@@ -94,8 +94,8 @@ export function ReportProgressDialog({
           <DialogTitle className="text-center">
             {t('reports.reportGeneration') || 'د راپور جوړول'}
           </DialogTitle>
-          <DialogDescription id="report-progress-description" className="sr-only">
-            {getStatusDescription()}
+          <DialogDescription id="report-progress-description">
+            {getStatusDescription() || t('reports.generatingReport') || 'Report generation in progress'}
           </DialogDescription>
         </DialogHeader>
 

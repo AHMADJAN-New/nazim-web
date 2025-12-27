@@ -1,12 +1,13 @@
 import { useMemo, useState, useEffect } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Eye, FileSpreadsheet, FileText, Download, Search, Filter, X, User } from 'lucide-react';
+import { Eye, Search, Filter, X, User } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudents } from '@/hooks/useStudents';
 import type { Student } from '@/types/domain/student';
-import { studentsApi } from '@/lib/api/client';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { useSchoolContext } from '@/contexts/SchoolContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -182,6 +183,7 @@ const StudentAvatar = ({ student, size = 'md' }: { student: Student; size?: 'sm'
 const StudentReport = () => {
   const { t, isRTL } = useLanguage();
   const { data: profile } = useProfile();
+  const { selectedSchoolId } = useSchoolContext();
   const orgIdForQuery = profile?.organization_id;
   const { data: studentsData, isLoading } = useStudents(orgIdForQuery);
   const { data: schools } = useSchools(orgIdForQuery);
@@ -244,41 +246,57 @@ const StudentReport = () => {
     setIsSheetOpen(true);
   };
 
-  const handleExport = async (format: 'csv' | 'pdf' | 'xlsx') => {
-    const exportSchool = schoolFilter !== 'all' 
-      ? schools?.find(s => s.id === schoolFilter) 
-      : schools?.[0];
-
-    if (!exportSchool) {
-      showToast.error(t('studentReport.schoolRequired') || 'A school is required to export the report.');
-      return;
-    }
-
-    try {
-      const { blob, filename } = await studentsApi.exportReport({
-        format: format === 'xlsx' ? 'xlsx' : format,
-        school_id: exportSchool.id,
-        student_status: statusFilter !== 'all' ? statusFilter : undefined,
-        gender: genderFilter !== 'all' ? genderFilter : undefined,
-        search: searchQuery || undefined,
-      });
-
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename || `student-registration-report.${format === 'pdf' ? 'pdf' : format === 'xlsx' ? 'xlsx' : 'csv'}`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      showToast.success(t('studentReport.reportExported') || `Report exported as ${format.toUpperCase()}`);
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error(error);
-      }
-      showToast.error(t('studentReport.exportFailed') || 'Failed to export the report. Please try again.');
-    }
+  // Transform filtered students to report format
+  const transformStudentData = (students: Student[]) => {
+    return students.map((student) => ({
+      admission_no: student.admissionNumber || '—',
+      card_number: student.cardNumber || '—',
+      status: student.status || '—',
+      full_name: student.fullName || '—',
+      father_name: student.fatherName || '—',
+      gender: student.gender || '—',
+      age: student.age || '—',
+      birth_date: student.birthDate ? new Date(student.birthDate).toISOString().split('T')[0] : '—',
+      nationality: student.nationality || '—',
+      address: student.homeAddress || '—',
+      phone: student.guardianPhone || '—',
+      guardian: student.guardianName || '—',
+      applying_grade: student.applyingGrade || '—',
+      school: schools?.find(s => s.id === student.schoolId)?.schoolName || '—',
+      admission_year: student.admissionYear || '—',
+      admission_fee_status: student.admissionFeeStatus || '—',
+      origin_location: buildLocation(student.origProvince, student.origDistrict, student.origVillage),
+      current_location: buildLocation(student.currProvince, student.currDistrict, student.currVillage),
+      previous_school: student.previousSchool || '—',
+      orphan: student.isOrphan ? 'Yes' : 'No',
+      disability: student.disabilityStatus || '—',
+      emergency_contact: [student.emergencyContactName, student.emergencyContactPhone].filter(Boolean).join(' ') || '—',
+    }));
   };
+
+  // Build filters summary
+  const buildFiltersSummary = () => {
+    const filters: string[] = [];
+    if (statusFilter !== 'all') {
+      filters.push(`Status: ${statusFilter}`);
+    }
+    if (genderFilter !== 'all') {
+      filters.push(`Gender: ${genderFilter}`);
+    }
+    if (schoolFilter !== 'all') {
+      const schoolName = schools?.find(s => s.id === schoolFilter)?.schoolName;
+      if (schoolName) {
+        filters.push(`School: ${schoolName}`);
+      }
+    }
+    if (searchQuery) {
+      filters.push(`Search: ${searchQuery}`);
+    }
+    return filters.join(' | ');
+  };
+
+  // Get current school for export
+  const currentSchoolId = schoolFilter !== 'all' ? schoolFilter : selectedSchoolId || profile?.default_school_id;
 
   const columns: ColumnDef<Student, any>[] = useMemo(() => [
     {
@@ -397,30 +415,46 @@ const StudentReport = () => {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            onClick={() => handleExport('csv')}
-            disabled={filteredStudents.length === 0}
-          >
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            CSV
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => handleExport('xlsx')}
-            disabled={filteredStudents.length === 0}
-          >
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            Excel
-          </Button>
-          <Button
-            variant="default"
-            onClick={() => handleExport('pdf')}
-            disabled={filteredStudents.length === 0}
-          >
-            <FileText className="mr-2 h-4 w-4" />
-            PDF
-          </Button>
+          <ReportExportButtons
+            data={filteredStudents}
+            columns={[
+              { key: 'admission_no', label: t('students.admissionNo') || 'Admission #' },
+              { key: 'card_number', label: t('attendancePage.cardHeader') || 'Card #' },
+              { key: 'status', label: t('studentReport.status') || 'Status' },
+              { key: 'full_name', label: t('studentReport.fullName') || 'Full Name' },
+              { key: 'father_name', label: t('students.fatherName') || 'Father Name' },
+              { key: 'gender', label: t('students.gender') || 'Gender' },
+              { key: 'age', label: t('studentReport.age') || 'Age' },
+              { key: 'birth_date', label: t('students.birthDate') || 'Birth Date' },
+              { key: 'nationality', label: t('students.nationality') || 'Nationality' },
+              { key: 'address', label: t('students.address') || 'Address' },
+              { key: 'phone', label: t('students.phone') || 'Phone' },
+              { key: 'guardian', label: t('students.guardian') || 'Guardian' },
+              { key: 'applying_grade', label: t('students.applyingGrade') || 'Applying Grade' },
+              { key: 'school', label: t('students.school') || 'School' },
+              { key: 'admission_year', label: t('students.admissionYear') || 'Admission Year' },
+              { key: 'admission_fee_status', label: t('students.admissionFeeStatus') || 'Fee Status' },
+              { key: 'origin_location', label: t('studentReport.originLocation') || 'Origin Location' },
+              { key: 'current_location', label: t('studentReport.currentLocation') || 'Current Location' },
+              { key: 'previous_school', label: t('studentReport.previousSchool') || 'Previous School' },
+              { key: 'orphan', label: t('studentReport.isOrphan') || 'Orphan' },
+              { key: 'disability', label: t('studentReport.disabilityStatus') || 'Disability' },
+              { key: 'emergency_contact', label: t('studentReport.emergencyContact') || 'Emergency Contact' },
+            ]}
+            reportKey="student_list"
+            title={t('studentReport.title') || 'Students Report'}
+            transformData={transformStudentData}
+            buildFiltersSummary={buildFiltersSummary}
+            schoolId={currentSchoolId}
+            templateType="student_list"
+            disabled={filteredStudents.length === 0 || isLoading}
+            errorNoSchool={t('studentReport.schoolRequired') || 'A school is required to export the report.'}
+            errorNoData={t('studentReport.noDataToExport') || 'No data to export'}
+            successPdf={t('studentReport.reportExported') || 'PDF report generated successfully'}
+            successExcel={t('studentReport.reportExported') || 'Excel report generated successfully'}
+            errorPdf={t('studentReport.exportFailed') || 'Failed to generate PDF report'}
+            errorExcel={t('studentReport.exportFailed') || 'Failed to generate Excel report'}
+          />
         </div>
       </div>
 

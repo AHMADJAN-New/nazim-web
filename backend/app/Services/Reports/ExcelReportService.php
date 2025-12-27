@@ -461,6 +461,88 @@ class ExcelReportService
             $rowNumber++;
         }
 
+        // Add totals row if applicable (for reports with numeric data)
+        $parameters = $context['parameters'] ?? [];
+        $showTotals = $parameters['show_totals'] ?? false;
+        $totalCount = $parameters['total_count'] ?? count($rows);
+        $totalsRowData = $parameters['totals_row'] ?? null; // Pre-calculated totals row data
+        
+        if ($showTotals && !empty($rows)) {
+            $totalsRow = $currentRow;
+            
+            // Row number column - show "Total" or count
+            $language = $context['language'] ?? 'en';
+            $totalLabel = match($language) {
+                'ps' => 'مجموعه',
+                'fa' => 'مجموع',
+                'ar' => 'المجموع',
+                default => 'Total',
+            };
+            $sheet->getCell("A{$totalsRow}")->setValue($totalLabel);
+            
+            // Add totals for numeric columns
+            $colIndex = 2;
+            foreach ($columns as $column) {
+                $colLetter = $this->getColumnLetter($colIndex);
+                $key = is_array($column) ? ($column['key'] ?? $colIndex - 2) : $colIndex - 2;
+                
+                $value = '';
+                
+                // If pre-calculated totals row data is provided, use it
+                if ($totalsRowData && is_array($totalsRowData) && isset($totalsRowData[$key])) {
+                    $value = $totalsRowData[$key];
+                } else {
+                    // Otherwise, calculate automatically
+                    // Check if this column should have totals (numeric columns)
+                    $columnType = is_array($column) ? ($column['type'] ?? 'text') : 'text';
+                    
+                    if ($columnType === 'numeric' || in_array($key, ['age', 'salary', 'count', 'total', 'present', 'absent', 'late', 'excused', 'sick', 'leave', 'total_records', 'total_sessions', 'attendance_rate'])) {
+                        // Sum numeric values
+                        $sum = 0;
+                        foreach ($rows as $row) {
+                            $cellValue = is_array($row) ? ($row[$key] ?? 0) : 0;
+                            if (is_numeric($cellValue)) {
+                                $sum += (float) $cellValue;
+                            }
+                        }
+                        $value = $sum > 0 ? $sum : '';
+                    } elseif ($colIndex === 2) {
+                        // First data column - show total count
+                        $value = $totalCount;
+                    }
+                }
+                
+                $sheet->getCell("{$colLetter}{$totalsRow}")->setValue($value);
+                $colIndex++;
+            }
+            
+            // Style totals row
+            $sheet->getStyle("A{$totalsRow}:{$lastCol}{$totalsRow}")->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'size' => $fontSize,
+                    'color' => ['argb' => 'FFFFFFFF'],
+                ],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['argb' => $primaryColor],
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN,
+                        'color' => ['argb' => 'FF333333'],
+                    ],
+                ],
+            ]);
+            
+            $sheet->getRowDimension($totalsRow)->setRowHeight(25);
+            $currentRow = $totalsRow + 1;
+        }
+
         // Set column widths - use COL_WIDTHS from context if available, otherwise auto-size based on content
         $colWidths = $context['COL_WIDTHS'] ?? [];
         

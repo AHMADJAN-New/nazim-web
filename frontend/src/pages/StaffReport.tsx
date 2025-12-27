@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Eye, FileSpreadsheet, FileText, User } from 'lucide-react';
+import { Eye, User } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useStaff, useStaffTypes } from '@/hooks/useStaff';
 import type { Staff } from '@/types/domain/staff';
-import { staffApi } from '@/lib/api/client';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { useSchoolContext } from '@/contexts/SchoolContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +38,6 @@ import { DataTablePagination } from '@/components/data-table/data-table-paginati
 import { useDataTable } from '@/hooks/use-data-table';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Search } from 'lucide-react';
 
@@ -85,6 +85,7 @@ const buildLocation = (province?: string | null, district?: string | null, villa
 const StaffReport = () => {
   const { t, isRTL } = useLanguage();
   const { data: profile } = useProfile();
+  const { selectedSchoolId } = useSchoolContext();
   const orgIdForQuery = profile?.organization_id;
   const { data: staffData, isLoading } = useStaff(orgIdForQuery, false);
   const { data: schools } = useSchools(orgIdForQuery);
@@ -148,41 +149,75 @@ const StaffReport = () => {
     setIsSheetOpen(true);
   };
 
-  const handleExport = async (format: 'csv' | 'pdf' | 'xlsx') => {
-    const exportSchool = schoolFilter !== 'all' 
-      ? schools?.find(s => s.id === schoolFilter) 
-      : schools?.[0];
-
-    if (!exportSchool) {
-      toast.error(t('staff.schoolRequiredForExport'));
-      return;
-    }
-
-    try {
-      const { blob, filename } = await staffApi.exportReport({
-        format: format === 'xlsx' ? 'xlsx' : format,
-        school_id: exportSchool.id,
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-        staff_type_id: staffTypeFilter !== 'all' ? staffTypeFilter : undefined,
-        search: searchQuery || undefined,
-      });
-
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename || `staff-registration-report.${format === 'pdf' ? 'pdf' : format === 'xlsx' ? 'xlsx' : 'csv'}`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      toast.success(`${t('staff.reportExportedAs')} ${format.toUpperCase()}`);
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error(error);
-      }
-      toast.error(t('staff.failedToExport'));
-    }
+  // Transform filtered staff to report format
+  const transformStaffData = (staff: Staff[]) => {
+    return staff.map((member) => {
+      const fullName = [member.firstName, member.fatherName, member.grandfatherName]
+        .filter(Boolean)
+        .join(' ');
+      
+      return {
+        staff_code: member.staffCode || '—',
+        employee_id: member.employeeId || '—',
+        status: member.status || '—',
+        full_name: fullName || '—',
+        first_name: member.firstName || '—',
+        father_name: member.fatherName || '—',
+        grandfather_name: member.grandfatherName || '—',
+        tazkira_number: member.tazkiraNumber || '—',
+        birth_date: member.birthDate ? new Date(member.birthDate).toISOString().split('T')[0] : '—',
+        birth_year: member.birthYear || '—',
+        phone_number: member.phoneNumber || '—',
+        email: member.email || '—',
+        home_address: member.homeAddress || '—',
+        staff_type: member.staffType?.name || member.staffType || '—',
+        position: member.position || '—',
+        duty: member.duty || '—',
+        salary: member.salary || '—',
+        teaching_section: member.teachingSection || '—',
+        school: schools?.find(s => s.id === member.schoolId)?.schoolName || '—',
+        organization: member.organization?.name || '—',
+        origin_location: buildLocation(member.originProvince, member.originDistrict, member.originVillage),
+        current_location: buildLocation(member.currentProvince, member.currentDistrict, member.currentVillage),
+        religious_education: member.religiousEducation || '—',
+        religious_institution: member.religiousUniversity || '—',
+        religious_graduation_year: member.religiousGraduationYear || '—',
+        religious_department: member.religiousDepartment || '—',
+        modern_education: member.modernEducation || '—',
+        modern_institution: member.modernSchoolUniversity || '—',
+        modern_graduation_year: member.modernGraduationYear || '—',
+        modern_department: member.modernDepartment || '—',
+        notes: member.notes || '—',
+      };
+    });
   };
+
+  // Build filters summary
+  const buildFiltersSummary = () => {
+    const filters: string[] = [];
+    if (statusFilter !== 'all') {
+      filters.push(`Status: ${statusFilter}`);
+    }
+    if (staffTypeFilter !== 'all') {
+      const staffTypeName = staffTypes?.find(st => st.id === staffTypeFilter)?.name;
+      if (staffTypeName) {
+        filters.push(`Staff Type: ${staffTypeName}`);
+      }
+    }
+    if (schoolFilter !== 'all') {
+      const schoolName = schools?.find(s => s.id === schoolFilter)?.schoolName;
+      if (schoolName) {
+        filters.push(`School: ${schoolName}`);
+      }
+    }
+    if (searchQuery) {
+      filters.push(`Search: ${searchQuery}`);
+    }
+    return filters.join(' | ');
+  };
+
+  // Get current school for export
+  const currentSchoolId = schoolFilter !== 'all' ? schoolFilter : selectedSchoolId || profile?.default_school_id;
 
   const columns: ColumnDef<Staff, any>[] = [
     {
@@ -314,30 +349,55 @@ const StaffReport = () => {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            onClick={() => handleExport('csv')}
-            disabled={filteredStaff.length === 0}
-          >
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            CSV
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => handleExport('xlsx')}
-            disabled={filteredStaff.length === 0}
-          >
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            Excel
-          </Button>
-          <Button
-            variant="default"
-            onClick={() => handleExport('pdf')}
-            disabled={filteredStaff.length === 0}
-          >
-            <FileText className="mr-2 h-4 w-4" />
-            PDF
-          </Button>
+          <ReportExportButtons
+            data={filteredStaff}
+            columns={[
+              { key: 'staff_code', label: t('staff.staffCode') || 'Staff Code' },
+              { key: 'employee_id', label: t('staff.employeeId') || 'Employee ID' },
+              { key: 'status', label: t('staff.status') || 'Status' },
+              { key: 'full_name', label: t('staff.fullName') || 'Full Name' },
+              { key: 'first_name', label: t('staff.firstName') || 'First Name' },
+              { key: 'father_name', label: t('staff.fatherName') || 'Father Name' },
+              { key: 'grandfather_name', label: t('staff.grandfatherName') || 'Grandfather Name' },
+              { key: 'tazkira_number', label: t('staff.tazkiraNumber') || 'Tazkira Number' },
+              { key: 'birth_date', label: t('staff.birthDate') || 'Birth Date' },
+              { key: 'birth_year', label: t('staff.birthYear') || 'Birth Year' },
+              { key: 'phone_number', label: t('staff.phoneNumber') || 'Phone Number' },
+              { key: 'email', label: t('staff.email') || 'Email' },
+              { key: 'home_address', label: t('staff.homeAddress') || 'Home Address' },
+              { key: 'staff_type', label: t('staff.staffType') || 'Staff Type' },
+              { key: 'position', label: t('staff.position') || 'Position' },
+              { key: 'duty', label: t('staff.duty') || 'Duty' },
+              { key: 'salary', label: t('staff.salary') || 'Salary', type: 'numeric' },
+              { key: 'teaching_section', label: t('staff.teachingSection') || 'Teaching Section' },
+              { key: 'school', label: t('staff.school') || 'School' },
+              { key: 'organization', label: t('staff.organization') || 'Organization' },
+              { key: 'origin_location', label: t('staff.originLocation') || 'Origin Location' },
+              { key: 'current_location', label: t('staff.currentLocation') || 'Current Location' },
+              { key: 'religious_education', label: t('staff.religiousEducation') || 'Religious Education' },
+              { key: 'religious_institution', label: t('staff.religiousInstitution') || 'Religious Institution' },
+              { key: 'religious_graduation_year', label: t('staff.religiousGraduationYear') || 'Religious Graduation Year' },
+              { key: 'religious_department', label: t('staff.religiousDepartment') || 'Religious Department' },
+              { key: 'modern_education', label: t('staff.modernEducation') || 'Modern Education' },
+              { key: 'modern_institution', label: t('staff.modernInstitution') || 'Modern Institution' },
+              { key: 'modern_graduation_year', label: t('staff.modernGraduationYear') || 'Modern Graduation Year' },
+              { key: 'modern_department', label: t('staff.modernDepartment') || 'Modern Department' },
+              { key: 'notes', label: t('staff.notes') || 'Notes' },
+            ]}
+            reportKey="staff_list"
+            title={t('staff.reportTitle') || 'Staff Report'}
+            transformData={transformStaffData}
+            buildFiltersSummary={buildFiltersSummary}
+            schoolId={currentSchoolId}
+            templateType="staff_list"
+            disabled={filteredStaff.length === 0 || isLoading}
+            errorNoSchool={t('staff.schoolRequiredForExport') || 'A school is required to export the report.'}
+            errorNoData={t('staff.noDataToExport') || 'No data to export'}
+            successPdf={t('staff.reportExportedAs') || 'PDF report generated successfully'}
+            successExcel={t('staff.reportExportedAs') || 'Excel report generated successfully'}
+            errorPdf={t('staff.failedToExport') || 'Failed to generate PDF report'}
+            errorExcel={t('staff.failedToExport') || 'Failed to generate Excel report'}
+          />
         </div>
       </div>
 

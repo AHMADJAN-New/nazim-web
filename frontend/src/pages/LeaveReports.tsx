@@ -20,12 +20,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useDatePreference } from '@/hooks/useDatePreference';
+import { leaveRequestsApi, apiClient } from '@/lib/api/client';
 import type { LeaveRequest } from '@/types/domain/leave';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
 
 export default function LeaveReports() {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const { data: profile } = useProfile();
+  const { calendar } = useDatePreference();
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [reportType, setReportType] = useState<'pdf' | 'excel'>('pdf');
+  const [reportProgress, setReportProgress] = useState(0);
+  const [reportStatus, setReportStatus] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const statusChips: Array<{ value: LeaveRequest['status']; label: string; color: string }> = [
     { value: 'approved', label: t('leave.approved'), color: 'bg-emerald-100 text-emerald-700' },
@@ -108,31 +124,91 @@ export default function LeaveReports() {
     setDateTo('');
   };
 
-  const handleExportCsv = () => {
-    if (!requests.length) {
+  const handleGenerateReport = async (variant: 'all' | 'pending' | 'approved' | 'rejected' | 'daily') => {
+    if (!requests.length && variant !== 'daily') {
       showToast.error(t('leave.noRequestsToExport'));
       return;
     }
 
-    const header = 'Student,Code,Class,Start,End,Status,Reason';
-    const rows = requests.map(req => [
-      req.student?.fullName || '—',
-      req.student?.studentCode || req.student?.admissionNo || '—',
-      req.className || '—',
-      format(req.startDate, 'yyyy-MM-dd'),
-      format(req.endDate, 'yyyy-MM-dd'),
-      req.status,
-      (req.reason || '').replace(/\n|\r/g, ' '),
-    ].join(','));
+    if (!profile?.default_school_id) {
+      showToast.error(t('leave.schoolRequired') || 'School is required for report generation');
+      return;
+    }
 
-    const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `leave-report-${format(new Date(), 'yyyyMMdd-HHmm')}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    showToast.success(t('leave.reportExported'));
+    try {
+      setIsGenerating(true);
+      setShowProgressDialog(true);
+      setReportProgress(0);
+      setReportStatus('pending');
+
+      // Map calendar type to backend format
+      const calendarPreference = calendar === 'gregorian' ? 'gregorian' : calendar === 'hijri_shamsi' ? 'jalali' : 'qamari';
+      // Map language code
+      const langCode = language === 'en' ? 'en' : language === 'ps' ? 'ps' : language === 'fa' ? 'fa' : 'ar';
+
+      const response = await leaveRequestsApi.generateReport({
+        report_type: reportType,
+        report_variant: variant,
+        branding_id: profile.default_school_id,
+        calendar_preference: calendarPreference,
+        language: langCode,
+        student_id: studentId || undefined,
+        class_id: classId || undefined,
+        school_id: schoolId || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        date_from: dateFrom || undefined,
+        date_to: dateTo || undefined,
+      });
+
+      if (response.success && response.download_url) {
+        // Report completed synchronously
+        window.open(response.download_url, '_blank');
+        setShowProgressDialog(false);
+        setIsGenerating(false);
+        showToast.success(t('leave.reportExported') || 'Report generated successfully');
+      } else if (response.success && response.report_id) {
+        // Report is being generated asynchronously - poll for status
+        const pollStatus = async () => {
+          try {
+                        const statusResponse = await apiClient.get(`/reports/${response.report_id}/status`) as any;
+                        const statusData = statusResponse;
+                        
+                        if (!statusData.success) {
+                          throw new Error(statusData.error || 'Failed to get report status');
+                        }
+                        
+                        if (statusData.status === 'completed' && statusData.download_url) {
+                          window.open(statusData.download_url, '_blank');
+                          setShowProgressDialog(false);
+                          setIsGenerating(false);
+                          showToast.success(t('leave.reportExported') || 'Report generated successfully');
+                        } else if (statusData.status === 'failed') {
+                          setShowProgressDialog(false);
+                          setIsGenerating(false);
+                          showToast.error(statusData.error_message || t('leave.reportGenerationFailed') || 'Failed to generate report');
+                        } else {
+                          // Update progress
+                          setReportProgress(statusData.progress || 0);
+                          setReportStatus(statusData.status);
+                          // Continue polling
+                          setTimeout(pollStatus, 1000);
+                        }
+                        } catch (error: any) {
+                          setShowProgressDialog(false);
+                          setIsGenerating(false);
+                          showToast.error(error.message || t('leave.reportGenerationFailed') || 'Failed to check report status');
+                        }
+        };
+        pollStatus();
+      } else {
+        setIsGenerating(false);
+        throw new Error(response.error || 'Failed to generate report');
+      }
+    } catch (error: any) {
+      setShowProgressDialog(false);
+      setIsGenerating(false);
+      showToast.error(error.message || t('leave.reportGenerationFailed') || 'Failed to generate report');
+    }
   };
 
   // Filter requests by status for tabs
@@ -273,7 +349,23 @@ export default function LeaveReports() {
                   <Button variant="ghost" size="sm" onClick={() => handleQuickRange('clear')} className={isRTL ? 'flex-row-reverse' : ''}><RefreshCcw className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('leave.resetFilters')}</Button>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="secondary" size="sm" onClick={handleExportCsv} className={isRTL ? 'flex-row-reverse' : ''}><Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('leave.exportCsv')}</Button>
+                  <Select value={reportType} onValueChange={(v) => setReportType(v as 'pdf' | 'excel')}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pdf">PDF</SelectItem>
+                      <SelectItem value="excel">Excel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="secondary" size="sm" onClick={() => handleGenerateReport('all')} disabled={isGenerating} className={isRTL ? 'flex-row-reverse' : ''}>
+                    {isGenerating ? (
+                      <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                    ) : (
+                      <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                    )}
+                    {t('leave.export') || 'Export'}
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -337,9 +429,25 @@ export default function LeaveReports() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs">{requests.length} {t('leave.entries')}</Badge>
-                  <Button variant="outline" size="sm" onClick={handleExportCsv} className={isRTL ? 'flex-row-reverse' : ''}>
-                    <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} /> {t('leave.export')}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Select value={reportType} onValueChange={(v) => setReportType(v as 'pdf' | 'excel')}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pdf">PDF</SelectItem>
+                        <SelectItem value="excel">Excel</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" size="sm" onClick={() => handleGenerateReport('all')} disabled={isGenerating} className={isRTL ? 'flex-row-reverse' : ''}>
+                      {isGenerating ? (
+                        <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                      ) : (
+                        <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                      )}
+                      {t('leave.export')}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardHeader>
@@ -400,7 +508,26 @@ export default function LeaveReports() {
                   <CardTitle>{t('leave.pendingRequests')}</CardTitle>
                   <CardDescription>{t('leave.awaitingApproval')}</CardDescription>
                 </div>
-                <Badge variant="outline" className="text-xs">{pendingRequests.length} {t('leave.entries')}</Badge>
+                <div className="flex gap-2 items-center">
+                  <Badge variant="outline" className="text-xs">{pendingRequests.length} {t('leave.entries')}</Badge>
+                  <Select value={reportType} onValueChange={(v) => setReportType(v as 'pdf' | 'excel')}>
+                    <SelectTrigger className="w-32 h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pdf">PDF</SelectItem>
+                      <SelectItem value="excel">Excel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" onClick={() => handleGenerateReport('pending')} disabled={isGenerating} className={isRTL ? 'flex-row-reverse' : ''}>
+                    {isGenerating ? (
+                      <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                    ) : (
+                      <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                    )}
+                    {t('leave.export')}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -448,7 +575,26 @@ export default function LeaveReports() {
                   <CardTitle>{t('leave.approvedRequests')}</CardTitle>
                   <CardDescription>{t('leave.approvedDescription')}</CardDescription>
                 </div>
-                <Badge variant="outline" className="text-xs">{approvedRequests.length} {t('leave.entries')}</Badge>
+                <div className="flex gap-2 items-center">
+                  <Badge variant="outline" className="text-xs">{approvedRequests.length} {t('leave.entries')}</Badge>
+                  <Select value={reportType} onValueChange={(v) => setReportType(v as 'pdf' | 'excel')}>
+                    <SelectTrigger className="w-32 h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pdf">PDF</SelectItem>
+                      <SelectItem value="excel">Excel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" onClick={() => handleGenerateReport('approved')} disabled={isGenerating} className={isRTL ? 'flex-row-reverse' : ''}>
+                    {isGenerating ? (
+                      <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                    ) : (
+                      <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                    )}
+                    {t('leave.export')}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -496,7 +642,26 @@ export default function LeaveReports() {
                   <CardTitle>{t('leave.rejectedRequests')}</CardTitle>
                   <CardDescription>{t('leave.rejectedDescription')}</CardDescription>
                 </div>
-                <Badge variant="outline" className="text-xs">{rejectedRequests.length} {t('leave.entries')}</Badge>
+                <div className="flex gap-2 items-center">
+                  <Badge variant="outline" className="text-xs">{rejectedRequests.length} {t('leave.entries')}</Badge>
+                  <Select value={reportType} onValueChange={(v) => setReportType(v as 'pdf' | 'excel')}>
+                    <SelectTrigger className="w-32 h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pdf">PDF</SelectItem>
+                      <SelectItem value="excel">Excel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" onClick={() => handleGenerateReport('rejected')} disabled={isGenerating} className={isRTL ? 'flex-row-reverse' : ''}>
+                    {isGenerating ? (
+                      <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                    ) : (
+                      <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                    )}
+                    {t('leave.export')}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -539,8 +704,31 @@ export default function LeaveReports() {
         <TabsContent value="daily" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>{t('leave.dailyBreakdownTitle')}</CardTitle>
-              <CardDescription>{t('leave.dailyBreakdownDescription')}</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>{t('leave.dailyBreakdownTitle')}</CardTitle>
+                  <CardDescription>{t('leave.dailyBreakdownDescription')}</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Select value={reportType} onValueChange={(v) => setReportType(v as 'pdf' | 'excel')}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pdf">PDF</SelectItem>
+                      <SelectItem value="excel">Excel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" onClick={() => handleGenerateReport('daily')} disabled={isGenerating} className={isRTL ? 'flex-row-reverse' : ''}>
+                    {isGenerating ? (
+                      <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                    ) : (
+                      <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                    )}
+                    {t('leave.export')}
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[500px] pr-2">
@@ -572,6 +760,56 @@ export default function LeaveReports() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Report Progress Dialog */}
+      <Dialog open={showProgressDialog} onOpenChange={(open) => {
+        if (!open && !isGenerating) {
+          setShowProgressDialog(false);
+        }
+      }}>
+        <DialogContent aria-describedby="leave-report-progress-description">
+          <DialogHeader>
+            <DialogTitle>{t('leave.generatingReport') || 'Generating Report'}</DialogTitle>
+            <DialogDescription id="leave-report-progress-description">
+              {reportStatus === 'processing' || reportStatus === 'pending' 
+                ? t('leave.reportInProgress') || 'Please wait while the report is being generated...'
+                : reportStatus === 'completed'
+                ? t('leave.reportReady') || 'Report is ready!'
+                : reportStatus === 'failed'
+                ? t('leave.reportFailed') || 'Report generation failed.'
+                : t('leave.reportStatus') || 'Report status'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Progress value={reportProgress} className="w-full" />
+            <div className="text-sm text-muted-foreground text-center">
+              {reportProgress}% {reportStatus && `(${reportStatus})`}
+            </div>
+            {reportStatus === 'completed' && (
+              <Button onClick={() => {
+                setShowProgressDialog(false);
+                setIsGenerating(false);
+              }} className="w-full">
+                {t('common.close') || 'Close'}
+              </Button>
+            )}
+            {reportStatus === 'failed' && (
+              <Button onClick={() => {
+                setShowProgressDialog(false);
+                setIsGenerating(false);
+              }} variant="destructive" className="w-full">
+                {t('common.close') || 'Close'}
+              </Button>
+            )}
+            {isGenerating && (reportStatus === 'pending' || reportStatus === 'processing') && (
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>{t('leave.generating') || 'Generating...'}</span>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

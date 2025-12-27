@@ -14,26 +14,38 @@ import {
     Clock,
     GraduationCap,
     Building2,
+    Download,
+    Loader2,
 } from 'lucide-react';
 import { format, subDays, subMonths } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useDatePreference } from '@/hooks/useDatePreference';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useClasses } from '@/hooks/useClasses';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useAttendanceTotalsReport } from '@/hooks/useAttendanceTotalsReport';
+import { attendanceSessionsApi, apiClient } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
 import type { AttendanceTotalsReportFilters } from '@/types/domain/attendanceTotalsReport';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Combobox } from '@/components/ui/combobox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { LoadingSpinner } from '@/components/ui/loading';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
 
 const attendanceStatusMeta = {
     present: { label: 'Present', icon: CheckCircle2, tone: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950' },
@@ -85,8 +97,14 @@ const SummaryCard = ({
 const formatPercent = (value?: number) => `${(value ?? 0).toFixed(1)}%`;
 
 export default function AttendanceTotalsReports() {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
+    const { calendar } = useDatePreference();
     const { data: profile } = useProfile();
+    const [reportType, setReportType] = useState<'pdf' | 'excel'>('pdf');
+    const [showProgressDialog, setShowProgressDialog] = useState(false);
+    const [reportProgress, setReportProgress] = useState(0);
+    const [reportStatus, setReportStatus] = useState<string | null>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
     const { data: schools } = useSchools(profile?.organization_id);
     const { data: classes } = useClasses(profile?.organization_id);
     const { data: academicYears } = useAcademicYears(profile?.organization_id);
@@ -175,6 +193,92 @@ export default function AttendanceTotalsReports() {
         return Object.values(filters).filter((value) => !!value && value !== profile?.organization_id).length;
     }, [filters, profile?.organization_id]);
 
+    const handleGenerateReport = async (variant: 'totals' | 'class_wise' | 'room_wise') => {
+        if (!report) {
+            showToast.error(t('attendanceTotalsReport.noDataToExport') || 'No data to export');
+            return;
+        }
+
+        if (!profile?.default_school_id) {
+            showToast.error(t('attendanceTotalsReport.schoolRequired') || 'School is required for report generation');
+            return;
+        }
+
+        try {
+            setIsGenerating(true);
+            setShowProgressDialog(true);
+            setReportProgress(0);
+            setReportStatus('pending');
+
+            // Map calendar type to backend format
+            const calendarPreference = calendar === 'gregorian' ? 'gregorian' : calendar === 'hijri_shamsi' ? 'jalali' : 'qamari';
+            // Map language code
+            const langCode = language === 'en' ? 'en' : language === 'ps' ? 'ps' : language === 'fa' ? 'fa' : 'ar';
+
+            const response = await attendanceSessionsApi.generateReport({
+                report_type: reportType,
+                report_variant: variant,
+                branding_id: profile.default_school_id,
+                calendar_preference: calendarPreference,
+                language: langCode,
+                class_id: filters.classId || undefined,
+                school_id: filters.schoolId || undefined,
+                status: filters.status || undefined,
+                date_from: filters.dateFrom || undefined,
+                date_to: filters.dateTo || undefined,
+                academic_year_id: filters.academicYearId || undefined,
+            });
+
+            if (response.success && response.download_url) {
+                // Report completed synchronously
+                window.open(response.download_url, '_blank');
+                setShowProgressDialog(false);
+                setIsGenerating(false);
+                showToast.success(t('attendanceTotalsReport.reportExported') || 'Report generated successfully');
+            } else if (response.success && response.report_id) {
+                // Report is being generated asynchronously - poll for status
+                const pollStatus = async () => {
+                    try {
+                        const statusResponse = await apiClient.get(`/reports/${response.report_id}/status`) as any;
+                        const statusData = statusResponse;
+                        
+                        if (!statusData.success) {
+                          throw new Error(statusData.error || 'Failed to get report status');
+                        }
+                        
+                        setReportProgress(statusData.progress || 0);
+                        setReportStatus(statusData.status);
+                        
+                        if (statusData.status === 'completed' && statusData.download_url) {
+                            window.open(statusData.download_url, '_blank');
+                            setShowProgressDialog(false);
+                            setIsGenerating(false);
+                            showToast.success(t('attendanceTotalsReport.reportExported') || 'Report generated successfully');
+                        } else if (statusData.status === 'failed') {
+                            setShowProgressDialog(false);
+                            setIsGenerating(false);
+                            showToast.error(statusData.error_message || t('attendanceTotalsReport.reportGenerationFailed') || 'Failed to generate report');
+                        } else {
+                            // Continue polling
+                            setTimeout(pollStatus, 1000);
+                        }
+                    } catch (error: any) {
+                        setShowProgressDialog(false);
+                        setIsGenerating(false);
+                        showToast.error(error.message || t('attendanceTotalsReport.reportGenerationFailed') || 'Failed to check report status');
+                    }
+                };
+                pollStatus();
+            } else {
+                throw new Error(response.error || 'Failed to generate report');
+            }
+        } catch (error: any) {
+            setShowProgressDialog(false);
+            setIsGenerating(false);
+            showToast.error(error.message || t('attendanceTotalsReport.reportGenerationFailed') || 'Failed to generate report');
+        }
+    };
+
     return (
         <div className="container mx-auto p-4 md:p-6 max-w-7xl space-y-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -187,6 +291,72 @@ export default function AttendanceTotalsReports() {
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={() => {
+                        setReportType('pdf');
+                        handleGenerateReport('totals');
+                    }} disabled={isLoading || !report || isGenerating}>
+                        {isGenerating && reportType === 'pdf' ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Download className="mr-2 h-4 w-4" />
+                        )}
+                        PDF Totals
+                    </Button>
+                    <Button variant="outline" onClick={() => {
+                        setReportType('excel');
+                        handleGenerateReport('totals');
+                    }} disabled={isLoading || !report || isGenerating}>
+                        {isGenerating && reportType === 'excel' ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Download className="mr-2 h-4 w-4" />
+                        )}
+                        Excel Totals
+                    </Button>
+                    <Button variant="outline" onClick={() => {
+                        setReportType('pdf');
+                        handleGenerateReport('class_wise');
+                    }} disabled={isLoading || !report || isGenerating}>
+                        {isGenerating && reportType === 'pdf' ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Download className="mr-2 h-4 w-4" />
+                        )}
+                        PDF Class-wise
+                    </Button>
+                    <Button variant="outline" onClick={() => {
+                        setReportType('excel');
+                        handleGenerateReport('class_wise');
+                    }} disabled={isLoading || !report || isGenerating}>
+                        {isGenerating && reportType === 'excel' ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Download className="mr-2 h-4 w-4" />
+                        )}
+                        Excel Class-wise
+                    </Button>
+                    <Button variant="outline" onClick={() => {
+                        setReportType('pdf');
+                        handleGenerateReport('room_wise');
+                    }} disabled={isLoading || !report || isGenerating}>
+                        {isGenerating && reportType === 'pdf' ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Download className="mr-2 h-4 w-4" />
+                        )}
+                        PDF Room-wise
+                    </Button>
+                    <Button variant="outline" onClick={() => {
+                        setReportType('excel');
+                        handleGenerateReport('room_wise');
+                    }} disabled={isLoading || !report || isGenerating}>
+                        {isGenerating && reportType === 'excel' ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Download className="mr-2 h-4 w-4" />
+                        )}
+                        Excel Room-wise
+                    </Button>
                     <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
                         <RefreshCw className="mr-2 h-4 w-4" />
                         {t('common.refresh') || 'Refresh'}
@@ -585,6 +755,34 @@ export default function AttendanceTotalsReports() {
                     </Tabs>
                 </div>
             )}
+
+            {/* Report Progress Dialog */}
+            <Dialog open={showProgressDialog} onOpenChange={(open) => {
+                if (!open && !isGenerating) {
+                    setShowProgressDialog(false);
+                }
+            }}>
+                <DialogContent aria-describedby="attendance-totals-report-progress-description">
+                    <DialogHeader>
+                        <DialogTitle>{t('attendanceTotalsReport.generatingReport') || 'Generating Report'}</DialogTitle>
+                        <DialogDescription id="attendance-totals-report-progress-description">
+                            {reportStatus === 'processing' || reportStatus === 'pending' 
+                                ? t('attendanceTotalsReport.reportInProgress') || 'Please wait while the report is being generated...'
+                                : reportStatus === 'completed'
+                                ? t('attendanceTotalsReport.reportReady') || 'Report is ready!'
+                                : reportStatus === 'failed'
+                                ? t('attendanceTotalsReport.reportFailed') || 'Report generation failed.'
+                                : t('attendanceTotalsReport.reportStatus') || 'Report status'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <Progress value={reportProgress} className="w-full" />
+                        <div className="text-sm text-muted-foreground text-center">
+                            {reportProgress}% {reportStatus && `(${reportStatus})`}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

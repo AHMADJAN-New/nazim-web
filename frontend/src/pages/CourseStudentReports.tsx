@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useReactTable, getCoreRowModel, type PaginationState } from '@tanstack/react-table';
 import { format } from 'date-fns';
@@ -36,6 +36,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import type { CourseStudent } from '@/types/domain/courseStudent';
 import { useLanguage } from '@/hooks/useLanguage';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { useAuth } from '@/hooks/useAuth';
 
 const statusBadge: Record<string, string> = {
   enrolled: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200',
@@ -143,41 +145,56 @@ const CourseStudentReports = () => {
     }
   };
 
-  const handleExportCSV = () => {
-    if (!filtered || filtered.length === 0) {
-      toast.error('No data to export');
-      return;
-    }
+  const { profile } = useAuth();
 
-    const headers = ['Name', t('staff.fatherName'), 'Admission No', 'Guardian Name', 'Phone', 'Birth Year', 'Age', 'Registered', 'Status', 'Course'];
-    const rows = filtered.map((student) => {
+  // Report export columns
+  const reportColumns = useMemo(() => [
+    { key: 'student_name', label: t('students.name') || 'Student' },
+    { key: 'father_name', label: t('staff.fatherName') || 'Father Name' },
+    { key: 'admission_no', label: t('students.admissionNo') || 'Admission No' },
+    { key: 'guardian_name', label: t('students.guardianName') || 'Guardian Name' },
+    { key: 'guardian_phone', label: t('students.phone') || 'Phone' },
+    { key: 'birth_year', label: t('students.birthYear') || 'Birth Year' },
+    { key: 'age', label: t('students.age') || 'Age' },
+    { key: 'registration_date', label: t('courses.registration') || 'Registered' },
+    { key: 'status', label: t('common.statusLabel') || 'Status' },
+    { key: 'course_name', label: t('courses.courseName') || 'Course' },
+  ], [t]);
+
+  // Transform data for report
+  const transformCourseStudentData = useCallback((students: typeof filtered) => {
+    return students.map((student) => {
       const course = courses?.find((c) => c.id === student.courseId);
-      return [
-        student.fullName || '',
-        student.fatherName || '',
-        student.admissionNo || '',
-        student.guardianName || '',
-        student.guardianPhone || '',
-        student.birthYear?.toString() || '',
-        student.age?.toString() || '',
-        student.registrationDate ? formatDate(student.registrationDate) : '',
-        student.completionStatus || '',
-        course?.name || '',
-      ];
+      return {
+        student_name: student.fullName || '-',
+        father_name: student.fatherName || '-',
+        admission_no: student.admissionNo || '-',
+        guardian_name: student.guardianName || '-',
+        guardian_phone: student.guardianPhone || '-',
+        birth_year: student.birthYear?.toString() || '-',
+        age: student.age?.toString() || '-',
+        registration_date: student.registrationDate ? formatDate(student.registrationDate) : '-',
+        status: student.completionStatus || '-',
+        course_name: course?.name || '-',
+      };
     });
+  }, [courses]);
 
-    const csvContent = [headers.join(','), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `course-students-report-${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success('Report exported successfully');
-  };
+  // Build filters summary
+  const buildFiltersSummary = useCallback(() => {
+    const filters: string[] = [];
+    if (selectedCourseId && selectedCourseId !== 'all') {
+      const course = courses?.find((c) => c.id === selectedCourseId);
+      if (course) filters.push(`${t('courses.courseName') || 'Course'}: ${course.name}`);
+    }
+    if (statusFilter !== 'all') {
+      filters.push(`${t('common.statusLabel') || 'Status'}: ${statusFilter}`);
+    }
+    if (search) {
+      filters.push(`${t('common.search') || 'Search'}: ${search}`);
+    }
+    return filters.join(', ');
+  }, [selectedCourseId, statusFilter, search, courses, t]);
 
   const paginationState: PaginationState = {
     pageIndex: page - 1,
@@ -209,10 +226,17 @@ const CourseStudentReports = () => {
           <p className="text-muted-foreground">View, filter, and manage course students with bulk operations.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportCSV} disabled={!filtered || filtered.length === 0}>
-            <Download className="mr-2 h-4 w-4" />
-            {t('common.export')} CSV
-          </Button>
+          <ReportExportButtons
+            data={filtered}
+            columns={reportColumns}
+            reportKey="short_term_course_students"
+            title={t('courses.courseReports') || 'Short-term Course Students Report'}
+            transformData={transformCourseStudentData}
+            buildFiltersSummary={buildFiltersSummary}
+            schoolId={profile?.default_school_id}
+            templateType="course_students"
+            disabled={isLoading || filtered.length === 0}
+          />
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="mr-2 h-4 w-4" />
             {t('common.refresh')}

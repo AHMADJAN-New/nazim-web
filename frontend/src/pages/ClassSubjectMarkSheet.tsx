@@ -21,6 +21,7 @@ import { FileDown, Printer, Search, Award, TrendingUp, TrendingDown, Trophy, Use
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
 import { calculateGrade } from '@/lib/utils/gradeCalculator';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 // Report data type
 type ClassSubjectReportData = {
@@ -738,16 +739,6 @@ export default function ClassSubjectMarkSheet() {
     window.print();
   };
 
-  const handleDownloadPDF = () => {
-    // TODO: Implement PDF download
-    console.log('Download PDF');
-  };
-
-  const handleDownloadExcel = () => {
-    // TODO: Implement Excel download
-    console.log('Download Excel');
-  };
-
   if (!canViewReports) {
     return (
       <div className="container mx-auto py-6">
@@ -892,14 +883,44 @@ export default function ClassSubjectMarkSheet() {
                 <Printer className="h-4 w-4 mr-2" />
                 {t('examReports.print')}
               </Button>
-              <Button variant="outline" onClick={handleDownloadPDF}>
-                <FileDown className="h-4 w-4 mr-2" />
-                {t('examReports.downloadPDF')}
-              </Button>
-              <Button variant="outline" onClick={handleDownloadExcel}>
-                <FileDown className="h-4 w-4 mr-2" />
-                {t('examReports.downloadExcel')}
-              </Button>
+              {report && report.students && report.students.length > 0 && (
+                <ReportExportButtons
+                  data={report.students}
+                  columns={[
+                    { key: 'rank', label: t('examReports.rank') },
+                    { key: 'rollNumber', label: t('examReports.rollNumber') },
+                    { key: 'studentName', label: t('examReports.studentName') },
+                    { key: 'marksObtained', label: t('examReports.obtainedMarks') },
+                    { key: 'totalMarks', label: t('examReports.totalMarks') },
+                    { key: 'percentage', label: t('examReports.percentage') },
+                    { key: 'grade', label: t('examReports.grade') },
+                    { key: 'result', label: t('examReports.result') },
+                  ]}
+                  reportKey="class_subject_academic_year"
+                  title={`${t('examReports.classSubjectMarkSheet') || 'Class Subject Mark Sheet'} - ${report.exam?.name || ''} - ${report.class?.name || ''} - ${report.subject?.name || ''}`}
+                  transformData={(data) => data.map((student: any) => ({
+                    rank: student.rank || '-',
+                    rollNumber: student.roll_number || '-',
+                    studentName: student.name || student.student_name || '-',
+                    marksObtained: student.is_absent ? t('examReports.absent') : (student.marks_obtained !== null ? student.marks_obtained : '-'),
+                    totalMarks: report.subject?.total_marks || '-',
+                    percentage: student.percentage !== null && student.percentage !== undefined ? `${student.percentage.toFixed(2)}%` : '-',
+                    grade: student.grade || '-',
+                    result: student.result === 'pass' ? t('examReports.pass') : student.result === 'fail' ? t('examReports.fail') : t('examReports.absent'),
+                  }))}
+                  buildFiltersSummary={() => {
+                    const parts: string[] = [];
+                    if (report.exam?.name) parts.push(`Exam: ${report.exam.name}`);
+                    if (report.class?.name) parts.push(`Class: ${report.class.name}${report.class.section ? ` - ${report.class.section}` : ''}`);
+                    if (report.subject?.name) parts.push(`Subject: ${report.subject.name}`);
+                    if (academicYear?.name) parts.push(`Academic Year: ${academicYear.name}`);
+                    return parts.join(' | ');
+                  }}
+                  schoolId={profile?.default_school_id}
+                  templateType="class_subject_academic_year"
+                  disabled={!report || !report.students || report.students.length === 0}
+                />
+              )}
             </div>
           )}
         </CardContent>

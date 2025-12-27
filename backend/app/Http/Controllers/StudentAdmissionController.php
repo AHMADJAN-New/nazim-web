@@ -6,6 +6,9 @@ use App\Models\StudentAdmission;
 use App\Models\Student;
 use App\Http\Requests\StoreStudentAdmissionRequest;
 use App\Http\Requests\UpdateStudentAdmissionRequest;
+use App\Services\Reports\ReportConfig;
+use App\Services\Reports\ReportService;
+use App\Services\Reports\DateConversionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +17,10 @@ use Carbon\Carbon;
 
 class StudentAdmissionController extends Controller
 {
+    public function __construct(
+        private ReportService $reportService,
+        private DateConversionService $dateService
+    ) {}
     /**
      * Get accessible organization IDs for the current user
      */
@@ -581,6 +588,250 @@ class StudentAdmissionController extends Controller
                 'to' => min($page * $perPage, $totalAdmissions),
             ],
         ]);
+    }
+
+    /**
+     * Export student admissions report
+     */
+    public function export(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        if (function_exists('setPermissionsTeamId')) {
+            setPermissionsTeamId($profile->organization_id);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('student_admissions.report')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for student_admissions.report: ' . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $orgIds = $this->getAccessibleOrgIds($profile);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $schoolIds = [$currentSchoolId];
+
+        if (empty($orgIds) || empty($schoolIds)) {
+            return response()->json(['error' => 'No accessible organizations or schools'], 403);
+        }
+
+        // Get filters (same as report method)
+        $validator = Validator::make($request->all(), [
+            'format' => 'required|in:pdf,xlsx',
+            'academic_year_id' => 'nullable|string',
+            'class_id' => 'nullable|string',
+            'enrollment_status' => 'nullable|string',
+            'residency_type_id' => 'nullable|string',
+            'is_boarder' => 'nullable|boolean',
+            'from_date' => 'nullable|date',
+            'to_date' => 'nullable|date',
+            'calendar_preference' => 'nullable|in:gregorian,jalali,qamari',
+            'language' => 'nullable|in:en,ps,fa,ar',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'Invalid filters provided',
+                'details' => $validator->errors(),
+            ], 422);
+        }
+
+        $filters = $validator->validated();
+
+        // Build query with same filters as report method
+        $query = StudentAdmission::query()
+            ->whereNull('student_admissions.deleted_at')
+            ->whereIn('student_admissions.organization_id', $orgIds)
+            ->whereIn('student_admissions.school_id', $schoolIds);
+
+        if (!empty($filters['academic_year_id'])) {
+            $query->where('student_admissions.academic_year_id', $filters['academic_year_id']);
+        }
+
+        if (!empty($filters['class_id'])) {
+            $query->where('student_admissions.class_id', $filters['class_id']);
+        }
+
+        if (!empty($filters['enrollment_status'])) {
+            $query->where('student_admissions.enrollment_status', $filters['enrollment_status']);
+        }
+
+        if (array_key_exists('is_boarder', $filters) && $filters['is_boarder'] !== null) {
+            $query->where('student_admissions.is_boarder', filter_var($filters['is_boarder'], FILTER_VALIDATE_BOOLEAN));
+        }
+
+        if (!empty($filters['residency_type_id'])) {
+            $query->where('student_admissions.residency_type_id', $filters['residency_type_id']);
+        }
+
+        if (!empty($filters['from_date'])) {
+            try {
+                $parsedFrom = Carbon::parse($filters['from_date'])->toDateString();
+                $query->whereDate('student_admissions.admission_date', '>=', $parsedFrom);
+            } catch (\Exception $e) {
+                Log::info('Invalid from_date provided for admissions export', ['value' => $filters['from_date']]);
+            }
+        }
+
+        if (!empty($filters['to_date'])) {
+            try {
+                $parsedTo = Carbon::parse($filters['to_date'])->toDateString();
+                $query->whereDate('student_admissions.admission_date', '<=', $parsedTo);
+            } catch (\Exception $e) {
+                Log::info('Invalid to_date provided for admissions export', ['value' => $filters['to_date']]);
+            }
+        }
+
+        // Get all admissions (no pagination for export)
+        $admissions = $query
+            ->with([
+                'student:id,full_name,admission_no,gender,admission_year,guardian_phone,guardian_name,card_number,father_name',
+                'organization:id,name',
+                'school:id,school_name',
+                'academicYear:id,name,start_date,end_date',
+                'class:id,name,grade_level',
+                'classAcademicYear:id,section_name',
+                'residencyType:id,name',
+                'room:id,room_number',
+            ])
+            ->orderBy('student_admissions.admission_date', 'desc')
+            ->orderBy('student_admissions.created_at', 'desc')
+            ->get();
+
+        // Get calendar preference and language from request or use defaults
+        $calendarPreference = $request->get('calendar_preference', 'jalali');
+        $language = $request->get('language', 'ps');
+
+        // Build filter summary
+        $filterSummary = [];
+        if (!empty($filters['academic_year_id'])) {
+            $filterSummary[] = 'Academic Year: ' . $filters['academic_year_id'];
+        }
+        if (!empty($filters['class_id'])) {
+            $filterSummary[] = 'Class: ' . $filters['class_id'];
+        }
+        if (!empty($filters['enrollment_status'])) {
+            $filterSummary[] = 'Status: ' . $filters['enrollment_status'];
+        }
+        if (array_key_exists('is_boarder', $filters) && $filters['is_boarder'] !== null) {
+            $filterSummary[] = 'Boarder: ' . ($filters['is_boarder'] ? 'Yes' : 'No');
+        }
+        if (!empty($filters['residency_type_id'])) {
+            $filterSummary[] = 'Residency: ' . $filters['residency_type_id'];
+        }
+        if (!empty($filters['from_date']) && !empty($filters['to_date'])) {
+            $filterSummary[] = 'Date Range: ' . $filters['from_date'] . ' to ' . $filters['to_date'];
+        }
+
+        // Map admissions to report rows
+        $columns = [
+            ['key' => 'student_name', 'label' => $language === 'ps' ? 'د زده کړیال نوم' : ($language === 'fa' ? 'نام دانش آموز' : ($language === 'ar' ? 'اسم الطالب' : 'Student Name'))],
+            ['key' => 'admission_no', 'label' => $language === 'ps' ? 'د شمولیت شمیره' : ($language === 'fa' ? 'شماره پذیرش' : ($language === 'ar' ? 'رقم القبول' : 'Admission #'))],
+            ['key' => 'card_number', 'label' => $language === 'ps' ? 'کارت شمیره' : ($language === 'fa' ? 'شماره کارت' : ($language === 'ar' ? 'رقم البطاقة' : 'Card #'))],
+            ['key' => 'school', 'label' => $language === 'ps' ? 'ښوونځی' : ($language === 'fa' ? 'مدرسه' : ($language === 'ar' ? 'المدرسة' : 'School'))],
+            ['key' => 'class', 'label' => $language === 'ps' ? 'صنف' : ($language === 'fa' ? 'کلاس' : ($language === 'ar' ? 'الصف' : 'Class'))],
+            ['key' => 'section', 'label' => $language === 'ps' ? 'برخه' : ($language === 'fa' ? 'بخش' : ($language === 'ar' ? 'القسم' : 'Section'))],
+            ['key' => 'academic_year', 'label' => $language === 'ps' ? 'د زده کړو کال' : ($language === 'fa' ? 'سال تحصیلی' : ($language === 'ar' ? 'السنة الدراسية' : 'Academic Year'))],
+            ['key' => 'residency_type', 'label' => $language === 'ps' ? 'د اوسیدو ډول' : ($language === 'fa' ? 'نوع اقامت' : ($language === 'ar' ? 'نوع الإقامة' : 'Residency Type'))],
+            ['key' => 'is_boarder', 'label' => $language === 'ps' ? 'د اوسیدو ډول' : ($language === 'fa' ? 'نوع اقامت' : ($language === 'ar' ? 'نوع الإقامة' : 'Boarder'))],
+            ['key' => 'room', 'label' => $language === 'ps' ? 'خونه' : ($language === 'fa' ? 'اتاق' : ($language === 'ar' ? 'الغرفة' : 'Room'))],
+            ['key' => 'guardian_name', 'label' => $language === 'ps' ? 'د سرپرست نوم' : ($language === 'fa' ? 'نام ولی' : ($language === 'ar' ? 'اسم الولي' : 'Guardian Name'))],
+            ['key' => 'guardian_phone', 'label' => $language === 'ps' ? 'د سرپرست تلیفون' : ($language === 'fa' ? 'تلفن ولی' : ($language === 'ar' ? 'هاتف الولي' : 'Guardian Phone'))],
+            ['key' => 'enrollment_status', 'label' => $language === 'ps' ? 'د نوم لیکنې حالت' : ($language === 'fa' ? 'وضعیت ثبت نام' : ($language === 'ar' ? 'حالة التسجيل' : 'Enrollment Status'))],
+            ['key' => 'admission_date', 'label' => $language === 'ps' ? 'د شمولیت نیټه' : ($language === 'fa' ? 'تاریخ پذیرش' : ($language === 'ar' ? 'تاريخ القبول' : 'Admission Date'))],
+        ];
+
+        $rows = [];
+        foreach ($admissions as $admission) {
+            $rows[] = [
+                'student_name' => $admission->student->full_name ?? '—',
+                'admission_no' => $admission->student->admission_no ?? '—',
+                'card_number' => $admission->student->card_number ?? '—',
+                'school' => $admission->school->school_name ?? '—',
+                'class' => $admission->class->name ?? '—',
+                'section' => $admission->classAcademicYear->section_name ?? '—',
+                'academic_year' => $admission->academicYear->name ?? '—',
+                'residency_type' => $admission->residencyType->name ?? '—',
+                'is_boarder' => $admission->is_boarder ? ($language === 'ps' ? 'هو' : ($language === 'fa' ? 'بله' : ($language === 'ar' ? 'نعم' : 'Yes'))) : ($language === 'ps' ? 'نه' : ($language === 'fa' ? 'خیر' : ($language === 'ar' ? 'لا' : 'No'))),
+                'room' => $admission->room->room_number ?? '—',
+                'guardian_name' => $admission->student->guardian_name ?? '—',
+                'guardian_phone' => $admission->student->guardian_phone ?? '—',
+                'enrollment_status' => $admission->enrollment_status ?? '—',
+                'admission_date' => $admission->admission_date ? $this->dateService->formatDate($admission->admission_date, $calendarPreference, 'full', $language) : '—',
+            ];
+        }
+
+        // Get format (pdf or excel)
+        $format = strtolower($request->get('format', 'pdf'));
+        $reportType = $format === 'xlsx' ? 'excel' : 'pdf';
+
+        // Build date range string for title
+        $dateRange = null;
+        if (!empty($filters['from_date']) && !empty($filters['to_date'])) {
+            $dateRange = $this->dateService->formatDate($filters['from_date'], $calendarPreference, 'full', $language) . 
+                        ' - ' . 
+                        $this->dateService->formatDate($filters['to_date'], $calendarPreference, 'full', $language);
+        }
+
+        // Create report config
+        $config = ReportConfig::fromArray([
+            'report_key' => 'student_admissions',
+            'report_type' => $reportType,
+            'branding_id' => $currentSchoolId,
+            'title' => $language === 'ps' ? 'د زده کړیالانو د شمولیت راپور' : ($language === 'fa' ? 'گزارش پذیرش دانش آموزان' : ($language === 'ar' ? 'تقرير قبول الطلاب' : 'Student Admissions Report')),
+            'calendar_preference' => $calendarPreference,
+            'language' => $language,
+            'parameters' => [
+                'filters_summary' => !empty($filterSummary) ? implode(' | ', $filterSummary) : null,
+                'total_count' => count($rows),
+                'date_range' => $dateRange,
+                'show_totals' => true, // Show totals row in Excel
+            ],
+        ]);
+
+        // Prepare report data
+        $data = [
+            'columns' => $columns,
+            'rows' => $rows,
+        ];
+
+        // Generate report
+        try {
+            $reportRun = $this->reportService->generateReport($config, $data, $profile->organization_id);
+
+            // For synchronous requests, return download
+            if ($reportRun->isCompleted()) {
+                return redirect("/api/reports/{$reportRun->id}/download");
+            }
+
+            // For async requests, return report ID
+            return response()->json([
+                'success' => true,
+                'report_id' => $reportRun->id,
+                'status' => $reportRun->status,
+                'message' => 'Report generation started',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Student admissions report generation failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to generate report: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

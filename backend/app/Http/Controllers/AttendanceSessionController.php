@@ -8,6 +8,9 @@ use App\Http\Requests\StoreAttendanceSessionRequest;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\ClassModel;
+use App\Services\Reports\DateConversionService;
+use App\Services\Reports\ReportConfig;
+use App\Services\Reports\ReportService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +20,10 @@ use Illuminate\Support\Str;
 
 class AttendanceSessionController extends Controller
 {
+    public function __construct(
+        private ReportService $reportService,
+        private DateConversionService $dateService
+    ) {}
     public function index(Request $request)
     {
         $user = $request->user();
@@ -915,5 +922,356 @@ class AttendanceSessionController extends Controller
         ];
 
         return response()->json($report);
+    }
+
+    /**
+     * Generate attendance report
+     * 
+     * POST /api/attendance-sessions/generate-report
+     */
+    public function generateReport(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('attendance_sessions.read')) {
+                return response()->json(['error' => 'Access Denied'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for attendance_sessions.read: ' . $e->getMessage());
+            return response()->json(['error' => 'Access Denied'], 403);
+        }
+
+        $validated = $request->validate([
+            'report_type' => 'required|in:pdf,excel',
+            'report_variant' => 'required|in:daily,totals,room_wise,class_wise',
+            'branding_id' => 'nullable|uuid',
+            'calendar_preference' => 'nullable|in:gregorian,jalali,qamari',
+            'language' => 'nullable|in:en,ps,fa,ar',
+            'student_id' => 'nullable|uuid',
+            'class_id' => 'nullable|uuid',
+            'school_id' => 'nullable|uuid',
+            'status' => 'nullable|in:present,absent,late,excused,sick,leave',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+            'academic_year_id' => 'nullable|uuid',
+        ]);
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $calendarPreference = $validated['calendar_preference'] ?? 'jalali';
+        $language = $validated['language'] ?? 'ps';
+
+        // Build query based on filters
+        $query = AttendanceRecord::with(['student', 'session.classModel', 'session.classes', 'session.school'])
+            ->where('attendance_records.organization_id', $profile->organization_id)
+            ->where('attendance_records.school_id', $currentSchoolId)
+            ->whereNull('attendance_records.deleted_at')
+            ->whereHas('session', function ($q) {
+                $q->whereNull('deleted_at');
+            });
+
+        // Apply filters
+        if (!empty($validated['student_id'])) {
+            $query->where('attendance_records.student_id', $validated['student_id']);
+        }
+        if (!empty($validated['class_id'])) {
+            $query->whereHas('session', function ($q) use ($validated) {
+                $q->where('class_id', $validated['class_id']);
+            });
+        }
+        if (!empty($validated['status'])) {
+            $query->where('attendance_records.status', $validated['status']);
+        }
+        if (!empty($validated['date_from'])) {
+            $query->whereHas('session', function ($q) use ($validated) {
+                $q->whereDate('session_date', '>=', Carbon::parse($validated['date_from'])->toDateString());
+            });
+        }
+        if (!empty($validated['date_to'])) {
+            $query->whereHas('session', function ($q) use ($validated) {
+                $q->whereDate('session_date', '<=', Carbon::parse($validated['date_to'])->toDateString());
+            });
+        }
+        if (!empty($validated['academic_year_id'])) {
+            $query->whereHas('session', function ($q) use ($validated) {
+                $q->where('academic_year_id', $validated['academic_year_id']);
+            });
+        }
+
+        $records = $query->orderBy('marked_at', 'desc')->get();
+
+        // Prepare report data based on variant
+        $columns = [];
+        $rows = [];
+        $title = '';
+        $dateRangeText = '';
+
+        // Build date range text
+        if (!empty($validated['date_from']) && !empty($validated['date_to'])) {
+            $dateFrom = $this->dateService->formatDate($validated['date_from'], $calendarPreference, 'full', $language);
+            $dateTo = $this->dateService->formatDate($validated['date_to'], $calendarPreference, 'full', $language);
+            $dateRangeText = "{$dateFrom} - {$dateTo}";
+        } elseif (!empty($validated['date_from'])) {
+            $dateFrom = $this->dateService->formatDate($validated['date_from'], $calendarPreference, 'full', $language);
+            $dateRangeText = "From: {$dateFrom}";
+        } elseif (!empty($validated['date_to'])) {
+            $dateTo = $this->dateService->formatDate($validated['date_to'], $calendarPreference, 'full', $language);
+            $dateRangeText = "Until: {$dateTo}";
+        }
+
+        $reportVariant = $validated['report_variant'];
+
+        if ($reportVariant === 'daily') {
+            // Daily attendance report
+            $title = 'Daily Attendance Report';
+            $columns = [
+                ['key' => 'student_name', 'label' => 'Student'],
+                ['key' => 'admission_no', 'label' => 'Admission No'],
+                ['key' => 'class_name', 'label' => 'Class'],
+                ['key' => 'session_date', 'label' => 'Date'],
+                ['key' => 'status', 'label' => 'Status'],
+                ['key' => 'marked_at', 'label' => 'Marked At'],
+                ['key' => 'entry_method', 'label' => 'Method'],
+            ];
+
+            foreach ($records as $record) {
+                $rows[] = [
+                    'student_name' => $record->student?->full_name ?? '—',
+                    'admission_no' => $record->student?->admission_no ?? '—',
+                    'class_name' => $record->session?->classModel?->name ?? ($record->session?->classes?->first()?->name ?? '—'),
+                    'session_date' => $record->session?->session_date 
+                        ? $this->dateService->formatDate($record->session->session_date, $calendarPreference, 'full', $language)
+                        : '—',
+                    'status' => ucfirst($record->status),
+                    'marked_at' => $this->dateService->formatDate($record->marked_at, $calendarPreference, 'full', $language) . ' ' . Carbon::parse($record->marked_at)->format('H:i'),
+                    'entry_method' => ucfirst($record->entry_method ?? '—'),
+                ];
+            }
+        } elseif ($reportVariant === 'totals') {
+            // Attendance totals report
+            $title = 'Attendance Totals Report';
+            $columns = [
+                ['key' => 'class_name', 'label' => 'Class', 'type' => 'text'],
+                ['key' => 'school_name', 'label' => 'School', 'type' => 'text'],
+                ['key' => 'present', 'label' => 'Present', 'type' => 'numeric'],
+                ['key' => 'absent', 'label' => 'Absent', 'type' => 'numeric'],
+                ['key' => 'late', 'label' => 'Late', 'type' => 'numeric'],
+                ['key' => 'excused', 'label' => 'Excused', 'type' => 'numeric'],
+                ['key' => 'sick', 'label' => 'Sick', 'type' => 'numeric'],
+                ['key' => 'leave', 'label' => 'Leave', 'type' => 'numeric'],
+                ['key' => 'total', 'label' => 'Total', 'type' => 'numeric'],
+                ['key' => 'attendance_rate', 'label' => 'Attendance Rate %', 'type' => 'numeric'],
+            ];
+
+            // Group by class
+            $grouped = $records->groupBy(function ($record) {
+                return $record->session?->classModel?->id ?? ($record->session?->classes?->first()?->id ?? 'unassigned');
+            });
+
+            foreach ($grouped as $classId => $classRecords) {
+                $firstRecord = $classRecords->first();
+                $present = $classRecords->where('status', 'present')->count();
+                $absent = $classRecords->where('status', 'absent')->count();
+                $late = $classRecords->where('status', 'late')->count();
+                $excused = $classRecords->where('status', 'excused')->count();
+                $sick = $classRecords->where('status', 'sick')->count();
+                $leave = $classRecords->where('status', 'leave')->count();
+                $total = $classRecords->count();
+                $attendanceRate = $total > 0 ? round(($present / $total) * 100, 1) : 0;
+
+                $rows[] = [
+                    'class_name' => $firstRecord->session?->classModel?->name ?? ($firstRecord->session?->classes?->first()?->name ?? 'Unassigned'),
+                    'school_name' => $firstRecord->session?->school?->school_name ?? '—',
+                    'present' => $present,
+                    'absent' => $absent,
+                    'late' => $late,
+                    'excused' => $excused,
+                    'sick' => $sick,
+                    'leave' => $leave,
+                    'total' => $total,
+                    'attendance_rate' => $attendanceRate,
+                ];
+            }
+
+            // Add totals row for Excel
+            if (count($rows) > 0) {
+                $totals = [
+                    'class_name' => 'TOTAL',
+                    'school_name' => '',
+                    'present' => array_sum(array_column($rows, 'present')),
+                    'absent' => array_sum(array_column($rows, 'absent')),
+                    'late' => array_sum(array_column($rows, 'late')),
+                    'excused' => array_sum(array_column($rows, 'excused')),
+                    'sick' => array_sum(array_column($rows, 'sick')),
+                    'leave' => array_sum(array_column($rows, 'leave')),
+                    'total' => array_sum(array_column($rows, 'total')),
+                    'attendance_rate' => count($rows) > 0 ? round(array_sum(array_column($rows, 'present')) / array_sum(array_column($rows, 'total')) * 100, 1) : 0,
+                ];
+            }
+        } elseif ($reportVariant === 'class_wise') {
+            // Class-wise summary
+            $title = 'Attendance Class-wise Summary';
+            $columns = [
+                ['key' => 'class_name', 'label' => 'Class', 'type' => 'text'],
+                ['key' => 'school_name', 'label' => 'School', 'type' => 'text'],
+                ['key' => 'total_sessions', 'label' => 'Sessions', 'type' => 'numeric'],
+                ['key' => 'total_records', 'label' => 'Records', 'type' => 'numeric'],
+                ['key' => 'present', 'label' => 'Present', 'type' => 'numeric'],
+                ['key' => 'absent', 'label' => 'Absent', 'type' => 'numeric'],
+                ['key' => 'attendance_rate', 'label' => 'Attendance Rate %', 'type' => 'numeric'],
+            ];
+
+            $grouped = $records->groupBy(function ($record) {
+                return $record->session?->classModel?->id ?? ($record->session?->classes?->first()?->id ?? 'unassigned');
+            });
+
+            foreach ($grouped as $classId => $classRecords) {
+                $firstRecord = $classRecords->first();
+                $sessions = $classRecords->pluck('attendance_session_id')->unique()->count();
+                $present = $classRecords->where('status', 'present')->count();
+                $absent = $classRecords->where('status', 'absent')->count();
+                $total = $classRecords->count();
+                $attendanceRate = $total > 0 ? round(($present / $total) * 100, 1) : 0;
+
+                $rows[] = [
+                    'class_name' => $firstRecord->session?->classModel?->name ?? ($firstRecord->session?->classes?->first()?->name ?? 'Unassigned'),
+                    'school_name' => $firstRecord->session?->school?->school_name ?? '—',
+                    'total_sessions' => $sessions,
+                    'total_records' => $total,
+                    'present' => $present,
+                    'absent' => $absent,
+                    'attendance_rate' => $attendanceRate,
+                ];
+            }
+
+            // Add totals row
+            if (count($rows) > 0) {
+                $totals = [
+                    'class_name' => 'TOTAL',
+                    'school_name' => '',
+                    'total_sessions' => array_sum(array_column($rows, 'total_sessions')),
+                    'total_records' => array_sum(array_column($rows, 'total_records')),
+                    'present' => array_sum(array_column($rows, 'present')),
+                    'absent' => array_sum(array_column($rows, 'absent')),
+                    'attendance_rate' => count($rows) > 0 ? round(array_sum(array_column($rows, 'present')) / array_sum(array_column($rows, 'total_records')) * 100, 1) : 0,
+                ];
+            }
+        } elseif ($reportVariant === 'room_wise') {
+            // Room-wise summary (sessions without class assignment)
+            $title = 'Attendance Room-wise Summary';
+            $columns = [
+                ['key' => 'room_name', 'label' => 'Room', 'type' => 'text'],
+                ['key' => 'school_name', 'label' => 'School', 'type' => 'text'],
+                ['key' => 'total_sessions', 'label' => 'Sessions', 'type' => 'numeric'],
+                ['key' => 'total_records', 'label' => 'Records', 'type' => 'numeric'],
+                ['key' => 'present', 'label' => 'Present', 'type' => 'numeric'],
+                ['key' => 'absent', 'label' => 'Absent', 'type' => 'numeric'],
+                ['key' => 'attendance_rate', 'label' => 'Attendance Rate %', 'type' => 'numeric'],
+            ];
+
+            // Filter for sessions without class assignment
+            $roomRecords = $records->filter(function ($record) {
+                return !$record->session?->classModel && (!$record->session?->classes || $record->session->classes->isEmpty());
+            });
+
+            $grouped = $roomRecords->groupBy(function ($record) {
+                return $record->session?->school_id ?? 'unassigned';
+            });
+
+            foreach ($grouped as $schoolId => $schoolRecords) {
+                $firstRecord = $schoolRecords->first();
+                $sessions = $schoolRecords->pluck('attendance_session_id')->unique()->count();
+                $present = $schoolRecords->where('status', 'present')->count();
+                $absent = $schoolRecords->where('status', 'absent')->count();
+                $total = $schoolRecords->count();
+                $attendanceRate = $total > 0 ? round(($present / $total) * 100, 1) : 0;
+
+                $rows[] = [
+                    'room_name' => 'General Room',
+                    'school_name' => $firstRecord->session?->school?->school_name ?? '—',
+                    'total_sessions' => $sessions,
+                    'total_records' => $total,
+                    'present' => $present,
+                    'absent' => $absent,
+                    'attendance_rate' => $attendanceRate,
+                ];
+            }
+
+            // Add totals row
+            if (count($rows) > 0) {
+                $totals = [
+                    'room_name' => 'TOTAL',
+                    'school_name' => '',
+                    'total_sessions' => array_sum(array_column($rows, 'total_sessions')),
+                    'total_records' => array_sum(array_column($rows, 'total_records')),
+                    'present' => array_sum(array_column($rows, 'present')),
+                    'absent' => array_sum(array_column($rows, 'absent')),
+                    'attendance_rate' => count($rows) > 0 ? round(array_sum(array_column($rows, 'present')) / array_sum(array_column($rows, 'total_records')) * 100, 1) : 0,
+                ];
+            }
+        }
+
+        // Add date range to title if available
+        if ($dateRangeText) {
+            $title .= " ({$dateRangeText})";
+        }
+
+        // Add totals row for Excel reports
+        $columnConfig = [];
+        $parameters = [
+            'date_range' => $dateRangeText,
+            'total_count' => count($rows),
+        ];
+        
+        if (isset($totals) && $validated['report_type'] === 'excel') {
+            // Mark totals row in parameters for Excel service
+            $parameters['show_totals'] = true;
+            $parameters['totals_row'] = $totals;
+        }
+
+        // Create report config
+        $config = ReportConfig::fromArray([
+            'report_key' => "attendance_{$reportVariant}",
+            'report_type' => $validated['report_type'],
+            'branding_id' => $validated['branding_id'] ?? $currentSchoolId,
+            'title' => $title,
+            'calendar_preference' => $calendarPreference,
+            'language' => $language,
+            'column_config' => $columnConfig,
+            'parameters' => $parameters,
+        ]);
+
+        // Generate report
+        try {
+            $reportRun = $this->reportService->generateReport(
+                $config,
+                ['columns' => $columns, 'rows' => $rows],
+                $profile->organization_id
+            );
+
+            return response()->json([
+                'success' => true,
+                'report_id' => $reportRun->id,
+                'status' => $reportRun->status,
+                'download_url' => $reportRun->isCompleted()
+                    ? url("/api/reports/{$reportRun->id}/download")
+                    : null,
+                'file_name' => $reportRun->file_name,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to generate attendance report', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to generate report: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

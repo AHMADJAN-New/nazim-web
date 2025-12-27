@@ -6,7 +6,10 @@ import { useSchools } from '@/hooks/useSchools';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useResidencyTypes } from '@/hooks/useResidencyTypes';
 import { useStudentAdmissionReport } from '@/hooks/useStudentAdmissionReport';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { useSchoolContext } from '@/contexts/SchoolContext';
 import type { AdmissionStatus } from '@/types/domain/studentAdmission';
+import type { StudentAdmission } from '@/types/domain/studentAdmission';
 import type { StudentAdmissionReportFilters } from '@/types/domain/studentAdmissionReport';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -73,8 +76,9 @@ const SummaryCard = ({
 };
 
 const StudentAdmissionsReport = () => {
-  const { t } = useLanguage();
+  const { t, language: currentLanguage } = useLanguage();
   const { data: profile } = useProfile();
+  const { selectedSchoolId } = useSchoolContext();
   const { data: schools } = useSchools(profile?.organization_id);
   const { data: academicYears } = useAcademicYears(profile?.organization_id);
   const { data: residencyTypes } = useResidencyTypes(profile?.organization_id);
@@ -135,6 +139,62 @@ const StudentAdmissionsReport = () => {
     setPage(1);
   };
 
+  // Transform admissions to report format
+  const transformAdmissionData = (admissions: StudentAdmission[]) => {
+    return admissions.map((admission) => ({
+      student_name: admission.student?.fullName || '—',
+      admission_no: admission.student?.admissionNumber || '—',
+      card_number: admission.student?.cardNumber || '—',
+      school: admission.school?.schoolName || '—',
+      class: admission.class?.name || '—',
+      section: admission.classAcademicYear?.sectionName || '—',
+      academic_year: admission.academicYear?.name || '—',
+      residency_type: admission.residencyType?.name || '—',
+      is_boarder: admission.isBoarder ? (currentLanguage === 'ps' ? 'هو' : (currentLanguage === 'fa' ? 'بله' : (currentLanguage === 'ar' ? 'نعم' : 'Yes'))) : (currentLanguage === 'ps' ? 'نه' : (currentLanguage === 'fa' ? 'خیر' : (currentLanguage === 'ar' ? 'لا' : 'No'))),
+      room: admission.room?.roomNumber || '—',
+      guardian_name: admission.student?.guardianName || '—',
+      guardian_phone: admission.student?.guardianPhone || '—',
+      enrollment_status: admission.enrollmentStatus || '—',
+      admission_date: admission.admissionDate ? new Date(admission.admissionDate).toISOString().split('T')[0] : '—',
+    }));
+  };
+
+  // Build filters summary
+  const buildFiltersSummary = () => {
+    const filterParts: string[] = [];
+    if (filters.schoolId) {
+      const schoolName = schools?.find(s => s.id === filters.schoolId)?.schoolName;
+      if (schoolName) {
+        filterParts.push(`School: ${schoolName}`);
+      }
+    }
+    if (filters.academicYearId) {
+      const yearName = academicYears?.find(y => y.id === filters.academicYearId)?.name;
+      if (yearName) {
+        filterParts.push(`Academic Year: ${yearName}`);
+      }
+    }
+    if (filters.enrollmentStatus) {
+      filterParts.push(`Status: ${filters.enrollmentStatus}`);
+    }
+    if (filters.residencyTypeId) {
+      const residencyName = residencyTypes?.find(r => r.id === filters.residencyTypeId)?.name;
+      if (residencyName) {
+        filterParts.push(`Residency: ${residencyName}`);
+      }
+    }
+    if (filters.isBoarder !== undefined) {
+      filterParts.push(`Boarder: ${filters.isBoarder ? 'Yes' : 'No'}`);
+    }
+    if (filters.fromDate && filters.toDate) {
+      filterParts.push(`Date Range: ${filters.fromDate} to ${filters.toDate}`);
+    }
+    return filterParts.join(' | ');
+  };
+
+  // Get current school for export
+  const currentSchoolId = selectedSchoolId || profile?.default_school_id;
+
   const hasActiveFilters = useMemo(() => {
     return !!(
       filters.schoolId ||
@@ -156,16 +216,60 @@ const StudentAdmissionsReport = () => {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold leading-tight">{t('admissions.reportTitle') || 'Admissions Report'}</h1>
-          <p className="text-muted-foreground">
-            {t('admissions.reportSubtitle') || 'Analyze admissions performance across schools and years.'}
-          </p>
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold leading-tight">{t('admissions.reportTitle') || 'Admissions Report'}</h1>
+            <p className="text-muted-foreground">
+              {t('admissions.reportSubtitle') || 'Analyze admissions performance across schools and years.'}
+            </p>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="mr-2 h-4 w-4" />
             {t('common.refresh') || 'Refresh'}
           </Button>
+          {report && report.recentAdmissions.length > 0 && (
+            <ReportExportButtons
+              data={report.recentAdmissions}
+              columns={[
+                { key: 'student_name', label: t('students.name') || 'Student Name' },
+                { key: 'admission_no', label: t('admissions.admissionNo') || 'Admission #' },
+                { key: 'card_number', label: t('admissions.cardNumber') || 'Card #' },
+                { key: 'school', label: t('admissions.school') || 'School' },
+                { key: 'class', label: t('admissions.class') || 'Class' },
+                { key: 'section', label: t('admissions.section') || 'Section' },
+                { key: 'academic_year', label: t('admissions.academicYear') || 'Academic Year' },
+                { key: 'residency_type', label: t('admissions.residency') || 'Residency Type' },
+                { key: 'is_boarder', label: t('admissions.boarder') || 'Boarder' },
+                { key: 'room', label: t('admissions.room') || 'Room' },
+                { key: 'guardian_name', label: t('admissions.guardian') || 'Guardian Name' },
+                { key: 'guardian_phone', label: t('admissions.guardianPhone') || 'Guardian Phone' },
+                { key: 'enrollment_status', label: t('admissions.status') || 'Enrollment Status' },
+                { key: 'admission_date', label: t('admissions.admissionDate') || 'Admission Date' },
+              ]}
+              reportKey="student_admissions"
+              title={t('admissions.reportTitle') || 'Student Admissions Report'}
+              transformData={transformAdmissionData}
+              buildFiltersSummary={buildFiltersSummary}
+              schoolId={currentSchoolId}
+              templateType="student_admissions"
+              disabled={!report || report.recentAdmissions.length === 0 || isLoading}
+              errorNoSchool={t('admissions.schoolRequiredForExport') || 'A school is required to export the report.'}
+              errorNoData={t('admissions.noDataToExport') || 'No data to export'}
+              successPdf={t('admissions.reportExported') || 'PDF report generated successfully'}
+              successExcel={t('admissions.reportExported') || 'Excel report generated successfully'}
+              errorPdf={t('admissions.exportFailed') || 'Failed to generate PDF report'}
+              errorExcel={t('admissions.exportFailed') || 'Failed to generate Excel report'}
+              parameters={{
+                academic_year_id: filters.academicYearId || undefined,
+                enrollment_status: filters.enrollmentStatus !== 'all' ? filters.enrollmentStatus : undefined,
+                residency_type_id: filters.residencyTypeId || undefined,
+                is_boarder: filters.isBoarder || undefined,
+                from_date: filters.fromDate || undefined,
+                to_date: filters.toDate || undefined,
+              }}
+            />
+          )}
           <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
             <Filter className="mr-2 h-4 w-4" />
             {t('admissions.filtersTitle') || 'Filters'}

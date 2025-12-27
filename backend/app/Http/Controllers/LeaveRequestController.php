@@ -8,6 +8,9 @@ use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\LeaveRequest;
 use App\Models\Student;
+use App\Services\Reports\DateConversionService;
+use App\Services\Reports\ReportConfig;
+use App\Services\Reports\ReportService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +19,10 @@ use Illuminate\Support\Str;
 
 class LeaveRequestController extends Controller
 {
+    public function __construct(
+        private ReportService $reportService,
+        private DateConversionService $dateService
+    ) {}
     public function index(Request $request)
     {
         $user = $request->user();
@@ -407,6 +414,240 @@ class LeaveRequestController extends Controller
                     'note' => $leave->reason,
                 ]
             );
+        }
+    }
+
+    /**
+     * Generate leave requests report
+     * 
+     * POST /api/leave-requests/generate-report
+     */
+    public function generateReport(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('leave_requests.read')) {
+                return response()->json(['error' => 'Access Denied'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for leave_requests.read: ' . $e->getMessage());
+            return response()->json(['error' => 'Access Denied'], 403);
+        }
+
+        $validated = $request->validate([
+            'report_type' => 'required|in:pdf,excel',
+            'report_variant' => 'required|in:all,pending,approved,rejected,daily',
+            'branding_id' => 'nullable|uuid',
+            'calendar_preference' => 'nullable|in:gregorian,jalali,qamari',
+            'language' => 'nullable|in:en,ps,fa,ar',
+            'student_id' => 'nullable|uuid',
+            'class_id' => 'nullable|uuid',
+            'school_id' => 'nullable|uuid',
+            'status' => 'nullable|in:pending,approved,rejected,cancelled',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+        ]);
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $calendarPreference = $validated['calendar_preference'] ?? 'jalali';
+        $language = $validated['language'] ?? 'ps';
+
+        // Build query based on filters
+        $query = LeaveRequest::with(['student', 'classModel', 'school', 'academicYear', 'approver'])
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at');
+
+        // Apply filters
+        if (!empty($validated['student_id'])) {
+            $query->where('student_id', $validated['student_id']);
+        }
+        if (!empty($validated['class_id'])) {
+            $query->where('class_id', $validated['class_id']);
+        }
+        if (!empty($validated['status'])) {
+            $query->where('status', $validated['status']);
+        }
+        if (!empty($validated['date_from'])) {
+            $query->whereDate('start_date', '>=', Carbon::parse($validated['date_from'])->toDateString());
+        }
+        if (!empty($validated['date_to'])) {
+            $query->whereDate('end_date', '<=', Carbon::parse($validated['date_to'])->toDateString());
+        }
+
+        // Apply report variant filter
+        $reportVariant = $validated['report_variant'];
+        if ($reportVariant === 'pending') {
+            $query->where('status', 'pending');
+        } elseif ($reportVariant === 'approved') {
+            $query->where('status', 'approved');
+        } elseif ($reportVariant === 'rejected') {
+            $query->where('status', 'rejected');
+        }
+        // 'all' and 'daily' include all statuses
+
+        $requests = $query->orderBy('start_date', 'desc')->get();
+
+        // Prepare report data
+        $columns = [];
+        $rows = [];
+        $title = '';
+        $dateRangeText = '';
+
+        // Build date range text
+        if (!empty($validated['date_from']) && !empty($validated['date_to'])) {
+            $dateFrom = $this->dateService->formatDate($validated['date_from'], $calendarPreference, 'full', $language);
+            $dateTo = $this->dateService->formatDate($validated['date_to'], $calendarPreference, 'full', $language);
+            $dateRangeText = "{$dateFrom} - {$dateTo}";
+        } elseif (!empty($validated['date_from'])) {
+            $dateFrom = $this->dateService->formatDate($validated['date_from'], $calendarPreference, 'full', $language);
+            $dateRangeText = "From: {$dateFrom}";
+        } elseif (!empty($validated['date_to'])) {
+            $dateTo = $this->dateService->formatDate($validated['date_to'], $calendarPreference, 'full', $language);
+            $dateRangeText = "Until: {$dateTo}";
+        }
+
+        if ($reportVariant === 'daily') {
+            // Daily breakdown report
+            $title = 'Daily Leave Breakdown Report';
+            $columns = [
+                ['key' => 'date', 'label' => 'Date', 'type' => 'text'],
+                ['key' => 'total', 'label' => 'Total', 'type' => 'numeric'],
+                ['key' => 'approved', 'label' => 'Approved', 'type' => 'numeric'],
+                ['key' => 'pending', 'label' => 'Pending', 'type' => 'numeric'],
+                ['key' => 'rejected', 'label' => 'Rejected', 'type' => 'numeric'],
+            ];
+
+            // Group by date
+            $grouped = $requests->groupBy(function ($req) {
+                return Carbon::parse($req->start_date)->format('Y-m-d');
+            });
+
+            $totalApproved = 0;
+            $totalPending = 0;
+            $totalRejected = 0;
+
+            foreach ($grouped as $date => $dayRequests) {
+                $approved = $dayRequests->where('status', 'approved')->count();
+                $pending = $dayRequests->where('status', 'pending')->count();
+                $rejected = $dayRequests->where('status', 'rejected')->count();
+                
+                $totalApproved += $approved;
+                $totalPending += $pending;
+                $totalRejected += $rejected;
+
+                $rows[] = [
+                    'date' => $this->dateService->formatDate($date, $calendarPreference, 'full', $language),
+                    'total' => $dayRequests->count(),
+                    'approved' => $approved,
+                    'pending' => $pending,
+                    'rejected' => $rejected,
+                ];
+            }
+
+            // Add totals for Excel
+            if ($validated['report_type'] === 'excel' && count($rows) > 0) {
+                $totals = [
+                    'date' => 'TOTAL',
+                    'total' => array_sum(array_column($rows, 'total')),
+                    'approved' => $totalApproved,
+                    'pending' => $totalPending,
+                    'rejected' => $totalRejected,
+                ];
+            }
+        } else {
+            // Standard list report
+            $variantTitles = [
+                'all' => 'All Leave Requests',
+                'pending' => 'Pending Leave Requests',
+                'approved' => 'Approved Leave Requests',
+                'rejected' => 'Rejected Leave Requests',
+            ];
+            $title = $variantTitles[$reportVariant] ?? 'Leave Requests Report';
+
+            $columns = [
+                ['key' => 'student_name', 'label' => 'Student'],
+                ['key' => 'admission_no', 'label' => 'Admission No'],
+                ['key' => 'class_name', 'label' => 'Class'],
+                ['key' => 'start_date', 'label' => 'Start Date'],
+                ['key' => 'end_date', 'label' => 'End Date'],
+                ['key' => 'status', 'label' => 'Status'],
+                ['key' => 'reason', 'label' => 'Reason'],
+            ];
+
+            foreach ($requests as $req) {
+                $rows[] = [
+                    'student_name' => $req->student?->full_name ?? '—',
+                    'admission_no' => $req->student?->admission_no ?? '—',
+                    'class_name' => $req->classModel?->name ?? '—',
+                    'start_date' => $this->dateService->formatDate($req->start_date, $calendarPreference, 'full', $language),
+                    'end_date' => $this->dateService->formatDate($req->end_date, $calendarPreference, 'full', $language),
+                    'status' => ucfirst($req->status),
+                    'reason' => $req->reason ?? '—',
+                ];
+            }
+        }
+
+        // Add date range to title if available
+        if ($dateRangeText) {
+            $title .= " ({$dateRangeText})";
+        }
+
+        // Prepare parameters
+        $parameters = [
+            'date_range' => $dateRangeText,
+            'total_count' => count($rows),
+        ];
+
+        // Add totals for Excel reports
+        if (isset($totals) && $validated['report_type'] === 'excel') {
+            $parameters['show_totals'] = true;
+            $parameters['totals_row'] = $totals;
+        }
+
+        // Create report config
+        $config = ReportConfig::fromArray([
+            'report_key' => "leave_requests_{$reportVariant}",
+            'report_type' => $validated['report_type'],
+            'branding_id' => $validated['branding_id'] ?? $currentSchoolId,
+            'title' => $title,
+            'calendar_preference' => $calendarPreference,
+            'language' => $language,
+            'parameters' => $parameters,
+        ]);
+
+        // Generate report
+        try {
+            $reportRun = $this->reportService->generateReport(
+                $config,
+                ['columns' => $columns, 'rows' => $rows],
+                $profile->organization_id
+            );
+
+            return response()->json([
+                'success' => true,
+                'report_id' => $reportRun->id,
+                'status' => $reportRun->status,
+                'download_url' => $reportRun->isCompleted()
+                    ? url("/api/reports/{$reportRun->id}/download")
+                    : null,
+                'file_name' => $reportRun->file_name,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to generate leave report', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to generate report: ' . $e->getMessage(),
+            ], 500);
         }
     }
 }
