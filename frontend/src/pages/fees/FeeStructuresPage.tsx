@@ -30,6 +30,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash, Eye } from 'lucide-react';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { formatCurrency, formatDate } from '@/lib/utils';
 
 export default function FeeStructuresPage() {
   const { t } = useLanguage();
@@ -230,18 +232,51 @@ export default function FeeStructuresPage() {
     <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t('fees.structures')}</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>{t('fees.addStructure')}</Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <ReportExportButtons
+            data={structures}
+            columns={[
+              { key: 'name', label: t('fees.name'), align: 'left' },
+              { key: 'code', label: t('fees.code'), align: 'left' },
+              { key: 'amount', label: t('fees.amount'), align: 'right' },
+              { key: 'feeType', label: t('fees.feeType'), align: 'left' },
+              { key: 'className', label: t('academic.classes.class'), align: 'left' },
+              { key: 'academicYear', label: t('academic.academicYears.academicYear'), align: 'left' },
+              { key: 'dueDate', label: t('fees.dueDate'), align: 'left' },
+              { key: 'isRequired', label: t('fees.required'), align: 'center' },
+              { key: 'isActive', label: t('fees.active'), align: 'center' },
+            ]}
+            reportKey="fee_structures"
+            title={t('fees.structures') || 'Fee Structures'}
+            transformData={(data) =>
+              data.map((structure) => ({
+                name: structure.name,
+                code: structure.code || '-',
+                amount: formatCurrency(structure.amount),
+                feeType: structure.feeType?.replace('_', ' ').toUpperCase() || '-',
+                className: classesById.get(structure.classId)?.name || '-',
+                academicYear: academicYearsById.get(structure.academicYearId)?.name || '-',
+                dueDate: structure.dueDate ? formatDate(structure.dueDate) : '-',
+                isRequired: structure.isRequired ? t('common.yes') : t('common.no'),
+                isActive: structure.isActive ? t('common.yes') : t('common.no'),
+              }))
+            }
+            templateType="fee_structures"
+            disabled={isLoading || structures.length === 0}
+          />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button>{t('fees.addStructure')}</Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>{t('fees.addStructure')}</DialogTitle>
               <DialogDescription className="sr-only">{t('fees.addStructure')}</DialogDescription>
             </DialogHeader>
             <FeeStructureForm onSubmit={handleSubmit} isSubmitting={createMutation.isPending} />
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card>

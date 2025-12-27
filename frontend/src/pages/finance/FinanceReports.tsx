@@ -45,6 +45,7 @@ import {
     Calendar,
     DollarSign,
 } from 'lucide-react';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
@@ -253,13 +254,45 @@ export default function FinanceReports() {
                                 <Card>
                                     <CardHeader>
                                         <div className="flex items-center justify-between">
-                                            <CardTitle className="flex items-center gap-2">
-                                                <FileText className="h-5 w-5" />
-                                                {t('finance.transactions') || 'Transactions'}
-                                            </CardTitle>
-                                            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400">
-                                                {allEntries.length} {t('finance.transactions') || 'transactions'}
-                                            </Badge>
+                                            <div className="flex items-center gap-4">
+                                                <CardTitle className="flex items-center gap-2">
+                                                    <FileText className="h-5 w-5" />
+                                                    {t('finance.transactions') || 'Transactions'}
+                                                </CardTitle>
+                                                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400">
+                                                    {allEntries.length} {t('finance.transactions') || 'transactions'}
+                                                </Badge>
+                                            </div>
+                                            <ReportExportButtons
+                                                data={allEntries}
+                                                columns={[
+                                                    { key: 'date', label: t('common.date'), align: 'left' },
+                                                    { key: 'type', label: t('common.type'), align: 'left' },
+                                                    { key: 'category', label: t('finance.category'), align: 'left' },
+                                                    { key: 'description', label: t('common.description'), align: 'left' },
+                                                    { key: 'amount', label: t('finance.amount'), align: 'right' },
+                                                ]}
+                                                reportKey="finance_daily_cashbook"
+                                                title={`${t('finance.dailyCashbook') || 'Daily Cashbook'} - ${cb.account.name}`}
+                                                transformData={(data) =>
+                                                    data.map((entry) => ({
+                                                        date: formatDate(entry.date),
+                                                        type: entry.type === 'income'
+                                                            ? (t('finance.income') || 'Income')
+                                                            : (t('finance.expense') || 'Expense'),
+                                                        category: entry.categoryName,
+                                                        description: entry.description || '-',
+                                                        amount: entry.type === 'income'
+                                                            ? `+${formatCurrency(entry.amount)}`
+                                                            : `-${formatCurrency(entry.amount)}`,
+                                                    }))
+                                                }
+                                                buildFiltersSummary={() =>
+                                                    `${t('common.date')}: ${formatDate(cashbook.date)} | ${t('finance.account')}: ${cb.account.name}`
+                                                }
+                                                templateType="finance_daily_cashbook"
+                                                disabled={allEntries.length === 0}
+                                            />
                                         </div>
                                     </CardHeader>
                                     <CardContent>
@@ -433,9 +466,56 @@ export default function FinanceReports() {
             return combined;
         }, [incomeVsExpense]);
 
+        // Prepare data for export - Income summary with categories
+        const incomeExportData = useMemo(() => {
+            if (!incomeVsExpense) return [];
+            return incomeVsExpense.incomeByCategory.map((item) => ({
+                category: item.name,
+                type: t('finance.income') || 'Income',
+                amount: item.total,
+            }));
+        }, [incomeVsExpense, t]);
+
+        // Prepare data for export - Expense summary with categories
+        const expenseExportData = useMemo(() => {
+            if (!incomeVsExpense) return [];
+            return incomeVsExpense.expenseByCategory.map((item) => ({
+                category: item.name,
+                type: t('finance.expense') || 'Expense',
+                amount: item.total,
+            }));
+        }, [incomeVsExpense, t]);
+
+        // Combined export data
+        const combinedExportData = useMemo(() => {
+            return [...incomeExportData, ...expenseExportData];
+        }, [incomeExportData, expenseExportData]);
+
         return (
             <div className="space-y-4">
-                <DateRangePicker />
+                <div className="flex items-center justify-between">
+                    <DateRangePicker />
+                    <ReportExportButtons
+                        data={combinedExportData}
+                        columns={[
+                            { key: 'type', label: t('common.type'), align: 'left' },
+                            { key: 'category', label: t('finance.category'), align: 'left' },
+                            { key: 'amount', label: t('finance.amount'), align: 'right' },
+                        ]}
+                        reportKey="finance_income_expense_summary"
+                        title={t('finance.incomeVsExpense') || 'Income vs Expense Summary'}
+                        transformData={(data) =>
+                            data.map((item) => ({
+                                type: item.type,
+                                category: item.category,
+                                amount: formatCurrency(item.amount),
+                            }))
+                        }
+                        buildFiltersSummary={() => `${dateRange.startDate} - ${dateRange.endDate}`}
+                        templateType="finance_income_expense_summary"
+                        disabled={iveLoading || !incomeVsExpense || combinedExportData.length === 0}
+                    />
+                </div>
                 {iveLoading ? (
                     <div className="flex items-center justify-center h-64">
                         <LoadingSpinner />
@@ -696,7 +776,31 @@ export default function FinanceReports() {
     // Project Summary Tab
     const ProjectSummaryTab = () => (
         <div className="space-y-4">
-            <DateRangePicker />
+            <div className="flex items-center justify-between">
+                <DateRangePicker />
+                <ReportExportButtons
+                    data={projectSummary?.projects || []}
+                    columns={[
+                        { key: 'name', label: t('common.name'), align: 'left' },
+                        { key: 'income', label: t('finance.income'), align: 'right' },
+                        { key: 'expense', label: t('finance.expense'), align: 'right' },
+                        { key: 'balance', label: t('finance.balance'), align: 'right' },
+                    ]}
+                    reportKey="finance_project_summary"
+                    title={t('finance.projectSummary') || 'Project Summary Report'}
+                    transformData={(data) =>
+                        data.map((item) => ({
+                            name: item.project.name,
+                            income: formatCurrency(item.totalIncome),
+                            expense: formatCurrency(item.totalExpense),
+                            balance: formatCurrency(item.balance),
+                        }))
+                    }
+                    buildFiltersSummary={() => `${dateRange.startDate} - ${dateRange.endDate}`}
+                    templateType="finance_project_summary"
+                    disabled={projectLoading || !projectSummary || projectSummary.projects.length === 0}
+                />
+            </div>
             {projectLoading ? (
                 <div className="flex items-center justify-center h-64">
                     <LoadingSpinner />
@@ -883,7 +987,31 @@ export default function FinanceReports() {
     // Donor Summary Tab
     const DonorSummaryTab = () => (
         <div className="space-y-4">
-            <DateRangePicker />
+            <div className="flex items-center justify-between">
+                <DateRangePicker />
+                <ReportExportButtons
+                    data={donorSummary?.donors || []}
+                    columns={[
+                        { key: 'name', label: t('common.name'), align: 'left' },
+                        { key: 'type', label: t('common.type'), align: 'left' },
+                        { key: 'donationCount', label: t('finance.donationCount'), align: 'right' },
+                        { key: 'totalDonated', label: t('finance.totalDonated'), align: 'right' },
+                    ]}
+                    reportKey="finance_donor_summary"
+                    title={t('finance.donorSummary') || 'Donor Summary Report'}
+                    transformData={(data) =>
+                        data.map((item) => ({
+                            name: item.donor.name,
+                            type: item.donor.type === 'individual' ? t('finance.individual') || 'Individual' : t('finance.organization') || 'Organization',
+                            donationCount: item.donationCount.toString(),
+                            totalDonated: formatCurrency(item.totalDonated),
+                        }))
+                    }
+                    buildFiltersSummary={() => `${dateRange.startDate} - ${dateRange.endDate}`}
+                    templateType="finance_donor_summary"
+                    disabled={donorLoading || !donorSummary || donorSummary.donors.length === 0}
+                />
+            </div>
             {donorLoading ? (
                 <div className="flex items-center justify-center h-64">
                     <LoadingSpinner />
@@ -988,6 +1116,29 @@ export default function FinanceReports() {
     // Account Balances Tab
     const AccountBalancesTab = () => (
         <div className="space-y-4">
+            <div className="flex justify-end">
+                <ReportExportButtons
+                    data={accountBalances?.accounts || []}
+                    columns={[
+                        { key: 'name', label: t('common.name'), align: 'left' },
+                        { key: 'type', label: t('common.type'), align: 'left' },
+                        { key: 'openingBalance', label: t('finance.openingBalance'), align: 'right' },
+                        { key: 'currentBalance', label: t('finance.currentBalance'), align: 'right' },
+                    ]}
+                    reportKey="finance_account_balances"
+                    title={t('finance.accountBalances') || 'Account Balances Report'}
+                    transformData={(data) =>
+                        data.map((item) => ({
+                            name: item.account.name,
+                            type: item.account.type === 'cash' ? t('finance.cash') || 'Cash' : t('finance.fund') || 'Fund',
+                            openingBalance: formatCurrency(item.openingBalance),
+                            currentBalance: formatCurrency(item.currentBalance),
+                        }))
+                    }
+                    templateType="finance_account_balances"
+                    disabled={accountLoading || !accountBalances || accountBalances.accounts.length === 0}
+                />
+            </div>
             {accountLoading ? (
                 <div className="flex items-center justify-center h-64">
                     <LoadingSpinner />

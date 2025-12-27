@@ -49,6 +49,7 @@ import { useCurrencies } from '@/hooks/useCurrencies';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, FolderKanban, TrendingUp, TrendingDown, DollarSign, Calendar } from 'lucide-react';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
@@ -228,7 +229,39 @@ export default function FinanceProjects() {
                         {t('finance.projectsDescription') || 'Manage your projects and track funds'}
                     </p>
                 </div>
-                <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
+                <div className="flex items-center gap-2">
+                    <ReportExportButtons
+                        data={projects || []}
+                        columns={[
+                            { key: 'name', label: t('common.name'), align: 'left' },
+                            { key: 'description', label: t('common.description'), align: 'left' },
+                            { key: 'startDate', label: t('common.startDate'), align: 'left' },
+                            { key: 'endDate', label: t('common.endDate'), align: 'left' },
+                            { key: 'budgetAmount', label: t('finance.budgetAmount'), align: 'right' },
+                            { key: 'totalIncome', label: t('finance.income'), align: 'right' },
+                            { key: 'totalExpense', label: t('finance.expense'), align: 'right' },
+                            { key: 'balance', label: t('finance.balance'), align: 'right' },
+                            { key: 'isActive', label: t('common.status'), align: 'center' },
+                        ]}
+                        reportKey="finance_projects"
+                        title={t('finance.projects') || 'Projects & Funds'}
+                        transformData={(data) =>
+                            data.map((project) => ({
+                                name: project.name,
+                                description: project.description || '-',
+                                startDate: project.startDate ? formatDate(project.startDate) : '-',
+                                endDate: project.endDate ? formatDate(project.endDate) : '-',
+                                budgetAmount: project.budgetAmount ? formatCurrency(project.budgetAmount) : '-',
+                                totalIncome: formatCurrency(project.totalIncome),
+                                totalExpense: formatCurrency(project.totalExpense),
+                                balance: formatCurrency(project.totalIncome - project.totalExpense),
+                                isActive: project.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive',
+                            }))
+                        }
+                        templateType="finance_projects"
+                        disabled={isLoading || !projects || projects.length === 0}
+                    />
+                    <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
                     <DialogTrigger asChild>
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
@@ -244,7 +277,8 @@ export default function FinanceProjects() {
                         </DialogHeader>
                         {renderProjectForm(handleCreate, createProject.isPending)}
                     </DialogContent>
-                </Dialog>
+                    </Dialog>
+                </div>
             </div>
 
             {/* Projects Grid */}

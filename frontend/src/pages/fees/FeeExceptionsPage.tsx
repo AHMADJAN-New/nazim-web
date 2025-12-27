@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
 import { Eye, Pencil, Trash2, Plus } from 'lucide-react';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -281,7 +282,59 @@ export default function FeeExceptionsPage() {
     <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t('fees.exceptions')}</h1>
-        <Dialog open={open} onOpenChange={(isOpen) => {
+        <div className="flex items-center gap-2">
+          <ReportExportButtons
+            data={exceptions}
+            columns={[
+              { key: 'studentName', label: t('fees.student'), align: 'left' },
+              { key: 'className', label: t('fees.class'), align: 'left' },
+              { key: 'structureName', label: t('fees.structure'), align: 'left' },
+              { key: 'exceptionType', label: t('fees.exceptionType'), align: 'left' },
+              { key: 'exceptionAmount', label: t('fees.exceptionAmount'), align: 'right' },
+              { key: 'exceptionReason', label: t('fees.exceptionReason'), align: 'left' },
+              { key: 'validFrom', label: t('fees.validFrom'), align: 'left' },
+              { key: 'validTo', label: t('fees.validTo'), align: 'left' },
+              { key: 'isActive', label: t('fees.status'), align: 'center' },
+            ]}
+            reportKey="fee_exceptions"
+            title={t('fees.exceptions') || 'Fee Exceptions'}
+            transformData={(data) =>
+              data.map((exception) => {
+                const assignment = assignmentsById[exception.feeAssignmentId];
+                const student = studentsById[exception.studentId];
+                const className = assignment?.classAcademicYearId
+                  ? (classAyById[assignment.classAcademicYearId]?.class?.name ?? '-')
+                  : '-';
+                const structureName = assignment
+                  ? (structuresById[assignment.feeStructureId]?.name ?? '-')
+                  : '-';
+                return {
+                  studentName: student?.fullName || exception.studentId || 'Unknown',
+                  className,
+                  structureName,
+                  exceptionType: exception.exceptionType.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+                  exceptionAmount: formatCurrency(exception.exceptionAmount),
+                  exceptionReason: exception.exceptionReason,
+                  validFrom: exception.validFrom ? formatDate(exception.validFrom) : '-',
+                  validTo: exception.validTo ? formatDate(exception.validTo) : '-',
+                  isActive: exception.isActive ? t('common.yes') : t('common.no'),
+                };
+              })
+            }
+            buildFiltersSummary={() => {
+              const parts: string[] = [];
+              const ay = academicYears.find((a) => a.id === filterAcademicYear);
+              if (ay) parts.push(`${t('fees.academicYear')}: ${ay.name}`);
+              if (filterClassAy !== 'all') {
+                const cay = classAcademicYears.find((c) => c.id === filterClassAy);
+                if (cay) parts.push(`${t('fees.class')}: ${cay.class?.name || filterClassAy}`);
+              }
+              return parts.join(' | ');
+            }}
+            templateType="fee_exceptions"
+            disabled={isLoading || exceptions.length === 0}
+          />
+          <Dialog open={open} onOpenChange={(isOpen) => {
           if (!isOpen) {
             handleCloseDialog();
           } else {
@@ -339,6 +392,7 @@ export default function FeeExceptionsPage() {
             )}
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>

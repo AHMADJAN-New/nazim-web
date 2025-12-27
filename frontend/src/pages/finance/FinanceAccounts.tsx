@@ -58,6 +58,7 @@ import { useCurrencies } from '@/hooks/useCurrencies';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
 
 export default function FinanceAccounts() {
@@ -254,7 +255,33 @@ export default function FinanceAccounts() {
                         {t('finance.accountsDescription') || 'Manage your cash locations and funds'}
                     </p>
                 </div>
-                <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
+                <div className="flex items-center gap-2">
+                    <ReportExportButtons
+                        data={accounts || []}
+                        columns={[
+                            { key: 'name', label: t('common.name'), align: 'left' },
+                            { key: 'code', label: t('common.code'), align: 'left' },
+                            { key: 'type', label: t('common.type'), align: 'left' },
+                            { key: 'openingBalance', label: t('finance.openingBalance'), align: 'right' },
+                            { key: 'currentBalance', label: t('finance.currentBalance'), align: 'right' },
+                            { key: 'isActive', label: t('common.status'), align: 'center' },
+                        ]}
+                        reportKey="finance_accounts"
+                        title={t('finance.accounts') || 'Finance Accounts'}
+                        transformData={(data) =>
+                            data.map((account) => ({
+                                name: account.name,
+                                code: account.code || '-',
+                                type: account.type === 'cash' ? t('finance.cash') || 'Cash' : t('finance.fund') || 'Fund',
+                                openingBalance: formatCurrency(account.openingBalance),
+                                currentBalance: formatCurrency(account.currentBalance),
+                                isActive: account.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive',
+                            }))
+                        }
+                        templateType="finance_accounts"
+                        disabled={isLoading || !accounts || accounts.length === 0}
+                    />
+                    <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
                     <DialogTrigger asChild>
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
@@ -270,7 +297,8 @@ export default function FinanceAccounts() {
                         </DialogHeader>
                         {renderAccountForm(handleCreate, createAccount.isPending)}
                     </DialogContent>
-                </Dialog>
+                    </Dialog>
+                </div>
             </div>
 
             {/* Accounts Table */}

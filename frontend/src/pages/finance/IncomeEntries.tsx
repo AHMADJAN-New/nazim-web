@@ -55,6 +55,7 @@ import { useCurrencies, useConvertCurrency } from '@/hooks/useCurrencies';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, TrendingUp, Search, Filter, Calendar, X, DollarSign } from 'lucide-react';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { PaymentMethod } from '@/types/domain/finance';
@@ -527,7 +528,54 @@ export default function IncomeEntries() {
                         {t('finance.incomeEntriesDescription') || 'Record and manage income'}
                     </p>
                 </div>
-                <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
+                <div className="flex items-center gap-2">
+                    <ReportExportButtons
+                        data={filteredEntries}
+                        columns={[
+                            { key: 'date', label: t('common.date'), align: 'left' },
+                            { key: 'categoryName', label: t('finance.category'), align: 'left' },
+                            { key: 'accountName', label: t('finance.account'), align: 'left' },
+                            { key: 'donorName', label: t('finance.donor'), align: 'left' },
+                            { key: 'projectName', label: t('finance.project'), align: 'left' },
+                            { key: 'currency', label: t('finance.currency'), align: 'left' },
+                            { key: 'amount', label: t('finance.amount'), align: 'right' },
+                            { key: 'paymentMethod', label: t('finance.paymentMethod'), align: 'left' },
+                            { key: 'referenceNo', label: t('finance.referenceNo'), align: 'left' },
+                        ]}
+                        reportKey="income_entries"
+                        title={t('finance.incomeEntries') || 'Income Entries'}
+                        transformData={(data) =>
+                            data.map((entry) => ({
+                                date: formatDate(entry.date),
+                                categoryName: entry.incomeCategory?.name || '-',
+                                accountName: entry.account?.name || '-',
+                                donorName: entry.donor?.name || '-',
+                                projectName: entry.project?.name || '-',
+                                currency: entry.currency?.code || baseCurrency?.code || '-',
+                                amount: formatCurrency(entry.amount),
+                                paymentMethod: entry.paymentMethod.replace('_', ' ').toUpperCase(),
+                                referenceNo: entry.referenceNo || '-',
+                            }))
+                        }
+                        buildFiltersSummary={() => {
+                            const parts: string[] = [];
+                            if (dateFrom) parts.push(`${t('common.from')}: ${dateFrom}`);
+                            if (dateTo) parts.push(`${t('common.to')}: ${dateTo}`);
+                            if (filterCategory !== 'all') {
+                                const cat = categories?.find(c => c.id === filterCategory);
+                                if (cat) parts.push(`${t('finance.category')}: ${cat.name}`);
+                            }
+                            if (filterAccount !== 'all') {
+                                const acc = accounts?.find(a => a.id === filterAccount);
+                                if (acc) parts.push(`${t('finance.account')}: ${acc.name}`);
+                            }
+                            if (searchTerm) parts.push(`${t('common.search')}: ${searchTerm}`);
+                            return parts.join(' | ');
+                        }}
+                        templateType="income_entries"
+                        disabled={isLoading || filteredEntries.length === 0}
+                    />
+                    <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
                     <DialogTrigger asChild>
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
@@ -543,7 +591,8 @@ export default function IncomeEntries() {
                         </DialogHeader>
                         {renderEntryForm(handleCreate, createEntry.isPending)}
                     </DialogContent>
-                </Dialog>
+                    </Dialog>
+                </div>
             </div>
 
             {/* Filters */}

@@ -54,6 +54,7 @@ import { useCurrencies } from '@/hooks/useCurrencies';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, TrendingDown, Search, Filter, Calendar, X } from 'lucide-react';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
@@ -432,7 +433,55 @@ export default function ExpenseEntries() {
                         {t('finance.expenseEntriesDescription') || 'Record and manage expenses'}
                     </p>
                 </div>
-                <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
+                <div className="flex items-center gap-2">
+                    <ReportExportButtons
+                        data={filteredEntries}
+                        columns={[
+                            { key: 'date', label: t('common.date'), align: 'left' },
+                            { key: 'categoryName', label: t('finance.category'), align: 'left' },
+                            { key: 'accountName', label: t('finance.account'), align: 'left' },
+                            { key: 'paidTo', label: t('finance.paidTo'), align: 'left' },
+                            { key: 'projectName', label: t('finance.project'), align: 'left' },
+                            { key: 'amount', label: t('finance.amount'), align: 'right' },
+                            { key: 'paymentMethod', label: t('finance.paymentMethod'), align: 'left' },
+                            { key: 'status', label: t('common.status'), align: 'center' },
+                            { key: 'referenceNo', label: t('finance.referenceNo'), align: 'left' },
+                        ]}
+                        reportKey="expense_entries"
+                        title={t('finance.expenseEntries') || 'Expense Entries'}
+                        transformData={(data) =>
+                            data.map((entry) => ({
+                                date: formatDate(entry.date),
+                                categoryName: entry.expenseCategory?.name || '-',
+                                accountName: entry.account?.name || '-',
+                                paidTo: entry.paidTo || '-',
+                                projectName: entry.project?.name || '-',
+                                amount: formatCurrency(entry.amount),
+                                paymentMethod: entry.paymentMethod?.replace('_', ' ').toUpperCase() || '-',
+                                status: entry.status.charAt(0).toUpperCase() + entry.status.slice(1),
+                                referenceNo: entry.referenceNo || '-',
+                            }))
+                        }
+                        buildFiltersSummary={() => {
+                            const parts: string[] = [];
+                            if (dateFrom) parts.push(`${t('common.from')}: ${dateFrom}`);
+                            if (dateTo) parts.push(`${t('common.to')}: ${dateTo}`);
+                            if (filterCategory !== 'all') {
+                                const cat = categories?.find(c => c.id === filterCategory);
+                                if (cat) parts.push(`${t('finance.category')}: ${cat.name}`);
+                            }
+                            if (filterAccount !== 'all') {
+                                const acc = accounts?.find(a => a.id === filterAccount);
+                                if (acc) parts.push(`${t('finance.account')}: ${acc.name}`);
+                            }
+                            if (filterStatus !== 'all') parts.push(`${t('common.status')}: ${filterStatus}`);
+                            if (searchTerm) parts.push(`${t('common.search')}: ${searchTerm}`);
+                            return parts.join(' | ');
+                        }}
+                        templateType="expense_entries"
+                        disabled={isLoading || filteredEntries.length === 0}
+                    />
+                    <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
                     <DialogTrigger asChild>
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />

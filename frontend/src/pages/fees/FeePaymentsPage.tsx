@@ -33,6 +33,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Eye, FileText } from 'lucide-react';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 export default function FeePaymentsPage() {
   const { t } = useLanguage();
@@ -230,6 +231,57 @@ export default function FeePaymentsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t('fees.payments')}</h1>
         <div className="flex items-center gap-2">
+          <ReportExportButtons
+            data={filteredPayments}
+            columns={[
+              { key: 'studentName', label: t('fees.student'), align: 'left' },
+              { key: 'className', label: t('fees.class'), align: 'left' },
+              { key: 'structureName', label: t('fees.structure'), align: 'left' },
+              { key: 'paymentDate', label: t('fees.paymentDate'), align: 'left' },
+              { key: 'amount', label: t('fees.amount'), align: 'right' },
+              { key: 'paymentMethod', label: t('fees.method'), align: 'left' },
+              { key: 'referenceNo', label: t('fees.reference'), align: 'left' },
+              { key: 'accountName', label: t('fees.account'), align: 'left' },
+            ]}
+            reportKey="fee_payments"
+            title={t('fees.payments') || 'Fee Payments'}
+            transformData={(data) =>
+              data.map((payment) => {
+                const assignment = assignmentsById[payment.feeAssignmentId];
+                const className =
+                  assignment?.classAcademicYearId &&
+                  (classAyById[assignment.classAcademicYearId]?.class?.name ??
+                    assignment.classAcademicYearId);
+                const structureName = assignment
+                  ? structuresById[assignment.feeStructureId]?.name ?? assignment.feeStructureId
+                  : payment.feeAssignmentId;
+                const account = accountsById[payment.accountId];
+                const student = studentsById[payment.studentId];
+                return {
+                  studentName: student?.fullName || payment.studentId || '-',
+                  className: className || '-',
+                  structureName: structureName || '-',
+                  paymentDate: formatDate(payment.paymentDate),
+                  amount: formatCurrency(payment.amount),
+                  paymentMethod: payment.paymentMethod.replace('_', ' ').toUpperCase(),
+                  referenceNo: payment.referenceNo || '-',
+                  accountName: account?.name || '-',
+                };
+              })
+            }
+            buildFiltersSummary={() => {
+              const parts: string[] = [];
+              const ay = academicYears.find((a) => a.id === filterAcademicYear);
+              if (ay) parts.push(`${t('fees.academicYear')}: ${ay.name}`);
+              if (filterClassAy) {
+                const cay = classAcademicYears.find((c) => c.id === filterClassAy);
+                if (cay) parts.push(`${t('fees.class')}: ${cay.class?.name || filterClassAy}`);
+              }
+              return parts.join(' | ');
+            }}
+            templateType="fee_payments"
+            disabled={isLoading || filteredPayments.length === 0}
+          />
           <Button
             variant="outline"
             onClick={() => navigate('/finance/fees/assignments')}
