@@ -51,6 +51,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 const classSchema = z.object({
     name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
@@ -648,12 +649,42 @@ export function ClassesManagement() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                {hasCreatePermission && (
-                                    <Button onClick={() => handleOpenClassDialog()}>
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        {t('academic.classes.addClass')}
-                                    </Button>
-                                )}
+                                <div className="flex items-center gap-2">
+                                    <ReportExportButtons
+                                        data={filteredClasses}
+                                        columns={[
+                                            { key: 'name', label: t('academic.classes.name') },
+                                            { key: 'code', label: t('academic.classes.code') },
+                                            { key: 'gradeLevel', label: t('academic.classes.gradeLevel') },
+                                            { key: 'defaultCapacity', label: t('academic.classes.defaultCapacity') },
+                                            { key: 'isActive', label: t('academic.classes.isActive') },
+                                        ]}
+                                        reportKey="classes"
+                                        title={t('academic.classes.management') || 'Classes Report'}
+                                        transformData={(data) => data.map((cls) => ({
+                                            name: cls.name || '',
+                                            code: cls.code || '',
+                                            gradeLevel: cls.gradeLevel !== null ? `Grade ${cls.gradeLevel}` : '-',
+                                            defaultCapacity: cls.default_capacity || 0,
+                                            isActive: cls.isActive ? t('academic.classes.active') : t('academic.classes.inactive'),
+                                        }))}
+                                        buildFiltersSummary={() => {
+                                            const filters: string[] = [];
+                                            if (searchQuery) filters.push(`Search: ${searchQuery}`);
+                                            if (gradeLevelFilter !== 'all') filters.push(`Grade Level: ${gradeLevelFilter}`);
+                                            return filters.length > 0 ? filters.join(' | ') : '';
+                                        }}
+                                        schoolId={profile?.default_school_id}
+                                        templateType="classes"
+                                        disabled={filteredClasses.length === 0}
+                                    />
+                                    {hasCreatePermission && (
+                                        <Button onClick={() => handleOpenClassDialog()}>
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            {t('academic.classes.addClass')}
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="rounded-md border">
@@ -729,6 +760,34 @@ export function ClassesManagement() {
                                     </SelectContent>
                                 </Select>
                                 <div className="flex gap-2">
+                                    {selectedAcademicYearId && classAcademicYears && classAcademicYears.length > 0 && (
+                                        <ReportExportButtons
+                                            data={classAcademicYears}
+                                            columns={[
+                                                { key: 'className', label: t('academic.classes.name') },
+                                                { key: 'sectionName', label: t('academic.classes.section') },
+                                                { key: 'room', label: t('academic.classes.room') },
+                                                { key: 'capacity', label: t('academic.classes.capacity') },
+                                                { key: 'studentCount', label: t('academic.classes.studentCount') },
+                                            ]}
+                                            reportKey="class_academic_years"
+                                            title={`${t('academic.classes.yearClasses') || 'Classes by Academic Year'} - ${academicYears?.find(y => y.id === selectedAcademicYearId)?.name || ''}`}
+                                            transformData={(data) => data.map((instance) => ({
+                                                className: instance.class?.name || 'Unknown',
+                                                sectionName: instance.sectionName || '-',
+                                                room: instance.room?.roomNumber || '-',
+                                                capacity: instance.capacity || instance.class?.defaultCapacity || '-',
+                                                studentCount: instance.currentStudentCount || 0,
+                                            }))}
+                                            buildFiltersSummary={() => {
+                                                const yearName = academicYears?.find(y => y.id === selectedAcademicYearId)?.name || '';
+                                                return yearName ? `Academic Year: ${yearName}` : '';
+                                            }}
+                                            schoolId={profile?.default_school_id}
+                                            templateType="classes"
+                                            disabled={!classAcademicYears || classAcademicYears.length === 0}
+                                        />
+                                    )}
                                     {hasAssignPermission && (
                                         <Button
                                             onClick={() => handleOpenAssignDialog()}

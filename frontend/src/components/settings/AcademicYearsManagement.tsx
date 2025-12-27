@@ -43,6 +43,7 @@ import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 const academicYearSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
@@ -307,6 +308,34 @@ export function AcademicYearsManagement() {
                   <SelectItem value="planned">{t('academic.academicYears.planned')}</SelectItem>
                 </SelectContent>
               </Select>
+              <ReportExportButtons
+                data={filteredAcademicYears}
+                columns={[
+                  { key: 'name', label: t('academic.academicYears.name') },
+                  { key: 'startDate', label: t('academic.academicYears.startDate') },
+                  { key: 'endDate', label: t('academic.academicYears.endDate') },
+                  { key: 'status', label: t('academic.academicYears.status') },
+                  { key: 'isCurrent', label: t('academic.academicYears.isCurrent') },
+                ]}
+                reportKey="academic_years"
+                title={t('academic.academicYears.management') || 'Academic Years Report'}
+                transformData={(data) => data.map((year) => ({
+                  name: year.name || '',
+                  startDate: formatDate(year.startDate),
+                  endDate: formatDate(year.endDate instanceof Date ? year.endDate : year.endDate),
+                  status: getStatusLabel(year.status),
+                  isCurrent: year.isCurrent ? t('academic.academicYears.current') : '-',
+                }))}
+                buildFiltersSummary={() => {
+                  const filters: string[] = [];
+                  if (searchQuery) filters.push(`Search: ${searchQuery}`);
+                  if (statusFilter !== 'all') filters.push(`Status: ${getStatusLabel(statusFilter)}`);
+                  return filters.length > 0 ? filters.join(' | ') : '';
+                }}
+                schoolId={profile?.default_school_id}
+                templateType="academic_years"
+                disabled={filteredAcademicYears.length === 0}
+              />
             </div>
           </div>
 

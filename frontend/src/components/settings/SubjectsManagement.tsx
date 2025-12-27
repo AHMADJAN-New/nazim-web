@@ -48,6 +48,7 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Pencil, Trash2, Search, BookOpen, Copy, X } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -711,18 +712,42 @@ export function SubjectsManagement() {
                                         First, assign subjects to classes. These subjects will appear in all academic years for the selected class.
                                     </CardDescription>
                                 </div>
-                                {hasAssignPermission && selectedClassId && (
-                                    <div className="flex items-center space-x-2">
-                                        <Button variant="outline" onClick={handleOpenBulkAssignToClassDialog}>
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            Bulk Assign
-                                        </Button>
-                                        <Button onClick={handleOpenAssignToClassDialog}>
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            Assign Subject
-                                        </Button>
-                                    </div>
-                                )}
+                                <div className="flex items-center space-x-2">
+                                    {classSubjectTemplates && classSubjectTemplates.length > 0 && selectedClassId && (
+                                        <ReportExportButtons
+                                            data={classSubjectTemplates}
+                                            columns={[
+                                                { key: 'code', label: t('academic.subjects.code') },
+                                                { key: 'name', label: t('academic.subjects.name') },
+                                            ]}
+                                            reportKey="classes_subjects"
+                                            title={`${t('academic.subjects.classSubjects') || 'Classes Subjects'} - ${classes?.find(c => c.id === selectedClassId)?.name || ''}`}
+                                            transformData={(data) => data.map((template) => ({
+                                                code: template.subject?.code || '',
+                                                name: template.subject?.name || '',
+                                            }))}
+                                            buildFiltersSummary={() => {
+                                                const className = classes?.find(c => c.id === selectedClassId)?.name || '';
+                                                return className ? `Class: ${className}` : '';
+                                            }}
+                                            schoolId={profile?.default_school_id}
+                                            templateType="classes_subjects"
+                                            disabled={!classSubjectTemplates || classSubjectTemplates.length === 0}
+                                        />
+                                    )}
+                                    {hasAssignPermission && selectedClassId && (
+                                        <>
+                                            <Button variant="outline" onClick={handleOpenBulkAssignToClassDialog}>
+                                                <Plus className="mr-2 h-4 w-4" />
+                                                Bulk Assign
+                                            </Button>
+                                            <Button onClick={handleOpenAssignToClassDialog}>
+                                                <Plus className="mr-2 h-4 w-4" />
+                                                Assign Subject
+                                            </Button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -806,18 +831,53 @@ export function SubjectsManagement() {
                                         Customize teacher, room, and hours for subjects in specific academic years.
                                     </CardDescription>
                                 </div>
-                                {hasAssignPermission && selectedClassAcademicYearId && (
-                                    <div className="flex items-center space-x-2">
-                                        <Button variant="outline" onClick={handleOpenBulkAssignDialog} disabled={!subjects || subjects.length === 0}>
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            {t('academic.subjects.bulkAssignSubjects')}
-                                        </Button>
-                                        <Button onClick={handleOpenAssignDialog} disabled={!subjects || subjects.length === 0}>
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            {t('academic.subjects.assignToClass')}
-                                        </Button>
-                                    </div>
-                                )}
+                                <div className="flex items-center space-x-2">
+                                    {classSubjects && classSubjects.length > 0 && selectedClassAcademicYearId && (
+                                        <ReportExportButtons
+                                            data={classSubjects}
+                                            columns={[
+                                                { key: 'code', label: t('academic.subjects.code') },
+                                                { key: 'name', label: t('academic.subjects.name') },
+                                                { key: 'teacher', label: t('academic.subjects.teacher') },
+                                                { key: 'room', label: t('academic.subjects.room') },
+                                                { key: 'weeklyHours', label: t('academic.subjects.weeklyHours') },
+                                            ]}
+                                            reportKey="class_subject_academic_year"
+                                            title={`${t('academic.subjects.classSubjects') || 'Class Subjects'} - ${classAcademicYears?.find(cay => cay.id === selectedClassAcademicYearId)?.class?.name || ''} ${classAcademicYears?.find(cay => cay.id === selectedClassAcademicYearId)?.sectionName ? `- ${classAcademicYears.find(cay => cay.id === selectedClassAcademicYearId)?.sectionName}` : ''}`}
+                                            transformData={(data) => data.map((cs) => ({
+                                                code: cs.subject?.code || '',
+                                                name: cs.subject?.name || '',
+                                                teacher: cs.teacher?.fullName || '-',
+                                                room: cs.room?.roomNumber || '-',
+                                                weeklyHours: cs.hoursPerWeek || '-',
+                                            }))}
+                                            buildFiltersSummary={() => {
+                                                const cay = classAcademicYears?.find(cay => cay.id === selectedClassAcademicYearId);
+                                                const academicYear = academicYears?.find(y => y.id === selectedAcademicYearId);
+                                                const parts: string[] = [];
+                                                if (cay?.class?.name) parts.push(`Class: ${cay.class.name}`);
+                                                if (cay?.sectionName) parts.push(`Section: ${cay.sectionName}`);
+                                                if (academicYear?.name) parts.push(`Academic Year: ${academicYear.name}`);
+                                                return parts.join(' | ');
+                                            }}
+                                            schoolId={profile?.default_school_id}
+                                            templateType="class_subject_academic_year"
+                                            disabled={!classSubjects || classSubjects.length === 0}
+                                        />
+                                    )}
+                                    {hasAssignPermission && selectedClassAcademicYearId && (
+                                        <>
+                                            <Button variant="outline" onClick={handleOpenBulkAssignDialog} disabled={!subjects || subjects.length === 0}>
+                                                <Plus className="mr-2 h-4 w-4" />
+                                                {t('academic.subjects.bulkAssignSubjects')}
+                                            </Button>
+                                            <Button onClick={handleOpenAssignDialog} disabled={!subjects || subjects.length === 0}>
+                                                <Plus className="mr-2 h-4 w-4" />
+                                                {t('academic.subjects.assignToClass')}
+                                            </Button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </CardHeader>
                         <CardContent>

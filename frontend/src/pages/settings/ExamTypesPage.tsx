@@ -34,6 +34,9 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { useProfile } from '@/hooks/useProfiles';
+import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
 
 const examTypeSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
@@ -47,6 +50,7 @@ type ExamTypeFormData = z.infer<typeof examTypeSchema>;
 
 export function ExamTypesPage() {
   const { t } = useLanguage();
+  const { data: profile } = useProfile();
   const { data: examTypes, isLoading } = useExamTypes();
   const createExamType = useCreateExamType();
   const updateExamType = useUpdateExamType();
@@ -188,12 +192,43 @@ export function ExamTypesPage() {
                 {t('examTypes.description') || 'Manage exam types for your organization'}
               </CardDescription>
             </div>
-            {hasCreate && (
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t('common.add') || 'Add'}
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {filteredExamTypes && filteredExamTypes.length > 0 && (
+                <ReportExportButtons
+                  data={filteredExamTypes}
+                  columns={[
+                    { key: 'name', label: t('examTypes.name') || 'Name' },
+                    { key: 'code', label: t('examTypes.code') || 'Code' },
+                    { key: 'description', label: t('examTypes.description') || 'Description' },
+                    { key: 'displayOrder', label: t('examTypes.displayOrder') || 'Display Order' },
+                    { key: 'isActive', label: t('examTypes.isActive') || 'Active' },
+                  ]}
+                  reportKey="exam_types"
+                  title={t('examTypes.title') || 'Exam Types Report'}
+                  transformData={(data) => data.map((examType) => ({
+                    name: examType.name || '',
+                    code: examType.code || '',
+                    description: examType.description || '',
+                    displayOrder: examType.displayOrder || 0,
+                    isActive: examType.isActive ? (t('common.active') || 'Active') : (t('common.inactive') || 'Inactive'),
+                  }))}
+                  buildFiltersSummary={() => {
+                    const filters: string[] = [];
+                    if (searchQuery) filters.push(`Search: ${searchQuery}`);
+                    return filters.length > 0 ? filters.join(' | ') : '';
+                  }}
+                  schoolId={profile?.default_school_id}
+                  templateType="exam_types"
+                  disabled={!filteredExamTypes || filteredExamTypes.length === 0}
+                />
+              )}
+              {hasCreate && (
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t('common.add') || 'Add'}
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>

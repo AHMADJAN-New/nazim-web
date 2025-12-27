@@ -41,6 +41,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 const residencyTypeSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
@@ -198,6 +199,30 @@ export function ResidencyTypesManagement() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
+              <ReportExportButtons
+                data={filteredResidencyTypes}
+                columns={[
+                  { key: 'name', label: t('academic.residencyTypes.name') },
+                  { key: 'code', label: t('academic.residencyTypes.code') },
+                  { key: 'description', label: t('academic.residencyTypes.description') },
+                  { key: 'isActive', label: t('academic.residencyTypes.isActive') },
+                ]}
+                reportKey="residency_types"
+                title={t('academic.residencyTypes.management') || 'Residency Types Report'}
+                transformData={(data) => data.map((type) => ({
+                  name: type.name || '',
+                  code: type.code || '',
+                  description: type.description || '-',
+                  isActive: type.is_active ? t('common.active') : t('common.inactive'),
+                }))}
+                buildFiltersSummary={() => {
+                  if (searchQuery) return `Search: ${searchQuery}`;
+                  return '';
+                }}
+                schoolId={profile?.default_school_id}
+                templateType="residency_types"
+                disabled={filteredResidencyTypes.length === 0}
+              />
               {hasCreatePermission && (
                 <Button onClick={() => handleOpenDialog()}>
                   <Plus className="h-4 w-4 mr-2" />

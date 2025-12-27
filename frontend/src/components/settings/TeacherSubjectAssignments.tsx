@@ -49,6 +49,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 type Step = 1 | 2;
 
@@ -109,6 +110,7 @@ export function TeacherSubjectAssignments() {
     const isLoading = assignmentsResult.isLoading;
     const refetchAssignments = async () => {
         await queryClient.invalidateQueries({ queryKey: ['teacher-subject-assignments'] });
+        await queryClient.refetchQueries({ queryKey: ['teacher-subject-assignments'] });
     };
     const createAssignment = useCreateTeacherSubjectAssignment();
     const updateAssignment = useUpdateTeacherSubjectAssignment();
@@ -377,7 +379,8 @@ export function TeacherSubjectAssignments() {
                 });
                 setIsEditDialogOpen(false);
                 resetForm();
-                await refetchAssignments();
+                // Mutation already invalidates queries, but refetch to ensure UI updates
+                await queryClient.refetchQueries({ queryKey: ['teacher-subject-assignments'] });
             } catch (error) {
                 // Error is handled by mutation
             }
@@ -422,7 +425,8 @@ export function TeacherSubjectAssignments() {
                 }
                 setIsCreateDialogOpen(false);
                 resetForm();
-                await refetchAssignments();
+                // Mutations already invalidate queries, but refetch to ensure UI updates
+                await queryClient.refetchQueries({ queryKey: ['teacher-subject-assignments'] });
             } catch (error) {
                 // Error is handled by mutation
             }
@@ -433,7 +437,8 @@ export function TeacherSubjectAssignments() {
         if (!deletingAssignment) return;
         try {
             await deleteAssignment.mutateAsync(deletingAssignment.id);
-            await refetchAssignments();
+            // Mutation already invalidates queries, but refetch to ensure UI updates
+            await queryClient.refetchQueries({ queryKey: ['teacher-subject-assignments'] });
             setDeletingAssignment(null);
         } catch (error) {
             // Error is handled by mutation
@@ -538,6 +543,67 @@ export function TeacherSubjectAssignments() {
                                 <X className="w-4 h-4 mr-2" />
                                 {t('teacherSubjectAssignments.clear')}
                             </Button>
+                        )}
+                        {filteredAssignments && filteredAssignments.length > 0 && (
+                            <ReportExportButtons
+                                data={filteredAssignments}
+                                columns={[
+                                    { key: 'teacher', label: t('teacherSubjectAssignments.teacher') },
+                                    { key: 'academicYear', label: t('teacherSubjectAssignments.academicYear') },
+                                    { key: 'class', label: t('teacherSubjectAssignments.class') },
+                                    { key: 'subject', label: t('teacherSubjectAssignments.subject') },
+                                    { key: 'scheduleSlots', label: t('teacherSubjectAssignments.scheduleSlots') },
+                                    { key: 'status', label: t('teacherSubjectAssignments.status') },
+                                ]}
+                                reportKey="teacher_assignments"
+                                title={t('teacherSubjectAssignments.title') || 'Teacher Assignments Report'}
+                                transformData={(data) => data.map((assignment) => {
+                                    const teacherFullName = assignment.teacher ? [
+                                        assignment.teacher.first_name,
+                                        assignment.teacher.father_name,
+                                        assignment.teacher.grandfather_name
+                                    ].filter(Boolean).join(' ') : '';
+                                    const teacherDisplay = assignment.teacher?.employee_id && teacherFullName
+                                        ? `${assignment.teacher.employee_id} - ${teacherFullName}`
+                                        : teacherFullName || t('teacherSubjectAssignments.unknown');
+                                    const academicYearName = assignment.academic_year_id 
+                                        ? (academicYearMap.get(assignment.academic_year_id) || 
+                                           assignment.academic_year?.name || 
+                                           t('teacherSubjectAssignments.unknownYear'))
+                                        : (assignment.academic_year?.name || t('teacherSubjectAssignments.unknownYear'));
+                                    const className = assignment.class_academic_year?.class?.name || assignment.class_academic_year?.class?.code || t('teacherSubjectAssignments.unknownClass');
+                                    const classDisplay = assignment.class_academic_year?.section_name 
+                                        ? `${className} - ${assignment.class_academic_year.section_name}`
+                                        : className;
+                                    const scheduleSlotsDisplay = assignment.schedule_slots && assignment.schedule_slots.length > 0
+                                        ? assignment.schedule_slots.map(slot => `${slot.name} (${slot.start_time}-${slot.end_time})`).join(', ')
+                                        : '-';
+                                    return {
+                                        teacher: teacherDisplay,
+                                        academicYear: academicYearName,
+                                        class: classDisplay,
+                                        subject: assignment.subject?.name || assignment.subject?.code || t('teacherSubjectAssignments.unknown'),
+                                        scheduleSlots: scheduleSlotsDisplay,
+                                        status: assignment.is_active ? t('common.active') : t('common.inactive'),
+                                    };
+                                })}
+                                buildFiltersSummary={() => {
+                                    const filters: string[] = [];
+                                    if (searchQuery) filters.push(`Search: ${searchQuery}`);
+                                    if (teacherFilter !== 'all') {
+                                        const teacher = teacherStaff.find(t => t.id === teacherFilter);
+                                        if (teacher) filters.push(`Teacher: ${teacher.employeeId} - ${teacher.fullName || `${teacher.firstName} ${teacher.fatherName}`}`);
+                                    }
+                                    if (academicYearFilter !== 'all') {
+                                        const year = academicYears?.find(y => y.id === academicYearFilter);
+                                        if (year) filters.push(`Academic Year: ${year.name}`);
+                                    }
+                                    return filters.length > 0 ? filters.join(' | ') : '';
+                                }}
+                                schoolId={profile?.default_school_id}
+                                templateType="teacher_assignments"
+                                disabled={!filteredAssignments || filteredAssignments.length === 0}
+                            />
                         )}
                     </div>
                 </CardContent>

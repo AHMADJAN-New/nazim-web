@@ -42,6 +42,8 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
 
 const staffTypeSchema = z.object({
     name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
@@ -213,6 +215,35 @@ export function StaffTypesManagement() {
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
+                            {filteredStaffTypes && filteredStaffTypes.length > 0 && (
+                                <ReportExportButtons
+                                    data={filteredStaffTypes}
+                                    columns={[
+                                        { key: 'name', label: t('academic.staffTypes.name') },
+                                        { key: 'code', label: t('academic.staffTypes.code') },
+                                        { key: 'description', label: t('academic.staffTypes.description') },
+                                        { key: 'displayOrder', label: t('academic.staffTypes.displayOrder') },
+                                        { key: 'isActive', label: t('academic.staffTypes.isActive') },
+                                    ]}
+                                    reportKey="staff_types"
+                                    title={t('academic.staffTypes.management') || 'Staff Types Report'}
+                                    transformData={(data) => data.map((type) => ({
+                                        name: type.name || '',
+                                        code: type.code || '',
+                                        description: type.description || '',
+                                        displayOrder: type.displayOrder || 0,
+                                        isActive: type.isActive ? t('academic.staffTypes.active') : t('academic.staffTypes.inactive'),
+                                    }))}
+                                    buildFiltersSummary={() => {
+                                        const filters: string[] = [];
+                                        if (searchQuery) filters.push(`Search: ${searchQuery}`);
+                                        return filters.length > 0 ? filters.join(' | ') : '';
+                                    }}
+                                    schoolId={profile?.default_school_id}
+                                    templateType="staff_types"
+                                    disabled={!filteredStaffTypes || filteredStaffTypes.length === 0}
+                                />
+                            )}
                             {hasCreatePermission && (
                                 <Button onClick={() => handleOpenDialog()}>
                                     <Plus className="h-4 w-4 mr-2" />
