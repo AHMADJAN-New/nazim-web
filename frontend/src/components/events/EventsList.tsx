@@ -52,6 +52,8 @@ import type { Event, EventStatus } from '@/types/events';
 import { EVENT_STATUS_LABELS } from '@/types/events';
 import { EventFormDialog } from './EventFormDialog';
 import { useHasPermission } from '@/hooks/usePermissions';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { useProfile } from '@/hooks/useProfiles';
 
 interface EventsListProps {
   schoolId?: string;
@@ -67,6 +69,7 @@ const STATUS_COLORS: Record<EventStatus, string> = {
 export function EventsList({ schoolId }: EventsListProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
   const hasCheckinPermission = useHasPermission('event_checkins.create');
   const hasEventUpdatePermission = useHasPermission('events.update');
   const [search, setSearch] = useState('');
@@ -157,6 +160,42 @@ export function EventsList({ schoolId }: EventsListProps) {
               ))}
             </SelectContent>
           </Select>
+          {events && events.length > 0 && (
+            <ReportExportButtons
+              data={events}
+              columns={[
+                { key: 'title', label: 'Title' },
+                { key: 'eventType', label: 'Event Type' },
+                { key: 'status', label: 'Status' },
+                { key: 'startsAt', label: 'Start Date' },
+                { key: 'venue', label: 'Venue' },
+                { key: 'totalInvited', label: 'Total Invited' },
+                { key: 'totalArrived', label: 'Total Arrived' },
+                { key: 'capacity', label: 'Capacity' },
+              ]}
+              reportKey="events"
+              title="Events General Report"
+              transformData={(data) => data.map((event) => ({
+                title: event.title || '',
+                eventType: event.event_type?.name || '-',
+                status: EVENT_STATUS_LABELS[event.status] || event.status,
+                startsAt: formatDateTime(event.starts_at),
+                venue: event.venue || '-',
+                totalInvited: event.total_invited || 0,
+                totalArrived: event.total_arrived || 0,
+                capacity: event.capacity || '-',
+              }))}
+              buildFiltersSummary={() => {
+                const filters: string[] = [];
+                if (search) filters.push(`Search: ${search}`);
+                if (statusFilter !== 'all') filters.push(`Status: ${EVENT_STATUS_LABELS[statusFilter]}`);
+                return filters.length > 0 ? filters.join(' | ') : '';
+              }}
+              schoolId={schoolId || profile?.default_school_id}
+              templateType="events"
+              disabled={!events || events.length === 0}
+            />
+          )}
         </div>
 
         {/* Events Grid */}
