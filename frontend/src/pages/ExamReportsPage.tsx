@@ -29,6 +29,7 @@ import {
   GraduationCap, Search, FileText, BookOpen, AlertCircle
 } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 export function ExamReportsPage() {
   const { t, isRTL } = useLanguage();
@@ -267,10 +268,45 @@ export function ExamReportsPage() {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>{t('exams.enrollmentStatus') || 'Enrollment Status'}</CardTitle>
-                <CardDescription>
-                  {t('exams.enrollmentStatusDescription') || 'Student enrollment by class'}
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>{t('exams.enrollmentStatus') || 'Enrollment Status'}</CardTitle>
+                    <CardDescription>
+                      {t('exams.enrollmentStatusDescription') || 'Student enrollment by class'}
+                    </CardDescription>
+                  </div>
+                  {enrollmentStats?.classStats && enrollmentStats.classStats.length > 0 && (
+                    <ReportExportButtons
+                      data={enrollmentStats.classStats}
+                      columns={[
+                        { key: 'className', label: t('exams.class') || 'Class' },
+                        { key: 'section', label: t('common.section') || 'Section' },
+                        { key: 'enrolledCount', label: t('exams.enrolled') || 'Enrolled' },
+                        { key: 'availableCount', label: t('exams.available') || 'Available' },
+                        { key: 'percentage', label: t('exams.percentage') || 'Percentage' },
+                      ]}
+                      reportKey="exam_enrollment_status"
+                      title={`${t('exams.enrollmentStatus') || 'Enrollment Status'} - ${exam?.name || ''}`}
+                      transformData={(data) => data.map((cs: any) => ({
+                        className: cs.className || '-',
+                        section: cs.sectionName || '-',
+                        enrolledCount: cs.enrolledCount ?? 0,
+                        availableCount: cs.availableCount ?? 0,
+                        percentage: `${(cs.enrollmentPercentage ?? 0).toFixed(0)}%`,
+                      }))}
+                      buildFiltersSummary={() => {
+                        const parts: string[] = [];
+                        if (exam?.name) parts.push(`Exam: ${exam.name}`);
+                        if (exam?.academicYear?.name) parts.push(`Academic Year: ${exam.academicYear.name}`);
+                        parts.push(`Total Enrolled: ${enrollmentStats.totalEnrolled} / ${enrollmentStats.totalAvailable}`);
+                        return parts.join(' | ');
+                      }}
+                      schoolId={profile?.default_school_id}
+                      templateType="exam_enrollment_status"
+                      disabled={!enrollmentStats?.classStats || enrollmentStats.classStats.length === 0}
+                    />
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="mb-4">
@@ -332,10 +368,47 @@ export function ExamReportsPage() {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>{t('exams.marksEntryProgress') || 'Marks Entry Progress'}</CardTitle>
-                <CardDescription>
-                  {t('exams.marksEntryProgressDescription') || 'Progress of marks entry by subject'}
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>{t('exams.marksEntryProgress') || 'Marks Entry Progress'}</CardTitle>
+                    <CardDescription>
+                      {t('exams.marksEntryProgressDescription') || 'Progress of marks entry by subject'}
+                    </CardDescription>
+                  </div>
+                  {marksProgress?.subjectProgress && marksProgress.subjectProgress.length > 0 && (
+                    <ReportExportButtons
+                      data={marksProgress.subjectProgress}
+                      columns={[
+                        { key: 'subjectName', label: t('exams.subject') || 'Subject' },
+                        { key: 'className', label: t('exams.class') || 'Class' },
+                        { key: 'resultsCount', label: t('exams.entered') || 'Entered' },
+                        { key: 'enrolledCount', label: t('exams.total') || 'Total' },
+                        { key: 'percentage', label: t('exams.percentage') || 'Percentage' },
+                        { key: 'status', label: t('exams.status') || 'Status' },
+                      ]}
+                      reportKey="exam_marks_progress"
+                      title={`${t('exams.marksEntryProgress') || 'Marks Entry Progress'} - ${exam?.name || ''}`}
+                      transformData={(data) => data.map((sp: any) => ({
+                        subjectName: sp.subjectName || '-',
+                        className: sp.className || '-',
+                        resultsCount: sp.resultsCount ?? 0,
+                        enrolledCount: sp.enrolledCount ?? 0,
+                        percentage: `${(sp.percentage ?? 0).toFixed(0)}%`,
+                        status: sp.isComplete ? (t('exams.complete') || 'Complete') : (t('exams.incomplete') || 'Incomplete'),
+                      }))}
+                      buildFiltersSummary={() => {
+                        const parts: string[] = [];
+                        if (exam?.name) parts.push(`Exam: ${exam.name}`);
+                        if (exam?.academicYear?.name) parts.push(`Academic Year: ${exam.academicYear.name}`);
+                        parts.push(`Overall Progress: ${marksProgress.totalEntered} / ${marksProgress.totalExpected} (${(marksProgress.overallPercentage ?? 0).toFixed(0)}%)`);
+                        return parts.join(' | ');
+                      }}
+                      schoolId={profile?.default_school_id}
+                      templateType="exam_marks_progress"
+                      disabled={!marksProgress?.subjectProgress || marksProgress.subjectProgress.length === 0}
+                    />
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="mb-4">

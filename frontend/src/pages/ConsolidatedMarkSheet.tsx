@@ -21,6 +21,7 @@ import { FileDown, Printer, Search, Award, TrendingUp, TrendingDown, UserRound }
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
 import { calculateGrade } from '@/lib/utils/gradeCalculator';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 // Report data type
 type ReportData = {
@@ -569,16 +570,6 @@ export default function ConsolidatedMarkSheet() {
     window.print();
   };
 
-  const handleDownloadPDF = () => {
-    // TODO: Implement PDF download
-    console.log('Download PDF');
-  };
-
-  const handleDownloadExcel = () => {
-    // TODO: Implement Excel download
-    console.log('Download Excel');
-  };
-
   if (!canViewReports) {
     return (
       <div className="container mx-auto py-6">
@@ -646,14 +637,77 @@ export default function ConsolidatedMarkSheet() {
                 <Printer className="h-4 w-4 mr-2" />
                 {t('examReports.print')}
               </Button>
-              <Button variant="outline" onClick={handleDownloadPDF}>
-                <FileDown className="h-4 w-4 mr-2" />
-                {t('examReports.downloadPDF')}
-              </Button>
-              <Button variant="outline" onClick={handleDownloadExcel}>
-                <FileDown className="h-4 w-4 mr-2" />
-                {t('examReports.downloadExcel')}
-              </Button>
+              {report && report.students && report.students.length > 0 && (
+                <ReportExportButtons
+                  data={report.students}
+                  columns={[
+                    { key: 'rank', label: t('examReports.rank') || 'Rank' },
+                    { key: 'rollNumber', label: t('examReports.rollNumber') || 'Roll Number' },
+                    { key: 'studentName', label: t('examReports.studentName') || 'Student Name' },
+                    ...(report.subjects || []).map((subject: any) => ({
+                      key: `subject_${subject.id || subject.subject_id}`,
+                      label: subject.name || 'Subject',
+                    })),
+                    { key: 'totalMarks', label: t('examReports.totalMarks') || 'Total Marks' },
+                    { key: 'percentage', label: t('examReports.percentage') || 'Percentage' },
+                    { key: 'grade', label: t('examReports.grade') || 'Grade' },
+                    { key: 'result', label: t('examReports.result') || 'Result' },
+                  ]}
+                  reportKey="consolidated_mark_sheet"
+                  title={`${t('examReports.consolidatedMarkSheet') || 'Consolidated Mark Sheet'} - ${report.exam?.name || selectedExam?.name || ''} - ${report.class?.name || classLabel || ''}`}
+                  transformData={(data) => {
+                    // Sort students by percentage (highest first)
+                    const sortedData = [...data].sort((a: any, b: any) => (b.percentage || 0) - (a.percentage || 0));
+                    return sortedData.map((student: any, index: number) => {
+                      const row: Record<string, any> = {
+                        rank: index + 1,
+                        rollNumber: student.roll_number || '-',
+                        studentName: student.student_name || '-',
+                      };
+                      // Add subject marks
+                      (report.subjects || []).forEach((subject: any) => {
+                        const subjectMark = student.subjects?.find((s: any) =>
+                          s.subject_id === subject.subject_id || s.subject_id === subject.id
+                        );
+                        if (subjectMark) {
+                          row[`subject_${subject.id || subject.subject_id}`] = subjectMark.is_absent
+                            ? (t('examReports.absent') || 'Absent')
+                            : subjectMark.marks_obtained !== null
+                              ? `${subjectMark.marks_obtained}/${subjectMark.total_marks}`
+                              : '-';
+                        } else {
+                          row[`subject_${subject.id || subject.subject_id}`] = '-';
+                        }
+                      });
+                      row.totalMarks = `${student.total_obtained || 0}/${student.total_maximum || 0}`;
+                      row.percentage = student.percentage !== null && student.percentage !== undefined
+                        ? `${student.percentage.toFixed(2)}%`
+                        : '-';
+                      row.grade = student.grade || '-';
+                      row.result = student.result === 'Pass'
+                        ? (t('examReports.pass') || 'Pass')
+                        : student.result === 'Fail'
+                          ? (t('examReports.fail') || 'Fail')
+                          : (t('examReports.incomplete') || 'Incomplete');
+                      return row;
+                    });
+                  }}
+                  buildFiltersSummary={() => {
+                    const parts: string[] = [];
+                    if (report.exam?.name || selectedExam?.name) parts.push(`Exam: ${report.exam?.name || selectedExam?.name}`);
+                    if (report.class?.name) parts.push(`Class: ${report.class.name}${report.class.section ? ` - ${report.class.section}` : ''}`);
+                    if (academicYear?.name) parts.push(`Academic Year: ${academicYear.name}`);
+                    if (report.summary) {
+                      parts.push(`Total Students: ${report.summary.total_students}`);
+                      parts.push(`Pass: ${report.summary.pass_count} | Fail: ${report.summary.fail_count}`);
+                    }
+                    return parts.join(' | ');
+                  }}
+                  schoolId={profile?.default_school_id}
+                  templateType="consolidated_mark_sheet"
+                  disabled={!report || !report.students || report.students.length === 0}
+                />
+              )}
             </div>
           )}
         </CardContent>

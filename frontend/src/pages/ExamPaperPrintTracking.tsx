@@ -17,7 +17,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Search, MoreHorizontal, Printer, Eye, FileText, Calendar, User, Download } from 'lucide-react';
+import { Search, MoreHorizontal, Printer, Eye, FileText, Calendar, User } from 'lucide-react';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
 import { format } from 'date-fns';
@@ -121,6 +122,59 @@ export default function ExamPaperPrintTracking() {
           <p className="text-sm text-muted-foreground">
             {t('examPapers.printTrackingDescription') || 'Track print status and copies printed for exam papers'}
           </p>
+        </div>
+        <div className="flex gap-2">
+          {filteredTemplates && filteredTemplates.length > 0 && (
+            <ReportExportButtons
+              data={filteredTemplates}
+              columns={[
+                { key: 'title', label: t('examPapers.paperTitle') || 'Title' },
+                { key: 'school', label: t('examPapers.school') || 'School' },
+                { key: 'subject', label: t('examPapers.subject') || 'Subject' },
+                { key: 'exam', label: t('examPapers.exam') || 'Exam' },
+                { key: 'printStatus', label: t('examPapers.printStatus') || 'Print Status' },
+                { key: 'copiesPrinted', label: t('examPapers.copiesPrinted') || 'Copies Printed' },
+                { key: 'lastPrinted', label: t('examPapers.lastPrinted') || 'Last Printed' },
+                { key: 'printedBy', label: t('examPapers.printedBy') || 'Printed By' },
+              ]}
+              reportKey="exam_paper_print_tracking"
+              title={t('examPapers.printTracking') || 'Exam Paper Print Tracking'}
+              transformData={(data) => data.map((template: ExamPaperTemplate) => ({
+                title: template.title || '-',
+                school: getSchoolName(template.schoolId),
+                subject: getSubjectName(template.subjectId),
+                exam: template.examId ? getExamName(template.examId) : (t('examPapers.generic') || 'Generic'),
+                printStatus: printStatusConfig[(template.printStatus || 'not_printed') as PrintStatus].label,
+                copiesPrinted: template.copiesPrinted ?? 0,
+                lastPrinted: template.lastPrintedAt 
+                  ? format(new Date(template.lastPrintedAt), 'MMM dd, yyyy HH:mm')
+                  : '-',
+                printedBy: template.printedBy || '-',
+              }))}
+              buildFiltersSummary={() => {
+                const parts: string[] = [];
+                if (selectedSchoolId) {
+                  const school = schools?.find(s => s.id === selectedSchoolId);
+                  if (school) parts.push(`School: ${school.schoolName}`);
+                }
+                if (selectedSubjectId) {
+                  parts.push(`Subject: ${getSubjectName(selectedSubjectId)}`);
+                }
+                if (selectedExamId) {
+                  const exam = exams?.find(e => e.id === selectedExamId);
+                  if (exam) parts.push(`Exam: ${exam.name}`);
+                }
+                if (selectedPrintStatus !== 'all') {
+                  parts.push(`Status: ${printStatusConfig[selectedPrintStatus].label}`);
+                }
+                parts.push(`Total: ${filteredTemplates.length} paper(s)`);
+                return parts.join(' | ');
+              }}
+              schoolId={profile?.default_school_id}
+              templateType="exam_paper_print_tracking"
+              disabled={!filteredTemplates || filteredTemplates.length === 0}
+            />
+          )}
         </div>
       </div>
 

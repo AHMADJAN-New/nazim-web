@@ -30,6 +30,7 @@ import {
   Search, List, Tag, AlertCircle, Eye, EyeOff
 } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import type { RollNumberReportStudent } from '@/types/domain/exam';
 
 export function ExamNumberReportsPage() {
@@ -341,6 +342,48 @@ export function ExamNumberReportsPage() {
                     <Download className="h-4 w-4 mr-2" />
                     {t('exams.numberReports.exportCsv') || 'Export CSV'}
                   </Button>
+                  {reportData?.students && reportData.students.length > 0 && (
+                    <ReportExportButtons
+                      data={filteredStudents}
+                      columns={[
+                        { key: 'rollNumber', label: t('exams.rollNumbers.rollNumber') || 'Roll Number' },
+                        { key: 'studentCode', label: t('exams.studentCode') || 'Student Code' },
+                        { key: 'studentName', label: t('exams.studentName') || 'Name' },
+                        { key: 'fatherName', label: t('exams.fatherName') || 'Father Name' },
+                        { key: 'className', label: t('exams.class') || 'Class' },
+                        { key: 'section', label: t('common.section') || 'Section' },
+                        ...(hasSecretNumberViewPermission ? [{ key: 'secretNumber', label: t('exams.secretNumbers.secretNumber') || 'Secret Number' }] : []),
+                      ]}
+                      reportKey="exam_roll_numbers"
+                      title={`${t('exams.numberReports.title') || 'Exam Number Report'} - ${exam?.name || ''}`}
+                      transformData={(data) => data.map((student: RollNumberReportStudent) => ({
+                        rollNumber: student.examRollNumber || '-',
+                        studentCode: student.studentCode || '-',
+                        studentName: student.fullName || '-',
+                        fatherName: student.fatherName || '-',
+                        className: student.className || '-',
+                        section: student.section || '-',
+                        ...(hasSecretNumberViewPermission ? { secretNumber: student.examSecretNumber || '-' } : {}),
+                      }))}
+                      buildFiltersSummary={() => {
+                        const parts: string[] = [];
+                        if (exam?.name) parts.push(`Exam: ${exam.name}`);
+                        if (selectedClassId) {
+                          const selectedClass = examClasses?.find((c) => c.id === selectedClassId);
+                          if (selectedClass) {
+                            parts.push(`Class: ${selectedClass.classAcademicYear?.class?.name || ''}${selectedClass.classAcademicYear?.sectionName ? ` - ${selectedClass.classAcademicYear.sectionName}` : ''}`);
+                          }
+                        } else {
+                          parts.push('Class: All Classes');
+                        }
+                        parts.push(`Total Students: ${filteredStudents.length}`);
+                        return parts.join(' | ');
+                      }}
+                      schoolId={profile?.default_school_id}
+                      templateType="exam_roll_numbers"
+                      disabled={!reportData?.students || reportData.students.length === 0}
+                    />
+                  )}
                 </div>
               </div>
             </CardHeader>

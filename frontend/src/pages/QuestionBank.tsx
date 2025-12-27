@@ -25,6 +25,7 @@ import { Plus, Pencil, Trash2, Search, MoreHorizontal, Copy, CheckCircle, XCircl
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { cn } from '@/lib/utils';
@@ -1103,6 +1104,44 @@ export function QuestionBank() {
                 {t('questionBank.deactivate') || 'Deactivate'} ({selectedQuestionIds.length})
               </Button>
             </>
+          )}
+          {questions && questions.length > 0 && (
+            <ReportExportButtons
+              data={questions}
+              columns={[
+                { key: 'questionText', label: t('questionBank.question') || 'Question' },
+                { key: 'type', label: t('questionBank.type') || 'Type' },
+                { key: 'difficulty', label: t('questionBank.difficulty') || 'Difficulty' },
+                { key: 'marks', label: t('questionBank.marks') || 'Marks' },
+                { key: 'subject', label: t('questionBank.subject') || 'Subject' },
+                { key: 'className', label: t('questionBank.class') || 'Class' },
+                { key: 'status', label: t('questionBank.status') || 'Status' },
+                { key: 'correctAnswer', label: t('questionBank.correctAnswer') || 'Correct Answer' },
+              ]}
+              reportKey="question_bank"
+              title={t('questionBank.title') || 'Question Bank'}
+              transformData={(data) => data.map((q: Question) => ({
+                questionText: q.text || '-',
+                type: typeConfig[q.type]?.label || q.type,
+                difficulty: difficultyConfig[q.difficulty]?.label || q.difficulty,
+                marks: q.marks || 0,
+                subject: q.subject?.name || '-',
+                className: q.classAcademicYear?.class?.name || t('common.all') || 'All',
+                status: q.isActive ? (t('common.active') || 'Active') : (t('common.inactive') || 'Inactive'),
+                correctAnswer: q.correctAnswer || '-',
+              }))}
+              buildFiltersSummary={() => {
+                const parts: string[] = [];
+                if (selectedType !== 'all') parts.push(`Type: ${typeConfig[selectedType]?.label || selectedType}`);
+                if (selectedDifficulty !== 'all') parts.push(`Difficulty: ${difficultyConfig[selectedDifficulty]?.label || selectedDifficulty}`);
+                if (selectedStatus !== 'all') parts.push(`Status: ${selectedStatus === 'active' ? 'Active' : 'Inactive'}`);
+                parts.push(`Total: ${pagination?.total || questions.length} questions`);
+                return parts.join(' | ');
+              }}
+              schoolId={profile?.default_school_id}
+              templateType="question_bank"
+              disabled={!questions || questions.length === 0}
+            />
           )}
           {hasCreate && (
             <Button type="button" onClick={openCreateDialog}>
