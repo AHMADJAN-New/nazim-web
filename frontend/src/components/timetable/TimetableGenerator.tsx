@@ -20,12 +20,7 @@ import { LoadTimetableDialog } from './LoadTimetableDialog';
 import { useTeacherPreferences, useTimetable } from '@/hooks/useTimetables';
 import type { SaveEntryInput } from './SaveTimetableDialog';
 import { toast } from 'sonner';
-import * as XLSX from 'xlsx';
-import * as pdfMakeModule from 'pdfmake/build/pdfmake';
-const pdfMake = (pdfMakeModule as any).default || pdfMakeModule;
-import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 import { useSchools } from '@/hooks/useSchools';
-import { resolveReportBranding } from '@/lib/reporting/branding';
 import {
 	DndContext,
 	DragEndEvent,
@@ -37,8 +32,9 @@ import {
 	useDraggable,
 	useDroppable,
 } from '@dnd-kit/core';
-import { GripVertical, Download, FileText, Printer } from 'lucide-react';
+import { GripVertical, Printer } from 'lucide-react';
 import { CSS } from '@dnd-kit/utilities';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 // Draggable cell component
 function DraggableCell({
@@ -550,247 +546,7 @@ export function TimetableGenerator() {
 		toast.success(t('timetable.entryMovedSuccessfully') || 'Timetable entry moved successfully');
 	};
 
-	// Export and Print functions
-	const handleExportExcel = () => {
-		if (entries.length === 0) {
-			toast.error(t('timetable.noTimetableToExport') || 'No timetable to export. Please generate a timetable first.');
-			return;
-		}
-
-		try {
-			const days = allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList);
-			
-			// Use central Excel export system
-			const wb = XLSX.utils.book_new();
-
-			// Teacher View Sheet
-			const teacherRows: Array<Array<string | number>> = [];
-			// Add school name if available
-			if (school?.schoolName) {
-				teacherRows.push([school.schoolName || '']);
-			}
-			teacherRows.push([t('timetable.teacherView') || 'Teacher View']);
-			teacherRows.push([]); // Blank row
-			
-			const teacherHeaders = [t('timetable.teacher') || 'Teacher', ...days.flatMap(day => headerSlots.map(s => `${day} - ${s.name}`))];
-			teacherRows.push(teacherHeaders);
-
-			teacherIdsInScope.forEach((tid) => {
-				const row: Array<string | number> = [teacherMap.get(tid) || tid];
-				days.forEach((day) => {
-					headerSlots.forEach((s) => {
-						const cell = entries.find((e) => e.teacher_id === tid && e.slot_id === s.id && e.day === day);
-						row.push(cell ? `${cell.class_name}\n${cell.subject_name}` : '');
-					});
-				});
-				teacherRows.push(row);
-			});
-			const teacherWs = XLSX.utils.aoa_to_sheet(teacherRows);
-			XLSX.utils.book_append_sheet(wb, teacherWs, (t('timetable.teacherView') || 'Teacher View').slice(0, 31));
-
-			// Class View Sheet
-			const classRows: Array<Array<string | number>> = [];
-			// Add school name if available
-			if (school?.schoolName) {
-				classRows.push([school.schoolName || '']);
-			}
-			classRows.push([t('timetable.classView') || 'Class View']);
-			classRows.push([]); // Blank row
-			
-			const classHeaders = [t('timetable.class') || 'Class', ...days.flatMap(day => headerSlots.map(s => `${day} - ${s.name}`))];
-			classRows.push(classHeaders);
-
-			Array.from(classesInScope).forEach((cid) => {
-				const row: Array<string | number> = [classMap.get(cid) || cid];
-				days.forEach((day) => {
-					headerSlots.forEach((s) => {
-						const cells = entries.filter((e) => e.class_id === cid && e.slot_id === s.id && e.day === day);
-						const cellText = cells.map(c => `${c.subject_name}\n${c.teacher_name}`).join('\n---\n');
-						row.push(cellText);
-					});
-				});
-				classRows.push(row);
-			});
-			const classWs = XLSX.utils.aoa_to_sheet(classRows);
-			XLSX.utils.book_append_sheet(wb, classWs, (t('timetable.classView') || 'Class View').slice(0, 31));
-
-			const fileName = `timetable_${new Date().toISOString().split('T')[0]}.xlsx`;
-			XLSX.writeFile(wb, fileName);
-			toast.success(t('timetable.exportedToExcelSuccessfully') || 'Timetable exported to Excel successfully');
-		} catch (error) {
-			if (import.meta.env.DEV) {
-				console.error('Error exporting to Excel:', error);
-			}
-			toast.error(t('timetable.exportToExcelFailed') || 'Failed to export timetable to Excel');
-		}
-	};
-
-	const handleExportPdf = async () => {
-		if (entries.length === 0) {
-			toast.error(t('timetable.noTimetableToExport') || 'No timetable to export. Please generate a timetable first.');
-			return;
-		}
-
-		if (!school) {
-			toast.error(t('timetable.configureBrandingForPdf') || 'Please configure school branding first to export PDF.');
-			return;
-		}
-
-		try {
-			// Initialize PDF fonts if not already done
-			if (pdfFonts && typeof pdfFonts === 'object' && !(pdfMake as any).vfs) {
-				(pdfMake as any).vfs = pdfFonts;
-			}
-
-			if (!(pdfMake as any).vfs) {
-				throw new Error('PDF fonts (vfs) not initialized. Please check pdfmake configuration.');
-			}
-
-			// Get branding from central system (supports Pashto/Arabic fonts)
-			const branding = await resolveReportBranding(school, null);
-
-			// Helper function to normalize Unicode text for PDF
-			const normalizeText = (text: string | number | null | undefined): string => {
-				if (text == null) return '';
-				const str = String(text);
-				// Normalize Unicode to NFC form (canonical composition)
-				// This helps ensure Pashto characters are properly encoded
-				try {
-					return str.normalize('NFC');
-				} catch {
-					return str;
-				}
-			};
-
-			const days = allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList);
-			const content: any[] = [];
-
-			// Title
-			content.push({
-				text: normalizeText(t('timetable.title') || 'Timetable'),
-				fontSize: branding.fontSize + 4,
-				bold: true,
-				alignment: 'center',
-				margin: [0, 0, 0, 16],
-			});
-
-			// Teacher View Table
-			const teacherHeaders = [
-				{ text: normalizeText(t('timetable.teacher') || 'Teacher'), bold: true, fillColor: branding.primaryColor, color: '#ffffff' },
-				...days.flatMap(day => headerSlots.map(s => ({
-					text: normalizeText(`${day}\n${s.name}`),
-					bold: true,
-					fillColor: branding.primaryColor,
-					color: '#ffffff',
-				}))),
-			];
-			const teacherRows: any[][] = [];
-			teacherIdsInScope.forEach((tid) => {
-				const row: any[] = [{ text: normalizeText(teacherMap.get(tid) || tid), fontSize: branding.fontSize }];
-				days.forEach((day) => {
-					headerSlots.forEach((s) => {
-						const cell = entries.find((e) => e.teacher_id === tid && e.slot_id === s.id && e.day === day);
-						row.push({
-							text: cell ? normalizeText(`${cell.class_name}\n${cell.subject_name}`) : '',
-							fontSize: branding.fontSize - 1,
-						});
-					});
-				});
-				teacherRows.push(row);
-			});
-
-			content.push({
-				text: normalizeText(t('timetable.teacherView') || 'Teacher View'),
-				fontSize: branding.fontSize + 2,
-				bold: true,
-				margin: [0, 16, 0, 8],
-			});
-			content.push({
-				table: {
-					headerRows: 1,
-					widths: ['auto', ...Array(headerSlots.length * days.length).fill('*')],
-					body: [teacherHeaders, ...teacherRows],
-				},
-				layout: 'lightHorizontalLines',
-				fontSize: branding.fontSize,
-				margin: [0, 0, 0, 16],
-			});
-
-			// Class View Table
-			const classHeaders = [
-				{ text: normalizeText(t('timetable.class') || 'Class'), bold: true, fillColor: branding.primaryColor, color: '#ffffff' },
-				...days.flatMap(day => headerSlots.map(s => ({
-					text: normalizeText(`${day}\n${s.name}`),
-					bold: true,
-					fillColor: branding.primaryColor,
-					color: '#ffffff',
-				}))),
-			];
-			const classRows: any[][] = [];
-			Array.from(classesInScope).forEach((cid) => {
-				const row: any[] = [{ text: normalizeText(classMap.get(cid) || cid), fontSize: branding.fontSize }];
-				days.forEach((day) => {
-					headerSlots.forEach((s) => {
-						const cells = entries.filter((e) => e.class_id === cid && e.slot_id === s.id && e.day === day);
-						const cellText = cells.map(c => `${c.subject_name}\n${c.teacher_name}`).join('\n---\n');
-						row.push({
-							text: normalizeText(cellText),
-							fontSize: branding.fontSize - 1,
-						});
-					});
-				});
-				classRows.push(row);
-			});
-
-			content.push({
-				text: normalizeText(t('timetable.classView') || 'Class View'),
-				fontSize: branding.fontSize + 2,
-				bold: true,
-				margin: [0, 16, 0, 8],
-			});
-			content.push({
-				table: {
-					headerRows: 1,
-					widths: ['auto', ...Array(headerSlots.length * days.length).fill('*')],
-					body: [classHeaders, ...classRows],
-				},
-				layout: 'lightHorizontalLines',
-				fontSize: branding.fontSize,
-				margin: [0, 0, 0, 16],
-			});
-
-			// pdfmake only has 'Roboto' in vfs_fonts by default
-			// Roboto supports Unicode but Pashto characters may not render perfectly
-			// For better Pashto support, custom fonts would need to be added to pdfmake's vfs
-			// All text values are normalized to NFC Unicode form for proper encoding
-			const docDefinition: any = {
-				pageSize: 'A3',
-				pageOrientation: 'landscape',
-				content,
-				defaultStyle: {
-					fontSize: branding.fontSize,
-					font: 'Roboto', // pdfmake default font (supports Unicode)
-					// Ensure proper text rendering
-					characterSpacing: 0,
-					lineHeight: 1.2,
-				},
-				// Add info for better Unicode handling
-				info: {
-					title: normalizeText(t('timetable.title') || 'Timetable'),
-					author: school?.schoolName || '',
-				},
-			};
-
-			const fileName = `timetable_${new Date().toISOString().split('T')[0]}.pdf`;
-			(pdfMake as any).createPdf(docDefinition).download(fileName);
-			toast.success(t('timetable.exportedToPdfSuccessfully') || 'Timetable exported to PDF successfully');
-		} catch (error) {
-			if (import.meta.env.DEV) {
-				console.error('Error exporting to PDF:', error);
-			}
-			toast.error(t('timetable.exportToPdfFailed') || 'Failed to export timetable to PDF');
-		}
-	};
+	// Print function (export is now handled by ReportExportButtons)
 
 	const handlePrint = () => {
 		if (entries.length === 0) {
@@ -1085,26 +841,66 @@ export function TimetableGenerator() {
 					<CardHeader className="flex flex-row items-center justify-between">
 						<CardTitle>{t('timetable.results') || 'Results'}</CardTitle>
 						<div className="flex items-center gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={handleExportExcel}
-								disabled={entries.length === 0}
-								title={t('timetable.exportExcel') || 'Export to Excel'}
-							>
-								<Download className="h-4 w-4 mr-2" />
-								Excel
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={handleExportPdf}
-								disabled={entries.length === 0}
-								title={t('timetable.exportPdf') || 'Export to PDF'}
-							>
-								<FileText className="h-4 w-4 mr-2" />
-								PDF
-							</Button>
+							{entries.length > 0 && (
+								<ReportExportButtons
+									data={entries}
+									columns={[
+										{ key: 'day', label: t('timetable.day') || 'Day' },
+										{ key: 'period', label: t('timetable.period') || 'Period' },
+										{ key: 'time', label: t('timetable.time') || 'Time' },
+										{ key: 'teacher', label: t('timetable.teacher') || 'Teacher' },
+										{ key: 'class', label: t('timetable.class') || 'Class' },
+										{ key: 'subject', label: t('timetable.subject') || 'Subject' },
+									]}
+									reportKey="timetable"
+									title={t('timetable.title') || 'Timetable Export'}
+									transformData={(data) => {
+										const days = allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList);
+										const rows: Array<Record<string, any>> = [];
+										
+										// Create rows for each entry
+										data.forEach((entry) => {
+											const slot = headerSlots.find(s => s.id === entry.slot_id);
+											const dayName = entry.day || '';
+											const dayLabel = dayName === 'all_year' ? t('timetable.allYear') || 'All Year' : (t(`timetable.days.${dayName}`) || dayName);
+											
+											rows.push({
+												day: dayLabel,
+												period: slot?.name || '',
+												time: slot ? `${slot.start_time} - ${slot.end_time}` : '',
+												teacher: entry.teacher_name || '',
+												class: entry.class_name || '',
+												subject: entry.subject_name || '',
+											});
+										});
+										
+										return rows;
+									}}
+									buildFiltersSummary={() => {
+										const parts: string[] = [];
+										if (selectedAcademicYearId) {
+											const year = academicYears?.find(y => y.id === selectedAcademicYearId);
+											if (year) parts.push(`Academic Year: ${year.name}`);
+										}
+										if (allYear) {
+											parts.push('Days: All Year');
+										} else if (selectedDays.length > 0) {
+											parts.push(`Days: ${selectedDays.map(d => t(`timetable.days.${d}`) || d).join(', ')}`);
+										}
+										if (selectedClassIds.length > 0) {
+											const classNames = selectedClassIds.map(cid => {
+												const cay = filteredClasses.find(c => c.id === cid);
+												return cay?.class?.name || cid;
+											}).join(', ');
+											parts.push(`Classes: ${classNames}`);
+										}
+										return parts.join(' | ');
+									}}
+									schoolId={profile?.default_school_id}
+									templateType="timetable"
+									disabled={entries.length === 0}
+								/>
+							)}
 							<Button
 								variant="outline"
 								size="sm"
