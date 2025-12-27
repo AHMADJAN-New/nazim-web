@@ -1133,7 +1133,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasExamTypesPermission ? [{
             title: "Exam Types",
-            titleKey: "examTypes.title",
+            titleKey: "examTypes",
             url: "/settings/exam-types",
             icon: ClipboardList,
           }] : []),
