@@ -48,6 +48,7 @@ import {
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, Tags } from 'lucide-react';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 export default function ExpenseCategories() {
     const { t } = useLanguage();
@@ -126,7 +127,29 @@ export default function ExpenseCategories() {
                         {t('finance.expenseCategoriesDescription') || 'Manage types of expenses'}
                     </p>
                 </div>
-                <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
+                <div className="flex items-center gap-2">
+                    <ReportExportButtons
+                        data={categories || []}
+                        columns={[
+                            { key: 'name', label: t('common.name'), align: 'left' },
+                            { key: 'code', label: t('common.code'), align: 'left' },
+                            { key: 'description', label: t('common.description'), align: 'left' },
+                            { key: 'isActive', label: t('common.status'), align: 'center' },
+                        ]}
+                        reportKey="expense_categories"
+                        title={t('finance.expenseCategories') || 'Expense Categories'}
+                        transformData={(data) =>
+                            data.map((category) => ({
+                                name: category.name,
+                                code: category.code || '-',
+                                description: category.description || '-',
+                                isActive: category.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive',
+                            }))
+                        }
+                        templateType="expense_categories"
+                        disabled={isLoading || !categories || categories.length === 0}
+                    />
+                    <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
                     <DialogTrigger asChild>
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />

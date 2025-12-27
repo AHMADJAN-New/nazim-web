@@ -54,6 +54,7 @@ import {
 } from '@/components/ui/sheet';
 import { Eye, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 export default function FeeAssignmentsPage() {
   const { t } = useLanguage();
@@ -422,7 +423,47 @@ export default function FeeAssignmentsPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t('fees.assignments')}</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <div className="flex items-center gap-2">
+          <ReportExportButtons
+            data={assignments}
+            columns={[
+              { key: 'studentName', label: t('fees.student'), align: 'left' },
+              { key: 'className', label: t('fees.class'), align: 'left' },
+              { key: 'structureName', label: t('fees.structure'), align: 'left' },
+              { key: 'assignedAmount', label: t('fees.amountAssigned'), align: 'right' },
+              { key: 'paidAmount', label: t('fees.paid'), align: 'right' },
+              { key: 'remainingAmount', label: t('fees.remaining'), align: 'right' },
+              { key: 'dueDate', label: t('fees.dueDate'), align: 'left' },
+              { key: 'status', label: t('fees.status'), align: 'center' },
+            ]}
+            reportKey="fee_assignments"
+            title={t('fees.assignments') || 'Fee Assignments'}
+            transformData={(data) =>
+              data.map((assignment) => ({
+                studentName: (assignment as any).student?.full_name || assignment.studentId || 'Unknown',
+                className: classAyById[assignment.classAcademicYearId || '']?.class?.name || assignment.classAcademicYearId || '-',
+                structureName: structuresById[assignment.feeStructureId]?.name || assignment.feeStructureId || '-',
+                assignedAmount: formatCurrency(assignment.assignedAmount),
+                paidAmount: formatCurrency(assignment.paidAmount),
+                remainingAmount: formatCurrency(assignment.remainingAmount),
+                dueDate: assignment.dueDate ? formatDate(assignment.dueDate) : '-',
+                status: assignment.status?.charAt(0).toUpperCase() + assignment.status?.slice(1) || '-',
+              }))
+            }
+            buildFiltersSummary={() => {
+              const parts: string[] = [];
+              const ay = academicYears.find(a => a.id === filterAcademicYear);
+              if (ay) parts.push(`${t('fees.academicYear')}: ${ay.name}`);
+              if (filterClassAy !== 'all') {
+                const cay = classAcademicYears.find(c => c.id === filterClassAy);
+                if (cay) parts.push(`${t('fees.class')}: ${cay.class?.name || filterClassAy}`);
+              }
+              return parts.join(' | ');
+            }}
+            templateType="fee_assignments"
+            disabled={isLoading || assignments.length === 0}
+          />
+          <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button>{t('fees.addAssignment')}</Button>
           </DialogTrigger>
@@ -593,8 +634,9 @@ export default function FeeAssignmentsPage() {
                 </div>
               </form>
             </Form>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card>

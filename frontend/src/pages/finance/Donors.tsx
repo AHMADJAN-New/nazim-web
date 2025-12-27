@@ -49,6 +49,7 @@ import {
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, Users, Search, Phone, Mail } from 'lucide-react';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { formatCurrency } from '@/lib/utils';
 
 export default function Donors() {
@@ -245,7 +246,34 @@ export default function Donors() {
                         {t('finance.donorsDescription') || 'Manage your donors and track contributions'}
                     </p>
                 </div>
-                <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
+                <div className="flex items-center gap-2">
+                    <ReportExportButtons
+                        data={filteredDonors}
+                        columns={[
+                            { key: 'name', label: t('common.name'), align: 'left' },
+                            { key: 'type', label: t('common.type'), align: 'left' },
+                            { key: 'phone', label: t('common.phone'), align: 'left' },
+                            { key: 'email', label: t('common.email'), align: 'left' },
+                            { key: 'totalDonated', label: t('finance.totalDonated'), align: 'right' },
+                            { key: 'isActive', label: t('common.status'), align: 'center' },
+                        ]}
+                        reportKey="finance_donors"
+                        title={t('finance.donors') || 'Donors'}
+                        transformData={(data) =>
+                            data.map((donor) => ({
+                                name: donor.name,
+                                type: donor.type === 'individual' ? t('finance.individual') || 'Individual' : t('finance.organization') || 'Organization',
+                                phone: donor.phone || '-',
+                                email: donor.email || '-',
+                                totalDonated: formatCurrency(donor.totalDonated),
+                                isActive: donor.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive',
+                            }))
+                        }
+                        buildFiltersSummary={() => searchTerm ? `${t('common.search')}: ${searchTerm}` : ''}
+                        templateType="finance_donors"
+                        disabled={isLoading || filteredDonors.length === 0}
+                    />
+                    <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
                     <DialogTrigger asChild>
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
@@ -261,7 +289,8 @@ export default function Donors() {
                         </DialogHeader>
                         {renderDonorForm(handleCreate, createDonor.isPending)}
                     </DialogContent>
-                </Dialog>
+                    </Dialog>
+                </div>
             </div>
 
             {/* Search */}

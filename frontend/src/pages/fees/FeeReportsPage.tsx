@@ -41,6 +41,7 @@ import {
   User,
   GraduationCap,
 } from 'lucide-react';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import {
   ChartContainer,
   ChartTooltip,
@@ -233,10 +234,46 @@ export default function FeeReportsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            {t('common.export') || 'Export'}
-          </Button>
+          <ReportExportButtons
+            data={studentFeesData?.data || []}
+            columns={[
+              { key: 'firstName', label: t('common.firstName'), align: 'left' },
+              { key: 'lastName', label: t('common.lastName'), align: 'left' },
+              { key: 'registrationNumber', label: t('students.registrationNumber'), align: 'left' },
+              { key: 'className', label: t('fees.class'), align: 'left' },
+              { key: 'totalAssigned', label: t('fees.assigned'), align: 'right' },
+              { key: 'totalPaid', label: t('fees.paid'), align: 'right' },
+              { key: 'totalRemaining', label: t('fees.remaining'), align: 'right' },
+              { key: 'overallStatus', label: t('fees.status'), align: 'center' },
+            ]}
+            reportKey="fee_student_summary"
+            title={t('fees.studentWiseSummary') || 'Student-wise Fee Summary'}
+            transformData={(data) =>
+              data.map((student) => ({
+                firstName: student.firstName,
+                lastName: student.lastName,
+                registrationNumber: student.registrationNumber,
+                className: student.className,
+                totalAssigned: formatCurrency(student.totalAssigned),
+                totalPaid: formatCurrency(student.totalPaid),
+                totalRemaining: formatCurrency(student.totalRemaining),
+                overallStatus: student.overallStatus.charAt(0).toUpperCase() + student.overallStatus.slice(1),
+              }))
+            }
+            buildFiltersSummary={() => {
+              const parts: string[] = [];
+              const ay = academicYears.find(a => a.id === filterAcademicYear);
+              if (ay) parts.push(`${t('fees.academicYear')}: ${ay.name}`);
+              if (filterClassAy) {
+                const cay = classAcademicYears.find(c => c.id === filterClassAy);
+                if (cay) parts.push(`${t('fees.class')}: ${cay.class?.name || filterClassAy}`);
+              }
+              if (filterStatus) parts.push(`${t('fees.status')}: ${filterStatus}`);
+              return parts.join(' | ');
+            }}
+            templateType="fee_student_summary"
+            disabled={dashboardLoading || !studentFeesData?.data || studentFeesData.data.length === 0}
+          />
         </div>
       </div>
 
@@ -702,11 +739,44 @@ export default function FeeReportsPage() {
         <TabsContent value="class-wise" className="space-y-4">
           <Card>
             <CardHeader>
-              <div>
-                <CardTitle>{t('fees.classWiseSummary') || 'Class-wise Summary'}</CardTitle>
-                <CardDescription className="mt-1">
-                  {t('fees.classWiseSummaryDescription') || 'View fee collection statistics grouped by class'}
-                </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>{t('fees.classWiseSummary') || 'Class-wise Summary'}</CardTitle>
+                  <CardDescription className="mt-1">
+                    {t('fees.classWiseSummaryDescription') || 'View fee collection statistics grouped by class'}
+                  </CardDescription>
+                </div>
+                <ReportExportButtons
+                  data={dashboard?.byClass || []}
+                  columns={[
+                    { key: 'className', label: t('fees.class'), align: 'left' },
+                    { key: 'studentCount', label: t('fees.students'), align: 'right' },
+                    { key: 'totalAssigned', label: t('fees.totalAssigned'), align: 'right' },
+                    { key: 'totalPaid', label: t('fees.collected'), align: 'right' },
+                    { key: 'totalRemaining', label: t('fees.remaining'), align: 'right' },
+                    { key: 'collectionPercentage', label: t('fees.collectionRate'), align: 'right' },
+                  ]}
+                  reportKey="fee_class_summary"
+                  title={t('fees.classWiseSummary') || 'Class-wise Fee Summary'}
+                  transformData={(data) =>
+                    data.map((classData) => ({
+                      className: classData.className,
+                      studentCount: classData.studentCount.toString(),
+                      totalAssigned: formatCurrency(classData.totalAssigned),
+                      totalPaid: formatCurrency(classData.totalPaid),
+                      totalRemaining: formatCurrency(classData.totalRemaining),
+                      collectionPercentage: `${classData.collectionPercentage.toFixed(1)}%`,
+                    }))
+                  }
+                  buildFiltersSummary={() => {
+                    const parts: string[] = [];
+                    const ay = academicYears.find(a => a.id === filterAcademicYear);
+                    if (ay) parts.push(`${t('fees.academicYear')}: ${ay.name}`);
+                    return parts.join(' | ');
+                  }}
+                  templateType="fee_class_summary"
+                  disabled={dashboardLoading || !dashboard || dashboard.byClass.length === 0}
+                />
               </div>
             </CardHeader>
             <CardContent>
