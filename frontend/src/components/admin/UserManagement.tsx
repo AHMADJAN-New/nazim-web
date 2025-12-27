@@ -143,7 +143,7 @@ export function UserManagement() {
       setValue('role', user.role as any);
       setValue('default_school_id', user.defaultSchoolId || null);
       setValue('staff_id', user.staffId || null);
-      setValue('schools_access_all', false); // Will be checked via permissions API if needed
+      setValue('schools_access_all', user.schoolsAccessAll || false);
       setValue('phone', user.phone || '');
     } else {
       setSelectedUser(null);
@@ -201,6 +201,7 @@ export function UserManagement() {
           role: data.role,
           defaultSchoolId: data.default_school_id || null,
           staffId: data.staff_id || null,
+          schoolsAccessAll: data.schools_access_all || false,
           phone: data.phone || undefined,
         };
         await updateUser.mutateAsync(updateData);

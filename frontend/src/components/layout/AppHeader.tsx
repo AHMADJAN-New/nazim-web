@@ -26,6 +26,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useSchools } from "@/hooks/useSchools";
+import { useSchoolContext } from "@/contexts/SchoolContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { authApi } from "@/lib/api/client";
 import { showToast } from "@/lib/toast";
@@ -55,17 +56,34 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
 
   const queryClient = useQueryClient();
   const { data: schools = [] } = useSchools(authProfile?.organization_id ?? undefined);
+  const { selectedSchoolId, setSelectedSchoolId, hasSchoolsAccessAll } = useSchoolContext();
+
+  // Only show school switcher if user has schools_access_all and multiple schools
+  const showSchoolSwitcher = hasSchoolsAccessAll && schools.length > 1;
 
   const updateMySchool = useMutation({
     mutationFn: async (schoolId: string) => {
-      // Update current user's default_school_id (backend validates org membership)
-      await authApi.updateProfile({ default_school_id: schoolId });
+      // For users with schools_access_all, just update context (temporary switch)
+      // For other users, update default_school_id permanently
+      if (hasSchoolsAccessAll) {
+        setSelectedSchoolId(schoolId);
+        // Invalidate queries to refresh data with new school context
+        await queryClient.invalidateQueries();
+        return;
+      } else {
+        // Update current user's default_school_id (backend validates org membership)
+        await authApi.updateProfile({ default_school_id: schoolId });
+      }
     },
     onSuccess: async () => {
-      // Force reload AuthContext profile and refresh all cached data
-      await refreshAuth();
-      await queryClient.invalidateQueries();
-      showToast.success(t("toast.profileUpdated"));
+      if (!hasSchoolsAccessAll) {
+        // Force reload AuthContext profile and refresh all cached data
+        await refreshAuth();
+        await queryClient.invalidateQueries();
+        showToast.success(t("toast.profileUpdated"));
+      } else {
+        showToast.success(t("common.schoolSwitched"));
+      }
     },
     onError: (error: any) => {
       showToast.error(error?.message || t("toast.profileUpdateFailed"));
@@ -140,23 +158,23 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
 
         {/* Right Section - Actions & Profile */}
         <div className="flex items-center gap-2">
-          {/* School Switcher (school-scoped data) */}
-          {schools.length > 0 && (
+          {/* School Switcher (only for users with schools_access_all) */}
+          {showSchoolSwitcher && (
             <Select
-              value={authProfile?.default_school_id ?? 'none'}
+              value={selectedSchoolId ?? 'none'}
               onValueChange={(value) => {
-                if (value && value !== 'none' && value !== authProfile?.default_school_id) {
+                if (value && value !== 'none' && value !== selectedSchoolId) {
                   updateMySchool.mutate(value);
                 }
               }}
-              disabled={updateMySchool.isPending || schools.length <= 1}
+              disabled={updateMySchool.isPending}
             >
               <SelectTrigger className="hidden md:flex w-[200px]">
                 <School className="h-4 w-4 mr-2" />
                 <SelectValue placeholder={t("common.selectSchool")} />
               </SelectTrigger>
               <SelectContent>
-                {!authProfile?.default_school_id && (
+                {!selectedSchoolId && (
                   <SelectItem value="none" disabled>
                     {t("common.selectSchool")}
                   </SelectItem>

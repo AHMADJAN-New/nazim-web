@@ -11,6 +11,7 @@ import { PersistentLayout } from "@/components/layout/PersistentLayout";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/hooks/useLanguage";
+import { SchoolProvider } from "@/contexts/SchoolContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
@@ -185,6 +186,7 @@ const App = () => (
       <Sonner />
       <LanguageProvider>
         <AuthProvider>
+          <SchoolProvider>
           <BrowserRouter
             future={{
               v7_startTransition: true,
@@ -1191,6 +1193,7 @@ const App = () => (
               </ErrorBoundary>
             </SidebarProvider>
           </BrowserRouter>
+          </SchoolProvider>
         </AuthProvider>
       </LanguageProvider>
     </TooltipProvider>

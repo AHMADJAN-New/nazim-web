@@ -10,6 +10,7 @@ export interface UserProfile {
   staff_id?: string | null;
   phone: string | null;
   avatar?: string | null;
+  schools_access_all?: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -41,6 +42,7 @@ export interface UpdateUserData {
   organization_id?: string | null;
   default_school_id?: string | null;
   staff_id?: string | null;
+  schools_access_all?: boolean;
   phone?: string;
   is_active?: boolean;
 }

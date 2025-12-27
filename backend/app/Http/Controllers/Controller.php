@@ -21,7 +21,9 @@ abstract class Controller
     }
 
     /**
-     * Strict school scoping: if you still need a list (rare), it is only the current school.
+     * Get accessible school IDs based on user's schools_access_all permission.
+     * If schools_access_all is true, returns all schools in organization.
+     * Otherwise, returns only the current/default school.
      */
     protected function getAccessibleSchoolIds($profile, ?Request $request = null): array
     {
@@ -29,6 +31,21 @@ abstract class Controller
             return [];
         }
 
+        // Check if user has schools_access_all permission
+        $hasSchoolsAccessAll = (bool) ($profile->schools_access_all ?? false);
+
+        // If user has schools_access_all, return all schools in organization
+        if ($hasSchoolsAccessAll) {
+            $allSchools = DB::table('school_branding')
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->pluck('id')
+                ->toArray();
+            
+            return $allSchools;
+        }
+
+        // Otherwise, strict school scoping: only current/default school
         // Prefer middleware-injected school id
         if ($request) {
             $currentSchoolId = $request->get('current_school_id');

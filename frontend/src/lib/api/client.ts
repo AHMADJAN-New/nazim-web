@@ -24,6 +24,7 @@ export interface Profile {
   avatar_url: string | null;
   is_active: boolean;
   default_school_id: string | null;
+  schools_access_all?: boolean;
 }
 
 interface RequestOptions extends RequestInit {
@@ -109,6 +110,21 @@ class ApiClient {
     endpoint: string,
     options: RequestOptions = {}
   ): Promise<T> {
+    // For users with schools_access_all, automatically add school_id query parameter
+    // if it's stored in localStorage (set by SchoolContext)
+    // This allows users to switch schools and see data from the selected school
+    if (typeof window !== 'undefined' && !options.params?.school_id) {
+      const selectedSchoolId = localStorage.getItem('selected_school_id');
+      if (selectedSchoolId) {
+        // Add school_id to params if not already present
+        if (!options.params) {
+          options.params = {};
+        }
+        if (!options.params.school_id) {
+          options.params.school_id = selectedSchoolId;
+        }
+      }
+    }
     const { params, ...fetchOptions } = options;
     const url = this.buildUrl(endpoint, params);
 

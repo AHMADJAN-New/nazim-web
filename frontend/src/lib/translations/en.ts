@@ -337,6 +337,7 @@ export const en: TranslationKeys = {
     selectClassSection: 'Select class & section',
     selectResidency: 'Select residency',
     selectSchool: 'Select school',
+    schoolSwitched: 'School switched successfully',
     shift: 'Shift',
     shiftPlaceholder: 'Morning / Evening',
     status: 'Status',

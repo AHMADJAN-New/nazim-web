@@ -92,19 +92,50 @@ class EnsureSchoolContext
             ], 403);
         }
 
+        // Check if user has schools_access_all permission
+        $hasSchoolsAccessAll = (bool) ($profile->schools_access_all ?? false);
+        
+        // If user has schools_access_all, allow switching schools via query parameter
+        if ($hasSchoolsAccessAll) {
+            $requestedSchoolId = $request->input('school_id') ?? $request->query('school_id');
+            
+            if (is_string($requestedSchoolId) && $requestedSchoolId !== '') {
+                // Validate requested school belongs to user's organization
+                $requestedSchool = DB::table('school_branding')
+                    ->where('id', $requestedSchoolId)
+                    ->where('organization_id', $profile->organization_id)
+                    ->whereNull('deleted_at')
+                    ->first();
+                
+                if ($requestedSchool) {
+                    // Use requested school for this request
+                    $schoolId = $requestedSchoolId;
+                } else {
+                    // Invalid school requested, fall back to default
+                    Log::warning('User with schools_access_all requested invalid school', [
+                        'user_id' => $user->id,
+                        'requested_school_id' => $requestedSchoolId,
+                        'organization_id' => $profile->organization_id,
+                    ]);
+                }
+            }
+        }
+
         // Add school context to request for easy access in controllers
         $request->merge([
             'current_school_id' => $schoolId,
         ]);
 
         // Defense-in-depth: prevent clients from selecting a different school via request params.
-        // Some legacy controllers still read request('school_id'); block cross-school attempts here.
-        $requestedSchoolId = $request->input('school_id');
-        if (is_string($requestedSchoolId) && $requestedSchoolId !== '' && $requestedSchoolId !== $schoolId) {
-            return response()->json([
-                'error' => 'Invalid school scope',
-                'message' => 'Cannot access a different school than your current school context.',
-            ], 403);
+        // For users without schools_access_all, block cross-school attempts.
+        if (!$hasSchoolsAccessAll) {
+            $requestedSchoolId = $request->input('school_id');
+            if (is_string($requestedSchoolId) && $requestedSchoolId !== '' && $requestedSchoolId !== $schoolId) {
+                return response()->json([
+                    'error' => 'Invalid school scope',
+                    'message' => 'Cannot access a different school than your current school context.',
+                ], 403);
+            }
         }
 
         return $next($request);
