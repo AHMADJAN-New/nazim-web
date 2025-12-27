@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { dmsApi } from "@/lib/api/client";
@@ -10,6 +11,7 @@ import { useState } from "react";
 import { showToast } from "@/lib/toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Building, Plus, Edit2, Trash2, FileText, Users, Search } from "lucide-react";
+import { ReportExportButtons } from "@/components/reports/ReportExportButtons";
 import {
   Dialog,
   DialogContent,
@@ -161,6 +163,27 @@ export default function DepartmentsPage() {
 
   const totalIncoming = stats.reduce((sum, stat) => sum + stat.incoming_count, 0);
 
+  // Prepare data for export
+  const departmentsExportData = useMemo(() => {
+    return filteredDepartments.map((dept) => {
+      const stat = statsMap.get(dept.id);
+      const docCount = stat?.incoming_count || 0;
+      return {
+        name: dept.name,
+        documents_count: docCount,
+        created_at: dept.created_at ? new Date(dept.created_at).toLocaleDateString() : '-',
+      };
+    });
+  }, [filteredDepartments, statsMap]);
+
+  // Build filters summary
+  const buildFiltersSummary = () => {
+    if (searchQuery) {
+      return `Search: ${searchQuery}`;
+    }
+    return 'All departments';
+  };
+
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
@@ -223,13 +246,30 @@ export default function DepartmentsPage() {
                 Manage your organization's departments and view document assignments
               </CardDescription>
             </div>
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t('common.search') || 'Search departments...'}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8"
+            <div className="flex items-center gap-2">
+              <div className="relative w-64">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t('common.search') || 'Search departments...'}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <ReportExportButtons
+                data={departmentsExportData}
+                columns={[
+                  { key: 'name', label: 'Department Name' },
+                  { key: 'documents_count', label: 'Documents' },
+                  { key: 'created_at', label: 'Created' },
+                ]}
+                reportKey="dms_departments"
+                title="DMS Departments Report"
+                transformData={(data) => data}
+                buildFiltersSummary={buildFiltersSummary}
+                templateType="dms"
+                disabled={departmentsExportData.length === 0}
+                errorNoData={t('common.noDataToExport') || 'No data to export'}
               />
             </div>
           </div>

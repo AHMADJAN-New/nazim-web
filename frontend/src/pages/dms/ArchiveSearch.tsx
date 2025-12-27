@@ -21,6 +21,7 @@ import { Search, X, Eye, FileText, Archive, Calendar, User, Building2, File, Dow
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { ReportExportButtons } from "@/components/reports/ReportExportButtons";
 
 const statusOptions = [
   { label: "All Statuses", value: "all" },
@@ -237,6 +238,52 @@ export default function ArchiveSearch() {
   const totalDocuments = (incomingMeta?.total || 0) + (outgoingMeta?.total || 0);
   const totalIncoming = incomingMeta?.total || 0;
   const totalOutgoing = outgoingMeta?.total || 0;
+
+  // Prepare data for export - Incoming Documents
+  const incomingExportData = useMemo(() => {
+    return incomingDocs.map((doc: IncomingDocument) => ({
+      document_number: doc.full_indoc_number || '',
+      subject: doc.subject || '',
+      sender_name: doc.sender_name || '',
+      sender_org: doc.sender_org || '',
+      received_date: doc.received_date || '',
+      status: doc.status || '',
+      security_level: doc.security_level_key || '',
+      external_doc_number: doc.external_doc_number || '',
+      pages_count: doc.pages_count || 0,
+    }));
+  }, [incomingDocs]);
+
+  // Prepare data for export - Outgoing Documents
+  const outgoingExportData = useMemo(() => {
+    return outgoingDocs.map((doc: OutgoingDocument) => ({
+      document_number: doc.full_outdoc_number || '',
+      subject: doc.subject || '',
+      recipient_type: doc.recipient_type || '',
+      issue_date: doc.issue_date || '',
+      status: doc.status || '',
+      security_level: doc.security_level_key || '',
+      external_doc_number: doc.external_doc_number || '',
+      pages_count: doc.pages_count || 0,
+    }));
+  }, [outgoingDocs]);
+
+  // Build filters summary
+  const buildFiltersSummary = () => {
+    const parts: string[] = [];
+    if (appliedSearchQuery) parts.push(`Search: ${appliedSearchQuery}`);
+    if (appliedFilters.status !== 'all') parts.push(`Status: ${appliedFilters.status}`);
+    if (appliedFilters.security_level_key !== 'all') {
+      parts.push(`Security: ${appliedFilters.security_level_key === 'none' ? 'None' : appliedFilters.security_level_key}`);
+    }
+    if (appliedFilters.academic_year_id && appliedFilters.academic_year_id !== 'all') {
+      const year = academicYears?.find(y => y.id === appliedFilters.academic_year_id);
+      if (year) parts.push(`Academic Year: ${year.name}`);
+    }
+    if (appliedFilters.from_date) parts.push(`From: ${appliedFilters.from_date}`);
+    if (appliedFilters.to_date) parts.push(`To: ${appliedFilters.to_date}`);
+    return parts.length > 0 ? parts.join(' | ') : 'All documents';
+  };
 
   // Reset pages when applied filters change or tab changes
   useEffect(() => {
@@ -472,26 +519,75 @@ export default function ArchiveSearch() {
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "incoming" | "outgoing")}>
           <Card>
             <CardHeader>
-              <TabsList className="grid w-full max-w-md grid-cols-2">
-                <TabsTrigger value="incoming" className="flex items-center gap-2">
-                  <Inbox className="h-4 w-4" />
-                  Incoming Documents
-                  {incomingMeta && (
-                    <Badge variant="secondary" className="ml-1">
-                      {incomingMeta.total}
-                    </Badge>
+              <div className="flex items-center justify-between mb-4">
+                <TabsList className="grid w-full max-w-md grid-cols-2">
+                  <TabsTrigger value="incoming" className="flex items-center gap-2">
+                    <Inbox className="h-4 w-4" />
+                    Incoming Documents
+                    {incomingMeta && (
+                      <Badge variant="secondary" className="ml-1">
+                        {incomingMeta.total}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="outgoing" className="flex items-center gap-2">
+                    <Send className="h-4 w-4" />
+                    Outgoing Documents
+                    {outgoingMeta && (
+                      <Badge variant="secondary" className="ml-1">
+                        {outgoingMeta.total}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+                <div className="flex gap-2">
+                  {activeTab === 'incoming' && (
+                    <ReportExportButtons
+                      data={incomingExportData}
+                      columns={[
+                        { key: 'document_number', label: 'Document Number' },
+                        { key: 'subject', label: 'Subject' },
+                        { key: 'sender_name', label: 'Sender Name' },
+                        { key: 'sender_org', label: 'Sender Organization' },
+                        { key: 'received_date', label: 'Received Date' },
+                        { key: 'status', label: 'Status' },
+                        { key: 'security_level', label: 'Security Level' },
+                        { key: 'external_doc_number', label: 'External Doc Number' },
+                        { key: 'pages_count', label: 'Pages' },
+                      ]}
+                      reportKey="dms_archive_incoming"
+                      title="DMS Archive - Incoming Documents"
+                      transformData={(data) => data}
+                      buildFiltersSummary={buildFiltersSummary}
+                      templateType="dms"
+                      disabled={incomingExportData.length === 0}
+                      errorNoData={t('common.noDataToExport') || 'No data to export'}
+                    />
                   )}
-                </TabsTrigger>
-                <TabsTrigger value="outgoing" className="flex items-center gap-2">
-                  <Send className="h-4 w-4" />
-                  Outgoing Documents
-                  {outgoingMeta && (
-                    <Badge variant="secondary" className="ml-1">
-                      {outgoingMeta.total}
-                    </Badge>
+                  {activeTab === 'outgoing' && (
+                    <ReportExportButtons
+                      data={outgoingExportData}
+                      columns={[
+                        { key: 'document_number', label: 'Document Number' },
+                        { key: 'subject', label: 'Subject' },
+                        { key: 'recipient_type', label: 'Recipient Type' },
+                        { key: 'issue_date', label: 'Issue Date' },
+                        { key: 'status', label: 'Status' },
+                        { key: 'security_level', label: 'Security Level' },
+                        { key: 'external_doc_number', label: 'External Doc Number' },
+                        { key: 'pages_count', label: 'Pages' },
+                      ]}
+                      reportKey="dms_archive_outgoing"
+                      title="DMS Archive - Outgoing Documents"
+                      transformData={(data) => data}
+                      buildFiltersSummary={buildFiltersSummary}
+                      templateType="dms"
+                      disabled={outgoingExportData.length === 0}
+                      errorNoData={t('common.noDataToExport') || 'No data to export'}
+                    />
                   )}
-                </TabsTrigger>
-              </TabsList>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {/* Incoming Documents Tab */}
