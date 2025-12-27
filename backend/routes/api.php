@@ -249,6 +249,7 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
         // Student Admissions
         Route::get('/student-admissions/stats', [StudentAdmissionController::class, 'stats']);
         Route::get('/student-admissions/report', [StudentAdmissionController::class, 'report']);
+        Route::post('/student-admissions/export', [StudentAdmissionController::class, 'export']);
         Route::post('/student-admissions/bulk-deactivate', [StudentAdmissionController::class, 'bulkDeactivate']);
         Route::post('/student-admissions/bulk-deactivate-by-student-ids', [StudentAdmissionController::class, 'bulkDeactivateByStudentIds']);
         Route::apiResource('student-admissions', StudentAdmissionController::class);
@@ -380,6 +381,7 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
         Route::get('/attendance-sessions/roster', [AttendanceSessionController::class, 'roster']);
         Route::get('/attendance-sessions/totals-report', [AttendanceSessionController::class, 'totalsReport']);
         Route::get('/attendance-sessions/report', [AttendanceSessionController::class, 'report']);
+        Route::post('/attendance-sessions/generate-report', [AttendanceSessionController::class, 'generateReport']);
         Route::post('/attendance-sessions/{id}/close', [AttendanceSessionController::class, 'close']);
         Route::post('/attendance-sessions/{id}/records', [AttendanceSessionController::class, 'markRecords']);
         Route::post('/attendance-sessions/{id}/scan', [AttendanceSessionController::class, 'scan']);
@@ -497,6 +499,7 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
         Route::get('/leave-requests/{id}/print', [LeaveRequestController::class, 'printData']);
         Route::post('/leave-requests/{id}/approve', [LeaveRequestController::class, 'approve']);
         Route::post('/leave-requests/{id}/reject', [LeaveRequestController::class, 'reject']);
+        Route::post('/leave-requests/generate-report', [LeaveRequestController::class, 'generateReport']);
         Route::apiResource('leave-requests', LeaveRequestController::class);
 
         // Dashboard

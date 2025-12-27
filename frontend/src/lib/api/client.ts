@@ -1791,6 +1791,21 @@ export const studentAdmissionsApi = {
     return apiClient.get('/student-admissions/report', params);
   },
 
+  export: async (params: {
+    format: 'pdf' | 'xlsx';
+    academic_year_id?: string;
+    class_id?: string;
+    enrollment_status?: string;
+    residency_type_id?: string;
+    is_boarder?: boolean;
+    from_date?: string;
+    to_date?: string;
+    calendar_preference?: string;
+    language?: string;
+  }) => {
+    return apiClient.post('/student-admissions/export', params);
+  },
+
   bulkDeactivate: async (data: {
     admission_ids: string[];
   }) => {
@@ -2197,6 +2212,22 @@ export const attendanceSessionsApi = {
   }) => {
     return apiClient.get('/attendance-sessions/totals-report', params);
   },
+  generateReport: async (params: {
+    report_type: 'pdf' | 'excel';
+    report_variant: 'daily' | 'totals' | 'room_wise' | 'class_wise';
+    branding_id?: string;
+    calendar_preference?: 'gregorian' | 'jalali' | 'qamari';
+    language?: 'en' | 'ps' | 'fa' | 'ar';
+    student_id?: string;
+    class_id?: string;
+    school_id?: string;
+    status?: 'present' | 'absent' | 'late' | 'excused' | 'sick' | 'leave';
+    date_from?: string;
+    date_to?: string;
+    academic_year_id?: string;
+  }) => {
+    return apiClient.post('/attendance-sessions/generate-report', params);
+  },
 };
 
 // Library Categories API
@@ -2405,6 +2436,22 @@ export const leaveRequestsApi = {
   printData: async (id: string) => apiClient.get(`/leave-requests/${id}/print`),
 
   scan: async (token: string) => apiClient.get(`/leave-requests/scan/${token}`),
+
+  generateReport: async (params: {
+    report_type: 'pdf' | 'excel';
+    report_variant: 'all' | 'pending' | 'approved' | 'rejected' | 'daily';
+    branding_id?: string;
+    calendar_preference?: 'gregorian' | 'jalali' | 'qamari';
+    language?: 'en' | 'ps' | 'fa' | 'ar';
+    student_id?: string;
+    class_id?: string;
+    school_id?: string;
+    status?: 'pending' | 'approved' | 'rejected' | 'cancelled';
+    date_from?: string;
+    date_to?: string;
+  }) => {
+    return apiClient.post('/leave-requests/generate-report', params);
+  },
 };
 // Short-term courses API
 export const shortTermCoursesApi = {
