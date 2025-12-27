@@ -63,7 +63,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['admission_no', 'organization_id']);
+            $table->unique(['admission_no', 'organization_id'], 'course_students_admission_no_organization_id_unique');
 
             $table->foreign('course_id')->references('id')->on('short_term_courses')->onDelete('cascade');
             $table->foreign('main_student_id')->references('id')->on('students')->nullOnDelete();

@@ -47,6 +47,12 @@ class ExamSeeder extends Seeder
             }
 
             foreach ($academicYears as $academicYear) {
+                // Get school_id from academic_year
+                if (!$academicYear->school_id) {
+                    $this->command->warn("  ⚠ Academic year '{$academicYear->name}' has no school_id. Skipping.");
+                    continue;
+                }
+
                 $this->command->info("  Creating exams for academic year: {$academicYear->name}...");
 
                 // Create quarterly exam (1 per academic year)
@@ -160,8 +166,15 @@ class ExamSeeder extends Seeder
             return false;
         }
 
+        // Get school_id from academic_year
+        $academicYear = AcademicYear::find($academicYearId);
+        if (!$academicYear || !$academicYear->school_id) {
+            throw new \Exception("Academic year {$academicYearId} does not have a school_id");
+        }
+
         Exam::create([
             'organization_id' => $organizationId,
+            'school_id' => $academicYear->school_id,
             'academic_year_id' => $academicYearId,
             'name' => $name,
             'description' => $description,

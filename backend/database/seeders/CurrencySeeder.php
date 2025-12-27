@@ -36,11 +36,28 @@ class CurrencySeeder extends Seeder
         foreach ($organizations as $organization) {
             $this->command->info("Creating currencies for {$organization->name}...");
 
-            // Create currencies for this organization
-            $created = $this->createCurrenciesForOrganization($organization->id);
-            $totalCreated += $created;
+            // Get all schools for this organization
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
+                ->whereNull('deleted_at')
+                ->get();
 
-            $this->command->info("  → Created {$created} currency(ies) for {$organization->name}");
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping currency seeding for this org.");
+                continue;
+            }
+
+            foreach ($schools as $school) {
+                $this->command->info("Creating currencies for {$organization->name} - school: {$school->school_name}...");
+
+                // Create currencies for this school
+                $created = $this->createCurrenciesForSchool($organization->id, $school->id);
+                $totalCreated += $created;
+
+                if ($created > 0) {
+                    $this->command->info("  → Created {$created} currency(ies) for {$organization->name} - {$school->school_name}");
+                }
+            }
         }
 
         if ($totalCreated > 0) {
@@ -51,9 +68,9 @@ class CurrencySeeder extends Seeder
     }
 
     /**
-     * Create currencies for a specific organization
+     * Create currencies for a specific school
      */
-    protected function createCurrenciesForOrganization(string $organizationId): int
+    protected function createCurrenciesForSchool(string $organizationId, string $schoolId): int
     {
         $createdCount = 0;
 
@@ -90,8 +107,9 @@ class CurrencySeeder extends Seeder
         ];
 
         foreach ($currencies as $currencyData) {
-            // Check if currency already exists for this organization
+            // Check if currency already exists for this school (by code, organization_id, and school_id)
             $exists = Currency::where('organization_id', $organizationId)
+                ->where('school_id', $schoolId)
                 ->where('code', $currencyData['code'])
                 ->whereNull('deleted_at')
                 ->exists();
@@ -99,6 +117,7 @@ class CurrencySeeder extends Seeder
             if (!$exists) {
                 Currency::create([
                     'organization_id' => $organizationId,
+                    'school_id' => $schoolId,
                     'code' => $currencyData['code'],
                     'name' => $currencyData['name'],
                     'symbol' => $currencyData['symbol'],
@@ -110,7 +129,7 @@ class CurrencySeeder extends Seeder
                 $createdCount++;
                 $this->command->info("    ✓ Created currency: {$currencyData['code']} - {$currencyData['name']}");
             } else {
-                $this->command->info("    ⊘ Currency {$currencyData['code']} already exists for this organization");
+                $this->command->info("    ⊘ Currency {$currencyData['code']} already exists for this school");
             }
         }
 

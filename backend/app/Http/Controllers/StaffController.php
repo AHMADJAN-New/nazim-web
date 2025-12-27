@@ -744,7 +744,6 @@ class StaffController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-<<<<<<< HEAD
         // Org access is enforced by organization middleware + school scope.
 
         $request->validate([
@@ -809,7 +808,6 @@ class StaffController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-<<<<<<< HEAD
         // Org access is enforced by organization middleware + school scope.
 
         $request->validate([

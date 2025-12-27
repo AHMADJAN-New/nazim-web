@@ -99,7 +99,6 @@ class CourseDocumentController extends Controller
         }
 
         $file = $request->file('file');
-<<<<<<< HEAD
 
         // Store document using FileStorageService (PRIVATE storage for course documents)
         $path = $this->fileStorageService->storeCourseDocument(

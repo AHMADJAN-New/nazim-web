@@ -16,6 +16,8 @@ return new class extends Migration
             $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
             $table->uuid('organization_id');
             $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
+            $table->uuid('school_id');
+            $table->foreign('school_id')->references('id')->on('school_branding')->onDelete('cascade');
             $table->string('name_en', 255);
             $table->string('name_ar', 255);
             $table->string('name_ps', 255);
@@ -29,9 +31,10 @@ return new class extends Migration
 
             // Indexes
             $table->index('organization_id');
+            $table->index('school_id');
             $table->index('order');
             $table->index('deleted_at');
-            $table->index(['organization_id', 'min_percentage', 'max_percentage']);
+            $table->index(['organization_id', 'school_id', 'min_percentage', 'max_percentage']);
         });
 
         // Check constraint: max_percentage >= min_percentage

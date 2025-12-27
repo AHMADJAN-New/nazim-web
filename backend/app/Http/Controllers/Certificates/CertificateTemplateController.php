@@ -78,7 +78,6 @@ class CertificateTemplateController extends Controller
 
         $backgroundPath = null;
         if ($request->hasFile('background_image')) {
-<<<<<<< HEAD
             $file = $request->file('background_image');
 
             // Validate image extension using FileStorageService
@@ -178,7 +177,6 @@ class CertificateTemplateController extends Controller
                         'errors' => ['background_image' => ['Invalid file type.']]
                     ], 422);
                 }
-<<<<<<< HEAD
 
                 // Delete old background if exists using FileStorageService
                 if ($template->background_image_path) {

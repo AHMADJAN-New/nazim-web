@@ -14,14 +14,20 @@ return new class extends Migration
                 $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
                 $table->uuid('organization_id');
                 $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
+                $table->uuid('school_id');
+                $table->foreign('school_id')->references('id')->on('school_branding')->onDelete('cascade');
                 $table->uuid('academic_year_id');
                 $table->foreign('academic_year_id')->references('id')->on('academic_years')->onDelete('cascade');
                 $table->string('name');
                 $table->text('description')->nullable();
+                $table->date('start_date')->nullable();
+                $table->date('end_date')->nullable();
+                $table->string('status')->default('draft');
                 $table->timestamps();
                 $table->softDeletes();
 
                 $table->index('organization_id');
+                $table->index('school_id');
                 $table->index('academic_year_id');
                 $table->index('deleted_at');
             });

@@ -35,20 +35,38 @@ class CourseStudentSeeder extends Seeder
         foreach ($organizations as $organization) {
             $this->command->info("Enrolling students in courses for {$organization->name}...");
 
-            // Get all courses for this organization
-            $courses = ShortTermCourse::where('organization_id', $organization->id)
+            // Get all schools for this organization
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
                 ->whereNull('deleted_at')
                 ->get();
 
-            if ($courses->isEmpty()) {
-                $this->command->warn("  ⚠ No courses found for {$organization->name}. Please run CourseSeeder first.");
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping course student seeding for this org.");
                 continue;
             }
 
-            foreach ($courses as $course) {
-                $created = $this->enrollStudentsInCourse($organization->id, $course);
-                $totalCreated += $created;
-                $this->command->info("  → Enrolled {$created} student(s) in '{$course->name_ar}'");
+            foreach ($schools as $school) {
+                $this->command->info("Enrolling students in courses for {$organization->name} - school: {$school->school_name}...");
+
+                // Get all courses for this school
+                $courses = ShortTermCourse::where('organization_id', $organization->id)
+                    ->where('school_id', $school->id)
+                    ->whereNull('deleted_at')
+                    ->get();
+
+                if ($courses->isEmpty()) {
+                    $this->command->warn("  ⚠ No courses found for {$organization->name} - {$school->school_name}. Please run CourseSeeder first.");
+                    continue;
+                }
+
+                foreach ($courses as $course) {
+                    $created = $this->enrollStudentsInCourse($organization->id, $school->id, $course);
+                    $totalCreated += $created;
+                    if ($created > 0) {
+                        $this->command->info("  → Enrolled {$created} student(s) in '{$course->name_ar}'");
+                    }
+                }
             }
         }
 
@@ -62,7 +80,7 @@ class CourseStudentSeeder extends Seeder
     /**
      * Enroll 4 students in a course
      */
-    protected function enrollStudentsInCourse(string $organizationId, ShortTermCourse $course): int
+    protected function enrollStudentsInCourse(string $organizationId, string $schoolId, ShortTermCourse $course): int
     {
         $createdCount = 0;
 
@@ -155,7 +173,7 @@ class CourseStudentSeeder extends Seeder
         ];
 
         foreach ($students as $studentData) {
-            $created = $this->createCourseStudent($organizationId, $course, $studentData);
+            $created = $this->createCourseStudent($organizationId, $schoolId, $course, $studentData);
 
             if ($created) {
                 $createdCount++;
@@ -168,7 +186,7 @@ class CourseStudentSeeder extends Seeder
     /**
      * Create a course student if it doesn't already exist
      */
-    protected function createCourseStudent(string $organizationId, ShortTermCourse $course, array $studentData): bool
+    protected function createCourseStudent(string $organizationId, string $schoolId, ShortTermCourse $course, array $studentData): bool
     {
         // Generate admission number similar to controller: CS-COURSE_CODE-YEAR-SEQUENCE
         // Get count of existing students for this course to generate sequence
@@ -186,12 +204,24 @@ class CourseStudentSeeder extends Seeder
         
         $admissionNo = sprintf('CS-%s-%s-%03d', $courseCode, $year, $sequence);
 
+        // Check if course student already exists with this admission_no, organization_id, and school_id
+        $existing = CourseStudent::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->where('admission_no', $admissionNo)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if ($existing) {
+            return false; // Skip if already exists
+        }
+
         // Registration date: within the last 30 days
         $registrationDate = now()->subDays(rand(0, 30));
 
         CourseStudent::create([
             'id' => (string) Str::uuid(),
             'organization_id' => $organizationId,
+            'school_id' => $schoolId,
             'course_id' => $course->id,
             'admission_no' => $admissionNo,
             'registration_date' => $registrationDate,

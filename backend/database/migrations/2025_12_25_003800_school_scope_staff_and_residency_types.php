@@ -103,14 +103,45 @@ SQL);
             // Soft-delete global rows (no longer used)
             DB::statement("UPDATE public.staff_types SET deleted_at = now() WHERE organization_id IS NULL AND deleted_at IS NULL");
 
-            // Tighten NOT NULL when safe (ignore soft-deleted rows)
-            $activeNullOrg = (int) DB::table('staff_types')->whereNull('organization_id')->whereNull('deleted_at')->count();
-            if ($activeNullOrg === 0) {
+            // Backfill organization_id for ALL rows with NULL (including soft-deleted ones)
+            // This is required before setting NOT NULL constraint
+            DB::statement(<<<SQL
+UPDATE public.staff_types st
+SET organization_id = (
+  SELECT organization_id 
+  FROM public.school_branding 
+  WHERE deleted_at IS NULL 
+  ORDER BY created_at ASC 
+  LIMIT 1
+)
+WHERE st.organization_id IS NULL;
+SQL);
+
+            // Tighten NOT NULL when safe (all rows now have organization_id)
+            $nullOrg = (int) DB::table('staff_types')->whereNull('organization_id')->count();
+            if ($nullOrg === 0) {
                 DB::statement('ALTER TABLE public.staff_types ALTER COLUMN organization_id SET NOT NULL');
             }
 
-            $activeNullSchool = (int) DB::table('staff_types')->whereNull('school_id')->whereNull('deleted_at')->count();
-            if ($activeNullSchool === 0) {
+            // Backfill school_id for ALL rows with NULL (including soft-deleted ones)
+            // This is required before setting NOT NULL constraint
+            DB::statement(<<<SQL
+UPDATE public.staff_types st
+SET school_id = (
+  SELECT id 
+  FROM public.school_branding 
+  WHERE deleted_at IS NULL 
+    AND organization_id = st.organization_id
+  ORDER BY created_at ASC 
+  LIMIT 1
+)
+WHERE st.school_id IS NULL
+  AND st.organization_id IS NOT NULL;
+SQL);
+
+            // Tighten NOT NULL when safe (all rows now have school_id)
+            $nullSchool = (int) DB::table('staff_types')->whereNull('school_id')->count();
+            if ($nullSchool === 0) {
                 DB::statement('ALTER TABLE public.staff_types ALTER COLUMN school_id SET NOT NULL');
             }
 
@@ -194,14 +225,45 @@ SQL);
             // Soft-delete global rows (no longer used)
             DB::statement("UPDATE public.residency_types SET deleted_at = now() WHERE organization_id IS NULL AND deleted_at IS NULL");
 
-            // Tighten NOT NULL when safe (ignore soft-deleted rows)
-            $activeNullOrg = (int) DB::table('residency_types')->whereNull('organization_id')->whereNull('deleted_at')->count();
-            if ($activeNullOrg === 0) {
+            // Backfill organization_id for ALL rows with NULL (including soft-deleted ones)
+            // This is required before setting NOT NULL constraint
+            DB::statement(<<<SQL
+UPDATE public.residency_types rt
+SET organization_id = (
+  SELECT organization_id 
+  FROM public.school_branding 
+  WHERE deleted_at IS NULL 
+  ORDER BY created_at ASC 
+  LIMIT 1
+)
+WHERE rt.organization_id IS NULL;
+SQL);
+
+            // Tighten NOT NULL when safe (all rows now have organization_id)
+            $nullOrg = (int) DB::table('residency_types')->whereNull('organization_id')->count();
+            if ($nullOrg === 0) {
                 DB::statement('ALTER TABLE public.residency_types ALTER COLUMN organization_id SET NOT NULL');
             }
 
-            $activeNullSchool = (int) DB::table('residency_types')->whereNull('school_id')->whereNull('deleted_at')->count();
-            if ($activeNullSchool === 0) {
+            // Backfill school_id for ALL rows with NULL (including soft-deleted ones)
+            // This is required before setting NOT NULL constraint
+            DB::statement(<<<SQL
+UPDATE public.residency_types rt
+SET school_id = (
+  SELECT id 
+  FROM public.school_branding 
+  WHERE deleted_at IS NULL 
+    AND organization_id = rt.organization_id
+  ORDER BY created_at ASC 
+  LIMIT 1
+)
+WHERE rt.school_id IS NULL
+  AND rt.organization_id IS NOT NULL;
+SQL);
+
+            // Tighten NOT NULL when safe (all rows now have school_id)
+            $nullSchool = (int) DB::table('residency_types')->whereNull('school_id')->count();
+            if ($nullSchool === 0) {
                 DB::statement('ALTER TABLE public.residency_types ALTER COLUMN school_id SET NOT NULL');
             }
 

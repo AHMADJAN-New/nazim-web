@@ -37,11 +37,28 @@ class GradeSeeder extends Seeder
         foreach ($organizations as $organization) {
             $this->command->info("Creating grades for {$organization->name}...");
 
-            // Create grades for this organization
-            $created = $this->createGradesForOrganization($organization->id);
-            $totalCreated += $created;
+            // Get all schools for this organization
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
+                ->whereNull('deleted_at')
+                ->get();
 
-            $this->command->info("  → Created {$created} grade(s) for {$organization->name}");
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping grade seeding for this org.");
+                continue;
+            }
+
+            foreach ($schools as $school) {
+                $this->command->info("Creating grades for {$organization->name} - school: {$school->school_name}...");
+
+                // Create grades for this school
+                $created = $this->createGradesForSchool($organization->id, $school->id);
+                $totalCreated += $created;
+
+                if ($created > 0) {
+                    $this->command->info("  → Created {$created} grade(s) for {$organization->name} - {$school->school_name}");
+                }
+            }
         }
 
         if ($totalCreated > 0) {
@@ -52,9 +69,9 @@ class GradeSeeder extends Seeder
     }
 
     /**
-     * Create grades for a specific organization
+     * Create grades for a specific school
      */
-    protected function createGradesForOrganization(string $organizationId): int
+    protected function createGradesForSchool(string $organizationId, string $schoolId): int
     {
         $createdCount = 0;
 
@@ -114,8 +131,9 @@ class GradeSeeder extends Seeder
         ];
 
         foreach ($grades as $gradeData) {
-            // Check if grade already exists for this organization (by percentage range)
+            // Check if grade already exists for this school (by percentage range, organization_id, and school_id)
             $existing = Grade::where('organization_id', $organizationId)
+                ->where('school_id', $schoolId)
                 ->where('min_percentage', $gradeData['min_percentage'])
                 ->where('max_percentage', $gradeData['max_percentage'])
                 ->whereNull('deleted_at')
@@ -128,6 +146,7 @@ class GradeSeeder extends Seeder
 
             Grade::create([
                 'organization_id' => $organizationId,
+                'school_id' => $schoolId,
                 'name_en' => $gradeData['name_en'],
                 'name_ar' => $gradeData['name_ar'],
                 'name_ps' => $gradeData['name_ps'],

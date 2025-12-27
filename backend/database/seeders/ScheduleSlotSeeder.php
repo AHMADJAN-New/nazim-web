@@ -126,9 +126,15 @@ class ScheduleSlotSeeder extends Seeder
         // Create each period for each academic year
         foreach ($periods as $period) {
             foreach ($academicYears as $academicYear) {
-                // Check if schedule slot already exists
+                // Get school_id from academic_year
+                if (!$academicYear->school_id) {
+                    continue; // Skip if academic year has no school_id
+                }
+
+                // Check if schedule slot already exists (by organization_id, school_id, academic_year_id, and code)
                 $exists = DB::table('schedule_slots')
                     ->where('organization_id', $organizationId)
+                    ->where('school_id', $academicYear->school_id)
                     ->where('academic_year_id', $academicYear->id)
                     ->where('code', $period['code'])
                     ->whereNull('deleted_at')
@@ -139,12 +145,19 @@ class ScheduleSlotSeeder extends Seeder
                     continue;
                 }
 
+                // Get school_id from academic_year
+                if (!$academicYear->school_id) {
+                    $this->command->warn("  ⚠ Academic year '{$academicYear->name}' has no school_id. Skipping schedule slot creation.");
+                    continue;
+                }
+
                 // Create schedule slot
                 $slotId = (string) Str::uuid();
                 
                 DB::table('schedule_slots')->insert([
                     'id' => $slotId,
                     'organization_id' => $organizationId,
+                    'school_id' => $academicYear->school_id,
                     'name' => $period['name'],
                     'code' => $period['code'],
                     'start_time' => $period['start_time'],
@@ -152,7 +165,6 @@ class ScheduleSlotSeeder extends Seeder
                     'days_of_week' => json_encode($daysOfWeek),
                     'default_duration_minutes' => 45,
                     'academic_year_id' => $academicYear->id,
-                    'school_id' => null, // Organization-wide
                     'sort_order' => $period['sort_order'],
                     'is_active' => true,
                     'description' => "Period {$period['sort_order']} - {$period['start_time']} to {$period['end_time']}",

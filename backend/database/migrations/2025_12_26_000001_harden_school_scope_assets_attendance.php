@@ -83,11 +83,11 @@ SQL);
         // Backfill attendance_session_classes from attendance_sessions.school_id
         if (Schema::hasTable('attendance_session_classes') && Schema::hasTable('attendance_sessions') && Schema::hasColumn('attendance_sessions', 'school_id')) {
             DB::statement(<<<SQL
-UPDATE public.attendance_session_classes asc
+UPDATE public.attendance_session_classes asc_table
 SET school_id = s.school_id
 FROM public.attendance_sessions s
-WHERE asc.school_id IS NULL
-  AND asc.attendance_session_id = s.id
+WHERE asc_table.school_id IS NULL
+  AND asc_table.attendance_session_id = s.id
   AND s.school_id IS NOT NULL;
 SQL);
             $backfillByOrgDefaultSchool('attendance_session_classes');

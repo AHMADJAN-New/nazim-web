@@ -174,7 +174,6 @@ class IdCardTemplateController extends Controller
                     ], 422);
                 }
 
-<<<<<<< HEAD
                 // Store using FileStorageService (PRIVATE storage for ID card templates)
                 $backgroundPathBack = $this->fileStorageService->storeIdCardTemplateBackground(
                     $file,
@@ -350,7 +349,6 @@ class IdCardTemplateController extends Controller
                     ], 422);
                 }
 
-<<<<<<< HEAD
                 // Store using FileStorageService (PRIVATE storage for ID card templates)
                 $validated['background_image_path_front'] = $this->fileStorageService->storeIdCardTemplateBackground(
                     $file,
@@ -396,7 +394,6 @@ class IdCardTemplateController extends Controller
                     ], 422);
                 }
 
-<<<<<<< HEAD
                 // Store using FileStorageService (PRIVATE storage for ID card templates)
                 $validated['background_image_path_back'] = $this->fileStorageService->storeIdCardTemplateBackground(
                     $file,

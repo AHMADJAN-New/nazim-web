@@ -108,9 +108,8 @@ Route::post('/verify/certificate/search', [CertificateVerifyController::class, '
 Route::get('/stats/students-count', [StatsController::class, 'studentsCount']);
 Route::get('/stats/staff-count', [StatsController::class, 'staffCount']);
 
-<<<<<<< HEAD
-// Protected routes
-Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
+// Protected routes (organization context is mandatory everywhere)
+Route::middleware(['auth:sanctum', 'organization'])->group(function () {
     // Storage routes (private file access)
     Route::get('/storage/download/{encodedPath}', [StorageController::class, 'download'])
         ->where('encodedPath', '.*')
@@ -121,9 +120,6 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/storage/info/{encodedPath}', [StorageController::class, 'info'])
         ->where('encodedPath', '.*')
         ->name('storage.info');
-
-// Protected routes (organization context is mandatory everywhere)
-Route::middleware(['auth:sanctum', 'organization'])->group(function () {
     // Auth routes
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/user', [AuthController::class, 'user']);

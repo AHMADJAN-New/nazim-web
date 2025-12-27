@@ -217,7 +217,6 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'Document not found'], 404);
         }
 
-<<<<<<< HEAD
         $orgIds = $this->getAccessibleOrgIds($profile);
 
         if (!in_array($document->organization_id, $orgIds)) {
@@ -272,8 +271,7 @@ class StudentDocumentController extends Controller
         if (!$document) {
             return response()->json(['error' => 'Document not found'], 404);
         }
-
-<<<<<<< HEAD
+        
         $orgIds = $this->getAccessibleOrgIds($profile);
 
         if (!in_array($document->organization_id, $orgIds)) {

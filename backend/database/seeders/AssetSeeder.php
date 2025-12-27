@@ -82,23 +82,38 @@ class AssetSeeder extends Seeder
         $totalCreated = 0;
         $totalSkipped = 0;
 
-        // Create assets for each organization
+        // Create assets for each organization and school
         foreach ($organizations as $organization) {
             $this->command->info("Creating assets for organization: {$organization->name}");
 
-            // Get all categories for this organization
-            $categories = AssetCategory::where('organization_id', $organization->id)
+            // Get all schools for this organization
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
                 ->whereNull('deleted_at')
-                ->where('is_active', true)
                 ->get();
 
-            if ($categories->isEmpty()) {
-                $this->command->warn("  No categories found for {$organization->name}. Please run AssetCategorySeeder first.");
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping asset seeding for this org.");
                 continue;
             }
 
-            $orgCreated = 0;
-            $orgSkipped = 0;
+            foreach ($schools as $school) {
+                $this->command->info("Creating assets for {$organization->name} - school: {$school->school_name}...");
+
+                // Get all categories for this school
+                $categories = AssetCategory::where('organization_id', $organization->id)
+                    ->where('school_id', $school->id)
+                    ->whereNull('deleted_at')
+                    ->where('is_active', true)
+                    ->get();
+
+                if ($categories->isEmpty()) {
+                    $this->command->warn("  No categories found for {$organization->name} - {$school->school_name}. Please run AssetCategorySeeder first.");
+                    continue;
+                }
+
+                $orgCreated = 0;
+                $orgSkipped = 0;
 
             // Get finance accounts and currencies for this organization (if columns exist)
             $financeAccounts = [];
@@ -135,10 +150,11 @@ class AssetSeeder extends Seeder
 
                 $assetCounter = 1;
                 foreach ($assets as $assetData) {
-                    // Check if asset already exists for this organization (by asset_tag)
+                    // Check if asset already exists for this school (by asset_tag, organization_id, and school_id)
                     $assetTag = 'AST-' . strtoupper(substr($organization->slug ?? substr($organization->id, 0, 3), 0, 3)) . '-' . strtoupper(substr($categoryCode, 0, 3)) . '-' . str_pad((string)$assetCounter, 4, '0', STR_PAD_LEFT);
                     
                     $existing = Asset::where('organization_id', $organization->id)
+                        ->where('school_id', $school->id)
                         ->where('asset_tag', $assetTag)
                         ->whereNull('deleted_at')
                         ->first();
@@ -159,6 +175,7 @@ class AssetSeeder extends Seeder
                     try {
                         $assetDataToCreate = [
                             'organization_id' => $organization->id,
+                            'school_id' => $school->id,
                             'name' => $assetData['name'],
                             'asset_tag' => $assetTag,
                             'category' => $category->name, // Keep for backward compatibility
@@ -211,14 +228,15 @@ class AssetSeeder extends Seeder
                 }
             }
 
-            $totalCreated += $orgCreated;
-            $totalSkipped += $orgSkipped;
+                $totalCreated += $orgCreated;
+                $totalSkipped += $orgSkipped;
 
-            if ($orgCreated > 0) {
-                $this->command->info("  → Created {$orgCreated} asset(s) for {$organization->name}");
-            }
-            if ($orgSkipped > 0) {
-                $this->command->info("  → Skipped {$orgSkipped} existing asset(s) for {$organization->name}");
+                if ($orgCreated > 0) {
+                    $this->command->info("  → Created {$orgCreated} asset(s) for {$organization->name} - {$school->school_name}");
+                }
+                if ($orgSkipped > 0) {
+                    $this->command->info("  → Skipped {$orgSkipped} existing asset(s) for {$organization->name} - {$school->school_name}");
+                }
             }
         }
 

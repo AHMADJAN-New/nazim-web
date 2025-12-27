@@ -29,6 +29,12 @@ class RoomController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Ensure organization context is set for Spatie permissions
+        // The 'organization' middleware should handle this, but we set it explicitly for safety
+        if (method_exists($user, 'setPermissionsTeamId')) {
+            $user->setPermissionsTeamId($profile->organization_id);
+        }
+
         // Check permission WITH organization context
         try {
             if (!$user->hasPermissionTo('rooms.read')) {
@@ -185,9 +191,14 @@ class RoomController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Ensure organization context is set for Spatie permissions
+        if (method_exists($user, 'setPermissionsTeamId')) {
+            $user->setPermissionsTeamId($profile->organization_id);
+        }
+
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('rooms.read')) {
+            if (!$user->hasPermissionTo('rooms.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -289,6 +300,12 @@ class RoomController extends Controller
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Ensure organization context is set for Spatie permissions
+        // The 'organization' middleware should handle this, but we set it explicitly for safety
+        if (method_exists($user, 'setPermissionsTeamId')) {
+            $user->setPermissionsTeamId($profile->organization_id);
         }
 
         // Check permission WITH organization context
@@ -393,9 +410,14 @@ class RoomController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Ensure organization context is set for Spatie permissions
+        if (method_exists($user, 'setPermissionsTeamId')) {
+            $user->setPermissionsTeamId($profile->organization_id);
+        }
+
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('rooms.read')) {
+            if (!$user->hasPermissionTo('rooms.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -547,9 +569,14 @@ class RoomController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Ensure organization context is set for Spatie permissions
+        if (method_exists($user, 'setPermissionsTeamId')) {
+            $user->setPermissionsTeamId($profile->organization_id);
+        }
+
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('rooms.read')) {
+            if (!$user->hasPermissionTo('rooms.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {

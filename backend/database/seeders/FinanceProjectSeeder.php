@@ -36,22 +36,40 @@ class FinanceProjectSeeder extends Seeder
         foreach ($organizations as $organization) {
             $this->command->info("Creating finance projects for {$organization->name}...");
 
-            // Get base currency for this organization
-            $baseCurrency = Currency::where('organization_id', $organization->id)
-                ->where('is_base', true)
-                ->where('is_active', true)
+            // Get all schools for this organization
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
                 ->whereNull('deleted_at')
-                ->first();
+                ->get();
 
-            if (!$baseCurrency) {
-                $this->command->warn("  ⚠ No base currency found for {$organization->name}. Projects will be created without currency.");
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping finance project seeding for this org.");
+                continue;
             }
 
-            // Create projects for this organization
-            $created = $this->createProjectsForOrganization($organization->id, $baseCurrency?->id);
-            $totalCreated += $created;
+            foreach ($schools as $school) {
+                $this->command->info("Creating finance projects for {$organization->name} - school: {$school->school_name}...");
 
-            $this->command->info("  → Created {$created} project(s) for {$organization->name}");
+                // Get base currency for this school
+                $baseCurrency = Currency::where('organization_id', $organization->id)
+                    ->where('school_id', $school->id)
+                    ->where('is_base', true)
+                    ->where('is_active', true)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if (!$baseCurrency) {
+                    $this->command->warn("  ⚠ No base currency found for {$organization->name} - {$school->school_name}. Projects will be created without currency.");
+                }
+
+                // Create projects for this school
+                $created = $this->createProjectsForSchool($organization->id, $school->id, $baseCurrency?->id);
+                $totalCreated += $created;
+
+                if ($created > 0) {
+                    $this->command->info("  → Created {$created} project(s) for {$organization->name} - {$school->school_name}");
+                }
+            }
         }
 
         if ($totalCreated > 0) {
@@ -62,9 +80,9 @@ class FinanceProjectSeeder extends Seeder
     }
 
     /**
-     * Create finance projects for a specific organization
+     * Create finance projects for a specific school
      */
-    protected function createProjectsForOrganization(string $organizationId, ?string $currencyId = null): int
+    protected function createProjectsForSchool(string $organizationId, string $schoolId, ?string $currencyId = null): int
     {
         $createdCount = 0;
         $today = Carbon::today();
@@ -94,8 +112,9 @@ class FinanceProjectSeeder extends Seeder
         ];
 
         foreach ($projects as $projectData) {
-            // Check if project already exists for this organization
+            // Check if project already exists for this school (by code, organization_id, and school_id)
             $exists = FinanceProject::where('organization_id', $organizationId)
+                ->where('school_id', $schoolId)
                 ->where('code', $projectData['code'])
                 ->whereNull('deleted_at')
                 ->exists();
@@ -103,7 +122,7 @@ class FinanceProjectSeeder extends Seeder
             if (!$exists) {
                 FinanceProject::create([
                     'organization_id' => $organizationId,
-                    'school_id' => null, // Can be assigned later
+                    'school_id' => $schoolId,
                     'currency_id' => $currencyId,
                     'name' => $projectData['name'],
                     'code' => $projectData['code'],
@@ -120,7 +139,7 @@ class FinanceProjectSeeder extends Seeder
                 $createdCount++;
                 $this->command->info("    ✓ Created project: {$projectData['name']} ({$projectData['code']})");
             } else {
-                $this->command->info("    ⊘ Project {$projectData['code']} already exists for this organization");
+                $this->command->info("    ⊘ Project {$projectData['code']} already exists for this school");
             }
         }
 

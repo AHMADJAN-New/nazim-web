@@ -11,7 +11,7 @@ class ResidencyTypeSeeder extends Seeder
     /**
      * Seed the residency_types table.
      *
-     * Creates global residency types (organization_id = NULL) available to all organizations:
+     * Creates residency types per organization + per school (strict school scoping):
      * - لیلیه (Night)
      * - نهاري (Day)
      */
@@ -19,7 +19,7 @@ class ResidencyTypeSeeder extends Seeder
     {
         $this->command->info('Seeding residency types...');
 
-        // Define residency types (global - available to all organizations)
+        // Define residency types (school-scoped)
         $residencyTypes = [
             [
                 'name' => 'لیلیه',
@@ -36,31 +36,49 @@ class ResidencyTypeSeeder extends Seeder
         ];
 
         $createdCount = 0;
-        foreach ($residencyTypes as $typeData) {
-            // Check if residency type already exists (global or any organization)
-            $existing = ResidencyType::where('code', $typeData['code'])
-                ->whereNull('deleted_at')
-                ->first();
+        $skippedCount = 0;
 
-            if ($existing) {
-                $this->command->info("  ✓ Residency type '{$typeData['name']}' ({$typeData['code']}) already exists.");
+        $organizations = DB::table('organizations')->whereNull('deleted_at')->get();
+        foreach ($organizations as $organization) {
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
+                ->whereNull('deleted_at')
+                ->get();
+
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping residency type seeding for this org.");
                 continue;
             }
 
-            ResidencyType::create([
-                'organization_id' => null, // Global type - available to all organizations
-                'name' => $typeData['name'],
-                'code' => $typeData['code'],
-                'description' => $typeData['description'],
-                'is_active' => $typeData['is_active'],
-            ]);
+            foreach ($schools as $school) {
+                foreach ($residencyTypes as $typeData) {
+                    $existing = ResidencyType::where('code', $typeData['code'])
+                        ->where('organization_id', $organization->id)
+                        ->where('school_id', $school->id)
+                        ->whereNull('deleted_at')
+                        ->first();
 
-            $this->command->info("  ✓ Created residency type: {$typeData['name']} ({$typeData['code']})");
-            $createdCount++;
+                    if ($existing) {
+                        $skippedCount++;
+                        continue;
+                    }
+
+                    ResidencyType::create([
+                        'organization_id' => $organization->id,
+                        'school_id' => $school->id,
+                        'name' => $typeData['name'],
+                        'code' => $typeData['code'],
+                        'description' => $typeData['description'],
+                        'is_active' => $typeData['is_active'],
+                    ]);
+
+                    $createdCount++;
+                }
+            }
         }
 
-        if ($createdCount > 0) {
-            $this->command->info("  → Created {$createdCount} residency type(s)");
+        if ($createdCount > 0 || $skippedCount > 0) {
+            $this->command->info("  → Created {$createdCount} residency type(s), skipped {$skippedCount} existing");
         }
 
         $this->command->info('✅ Residency types seeded successfully!');

@@ -23,66 +23,87 @@ class FeeStructureSeeder extends Seeder
     {
         $this->command->info('Seeding fee structures...');
 
-        // Get school 1 (first school from Organization One)
-        $school = SchoolBranding::whereNull('deleted_at')
-            ->orderBy('created_at', 'asc')
-            ->first();
-
-        if (!$school) {
-            $this->command->warn('No school found. Please run SchoolBrandingSeeder first.');
-            return;
-        }
-
-        $this->command->info("Using school: {$school->school_name} (ID: {$school->id})");
-
-        // Get organization_id from school
-        $organizationId = $school->organization_id;
-
-        // Get base currency for the organization
-        $currency = Currency::where('organization_id', $organizationId)
-            ->where('is_base', true)
-            ->where('is_active', true)
+        // Get all organizations
+        $organizations = DB::table('organizations')
             ->whereNull('deleted_at')
-            ->first();
-
-        if (!$currency) {
-            $this->command->warn("  ⚠ No base currency found for organization. Fee structures will be created without currency.");
-        } else {
-            $this->command->info("Using currency: {$currency->code} - {$currency->name}");
-        }
-
-        // Find all existing academic years that have classes assigned
-        // Get academic years that have at least one class_academic_year
-        $academicYears = AcademicYear::where('organization_id', $organizationId)
-            ->whereNull('deleted_at')
-            ->whereHas('classAcademicYears', function ($query) use ($organizationId) {
-                $query->where('organization_id', $organizationId)
-                    ->whereNull('deleted_at')
-                    ->where('is_active', true);
-            })
-            ->orderBy('start_date', 'desc')
             ->get();
 
-        if ($academicYears->isEmpty()) {
-            $this->command->warn('No academic years with classes found. Please create academic years and assign classes first.');
+        if ($organizations->isEmpty()) {
+            $this->command->warn('No organizations found. Please run DatabaseSeeder first.');
             return;
         }
-
-        $this->command->info("Found {$academicYears->count()} academic year(s) with classes:");
 
         $totalCreated = 0;
 
-        // Process each academic year that has classes
-        foreach ($academicYears as $academicYear) {
-            $this->command->info("Processing academic year: {$academicYear->name} (ID: {$academicYear->id})");
-            $created = $this->createFeeStructuresForAcademicYear(
-                $organizationId,
-                $school->id,
-                $academicYear->id,
-                $currency?->id
-            );
-            $totalCreated += $created;
-            $this->command->info("  → Created {$created} fee structure(s) for academic year {$academicYear->name}");
+        foreach ($organizations as $organization) {
+            $this->command->info("Creating fee structures for {$organization->name}...");
+
+            // Get all schools for this organization
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
+                ->whereNull('deleted_at')
+                ->get();
+
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping fee structure seeding for this org.");
+                continue;
+            }
+
+            foreach ($schools as $school) {
+                $this->command->info("Creating fee structures for {$organization->name} - school: {$school->school_name}...");
+
+                // Get base currency for this school
+                $currency = Currency::where('organization_id', $organization->id)
+                    ->where('school_id', $school->id)
+                    ->where('is_base', true)
+                    ->where('is_active', true)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if (!$currency) {
+                    $this->command->warn("  ⚠ No base currency found for {$organization->name} - {$school->school_name}. Fee structures will be created without currency.");
+                } else {
+                    $this->command->info("Using currency: {$currency->code} - {$currency->name}");
+                }
+
+                // Find all existing academic years that have classes assigned for this school
+                // Get academic years that have at least one class_academic_year
+                $organizationId = $organization->id;
+                $schoolId = $school->id;
+                $academicYears = AcademicYear::where('organization_id', $organizationId)
+                    ->where('school_id', $schoolId)
+                    ->whereNull('deleted_at')
+                    ->whereHas('classAcademicYears', function ($query) use ($organizationId, $schoolId) {
+                        $query->where('organization_id', $organizationId)
+                            ->where('school_id', $schoolId)
+                            ->whereNull('deleted_at')
+                            ->where('is_active', true);
+                    })
+                    ->orderBy('start_date', 'desc')
+                    ->get();
+
+                if ($academicYears->isEmpty()) {
+                    $this->command->warn("  ⚠ No academic years with classes found for {$organization->name} - {$school->school_name}. Skipping.");
+                    continue;
+                }
+
+                $this->command->info("Found {$academicYears->count()} academic year(s) with classes:");
+
+                // Process each academic year that has classes
+                foreach ($academicYears as $academicYear) {
+                    $this->command->info("Processing academic year: {$academicYear->name} (ID: {$academicYear->id})");
+                    $created = $this->createFeeStructuresForAcademicYear(
+                        $organization->id,
+                        $school->id,
+                        $academicYear->id,
+                        $currency?->id
+                    );
+                    $totalCreated += $created;
+                    if ($created > 0) {
+                        $this->command->info("  → Created {$created} fee structure(s) for academic year {$academicYear->name}");
+                    }
+                }
+            }
         }
 
         if ($totalCreated > 0) {
@@ -101,9 +122,10 @@ class FeeStructureSeeder extends Seeder
         string $academicYearId,
         ?string $currencyId
     ): int {
-        // Get all class academic years for this academic year
+        // Get all class academic years for this academic year and school
         $classAcademicYears = ClassAcademicYear::where('academic_year_id', $academicYearId)
             ->where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
             ->whereNull('deleted_at')
             ->where('is_active', true)
             ->with('class')
@@ -165,8 +187,9 @@ class FeeStructureSeeder extends Seeder
 
             $feeIndex = 0;
             foreach ($feeTypes as $feeTypeData) {
-                // Check if fee structure already exists
+                // Check if fee structure already exists (by organization_id, school_id, academic_year_id, class_academic_year_id, and fee_type)
                 $existing = FeeStructure::where('organization_id', $organizationId)
+                    ->where('school_id', $schoolId)
                     ->where('academic_year_id', $academicYearId)
                     ->where('class_academic_year_id', $classAcademicYear->id)
                     ->where('fee_type', $feeTypeData['fee_type'])
