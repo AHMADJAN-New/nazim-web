@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useAuth } from '@/hooks/useAuth';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
@@ -79,6 +79,8 @@ import {
 import { cn } from '@/lib/utils';
 import { showToast } from '@/lib/toast';
 import { StudentIdCardPreview } from '@/components/id-cards/StudentIdCardPreview';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { formatDate } from '@/lib/utils';
 
 export default function IdCardAssignment() {
   const { t } = useLanguage();
@@ -331,6 +333,68 @@ export default function IdCardAssignment() {
       return true;
     });
   }, [idCards, searchQuery]);
+
+  // Report export columns
+  const reportColumns = useMemo(() => [
+    { key: 'student_name', label: t('students.student') || 'Student' },
+    { key: 'admission_number', label: t('students.admissionNo') || 'Admission No' },
+    { key: 'class_name', label: t('classes.class') || 'Class' },
+    { key: 'template_name', label: t('idCards.template') || 'Template' },
+    { key: 'card_number', label: t('idCards.cardNumber') || 'Card Number' },
+    { key: 'fee_status', label: t('idCards.feeStatus') || 'Fee Status' },
+    { key: 'fee_amount', label: t('idCards.feeAmount') || 'Fee Amount' },
+    { key: 'printed_status', label: t('idCards.printedStatus') || 'Printed Status' },
+    { key: 'printed_at', label: t('idCards.printedAt') || 'Printed At' },
+    { key: 'assigned_at', label: t('idCards.assignedAt') || 'Assigned At' },
+  ], [t]);
+
+  // Transform data for report
+  const transformIdCardData = useCallback((cards: typeof filteredCards) => {
+    return cards.map(card => ({
+      student_name: card.student?.fullName || '-',
+      admission_number: card.student?.admissionNumber || '-',
+      class_name: card.class?.name || '-',
+      template_name: card.template?.name || '-',
+      card_number: card.cardNumber || '-',
+      fee_status: card.cardFeePaid 
+        ? (t('idCards.feePaid') || 'Paid')
+        : (t('idCards.feeUnpaid') || 'Unpaid'),
+      fee_amount: card.cardFee ? card.cardFee.toString() : '-',
+      printed_status: card.isPrinted
+        ? (t('idCards.printed') || 'Printed')
+        : (t('idCards.unprinted') || 'Unprinted'),
+      printed_at: card.printedAt ? formatDate(card.printedAt) : '-',
+      assigned_at: card.createdAt ? formatDate(card.createdAt) : '-',
+    }));
+  }, [t]);
+
+  // Build filters summary
+  const buildFiltersSummary = useCallback(() => {
+    const filters: string[] = [];
+    if (academicYearId) {
+      const year = academicYears.find(ay => ay.id === academicYearId);
+      if (year) filters.push(`${t('fees.academicYear') || 'Academic Year'}: ${year.name}`);
+    }
+    if (schoolId) {
+      const school = schools.find(s => s.id === schoolId);
+      if (school) filters.push(`${t('common.schoolManagement') || 'School'}: ${school.schoolName}`);
+    }
+    if (classId) {
+      const cls = classes.find(c => c.id === classId);
+      if (cls) filters.push(`${t('classes.class') || 'Class'}: ${cls.name}`);
+    }
+    if (templateId) {
+      const template = templates.find(t => t.id === templateId);
+      if (template) filters.push(`${t('idCards.template') || 'Template'}: ${template.name}`);
+    }
+    if (enrollmentStatus !== 'all') {
+      filters.push(`${t('students.enrollmentStatus') || 'Enrollment Status'}: ${enrollmentStatus}`);
+    }
+    if (searchQuery) {
+      filters.push(`${t('common.search') || 'Search'}: ${searchQuery}`);
+    }
+    return filters.join(', ');
+  }, [academicYearId, schoolId, classId, templateId, enrollmentStatus, searchQuery, academicYears, schools, classes, templates, t]);
 
   return (
     <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4">
@@ -716,12 +780,27 @@ export default function IdCardAssignment() {
             <TabsContent value="assigned" className="mt-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">
-                    {t('idCards.assignedCards.title') || 'Assigned Cards'}
-                  </CardTitle>
-                  <CardDescription>
-                    {t('idCards.assignedCards.description') || 'View and manage assigned ID cards'}
-                  </CardDescription>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-lg">
+                        {t('idCards.assignedCards.title') || 'Assigned Cards'}
+                      </CardTitle>
+                      <CardDescription>
+                        {t('idCards.assignedCards.description') || 'View and manage assigned ID cards'}
+                      </CardDescription>
+                    </div>
+                    <ReportExportButtons
+                      data={filteredCards}
+                      columns={reportColumns}
+                      reportKey="id_cards_assignment"
+                      title={t('idCards.assignedCards.title') || 'ID Cards Assignment Report'}
+                      transformData={transformIdCardData}
+                      buildFiltersSummary={buildFiltersSummary}
+                      schoolId={schoolId || undefined}
+                      templateType="id_cards"
+                      disabled={cardsLoading || filteredCards.length === 0}
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent>
               {cardsLoading ? (
