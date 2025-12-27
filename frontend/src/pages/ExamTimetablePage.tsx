@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import {
   Dialog,
@@ -475,6 +476,47 @@ export function ExamTimetablePage() {
                 </Button>
               )}
             </div>
+            {filteredExamTimes.length > 0 && (
+              <ReportExportButtons
+                data={filteredExamTimes}
+                columns={[
+                  { key: 'date', label: t('exams.date') || 'Date' },
+                  { key: 'time', label: t('exams.time') || 'Time' },
+                  { key: 'className', label: t('exams.class') || 'Class' },
+                  { key: 'subjectName', label: t('exams.subject') || 'Subject' },
+                  { key: 'roomName', label: t('exams.room') || 'Room' },
+                  { key: 'invigilatorName', label: t('exams.invigilator') || 'Invigilator' },
+                  { key: 'status', label: t('exams.status') || 'Status' },
+                ]}
+                reportKey="exam_timetable"
+                title={`${t('exams.examTimetable') || 'Exam Timetable'} - ${exam?.name || ''}`}
+                transformData={(data) => data.map((et: ExamTime) => ({
+                  date: formatDate(et.date),
+                  time: `${et.startTime} - ${et.endTime}`,
+                  className: getClassName(et.examClassId),
+                  subjectName: getSubjectName(et.examSubjectId),
+                  roomName: et.room?.name || '-',
+                  invigilatorName: et.invigilator?.fullName || '-',
+                  status: et.isLocked ? (t('exams.locked') || 'Locked') : (t('exams.unlocked') || 'Unlocked'),
+                }))}
+                buildFiltersSummary={() => {
+                  const parts: string[] = [];
+                  if (exam?.name) parts.push(`Exam: ${exam.name}`);
+                  if (exam?.academicYear?.name) parts.push(`Academic Year: ${exam.academicYear.name}`);
+                  if (selectedClassFilter !== 'all') {
+                    parts.push(`Class: ${getClassName(selectedClassFilter)}`);
+                  }
+                  if (selectedDateFilter) {
+                    parts.push(`Date: ${formatDate(selectedDateFilter)}`);
+                  }
+                  parts.push(`Total Sessions: ${filteredExamTimes.length}`);
+                  return parts.join(' | ');
+                }}
+                schoolId={profile?.default_school_id}
+                templateType="exam_timetable"
+                disabled={filteredExamTimes.length === 0}
+              />
+            )}
             {canModify && (
               <Button onClick={() => setIsCreateDialogOpen(true)} disabled={!examClasses?.length || !examSubjects?.length}>
                 <Plus className="h-4 w-4 mr-2" />

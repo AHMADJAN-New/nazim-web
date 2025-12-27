@@ -21,6 +21,7 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useProfile } from '@/hooks/useProfiles';
 import { calculateGrade } from '@/lib/utils/gradeCalculator';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 // Report data type matching API response
 type StudentReportData = {
@@ -595,13 +596,6 @@ export default function StudentExamReport() {
     window.print();
   };
 
-  const handleDownloadPDF = () => {
-    // TODO: Implement PDF download
-    if (import.meta.env.DEV) {
-      console.log('Download PDF');
-    }
-  };
-
   const handleStudentToggle = (studentId: string) => {
     setSelectedStudentIds((prev) =>
       prev.includes(studentId) ? prev.filter((id) => id !== studentId) : [...prev, studentId]
@@ -743,10 +737,73 @@ export default function StudentExamReport() {
                 <Printer className="h-4 w-4 mr-2" />
                 {t('studentReportCard.printCard')}
               </Button>
-              <Button variant="outline" onClick={handleDownloadPDF}>
-                <FileDown className="h-4 w-4 mr-2" />
-                {t('studentReportCard.downloadPDF')}
-              </Button>
+              {reportsData && reportsData.length > 0 && reportsData.some(r => r !== null) && (
+                <ReportExportButtons
+                  data={reportsData.filter((r): r is StudentReportData => r !== null)}
+                  columns={[
+                    { key: 'studentName', label: t('students.fullName') || 'Student Name' },
+                    { key: 'rollNumber', label: t('studentReportCard.rollNo') || 'Roll Number' },
+                    { key: 'className', label: t('classes.class') || 'Class' },
+                    { key: 'subjects', label: t('subjects.subjects') || 'Subjects' },
+                    { key: 'totalMarks', label: t('examReports.totalMarks') || 'Total Marks' },
+                    { key: 'percentage', label: t('examReports.percentage') || 'Percentage' },
+                    { key: 'grade', label: t('examReports.grade') || 'Grade' },
+                    { key: 'result', label: t('examReports.result') || 'Result' },
+                  ]}
+                  reportKey="student_report_card"
+                  title={`${t('studentReportCard.title') || 'Student Report Card'} - ${selectedExam?.name || ''}`}
+                  transformData={(data) => data.map((report: StudentReportData) => {
+                    // Build subjects list
+                    const subjectsList = (report.subjects || []).map((s) => {
+                      const subjectName = s.subject?.name || s.name || '-';
+                      const marks = s.marks;
+                      const isAbsent = s.is_absent;
+                      if (isAbsent) {
+                        return `${subjectName}: ${t('examReports.absent') || 'Absent'}`;
+                      }
+                      if (marks?.obtained !== null && marks?.obtained !== undefined) {
+                        return `${subjectName}: ${marks.obtained}/${marks.total}`;
+                      }
+                      return `${subjectName}: -`;
+                    }).join('; ');
+
+                    return {
+                      studentName: report.student?.full_name || '-',
+                      rollNumber: report.student?.roll_number || '-',
+                      className: report.student?.class
+                        ? `${report.student.class}${report.student.section ? ` - ${report.student.section}` : ''}`
+                        : '-',
+                      subjects: subjectsList,
+                      totalMarks: `${report.summary?.total_marks_obtained || 0}/${report.summary?.total_maximum_marks || 0}`,
+                      percentage: report.summary?.overall_percentage !== null && report.summary?.overall_percentage !== undefined
+                        ? `${report.summary.overall_percentage.toFixed(2)}%`
+                        : '-',
+                      grade: (() => {
+                        const percentage = report.summary?.overall_percentage;
+                        if (percentage !== null && percentage !== undefined) {
+                          // Note: We can't call calculateGrade here directly as we don't have grades in scope
+                          // The backend should include grade in the response
+                          return '-';
+                        }
+                        return '-';
+                      })(),
+                      result: report.summary?.overall_result === 'Pass'
+                        ? (t('examReports.pass') || 'Pass')
+                        : (t('examReports.fail') || 'Fail'),
+                    };
+                  })}
+                  buildFiltersSummary={() => {
+                    const parts: string[] = [];
+                    if (selectedExam?.name) parts.push(`Exam: ${selectedExam.name}`);
+                    if (academicYear?.name) parts.push(`Academic Year: ${academicYear.name}`);
+                    parts.push(`Students: ${selectedStudentIds.length}`);
+                    return parts.join(' | ');
+                  }}
+                  schoolId={profile?.default_school_id}
+                  templateType="student_report_card"
+                  disabled={!reportsData || reportsData.length === 0}
+                />
+              )}
             </div>
           )}
         </CardContent>

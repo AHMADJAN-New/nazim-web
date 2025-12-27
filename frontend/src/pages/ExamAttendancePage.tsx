@@ -49,6 +49,7 @@ import { ArrowLeft, Check, X, Clock, AlertCircle, UserCheck, Users, ChevronDown,
 import { format } from 'date-fns';
 import { formatDate, formatDateTime, cn } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import type { ExamAttendanceStatus, TimeslotStudent } from '@/types/domain/exam';
 
 // Status configuration
@@ -692,6 +693,51 @@ export default function ExamAttendancePage() {
                         <Save className="h-4 w-4 mr-2" />
                         {markAttendance.isPending ? 'Saving...' : 'Save Attendance'}
                       </Button>
+                      {timeslotData?.students && timeslotData.students.length > 0 && (
+                        <ReportExportButtons
+                          data={timeslotData.students}
+                          columns={[
+                            { key: 'studentName', label: t('exams.studentName') || 'Student Name' },
+                            { key: 'fatherName', label: t('exams.fatherName') || 'Father Name' },
+                            { key: 'rollNumber', label: t('exams.rollNumbers.rollNumber') || 'Roll Number' },
+                            { key: 'admissionNo', label: t('exams.studentCode') || 'Admission No' },
+                            { key: 'status', label: t('exams.attendance.status') || 'Status' },
+                            { key: 'seatNumber', label: t('exams.attendance.seatNumber') || 'Seat Number' },
+                          ]}
+                          reportKey="exam_attendance"
+                          title={`${t('exams.attendance.title') || 'Exam Attendance'} - ${exam?.name || ''} - ${selectedExamTime?.examSubject?.subject?.name || ''}`}
+                          transformData={(data) => data.map((student: TimeslotStudent) => {
+                            const entry = attendanceEntries.get(student.studentId);
+                            const status = entry?.status || student.attendance?.status || 'Not marked';
+                            return {
+                              studentName: student.student.fullName || '-',
+                              fatherName: student.student.fatherName || '-',
+                              rollNumber: student.rollNumber || '-',
+                              admissionNo: student.student.admissionNo || '-',
+                              status: STATUS_CONFIG[status as ExamAttendanceStatus]?.label || status,
+                              seatNumber: entry?.seatNumber || student.attendance?.seatNumber || '-',
+                            };
+                          })}
+                          buildFiltersSummary={() => {
+                            const parts: string[] = [];
+                            if (exam?.name) parts.push(`Exam: ${exam.name}`);
+                            if (selectedExamTime) {
+                              parts.push(`Date: ${formatDate(selectedExamTime.date)}`);
+                              parts.push(`Time: ${selectedExamTime.startTime} - ${selectedExamTime.endTime}`);
+                              if (selectedExamTime.examSubject?.subject?.name) {
+                                parts.push(`Subject: ${selectedExamTime.examSubject.subject.name}`);
+                              }
+                            }
+                            if (timeslotData?.counts) {
+                              parts.push(`Marked: ${timeslotData.counts.marked} / ${timeslotData.counts.total}`);
+                            }
+                            return parts.join(' | ');
+                          }}
+                          schoolId={profile?.default_school_id}
+                          templateType="exam_attendance"
+                          disabled={!timeslotData?.students || timeslotData.students.length === 0}
+                        />
+                      )}
                     </div>
                   )}
 

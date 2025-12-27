@@ -33,6 +33,7 @@ import { Plus, Pencil, Trash2, Search, MoreHorizontal, Copy, Eye, FileText, File
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { examPaperTemplateSchema, type ExamPaperTemplateFormData } from '@/lib/validations/examPaperTemplate';
@@ -707,12 +708,62 @@ export default function ExamPaperTemplates() {
             {t('examPapers.description') || 'Create and manage exam papers'}
           </p>
         </div>
-        {hasCreate && activeTab === 'templates' && (
-          <Button onClick={openCreateDialog}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('examPapers.create') || 'Create Template'}
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {activeTab === 'templates' && filteredTemplates && filteredTemplates.length > 0 && (
+            <ReportExportButtons
+              data={filteredTemplates}
+              columns={[
+                { key: 'title', label: t('examPapers.templateTitle') || 'Title' },
+                { key: 'subject', label: t('examPapers.subject') || 'Subject' },
+                { key: 'exam', label: t('examPapers.exam') || 'Exam' },
+                { key: 'className', label: t('examPapers.class') || 'Class' },
+                { key: 'language', label: t('examPapers.language') || 'Language' },
+                { key: 'duration', label: t('examPapers.duration') || 'Duration' },
+                { key: 'questionsCount', label: t('examPapers.questions') || 'Questions' },
+                { key: 'totalMarks', label: t('examPapers.marks') || 'Total Marks' },
+                { key: 'status', label: t('examPapers.status') || 'Status' },
+              ]}
+              reportKey="exam_paper_templates"
+              title={t('examPapers.title') || 'Exam Papers'}
+              transformData={(data) => data.map((template: ExamPaperTemplate) => ({
+                title: template.title || '-',
+                subject: getSubjectName(template.subjectId),
+                exam: template.examId ? getExamName(template.examId) || '-' : (t('examPapers.generic') || 'Generic'),
+                className: template.classAcademicYear?.class?.name || '-',
+                language: languageConfig[template.language]?.label || template.language,
+                duration: `${template.durationMinutes} min`,
+                questionsCount: template.itemsCount ?? template.items?.length ?? 0,
+                totalMarks: template.computedTotalMarks || template.totalMarks || '-',
+                status: template.isActive ? (t('common.active') || 'Active') : (t('common.inactive') || 'Inactive'),
+              }))}
+              buildFiltersSummary={() => {
+                const parts: string[] = [];
+                if (selectedSchoolId) {
+                  const school = schools?.find(s => s.id === selectedSchoolId);
+                  if (school) parts.push(`School: ${school.schoolName}`);
+                }
+                if (selectedSubjectId) {
+                  parts.push(`Subject: ${getSubjectName(selectedSubjectId)}`);
+                }
+                if (selectedExamId) {
+                  const exam = exams?.find(e => e.id === selectedExamId);
+                  if (exam) parts.push(`Exam: ${exam.name}`);
+                }
+                parts.push(`Total: ${filteredTemplates.length} paper(s)`);
+                return parts.join(' | ');
+              }}
+              schoolId={profile?.default_school_id}
+              templateType="exam_paper_templates"
+              disabled={!filteredTemplates || filteredTemplates.length === 0}
+            />
+          )}
+          {hasCreate && activeTab === 'templates' && (
+            <Button onClick={openCreateDialog}>
+              <Plus className="h-4 w-4 mr-2" />
+              {t('examPapers.create') || 'Create Template'}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
