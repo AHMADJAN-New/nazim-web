@@ -62,6 +62,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
+import { CourseStudentPictureCell } from '@/components/short-term-courses/CourseStudentPictureCell';
 
 const statusBadge: Record<string, string> = {
   enrolled: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200',
@@ -111,7 +112,14 @@ const StudentRow = ({
   }, [allStudents, courses, student]);
   
   return (
-    <TableRow key={`course-student-${student.id}`}>
+    <TableRow 
+      key={`course-student-${student.id}`}
+      className="cursor-pointer hover:bg-muted/50"
+      onClick={() => onViewDetails(student)}
+    >
+      <TableCell>
+        <CourseStudentPictureCell student={student} size="md" />
+      </TableCell>
       <TableCell>
         <div className="font-semibold leading-tight">{student.fullName || '-'}</div>
       </TableCell>
@@ -168,7 +176,7 @@ const StudentRow = ({
                           </Badge>
         )}
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -538,11 +546,12 @@ const CourseStudents = () => {
             <>
               <div className="rounded-md border overflow-x-auto">
                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('students.name')}</TableHead>
-                      <TableHead>{t('students.fatherName')}</TableHead>
-                      <TableHead>{t('students.admissionNo')}</TableHead>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead></TableHead>
+                        <TableHead>{t('students.name')}</TableHead>
+                        <TableHead>{t('students.fatherName')}</TableHead>
+                        <TableHead>{t('students.admissionNo')}</TableHead>
                       <TableHead className="hidden lg:table-cell">{t('courses.course')}</TableHead>
                       <TableHead className="hidden lg:table-cell">{t('students.guardianName')}</TableHead>
                       <TableHead className="hidden lg:table-cell">{t('students.phone')}</TableHead>
@@ -572,7 +581,7 @@ const CourseStudents = () => {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={11} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={12} className="py-8 text-center text-muted-foreground">
                           {typedStudents.length === 0 
                             ? t('courses.noCourseStudentsFound')
                             : t('courses.noStudentsMatchFilters')}

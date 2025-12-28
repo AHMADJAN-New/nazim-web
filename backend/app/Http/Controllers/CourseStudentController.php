@@ -9,12 +9,17 @@ use App\Http\Requests\UpdateCourseStudentRequest;
 use App\Models\CourseStudent;
 use App\Models\ShortTermCourse;
 use App\Models\Student;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class CourseStudentController extends Controller
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
+
     private function getProfile($user)
     {
         return DB::table('profiles')->where('id', (string) $user->id)->first();
@@ -63,6 +68,17 @@ class CourseStudentController extends Controller
             
             $students = $query->orderBy('registration_date', 'desc')
                 ->paginate((int)$perPage);
+            
+            // Debug: Log picture_path in response
+            Log::debug('Course students paginated response', [
+                'total' => $students->total(),
+                'count' => $students->count(),
+                'students_with_picture' => $students->filter(fn($s) => !empty($s->picture_path))->count(),
+                'sample_picture_paths' => $students->take(3)->map(fn($s) => [
+                    'id' => $s->id,
+                    'picture_path' => $s->picture_path,
+                ])->toArray(),
+            ]);
             
             // Return paginated response in Laravel's standard format
             return response()->json($students);
@@ -768,5 +784,197 @@ class CourseStudentController extends Controller
             }
         }
         return $data;
+    }
+
+    /**
+     * Upload course student picture
+     */
+    public function uploadPicture(Request $request, string $id)
+    {
+        // Debug: Log upload attempt
+        Log::info('Course Student Picture Upload - Request received', [
+            'course_student_id' => $id,
+            'has_file' => $request->hasFile('file'),
+            'file_name' => $request->hasFile('file') ? $request->file('file')->getClientOriginalName() : null,
+        ]);
+        
+        try {
+            $user = $request->user();
+            if (!$user) {
+                Log::warning('Course Student Picture Upload - Unauthorized', ['course_student_id' => $id]);
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+
+            $profile = $this->getProfile($user);
+
+            if (!$profile) {
+                return response()->json(['error' => 'Profile not found'], 404);
+            }
+
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            }
+
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
+            try {
+                if (!$user->hasPermissionTo('course_students.update')) {
+                    return response()->json(['error' => 'This action is unauthorized'], 403);
+                }
+            } catch (\Exception $e) {
+                Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+
+            $student = CourseStudent::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->find($id);
+
+            if (!$student) {
+                Log::warning('Course Student Picture Upload - Student not found', [
+                    'course_student_id' => $id,
+                    'organization_id' => $profile->organization_id,
+                    'school_id' => $currentSchoolId,
+                ]);
+                return response()->json(['error' => 'Course student not found'], 404);
+            }
+
+            if (!$request->hasFile('file')) {
+                Log::warning('Course Student Picture Upload - No file provided', ['course_student_id' => $id]);
+                return response()->json(['error' => 'No file provided'], 422);
+            }
+
+            $file = $request->file('file');
+            if (!$file) {
+                return response()->json(['error' => 'No file provided'], 422);
+            }
+
+            // Check file size (max 5MB)
+            $fileSize = $file->getSize();
+            if ($fileSize > 5120 * 1024) {
+                return response()->json(['error' => 'File size exceeds maximum allowed size of 5MB'], 422);
+            }
+
+            // Check extension
+            $extension = strtolower($file->getClientOriginalExtension());
+            if (!$this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
+                return response()->json(['error' => 'The file must be an image (jpg, jpeg, png, gif, or webp).'], 422);
+            }
+
+            // Delete old picture if exists
+            if ($student->picture_path) {
+                $this->fileStorageService->deleteFile($student->picture_path);
+            }
+
+            // Store new picture using FileStorageService (PRIVATE storage for course student pictures)
+            // Use storeStudentPicture since course students are similar to students
+            $path = $this->fileStorageService->storeStudentPicture(
+                $file,
+                $student->organization_id,
+                $id,
+                $student->school_id
+            );
+
+            // Update course student record
+            $oldPicturePath = $student->picture_path;
+            $student->picture_path = $path;
+            $student->save();
+            
+            // Refresh the model to ensure we have the latest data
+            $student->refresh();
+
+            Log::info('Course Student Picture Upload', [
+                'course_student_id' => $id,
+                'user_id' => $user->id,
+                'old_picture_path' => $oldPicturePath,
+                'new_picture_path' => $path,
+                'saved_picture_path' => $student->picture_path, // Verify it was saved
+                'file_size' => $fileSize,
+                'file_extension' => $extension,
+            ]);
+
+            return response()->json([
+                'message' => 'Picture uploaded successfully',
+                'picture_path' => $path,
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Course student picture upload validation failed', [
+                'errors' => $e->errors(),
+                'course_student_id' => $id,
+            ]);
+            return response()->json([
+                'error' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error uploading course student picture: ' . $e->getMessage(), [
+                'course_student_id' => $id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to upload picture: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get course student picture
+     */
+    public function getPicture(Request $request, string $id)
+    {
+        try {
+            $user = $request->user();
+            if (!$user) {
+                abort(401, 'Unauthorized');
+            }
+
+            $profile = $this->getProfile($user);
+
+            if (!$profile) {
+                abort(404, 'Profile not found');
+            }
+
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            }
+
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
+            try {
+                if (!$user->hasPermissionTo('course_students.read')) {
+                    return response()->json([
+                        'error' => 'Access Denied',
+                        'message' => 'You do not have permission to view course student pictures.',
+                    ], 403);
+                }
+            } catch (\Exception $e) {
+                Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+
+            $student = CourseStudent::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->find($id);
+
+            if (!$student) {
+                return response()->json(['error' => 'Course student not found'], 404);
+            }
+
+            if (!$student->picture_path) {
+                abort(404, 'Picture not found');
+            }
+
+            // Use FileStorageService to download the file
+            return $this->fileStorageService->downloadFile(
+                $student->picture_path,
+                'student-picture.' . pathinfo($student->picture_path, PATHINFO_EXTENSION)
+            );
+        } catch (\Exception $e) {
+            Log::error('Error retrieving course student picture: ' . $e->getMessage(), [
+                'course_student_id' => $id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            abort(404, 'Picture not found');
+        }
     }
 }

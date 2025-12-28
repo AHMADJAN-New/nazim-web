@@ -1,4 +1,5 @@
-import { useEffect, memo } from 'react';
+import { useEffect, memo, useState as useReactState } from 'react';
+import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import {
   Dialog,
@@ -15,10 +16,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
+import { Form } from '@/components/ui/form';
 import { useCreateCourseStudent, useUpdateCourseStudent } from '@/hooks/useCourseStudents';
 import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import type { CourseStudent } from '@/types/domain/courseStudent';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useAuth } from '@/hooks/useAuth';
+import { CourseStudentPictureUpload } from './CourseStudentPictureUpload';
+import { useCourseStudentPictureUpload } from '@/hooks/useCourseStudentPictureUpload';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface CourseStudentFormDialogProps {
   open: boolean;
@@ -66,14 +72,18 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
   onSuccess,
 }: CourseStudentFormDialogProps) {
   const { t } = useLanguage();
+  const { profile } = useAuth();
   const isEdit = !!student;
   const createMutation = useCreateCourseStudent();
   const updateMutation = useUpdateCourseStudent();
   const { data: courses } = useShortTermCourses();
+  const [selectedPictureFile, setSelectedPictureFile] = useReactState<File | null>(null);
+  const pictureUpload = useCourseStudentPictureUpload();
+  const queryClient = useQueryClient();
 
   const openCourses = (courses || []).filter((c) => c.status === 'open' || c.status === 'draft');
 
-  const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<StudentFormValues>({
+  const form = useForm<StudentFormValues>({
     defaultValues: {
       courseId: courseId || '',
       admissionNo: '',
@@ -104,6 +114,13 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
       feeAmount: undefined,
     },
   });
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors, isSubmitting },
+  } = form;
 
   useEffect(() => {
     if (!open) return;
@@ -203,8 +220,33 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
 
     if (isEdit && student) {
       await updateMutation.mutateAsync({ id: student.id, data: payload });
+      // Picture upload is handled by the CourseStudentPictureUpload component in edit mode
     } else {
-      await createMutation.mutateAsync(payload);
+      const newStudent = await createMutation.mutateAsync(payload);
+      // Upload picture if one was selected during creation
+      if (selectedPictureFile && newStudent?.id && profile?.organization_id) {
+        try {
+          const uploadResult = await pictureUpload.mutateAsync({
+            courseStudentId: newStudent.id,
+            organizationId: profile.organization_id,
+            schoolId: profile.default_school_id || null,
+            file: selectedPictureFile,
+          });
+          
+          if (import.meta.env.DEV) {
+            console.log('[CourseStudentFormDialog] Picture uploaded after creation:', uploadResult);
+          }
+          
+          // Force refresh the student data to get the updated picture_path
+          // The mutation already invalidates queries, but we can also manually refetch
+          await queryClient.refetchQueries({ queryKey: ['course-students'] });
+        } catch (error) {
+          // Picture upload failed, but student was created - log error but don't block
+          if (import.meta.env.DEV) {
+            console.error('[CourseStudentFormDialog] Failed to upload picture after creation:', error);
+          }
+        }
+      }
     }
     onSuccess?.();
     onOpenChange(false);
@@ -220,8 +262,9 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <Tabs defaultValue="basic" className="w-full">
+        <Form {...form}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <Tabs defaultValue="basic" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
               <TabsTrigger value="address">Address</TabsTrigger>
@@ -371,6 +414,18 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
                     {...register('preferredLanguage')}
                   />
                 </div>
+              </div>
+
+              {/* Student Picture Upload */}
+              <div className="mt-4">
+                <CourseStudentPictureUpload
+                  courseStudentId={student?.id}
+                  organizationId={profile?.organization_id}
+                  schoolId={profile?.default_school_id || null}
+                  currentFileName={student?.picturePath || null}
+                  onFileSelected={setSelectedPictureFile}
+                  allowUploadWithoutStudent={!isEdit}
+                />
               </div>
             </TabsContent>
 
@@ -530,17 +585,18 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
                 </div>
               </div>
             </TabsContent>
-          </Tabs>
+            </Tabs>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}>
-              {isEdit ? 'Update Student' : 'Register Student'}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}>
+                {isEdit ? 'Update Student' : 'Register Student'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

@@ -9,6 +9,7 @@ import { useCourseStudents } from '@/hooks/useCourseStudents';
 import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import type { CourseStudent } from '@/types/domain/courseStudent';
 import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
+import { CourseStudentPictureCell } from './CourseStudentPictureCell';
 import {
   User,
   BookOpen,
@@ -78,6 +79,7 @@ export function CourseStudentDetailsPanel({
     return courses.find(c => c.id === student.courseId) || null;
   }, [student, courses]);
 
+  // Early return
   if (!student) return null;
 
   const StatusIcon = statusIcon[student.completionStatus] || Clock;
@@ -86,11 +88,16 @@ export function CourseStudentDetailsPanel({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-3xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className="text-2xl font-bold">{student.fullName}</SheetTitle>
-          <SheetDescription>
-            {student.admissionNo && `Admission #${student.admissionNo}`}
-            {student.mainStudentId && ' • Linked to Main Student'}
-          </SheetDescription>
+          <div className="flex items-center gap-4">
+            <CourseStudentPictureCell student={student} size="lg" />
+            <div>
+              <SheetTitle className="text-2xl font-bold">{student.fullName}</SheetTitle>
+              <SheetDescription>
+                {student.admissionNo && `Admission #${student.admissionNo}`}
+                {student.mainStudentId && ' • Linked to Main Student'}
+              </SheetDescription>
+            </div>
+          </div>
         </SheetHeader>
 
         <Tabs defaultValue="info" className="mt-6">

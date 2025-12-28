@@ -104,7 +104,23 @@ export function CalendarDatePicker({
 }: CalendarDatePickerProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [currentCalendar, setCurrentCalendar] = React.useState<CalendarType>(calendarState.get());
-  const [month, setMonth] = React.useState<Date | undefined>(date || new Date());
+  
+  // Normalize date prop: convert string to Date if needed
+  const normalizedDate = React.useMemo(() => {
+    if (!date) return undefined;
+    if (date instanceof Date) {
+      // Check if it's a valid Date
+      return isNaN(date.getTime()) ? undefined : date;
+    }
+    // If it's a string, try to convert it
+    if (typeof date === 'string') {
+      const parsed = new Date(date);
+      return isNaN(parsed.getTime()) ? undefined : parsed;
+    }
+    return undefined;
+  }, [date]);
+  
+  const [month, setMonth] = React.useState<Date | undefined>(normalizedDate || new Date());
   const { language, t } = useLanguage();
 
   // Subscribe to calendar changes
@@ -129,9 +145,9 @@ export function CalendarDatePicker({
 
   // Format the display value
   const displayValue = React.useMemo(() => {
-    if (!date) return placeholder;
-    return formatDate(date);
-  }, [date, placeholder]);
+    if (!normalizedDate) return placeholder;
+    return formatDate(normalizedDate);
+  }, [normalizedDate, placeholder]);
 
   // Handle date selection
   const handleSelect = (selectedDate: Date | undefined) => {
@@ -160,10 +176,13 @@ export function CalendarDatePicker({
 
   // Update month when date changes externally
   React.useEffect(() => {
-    if (date) {
-      setMonth(date);
+    if (normalizedDate) {
+      setMonth(normalizedDate);
+    } else if (!date) {
+      // If date is cleared, reset to current month
+      setMonth(new Date());
     }
-  }, [date]);
+  }, [normalizedDate, date]);
 
   // Hide the default labels that react-day-picker adds to dropdowns
   React.useEffect(() => {
@@ -230,7 +249,7 @@ export function CalendarDatePicker({
     options.sort((a, b) => a.value - b.value);
 
     return options;
-  }, [currentCalendar, language, month?.getFullYear(), month?.getMonth(), month?.getDate()]);
+  }, [currentCalendar, language, month instanceof Date ? month.getFullYear() : undefined, month instanceof Date ? month.getMonth() : undefined, month instanceof Date ? month.getDate() : undefined]);
 
   // Memoize year options to improve performance
   const yearOptions = React.useMemo(() => {
@@ -374,7 +393,7 @@ export function CalendarDatePicker({
       <PopoverContent className="w-auto min-w-[380px] overflow-hidden p-0 [&_.rdp-caption_label]:hidden [&_.rdp-caption_dropdowns_*:not(select)]:hidden" align="start">
         <Calendar
           mode="single"
-          selected={date}
+          selected={normalizedDate}
           onSelect={handleSelect}
           disabled={(date) => {
             if (minDate && date < minDate) return true;

@@ -36,7 +36,29 @@ export const useCourseStudents = (courseId?: string, usePaginated?: boolean) => 
       
       if (usePaginated && apiStudents && typeof apiStudents === 'object' && 'data' in apiStudents) {
         const paginated = apiStudents as any;
+        // Debug: Log raw API data before mapping
+        if (import.meta.env.DEV && paginated.data && paginated.data.length > 0) {
+          const sample = paginated.data[0];
+          console.log('[useCourseStudents] Sample raw API student:', {
+            id: sample.id,
+            picture_path: sample.picture_path,
+            full_name: sample.full_name,
+          });
+        }
         const students = (paginated.data || []).map(mapCourseStudentApiToDomain);
+        // Debug: Log mapped data
+        if (import.meta.env.DEV && students.length > 0) {
+          const sample = students[0];
+          console.log('[useCourseStudents] Sample mapped student:', {
+            id: sample.id,
+            picturePath: sample.picturePath,
+            fullName: sample.fullName,
+          });
+          const withPictures = students.filter(s => s.picturePath);
+          if (withPictures.length > 0) {
+            console.log('[useCourseStudents] Students with pictures:', withPictures.length, 'out of', students.length);
+          }
+        }
         const meta: PaginationMeta = {
           current_page: paginated.current_page,
           from: paginated.from,

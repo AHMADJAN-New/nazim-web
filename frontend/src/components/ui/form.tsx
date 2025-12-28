@@ -42,11 +42,23 @@ const FormField = <
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext)
   const itemContext = React.useContext(FormItemContext)
-  const { getFieldState, formState } = useFormContext()
+  // `useFormContext()` can be null if components are rendered outside of `<Form />` (FormProvider).
+  // We guard to prevent hard crashes and instead behave as a no-op field (no errors).
+  const formContext = useFormContext()
+  const getFieldState =
+    formContext?.getFieldState ??
+    (() => ({
+      invalid: false,
+      isDirty: false,
+      isTouched: false,
+      error: undefined,
+    }))
+  const formState = formContext?.formState ?? ({} as any)
 
-  const fieldState = getFieldState(fieldContext.name, formState)
+  const fieldName = (fieldContext as any)?.name
+  const fieldState = fieldName ? getFieldState(fieldName, formState) : {}
 
-  if (!fieldContext) {
+  if (!fieldName) {
     throw new Error("useFormField should be used within <FormField>")
   }
 
