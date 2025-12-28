@@ -2718,6 +2718,20 @@ export const ar: TranslationKeys = {
       recordsSaved: 'تم حفظ سجلات الحضور بنجاح',
       sessionClosed: 'تم إغلاق جلسة الحضور بنجاح'
     },
+    courseDocuments: {
+      uploaded: 'تم رفع المستند بنجاح',
+      deleted: 'تم حذف المستند بنجاح',
+      uploadFailed: 'فشل رفع المستند',
+      deleteFailed: 'فشل حذف المستند',
+      downloadFailed: 'فشل تنزيل المستند'
+    },
+    examDocuments: {
+      uploaded: 'تم رفع المستند بنجاح',
+      deleted: 'تم حذف المستند بنجاح',
+      uploadFailed: 'فشل رفع المستند',
+      deleteFailed: 'فشل حذف المستند',
+      downloadFailed: 'فشل تنزيل المستند'
+    },
     // Finance
     finance: {
       accountCreated: 'تم إنشاء الحساب بنجاح',

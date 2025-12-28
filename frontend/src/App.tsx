@@ -85,6 +85,7 @@ import {
   GraduationCertificateTemplates,
   IssuedCertificatesPage,
   CourseDocuments,
+  ExamDocuments,
   StaffReport,
   HostelManagement,
   HostelReports,
@@ -876,6 +877,13 @@ const App = () => (
                       <PermissionRoute permission="course_documents.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <CourseDocuments />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exam-documents" element={
+                      <PermissionRoute permission="exam_documents.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamDocuments />
                         </Suspense>
                       </PermissionRoute>
                     } />

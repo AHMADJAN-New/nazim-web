@@ -3026,6 +3026,20 @@ export const en: TranslationKeys = {
       recordsSaved: 'Attendance records saved successfully',
       sessionClosed: 'Attendance session closed successfully'
     },
+    courseDocuments: {
+      uploaded: 'Document uploaded successfully',
+      deleted: 'Document deleted successfully',
+      uploadFailed: 'Failed to upload document',
+      deleteFailed: 'Failed to delete document',
+      downloadFailed: 'Failed to download document'
+    },
+    examDocuments: {
+      uploaded: 'Document uploaded successfully',
+      deleted: 'Document deleted successfully',
+      uploadFailed: 'Failed to upload document',
+      deleteFailed: 'Failed to delete document',
+      downloadFailed: 'Failed to download document'
+    },
     finance: {
       accountCreated: 'Account created successfully',
       accountUpdated: 'Account updated successfully',

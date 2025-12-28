@@ -202,6 +202,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasIdCardsPermission = useHasPermission('id_cards.read');
   const hasIdCardsExportPermission = useHasPermission('id_cards.export');
   const hasCourseDocumentsPermission = useHasPermission('course_documents.read');
+  const hasExamDocumentsPermission = useHasPermission('exam_documents.read');
   const hasStaffTypesPermission = useHasPermission('staff_types.read');
   const hasScheduleSlotsPermission = useHasPermission('schedule_slots.read');
   const hasTeacherSubjectAssignmentsPermission = useHasPermission('teacher_subject_assignments.read');
@@ -643,6 +644,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
                 icon: LucideIcons.Printer,
               }] : []),
             ],
+          }] : []),
+          ...(hasExamDocumentsPermission ? [{
+            title: "Exam Documents",
+            titleKey: "examDocuments",
+            url: "/exam-documents",
+            icon: FileText,
           }] : []),
           // Reports Submenu - at the end
           ...((hasExamsReportsPermission || hasExamsViewGradeCardsPermission || hasExamsViewConsolidatedReportsPermission || hasExamsViewClassReportsPermission || hasExamsViewStudentReportsPermission || hasExamsNumbersPrintPermission) ? [{
@@ -1201,7 +1208,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
           hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission ||
           hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission ||
           hasExamsNumbersPrintPermission ||
-          hasExamsQuestionsPermission || hasExamsPapersPermission;
+          hasExamsQuestionsPermission || hasExamsPapersPermission ||
+          hasExamDocumentsPermission;
         // Note: examManagement submenu visibility is already handled by its permission checks above
       }
 
@@ -1232,7 +1240,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasExamTypesPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasIdCardsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission, hasDmsPermission, hasDmsIncomingPermission, hasDmsOutgoingPermission, hasDmsTemplatesPermission, hasDmsLetterheadsPermission, hasDmsDepartmentsPermission, hasDmsReportsPermission, hasDmsSettingsPermission, hasDmsArchivePermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasExamTypesPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasExamDocumentsPermission, hasIdCardsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission, hasDmsPermission, hasDmsIncomingPermission, hasDmsOutgoingPermission, hasDmsTemplatesPermission, hasDmsLetterheadsPermission, hasDmsDepartmentsPermission, hasDmsReportsPermission, hasDmsSettingsPermission, hasDmsArchivePermission]);
 
   // Helper function to get navigation items (already filtered by permissions)
   const getNavigationItems = (context: NavigationContext): NavigationItem[] => {

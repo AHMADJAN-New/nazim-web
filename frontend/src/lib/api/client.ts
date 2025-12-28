@@ -2570,6 +2570,27 @@ export const courseDocumentsApi = {
     apiClient.requestFile(`/course-documents/${id}/download`, { method: 'GET' }),
 };
 
+// Exam Documents API
+export const examDocumentsApi = {
+  list: async (params?: {
+    exam_id?: string;
+    exam_class_id?: string;
+    exam_student_id?: string;
+    document_type?: string;
+    page?: number;
+    per_page?: number;
+  }) => apiClient.get('/exam-documents', params),
+
+  get: async (id: string) => apiClient.get(`/exam-documents/${id}`),
+
+  create: async (data: FormData) => apiClient.post('/exam-documents', data),
+
+  delete: async (id: string) => apiClient.delete(`/exam-documents/${id}`),
+
+  download: async (id: string) =>
+    apiClient.requestFile(`/exam-documents/${id}/download`, { method: 'GET' }),
+};
+
 // Certificate Templates API
 export const certificateTemplatesApi = {
   list: async (params?: { active_only?: boolean; type?: string; school_id?: string }) =>

@@ -2734,6 +2734,20 @@ export const ps: TranslationKeys = {
       recordsSaved: 'د حاضري ریکارډونه په بریالیتوب سره خوندي شول',
       sessionClosed: 'د حاضري ناسته په بریالیتوب سره بنده شوه'
     },
+    courseDocuments: {
+      uploaded: 'اسناد په بریالیتوب سره پورته شو',
+      deleted: 'اسناد په بریالیتوب سره پاک شو',
+      uploadFailed: 'د اسنادو پورته کولو کې ناکامي',
+      deleteFailed: 'د اسنادو پاکولو کې ناکامي',
+      downloadFailed: 'د اسنادو ډاونلوډ کولو کې ناکامي'
+    },
+    examDocuments: {
+      uploaded: 'اسناد په بریالیتوب سره پورته شو',
+      deleted: 'اسناد په بریالیتوب سره پاک شو',
+      uploadFailed: 'د اسنادو پورته کولو کې ناکامي',
+      deleteFailed: 'د اسنادو پاکولو کې ناکامي',
+      downloadFailed: 'د اسنادو ډاونلوډ کولو کې ناکامي'
+    },
     finance: {
       accountCreated: 'حساب په بریالیتوب سره جوړ شو',
       accountUpdated: 'حساب په بریالیتوب سره تازه شو',

@@ -69,6 +69,7 @@ export const CertificateTemplatesV2Page = lazy(() => import('@/pages/graduation/
 export const GraduationCertificateTemplates = lazy(() => import('@/pages/graduation/GraduationCertificateTemplates'));
 export const IssuedCertificatesPage = lazy(() => import('@/pages/graduation/IssuedCertificatesPage'));
 export const CourseDocuments = lazy(() => import('@/pages/CourseDocuments'));
+export const ExamDocuments = lazy(() => import('@/pages/ExamDocuments'));
 export const StaffReport = lazy(() => import('@/pages/StaffReport'));
 export const HostelManagement = lazy(() => import('@/pages/HostelManagement').then(module => ({ default: module.HostelManagement })));
 export const HostelReports = lazy(() => import('@/pages/HostelReports').then(module => ({ default: module.HostelReports })));

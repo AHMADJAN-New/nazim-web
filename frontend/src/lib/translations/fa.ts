@@ -2720,6 +2720,20 @@ export const fa: TranslationKeys = {
       recordsSaved: 'رکوردهای حاضری با موفقیت ذخیره شدند',
       sessionClosed: 'جلسه حاضری با موفقیت بسته شد'
     },
+    courseDocuments: {
+      uploaded: 'اسناد با موفقیت آپلود شد',
+      deleted: 'اسناد با موفقیت حذف شد',
+      uploadFailed: 'آپلود اسناد ناموفق بود',
+      deleteFailed: 'حذف اسناد ناموفق بود',
+      downloadFailed: 'دانلود اسناد ناموفق بود'
+    },
+    examDocuments: {
+      uploaded: 'اسناد با موفقیت آپلود شد',
+      deleted: 'اسناد با موفقیت حذف شد',
+      uploadFailed: 'آپلود اسناد ناموفق بود',
+      deleteFailed: 'حذف اسناد ناموفق بود',
+      downloadFailed: 'دانلود اسناد ناموفق بود'
+    },
     // Finance
     finance: {
       accountCreated: 'حساب با موفقیت ایجاد شد',

@@ -3406,6 +3406,22 @@ export interface TranslationKeys {
       recordsSaved: string;
       sessionClosed: string;
     };
+    // Course Documents
+    courseDocuments: {
+      uploaded: string;
+      deleted: string;
+      uploadFailed: string;
+      deleteFailed: string;
+      downloadFailed: string;
+    };
+    // Exam Documents
+    examDocuments: {
+      uploaded: string;
+      deleted: string;
+      uploadFailed: string;
+      deleteFailed: string;
+      downloadFailed: string;
+    };
     // Finance
     finance: {
       accountCreated: string;

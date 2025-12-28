@@ -95,6 +95,7 @@ class PermissionSeeder extends Seeder
             'issued_certificates' => ['read'],
             'certificates' => ['issue', 'print', 'revoke'],
             'course_documents' => ['read', 'create', 'update', 'delete'],
+            'exam_documents' => ['read', 'create', 'update', 'delete'],
             // ID Cards permissions
             'id_cards' => ['read', 'create', 'update', 'delete', 'export'],
             // Finance Module permissions
@@ -184,6 +185,8 @@ class PermissionSeeder extends Seeder
                 'dms.settings.read',
                 // Question Bank & Papers - read only for staff
                 'exams.questions.read', 'exams.papers.read',
+                // Exam Documents - full access for staff
+                'exam_documents.read', 'exam_documents.create', 'exam_documents.update', 'exam_documents.delete',
                 // ID Cards - read, create, and export for staff
                 'id_cards.read', 'id_cards.create', 'id_cards.export',
                 // Events Module - full access for staff
@@ -210,6 +213,7 @@ class PermissionSeeder extends Seeder
                 'exam_students.read', 'exam_students.create', 'exam_students.update',
                 'exam_results.read', 'exam_results.create', 'exam_results.update',
                 'exam_times.read', 'exam_times.create', 'exam_times.update',
+                'exam_documents.read', 'exam_documents.create', 'exam_documents.update', 'exam_documents.delete',
                 'timetables.read',
                 'schedule_slots.read',
                 'academic_years.read',
