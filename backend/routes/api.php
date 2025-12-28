@@ -711,3 +711,76 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
 
 // Preview route (no auth required for template preview)
 Route::get('/reports/preview/template', [\App\Http\Controllers\ReportGenerationController::class, 'previewTemplate']);
+
+// =====================================================
+// SUBSCRIPTION / SAAS ROUTES
+// =====================================================
+
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\SubscriptionAdminController;
+
+// Public subscription routes
+Route::get('/subscription/plans', [SubscriptionController::class, 'plans']);
+
+// Authenticated subscription routes
+Route::middleware(['auth:sanctum'])->prefix('subscription')->group(function () {
+    // Current subscription status
+    Route::get('/status', [SubscriptionController::class, 'status']);
+    Route::get('/usage', [SubscriptionController::class, 'usage']);
+    Route::get('/features', [SubscriptionController::class, 'features']);
+    
+    // Pricing & discount codes
+    Route::post('/calculate-price', [SubscriptionController::class, 'calculatePrice']);
+    Route::post('/validate-discount', [SubscriptionController::class, 'validateDiscountCode']);
+    
+    // Renewal requests
+    Route::post('/renewal-request', [SubscriptionController::class, 'createRenewalRequest']);
+    Route::get('/renewal-history', [SubscriptionController::class, 'renewalHistory']);
+    
+    // Payments
+    Route::post('/submit-payment', [SubscriptionController::class, 'submitPayment']);
+    Route::get('/payment-history', [SubscriptionController::class, 'paymentHistory']);
+    
+    // History
+    Route::get('/history', [SubscriptionController::class, 'subscriptionHistory']);
+});
+
+// Admin subscription management routes (requires subscription.admin permission)
+Route::middleware(['auth:sanctum', 'organization'])->prefix('admin/subscription')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [SubscriptionAdminController::class, 'dashboard']);
+    
+    // Plans management
+    Route::get('/plans', [SubscriptionAdminController::class, 'listPlans']);
+    Route::post('/plans', [SubscriptionAdminController::class, 'createPlan']);
+    Route::put('/plans/{id}', [SubscriptionAdminController::class, 'updatePlan']);
+    
+    // Organization subscriptions
+    Route::get('/subscriptions', [SubscriptionAdminController::class, 'listSubscriptions']);
+    Route::get('/organizations/{organizationId}/subscription', [SubscriptionAdminController::class, 'getOrganizationSubscription']);
+    Route::post('/organizations/{organizationId}/activate', [SubscriptionAdminController::class, 'activateSubscription']);
+    Route::post('/organizations/{organizationId}/suspend', [SubscriptionAdminController::class, 'suspendSubscription']);
+    Route::post('/organizations/{organizationId}/limit-override', [SubscriptionAdminController::class, 'addLimitOverride']);
+    Route::post('/organizations/{organizationId}/feature-addon', [SubscriptionAdminController::class, 'addFeatureAddon']);
+    Route::get('/organizations/{organizationId}/usage-snapshots', [SubscriptionAdminController::class, 'getUsageSnapshots']);
+    Route::post('/organizations/{organizationId}/recalculate-usage', [SubscriptionAdminController::class, 'recalculateUsage']);
+    
+    // Payments & renewals
+    Route::get('/payments/pending', [SubscriptionAdminController::class, 'listPendingPayments']);
+    Route::post('/payments/{paymentId}/confirm', [SubscriptionAdminController::class, 'confirmPayment']);
+    Route::post('/payments/{paymentId}/reject', [SubscriptionAdminController::class, 'rejectPayment']);
+    Route::get('/renewals/pending', [SubscriptionAdminController::class, 'listPendingRenewals']);
+    
+    // Discount codes
+    Route::get('/discount-codes', [SubscriptionAdminController::class, 'listDiscountCodes']);
+    Route::post('/discount-codes', [SubscriptionAdminController::class, 'createDiscountCode']);
+    Route::put('/discount-codes/{id}', [SubscriptionAdminController::class, 'updateDiscountCode']);
+    Route::delete('/discount-codes/{id}', [SubscriptionAdminController::class, 'deleteDiscountCode']);
+    
+    // Definitions
+    Route::get('/feature-definitions', [SubscriptionAdminController::class, 'listFeatureDefinitions']);
+    Route::get('/limit-definitions', [SubscriptionAdminController::class, 'listLimitDefinitions']);
+    
+    // System operations
+    Route::post('/process-transitions', [SubscriptionAdminController::class, 'processStatusTransitions']);
+});

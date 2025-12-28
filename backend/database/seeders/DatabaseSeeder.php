@@ -24,6 +24,10 @@ class DatabaseSeeder extends Seeder
     {
         $this->command->info('Starting database seeding...');
 
+        // Step 0: Seed subscription plans (required for new organizations)
+        $this->command->info('Step 0: Seeding subscription plans...');
+        $this->call(SubscriptionSeeder::class);
+
         // Step 1: Seed permissions first (required for roles)
         $this->command->info('Step 1: Seeding permissions...');
         $this->call(PermissionSeeder::class);

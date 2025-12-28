@@ -26,6 +26,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'organization' => \App\Http\Middleware\EnsureOrganizationAccess::class,
             'org.context' => \App\Http\Middleware\SetOrganizationContext::class,
             'school.context' => \App\Http\Middleware\EnsureSchoolContext::class,
+            'subscription' => \App\Http\Middleware\EnsureSubscriptionAccess::class,
+            'feature' => \App\Http\Middleware\EnsureFeatureAccess::class,
+            'limit' => \App\Http\Middleware\EnforceUsageLimit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
