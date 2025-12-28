@@ -2042,6 +2042,7 @@ export const en: TranslationKeys = {
     validateFile: 'Validate',
     importNow: 'Import',
     validationSummary: 'Validation summary',
+    validRows: 'Valid rows',
     rows: 'Rows',
     valid: 'Valid',
     invalid: 'Invalid',

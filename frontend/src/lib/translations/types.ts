@@ -654,6 +654,7 @@ export interface TranslationKeys {
     validateFile: string;
     importNow: string;
     validationSummary: string;
+    validRows: string;
     rows: string;
     valid: string;
     invalid: string;

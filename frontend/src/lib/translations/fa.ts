@@ -1836,6 +1836,7 @@ export const fa: TranslationKeys = {
     validateFile: 'اعتبارسنجی',
     importNow: 'ورود',
     validationSummary: 'خلاصه اعتبارسنجی',
+    validRows: 'ردیف‌های معتبر',
     rows: 'ردیف‌ها',
     valid: 'معتبر',
     invalid: 'نامعتبر',

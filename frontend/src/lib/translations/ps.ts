@@ -1836,6 +1836,7 @@ export const ps: TranslationKeys = {
     validateFile: 'کتنه (Validate)',
     importNow: 'واردول (Import)',
     validationSummary: 'د کتنې لنډیز',
+    validRows: 'سم قطارونه',
     rows: 'قطارونه',
     valid: 'سم',
     invalid: 'ناسم',

@@ -25,7 +25,7 @@ class PermissionSeeder extends Seeder
             'rooms' => ['read', 'create', 'update', 'delete'],
             'teachers' => ['read', 'create', 'update', 'delete'],
             'staff' => ['read', 'create', 'update', 'delete'],
-            'students' => ['read', 'create', 'update', 'delete'],
+            'students' => ['read', 'create', 'update', 'delete', 'import'],
             'classes' => ['read', 'create', 'update', 'delete', 'assign', 'copy'],
             'academic_years' => ['read', 'create', 'update', 'delete'],
             'grades' => ['read', 'create', 'update', 'delete'],
@@ -97,6 +97,7 @@ class PermissionSeeder extends Seeder
             'course_documents' => ['read', 'create', 'update', 'delete'],
             'exam_documents' => ['read', 'create', 'update', 'delete'],
             'finance_documents' => ['read', 'create', 'update', 'delete'],
+            'phonebook' => ['read'],
             // ID Cards permissions
             'id_cards' => ['read', 'create', 'update', 'delete', 'export'],
             // Finance Module permissions
@@ -153,7 +154,7 @@ class PermissionSeeder extends Seeder
             'admin' => '*', // All permissions
             'staff' => [
                 // Staff can read most things, create/update limited
-                'students.read', 'students.create', 'students.update',
+                'students.read', 'students.create', 'students.update', 'students.import',
                 'staff.read',
                 'classes.read',
                 'subjects.read',

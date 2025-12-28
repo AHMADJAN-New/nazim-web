@@ -1835,6 +1835,7 @@ export const ar: TranslationKeys = {
     validateFile: 'تحقق',
     importNow: 'استيراد',
     validationSummary: 'ملخص التحقق',
+    validRows: 'الصفوف الصحيحة',
     rows: 'الصفوف',
     valid: 'صحيح',
     invalid: 'غير صحيح',
