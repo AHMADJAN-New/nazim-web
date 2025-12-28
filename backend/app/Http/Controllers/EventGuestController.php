@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\EventGuest;
 use App\Models\EventGuestFieldValue;
 use App\Models\EventTypeField;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -16,6 +17,9 @@ use Intervention\Image\Drivers\Gd\Driver;
 
 class EventGuestController extends Controller
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
     /**
      * Display a listing of guests for an event (optimized for 10k+)
      */
@@ -102,9 +106,10 @@ class EventGuestController extends Controller
             ->paginate((int)$perPage);
 
         // Transform photo_path to URL
-        $guests->getCollection()->transform(function ($guest) {
+        $fileStorageService = app(FileStorageService::class);
+        $guests->getCollection()->transform(function ($guest) use ($fileStorageService) {
             $guest->photo_thumb_url = $guest->photo_path
-                ? Storage::url($guest->photo_path)
+                ? $fileStorageService->getPublicUrl($guest->photo_path)
                 : null;
             unset($guest->photo_path);
             return $guest;
@@ -168,9 +173,10 @@ class EventGuestController extends Controller
             ->get();
 
         // Transform photo_path to URL
-        $guests->transform(function ($guest) {
+        $fileStorageService = app(FileStorageService::class);
+        $guests->transform(function ($guest) use ($fileStorageService) {
             $guest->photo_thumb_url = $guest->photo_path
-                ? Storage::url($guest->photo_path)
+                ? $fileStorageService->getPublicUrl($guest->photo_path)
                 : null;
             unset($guest->photo_path);
             return $guest;
@@ -282,7 +288,7 @@ class EventGuestController extends Controller
                 'arrived_count' => $guest->arrived_count,
                 'status' => $guest->status,
                 'photo_path' => $guest->photo_path,
-                'photo_url' => $guest->photo_path ? Storage::url($guest->photo_path) : null,
+                'photo_url' => $guest->photo_path ? $this->fileStorageService->getPublicUrl($guest->photo_path) : null,
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -328,8 +334,9 @@ class EventGuestController extends Controller
         }
 
         // Transform for response
+        $fileStorageService = app(FileStorageService::class);
         $guest->photo_url = $guest->photo_path
-            ? Storage::url($guest->photo_path)
+            ? $fileStorageService->getPublicUrl($guest->photo_path)
             : null;
 
         // Group field values by field group
@@ -687,9 +694,6 @@ class EventGuestController extends Controller
             
             $filename = Str::uuid() . '.' . strtolower($extension);
             
-            // Store original - use getRealPath() for better Android Chrome compatibility
-            $path = "events/{$eventId}/guests/{$filename}";
-            
             // Get file content - try multiple methods for Android Chrome compatibility
             $fileContent = null;
             $filePath = null;
@@ -788,7 +792,6 @@ class EventGuestController extends Controller
                     // Update extension to jpg since we're converting to JPEG
                     $extension = 'jpg';
                     $filename = Str::uuid() . '.jpg';
-                    $path = "events/{$eventId}/guests/{$filename}";
                 } else {
                     // Fallback: Use GD library if available
                     if (extension_loaded('gd')) {
@@ -848,7 +851,6 @@ class EventGuestController extends Controller
                                     // Update extension
                                     $extension = 'jpg';
                                     $filename = Str::uuid() . '.jpg';
-                                    $path = "events/{$eventId}/guests/{$filename}";
                                     
                                     $newSize = strlen($processedContent);
                                     Log::info("Image compressed with GD", [
@@ -871,13 +873,19 @@ class EventGuestController extends Controller
                 $processedContent = $fileContent;
             }
             
-            // Store the processed file
-            $stored = Storage::disk('public')->put($path, $processedContent);
+            // Store the processed file using FileStorageService (school-scoped, public disk)
+            $path = $this->fileStorageService->storeEventGuestPhotoPublic(
+                $processedContent,
+                $filename,
+                $profile->organization_id,
+                $eventId,
+                $guestId,
+                $currentSchoolId
+            );
             
-            if (!$stored) {
+            if (!$path) {
                 Log::error("Failed to store file", [
                     'guest_id' => $guestId,
-                    'path' => $path,
                     'file_size' => strlen($processedContent),
                 ]);
                 return response()->json(['error' => 'Failed to store file. Please try again.'], 500);
@@ -893,13 +901,12 @@ class EventGuestController extends Controller
             // Create thumbnail from processed content
             $thumbPath = null;
             try {
+                $thumbContent = null;
                 if (class_exists(ImageManager::class)) {
                     $manager = new ImageManager(new Driver());
                     $thumbImage = $manager->read($processedContent);
                     $thumbImage->cover(200, 200);
-
-                    $thumbPath = "events/{$eventId}/guests/thumbs/{$filename}";
-                    Storage::disk('public')->put($thumbPath, $thumbImage->toJpeg(80));
+                    $thumbContent = $thumbImage->toJpeg(80);
                 } elseif (extension_loaded('gd')) {
                     // Fallback: Use GD library
                     $thumbImage = @imagecreatefromstring($processedContent);
@@ -924,12 +931,20 @@ class EventGuestController extends Controller
                         imagejpeg($thumbResized, null, 80);
                         $thumbContent = ob_get_clean();
                         
-                        $thumbPath = "events/{$eventId}/guests/thumbs/{$filename}";
-                        Storage::disk('public')->put($thumbPath, $thumbContent);
-                        
                         imagedestroy($thumbImage);
                         imagedestroy($thumbResized);
                     }
+                }
+                
+                if ($thumbContent) {
+                    $thumbPath = $this->fileStorageService->storeEventGuestPhotoThumbnail(
+                        $thumbContent,
+                        $filename,
+                        $profile->organization_id,
+                        $eventId,
+                        $guestId,
+                        $currentSchoolId
+                    );
                 }
             } catch (\Exception $e) {
                 Log::warning("Failed to create thumbnail: " . $e->getMessage());
@@ -940,9 +955,10 @@ class EventGuestController extends Controller
             // Delete old photo if exists (before updating database)
             if ($guest->photo_path) {
                 try {
-                    Storage::disk('public')->delete($guest->photo_path);
+                    $this->fileStorageService->deleteFile($guest->photo_path, $this->fileStorageService->getPublicDisk());
+                    // Try to delete thumbnail (path might be different, so try both patterns)
                     $oldThumb = str_replace('/guests/', '/guests/thumbs/', $guest->photo_path);
-                    Storage::disk('public')->delete($oldThumb);
+                    $this->fileStorageService->deleteFile($oldThumb, $this->fileStorageService->getPublicDisk());
                 } catch (\Exception $e) {
                     Log::warning("Failed to delete old photo", [
                         'guest_id' => $guestId,
@@ -964,9 +980,9 @@ class EventGuestController extends Controller
                         'guest_exists' => $guest->exists,
                     ]);
                     // Try to delete the stored file since DB update failed
-                    Storage::disk('public')->delete($path);
+                    $this->fileStorageService->deleteFile($path, $this->fileStorageService->getPublicDisk());
                     if ($thumbPath) {
-                        Storage::disk('public')->delete($thumbPath);
+                        $this->fileStorageService->deleteFile($thumbPath, $this->fileStorageService->getPublicDisk());
                     }
                     return response()->json(['error' => 'Failed to save photo information. Please try again.'], 500);
                 }
@@ -980,9 +996,9 @@ class EventGuestController extends Controller
                         'actual_path' => $guest->photo_path,
                     ]);
                     // Try to delete the stored file
-                    Storage::disk('public')->delete($path);
+                    $this->fileStorageService->deleteFile($path, $this->fileStorageService->getPublicDisk());
                     if ($thumbPath) {
-                        Storage::disk('public')->delete($thumbPath);
+                        $this->fileStorageService->deleteFile($thumbPath, $this->fileStorageService->getPublicDisk());
                     }
                     return response()->json(['error' => 'Failed to save photo information. Please try again.'], 500);
                 }
@@ -1001,16 +1017,16 @@ class EventGuestController extends Controller
                     'trace' => $e->getTraceAsString(),
                 ]);
                 // Try to delete the stored file
-                Storage::disk('public')->delete($path);
+                $this->fileStorageService->deleteFile($path, $this->fileStorageService->getPublicDisk());
                 if ($thumbPath) {
-                    Storage::disk('public')->delete($thumbPath);
+                    $this->fileStorageService->deleteFile($thumbPath, $this->fileStorageService->getPublicDisk());
                 }
                 return response()->json(['error' => 'Failed to save photo information: ' . $e->getMessage()], 500);
             }
 
             return response()->json([
-                'photo_url' => Storage::url($path),
-                'photo_thumb_url' => isset($thumbPath) ? Storage::url($thumbPath) : Storage::url($path),
+                'photo_url' => $this->fileStorageService->getPublicUrl($path),
+                'photo_thumb_url' => isset($thumbPath) ? $this->fileStorageService->getPublicUrl($thumbPath) : $this->fileStorageService->getPublicUrl($path),
             ]);
         } catch (\Exception $e) {
             Log::error("Failed to upload photo", [
@@ -1073,44 +1089,29 @@ class EventGuestController extends Controller
                 return response('', 404);
             }
 
-            // Normalize path separators for Windows compatibility
-            $normalizedPath = str_replace('/', DIRECTORY_SEPARATOR, $guest->photo_path);
-            $fullPath = storage_path('app' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . $normalizedPath);
-
-            // Check if file exists
-            if (!file_exists($fullPath)) {
+            // Check if file exists using FileStorageService
+            $fileStorageService = app(FileStorageService::class);
+            if (!$fileStorageService->fileExists($guest->photo_path, $fileStorageService->getPublicDisk())) {
                 Log::warning('Guest photo file not found on disk', [
                     'guest_id' => $guestId,
                     'photo_path' => $guest->photo_path,
-                    'normalized_path' => $normalizedPath,
-                    'full_path' => $fullPath,
                 ]);
                 return response('', 404);
             }
 
-            // Get file content
+            // Get file content using FileStorageService
             try {
-                $file = file_get_contents($fullPath);
-                if ($file === false) {
-                    throw new \Exception('Failed to read file contents');
+                $file = $fileStorageService->getFile($guest->photo_path, $fileStorageService->getPublicDisk());
+                if ($file === null || empty($file)) {
+                    throw new \Exception('Failed to read file contents or file is empty');
                 }
             } catch (\Exception $e) {
                 Log::error('Error reading guest photo file', [
                     'guest_id' => $guestId,
                     'photo_path' => $guest->photo_path,
-                    'full_path' => $fullPath,
                     'error' => $e->getMessage(),
                 ]);
                 return response('', 500);
-            }
-            
-            if (!$file || empty($file)) {
-                Log::warning('Guest photo file is empty', [
-                    'guest_id' => $guestId,
-                    'photo_path' => $guest->photo_path,
-                    'full_path' => $fullPath,
-                ]);
-                return response('', 404);
             }
             
             // Determine MIME type from file extension

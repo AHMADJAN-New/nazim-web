@@ -101,11 +101,12 @@ class CourseDocumentController extends Controller
         $file = $request->file('file');
 
         // Store document using FileStorageService (PRIVATE storage for course documents)
+        // Use currentSchoolId since course is already filtered by it
         $path = $this->fileStorageService->storeCourseDocument(
             $file,
             $profile->organization_id,
             $validated['course_id'],
-            $course->school_id ?? null,
+            $currentSchoolId,
             $validated['document_type']
         );
 

@@ -37,15 +37,16 @@ class FileStorageServiceTest extends TestCase
         Storage::disk('local')->assertExists($path);
     }
 
-    public function test_store_student_picture_without_school_id(): void
+    public function test_store_student_picture_with_school_id(): void
     {
         $file = UploadedFile::fake()->image('photo.png');
         $organizationId = 'org-123';
         $studentId = 'student-456';
+        $schoolId = 'school-789';
 
-        $path = $this->service->storeStudentPicture($file, $organizationId, $studentId, null);
+        $path = $this->service->storeStudentPicture($file, $organizationId, $studentId, $schoolId);
 
-        $this->assertStringStartsWith("organizations/{$organizationId}/students/{$studentId}/pictures/", $path);
+        $this->assertStringStartsWith("organizations/{$organizationId}/schools/{$schoolId}/students/{$studentId}/pictures/", $path);
         $this->assertStringEndsWith('.png', $path);
         Storage::disk('local')->assertExists($path);
     }
@@ -87,11 +88,12 @@ class FileStorageServiceTest extends TestCase
         $file = UploadedFile::fake()->create('contract.pdf', 200);
         $organizationId = 'org-123';
         $staffId = 'staff-456';
+        $schoolId = 'school-789';
         $documentType = 'contract';
 
-        $path = $this->service->storeStaffDocument($file, $organizationId, $staffId, null, $documentType);
+        $path = $this->service->storeStaffDocument($file, $organizationId, $staffId, $schoolId, $documentType);
 
-        $this->assertStringContains("staff/{$staffId}/documents/{$documentType}/", $path);
+        $this->assertStringContains("organizations/{$organizationId}/schools/{$schoolId}/staff/{$staffId}/documents/{$documentType}/", $path);
         Storage::disk('local')->assertExists($path);
     }
 
@@ -155,9 +157,10 @@ class FileStorageServiceTest extends TestCase
         $organizationId = 'org-123';
         $templateId = 'template-456';
 
-        $path = $this->service->storeCertificateTemplateBackground($file, $organizationId, null, $templateId);
+        $schoolId = 'school-789';
+        $path = $this->service->storeCertificateTemplateBackground($file, $organizationId, $schoolId, $templateId);
 
-        $this->assertStringContains("templates/certificates/{$templateId}/", $path);
+        $this->assertStringContains("organizations/{$organizationId}/schools/{$schoolId}/templates/certificates/{$templateId}/", $path);
         $this->assertStringContains('background.jpg', $path);
         Storage::disk('local')->assertExists($path);
     }

@@ -26,6 +26,7 @@ class FileStorageService
     private const PATH_STUDENTS = 'students';
     private const PATH_STAFF = 'staff';
     private const PATH_COURSES = 'courses';
+    private const PATH_EXAMS = 'exams';
     private const PATH_DMS = 'dms';
     private const PATH_EVENTS = 'events';
     private const PATH_TEMPLATES = 'templates';
@@ -37,12 +38,13 @@ class FileStorageService
 
     /**
      * Store student picture (PRIVATE)
+     * CRITICAL: Student files are school-scoped and MUST include schoolId
      */
     public function storeStudentPicture(
         UploadedFile $file,
         string $organizationId,
         string $studentId,
-        ?string $schoolId = null
+        string $schoolId
     ): string {
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_STUDENTS, $studentId, 'pictures');
         return $this->storeFile($file, $path, self::DISK_PRIVATE);
@@ -50,12 +52,13 @@ class FileStorageService
 
     /**
      * Store student document (PRIVATE)
+     * CRITICAL: Student files are school-scoped and MUST include schoolId
      */
     public function storeStudentDocument(
         UploadedFile $file,
         string $organizationId,
         string $studentId,
-        ?string $schoolId = null,
+        string $schoolId,
         ?string $documentType = null
     ): string {
         $subPath = $documentType ? "documents/{$documentType}" : 'documents';
@@ -69,12 +72,13 @@ class FileStorageService
 
     /**
      * Store staff picture (PUBLIC - for display in UI)
+     * CRITICAL: Staff files are school-scoped and MUST include schoolId
      */
     public function storeStaffPicturePublic(
         UploadedFile $file,
         string $organizationId,
         string $staffId,
-        ?string $schoolId = null
+        string $schoolId
     ): string {
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_STAFF, $staffId, 'pictures');
         return $this->storeFile($file, $path, self::DISK_PUBLIC);
@@ -82,12 +86,13 @@ class FileStorageService
 
     /**
      * Store staff picture (PRIVATE - for sensitive contexts)
+     * CRITICAL: Staff files are school-scoped and MUST include schoolId
      */
     public function storeStaffPicturePrivate(
         UploadedFile $file,
         string $organizationId,
         string $staffId,
-        ?string $schoolId = null
+        string $schoolId
     ): string {
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_STAFF, $staffId, 'pictures');
         return $this->storeFile($file, $path, self::DISK_PRIVATE);
@@ -95,12 +100,13 @@ class FileStorageService
 
     /**
      * Store staff document (PRIVATE)
+     * CRITICAL: Staff files are school-scoped and MUST include schoolId
      */
     public function storeStaffDocument(
         UploadedFile $file,
         string $organizationId,
         string $staffId,
-        ?string $schoolId = null,
+        string $schoolId,
         ?string $documentType = null
     ): string {
         $subPath = $documentType ? "documents/{$documentType}" : 'documents';
@@ -114,16 +120,37 @@ class FileStorageService
 
     /**
      * Store course document (PRIVATE)
+     * CRITICAL: Course files are school-scoped and MUST include schoolId
      */
     public function storeCourseDocument(
         UploadedFile $file,
         string $organizationId,
         string $courseId,
-        ?string $schoolId = null,
+        string $schoolId,
         ?string $documentType = null
     ): string {
         $subPath = $documentType ? "{$documentType}" : 'documents';
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_COURSES, $courseId, $subPath);
+        return $this->storeFile($file, $path, self::DISK_PRIVATE);
+    }
+
+    // ==============================================
+    // EXAM DOCUMENTS
+    // ==============================================
+
+    /**
+     * Store exam document (PRIVATE)
+     * CRITICAL: Exam files are school-scoped and MUST include schoolId
+     */
+    public function storeExamDocument(
+        UploadedFile $file,
+        string $organizationId,
+        string $examId,
+        string $schoolId,
+        ?string $documentType = null
+    ): string {
+        $subPath = $documentType ? "{$documentType}" : 'documents';
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_EXAMS, $examId, $subPath);
         return $this->storeFile($file, $path, self::DISK_PRIVATE);
     }
 
@@ -151,12 +178,13 @@ class FileStorageService
 
     /**
      * Store event attachment (PRIVATE)
+     * CRITICAL: Event files are school-scoped and MUST include schoolId
      */
     public function storeEventAttachment(
         UploadedFile $file,
         string $organizationId,
         string $eventId,
-        ?string $schoolId = null
+        string $schoolId
     ): string {
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_EVENTS, $eventId, 'attachments');
         return $this->storeFile($file, $path, self::DISK_PRIVATE);
@@ -164,26 +192,64 @@ class FileStorageService
 
     /**
      * Store event guest photo (PRIVATE)
+     * CRITICAL: Event files are school-scoped and MUST include schoolId
      */
     public function storeEventGuestPhoto(
         UploadedFile $file,
         string $organizationId,
         string $eventId,
         string $guestId,
-        ?string $schoolId = null
+        string $schoolId
     ): string {
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_EVENTS, $eventId, 'guests', $guestId);
         return $this->storeFile($file, $path, self::DISK_PRIVATE);
     }
 
     /**
+     * Store event guest photo (PUBLIC) - for processed/compressed images
+     * CRITICAL: Event files are school-scoped and MUST include schoolId
+     */
+    public function storeEventGuestPhotoPublic(
+        string $content,
+        string $filename,
+        string $organizationId,
+        string $eventId,
+        string $guestId,
+        string $schoolId
+    ): string {
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_EVENTS, $eventId, 'guests', $guestId);
+        $fullPath = $path . '/' . $filename;
+        Storage::disk(self::DISK_PUBLIC)->put($fullPath, $content);
+        return $fullPath;
+    }
+
+    /**
+     * Store event guest photo thumbnail (PUBLIC)
+     * CRITICAL: Event files are school-scoped and MUST include schoolId
+     */
+    public function storeEventGuestPhotoThumbnail(
+        string $content,
+        string $filename,
+        string $organizationId,
+        string $eventId,
+        string $guestId,
+        string $schoolId
+    ): string {
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_EVENTS, $eventId, 'guests', $guestId, 'thumbs');
+        $fullPath = $path . '/' . $filename;
+        Storage::disk(self::DISK_PUBLIC)->put($fullPath, $content);
+        return $fullPath;
+    }
+
+    /**
      * Store event banner (PUBLIC)
+     * CRITICAL: Event files are school-scoped and MUST include schoolId
      */
     public function storeEventBannerPublic(
         UploadedFile $file,
         string $organizationId,
         string $eventId,
-        ?string $schoolId = null
+        string $schoolId
     ): string {
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_EVENTS, $eventId, 'banners');
         return $this->storeFile($file, $path, self::DISK_PUBLIC);
@@ -191,12 +257,13 @@ class FileStorageService
 
     /**
      * Store event thumbnail (PUBLIC)
+     * CRITICAL: Event files are school-scoped and MUST include schoolId
      */
     public function storeEventThumbnailPublic(
         UploadedFile $file,
         string $organizationId,
         string $eventId,
-        ?string $schoolId = null
+        string $schoolId
     ): string {
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_EVENTS, $eventId, 'thumbnails');
         return $this->storeFile($file, $path, self::DISK_PUBLIC);
@@ -208,11 +275,12 @@ class FileStorageService
 
     /**
      * Store ID card template background (PRIVATE)
+     * CRITICAL: Template files are school-scoped and MUST include schoolId
      */
     public function storeIdCardTemplateBackground(
         UploadedFile $file,
         string $organizationId,
-        ?string $schoolId = null,
+        string $schoolId,
         string $templateId,
         string $side = 'front'
     ): string {
@@ -225,11 +293,12 @@ class FileStorageService
 
     /**
      * Store certificate template background (PRIVATE)
+     * CRITICAL: Template files are school-scoped and MUST include schoolId
      */
     public function storeCertificateTemplateBackground(
         UploadedFile $file,
         string $organizationId,
-        ?string $schoolId = null,
+        string $schoolId,
         string $templateId
     ): string {
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_TEMPLATES, 'certificates', $templateId);
@@ -245,12 +314,13 @@ class FileStorageService
 
     /**
      * Store generated report (PRIVATE)
+     * CRITICAL: Reports are school-scoped and MUST include schoolId
      */
     public function storeReport(
         string $content,
         string $filename,
         string $organizationId,
-        ?string $schoolId = null,
+        string $schoolId,
         string $reportType = 'general'
     ): string {
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_REPORTS, $reportType);
@@ -263,11 +333,12 @@ class FileStorageService
 
     /**
      * Store report from file (PRIVATE)
+     * CRITICAL: Reports are school-scoped and MUST include schoolId
      */
     public function storeReportFile(
         UploadedFile $file,
         string $organizationId,
-        ?string $schoolId = null,
+        string $schoolId,
         string $reportType = 'general'
     ): string {
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_REPORTS, $reportType);
@@ -414,12 +485,13 @@ class FileStorageService
 
     /**
      * Delete all files for a resource (e.g., when deleting a student)
+     * CRITICAL: Resource files are school-scoped and MUST include schoolId
      */
     public function deleteResourceFiles(
         string $organizationId,
         string $resourceType,
         string $resourceId,
-        ?string $schoolId = null
+        string $schoolId
     ): bool {
         $path = $this->buildPath($organizationId, $schoolId, $resourceType, $resourceId);
 

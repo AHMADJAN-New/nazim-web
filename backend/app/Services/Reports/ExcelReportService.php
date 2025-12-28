@@ -55,16 +55,16 @@ class ExcelReportService
      * @param ReportConfig $config Report configuration
      * @param array $context Template context
      * @param callable|null $progressCallback Progress callback
-     * @param string|null $organizationId Organization ID for file storage
-     * @param string|null $schoolId School ID for file storage
+     * @param string $organizationId Organization ID for file storage (REQUIRED)
+     * @param string $schoolId School ID for file storage (REQUIRED)
      * @return array Result with path, filename, and size
      */
     public function generate(
         ReportConfig $config,
         array $context,
         ?callable $progressCallback = null,
-        ?string $organizationId = null,
-        ?string $schoolId = null
+        string $organizationId,
+        string $schoolId
     ): array {
         $this->reportProgress($progressCallback, 0, 'Starting Excel generation');
 
@@ -1010,8 +1010,9 @@ class ExcelReportService
 
     /**
      * Save spreadsheet to file
+     * CRITICAL: Reports are school-scoped and MUST include both organizationId and schoolId
      */
-    private function saveToFile(Spreadsheet $spreadsheet, ReportConfig $config, ?string $organizationId = null, ?string $schoolId = null): array
+    private function saveToFile(Spreadsheet $spreadsheet, ReportConfig $config, string $organizationId, string $schoolId): array
     {
         // Generate unique filename
         $filename = $this->generateFilename($config);
@@ -1030,24 +1031,14 @@ class ExcelReportService
         // Read file content
         $fileContent = file_get_contents($tempPath);
 
-        // Store using FileStorageService if organization and school IDs are provided
-        if ($organizationId && $schoolId) {
-            $storagePath = $this->fileStorageService->storeReport(
-                $fileContent,
-                $filename,
-                $organizationId,
-                $schoolId,
-                $config->reportKey ?? 'general'
-            );
-        } else {
-            // Fallback to old storage method for backward compatibility
-            $storageDir = storage_path('app/reports');
-            if (!is_dir($storageDir)) {
-                mkdir($storageDir, 0755, true);
-            }
-            $storagePath = "reports/{$filename}";
-            Storage::disk('local')->put($storagePath, $fileContent);
-        }
+        // Store using FileStorageService (school-scoped storage)
+        $storagePath = $this->fileStorageService->storeReport(
+            $fileContent,
+            $filename,
+            $organizationId,
+            $schoolId,
+            $config->reportKey ?? 'general'
+        );
 
         // Clean up temp file
         @unlink($tempPath);

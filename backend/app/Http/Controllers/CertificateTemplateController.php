@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CertificateTemplate;
 use App\Models\CourseStudent;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +13,9 @@ use Illuminate\Support\Str;
 
 class CertificateTemplateController extends Controller
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
     private function getProfile($user)
     {
         return DB::table('profiles')->where('id', (string) $user->id)->first();
@@ -131,18 +135,19 @@ class CertificateTemplateController extends Controller
             }
         }
 
+        // Generate template ID first so we can use it in file paths
+        $templateId = (string) Str::uuid();
+
         $backgroundPath = null;
         if ($request->hasFile('background_image')) {
             try {
                 $file = $request->file('background_image');
                 
-                // Validate file extension
-                $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-                $extension = strtolower($file->getClientOriginalExtension());
-                if (!in_array($extension, $allowedExtensions)) {
+                // Validate image extension using FileStorageService
+                if (!$this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
                     return response()->json([
                         'error' => 'The background image must be a valid image file (jpg, jpeg, png, gif, or webp).',
-                        'errors' => ['background_image' => ['Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions)]]
+                        'errors' => ['background_image' => ['Invalid file type.']]
                     ], 422);
                 }
 
@@ -154,17 +159,12 @@ class CertificateTemplateController extends Controller
                     ], 422);
                 }
 
-                // Ensure storage directory exists
-                $directory = 'certificate-templates/' . $profile->organization_id;
-                if (!Storage::disk('local')->exists($directory)) {
-                    Storage::disk('local')->makeDirectory($directory);
-                }
-
-                $fileName = Str::uuid() . '.' . $extension;
-                $backgroundPath = $file->storeAs(
-                    $directory,
-                    $fileName,
-                    'local'
+                // Store using FileStorageService (PRIVATE storage for certificate templates)
+                $backgroundPath = $this->fileStorageService->storeCertificateTemplateBackground(
+                    $file,
+                    $profile->organization_id,
+                    $currentSchoolId,
+                    $templateId
                 );
 
                 if (!$backgroundPath) {
@@ -193,6 +193,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::create([
+            'id' => $templateId,
             'organization_id' => $profile->organization_id,
             'type' => $type,
             'school_id' => $currentSchoolId,
@@ -313,42 +314,27 @@ class CertificateTemplateController extends Controller
 
         if ($request->hasFile('background_image')) {
             try {
-                // Delete old background if exists
-                if ($template->background_image_path && Storage::disk('local')->exists($template->background_image_path)) {
-                    Storage::disk('local')->delete($template->background_image_path);
-                }
-
                 $file = $request->file('background_image');
                 
-                // Validate file extension
-                $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-                $extension = strtolower($file->getClientOriginalExtension());
-                if (!in_array($extension, $allowedExtensions)) {
+                // Validate image extension using FileStorageService
+                if (!$this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
                     return response()->json([
                         'error' => 'The background image must be a valid image file (jpg, jpeg, png, gif, or webp).',
-                        'errors' => ['background_image' => ['Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions)]]
+                        'errors' => ['background_image' => ['Invalid file type.']]
                     ], 422);
                 }
 
-                // Validate file size (5MB = 5120 KB)
-                if ($file->getSize() > 5 * 1024 * 1024) {
-                    return response()->json([
-                        'error' => 'The background image must not be larger than 5MB.',
-                        'errors' => ['background_image' => ['File size exceeds 5MB limit']]
-                    ], 422);
+                // Delete old background if exists using FileStorageService
+                if ($template->background_image_path) {
+                    $this->fileStorageService->deleteFile($template->background_image_path);
                 }
 
-                // Ensure storage directory exists
-                $directory = 'certificate-templates/' . $profile->organization_id;
-                if (!Storage::disk('local')->exists($directory)) {
-                    Storage::disk('local')->makeDirectory($directory);
-                }
-
-                $fileName = Str::uuid() . '.' . $extension;
-                $validated['background_image_path'] = $file->storeAs(
-                    $directory,
-                    $fileName,
-                    'local'
+                // Store using FileStorageService (PRIVATE storage for certificate templates)
+                $validated['background_image_path'] = $this->fileStorageService->storeCertificateTemplateBackground(
+                    $file,
+                    $profile->organization_id,
+                    $template->school_id,
+                    $template->id
                 );
 
                 if (!$validated['background_image_path']) {
@@ -424,9 +410,9 @@ class CertificateTemplateController extends Controller
             ], 422);
         }
 
-        // Delete background image if exists
-        if ($template->background_image_path && Storage::disk('local')->exists($template->background_image_path)) {
-            Storage::disk('local')->delete($template->background_image_path);
+        // Delete background image if exists using FileStorageService
+        if ($template->background_image_path) {
+            $this->fileStorageService->deleteFile($template->background_image_path);
         }
 
         $template->delete();
@@ -452,14 +438,13 @@ class CertificateTemplateController extends Controller
             return response()->json(['error' => 'Background image not found'], 404);
         }
 
-        if (!Storage::disk('local')->exists($template->background_image_path)) {
+        // Check if file exists using FileStorageService
+        if (!$this->fileStorageService->fileExists($template->background_image_path)) {
             return response()->json(['error' => 'File not found on storage'], 404);
         }
 
-        $mimeType = Storage::disk('local')->mimeType($template->background_image_path);
-        return Storage::disk('local')->response($template->background_image_path, null, [
-            'Content-Type' => $mimeType,
-        ]);
+        // Get file and return response using FileStorageService
+        return $this->fileStorageService->getFileResponse($template->background_image_path);
     }
 
     public function setDefault(Request $request, string $id)

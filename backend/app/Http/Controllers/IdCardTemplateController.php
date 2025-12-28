@@ -142,7 +142,7 @@ class IdCardTemplateController extends Controller
                 $backgroundPathFront = $this->fileStorageService->storeIdCardTemplateBackground(
                     $file,
                     $profile->organization_id,
-                    $validated['school_id'] ?? null,
+                    $currentSchoolId,
                     $templateId,
                     'front'
                 );
@@ -182,7 +182,7 @@ class IdCardTemplateController extends Controller
                 $backgroundPathBack = $this->fileStorageService->storeIdCardTemplateBackground(
                     $file,
                     $profile->organization_id,
-                    $validated['school_id'] ?? null,
+                    $currentSchoolId,
                     $templateId,
                     'back'
                 );
