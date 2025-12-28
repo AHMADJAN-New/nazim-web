@@ -49,6 +49,7 @@ export const TeacherSubjectAssignments = lazy(() => import('@/components/setting
 export const StaffTypesManagement = lazy(() => import('@/components/settings/StaffTypesManagement').then(module => ({ default: module.StaffTypesManagement })));
 export const StaffList = lazy(() => import('@/pages/StaffList').then(module => ({ default: module.StaffList })));
 export const Students = lazy(() => import('@/pages/Students').then(module => ({ default: module.Students })));
+export const StudentsImport = lazy(() => import('@/pages/StudentsImport'));
 export const StudentAdmissions = lazy(() => import('@/pages/StudentAdmissions').then(module => ({ default: module.StudentAdmissions })));
 export const StudentReport = lazy(() => import('@/pages/StudentReport'));
 export const StudentAdmissionsReport = lazy(() => import('@/pages/StudentAdmissionsReport'));
@@ -85,6 +86,7 @@ export const LibraryDistribution = lazy(() => import('@/pages/LibraryDistributio
 export const LibraryReports = lazy(() => import('@/pages/LibraryReports'));
 export const LeaveManagement = lazy(() => import('@/pages/LeaveManagement').then(module => ({ default: module.default })));
 export const LeaveReports = lazy(() => import('@/pages/LeaveReports').then(module => ({ default: module.default })));
+export const PhoneBook = lazy(() => import('@/pages/PhoneBook').then(module => ({ default: module.default })));
 export const Assets = lazy(() => import('@/pages/Assets').then(module => ({ default: module.default })));
 export const AssetsDashboard = lazy(() => import('@/pages/assets/AssetsDashboard'));
 export const AssetAssignments = lazy(() => import('@/pages/AssetAssignments').then(module => ({ default: module.default })));

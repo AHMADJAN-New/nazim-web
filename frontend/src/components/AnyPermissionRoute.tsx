@@ -21,7 +21,7 @@ export function AnyPermissionRoute({ permissions, children, showError = true }: 
   const { profile } = useAuth();
   const { data: userPermissions, isLoading } = useUserPermissions();
 
-  const hasProfile = profile?.role !== undefined && profile !== null;
+  const hasProfile = profile?.organization_id !== undefined && profile !== null;
   const queryCanRun = hasProfile && !isLoading;
   const hasPermissionsData = Array.isArray(userPermissions);
   const permissionsReady = hasProfile && queryCanRun && hasPermissionsData;

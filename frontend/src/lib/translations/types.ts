@@ -118,6 +118,7 @@ export interface TranslationKeys {
   nav: {
     dashboard: string;
     students: string;
+    studentsImport: string;
     admissions: string;
     studentReports: string;
     studentManagement: string;
@@ -627,6 +628,39 @@ export interface TranslationKeys {
     allSchools: string;
     allOrganizations: string;
     organization: string;
+    importTitle: string;
+    importSubtitle: string;
+    backToStudents: string;
+    templateBuilder: string;
+    uploadImport: string;
+    studentFields: string;
+    admissionFields: string;
+    templateFieldsHint: string;
+    admissionFieldsHint: string;
+    admissionDefaults: string;
+    admissionDefaultsHint: string;
+    defaultResidencyType: string;
+    defaultRoom: string;
+    academicYearOptional: string;
+    selectAcademicYear: string;
+    classTemplates: string;
+    selectAcademicYearForClasses: string;
+    noClassesForYear: string;
+    academicYearRequiredForClassTemplates: string;
+    downloadTemplate: string;
+    importRulesHint: string;
+    uploadImportHint: string;
+    selectXlsx: string;
+    validateFile: string;
+    importNow: string;
+    validationSummary: string;
+    rows: string;
+    valid: string;
+    invalid: string;
+    sheet: string;
+    row: string;
+    field: string;
+    message: string;
     acrossSelected: string;
     registeredMale: string;
     registeredFemale: string;
@@ -3144,6 +3178,8 @@ export interface TranslationKeys {
     fileUploadFailed: string;
     fileDownloaded: string;
     fileDownloadFailed: string;
+    studentsImported: string;
+    admissionsCreated: string;
     // Report Templates
     reportTemplateCreated: string;
     reportTemplateUpdated: string;
@@ -4372,6 +4408,48 @@ export interface TranslationKeys {
     repeatY: string;
     allReports: string;
     manage: string;
+  };
+
+  // Phone Book
+  phoneBook: {
+    title: string;
+    subtitle: string;
+    name: string;
+    phone: string;
+    email: string;
+    category: string;
+    relation: string;
+    details: string;
+    address: string;
+    all: string;
+    students: string;
+    staff: string;
+    donors: string;
+    guests: string;
+    others: string;
+    studentGuardian: string;
+    studentEmergency: string;
+    studentZamin: string;
+    donor: string;
+    guest: string;
+    other: string;
+    allEntries: string;
+    allEntriesDescription: string;
+    studentContacts: string;
+    studentContactsDescription: string;
+    staffContacts: string;
+    staffContactsDescription: string;
+    donorContacts: string;
+    donorContactsDescription: string;
+    guestContacts: string;
+    guestContactsDescription: string;
+    searchPlaceholder: string;
+    student: string;
+    admissionNo: string;
+    employeeId: string;
+    guestCode: string;
+    contactPerson: string;
+    noDataToExport: string;
   };
 }
 

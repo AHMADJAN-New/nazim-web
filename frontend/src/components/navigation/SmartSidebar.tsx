@@ -51,7 +51,8 @@ import {
   Hash,
   KeyRound,
   Printer,
-  Tag
+  Tag,
+  Phone
 } from "lucide-react";
 
 import {
@@ -189,6 +190,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasAttendanceReportsPermission = useHasPermission('attendance_sessions.report');
   const hasLeaveRequestsPermission = useHasPermission('leave_requests.read');
   const hasStudentsPermission = useHasPermission('students.read');
+  const hasStudentsImportPermission = useHasPermission('students.import');
   const hasStudentAdmissionsPermission = useHasPermission('student_admissions.read');
   const hasStudentReportsPermission = useHasPermission('student_reports.read');
   const hasStudentAdmissionsReportPermission = useHasPermission('student_admissions.report');
@@ -274,6 +276,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasEventUpdatePermission = useHasPermission('events.update');
   // Show events navigation if user has ANY event-related permission
   const hasEventsNavigation = hasEventsPermission || hasEventTypesPermission || hasEventGuestsPermission || hasEventGuestsCreatePermission || hasEventCheckinsCreatePermission || hasEventCheckinsReadPermission || hasEventUpdatePermission;
+  
+  // Phone Book permission - user needs at least one of these permissions
+  const hasPhoneBookPermission = hasStudentsPermission || hasStaffPermission || hasDonorsPermission || hasEventGuestsPermission;
 
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -365,6 +370,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: FileText,
           }] : []),
         ],
+      }] : []),
+      ...(hasPhoneBookPermission ? [{
+        titleKey: "phoneBook",
+        url: "/phonebook",
+        icon: Phone,
+        badge: null,
+        priority: 3.01,
       }] : []),
       ...(hasAttendanceNavigation ? [{
         titleKey: "attendance",
@@ -527,7 +539,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
         ],
       }] : []),
-      ...((hasStudentsPermission || hasStudentAdmissionsPermission || hasStudentReportsPermission || hasStudentAdmissionsReportPermission) ? [{
+      ...((hasStudentsPermission || hasStudentsImportPermission || hasStudentAdmissionsPermission || hasStudentReportsPermission || hasStudentAdmissionsReportPermission) ? [{
         titleKey: "studentManagement",
         icon: GraduationCap,
         badge: null,
@@ -538,6 +550,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "students",
             url: "/students",
             icon: GraduationCap,
+          }] : []),
+          ...(hasStudentsImportPermission ? [{
+            title: "Bulk Import Students",
+            titleKey: "studentsImport",
+            url: "/students/import",
+            icon: LucideIcons.Upload,
           }] : []),
           ...(hasStudentAdmissionsPermission ? [{
             title: "Admissions",

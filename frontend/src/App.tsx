@@ -65,6 +65,7 @@ import {
   StaffTypesManagement,
   StaffList,
   Students,
+  StudentsImport,
   StudentAdmissions,
   StudentReport,
   StudentAdmissionsReport,
@@ -103,6 +104,7 @@ import {
   LibraryReports,
   LeaveManagement,
   LeaveReports,
+  PhoneBook,
   Assets,
   AssetsDashboard,
   AssetAssignments,
@@ -647,10 +649,24 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/phonebook" element={
+                      <AnyPermissionRoute permissions={['students.read', 'staff.read', 'donors.read', 'event_guests.read']}>
+                        <Suspense fallback={<PageSkeleton />}>
+                          <PhoneBook />
+                        </Suspense>
+                      </AnyPermissionRoute>
+                    } />
                     <Route path="/students" element={
                       <PermissionRoute permission="students.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <Students />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/students/import" element={
+                      <PermissionRoute permission="students.import">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <StudentsImport />
                         </Suspense>
                       </PermissionRoute>
                     } />

@@ -1602,6 +1602,45 @@ export const studentsApi = {
   },
 };
 
+// Student Import (Excel templates + bulk import)
+export const studentImportApi = {
+  downloadTemplate: async (data: {
+    student_fields: string[];
+    admission_fields?: string[];
+    academic_year_id?: string | null;
+    class_academic_year_ids?: string[];
+    class_defaults?: Array<{
+      class_academic_year_id: string;
+      room_id?: string | null;
+      residency_type_id?: string | null;
+      shift?: string | null;
+      enrollment_status?: string | null;
+      is_boarder?: boolean | null;
+    }>;
+  }) => {
+    return apiClient.requestFile('/student-import/templates/download', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  validate: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post('/student-import/validate', formData, {
+      headers: {}, // Let browser set Content-Type with boundary
+    });
+  },
+
+  commit: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post('/student-import/commit', formData, {
+      headers: {}, // Let browser set Content-Type with boundary
+    });
+  },
+};
+
 // Student Documents API
 export const studentDocumentsApi = {
   list: async (studentId: string) => {
@@ -4164,4 +4203,16 @@ export const eventUsersApi = {
 
   delete: async (eventId: string, userId: string) =>
     apiClient.delete(`/events/${eventId}/users/${userId}`),
+};
+
+// Phone Book API
+export const phoneBookApi = {
+  list: async (params?: {
+    category?: 'all' | 'students' | 'staff' | 'donors' | 'guests' | 'others';
+    search?: string;
+    page?: number;
+    per_page?: number;
+  }) => {
+    return apiClient.get('/phonebook', params);
+  },
 };

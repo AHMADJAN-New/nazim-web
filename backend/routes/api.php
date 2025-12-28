@@ -32,6 +32,7 @@ use App\Http\Controllers\ResidencyTypeController;
 use App\Http\Controllers\StaffDocumentController;
 use App\Http\Controllers\ReportTemplateController;
 use App\Http\Controllers\StudentAdmissionController;
+use App\Http\Controllers\StudentImportController;
 use App\Http\Controllers\StudentDocumentController;
 use App\Http\Controllers\StudentEducationalHistoryController;
 use App\Http\Controllers\StudentDisciplineRecordController;
@@ -202,6 +203,9 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
         Route::post('/staff/{id}/document', [StaffController::class, 'uploadDocument']);
         Route::apiResource('staff', StaffController::class);
 
+        // Phone Book
+        Route::get('/phonebook', [\App\Http\Controllers\PhoneBookController::class, 'index']);
+
         // Staff Types
         Route::apiResource('staff-types', StaffTypeController::class);
 
@@ -220,6 +224,9 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
 
         // Students
         // IMPORTANT: More specific routes must come before parameterized routes
+        Route::post('/student-import/templates/download', [StudentImportController::class, 'downloadTemplate']);
+        Route::post('/student-import/validate', [StudentImportController::class, 'validateFile']);
+        Route::post('/student-import/commit', [StudentImportController::class, 'commit']);
         Route::get('/students/stats', [StudentController::class, 'stats']);
         Route::get('/students/autocomplete', [StudentController::class, 'autocomplete']);
         Route::post('/students/check-duplicates', [StudentController::class, 'checkDuplicates']);
@@ -423,6 +430,8 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
         Route::post('/course-students/{id}/drop', [CourseStudentController::class, 'markDropped']);
         Route::post('/course-students/{id}/issue-certificate', [CourseStudentController::class, 'issueCertificate']);
         Route::post('/course-students/{id}/enroll-to-new-course', [CourseStudentController::class, 'enrollToNewCourse']);
+        Route::post('/course-students/{id}/picture', [CourseStudentController::class, 'uploadPicture']);
+        Route::get('/course-students/{id}/picture', [CourseStudentController::class, 'getPicture']);
 
     // Course student discipline records
     Route::get('/course-students/{id}/discipline-records', [CourseStudentDisciplineRecordController::class, 'index']);

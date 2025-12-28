@@ -30,10 +30,10 @@ export function PermissionRoute({
   // Permissions are needed for all users
 
   // Permissions are ready if:
-  // 1. We have a profile with a role (query can run)
+  // 1. We have a profile with organization_id (query can run)
   // 2. Query is not loading (has completed or is disabled)
   // 3. We have permissions data (even if empty array)
-  const hasProfile = profile?.role !== undefined && profile !== null;
+  const hasProfile = profile?.organization_id !== undefined && profile !== null;
   const queryCanRun = hasProfile && !isLoading;
   // With placeholderData and initialData, permissions should always be an array, never undefined
   const hasPermissionsData = Array.isArray(permissions);
