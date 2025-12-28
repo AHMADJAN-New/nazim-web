@@ -170,6 +170,40 @@ class ApiClient {
           throw new Error(error.message || 'Validation failed' + (details ? ` - ${details}` : ''));
         }
 
+        // Handle 402 subscription errors (feature not available, limit reached, etc.)
+        if (response.status === 402) {
+          const subscriptionError = new Error(error.message || error.error || 'Subscription required');
+          // Attach subscription-specific data so components can handle it
+          (subscriptionError as any).isSubscriptionError = true;
+          (subscriptionError as any).code = error.code; // e.g., 'NO_SUBSCRIPTION', 'LIMIT_REACHED', 'FEATURE_NOT_AVAILABLE'
+          (subscriptionError as any).subscriptionStatus = error.subscription_status;
+          (subscriptionError as any).accessLevel = error.access_level;
+          (subscriptionError as any).resourceKey = error.resource_key;
+          (subscriptionError as any).featureKey = error.feature_key;
+          (subscriptionError as any).upgradeRequired = error.upgrade_required;
+          (subscriptionError as any).current = error.current;
+          (subscriptionError as any).limit = error.limit;
+          (subscriptionError as any).availableAddons = error.available_addons;
+          
+          // Dispatch custom event for global subscription error handling
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('subscription-error', {
+              detail: {
+                code: error.code,
+                message: error.message || error.error,
+                resourceKey: error.resource_key,
+                featureKey: error.feature_key,
+                current: error.current,
+                limit: error.limit,
+                subscriptionStatus: error.subscription_status,
+                accessLevel: error.access_level,
+              }
+            }));
+          }
+          
+          throw subscriptionError;
+        }
+
         // Create error but don't log expected 401s
         // Laravel may return error in 'error' field or 'message' field
         const errorMessage = error.message || error.error || `HTTP error! status: ${response.status}`;

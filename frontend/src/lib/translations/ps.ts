@@ -3373,5 +3373,92 @@ export const ps: TranslationKeys = {
       selectTemplateFirst: 'لومړی یو کړکۍ وټاکئ',
       fillRequiredFields: 'لومړی اړینې ساحې ډک کړئ'
     }
-  }
+  },
+  
+  // Subscription/SaaS system
+  subscription: {
+    // Status banners
+    trialPeriod: 'آزموینې موده',
+    trialEndsIn: 'آزموینه پای ته رسیږي په',
+    trialEnding: 'ستاسو آزموینه ډیره ژر پای ته رسیږي. د دوام لپاره لوړ کړئ.',
+    upgradeToKeepAccess: 'د بشپړ لاسرسي لپاره لوړ کړئ.',
+    gracePeriod: 'د رحم موده',
+    subscriptionExpired: 'ستاسو ګډون پای ته رسیدلی.',
+    daysLeftToRenew: 'ورځې پاتې دي د نوي کولو لپاره.',
+    renewNow: 'اوس نوی کړئ د بشپړ لاسرسي لپاره.',
+    readOnlyMode: 'یوازې لوستلو حالت',
+    cannotMakeChanges: 'تاسو کولی شئ معلومات وګورئ خو بدلونونه نشئ کولی. د بشپړ لاسرسي بیرته راوړلو لپاره خپل ګډون نوی کړئ.',
+    accountBlocked: 'حساب بند دی',
+    contactSupport: 'ستاسو حساب لاسرسی بند شوی. مهرباني وکړئ د ملاتړ سره اړیکه ونیسئ یا خپل ګډون نوی کړئ.',
+    usageLimitsWarning: 'د کارولو محدودیتونو خبرداری',
+    approachingLimits: 'تاسو د ځینو کارولو محدودیتونو ته نژدې یاست.',
+    manageSubscription: 'اداره',
+    upgrade: 'لوړ کړئ',
+    
+    // Usage limits
+    limitReached: 'محدودیت رسیدلی',
+    limitReachedCantCreate: 'محدودیت رسیدلی. نور جوړول نه شی.',
+    approachingLimit: 'محدودیت ته نژدې',
+    cannotCreateMore: 'تاسو د دې سرچینې لپاره اعظمي محدودیت ته رسیدلي. د نورو جوړولو لپاره خپله پلان لوړه کړئ.',
+    usageWarningMessage: 'تاسو د دې سرچینې لپاره د کارولو محدودیت ته نژدې یاست.',
+    used: 'کارول شوی',
+    currentPlan: 'اوسنۍ پلان',
+    upgradePlan: 'پلان لوړ کړئ',
+    
+    // Features
+    featureNotAvailable: 'فیچر شتون نلري',
+    isNotIncluded: 'ستاسو په اوسني پلان کې شامل نه دی.',
+    purchaseAddon: 'ایڈ-آن واخلئ',
+    viewFeatures: 'فیچرونه وګورئ',
+    
+    // Errors
+    noSubscription: 'هیڅ فعال ګډون نشته. مهرباني وکړئ د دې فیچر لاسرسي لپاره ګډون وکړئ.',
+    limitReachedMessage: 'تاسو د دې سرچینې لپاره محدودیت ته رسیدلي. مهرباني وکړئ خپله پلان لوړه کړئ.',
+    featureNotAvailableMessage: 'دا فیچر ستاسو په اوسني پلان کې شتون نلري.',
+    writeAccessDenied: 'ستاسو ګډون د لیکلو لاسرسي اجازه نه ورکوي. مهرباني وکړئ د بدلونونو لپاره نوی کړئ.',
+    readAccessDenied: 'ستاسو ګډون پای ته رسیدلی. مهرباني وکړئ د خپلو معلوماتو لاسرسي لپاره نوی کړئ.',
+    genericError: 'د ګډون تېروتنه رامنځته شوه. مهرباني وکړئ د خپل ګډون حالت وګورئ.',
+  },
+  
+  // Phone Book
+  phoneBook: {
+    title: 'تلیفون لړلیک',
+    subtitle: 'د زده کونکو، کارمندانو، تمویلونکو، او میلمنو ټول تلیفون شمیرې وګورئ او لټون وکړئ',
+    name: 'نوم',
+    phone: 'تلیفون',
+    email: 'بریښنالیک',
+    category: 'کټګورۍ',
+    relation: 'اړیکه',
+    details: 'جزئیات',
+    address: 'پته',
+    all: 'ټول',
+    students: 'زده کونکي',
+    staff: 'کارمندان',
+    donors: 'تمویلونکي',
+    guests: 'میلمانه',
+    others: 'نور',
+    studentGuardian: 'د زده کونکي سرپرست',
+    studentEmergency: 'د زده کونکي بیړنی',
+    studentZamin: 'د زده کونکي ضامن',
+    donor: 'تمویلونکی',
+    guest: 'میلمه',
+    other: 'نور',
+    allEntries: 'ټول تلیفون لړلیک',
+    allEntriesDescription: 'د زده کونکو، کارمندانو، تمویلونکو، او میلمنو ټول تلیفون شمیرې وګورئ',
+    studentContacts: 'د زده کونکي اړیکې',
+    studentContactsDescription: 'د زده کونکي سرپرستانو، بیړنیو اړیکو، او ضامنانو تلیفون شمیرې',
+    staffContacts: 'د کارمندانو اړیکې',
+    staffContactsDescription: 'د ټولو کارمندانو تلیفون شمیرې',
+    donorContacts: 'د تمویلونکو اړیکې',
+    donorContactsDescription: 'د ټولو تمویلونکو تلیفون شمیرې',
+    guestContacts: 'د میلمنو اړیکې',
+    guestContactsDescription: 'د پیښو میلمنو تلیفون شمیرې',
+    searchPlaceholder: 'د نوم، تلیفون، بریښنالیک... له مخې لټون وکړئ',
+    student: 'زده کونکی',
+    admissionNo: 'داخله شمیره',
+    employeeId: 'کارمند پیژندنه',
+    guestCode: 'د میلمه کوډ',
+    contactPerson: 'اړیکه شخص',
+    noDataToExport: 'د صادرولو لپاره معلومات نشته',
+  },
 };

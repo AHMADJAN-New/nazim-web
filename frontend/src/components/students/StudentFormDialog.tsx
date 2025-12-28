@@ -35,6 +35,7 @@ import type { Student } from '@/types/domain/student';
 import { StudentDocumentsDialog } from './StudentDocumentsDialog';
 import { StudentEducationalHistoryDialog } from './StudentEducationalHistoryDialog';
 import { StudentDisciplineRecordsDialog } from './StudentDisciplineRecordsDialog';
+import { UsageLimitWarning, useCanCreate } from '@/components/subscription';
 
 export interface StudentFormDialogProps {
     open: boolean;
@@ -54,6 +55,9 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
     const { data: ac } = useStudentAutocomplete();
     const [selectedPictureFile, setSelectedPictureFile] = useState<File | null>(null);
     const pictureUpload = useStudentPictureUpload();
+    
+    // Check usage limits for students (only relevant when creating new students)
+    const studentUsage = useCanCreate('students');
     
     // Dialog states for documents, history, and discipline
     const [isDocumentsDialogOpen, setIsDocumentsDialogOpen] = useState(false);
@@ -262,6 +266,11 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                         {isEdit ? t('students.updateDescription') || 'Update registration and guardian details.' : t('students.addDescription') || 'Capture admission details with guardian and residency information.'}
                     </DialogDescription>
                 </DialogHeader>
+
+                {/* Show usage limit warning when creating new students */}
+                {!isEdit && (studentUsage.isWarning || !studentUsage.canCreate) && (
+                    <UsageLimitWarning resourceKey="students" compact />
+                )}
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     {/* School selection when multiple schools exist */}
@@ -608,7 +617,11 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                     </OtherInformationSection>
 
                     <DialogFooter>
-                        <Button type="submit" className="w-full">
+                        <Button 
+                            type="submit" 
+                            className="w-full"
+                            disabled={!isEdit && !studentUsage.canCreate}
+                        >
                             {isEdit ? t('common.save') || 'Update Student' : t('students.add') || 'Register Student'}
                         </Button>
                     </DialogFooter>

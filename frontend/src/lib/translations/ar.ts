@@ -3412,5 +3412,92 @@ export const ar: TranslationKeys = {
       selectTemplateFirst: 'الرجاء اختيار قالب أولاً',
       fillRequiredFields: 'الرجاء ملء جميع الحقول المطلوبة'
     }
-  }
+  },
+  
+  // Subscription/SaaS system
+  subscription: {
+    // Status banners
+    trialPeriod: 'الفترة التجريبية',
+    trialEndsIn: 'تنتهي الفترة التجريبية في',
+    trialEnding: 'فترتك التجريبية على وشك الانتهاء. قم بالترقية للمتابعة.',
+    upgradeToKeepAccess: 'قم بالترقية للحفاظ على الوصول الكامل.',
+    gracePeriod: 'فترة السماح',
+    subscriptionExpired: 'انتهى اشتراكك.',
+    daysLeftToRenew: 'أيام متبقية للتجديد.',
+    renewNow: 'جدد الآن للوصول الكامل.',
+    readOnlyMode: 'وضع القراءة فقط',
+    cannotMakeChanges: 'يمكنك عرض البيانات ولكن لا يمكنك إجراء تغييرات. قم بتجديد اشتراكك.',
+    accountBlocked: 'الحساب محظور',
+    contactSupport: 'تم حظر الوصول إلى حسابك. يرجى الاتصال بالدعم أو تجديد اشتراكك.',
+    usageLimitsWarning: 'تحذير حدود الاستخدام',
+    approachingLimits: 'أنت تقترب من بعض حدود الاستخدام.',
+    manageSubscription: 'إدارة',
+    upgrade: 'ترقية',
+    
+    // Usage limits
+    limitReached: 'تم الوصول للحد',
+    limitReachedCantCreate: 'تم الوصول للحد. لا يمكن إنشاء المزيد.',
+    approachingLimit: 'الاقتراب من الحد',
+    cannotCreateMore: 'لقد وصلت إلى الحد الأقصى لهذا المورد. قم بترقية خطتك لإنشاء المزيد.',
+    usageWarningMessage: 'أنت تقترب من حد الاستخدام لهذا المورد.',
+    used: 'مستخدم',
+    currentPlan: 'الخطة الحالية',
+    upgradePlan: 'ترقية الخطة',
+    
+    // Features
+    featureNotAvailable: 'الميزة غير متاحة',
+    isNotIncluded: 'غير مشمولة في خطتك الحالية.',
+    purchaseAddon: 'شراء إضافة',
+    viewFeatures: 'عرض الميزات',
+    
+    // Errors
+    noSubscription: 'لا يوجد اشتراك نشط. يرجى الاشتراك للوصول إلى هذه الميزة.',
+    limitReachedMessage: 'لقد وصلت إلى الحد لهذا المورد. يرجى ترقية خطتك.',
+    featureNotAvailableMessage: 'هذه الميزة غير متاحة في خطتك الحالية.',
+    writeAccessDenied: 'اشتراكك لا يسمح بالوصول للكتابة. يرجى التجديد لإجراء التغييرات.',
+    readAccessDenied: 'انتهى اشتراكك. يرجى التجديد للوصول إلى بياناتك.',
+    genericError: 'حدث خطأ في الاشتراك. يرجى التحقق من حالة اشتراكك.',
+  },
+  
+  // Phone Book
+  phoneBook: {
+    title: 'دليل الهاتف',
+    subtitle: 'عرض والبحث في جميع أرقام الهواتف من الطلاب والموظفين والمتبرعين والضيوف',
+    name: 'الاسم',
+    phone: 'الهاتف',
+    email: 'البريد الإلكتروني',
+    category: 'الفئة',
+    relation: 'العلاقة',
+    details: 'التفاصيل',
+    address: 'العنوان',
+    all: 'الكل',
+    students: 'الطلاب',
+    staff: 'الموظفون',
+    donors: 'المتبرعون',
+    guests: 'الضيوف',
+    others: 'آخرون',
+    studentGuardian: 'ولي أمر الطالب',
+    studentEmergency: 'طوارئ الطالب',
+    studentZamin: 'كفيل الطالب',
+    donor: 'متبرع',
+    guest: 'ضيف',
+    other: 'آخر',
+    allEntries: 'جميع دليل الهاتف',
+    allEntriesDescription: 'عرض جميع أرقام الهواتف من الطلاب والموظفين والمتبرعين والضيوف',
+    studentContacts: 'جهات اتصال الطلاب',
+    studentContactsDescription: 'أرقام هواتف أولياء الأمور وجهات الاتصال للطوارئ والكفلاء للطلاب',
+    staffContacts: 'جهات اتصال الموظفين',
+    staffContactsDescription: 'أرقام هواتف جميع الموظفين',
+    donorContacts: 'جهات اتصال المتبرعين',
+    donorContactsDescription: 'أرقام هواتف جميع المتبرعين',
+    guestContacts: 'جهات اتصال الضيوف',
+    guestContactsDescription: 'أرقام هواتف ضيوف الفعاليات',
+    searchPlaceholder: 'البحث بالاسم أو الهاتف أو البريد الإلكتروني...',
+    student: 'طالب',
+    admissionNo: 'رقم القبول',
+    employeeId: 'رقم الموظف',
+    guestCode: 'رمز الضيف',
+    contactPerson: 'جهة الاتصال',
+    noDataToExport: 'لا توجد بيانات للتصدير',
+  },
 };

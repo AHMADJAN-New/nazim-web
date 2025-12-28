@@ -3937,4 +3937,49 @@ export const en: TranslationKeys = {
     contactPerson: 'Contact Person',
     noDataToExport: 'No data to export',
   },
+  
+  // Subscription/SaaS system
+  subscription: {
+    // Status banners
+    trialPeriod: 'Trial Period',
+    trialEndsIn: 'Trial ends in',
+    trialEnding: 'Your trial is ending soon. Upgrade to continue.',
+    upgradeToKeepAccess: 'Upgrade to keep full access.',
+    gracePeriod: 'Grace Period',
+    subscriptionExpired: 'Your subscription has expired.',
+    daysLeftToRenew: 'days left to renew.',
+    renewNow: 'Renew now to continue full access.',
+    readOnlyMode: 'Read-Only Mode',
+    cannotMakeChanges: 'You can view data but cannot make changes. Renew your subscription to restore full access.',
+    accountBlocked: 'Account Blocked',
+    contactSupport: 'Your account access has been blocked. Please contact support or renew your subscription.',
+    usageLimitsWarning: 'Usage Limits Warning',
+    approachingLimits: 'You are approaching some usage limits.',
+    manageSubscription: 'Manage',
+    upgrade: 'Upgrade',
+    
+    // Usage limits
+    limitReached: 'Limit Reached',
+    limitReachedCantCreate: 'Limit reached. Cannot create more.',
+    approachingLimit: 'Approaching Limit',
+    cannotCreateMore: 'You have reached the maximum limit for this resource. Upgrade your plan to create more.',
+    usageWarningMessage: 'You are approaching the usage limit for this resource.',
+    used: 'used',
+    currentPlan: 'Current plan',
+    upgradePlan: 'Upgrade Plan',
+    
+    // Features
+    featureNotAvailable: 'Feature Not Available',
+    isNotIncluded: 'is not included in your current plan.',
+    purchaseAddon: 'Purchase Add-on',
+    viewFeatures: 'View Features',
+    
+    // Errors
+    noSubscription: 'No active subscription. Please subscribe to access this feature.',
+    limitReachedMessage: 'You have reached the limit for this resource. Please upgrade your plan.',
+    featureNotAvailableMessage: 'This feature is not available on your current plan.',
+    writeAccessDenied: 'Your subscription does not allow write access. Please renew to make changes.',
+    readAccessDenied: 'Your subscription has expired. Please renew to access your data.',
+    genericError: 'A subscription error occurred. Please check your subscription status.',
+  },
 };

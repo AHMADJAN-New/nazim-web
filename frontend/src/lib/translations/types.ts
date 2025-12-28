@@ -4459,5 +4459,50 @@ export interface TranslationKeys {
     contactPerson: string;
     noDataToExport: string;
   };
+  
+  // Subscription/SaaS system
+  subscription: {
+    // Status banners
+    trialPeriod: string;
+    trialEndsIn: string;
+    trialEnding: string;
+    upgradeToKeepAccess: string;
+    gracePeriod: string;
+    subscriptionExpired: string;
+    daysLeftToRenew: string;
+    renewNow: string;
+    readOnlyMode: string;
+    cannotMakeChanges: string;
+    accountBlocked: string;
+    contactSupport: string;
+    usageLimitsWarning: string;
+    approachingLimits: string;
+    manageSubscription: string;
+    upgrade: string;
+    
+    // Usage limits
+    limitReached: string;
+    limitReachedCantCreate: string;
+    approachingLimit: string;
+    cannotCreateMore: string;
+    usageWarningMessage: string;
+    used: string;
+    currentPlan: string;
+    upgradePlan: string;
+    
+    // Features
+    featureNotAvailable: string;
+    isNotIncluded: string;
+    purchaseAddon: string;
+    viewFeatures: string;
+    
+    // Errors
+    noSubscription: string;
+    limitReachedMessage: string;
+    featureNotAvailableMessage: string;
+    writeAccessDenied: string;
+    readAccessDenied: string;
+    genericError: string;
+  };
 }
 

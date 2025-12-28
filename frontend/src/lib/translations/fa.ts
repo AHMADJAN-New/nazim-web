@@ -3418,5 +3418,92 @@ export const fa: TranslationKeys = {
       selectTemplateFirst: 'لطفاً ابتدا یک قالب انتخاب کنید',
       fillRequiredFields: 'لطفاً تمام فیلدهای الزامی را پر کنید'
     }
-  }
+  },
+  
+  // Subscription/SaaS system
+  subscription: {
+    // Status banners
+    trialPeriod: 'دوره آزمایشی',
+    trialEndsIn: 'آزمایش به پایان می‌رسد در',
+    trialEnding: 'دوره آزمایشی شما به زودی تمام می‌شود. برای ادامه ارتقا دهید.',
+    upgradeToKeepAccess: 'برای حفظ دسترسی کامل ارتقا دهید.',
+    gracePeriod: 'دوره مهلت',
+    subscriptionExpired: 'اشتراک شما منقضی شده است.',
+    daysLeftToRenew: 'روز برای تمدید باقی مانده.',
+    renewNow: 'همین الان تمدید کنید برای دسترسی کامل.',
+    readOnlyMode: 'حالت فقط خواندنی',
+    cannotMakeChanges: 'شما می‌توانید داده‌ها را مشاهده کنید اما نمی‌توانید تغییرات ایجاد کنید. اشتراک خود را تمدید کنید.',
+    accountBlocked: 'حساب مسدود شده',
+    contactSupport: 'دسترسی حساب شما مسدود شده است. لطفاً با پشتیبانی تماس بگیرید یا اشتراک خود را تمدید کنید.',
+    usageLimitsWarning: 'هشدار محدودیت استفاده',
+    approachingLimits: 'شما به برخی محدودیت‌های استفاده نزدیک می‌شوید.',
+    manageSubscription: 'مدیریت',
+    upgrade: 'ارتقا',
+    
+    // Usage limits
+    limitReached: 'محدودیت رسیده',
+    limitReachedCantCreate: 'محدودیت رسیده. نمی‌توان بیشتر ایجاد کرد.',
+    approachingLimit: 'نزدیک به محدودیت',
+    cannotCreateMore: 'شما به حداکثر محدودیت برای این منبع رسیده‌اید. برای ایجاد بیشتر پلان خود را ارتقا دهید.',
+    usageWarningMessage: 'شما به محدودیت استفاده برای این منبع نزدیک می‌شوید.',
+    used: 'استفاده شده',
+    currentPlan: 'پلان فعلی',
+    upgradePlan: 'ارتقای پلان',
+    
+    // Features
+    featureNotAvailable: 'ویژگی در دسترس نیست',
+    isNotIncluded: 'در پلان فعلی شما شامل نمی‌شود.',
+    purchaseAddon: 'خرید افزونه',
+    viewFeatures: 'مشاهده ویژگی‌ها',
+    
+    // Errors
+    noSubscription: 'اشتراک فعالی وجود ندارد. لطفاً برای دسترسی به این ویژگی اشتراک بگیرید.',
+    limitReachedMessage: 'شما به محدودیت برای این منبع رسیده‌اید. لطفاً پلان خود را ارتقا دهید.',
+    featureNotAvailableMessage: 'این ویژگی در پلان فعلی شما در دسترس نیست.',
+    writeAccessDenied: 'اشتراک شما اجازه دسترسی نوشتن را نمی‌دهد. لطفاً برای ایجاد تغییرات تمدید کنید.',
+    readAccessDenied: 'اشتراک شما منقضی شده است. لطفاً برای دسترسی به داده‌های خود تمدید کنید.',
+    genericError: 'خطای اشتراک رخ داده است. لطفاً وضعیت اشتراک خود را بررسی کنید.',
+  },
+  
+  // Phone Book
+  phoneBook: {
+    title: 'دفترچه تلفن',
+    subtitle: 'مشاهده و جستجوی تمام شماره تلفن‌ها از دانش‌آموزان، کارکنان، اهداکنندگان و مهمانان',
+    name: 'نام',
+    phone: 'تلفن',
+    email: 'ایمیل',
+    category: 'دسته‌بندی',
+    relation: 'رابطه',
+    details: 'جزئیات',
+    address: 'آدرس',
+    all: 'همه',
+    students: 'دانش‌آموزان',
+    staff: 'کارکنان',
+    donors: 'اهداکنندگان',
+    guests: 'مهمانان',
+    others: 'سایرین',
+    studentGuardian: 'سرپرست دانش‌آموز',
+    studentEmergency: 'اضطراری دانش‌آموز',
+    studentZamin: 'ضامن دانش‌آموز',
+    donor: 'اهداکننده',
+    guest: 'مهمان',
+    other: 'سایر',
+    allEntries: 'تمام دفترچه تلفن',
+    allEntriesDescription: 'مشاهده تمام شماره تلفن‌ها از دانش‌آموزان، کارکنان، اهداکنندگان و مهمانان',
+    studentContacts: 'مخاطبین دانش‌آموز',
+    studentContactsDescription: 'شماره تلفن‌های سرپرستان، مخاطبین اضطراری و ضامنان دانش‌آموز',
+    staffContacts: 'مخاطبین کارکنان',
+    staffContactsDescription: 'شماره تلفن‌های تمام کارکنان',
+    donorContacts: 'مخاطبین اهداکنندگان',
+    donorContactsDescription: 'شماره تلفن‌های تمام اهداکنندگان',
+    guestContacts: 'مخاطبین مهمانان',
+    guestContactsDescription: 'شماره تلفن‌های مهمانان رویداد',
+    searchPlaceholder: 'جستجو بر اساس نام، تلفن، ایمیل...',
+    student: 'دانش‌آموز',
+    admissionNo: 'شماره ثبت‌نام',
+    employeeId: 'شناسه کارمند',
+    guestCode: 'کد مهمان',
+    contactPerson: 'شخص تماس',
+    noDataToExport: 'داده‌ای برای صادرات وجود ندارد',
+  },
 };
