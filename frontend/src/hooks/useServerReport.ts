@@ -107,9 +107,10 @@ export function useServerReport(): UseServerReportReturn {
 
         // Call complete callback after state is updated
         // Use setTimeout to ensure state update is processed
+        // Pass downloadUrl to callback so it's available immediately
         setTimeout(() => {
           if (onCompleteRef.current) {
-            onCompleteRef.current();
+            onCompleteRef.current(response.download_url || null);
           }
         }, 100); // Increased delay to ensure state is fully updated
       } else if (response.status === 'failed') {
@@ -242,7 +243,7 @@ export function useServerReport(): UseServerReportReturn {
         reportIdRef.current = response.report_id;
 
         if (options.onComplete) {
-          options.onComplete();
+          options.onComplete(response.download_url || null);
         }
         return;
       }

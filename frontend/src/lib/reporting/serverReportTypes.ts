@@ -100,6 +100,6 @@ export interface ServerReportOptions<T extends Record<string, any>> {
   columnConfig?: Record<string, { width?: number; align?: string }>;
   async?: boolean;
   onProgress?: (progress: number, message?: string) => void;
-  onComplete?: () => void;
+  onComplete?: (downloadUrl?: string | null) => void;
   onError?: (error: string) => void;
 }

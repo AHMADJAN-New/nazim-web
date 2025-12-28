@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -84,8 +84,18 @@ export function MultiSectionReportExportButtons({
     downloadReport,
     reset: resetReport,
   } = useServerReport();
+  
+  // Track reportId separately to construct download URL if needed
+  const reportIdRef = useRef<string | null>(null);
 
   const [showProgress, setShowProgress] = useState(false);
+  // Use a ref to track the latest downloadUrl (for use in callbacks)
+  const downloadUrlRef = useRef<string | null>(null);
+
+  // Update ref whenever downloadUrl changes
+  useEffect(() => {
+    downloadUrlRef.current = downloadUrl;
+  }, [downloadUrl]);
 
   const filtersSummary = buildFiltersSummary?.() || '';
 
@@ -180,7 +190,7 @@ export function MultiSectionReportExportButtons({
         })),
       },
       async: true,
-      onComplete: async () => {
+      onComplete: async (urlFromCallback?: string | null) => {
         try {
           if (mode === 'download') {
             showToast.success(t('common.exportSuccessPdf') || 'PDF report generated successfully');
@@ -191,14 +201,17 @@ export function MultiSectionReportExportButtons({
           }
 
           // mode === 'print' => fetch blob and print in same tab
-          if (!downloadUrl) {
-            // allow a short delay for state/refs
-            await new Promise((r) => setTimeout(r, 800));
+          // Use downloadUrl from callback parameter (most reliable) or fallback to ref/state
+          let urlToUse = urlFromCallback || downloadUrlRef.current || downloadUrl;
+          
+          // If still not available, wait a bit for state to update
+          if (!urlToUse) {
+            await new Promise((r) => setTimeout(r, 500));
+            urlToUse = downloadUrlRef.current || downloadUrl;
           }
 
-          const urlToUse = downloadUrl;
           if (!urlToUse) {
-            throw new Error('Download URL not available for printing');
+            throw new Error('Download URL not available for printing. Please try again.');
           }
 
           const url = new URL(urlToUse);

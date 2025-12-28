@@ -87,15 +87,21 @@ export function ReportProgressDialog({
     return '';
   };
 
+  const statusDescription = getStatusDescription() || t('reports.generatingReport') || 'Report generation in progress';
+
+  // Ensure description always has content to satisfy accessibility requirements
+  const descriptionId = 'report-progress-description';
+  const descriptionText = statusDescription || ' '; // Use space if empty to ensure element exists
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" aria-describedby="report-progress-description">
+      <DialogContent className="sm:max-w-md" aria-describedby={descriptionId}>
         <DialogHeader>
           <DialogTitle className="text-center">
             {t('reports.reportGeneration') || 'د راپور جوړول'}
           </DialogTitle>
-          <DialogDescription id="report-progress-description">
-            {getStatusDescription() || t('reports.generatingReport') || 'Report generation in progress'}
+          <DialogDescription id={descriptionId}>
+            {descriptionText}
           </DialogDescription>
         </DialogHeader>
 

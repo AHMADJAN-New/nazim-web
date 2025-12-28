@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useExams, useExamClasses, useExamSubjects, useLatestExamFromCurrentYear } from '@/hooks/useExams';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
@@ -20,8 +20,12 @@ import { ColumnDef } from '@tanstack/react-table';
 import { FileDown, Printer, Search, Award, TrendingUp, TrendingDown, Trophy, UserRound } from 'lucide-react';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
+import { useSchoolContext } from '@/contexts/SchoolContext';
 import { calculateGrade } from '@/lib/utils/gradeCalculator';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { MultiSectionReportExportButtons, type MultiSectionReportSection } from '@/components/reports/MultiSectionReportExportButtons';
+import { useServerReport } from '@/hooks/useServerReport';
+import { showToast } from '@/lib/toast';
 
 // Report data type
 type ClassSubjectReportData = {
@@ -96,30 +100,53 @@ function MarkSheetPictureCell({ studentId, picturePath, studentName }: { student
           const token = apiClient.getToken();
           const url = `/api/students/${studentId}/picture`;
           
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'Accept': 'image/*',
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-            },
-            credentials: 'include',
-          });
+          // Use AbortController to prevent browser from logging errors for expected failures
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
           
-          if (!response.ok) {
-            if (response.status === 404) {
+          try {
+            const response = await fetch(url, {
+              method: 'GET',
+              headers: {
+                'Accept': 'image/*',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+              },
+              credentials: 'include',
+              signal: controller.signal,
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+              // 404 and 500 are both expected (no picture or server error) - just show placeholder
+              // Don't throw to avoid browser console errors
+              if (response.status === 404 || response.status === 500) {
+                setImageError(true);
+                return;
+              }
+              // Only throw for other errors
+              throw new Error(`Failed to fetch image: ${response.status}`);
+            }
+            
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            currentBlobUrl = blobUrl;
+            setImageUrl(blobUrl);
+            setImageError(false);
+          } catch (fetchError: any) {
+            clearTimeout(timeoutId);
+            // Handle abort (timeout) and network errors silently
+            if (fetchError.name === 'AbortError' || fetchError.message?.includes('Failed to fetch')) {
               setImageError(true);
               return;
             }
-            throw new Error(`Failed to fetch image: ${response.status}`);
+            // Re-throw only unexpected errors
+            throw fetchError;
           }
-          
-          const blob = await response.blob();
-          const blobUrl = URL.createObjectURL(blob);
-          currentBlobUrl = blobUrl;
-          setImageUrl(blobUrl);
-          setImageError(false);
         } catch (error) {
-          if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
+          // Silently handle errors - 404 and 500 are expected when picture doesn't exist
+          // Only log unexpected errors in development
+          if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404') && !error.message.includes('500')) {
             console.error('Failed to fetch student picture:', error);
           }
           setImageError(true);
@@ -156,6 +183,61 @@ function MarkSheetPictureCell({ studentId, picturePath, studentName }: { student
       )}
     </div>
   );
+}
+
+// Helper function to transform subject report data for export
+function transformSubjectReportData(report: ClassSubjectReportData, t: (key: string) => string): Record<string, any>[] {
+  if (!report.students || report.students.length === 0) return [];
+  
+  // Sort students by marks (highest first), then by name
+  const sortedStudents = [...report.students].sort((a, b) => {
+    if (a.marks_obtained !== null && b.marks_obtained !== null) {
+      return b.marks_obtained - a.marks_obtained;
+    }
+    if (a.marks_obtained !== null) return -1;
+    if (b.marks_obtained !== null) return 1;
+    const nameA = (a.student_name || a.name || '').toLowerCase();
+    const nameB = (b.student_name || b.name || '').toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+  
+  return sortedStudents.map((student: any, index: number) => {
+    const row: Record<string, any> = {
+      rank: student.rank ?? (index + 1),
+      rollNumber: student.roll_number || '-',
+      studentName: student.student_name || student.name || '-',
+      marksObtained: student.is_absent 
+        ? (t('examReports.absent') || 'Absent')
+        : (student.marks_obtained !== null ? student.marks_obtained : '-'),
+      totalMarks: report.subject?.total_marks || '-',
+      percentage: student.percentage !== null && student.percentage !== undefined
+        ? `${student.percentage.toFixed(2)}%`
+        : '-',
+      grade: student.grade || '-',
+      result: student.is_absent
+        ? (t('examReports.absent') || 'Absent')
+        : (student.is_pass === true
+            ? (t('examReports.pass') || 'Pass')
+            : (student.is_pass === false
+                ? (t('examReports.fail') || 'Fail')
+                : '-')),
+    };
+    return row;
+  });
+}
+
+// Helper function to get columns for export
+function getExportColumns(report: ClassSubjectReportData, t: (key: string) => string): Array<{ key: string; label: string }> {
+  return [
+    { key: 'rank', label: t('examReports.rank') || 'Rank' },
+    { key: 'rollNumber', label: t('examReports.rollNumber') || 'Roll Number' },
+    { key: 'studentName', label: t('examReports.studentName') || 'Student Name' },
+    { key: 'marksObtained', label: t('examReports.obtainedMarks') || 'Obtained Marks' },
+    { key: 'totalMarks', label: t('examReports.totalMarks') || 'Total Marks' },
+    { key: 'percentage', label: t('examReports.percentage') || 'Percentage' },
+    { key: 'grade', label: t('examReports.grade') || 'Grade' },
+    { key: 'result', label: t('examReports.result') || 'Result' },
+  ];
 }
 
 // Reusable Subject Mark Sheet Component
@@ -296,7 +378,27 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
     {
       accessorKey: 'roll_number',
       header: t('examReports.rollNumber'),
-      cell: ({ row }) => row.original.roll_number,
+      cell: ({ row }) => row.original.roll_number || '-',
+    },
+    {
+      id: 'admission_no',
+      header: t('students.admissionNo') || 'Admission No',
+      cell: ({ row }) => row.original.admission_no || '-',
+    },
+    {
+      id: 'father_name',
+      header: t('students.fatherName') || 'Father Name',
+      cell: ({ row }) => row.original.father_name || '-',
+    },
+    {
+      id: 'class_name',
+      header: t('examReports.className') || 'Class',
+      cell: () => <div className="font-medium">{report.class?.name || ''}{report.class?.section ? ` - ${report.class.section}` : ''}</div>,
+    },
+    {
+      id: 'subject_name',
+      header: t('examReports.subjectName') || 'Subject',
+      cell: () => <div className="font-medium">{report.subject?.name || '-'}</div>,
     },
     {
       id: 'marks_obtained',
@@ -309,7 +411,7 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
               <Badge variant="outline" className="text-muted-foreground">
                 {t('examReports.absent') || 'Absent'}
               </Badge>
-            ) : student.marks_obtained !== null ? (
+            ) : student.marks_obtained !== null && student.marks_obtained !== undefined ? (
               <Badge 
                 variant={student.is_pass ? 'default' : 'destructive'}
                 className="font-semibold"
@@ -326,7 +428,12 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
     {
       id: 'total_marks',
       header: () => <div className="text-center">{t('examReports.totalMarks')}</div>,
-      cell: () => <div className="text-center">{report.subject?.total_marks ?? '-'}</div>,
+      cell: () => <div className="text-center font-medium">{report.subject?.total_marks ?? '-'}</div>,
+    },
+    {
+      id: 'passing_marks',
+      header: () => <div className="text-center">{t('examReports.passingMarks') || 'Passing Marks'}</div>,
+      cell: () => <div className="text-center">{report.subject?.passing_marks ?? '-'}</div>,
     },
     {
       id: 'percentage',
@@ -384,7 +491,7 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
         );
       },
     },
-  ], [t, report.subject?.total_marks, sortedStudents, page, pageSize]);
+  ], [t, report.subject?.total_marks, report.subject?.passing_marks, report.subject?.name, report.class?.name, report.class?.section, sortedStudents, page, pageSize]);
 
   // Use DataTable hook for pagination integration
   const { table } = useDataTable({
@@ -530,7 +637,7 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
   );
 }
 
-// Component for individual class/subject report in multiple classes tab
+// Component for individual class/subject report in multiple subjects tab
 function ClassSubjectReportTab({ examClass, examId, subjectId, academicYear, selectedExam }: { examClass: any; examId: string; subjectId: string; academicYear?: any; selectedExam?: any }) {
   const { t } = useLanguage();
   
@@ -597,39 +704,27 @@ export default function ClassSubjectMarkSheet() {
   const { t } = useLanguage();
   const canViewReports = useHasPermission('exams.read');
   const { data: profile } = useProfile();
+  const { selectedSchoolId } = useSchoolContext();
   const organizationId = profile?.organization_id;
 
   const [selectedExamId, setSelectedExamId] = useState<string>('');
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'single' | 'multiple'>('single');
-  const [activeClassTabId, setActiveClassTabId] = useState<string>(''); // Track active class tab in multiple classes view
 
   const { data: exams, isLoading: examsLoading } = useExams(organizationId);
   const latestExam = useLatestExamFromCurrentYear(organizationId);
   const { data: examClasses, isLoading: classesLoading } = useExamClasses(selectedExamId);
-  
-  // For single class tab, get subjects for selected class
-  // For multiple classes tab, get subjects for the active class tab (or first class if none selected)
-  const classIdForSubjects = activeTab === 'multiple' && examClasses && examClasses.length > 0
-    ? (activeClassTabId || examClasses[0].id)
-    : selectedClassId;
-  
-  const { data: examSubjects, isLoading: subjectsLoading } = useExamSubjects(
-    selectedExamId, 
-    classIdForSubjects
-  );
+  const { data: examSubjects, isLoading: subjectsLoading } = useExamSubjects(selectedExamId, selectedClassId);
   const { data: academicYears } = useAcademicYears();
   const { data: currentAcademicYear, isLoading: currentYearLoading } = useCurrentAcademicYear(organizationId);
 
   // Auto-select latest exam from current academic year
   useEffect(() => {
-    // Only auto-select if no exam is selected and both exams and current academic year are loaded
     if (!selectedExamId && !examsLoading && !currentYearLoading && exams !== undefined) {
       if (latestExam) {
         setSelectedExamId(latestExam.id);
       } else if (exams && exams.length > 0) {
-        // Fallback to first exam if no current year exam found
         setSelectedExamId(exams[0].id);
       }
     }
@@ -642,57 +737,12 @@ export default function ClassSubjectMarkSheet() {
     }
   }, [examClasses, selectedClassId, selectedExamId, classesLoading]);
 
-  // Auto-select first class tab in multiple classes view
+  // Auto-select first subject when subjects are loaded
   useEffect(() => {
-    if (activeTab === 'multiple' && examClasses && examClasses.length > 0) {
-      if (!activeClassTabId || !examClasses.find(c => c.id === activeClassTabId)) {
-        setActiveClassTabId(examClasses[0].id);
-      }
-    } else if (activeTab === 'single') {
-      // Reset active class tab when switching to single tab
-      setActiveClassTabId('');
+    if (selectedClassId && examSubjects && examSubjects.length > 0 && !selectedSubjectId && !subjectsLoading) {
+      setSelectedSubjectId(examSubjects[0].id);
     }
-  }, [activeTab, examClasses, activeClassTabId]);
-
-  // Track previous classId to detect class changes
-  const prevClassIdRef = useRef<string>('');
-  
-  // Auto-select first subject when class changes (for both single and multiple tabs)
-  useEffect(() => {
-    if (examSubjects && examSubjects.length > 0 && !subjectsLoading && classIdForSubjects) {
-      // Check if class has actually changed
-      const classChanged = prevClassIdRef.current !== classIdForSubjects;
-      
-      if (classChanged) {
-        // Always select first subject when class changes
-        setSelectedSubjectId(examSubjects[0].id);
-        prevClassIdRef.current = classIdForSubjects;
-      } else {
-        // If class hasn't changed, check if current subject exists
-        const subjectExists = selectedSubjectId && examSubjects.some(s => s.id === selectedSubjectId);
-        if (!subjectExists && selectedSubjectId) {
-          // Select first subject if current subject doesn't exist in this class
-          setSelectedSubjectId(examSubjects[0].id);
-        }
-      }
-    }
-  }, [classIdForSubjects, examSubjects, subjectsLoading, selectedSubjectId]); // Re-run when class changes
-
-  // Auto-select first subject when exam subjects are loaded (initial load only)
-  useEffect(() => {
-    if (examSubjects && examSubjects.length > 0 && !selectedSubjectId && !subjectsLoading) {
-      if (activeTab === 'single' && selectedClassId) {
-        setSelectedSubjectId(examSubjects[0].id);
-      } else if (activeTab === 'multiple' && selectedExamId && examClasses && examClasses.length > 0) {
-        // In multiple classes tab, auto-select first subject and first class
-        const firstClass = selectedClassId || examClasses[0].id;
-        setSelectedSubjectId(examSubjects[0].id);
-        if (!selectedClassId) {
-          setSelectedClassId(firstClass);
-        }
-      }
-    }
-  }, [examSubjects, selectedSubjectId, selectedClassId, selectedExamId, subjectsLoading, activeTab, examClasses]);
+  }, [examSubjects, selectedSubjectId, selectedClassId, subjectsLoading]);
 
   // Fetch class-subject report for single class/subject
   const { data: report, isLoading: reportLoading, isFetching } = useQuery<ClassSubjectReportData>({
@@ -708,8 +758,10 @@ export default function ClassSubjectMarkSheet() {
     refetchOnWindowFocus: false,
   });
 
-  // Fetch all classes for multiple classes view
+  // Fetch all classes for multiple subjects view
   const { data: allExamClasses } = useExamClasses(selectedExamId);
+  // Fetch all subjects for all classes (for multiple subjects export)
+  const { data: allSubjects } = useExamSubjects(selectedExamId, undefined);
 
   const selectedExam = exams?.find(e => e.id === selectedExamId);
   const selectedClass = examClasses?.find(c => c.id === selectedClassId);
@@ -735,9 +787,112 @@ export default function ClassSubjectMarkSheet() {
     label: subj.subject?.name ?? subj.classSubject?.subject?.name ?? t('subjects.subject') ?? 'Subject',
   }));
 
-  const handlePrint = () => {
-    window.print();
-  };
+  // Build sections for multiple subjects export (each subject of each class = one sheet)
+  const buildMultiSubjectSections = useCallback(async (): Promise<MultiSectionReportSection[]> => {
+    if (!allExamClasses || allExamClasses.length === 0 || !selectedExamId) return [];
+
+    const sections: MultiSectionReportSection[] = [];
+    const { examSubjectsApi } = await import('@/lib/api/client');
+
+    for (const examClass of allExamClasses) {
+      // Fetch subjects for this class via API
+      let subjectsForClass: any[] = [];
+      try {
+        const subjectsResponse = await examSubjectsApi.list({ exam_id: selectedExamId, exam_class_id: examClass.id });
+        subjectsForClass = ((subjectsResponse as { data?: unknown }).data ?? subjectsResponse) as any[];
+        if (Array.isArray(subjectsForClass)) {
+          // Already an array
+        } else if (subjectsForClass && typeof subjectsForClass === 'object' && 'data' in subjectsForClass) {
+          subjectsForClass = (subjectsForClass as any).data || [];
+        } else {
+          subjectsForClass = [];
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[ClassSubjectMarkSheet] Failed to fetch subjects for class:', error);
+        }
+        continue; // Skip this class if we can't get its subjects
+      }
+
+      if (!subjectsForClass || subjectsForClass.length === 0) continue;
+
+      for (const subject of subjectsForClass) {
+        try {
+          const response = await examsApi.classSubjectMarkSheet(selectedExamId, examClass.id, subject.id);
+          const subjectReport = ((response as { data?: unknown }).data ?? response) as ClassSubjectReportData;
+
+          if (!subjectReport?.students || subjectReport.students.length === 0) continue;
+
+          const baseClassName = examClass.classAcademicYear?.class?.name ?? t('classes.class') ?? 'Class';
+          const sectionName = examClass.classAcademicYear?.sectionName ? ` - ${examClass.classAcademicYear.sectionName}` : '';
+          const fullClassName = `${baseClassName}${sectionName}`;
+          const subjectName = subject.subject?.name ?? subject.classSubject?.subject?.name ?? t('subjects.subject') ?? 'Subject';
+
+          sections.push({
+            title: `${fullClassName} - ${subjectName}`,
+            sheetName: `${fullClassName} - ${subjectName}`.substring(0, 31), // Excel sheet name limit
+            columns: getExportColumns(subjectReport, t),
+            rows: transformSubjectReportData(subjectReport, t),
+          });
+        } catch (error) {
+          if (import.meta.env.DEV) {
+            console.error('[ClassSubjectMarkSheet] Failed to fetch subject report for export:', error);
+          }
+          // Continue to next subject/class
+        }
+      }
+    }
+
+    return sections;
+  }, [allExamClasses, selectedExamId, t]);
+
+  // Helper function to print PDF from download URL
+  const printPdfFromReport = useCallback(async (downloadUrl: string) => {
+    try {
+      const url = new URL(downloadUrl);
+      let endpoint = url.pathname;
+      if (endpoint.startsWith('/api/')) endpoint = endpoint.substring(4);
+      if (!endpoint.startsWith('/')) endpoint = '/' + endpoint;
+
+      const { apiClient } = await import('@/lib/api/client');
+      const { blob } = await apiClient.requestFile(endpoint);
+
+      const blobUrl = window.URL.createObjectURL(blob);
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      iframe.style.opacity = '0';
+      iframe.style.pointerEvents = 'none';
+      iframe.src = blobUrl;
+
+      document.body.appendChild(iframe);
+
+      iframe.onload = () => {
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } finally {
+            const cleanup = () => {
+              setTimeout(() => {
+                if (iframe.parentNode) document.body.removeChild(iframe);
+                window.URL.revokeObjectURL(blobUrl);
+                window.removeEventListener('afterprint', cleanup);
+              }, 500);
+            };
+            window.addEventListener('afterprint', cleanup);
+            setTimeout(cleanup, 30000);
+          }
+        }, 800);
+      };
+    } catch (error) {
+      showToast.error(error instanceof Error ? error.message : 'Failed to print PDF');
+    }
+  }, []);
 
   if (!canViewReports) {
     return (
@@ -766,7 +921,7 @@ export default function ClassSubjectMarkSheet() {
         </CardHeader>
         <CardContent>
           <div className={`grid gap-4 ${activeTab === 'single' ? 'md:grid-cols-3' : 'md:grid-cols-1'}`}>
-            {/* Exam Selection with academic year */}
+            {/* Exam Selection */}
             <div className="space-y-2">
               <Label htmlFor="exam">{t('examReports.selectExam')}</Label>
               <Combobox
@@ -782,7 +937,6 @@ export default function ClassSubjectMarkSheet() {
                 emptyText={t('exams.noExams') || 'No exams'}
                 disabled={examsLoading}
               />
-              {/* Show academic year below exam selection */}
               {selectedExam && academicYear && (
                 <div className="mt-2">
                   <p className="text-sm text-muted-foreground">
@@ -792,7 +946,7 @@ export default function ClassSubjectMarkSheet() {
               )}
             </div>
 
-            {/* Class Selection filtered by exam - only show in single tab */}
+            {/* Class Selection - only show in single subject tab */}
             {activeTab === 'single' && (
               <div className="space-y-2">
                 <Label htmlFor="class">{t('examReports.selectClass')}</Label>
@@ -815,7 +969,7 @@ export default function ClassSubjectMarkSheet() {
               </div>
             )}
 
-            {/* Subject Selection filtered by exam + class - only show in single tab */}
+            {/* Subject Selection - only show in single subject tab */}
             {activeTab === 'single' && (
               <div className="space-y-2">
                 <Label htmlFor="subject">{t('examReports.selectSubject')}</Label>
@@ -836,107 +990,73 @@ export default function ClassSubjectMarkSheet() {
             )}
           </div>
 
-          {/* Subject Badges - Show in both tabs, filtered by class */}
-          {selectedExamId && classIdForSubjects && examSubjects && examSubjects.length > 0 && (
-            <div className="mt-4 space-y-2">
-              <Label>
-                {t('examReports.selectSubject')}
-                {activeTab === 'multiple' && examClasses && examClasses.length > 0 && (
-                  <span className="text-xs text-muted-foreground ml-2">
-                    ({t('examReports.subjectsForClass') || 'Subjects for'} {examClasses.find(c => c.id === classIdForSubjects)?.classAcademicYear?.class?.name || ''})
-                  </span>
-                )}
-              </Label>
-              <div className="flex flex-wrap gap-2">
-                {examSubjects.map((subject) => {
-                  const subjectName = subject.subject?.name ?? subject.classSubject?.subject?.name ?? t('subjects.subject') ?? 'Subject';
-                  const isSelected = selectedSubjectId === subject.id;
-                  
-                  return (
-                    <Badge
-                      key={subject.id}
-                      variant={isSelected ? 'default' : 'outline'}
-                      className="cursor-pointer px-3 py-1.5 text-sm font-medium transition-colors hover:bg-primary hover:text-primary-foreground"
-                      onClick={() => {
-                        setSelectedSubjectId(subject.id);
-                        // In multiple classes tab, also select first class when subject is selected
-                        if (activeTab === 'multiple' && examClasses && examClasses.length > 0) {
-                          // Use selected class if available, otherwise use first class
-                          const targetClassId = selectedClassId || examClasses[0].id;
-                          if (!selectedClassId) {
-                            setSelectedClassId(targetClassId);
-                          }
-                        }
-                      }}
-                    >
-                      {subjectName}
-                    </Badge>
-                  );
-                })}
-              </div>
+          {selectedExamId && activeTab === 'single' && selectedClassId && selectedSubjectId && (
+            <div className="flex gap-2 mt-4">
+              <MultiSectionReportExportButtons
+                reportKey="class_subject_mark_sheet"
+                title={`${t('examReports.classSubjectMarkSheet') || 'Class Subject Mark Sheet'} - ${selectedExam?.name || ''} - ${selectedClass?.classAcademicYear?.class?.name || ''}${selectedClass?.classAcademicYear?.sectionName ? ` - ${selectedClass.classAcademicYear.sectionName}` : ''} - ${selectedSubject?.subject?.name || selectedSubject?.classSubject?.subject?.name || ''}`}
+                templateType="class_subject_academic_year"
+                schoolId={selectedSchoolId || profile?.default_school_id}
+                buildSections={async () => {
+                  // For single subject, create one section
+                  if (!report || !report.students || report.students.length === 0) return [];
+                  return [{
+                    title: `${selectedClass?.classAcademicYear?.class?.name || ''}${selectedClass?.classAcademicYear?.sectionName ? ` - ${selectedClass.classAcademicYear.sectionName}` : ''} - ${selectedSubject?.subject?.name || selectedSubject?.classSubject?.subject?.name || ''}`,
+                    sheetName: `${selectedClass?.classAcademicYear?.class?.name || ''} - ${selectedSubject?.subject?.name || selectedSubject?.classSubject?.subject?.name || ''}`.substring(0, 31),
+                    columns: getExportColumns(report, t),
+                    rows: transformSubjectReportData(report, t),
+                  }];
+                }}
+                buildFiltersSummary={() => {
+                  const parts: string[] = [];
+                  if (selectedExam?.name) parts.push(`Exam: ${selectedExam.name}`);
+                  if (selectedClass?.classAcademicYear?.class?.name) {
+                    parts.push(`Class: ${selectedClass.classAcademicYear.class.name}${selectedClass.classAcademicYear.sectionName ? ` - ${selectedClass.classAcademicYear.sectionName}` : ''}`);
+                  }
+                  if (selectedSubject?.subject?.name || selectedSubject?.classSubject?.subject?.name) {
+                    parts.push(`Subject: ${selectedSubject.subject?.name || selectedSubject.classSubject?.subject?.name}`);
+                  }
+                  if (academicYear?.name) parts.push(`Academic Year: ${academicYear.name}`);
+                  return parts.join(' | ');
+                }}
+                showPrint={true}
+              />
             </div>
           )}
 
-          {selectedExamId && selectedSubjectId && (
+          {selectedExamId && activeTab === 'multiple' && (
             <div className="flex gap-2 mt-4">
-              <Button variant="outline" onClick={handlePrint}>
-                <Printer className="h-4 w-4 mr-2" />
-                {t('examReports.print')}
-              </Button>
-              {report && report.students && report.students.length > 0 && (
-                <ReportExportButtons
-                  data={report.students}
-                  columns={[
-                    { key: 'rank', label: t('examReports.rank') },
-                    { key: 'rollNumber', label: t('examReports.rollNumber') },
-                    { key: 'studentName', label: t('examReports.studentName') },
-                    { key: 'marksObtained', label: t('examReports.obtainedMarks') },
-                    { key: 'totalMarks', label: t('examReports.totalMarks') },
-                    { key: 'percentage', label: t('examReports.percentage') },
-                    { key: 'grade', label: t('examReports.grade') },
-                    { key: 'result', label: t('examReports.result') },
-                  ]}
-                  reportKey="class_subject_academic_year"
-                  title={`${t('examReports.classSubjectMarkSheet') || 'Class Subject Mark Sheet'} - ${report.exam?.name || ''} - ${report.class?.name || ''} - ${report.subject?.name || ''}`}
-                  transformData={(data) => data.map((student: any) => ({
-                    rank: student.rank || '-',
-                    rollNumber: student.roll_number || '-',
-                    studentName: student.name || student.student_name || '-',
-                    marksObtained: student.is_absent ? t('examReports.absent') : (student.marks_obtained !== null ? student.marks_obtained : '-'),
-                    totalMarks: report.subject?.total_marks || '-',
-                    percentage: student.percentage !== null && student.percentage !== undefined ? `${student.percentage.toFixed(2)}%` : '-',
-                    grade: student.grade || '-',
-                    result: student.result === 'pass' ? t('examReports.pass') : student.result === 'fail' ? t('examReports.fail') : t('examReports.absent'),
-                  }))}
-                  buildFiltersSummary={() => {
-                    const parts: string[] = [];
-                    if (report.exam?.name) parts.push(`Exam: ${report.exam.name}`);
-                    if (report.class?.name) parts.push(`Class: ${report.class.name}${report.class.section ? ` - ${report.class.section}` : ''}`);
-                    if (report.subject?.name) parts.push(`Subject: ${report.subject.name}`);
-                    if (academicYear?.name) parts.push(`Academic Year: ${academicYear.name}`);
-                    return parts.join(' | ');
-                  }}
-                  schoolId={profile?.default_school_id}
-                  templateType="class_subject_academic_year"
-                  disabled={!report || !report.students || report.students.length === 0}
-                />
-              )}
+              <MultiSectionReportExportButtons
+                reportKey="class_subject_mark_sheet"
+                title={`${t('examReports.classSubjectMarkSheet') || 'Class Subject Mark Sheet'} - ${selectedExam?.name || ''} - All Subjects`}
+                templateType="class_subject_academic_year"
+                schoolId={selectedSchoolId || profile?.default_school_id}
+                buildSections={buildMultiSubjectSections}
+                buildFiltersSummary={() => {
+                  const parts: string[] = [];
+                  if (selectedExam?.name) parts.push(`Exam: ${selectedExam.name}`);
+                  if (academicYear?.name) parts.push(`Academic Year: ${academicYear.name}`);
+                  parts.push('All Classes & All Subjects');
+                  return parts.join(' | ');
+                }}
+                showPrint={true}
+              />
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Tabs for Single vs Multiple Classes */}
-      {selectedExamId && selectedSubjectId && (
+      {/* Tabs for Single vs Multiple Subjects */}
+      {selectedExamId && (
         <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'single' | 'multiple')} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="single">{t('examReports.singleClass') || 'Single Class'}</TabsTrigger>
-            <TabsTrigger value="multiple">{t('examReports.multipleClasses') || 'Multiple Classes'}</TabsTrigger>
+            <TabsTrigger value="single">{t('examReports.singleSubject') || 'Single Subject'}</TabsTrigger>
+            <TabsTrigger value="multiple">{t('examReports.multipleSubjects') || 'Multiple Subjects'}</TabsTrigger>
           </TabsList>
 
-          {/* Single Class Tab */}
+          {/* Single Subject Tab */}
           <TabsContent value="single" className="space-y-6">
-            {selectedClassId ? (
+            {selectedClassId && selectedSubjectId ? (
               <>
                 {reportLoading || isFetching ? (
                   <Card>
@@ -968,42 +1088,41 @@ export default function ClassSubjectMarkSheet() {
                   <div className="text-center space-y-2">
                     <Search className="h-12 w-12 text-muted-foreground mx-auto" />
                     <p className="text-muted-foreground">{t('examReports.selectClassPrompt')}</p>
+                    <p className="text-sm text-muted-foreground">{t('examReports.selectSubjectPrompt')}</p>
                   </div>
                 </CardContent>
               </Card>
             )}
           </TabsContent>
 
-          {/* Multiple Classes Tab */}
+          {/* Multiple Subjects Tab */}
           <TabsContent value="multiple" className="space-y-6">
             {allExamClasses && allExamClasses.length > 0 ? (
-              <Tabs 
-                value={activeClassTabId || allExamClasses[0]?.id} 
-                onValueChange={setActiveClassTabId}
-                className="w-full"
-              >
-                <TabsList className="w-full overflow-x-auto">
-                  {allExamClasses.map((examClass) => {
-                    const className = examClass.classAcademicYear?.class?.name ?? t('classes.class') ?? 'Class';
-                    const section = examClass.classAcademicYear?.sectionName ? ` - ${examClass.classAcademicYear.sectionName}` : '';
-                    return (
-                      <TabsTrigger key={examClass.id} value={examClass.id} className="whitespace-nowrap">
-                        {className}{section}
-                      </TabsTrigger>
-                    );
-                  })}
-                </TabsList>
-                {allExamClasses.map((examClass) => (
-                  <ClassSubjectReportTab 
-                    key={examClass.id} 
-                    examClass={examClass} 
-                    examId={selectedExamId}
-                    subjectId={selectedSubjectId}
-                    academicYear={academicYear}
-                    selectedExam={selectedExam}
-                  />
-                ))}
-              </Tabs>
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('examReports.multipleSubjects') || 'Multiple Subjects'}</CardTitle>
+                  <CardDescription>
+                    {t('examReports.multipleSubjectsDescription') || 'Export all subjects for all classes. Each subject of each class will be in a separate sheet in Excel, or separate pages in PDF.'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">
+                      {t('examReports.useExportButtons') || 'Use the export buttons above to generate reports for all subjects across all classes.'}
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                      <div className="text-center p-4 border rounded-lg">
+                        <p className="text-2xl font-bold">{allExamClasses.length}</p>
+                        <p className="text-sm text-muted-foreground">{t('classes.classes') || 'Classes'}</p>
+                      </div>
+                      <div className="text-center p-4 border rounded-lg">
+                        <p className="text-2xl font-bold">{allSubjects?.length || 0}</p>
+                        <p className="text-sm text-muted-foreground">{t('subjects.subjects') || 'Subjects'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ) : (
               <Card>
                 <CardContent className="flex items-center justify-center py-12">
@@ -1018,13 +1137,12 @@ export default function ClassSubjectMarkSheet() {
         </Tabs>
       )}
 
-      {(!selectedExamId || !selectedSubjectId) && (
+      {(!selectedExamId) && (
         <Card>
           <CardContent className="flex items-center justify-center py-12">
             <div className="text-center space-y-2">
               <Search className="h-12 w-12 text-muted-foreground mx-auto" />
               <p className="text-muted-foreground">{t('examReports.selectExamPrompt')}</p>
-              <p className="text-sm text-muted-foreground">{t('examReports.selectSubjectPrompt')}</p>
             </div>
           </CardContent>
         </Card>
