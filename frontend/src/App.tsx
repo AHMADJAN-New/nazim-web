@@ -141,6 +141,7 @@ import {
   Currencies,
   ExchangeRates,
   Donors,
+  FinanceDocuments,
   FinanceReports,
   FinanceSettings,
   FeeDashboard,
@@ -1113,6 +1114,13 @@ const App = () => (
                       <PermissionRoute permission="donors.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <Donors />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/documents" element={
+                      <PermissionRoute permission="finance_documents.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <FinanceDocuments />
                         </Suspense>
                       </PermissionRoute>
                     } />

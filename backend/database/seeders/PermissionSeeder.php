@@ -96,6 +96,7 @@ class PermissionSeeder extends Seeder
             'certificates' => ['issue', 'print', 'revoke'],
             'course_documents' => ['read', 'create', 'update', 'delete'],
             'exam_documents' => ['read', 'create', 'update', 'delete'],
+            'finance_documents' => ['read', 'create', 'update', 'delete'],
             // ID Cards permissions
             'id_cards' => ['read', 'create', 'update', 'delete', 'export'],
             // Finance Module permissions

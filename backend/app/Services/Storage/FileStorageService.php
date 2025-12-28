@@ -155,6 +155,25 @@ class FileStorageService
     }
 
     // ==============================================
+    // FINANCE FILES
+    // ==============================================
+
+    /**
+     * Store finance document (PRIVATE)
+     * CRITICAL: Finance files are school-scoped and MUST include schoolId
+     */
+    public function storeFinanceDocument(
+        UploadedFile $file,
+        string $organizationId,
+        string $schoolId,
+        ?string $documentType = null
+    ): string {
+        $subPath = $documentType ? "finance/{$documentType}" : 'finance';
+        $path = $this->buildPath($organizationId, $schoolId, $subPath);
+        return $this->storeFile($file, $path, self::DISK_PRIVATE);
+    }
+
+    // ==============================================
     // DMS FILES (Document Management System)
     // ==============================================
 

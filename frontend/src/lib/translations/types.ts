@@ -3446,6 +3446,12 @@ export interface TranslationKeys {
       expenseUpdated: string;
       expenseDeleted: string;
     };
+    // Finance Documents
+    financeDocumentCreated: string;
+    financeDocumentCreateFailed: string;
+    financeDocumentDeleted: string;
+    financeDocumentDeleteFailed: string;
+    financeDocumentDownloadFailed: string;
     // Questions
     questionCreated: string;
     questionUpdated: string;
@@ -3727,6 +3733,47 @@ export interface TranslationKeys {
     currencyInformation: string;
     currencySymbol: string;
     totalDonated: string;
+    // Finance Documents
+    financeDocuments: string;
+    manageFinanceDocuments: string;
+    uploadDocument: string;
+    uploadDocumentDescription: string;
+    documentType: string;
+    documentTitle: string;
+    documentTitlePlaceholder: string;
+    documentDescription: string;
+    documentDescriptionPlaceholder: string;
+    referenceNumber: string;
+    referenceNumberPlaceholder: string;
+    documentDate: string;
+    file: string;
+    maxFileSize: string;
+    documents: string;
+    noDocuments: string;
+    fileName: string;
+    fileSize: string;
+    uploadedAt: string;
+    deleteDocument: string;
+    deleteDocumentConfirmation: string;
+    searchPlaceholder: string;
+    totalDocuments: string;
+    totalAmount: string;
+    documentTypes: {
+      invoice: string;
+      receipt: string;
+      budget: string;
+      report: string;
+      taxDocument: string;
+      voucher: string;
+      bankStatement: string;
+      other: string;
+    };
+    startDate: string;
+    endDate: string;
+    documentDetails: string;
+    previewNotAvailable: string;
+    previewNotSupported: string;
+    previewLoadError: string;
   };
 
   // Exams

@@ -249,7 +249,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasFeesPermission = useHasPermission('fees.read');
   const hasFeePaymentsPermission = useHasPermission('fees.payments.create');
   const hasFeeExceptionsPermission = useHasPermission('fees.exceptions.create');
-  const hasFinancePermission = hasFinanceAccountsPermission || hasIncomeEntriesPermission || hasExpenseEntriesPermission || hasFinanceProjectsPermission || hasDonorsPermission || hasFinanceReportsPermission || hasCurrenciesPermission || hasExchangeRatesPermission || hasFeesPermission || hasFeePaymentsPermission || hasFeeExceptionsPermission;
+  const hasFinanceDocumentsPermission = useHasPermission('finance_documents.read');
+  const hasFinancePermission = hasFinanceAccountsPermission || hasIncomeEntriesPermission || hasExpenseEntriesPermission || hasFinanceProjectsPermission || hasDonorsPermission || hasFinanceReportsPermission || hasCurrenciesPermission || hasExchangeRatesPermission || hasFeesPermission || hasFeePaymentsPermission || hasFeeExceptionsPermission || hasFinanceDocumentsPermission;
 
   // DMS (Document Management System) permissions
   const hasDmsIncomingPermission = useHasPermission('dms.incoming.read');
@@ -806,6 +807,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "finance.donors",
             url: "/finance/donors",
             icon: Users,
+          }] : []),
+          ...(hasFinanceDocumentsPermission ? [{
+            title: "Documents",
+            titleKey: "finance.financeDocuments",
+            url: "/finance/documents",
+            icon: LucideIcons.FileText,
           }] : []),
           ...(hasFinanceReportsPermission ? [{
             title: "Reports",

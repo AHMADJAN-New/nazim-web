@@ -69,6 +69,7 @@ use App\Http\Controllers\ExamAttendanceController;
 use App\Http\Controllers\ExamNumberController;
 use App\Http\Controllers\ExamTypeController;
 use App\Http\Controllers\ExamDocumentController;
+use App\Http\Controllers\FinanceDocumentController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\GraduationBatchController;
 use App\Http\Controllers\Certificates\IssuedCertificateController;
@@ -320,6 +321,10 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
     // Exam Documents
     Route::get('/exam-documents/{id}/download', [ExamDocumentController::class, 'download']);
     Route::apiResource('exam-documents', ExamDocumentController::class);
+
+    // Finance Documents
+    Route::get('/finance-documents/{id}/download', [FinanceDocumentController::class, 'download']);
+    Route::apiResource('finance-documents', FinanceDocumentController::class);
 
     // Exam Numbers (Roll Numbers & Secret Numbers)
     Route::get('/exams/{exam}/students-with-numbers', [ExamNumberController::class, 'studentsWithNumbers']);
