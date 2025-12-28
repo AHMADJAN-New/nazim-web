@@ -140,6 +140,8 @@ class PermissionSeeder extends Seeder
             'event_types' => ['read', 'create', 'update', 'delete'],
             'event_guests' => ['read', 'create', 'update', 'delete', 'import', 'checkin'],
             'event_checkins' => ['read', 'create', 'update', 'delete'],
+            // Subscription Administration (super-admin only)
+            'subscription' => ['admin', 'read'],
         ];
     }
 
@@ -147,17 +149,22 @@ class PermissionSeeder extends Seeder
      * Default role permission assignments
      *
      * Format: 'role_name' => ['permission1', 'permission2', ...] or '*' for all permissions
+     *
+     * Note: 'subscription.admin' is a SUPER-ADMIN only permission and should NOT be assigned
+     * to regular organization admins. It is managed separately by the platform owner.
      */
     public static function getRolePermissions(): array
     {
         return [
-            'admin' => '*', // All permissions
+            'admin' => '*', // All permissions EXCEPT subscription.admin (handled in getExcludedPermissions)
             'staff' => [
                 // Staff can read most things, create/update limited
                 'students.read', 'students.create', 'students.update', 'students.import',
                 'staff.read',
                 'classes.read',
                 'subjects.read',
+                // Subscription - all roles can read their own subscription
+                'subscription.read',
                 // Exam permissions for staff - can manage enrollment and view reports
                 'exams.read', 'exams.assign', 'exams.manage', 'exams.enroll_students', 'exams.view_reports',
                 'exams.view_grade_cards', 'exams.view_consolidated_reports', 'exams.view_class_reports', 'exams.view_student_reports',
@@ -202,6 +209,8 @@ class PermissionSeeder extends Seeder
                 'students.read',
                 'classes.read',
                 'subjects.read', 'subjects.create', 'subjects.update',
+                // Subscription - all roles can read their own subscription
+                'subscription.read',
                 // Exam permissions for teachers - full exam management including marks entry and attendance
                 'exams.read', 'exams.create', 'exams.update', 'exams.assign', 'exams.manage',
                 'exams.manage_timetable', 'exams.enroll_students', 'exams.enter_marks', 'exams.view_reports',
@@ -254,6 +263,8 @@ class PermissionSeeder extends Seeder
                 'students.read',
                 'classes.read',
                 'subjects.read',
+                // Subscription - all roles can read their own subscription
+                'subscription.read',
                 'exams.read', 'exams.create', 'exams.update', 'exams.assign', 'exams.manage',
                 'exams.manage_timetable', 'exams.enroll_students', 'exams.enter_marks', 'exams.view_reports',
                 'exams.view_grade_cards', 'exams.view_consolidated_reports', 'exams.view_class_reports', 'exams.view_student_reports',
@@ -281,6 +292,8 @@ class PermissionSeeder extends Seeder
                 'rooms.read', 'rooms.create', 'rooms.update',
                 'student_admissions.read', 'student_admissions.update',
                 'reports.read',
+                // Subscription - all roles can read their own subscription
+                'subscription.read',
             ],
             'librarian' => [
                 // Librarians manage library and can access DMS for document management
@@ -301,7 +314,22 @@ class PermissionSeeder extends Seeder
                 'dms.reports.read',
                 'dms.archive.read', 'dms.archive.search',
                 'dms.settings.read',
+                // Subscription - all roles can read their own subscription
+                'subscription.read',
             ],
+        ];
+    }
+
+    /**
+     * Permissions that should be EXCLUDED from organization-level admins.
+     * These are super-admin only permissions managed by the platform owner.
+     *
+     * @return array<string>
+     */
+    public static function getSuperAdminOnlyPermissions(): array
+    {
+        return [
+            'subscription.admin', // Only platform super-admins can manage subscriptions
         ];
     }
 

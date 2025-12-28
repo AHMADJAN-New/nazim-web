@@ -21,6 +21,7 @@ export interface SubscriptionPlan {
   limits?: Record<string, number>;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
 }
 
 export interface OrganizationSubscription {

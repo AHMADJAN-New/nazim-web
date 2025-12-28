@@ -21,6 +21,7 @@ export interface SubscriptionPlan {
   limits: Record<string, number>;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt: Date | null;
 }
 
 export type SubscriptionStatus = 

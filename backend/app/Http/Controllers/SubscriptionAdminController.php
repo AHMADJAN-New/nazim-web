@@ -29,6 +29,36 @@ class SubscriptionAdminController extends Controller
         private UsageTrackingService $usageTrackingService
     ) {}
 
+    /**
+     * Check if user has subscription admin permission
+     * This is a super-admin level permission for managing all subscriptions
+     */
+    private function checkSubscriptionAdminPermission(Request $request): bool
+    {
+        $user = $request->user();
+        if (!$user) {
+            return false;
+        }
+
+        try {
+            // Check for subscription.admin permission
+            return $user->hasPermissionTo('subscription.admin');
+        } catch (\Exception $e) {
+            \Log::warning("Permission check failed for subscription.admin: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Enforce subscription admin permission - abort if not authorized
+     */
+    private function enforceSubscriptionAdmin(Request $request): void
+    {
+        if (!$this->checkSubscriptionAdminPermission($request)) {
+            abort(403, 'You do not have permission to access subscription administration');
+        }
+    }
+
     // =====================================================
     // DASHBOARD
     // =====================================================
@@ -38,6 +68,8 @@ class SubscriptionAdminController extends Controller
      */
     public function dashboard(Request $request)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         // Total organizations
         $totalOrgs = Organization::whereNull('deleted_at')->count();
 
@@ -113,6 +145,8 @@ class SubscriptionAdminController extends Controller
      */
     public function listPlans(Request $request)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $plans = SubscriptionPlan::withTrashed()
             ->orderBy('sort_order')
             ->get();
@@ -149,6 +183,8 @@ class SubscriptionAdminController extends Controller
      */
     public function createPlan(Request $request)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:100',
             'slug' => 'required|string|max:50|unique:subscription_plans,slug',
@@ -224,6 +260,8 @@ class SubscriptionAdminController extends Controller
      */
     public function updatePlan(Request $request, string $id)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $plan = SubscriptionPlan::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
@@ -296,6 +334,8 @@ class SubscriptionAdminController extends Controller
      */
     public function listSubscriptions(Request $request)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $query = OrganizationSubscription::with(['organization', 'plan'])
             ->whereNull('deleted_at');
 
@@ -326,6 +366,8 @@ class SubscriptionAdminController extends Controller
      */
     public function getOrganizationSubscription(Request $request, string $organizationId)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
         $status = $this->featureGateService->getSubscriptionStatus($organizationId);
         $usage = $this->usageTrackingService->getAllUsage($organizationId);
@@ -346,6 +388,8 @@ class SubscriptionAdminController extends Controller
      */
     public function activateSubscription(Request $request, string $organizationId)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $validator = Validator::make($request->all(), [
             'plan_id' => 'required|uuid|exists:subscription_plans,id',
             'currency' => 'required|in:AFN,USD',
@@ -385,6 +429,8 @@ class SubscriptionAdminController extends Controller
      */
     public function suspendSubscription(Request $request, string $organizationId)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $validator = Validator::make($request->all(), [
             'reason' => 'required|string|max:500',
         ]);
@@ -416,6 +462,8 @@ class SubscriptionAdminController extends Controller
      */
     public function addLimitOverride(Request $request, string $organizationId)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $validator = Validator::make($request->all(), [
             'resource_key' => 'required|string|max:100',
             'limit_value' => 'required|integer|min:-1',
@@ -453,6 +501,8 @@ class SubscriptionAdminController extends Controller
      */
     public function addFeatureAddon(Request $request, string $organizationId)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $validator = Validator::make($request->all(), [
             'feature_key' => 'required|string|max:100',
             'price_paid' => 'required|numeric|min:0',
@@ -492,6 +542,8 @@ class SubscriptionAdminController extends Controller
      */
     public function listPendingPayments(Request $request)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $payments = PaymentRecord::pending()
             ->with(['organization', 'subscription.plan'])
             ->orderBy('created_at', 'asc')
@@ -505,6 +557,8 @@ class SubscriptionAdminController extends Controller
      */
     public function confirmPayment(Request $request, string $paymentId)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $payment = PaymentRecord::findOrFail($paymentId);
         $user = $request->user();
 
@@ -544,6 +598,8 @@ class SubscriptionAdminController extends Controller
      */
     public function rejectPayment(Request $request, string $paymentId)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $validator = Validator::make($request->all(), [
             'reason' => 'required|string|max:500',
         ]);
@@ -590,6 +646,8 @@ class SubscriptionAdminController extends Controller
      */
     public function listPendingRenewals(Request $request)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $renewals = RenewalRequest::pending()
             ->with(['organization', 'subscription.plan', 'requestedPlan', 'paymentRecord'])
             ->orderBy('requested_at', 'asc')
@@ -607,6 +665,8 @@ class SubscriptionAdminController extends Controller
      */
     public function listDiscountCodes(Request $request)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $codes = DiscountCode::withTrashed()
             ->orderBy('created_at', 'desc')
             ->paginate($request->per_page ?? 20);
@@ -619,6 +679,8 @@ class SubscriptionAdminController extends Controller
      */
     public function createDiscountCode(Request $request)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $validator = Validator::make($request->all(), [
             'code' => 'required|string|max:50|unique:discount_codes,code',
             'name' => 'required|string|max:150',
@@ -667,6 +729,8 @@ class SubscriptionAdminController extends Controller
      */
     public function updateDiscountCode(Request $request, string $id)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $code = DiscountCode::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
@@ -700,6 +764,8 @@ class SubscriptionAdminController extends Controller
      */
     public function deleteDiscountCode(Request $request, string $id)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $code = DiscountCode::findOrFail($id);
         $code->delete();
 
@@ -715,6 +781,8 @@ class SubscriptionAdminController extends Controller
      */
     public function listFeatureDefinitions(Request $request)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $features = FeatureDefinition::orderBy('category')
             ->orderBy('sort_order')
             ->get();
@@ -727,6 +795,8 @@ class SubscriptionAdminController extends Controller
      */
     public function listLimitDefinitions(Request $request)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $limits = LimitDefinition::orderBy('category')
             ->orderBy('sort_order')
             ->get();
@@ -743,6 +813,8 @@ class SubscriptionAdminController extends Controller
      */
     public function getUsageSnapshots(Request $request, string $organizationId)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $snapshots = UsageSnapshot::where('organization_id', $organizationId)
             ->orderBy('snapshot_date', 'desc')
             ->limit(12)
@@ -756,6 +828,8 @@ class SubscriptionAdminController extends Controller
      */
     public function recalculateUsage(Request $request, string $organizationId)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $recalculated = $this->usageTrackingService->recalculateUsage($organizationId);
 
         return response()->json([
@@ -769,6 +843,8 @@ class SubscriptionAdminController extends Controller
      */
     public function processStatusTransitions(Request $request)
     {
+        $this->enforceSubscriptionAdmin($request);
+
         $processed = $this->subscriptionService->processSubscriptionStatusTransitions();
 
         return response()->json([

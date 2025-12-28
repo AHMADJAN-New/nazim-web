@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
@@ -6,7 +6,43 @@ import { useLanguage } from './useLanguage';
 import { apiClient } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 import type * as SubscriptionApi from '@/types/api/subscription';
-import type { SubscriptionDashboardStats } from '@/types/domain/subscription';
+import type {
+  SubscriptionDashboardStats,
+  SubscriptionPlan,
+} from '@/types/domain/subscription';
+
+// =====================================================
+// MAPPERS
+// =====================================================
+
+/**
+ * Map API SubscriptionPlan to domain SubscriptionPlan
+ */
+function mapPlanApiToDomain(api: SubscriptionApi.SubscriptionPlan): SubscriptionPlan {
+  return {
+    id: api.id,
+    name: api.name,
+    slug: api.slug,
+    description: api.description,
+    priceYearlyAfn: api.price_yearly_afn,
+    priceYearlyUsd: api.price_yearly_usd,
+    isActive: api.is_active,
+    isDefault: api.is_default,
+    isCustom: api.is_custom,
+    trialDays: api.trial_days,
+    gracePeriodDays: api.grace_period_days,
+    readonlyPeriodDays: api.readonly_period_days,
+    maxSchools: api.max_schools,
+    perSchoolPriceAfn: api.per_school_price_afn,
+    perSchoolPriceUsd: api.per_school_price_usd,
+    sortOrder: api.sort_order,
+    features: api.features || [],
+    limits: api.limits || {},
+    createdAt: new Date(api.created_at),
+    updatedAt: new Date(api.updated_at),
+    deletedAt: api.deleted_at ? new Date(api.deleted_at) : null,
+  };
+}
 
 // =====================================================
 // ADMIN DASHBOARD
@@ -56,14 +92,14 @@ export const useSubscriptionDashboard = () => {
 export const useAdminPlans = () => {
   const { user } = useAuth();
 
-  return useQuery({
+  return useQuery<SubscriptionPlan[]>({
     queryKey: ['subscription-admin-plans'],
     queryFn: async () => {
       const response = await apiClient.request<{ data: SubscriptionApi.SubscriptionPlan[] }>(
         '/admin/subscription/plans',
         { method: 'GET' }
       );
-      return response.data;
+      return response.data.map(mapPlanApiToDomain);
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
