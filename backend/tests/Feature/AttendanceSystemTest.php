@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AttendanceSession;
 use App\Models\AttendanceRecord;
 use App\Models\Organization;
+use App\Models\SchoolBranding;
 use App\Models\Student;
 use App\Models\ClassModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -47,8 +48,12 @@ class AttendanceSystemTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
-        $student = Student::factory()->create(['organization_id' => $organization->id]);
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
         $class = ClassModel::factory()->create(['organization_id' => $organization->id]);
 
         $session = AttendanceSession::factory()->create([
@@ -99,10 +104,19 @@ class AttendanceSystemTest extends TestCase
         $org1 = Organization::factory()->create();
         $org2 = Organization::factory()->create();
 
-        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1);
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $org1->id]);
+        $school2 = SchoolBranding::factory()->create(['organization_id' => $org2->id]);
 
-        $student1 = Student::factory()->create(['organization_id' => $org1->id]);
-        $student2 = Student::factory()->create(['organization_id' => $org2->id]);
+        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
+
+        $student1 = Student::factory()->create([
+            'organization_id' => $org1->id,
+            'school_id' => $school1->id,
+        ]);
+        $student2 = Student::factory()->create([
+            'organization_id' => $org2->id,
+            'school_id' => $school2->id,
+        ]);
 
         $session1 = AttendanceSession::factory()->create(['organization_id' => $org1->id]);
         $session2 = AttendanceSession::factory()->create(['organization_id' => $org2->id]);
@@ -135,9 +149,13 @@ class AttendanceSystemTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         $session = AttendanceSession::factory()->create(['organization_id' => $organization->id]);
-        $student = Student::factory()->create(['organization_id' => $organization->id]);
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
 
         $record = AttendanceRecord::factory()->create([
             'attendance_session_id' => $session->id,

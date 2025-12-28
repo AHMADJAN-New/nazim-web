@@ -13,11 +13,12 @@ class AcademicYearFactory extends Factory
 
     public function definition(): array
     {
+        $organization = Organization::factory()->create();
         $year = fake()->numberBetween(2020, 2025);
 
         return [
             'id' => (string) Str::uuid(),
-            'organization_id' => Organization::factory(),
+            'organization_id' => $organization->id,
             'name' => "{$year}-" . ($year + 1),
             'start_date' => "{$year}-01-01",
             'end_date' => ($year + 1) . "-12-31",

@@ -14,10 +14,13 @@ class AttendanceSessionFactory extends Factory
 
     public function definition(): array
     {
+        $organization = Organization::factory()->create();
+        $class = ClassModel::factory()->create(['organization_id' => $organization->id]);
+
         return [
             'id' => (string) Str::uuid(),
-            'organization_id' => Organization::factory(),
-            'class_id' => ClassModel::factory(),
+            'organization_id' => $organization->id,
+            'class_id' => $class->id,
             'session_date' => now(),
             'session_type' => 'daily',
             'status' => 'active',

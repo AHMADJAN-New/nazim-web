@@ -13,9 +13,11 @@ class FinanceAccountFactory extends Factory
 
     public function definition(): array
     {
+        $organization = Organization::factory()->create();
+
         return [
             'id' => (string) Str::uuid(),
-            'organization_id' => Organization::factory(),
+            'organization_id' => $organization->id,
             'account_name' => fake()->randomElement(['Cash Box', 'Bank Account', 'Petty Cash']),
             'account_type' => fake()->randomElement(['cash', 'bank', 'mobile_money']),
             'balance' => fake()->numberBetween(0, 100000),

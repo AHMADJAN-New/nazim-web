@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Organization;
+use App\Models\SchoolBranding;
 use App\Models\Student;
 use App\Models\Staff;
 use App\Models\Exam;
@@ -20,12 +21,23 @@ class OrganizationMultiTenancyTest extends TestCase
         $org1 = Organization::factory()->create(['name' => 'Organization 1']);
         $org2 = Organization::factory()->create(['name' => 'Organization 2']);
 
-        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1);
-        $user2 = $this->authenticate([], ['organization_id' => $org2->id], $org2);
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $org1->id]);
+        $school2 = SchoolBranding::factory()->create(['organization_id' => $org2->id]);
+
+        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
+        $user2 = $this->authenticate([], ['organization_id' => $org2->id], $org2, $school2);
 
         // Create students for each organization
-        Student::factory()->create(['organization_id' => $org1->id, 'full_name' => 'Student from Org 1']);
-        Student::factory()->create(['organization_id' => $org2->id, 'full_name' => 'Student from Org 2']);
+        Student::factory()->create([
+            'organization_id' => $org1->id,
+            'school_id' => $school1->id,
+            'full_name' => 'Student from Org 1',
+        ]);
+        Student::factory()->create([
+            'organization_id' => $org2->id,
+            'school_id' => $school2->id,
+            'full_name' => 'Student from Org 2',
+        ]);
 
         // User 1 should only see their organization's students
         $response = $this->jsonAs($user1, 'GET', '/api/students');
@@ -42,7 +54,9 @@ class OrganizationMultiTenancyTest extends TestCase
         $org1 = Organization::factory()->create();
         $org2 = Organization::factory()->create();
 
-        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1);
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $org1->id]);
+
+        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
         // Create student in org2
         $student = Student::factory()->create([
@@ -62,7 +76,9 @@ class OrganizationMultiTenancyTest extends TestCase
         $org1 = Organization::factory()->create();
         $org2 = Organization::factory()->create();
 
-        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1);
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $org1->id]);
+
+        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
         $response = $this->jsonAs($user1, 'POST', '/api/students', [
             'organization_id' => $org2->id, // Trying to create in another org
@@ -89,10 +105,19 @@ class OrganizationMultiTenancyTest extends TestCase
         $org1 = Organization::factory()->create();
         $org2 = Organization::factory()->create();
 
-        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1);
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $org1->id]);
+        $school2 = SchoolBranding::factory()->create(['organization_id' => $org2->id]);
 
-        Staff::factory()->count(3)->create(['organization_id' => $org1->id]);
-        Staff::factory()->count(2)->create(['organization_id' => $org2->id]);
+        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
+
+        Staff::factory()->count(3)->create([
+            'organization_id' => $org1->id,
+            'school_id' => $school1->id,
+        ]);
+        Staff::factory()->count(2)->create([
+            'organization_id' => $org2->id,
+            'school_id' => $school2->id,
+        ]);
 
         $response = $this->jsonAs($user1, 'GET', '/api/staff');
         $response->assertStatus(200);
@@ -112,7 +137,9 @@ class OrganizationMultiTenancyTest extends TestCase
         $org1 = Organization::factory()->create();
         $org2 = Organization::factory()->create();
 
-        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1);
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $org1->id]);
+
+        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
         Exam::factory()->count(2)->create(['organization_id' => $org1->id]);
         Exam::factory()->count(3)->create(['organization_id' => $org2->id]);
@@ -134,7 +161,9 @@ class OrganizationMultiTenancyTest extends TestCase
         $org1 = Organization::factory()->create();
         $org2 = Organization::factory()->create();
 
-        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1);
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $org1->id]);
+
+        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
         FinanceAccount::factory()->count(2)->create(['organization_id' => $org1->id]);
         FinanceAccount::factory()->count(3)->create(['organization_id' => $org2->id]);
@@ -179,18 +208,23 @@ class OrganizationMultiTenancyTest extends TestCase
         $org1 = Organization::factory()->create();
         $org2 = Organization::factory()->create();
 
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $org1->id]);
+        $school2 = SchoolBranding::factory()->create(['organization_id' => $org2->id]);
+
         // Create students with specific names
         Student::factory()->create([
             'organization_id' => $org1->id,
+            'school_id' => $school1->id,
             'full_name' => 'Ahmad',
         ]);
 
         Student::factory()->create([
             'organization_id' => $org2->id,
+            'school_id' => $school2->id,
             'full_name' => 'Ahmad', // Same name, different org
         ]);
 
-        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1);
+        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
         // Search for "Ahmad" - should only return from org1
         $response = $this->jsonAs($user1, 'GET', '/api/students', [

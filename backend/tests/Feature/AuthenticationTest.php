@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Organization;
 use App\Models\Profile;
+use App\Models\SchoolBranding;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -17,6 +18,7 @@ class AuthenticationTest extends TestCase
     public function user_can_login_with_valid_credentials()
     {
         $organization = Organization::factory()->create();
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
 
         $user = User::factory()->create([
             'email' => 'test@example.com',
@@ -27,6 +29,7 @@ class AuthenticationTest extends TestCase
             'id' => $user->id,
             'email' => $user->email,
             'organization_id' => $organization->id,
+            'default_school_id' => $school->id,
             'is_active' => true,
         ]);
 
@@ -49,6 +52,7 @@ class AuthenticationTest extends TestCase
     public function user_cannot_login_with_invalid_password()
     {
         $organization = Organization::factory()->create();
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
 
         $user = User::factory()->create([
             'email' => 'test@example.com',
@@ -59,6 +63,7 @@ class AuthenticationTest extends TestCase
             'id' => $user->id,
             'email' => $user->email,
             'organization_id' => $organization->id,
+            'default_school_id' => $school->id,
             'is_active' => true,
         ]);
 
@@ -87,6 +92,7 @@ class AuthenticationTest extends TestCase
     public function inactive_user_cannot_login()
     {
         $organization = Organization::factory()->create();
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
 
         $user = User::factory()->create([
             'email' => 'test@example.com',
@@ -97,6 +103,7 @@ class AuthenticationTest extends TestCase
             'id' => $user->id,
             'email' => $user->email,
             'organization_id' => $organization->id,
+            'default_school_id' => $school->id,
             'is_active' => false,
         ]);
 
@@ -169,6 +176,7 @@ class AuthenticationTest extends TestCase
     public function user_can_change_password()
     {
         $organization = Organization::factory()->create();
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
 
         $user = User::factory()->create([
             'encrypted_password' => Hash::make('oldpassword'),
@@ -178,6 +186,7 @@ class AuthenticationTest extends TestCase
             'id' => $user->id,
             'email' => $user->email,
             'organization_id' => $organization->id,
+            'default_school_id' => $school->id,
             'is_active' => true,
         ]);
 
@@ -223,11 +232,12 @@ class AuthenticationTest extends TestCase
     /** @test */
     public function user_without_organization_gets_auto_assigned()
     {
-        // Create default organization
-        Organization::factory()->create([
+        // Create default organization and school
+        $defaultOrg = Organization::factory()->create([
             'name' => 'ناظم',
             'slug' => 'nazim',
         ]);
+        SchoolBranding::factory()->create(['organization_id' => $defaultOrg->id]);
 
         $user = User::factory()->create([
             'email' => 'test@example.com',
@@ -238,6 +248,7 @@ class AuthenticationTest extends TestCase
             'id' => $user->id,
             'email' => $user->email,
             'organization_id' => null, // No organization
+            'default_school_id' => null, // No school
             'is_active' => true,
         ]);
 

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AcademicYear;
 use App\Models\Exam;
 use App\Models\Organization;
+use App\Models\SchoolBranding;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -152,7 +153,9 @@ class ExamSystemTest extends TestCase
         $org1 = Organization::factory()->create();
         $org2 = Organization::factory()->create();
 
-        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1);
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $org1->id]);
+
+        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
         $examOrg2 = Exam::factory()->create(['organization_id' => $org2->id]);
 

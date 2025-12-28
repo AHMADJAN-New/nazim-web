@@ -7,6 +7,7 @@ use App\Models\LibraryCategory;
 use App\Models\LibraryCopy;
 use App\Models\LibraryLoan;
 use App\Models\Organization;
+use App\Models\SchoolBranding;
 use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -90,7 +91,9 @@ class LibraryManagementTest extends TestCase
         $org1 = Organization::factory()->create();
         $org2 = Organization::factory()->create();
 
-        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1);
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $org1->id]);
+
+        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
         LibraryBook::factory()->count(3)->create(['organization_id' => $org1->id]);
         LibraryBook::factory()->count(2)->create(['organization_id' => $org2->id]);
@@ -114,13 +117,17 @@ class LibraryManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         $book = LibraryBook::factory()->create(['organization_id' => $organization->id]);
         $copy = LibraryCopy::factory()->create([
             'library_book_id' => $book->id,
             'status' => 'available',
         ]);
-        $student = Student::factory()->create(['organization_id' => $organization->id]);
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
 
         $loanData = [
             'library_copy_id' => $copy->id,
@@ -147,10 +154,14 @@ class LibraryManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         $book = LibraryBook::factory()->create(['organization_id' => $organization->id]);
         $copy = LibraryCopy::factory()->create(['library_book_id' => $book->id]);
-        $student = Student::factory()->create(['organization_id' => $organization->id]);
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
 
         $loan = LibraryLoan::factory()->create([
             'library_copy_id' => $copy->id,

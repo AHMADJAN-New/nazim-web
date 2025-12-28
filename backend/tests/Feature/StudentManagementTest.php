@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Organization;
+use App\Models\SchoolBranding;
 use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -16,8 +17,12 @@ class StudentManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
-        Student::factory()->count(5)->create(['organization_id' => $organization->id]);
+        Student::factory()->count(5)->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
 
         $response = $this->jsonAs($user, 'GET', '/api/students');
 
@@ -97,9 +102,11 @@ class StudentManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         $student = Student::factory()->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
             'full_name' => 'Test Student',
         ]);
 
@@ -117,9 +124,11 @@ class StudentManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         $student = Student::factory()->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
             'full_name' => 'Original Name',
         ]);
 
@@ -147,9 +156,11 @@ class StudentManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         $student = Student::factory()->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
         ]);
 
         $response = $this->jsonAs($user, 'DELETE', "/api/students/{$student->id}");
@@ -191,14 +202,17 @@ class StudentManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         Student::factory()->count(3)->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
             'student_status' => 'active',
         ]);
 
         Student::factory()->count(2)->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
             'student_status' => 'inactive',
         ]);
 
@@ -220,14 +234,17 @@ class StudentManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         Student::factory()->count(3)->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
             'gender' => 'male',
         ]);
 
         Student::factory()->count(2)->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
             'gender' => 'female',
         ]);
 
@@ -249,14 +266,17 @@ class StudentManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         Student::factory()->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
             'full_name' => 'Ahmad Mohammad',
         ]);
 
         Student::factory()->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
             'full_name' => 'Ali Hassan',
         ]);
 
@@ -276,13 +296,16 @@ class StudentManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         $orphan = Student::factory()->orphan()->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
         ]);
 
         $nonOrphan = Student::factory()->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
             'is_orphan' => false,
         ]);
 
@@ -298,12 +321,76 @@ class StudentManagementTest extends TestCase
         $org1 = Organization::factory()->create();
         $org2 = Organization::factory()->create();
 
-        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1);
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $org1->id]);
+
+        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
         $studentOrg2 = Student::factory()->create(['organization_id' => $org2->id]);
 
         $response = $this->jsonAs($user1, 'GET', "/api/students/{$studentOrg2->id}");
 
         $this->assertContains($response->status(), [403, 404]);
+    }
+
+    /** @test */
+    public function user_cannot_access_student_from_different_school_without_permission()
+    {
+        $organization = Organization::factory()->create();
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $school2 = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+
+        // User with access only to school1
+        $user = $this->authenticate(
+            [],
+            ['organization_id' => $organization->id, 'default_school_id' => $school1->id],
+            $organization,
+            $school1,
+            false // Don't give schools.access_all permission
+        );
+
+        // Student belongs to school2
+        $studentSchool2 = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school2->id,
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', "/api/students/{$studentSchool2->id}");
+
+        $this->assertContains($response->status(), [403, 404]);
+    }
+
+    /** @test */
+    public function user_with_access_all_permission_can_view_students_from_all_schools()
+    {
+        $organization = Organization::factory()->create();
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $school2 = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+
+        // User with schools.access_all permission
+        $user = $this->authenticate(
+            [],
+            ['organization_id' => $organization->id],
+            $organization,
+            $school1,
+            true // Give schools.access_all permission
+        );
+
+        // Students in different schools
+        $studentSchool1 = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school1->id,
+        ]);
+
+        $studentSchool2 = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school2->id,
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', '/api/students');
+
+        $response->assertStatus(200);
+        $students = $response->json('data');
+
+        $this->assertGreaterThanOrEqual(2, count($students));
     }
 }

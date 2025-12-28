@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Organization;
+use App\Models\SchoolBranding;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
@@ -25,7 +26,8 @@ class PermissionAuthorizationTest extends TestCase
     public function user_with_permission_can_access_resource()
     {
         $organization = Organization::factory()->create();
-        $user = $this->createUser([], ['organization_id' => $organization->id], $organization);
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $user = $this->createUser([], ['organization_id' => $organization->id], $organization, $school);
 
         // Create permission
         $permission = Permission::create(['name' => 'students.read', 'guard_name' => 'web']);
@@ -43,7 +45,8 @@ class PermissionAuthorizationTest extends TestCase
     public function user_without_permission_cannot_access_resource()
     {
         $organization = Organization::factory()->create();
-        $user = $this->createUser([], ['organization_id' => $organization->id], $organization);
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $user = $this->createUser([], ['organization_id' => $organization->id], $organization, $school);
 
         // User has no permissions
         $this->actingAsUser($user);
@@ -62,8 +65,11 @@ class PermissionAuthorizationTest extends TestCase
         $org1 = Organization::factory()->create();
         $org2 = Organization::factory()->create();
 
-        $user1 = $this->createUser([], ['organization_id' => $org1->id], $org1);
-        $user2 = $this->createUser([], ['organization_id' => $org2->id], $org2);
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $org1->id]);
+        $school2 = SchoolBranding::factory()->create(['organization_id' => $org2->id]);
+
+        $user1 = $this->createUser([], ['organization_id' => $org1->id], $org1, $school1);
+        $user2 = $this->createUser([], ['organization_id' => $org2->id], $org2, $school2);
 
         // Create permission
         $permission = Permission::create(['name' => 'students.read', 'guard_name' => 'web']);
@@ -85,7 +91,8 @@ class PermissionAuthorizationTest extends TestCase
     public function roles_can_be_assigned_to_users()
     {
         $organization = Organization::factory()->create();
-        $user = $this->createUser([], ['organization_id' => $organization->id], $organization);
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $user = $this->createUser([], ['organization_id' => $organization->id], $organization, $school);
 
         // Create role
         $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
@@ -101,7 +108,8 @@ class PermissionAuthorizationTest extends TestCase
     public function roles_can_have_multiple_permissions()
     {
         $organization = Organization::factory()->create();
-        $user = $this->createUser([], ['organization_id' => $organization->id], $organization);
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $user = $this->createUser([], ['organization_id' => $organization->id], $organization, $school);
 
         // Create permissions
         $readPerm = Permission::create(['name' => 'students.read', 'guard_name' => 'web']);
@@ -138,8 +146,11 @@ class PermissionAuthorizationTest extends TestCase
         $org1 = Organization::factory()->create();
         $org2 = Organization::factory()->create();
 
-        $user1 = $this->createUser([], ['organization_id' => $org1->id], $org1);
-        $user2 = $this->createUser([], ['organization_id' => $org2->id], $org2);
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $org1->id]);
+        $school2 = SchoolBranding::factory()->create(['organization_id' => $org2->id]);
+
+        $user1 = $this->createUser([], ['organization_id' => $org1->id], $org1, $school1);
+        $user2 = $this->createUser([], ['organization_id' => $org2->id], $org2, $school2);
 
         $permission = Permission::create(['name' => 'students.read', 'guard_name' => 'web']);
 
@@ -156,7 +167,8 @@ class PermissionAuthorizationTest extends TestCase
     public function permissions_are_checked_on_api_endpoints()
     {
         $organization = Organization::factory()->create();
-        $user = $this->createUser([], ['organization_id' => $organization->id], $organization);
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $user = $this->createUser([], ['organization_id' => $organization->id], $organization, $school);
 
         $this->actingAsUser($user);
 

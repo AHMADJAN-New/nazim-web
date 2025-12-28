@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Organization;
+use App\Models\SchoolBranding;
 use App\Models\Staff;
 use App\Models\StaffType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,8 +18,12 @@ class StaffManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
-        Staff::factory()->count(5)->create(['organization_id' => $organization->id]);
+        Staff::factory()->count(5)->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
 
         $response = $this->jsonAs($user, 'GET', '/api/staff');
 
@@ -75,9 +80,11 @@ class StaffManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         $staff = Staff::factory()->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
             'full_name' => 'Original Name',
         ]);
 
@@ -106,8 +113,12 @@ class StaffManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
-        $staff = Staff::factory()->create(['organization_id' => $organization->id]);
+        $staff = Staff::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
 
         $response = $this->jsonAs($user, 'DELETE', "/api/staff/{$staff->id}");
 
@@ -121,14 +132,17 @@ class StaffManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         Staff::factory()->count(3)->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
             'employment_status' => 'active',
         ]);
 
         Staff::factory()->count(2)->inactive()->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
         ]);
 
         $response = $this->jsonAs($user, 'GET', '/api/staff', [
@@ -174,12 +188,76 @@ class StaffManagementTest extends TestCase
         $org1 = Organization::factory()->create();
         $org2 = Organization::factory()->create();
 
-        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1);
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $org1->id]);
+
+        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
         $staffOrg2 = Staff::factory()->create(['organization_id' => $org2->id]);
 
         $response = $this->jsonAs($user1, 'GET', "/api/staff/{$staffOrg2->id}");
 
         $this->assertContains($response->status(), [403, 404]);
+    }
+
+    /** @test */
+    public function user_cannot_access_staff_from_different_school_without_permission()
+    {
+        $organization = Organization::factory()->create();
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $school2 = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+
+        // User with access only to school1
+        $user = $this->authenticate(
+            [],
+            ['organization_id' => $organization->id, 'default_school_id' => $school1->id],
+            $organization,
+            $school1,
+            false // Don't give schools.access_all permission
+        );
+
+        // Staff belongs to school2
+        $staffSchool2 = Staff::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school2->id,
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', "/api/staff/{$staffSchool2->id}");
+
+        $this->assertContains($response->status(), [403, 404]);
+    }
+
+    /** @test */
+    public function user_with_access_all_permission_can_view_staff_from_all_schools()
+    {
+        $organization = Organization::factory()->create();
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $school2 = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+
+        // User with schools.access_all permission
+        $user = $this->authenticate(
+            [],
+            ['organization_id' => $organization->id],
+            $organization,
+            $school1,
+            true // Give schools.access_all permission
+        );
+
+        // Staff in different schools
+        $staffSchool1 = Staff::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school1->id,
+        ]);
+
+        $staffSchool2 = Staff::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school2->id,
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', '/api/staff');
+
+        $response->assertStatus(200);
+        $staff = $response->json('data');
+
+        $this->assertGreaterThanOrEqual(2, count($staff));
     }
 }
