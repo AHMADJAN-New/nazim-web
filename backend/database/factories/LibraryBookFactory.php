@@ -14,13 +14,12 @@ class LibraryBookFactory extends Factory
 
     public function definition(): array
     {
-        $organization = Organization::factory()->create();
-        $category = LibraryCategory::factory()->create(['organization_id' => $organization->id]);
+        $organization = Organization::factory();
 
         return [
             'id' => (string) Str::uuid(),
-            'organization_id' => $organization->id,
-            'category_id' => $category->id,
+            'organization_id' => $organization,
+            'category_id' => LibraryCategory::factory()->for($organization),
             'title' => fake()->sentence(3),
             'author' => fake()->name(),
             'isbn' => fake()->isbn13(),

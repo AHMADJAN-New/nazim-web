@@ -14,13 +14,12 @@ class ExamFactory extends Factory
 
     public function definition(): array
     {
-        $organization = Organization::factory()->create();
-        $academicYear = AcademicYear::factory()->create(['organization_id' => $organization->id]);
+        $organization = Organization::factory();
 
         return [
             'id' => (string) Str::uuid(),
-            'organization_id' => $organization->id,
-            'academic_year_id' => $academicYear->id,
+            'organization_id' => $organization,
+            'academic_year_id' => AcademicYear::factory()->for($organization),
             'exam_name' => fake()->randomElement(['Midterm', 'Final', 'Quiz']) . ' ' . fake()->word(),
             'exam_type' => fake()->randomElement(['midterm', 'final', 'quiz', 'monthly']),
             'start_date' => now()->addDays(7),

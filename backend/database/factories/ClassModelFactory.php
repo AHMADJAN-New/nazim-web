@@ -13,11 +13,9 @@ class ClassModelFactory extends Factory
 
     public function definition(): array
     {
-        $organization = Organization::factory()->create();
-
         return [
             'id' => (string) Str::uuid(),
-            'organization_id' => $organization->id,
+            'organization_id' => Organization::factory(),
             'class_name' => 'Class ' . fake()->numberBetween(1, 12),
             'grade_level' => fake()->numberBetween(1, 12),
             'description' => fake()->sentence(),
