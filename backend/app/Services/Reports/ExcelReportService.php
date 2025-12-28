@@ -38,6 +38,17 @@ class ExcelReportService
         private FileStorageService $fileStorageService
     ) {}
 
+    private function sanitizeSheetTitle(string $name): string
+    {
+        // Excel sheet name rules: no : \ / ? * [ ] and max length 31
+        $clean = preg_replace('/[:\\\\\\/\\?\\*\\[\\]]/u', ' ', $name) ?? 'Sheet';
+        $clean = trim($clean);
+        if ($clean === '') {
+            $clean = 'Sheet';
+        }
+        return mb_substr($clean, 0, 31, 'UTF-8');
+    }
+
     /**
      * Generate Excel report
      *
@@ -57,12 +68,75 @@ class ExcelReportService
     ): array {
         $this->reportProgress($progressCallback, 0, 'Starting Excel generation');
 
+        // Multi-sheet support via parameters.sheets
+        // This enables exports like: "each class in a separate sheet" while still using the central reporting system.
+        $sheets = $context['parameters']['sheets'] ?? null;
+        if (is_array($sheets) && count($sheets) > 0) {
+            $this->reportProgress($progressCallback, 5, 'Preparing multi-sheet workbook');
+
+            $spreadsheet = new Spreadsheet();
+
+            foreach (array_values($sheets) as $sheetIndex => $sheetSpec) {
+                $sheet = $sheetIndex === 0 ? $spreadsheet->getActiveSheet() : $spreadsheet->createSheet();
+
+                $sheetNameRaw = is_array($sheetSpec) ? ($sheetSpec['sheet_name'] ?? ($sheetSpec['title'] ?? "Sheet " . ($sheetIndex + 1))) : ("Sheet " . ($sheetIndex + 1));
+                $sheetTitle = $this->sanitizeSheetTitle((string) $sheetNameRaw);
+                $sheet->setTitle($sheetTitle);
+
+                // Sheet-specific context overrides
+                $sheetContext = $context;
+                if (is_array($sheetSpec)) {
+                    if (isset($sheetSpec['columns']) && is_array($sheetSpec['columns'])) {
+                        $sheetContext['COLUMNS'] = $sheetSpec['columns'];
+                    }
+                    if (isset($sheetSpec['rows']) && is_array($sheetSpec['rows'])) {
+                        $sheetContext['ROWS'] = $sheetSpec['rows'];
+                    }
+                    if (isset($sheetSpec['title']) && is_string($sheetSpec['title'])) {
+                        $sheetContext['TABLE_TITLE'] = $sheetSpec['title'];
+                    }
+                }
+
+                // Set RTL if needed
+                if ($sheetContext['rtl'] ?? true) {
+                    $sheet->setRightToLeft(true);
+                }
+
+                $currentRow = 1;
+
+                // Header / Title / Notes / Table / Footer per sheet
+                $currentRow = $this->addHeaderSection($sheet, $sheetContext, $currentRow);
+                $currentRow = $this->addTitleSection($sheet, $sheetContext, $currentRow);
+                $currentRow = $this->addNotesSection($sheet, $sheetContext['NOTES_HEADER'] ?? [], $currentRow);
+                $currentRow = $this->addTableSection($sheet, $sheetContext, $currentRow);
+                $currentRow = $this->addNotesSection($sheet, $sheetContext['NOTES_BODY'] ?? [], $currentRow);
+                $currentRow = $this->addFooterSection($sheet, $sheetContext, $currentRow);
+                $this->addNotesSection($sheet, $sheetContext['NOTES_FOOTER'] ?? [], $currentRow);
+
+                $this->applyPageSettings($sheet, $sheetContext);
+
+                // Watermark (after content)
+                $columns = $sheetContext['COLUMNS'] ?? [];
+                $colCount = count($columns) + 1; // +1 for row number column
+                $this->addWatermark($sheet, $sheetContext, $currentRow, $colCount);
+
+                // Progress update per sheet
+                $pct = 10 + (int) floor((($sheetIndex + 1) / max(1, count($sheets))) * 80);
+                $this->reportProgress($progressCallback, min(90, $pct), "Built sheet " . ($sheetIndex + 1) . " of " . count($sheets));
+            }
+
+            $result = $this->saveToFile($spreadsheet, $config, $organizationId, $schoolId);
+            $this->reportProgress($progressCallback, 100, 'Excel file saved');
+
+            return $result;
+        }
+
         // Create spreadsheet
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
         // Set sheet title
-        $sheetTitle = substr($config->title ?: 'Report', 0, 31); // Excel limit is 31 chars
+        $sheetTitle = $this->sanitizeSheetTitle($config->title ?: 'Report');
         $sheet->setTitle($sheetTitle);
 
         $this->reportProgress($progressCallback, 10, 'Spreadsheet created');

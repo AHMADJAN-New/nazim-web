@@ -17,11 +17,13 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { ColumnDef } from '@tanstack/react-table';
-import { FileDown, Printer, Search, Award, TrendingUp, TrendingDown, UserRound } from 'lucide-react';
+import { Printer, Search, Award, TrendingUp, TrendingDown, UserRound } from 'lucide-react';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
 import { calculateGrade } from '@/lib/utils/gradeCalculator';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { MultiSectionReportExportButtons } from '@/components/reports/MultiSectionReportExportButtons';
+import type { MultiSectionReportSection } from '@/components/reports/MultiSectionReportExportButtons';
 
 // Report data type
 type ReportData = {
@@ -494,6 +496,68 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
   );
 }
 
+// Helper function to transform class report data for export
+function transformClassReportData(report: ReportData, t: (key: string) => string): Record<string, any>[] {
+  if (!report.students || report.students.length === 0) return [];
+  
+  // Sort students by percentage (highest first)
+  const sortedStudents = [...report.students].sort((a, b) => (b.percentage || 0) - (a.percentage || 0));
+  
+  return sortedStudents.map((student: any, index: number) => {
+    const row: Record<string, any> = {
+      rank: index + 1,
+      rollNumber: student.roll_number || '-',
+      studentName: student.student_name || '-',
+    };
+    
+    // Add subject marks
+    (report.subjects || []).forEach((subject: any) => {
+      const subjectMark = student.subjects?.find((s: any) =>
+        s.subject_id === subject.subject_id || s.subject_id === subject.id
+      );
+      if (subjectMark) {
+        row[`subject_${subject.id || subject.subject_id}`] = subjectMark.is_absent
+          ? (t('examReports.absent') || 'Absent')
+          : subjectMark.marks_obtained !== null
+            ? `${subjectMark.marks_obtained}/${subjectMark.total_marks}`
+            : '-';
+      } else {
+        row[`subject_${subject.id || subject.subject_id}`] = '-';
+      }
+    });
+    
+    row.totalMarks = `${student.total_obtained || 0}/${student.total_maximum || 0}`;
+    row.percentage = student.percentage !== null && student.percentage !== undefined
+      ? `${student.percentage.toFixed(2)}%`
+      : '-';
+    row.grade = student.grade || '-';
+    row.result = student.result === 'Pass'
+      ? (t('examReports.pass') || 'Pass')
+      : student.result === 'Fail'
+        ? (t('examReports.fail') || 'Fail')
+        : (t('examReports.incomplete') || 'Incomplete');
+    
+    return row;
+  });
+}
+
+// Helper function to get columns for export
+function getExportColumns(report: ReportData, t: (key: string) => string): Array<{ key: string; label: string }> {
+  return [
+    { key: 'rank', label: t('examReports.rank') || 'Rank' },
+    { key: 'rollNumber', label: t('examReports.rollNumber') || 'Roll Number' },
+    { key: 'studentName', label: t('examReports.studentName') || 'Student Name' },
+    ...(report.subjects || []).map((subject: any) => ({
+      key: `subject_${subject.id || subject.subject_id}`,
+      label: subject.name || 'Subject',
+    })),
+    { key: 'totalMarks', label: t('examReports.totalMarks') || 'Total Marks' },
+    { key: 'percentage', label: t('examReports.percentage') || 'Percentage' },
+    { key: 'grade', label: t('examReports.grade') || 'Grade' },
+    { key: 'result', label: t('examReports.result') || 'Result' },
+  ];
+}
+
 export default function ConsolidatedMarkSheet() {
   const { t } = useLanguage();
   const canViewReports = useHasPermission('exams.read');
@@ -566,8 +630,36 @@ export default function ConsolidatedMarkSheet() {
     };
   });
 
-  const handlePrint = () => {
-    window.print();
+  const buildMultiClassSections = async (): Promise<MultiSectionReportSection[]> => {
+    if (!allExamClasses || allExamClasses.length === 0 || !selectedExamId) return [];
+
+    const sections: MultiSectionReportSection[] = [];
+
+    for (const examClass of allExamClasses) {
+      try {
+        const response = await examsApi.consolidatedClassReport(selectedExamId, examClass.id);
+        const classReport = ((response as { data?: unknown }).data ?? response) as ReportData;
+
+        if (!classReport?.students || classReport.students.length === 0) continue;
+
+        const baseClassName = examClass.classAcademicYear?.class?.name ?? t('classes.class') ?? 'Class';
+        const sectionName = examClass.classAcademicYear?.sectionName ? ` - ${examClass.classAcademicYear.sectionName}` : '';
+        const fullClassName = `${baseClassName}${sectionName}`;
+
+        sections.push({
+          title: fullClassName,
+          sheetName: fullClassName,
+          columns: getExportColumns(classReport, t),
+          rows: transformClassReportData(classReport, t),
+        });
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[ConsolidatedMarkSheet] Failed to fetch class report for export:', error);
+        }
+      }
+    }
+
+    return sections;
   };
 
   if (!canViewReports) {
@@ -633,10 +725,37 @@ export default function ConsolidatedMarkSheet() {
 
           {selectedExamId && (
             <div className="flex gap-2 mt-4">
-              <Button variant="outline" onClick={handlePrint}>
-                <Printer className="h-4 w-4 mr-2" />
-                {t('examReports.print')}
-              </Button>
+              <MultiSectionReportExportButtons
+                reportKey="consolidated_mark_sheet"
+                title={`${t('examReports.consolidatedMarkSheet') || 'Consolidated Mark Sheet'} - ${report?.exam?.name || selectedExam?.name || ''} - ${report?.class?.name || classLabel || ''}`
+                  .replace(/\s+-\s+-\s+/g, ' - ')
+                  .replace(/\s+-\s*$/g, '')}
+                templateType="consolidated_mark_sheet"
+                schoolId={profile?.default_school_id || undefined}
+                showPrint
+                showExcel={false}
+                showPdf={false}
+                disabled={!report || !report.students || report.students.length === 0}
+                buildFiltersSummary={() => {
+                  const parts: string[] = [];
+                  if (report?.exam?.name || selectedExam?.name) parts.push(`Exam: ${report?.exam?.name || selectedExam?.name}`);
+                  if (report?.class?.name || classLabel) parts.push(`Class: ${report?.class?.name || classLabel}`);
+                  if (academicYear?.name) parts.push(`Academic Year: ${academicYear.name}`);
+                  return parts.join(' | ');
+                }}
+                buildSections={async () => {
+                  if (!report?.students || report.students.length === 0) return [];
+                  const className = report?.class?.name || classLabel || (t('classes.class') || 'Class');
+                  return [
+                    {
+                      title: className,
+                      sheetName: className,
+                      columns: getExportColumns(report, t),
+                      rows: transformClassReportData(report, t),
+                    },
+                  ];
+                }}
+              />
               {report && report.students && report.students.length > 0 && (
                 <ReportExportButtons
                   data={report.students}
@@ -764,28 +883,59 @@ export default function ConsolidatedMarkSheet() {
           {/* Multiple Classes Tab */}
           <TabsContent value="multiple" className="space-y-6">
             {allExamClasses && allExamClasses.length > 0 ? (
-              <Tabs defaultValue={allExamClasses[0]?.id} className="w-full">
-                <TabsList className="w-full overflow-x-auto">
-                  {allExamClasses.map((examClass) => {
-                    const className = examClass.classAcademicYear?.class?.name ?? t('classes.class') ?? 'Class';
-                    const section = examClass.classAcademicYear?.sectionName ? ` - ${examClass.classAcademicYear.sectionName}` : '';
-                    return (
-                      <TabsTrigger key={examClass.id} value={examClass.id} className="whitespace-nowrap">
-                        {className}{section}
-                      </TabsTrigger>
-                    );
-                  })}
-                </TabsList>
-                {allExamClasses.map((examClass) => (
-                  <ClassReportTab 
-                    key={examClass.id} 
-                    examClass={examClass} 
-                    examId={selectedExamId}
-                    academicYear={academicYear}
-                    selectedExam={selectedExam}
-                  />
-                ))}
-              </Tabs>
+              <>
+                {/* Export Buttons for Multiple Classes */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>{t('examReports.exportMultipleClasses') || 'Export Multiple Classes'}</CardTitle>
+                        <CardDescription>
+                          {t('examReports.exportMultipleClassesDescription') || 'Export all classes in one file. Excel: Each class in a separate sheet. PDF: All classes with page breaks.'}
+                        </CardDescription>
+                      </div>
+                      <MultiSectionReportExportButtons
+                        reportKey="consolidated_mark_sheet_multiple"
+                        title={`${t('examReports.consolidatedMarkSheet') || 'Consolidated Mark Sheet'} - ${selectedExam?.name || ''} - ${t('examReports.multipleClasses') || 'Multiple Classes'}`.replace(/\s+-\s+-\s+/g, ' - ').replace(/\s+-\s*$/g, '')}
+                        templateType="consolidated_mark_sheet"
+                        schoolId={profile?.default_school_id || undefined}
+                        showPrint
+                        buildFiltersSummary={() => {
+                          const parts: string[] = [];
+                          if (selectedExam?.name) parts.push(`Exam: ${selectedExam.name}`);
+                          if (academicYear?.name) parts.push(`Academic Year: ${academicYear.name}`);
+                          parts.push(`Total Classes: ${allExamClasses.length}`);
+                          return parts.join(' | ');
+                        }}
+                        buildSections={buildMultiClassSections}
+                      />
+                    </div>
+                  </CardHeader>
+                </Card>
+
+                <Tabs defaultValue={allExamClasses[0]?.id} className="w-full">
+                  <TabsList className="w-full overflow-x-auto">
+                    {allExamClasses.map((examClass) => {
+                      const className = examClass.classAcademicYear?.class?.name ?? t('classes.class') ?? 'Class';
+                      const section = examClass.classAcademicYear?.sectionName ? ` - ${examClass.classAcademicYear.sectionName}` : '';
+                      return (
+                        <TabsTrigger key={examClass.id} value={examClass.id} className="whitespace-nowrap">
+                          {className}{section}
+                        </TabsTrigger>
+                      );
+                    })}
+                  </TabsList>
+                  {allExamClasses.map((examClass) => (
+                    <ClassReportTab 
+                      key={examClass.id} 
+                      examClass={examClass} 
+                      examId={selectedExamId}
+                      academicYear={academicYear}
+                      selectedExam={selectedExam}
+                    />
+                  ))}
+                </Tabs>
+              </>
             ) : (
               <Card>
                 <CardContent className="flex items-center justify-center py-12">

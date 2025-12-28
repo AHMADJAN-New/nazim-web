@@ -219,6 +219,7 @@ export default function ExpenseCategories() {
                     </DialogContent>
                 </Dialog>
             </div>
+            </div>
 
             {/* Categories Table */}
             <Card>

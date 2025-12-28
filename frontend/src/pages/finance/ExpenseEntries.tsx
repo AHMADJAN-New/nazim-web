@@ -499,6 +499,7 @@ export default function ExpenseEntries() {
                     </DialogContent>
                 </Dialog>
             </div>
+            </div>
 
             {/* Filters */}
             <Card>

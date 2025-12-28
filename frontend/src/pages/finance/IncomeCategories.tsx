@@ -234,6 +234,7 @@ export default function IncomeCategories() {
                     </DialogContent>
                 </Dialog>
             </div>
+            </div>
 
             {/* Categories Table */}
             <Card>

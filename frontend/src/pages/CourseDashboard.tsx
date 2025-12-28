@@ -371,9 +371,11 @@ export default function CourseDashboard() {
                     {t('courses.csv')}
                   </Button>
                   <Button variant="outline" size="sm" onClick={exportToPdf}>
-                <Download className="h-4 w-4 mr-1" />
-                {t('courses.pdf')}
-              </Button>
+                    <Download className="h-4 w-4 mr-1" />
+                    {t('courses.pdf')}
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </CardHeader>
