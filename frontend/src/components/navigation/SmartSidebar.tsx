@@ -86,6 +86,8 @@ interface NavigationChild {
   children?: NavigationChild[]; // Support nested children for submenus
 }
 
+type NavigationCategory = 'core' | 'operations' | 'academic' | 'finance' | 'admin';
+
 interface NavigationItem {
   titleKey: string;
   url?: string;
@@ -95,6 +97,8 @@ interface NavigationItem {
   children?: NavigationChild[];
   priority?: number;
   contextual?: boolean;
+  category?: NavigationCategory;
+  iconColor?: string;
 }
 
 interface NavigationContext {
@@ -299,6 +303,16 @@ export const SmartSidebar = memo(function SmartSidebar() {
   // Check if user is event user (profile already declared above)
   const isEventUser = profile?.is_event_user === true;
 
+  // Define category colors for icons
+  const categoryColors = {
+    core: 'text-blue-600 dark:text-blue-400',
+    operations: 'text-green-600 dark:text-green-400',
+    academic: 'text-purple-600 dark:text-purple-400',
+    finance: 'text-emerald-600 dark:text-emerald-400',
+    admin: 'text-orange-600 dark:text-orange-400',
+    default: 'text-sidebar-foreground/70',
+  };
+
   // Context-aware navigation items - computed with useMemo to avoid hook order issues
   const allNavigationItems = useMemo((): NavigationItem[] => {
     // CRITICAL: Event users should only see event-related navigation
@@ -312,6 +326,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
           icon: Calendar,
           badge: null,
           priority: 1,
+          category: 'operations',
+          iconColor: categoryColors.operations,
           children: [
             ...(hasEventsPermission ? [{
               title: "All Events",
@@ -349,13 +365,17 @@ export const SmartSidebar = memo(function SmartSidebar() {
         url: "/dashboard",
         icon: Home,
         badge: null,
-        priority: 0.5
+        priority: 0.5,
+        category: 'core',
+        iconColor: categoryColors.core,
       },
       ...((hasStaffPermission || hasStaffReportsPermission) ? [{
         titleKey: "staffManagement",
         icon: Users,
         badge: null,
-        priority: 3,
+        priority: 2,
+        category: 'operations',
+        iconColor: categoryColors.operations,
         children: [
           ...(hasStaffPermission ? [{
             title: "Staff",
@@ -376,14 +396,18 @@ export const SmartSidebar = memo(function SmartSidebar() {
         url: "/phonebook",
         icon: Phone,
         badge: null,
-        priority: 3.01,
+        priority: 2.1,
+        category: 'operations',
+        iconColor: categoryColors.operations,
       }] : []),
       ...(hasAttendanceNavigation ? [{
         titleKey: "attendance",
         url: "/attendance",
         icon: UserCheck,
         badge: null,
-        priority: 3.02,
+        priority: 2.2,
+        category: 'operations',
+        iconColor: categoryColors.operations,
         children: [
           ...(hasAttendanceSessionsPermission ? [{
             title: "Attendance",
@@ -409,7 +433,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "leaveRequests",
         icon: Calendar,
         badge: null,
-        priority: 3.03,
+        priority: 2.3,
+        category: 'operations',
+        iconColor: categoryColors.operations,
         children: [
           {
             title: "Leave Requests",
@@ -429,7 +455,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "shortTermCourses",
         icon: GraduationCap,
         badge: null,
-        priority: 3.045,
+        priority: 4.1,
+        category: 'academic',
+        iconColor: categoryColors.academic,
         children: [
           ...(hasShortTermCoursesPermission ? [{
             title: "Course Dashboard",
@@ -485,7 +513,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "graduationCertificates",
         icon: LucideIcons.GraduationCap,
         badge: null,
-        priority: 3.053,
+        priority: 4.2,
+        category: 'academic',
+        iconColor: categoryColors.academic,
         children: [
           ...(hasGraduationBatchesPermission ? [{
             title: "Dashboard",
@@ -517,7 +547,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "idCards",
         icon: LucideIcons.CreditCard,
         badge: null,
-        priority: 3.054,
+        priority: 4.3,
+        category: 'academic',
+        iconColor: categoryColors.academic,
         children: [
           ...(hasIdCardsPermission ? [{
             title: "ID Card Templates",
@@ -543,7 +575,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "studentManagement",
         icon: GraduationCap,
         badge: null,
-        priority: 3.05,
+        priority: 4,
+        category: 'academic',
+        iconColor: categoryColors.academic,
         children: [
           ...(hasStudentsPermission ? [{
             title: "Students",
@@ -581,7 +615,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "exams",
         icon: Trophy,
         badge: null,
-        priority: 3.055,
+        priority: 5,
+        category: 'academic',
+        iconColor: categoryColors.academic,
         children: [
           ...(hasExamsPermission ? [{
             title: "Exams",
@@ -720,7 +756,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "hostel",
         icon: BedDouble,
         badge: null,
-        priority: 3.06,
+        priority: 6,
+        category: 'operations',
+        iconColor: categoryColors.operations,
         children: [
           ...(hasHostelPermission ? [{
             title: "Hostel overview",
@@ -750,7 +788,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "library",
         icon: BookOpen,
         badge: null,
-        priority: 3.07,
+        priority: 7,
+        category: 'operations',
+        iconColor: categoryColors.operations,
         children: [
           ...(hasLibraryBooksPermission ? [{
             title: "Dashboard",
@@ -788,7 +828,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "finance",
         icon: CreditCard,
         badge: null,
-        priority: 3.075,
+        priority: 8,
+        category: 'finance',
+        iconColor: categoryColors.finance,
         children: [
           ...(hasFinanceAccountsPermission ? [{
             title: "Dashboard",
@@ -852,7 +894,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "finance.fees",
         icon: LucideIcons.Banknote,
         badge: null,
-        priority: 3.08,
+        priority: 8.1,
+        category: 'finance',
+        iconColor: categoryColors.finance,
         children: [
           {
             title: "Dashboard",
@@ -896,7 +940,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "document-system",
         icon: FileText,
         badge: null,
-        priority: 3.085,
+        priority: 7.5,
+        category: 'operations',
+        iconColor: categoryColors.operations,
         children: [
           ...(hasDmsIncomingPermission || hasDmsOutgoingPermission ? [{
             title: "DMS Dashboard",
@@ -970,7 +1016,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "events",
         icon: Calendar,
         badge: null,
-        priority: 3.087,
+        priority: 6.5,
+        category: 'operations',
+        iconColor: categoryColors.operations,
         children: [
           ...(hasEventsPermission ? [{
             title: "All Events",
@@ -1008,7 +1056,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "assets",
         icon: Boxes,
         badge: null,
-        priority: 3.08,
+        priority: 7.1,
+        category: 'operations',
+        iconColor: categoryColors.operations,
         children: [
           {
             title: "Assets Dashboard",
@@ -1046,7 +1096,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "academicManagement",
         icon: GraduationCap,
         badge: null,
-        priority: 3.1,
+        priority: 4.5,
+        category: 'academic',
+        iconColor: categoryColors.academic,
         children: [
           ...(hasClassesPermission ? [{
             title: "Classes",
@@ -1072,7 +1124,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "timetables",
         icon: Calendar,
         badge: null,
-        priority: 8.4,
+        priority: 4.6,
+        category: 'academic',
+        iconColor: categoryColors.academic,
         children: [
           ...(hasTimetablesPermission ? [{
             title: "Timetable Generation",
@@ -1093,6 +1147,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
         icon: Settings,
         badge: null,
         priority: 10,
+        category: 'admin',
+        iconColor: categoryColors.admin,
         children: [
           // Only show child items if user has the required permission
           ...(hasOrganizationsPermission ? [{
@@ -1138,7 +1194,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "academicSettings",
         icon: GraduationCap,
         badge: null,
-        priority: 8,
+        priority: 9,
+        category: 'admin',
+        iconColor: categoryColors.admin,
         children: [
           // Only show child items if user has the required permission
           ...(hasBrandingPermission ? [{
@@ -1362,6 +1420,28 @@ export const SmartSidebar = memo(function SmartSidebar() {
     return items;
   }, [navigationContext, allNavigationItems, permissionsReady]);
 
+  // Group items by category for better organization
+  const groupedItems = useMemo(() => {
+    const groups: Record<NavigationCategory, NavigationItem[]> = {
+      core: [],
+      operations: [],
+      academic: [],
+      finance: [],
+      admin: [],
+    };
+
+    filteredItems.forEach(item => {
+      const category = item.category || 'operations';
+      if (groups[category]) {
+        groups[category].push(item);
+      } else {
+        groups.operations.push(item); // Default fallback
+      }
+    });
+
+    return groups;
+  }, [filteredItems]);
+
   // Don't show loading state - always render with available data
   // The sidebar will update when permissions are available, but won't disappear
 
@@ -1393,6 +1473,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
   const renderMenuItem = (item: NavigationItem) => {
     const label = t(`nav.${item.titleKey}`);
+    const iconColorClass = item.iconColor || categoryColors.default;
     // Always show parent items even if they have no children (they might have children that load later)
     if (item.children) {
       const isExpanded = expandedItems.includes(item.titleKey) || isChildActive(item.children);
@@ -1402,7 +1483,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           <SidebarMenuItem>
             <CollapsibleTrigger asChild>
               <SidebarMenuButton className={getNavCls({ isActive: isChildActive(item.children) })}>
-                <item.icon className="h-4 w-4" />
+                <item.icon className={`h-4 w-4 ${iconColorClass}`} />
                 {!collapsed && (
                   <>
                     <span className="flex-1">{label}</span>
@@ -1499,7 +1580,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             to={item.url || '/'}
             className={getNavCls({ isActive: isActive(item.url || '/') })}
           >
-            <item.icon className="h-4 w-4" />
+            <item.icon className={`h-4 w-4 ${iconColorClass}`} />
             {!collapsed && (
               <>
                 <span className="flex-1">{label}</span>
@@ -1521,7 +1602,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
   return (
     <Sidebar
-      className={`${collapsed ? "w-14" : "w-64"} transition-all duration-300`}
+      className={`${collapsed ? "w-14" : "w-72"} transition-all duration-300`}
       collapsible="icon"
       side={isRTL ? "right" : "left"}
       dir={isRTL ? 'rtl' : 'ltr'}
@@ -1601,15 +1682,76 @@ export const SmartSidebar = memo(function SmartSidebar() {
           </SidebarGroup>
         )}
 
-        {/* Main Navigation */}
-        <SidebarGroup>
-          <SidebarGroupLabel>{t('common.mainNavigation')}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {filteredItems.map(renderMenuItem)}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Main Navigation - Grouped by Category */}
+        {/* Core Section */}
+        {groupedItems.core.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
+              {t('nav.sections.core')}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {groupedItems.core.map(renderMenuItem)}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Operations Section */}
+        {groupedItems.operations.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
+              {t('nav.sections.operations')}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {groupedItems.operations.map(renderMenuItem)}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Academic Section */}
+        {groupedItems.academic.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
+              {t('nav.sections.academic')}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {groupedItems.academic.map(renderMenuItem)}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Finance Section */}
+        {groupedItems.finance.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
+              {t('nav.sections.finance')}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {groupedItems.finance.map(renderMenuItem)}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Admin Section */}
+        {groupedItems.admin.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
+              {t('nav.sections.admin')}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {groupedItems.admin.map(renderMenuItem)}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       {/* Quick Actions */}

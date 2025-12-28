@@ -1309,7 +1309,14 @@ export const fa: TranslationKeys = {
     studentReports: 'گزارش‌های دانش‌آموزان',
     students: 'دانش‌آموزان',
     studentsImport: 'ورود گروهی دانش‌آموزان',
-    translations: 'ترجمه‌ها'
+    translations: 'ترجمه‌ها',
+    sections: {
+      core: 'اصلی',
+      operations: 'عملیات',
+      academic: 'آموزشی',
+      finance: 'مالی',
+      admin: 'مدیریت'
+    }
   },
   certificates: {
     templates: 'قالب‌های گواهینامه',

@@ -1451,7 +1451,14 @@ export const en: TranslationKeys = {
     studentReports: 'Student Reports',
     students: 'Students',
     studentsImport: 'Bulk Import Students',
-    translations: 'Translations'
+    translations: 'Translations',
+    sections: {
+      core: 'Core',
+      operations: 'Operations',
+      academic: 'Academic',
+      finance: 'Finance',
+      admin: 'Administration'
+    }
   },
   certificates: {
     templates: 'Certificate Templates',

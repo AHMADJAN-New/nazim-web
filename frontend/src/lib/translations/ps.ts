@@ -1309,7 +1309,14 @@ export const ps: TranslationKeys = {
     studentReports: 'د زده کوونکو راپورونه',
     students: 'زده کوونکي',
     studentsImport: 'د زده کوونکو ډله ییز واردول',
-    translations: 'ژباړې'
+    translations: 'ژباړې',
+    sections: {
+      core: 'اساسي',
+      operations: 'عملیات',
+      academic: 'علمي',
+      finance: 'مالي',
+      admin: 'اداره'
+    }
   },
   certificates: {
     templates: 'د سند قالبونه',

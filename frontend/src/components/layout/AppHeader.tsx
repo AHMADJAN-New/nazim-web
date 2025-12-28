@@ -74,14 +74,30 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   // For users with schools_access_all: just update context (temporary switch)
   // For other users: update default_school_id permanently (only if they have permission)
   const handleSchoolChange = (schoolId: string) => {
+    // Prevent reload if same school is selected
+    if (schoolId === selectedSchoolId) {
+      return;
+    }
+
     if (hasSchoolsAccessAll) {
-      // Temporary switch - just update context
+      // Temporary switch - update context and do hard reload
+      // Update localStorage synchronously first
       setSelectedSchoolId(schoolId);
-      // Invalidate queries to refresh data with new school context
-      void queryClient.invalidateQueries();
+      
+      // Clear all React Query cache to ensure fresh data
+      queryClient.clear();
+      
+      // Show success message briefly before reload
       showToast.success(t("common.schoolSwitched"));
+      
+      // Hard reload after a short delay to ensure localStorage is updated and toast is visible
+      // This ensures all data is refreshed with the new school context
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
     } else {
       // Permanent switch - update default_school_id
+      // This will also trigger a hard reload after the API call succeeds
       updateMySchool.mutate(schoolId);
     }
   };
@@ -91,11 +107,22 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
       // Update current user's default_school_id (backend validates org membership)
       await authApi.updateProfile({ default_school_id: schoolId });
     },
-    onSuccess: async () => {
-      // Force reload AuthContext profile and refresh all cached data
-      await refreshAuth();
-      await queryClient.invalidateQueries();
+    onSuccess: (_data, schoolId) => {
+      // Clear all React Query cache to ensure fresh data
+      queryClient.clear();
+      
+      // Update selected school in context to match new default
+      setSelectedSchoolId(schoolId);
+      
+      // Show success message briefly before reload
       showToast.success(t("toast.profileUpdated"));
+      
+      // Hard reload to ensure all data is refreshed with new school context
+      // This ensures all components re-initialize with the new default_school_id
+      // No need to call refreshAuth() since hard reload will fetch fresh profile
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
     },
     onError: (error: any) => {
       showToast.error(error?.message || t("toast.profileUpdateFailed"));
@@ -175,7 +202,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
             <Select
               value={selectedSchoolId ?? authProfile?.default_school_id ?? 'none'}
               onValueChange={(value) => {
-                if (value && value !== 'none' && value !== selectedSchoolId) {
+                if (value && value !== 'none') {
                   handleSchoolChange(value);
                 }
               }}

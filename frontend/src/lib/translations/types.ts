@@ -192,6 +192,13 @@ export interface TranslationKeys {
     "dms.archive": string;
     "dms.reports": string;
     "dms.settings": string;
+    sections: {
+      core: string;
+      operations: string;
+      academic: string;
+      finance: string;
+      admin: string;
+    };
   };
 
   // Document Management System

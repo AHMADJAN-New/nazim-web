@@ -1308,7 +1308,14 @@ export const ar: TranslationKeys = {
     studentReports: 'تقارير الطلاب',
     students: 'الطلاب',
     studentsImport: 'استيراد جماعي للطلاب',
-    translations: 'الترجمات'
+    translations: 'الترجمات',
+    sections: {
+      core: 'الأساسي',
+      operations: 'العمليات',
+      academic: 'الأكاديمي',
+      finance: 'المالية',
+      admin: 'الإدارة'
+    }
   },
   certificates: {
     templates: 'قوالب الشهادات',
