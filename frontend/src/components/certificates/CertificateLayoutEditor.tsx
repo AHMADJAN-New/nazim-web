@@ -39,6 +39,9 @@ const getFields = (studentName: string, fatherName: string, courseName: string):
   { id: 'nationality', label: 'Nationality', key: 'nationalityPosition', sampleText: 'Afghan', defaultFontSize: 12 },
   { id: 'guardianName', label: 'Guardian Name', key: 'guardianNamePosition', sampleText: 'Guardian Name', defaultFontSize: 14 },
   { id: 'studentPhoto', label: 'Student Photo', key: 'studentPhotoPosition', sampleText: '📷', isImage: true, defaultWidth: 100, defaultHeight: 100, defaultFontSize: 12 },
+  { id: 'qrCode', label: 'QR Code', key: 'qrCodePosition', sampleText: '🔳', isImage: true, defaultWidth: 120, defaultHeight: 120, defaultFontSize: 12 },
+  { id: 'directorSignature', label: 'Director Signature', key: 'directorSignaturePosition', sampleText: 'Director Signature', defaultFontSize: 10 },
+  { id: 'officialSeal', label: 'Official Seal', key: 'officialSealPosition', sampleText: 'Official Seal', defaultFontSize: 10 },
 ];
 
 interface CertificateLayoutEditorProps {
@@ -61,7 +64,7 @@ export function CertificateLayoutEditor({
   // Initialize config from layoutConfig prop and preserve it when prop changes
   const [config, setConfig] = useState<CertificateLayoutConfig>(() => ({
     ...layoutConfig,
-    enabledFields: layoutConfig.enabledFields || ['header', 'studentName', 'fatherName', 'courseName', 'certificateNumber', 'date'],
+    enabledFields: layoutConfig.enabledFields || ['header', 'studentName', 'fatherName', 'courseName', 'certificateNumber', 'date', 'directorSignature', 'officialSeal'],
     fieldFonts: layoutConfig.fieldFonts || {},
   }));
 
@@ -69,7 +72,7 @@ export function CertificateLayoutEditor({
   useEffect(() => {
     setConfig({
       ...layoutConfig,
-      enabledFields: layoutConfig.enabledFields || ['header', 'studentName', 'fatherName', 'courseName', 'certificateNumber', 'date'],
+      enabledFields: layoutConfig.enabledFields || ['header', 'studentName', 'fatherName', 'courseName', 'certificateNumber', 'date', 'directorSignature', 'officialSeal'],
       fieldFonts: layoutConfig.fieldFonts || {},
     });
   }, [layoutConfig]);
@@ -86,7 +89,7 @@ export function CertificateLayoutEditor({
   // Fetch course name if courseId is provided
   const { data: courses = [] } = useShortTermCourses();
   const course = courseId ? courses.find((c) => c.id === courseId) : null;
-  const courseName = course?.name || 'Advanced Mathematics'; // Fallback to sample text
+  const courseName = course?.name || 'Course Name'; // Use actual course name or generic placeholder
   
   // Fetch students for the course to get real names
   const { data: courseStudents = [] } = useCourseStudents(courseId || undefined, false);
@@ -225,6 +228,9 @@ export function CertificateLayoutEditor({
       nationalityPosition: { x: 50, y: 80 }, // Bottom center
       guardianNamePosition: { x: 50, y: 70 }, // Lower middle
       studentPhotoPosition: { x: 15, y: 40 }, // Left side, middle
+      qrCodePosition: { x: 85, y: 40, width: 12, height: 12 }, // Right side, middle
+      directorSignaturePosition: { x: 20, y: 85 }, // Bottom left area
+      officialSealPosition: { x: 80, y: 85 }, // Bottom right area
     };
     
     return defaultPositions[fieldKey] || { x: 50, y: 50 };
@@ -474,9 +480,12 @@ export function CertificateLayoutEditor({
                       <img
                         src={imageUrl}
                         alt="Certificate Background"
-                        className="w-full h-full object-contain"
                         style={{ 
                           display: backgroundImageLoaded ? 'block' : 'none',
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          objectPosition: 'center',
                         }}
                       />
                     )}
@@ -502,7 +511,7 @@ export function CertificateLayoutEditor({
                         <div className="flex items-center justify-center gap-1 border-2 border-dashed border-blue-400 bg-blue-50 rounded p-2">
                           <GripVertical className="h-4 w-4 opacity-50" />
                           <span className="text-2xl">{field.sampleText}</span>
-                          <span className="text-xs">Photo</span>
+                          <span className="text-xs">{field.id === 'qrCode' ? 'QR' : 'Photo'}</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1">
@@ -520,6 +529,29 @@ export function CertificateLayoutEditor({
                                 })()
                               : field.id === 'date' && config.dateText
                               ? `${config.dateText} ${field.sampleText}`
+                              : field.id === 'directorSignature'
+                              ? (() => {
+                                  const sigText = config.directorSignatureText !== undefined 
+                                    ? config.directorSignatureText 
+                                    : 'Director Signature';
+                                  return sigText || '___________';
+                                })()
+                              : field.id === 'officialSeal'
+                              ? (() => {
+                                  const sealText = config.officialSealText !== undefined 
+                                    ? config.officialSealText 
+                                    : 'Official Seal';
+                                  return sealText || '___________';
+                                })()
+                              : field.id === 'certificateNumber'
+                              ? (() => {
+                                  const certPrefix = config.certificateNumberPrefix !== undefined 
+                                    ? config.certificateNumberPrefix 
+                                    : 'Certificate No:';
+                                  return certPrefix 
+                                    ? `${certPrefix} ${field.sampleText}`
+                                    : field.sampleText;
+                                })()
                               : field.sampleText}
                           </span>
                         </div>
@@ -606,6 +638,135 @@ export function CertificateLayoutEditor({
                   <p className="text-xs text-muted-foreground">
                     Label/prefix for the date field (e.g., "Date:", "Issued on:", etc.)
                   </p>
+                </div>
+              )}
+
+              {selectedField === 'directorSignature' && (
+                <div className="space-y-2 pt-2 border-t">
+                  <Label>Director Signature Text</Label>
+                  <Input
+                    value={config.directorSignatureText !== undefined ? config.directorSignatureText : 'Director Signature'}
+                    onChange={(e) => setConfig({ ...config, directorSignatureText: e.target.value })}
+                    placeholder="Director Signature"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Text to display below signature line. Leave empty to hide text (show only line).
+                  </p>
+                </div>
+              )}
+
+              {selectedField === 'officialSeal' && (
+                <div className="space-y-2 pt-2 border-t">
+                  <Label>Official Seal Text</Label>
+                  <Input
+                    value={config.officialSealText !== undefined ? config.officialSealText : 'Official Seal'}
+                    onChange={(e) => setConfig({ ...config, officialSealText: e.target.value })}
+                    placeholder="Official Seal"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Text to display below seal line. Leave empty to hide text (show only line).
+                  </p>
+                </div>
+              )}
+
+              {selectedField === 'certificateNumber' && (
+                <div className="space-y-2 pt-2 border-t">
+                  <Label>Certificate Number Prefix</Label>
+                  <Input
+                    value={config.certificateNumberPrefix !== undefined ? config.certificateNumberPrefix : 'Certificate No:'}
+                    onChange={(e) => setConfig({ ...config, certificateNumberPrefix: e.target.value })}
+                    placeholder="Certificate No:"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Prefix for certificate number (e.g., "Certificate No:", "Cert:", "#"). Leave empty to show only the number.
+                  </p>
+                </div>
+              )}
+
+              {(selectedField === 'studentPhoto' || selectedField === 'qrCode') && (
+                <div className="space-y-3 pt-2 border-t">
+                  <div className="space-y-2">
+                    <Label>{selectedField === 'qrCode' ? 'QR Code Size (% of page)' : 'Photo Size (% of page)'}</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Width (%)</Label>
+                        <Input
+                          type="number"
+                          value={
+                            (selectedField === 'qrCode'
+                              ? (config.qrCodePosition as any)?.width
+                              : (config.studentPhotoPosition as any)?.width) ?? ''
+                          }
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const val = raw === '' ? undefined : Math.max(1, Math.min(100, Number(raw)));
+                            if (selectedField === 'qrCode') {
+                              const current = config.qrCodePosition || { x: 85, y: 40 };
+                              setConfig({ ...config, qrCodePosition: { ...current, width: val } });
+                            } else {
+                              const current = config.studentPhotoPosition || { x: 15, y: 40 };
+                              setConfig({ ...config, studentPhotoPosition: { ...current, width: val } });
+                            }
+                          }}
+                          placeholder="e.g., 12"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Height (%)</Label>
+                        <Input
+                          type="number"
+                          value={
+                            (selectedField === 'qrCode'
+                              ? (config.qrCodePosition as any)?.height
+                              : (config.studentPhotoPosition as any)?.height) ?? ''
+                          }
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const val = raw === '' ? undefined : Math.max(1, Math.min(100, Number(raw)));
+                            if (selectedField === 'qrCode') {
+                              const current = config.qrCodePosition || { x: 85, y: 40 };
+                              setConfig({ ...config, qrCodePosition: { ...current, height: val } });
+                            } else {
+                              const current = config.studentPhotoPosition || { x: 15, y: 40 };
+                              setConfig({ ...config, studentPhotoPosition: { ...current, height: val } });
+                            }
+                          }}
+                          placeholder="e.g., 12"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Leave empty to use default pixel size. Values are percentages of the page.
+                    </p>
+                  </div>
+
+                  {selectedField === 'qrCode' && (
+                    <div className="space-y-2">
+                      <Label>QR Code Value Source</Label>
+                      <Select
+                        value={config.qrCodeValueSource || 'certificate_number'}
+                        onValueChange={(value) =>
+                          setConfig({
+                            ...config,
+                            qrCodeValueSource: value as any,
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select QR value source" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="certificate_number">Certificate Number</SelectItem>
+                          <SelectItem value="admission_no">Admission Number</SelectItem>
+                          <SelectItem value="course_student_id">Course Student ID</SelectItem>
+                          <SelectItem value="student_id">Student ID</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Select what data should be encoded into the QR code.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 

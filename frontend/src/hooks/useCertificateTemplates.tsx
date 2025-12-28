@@ -24,12 +24,18 @@ export interface CertificateLayoutConfig {
   nationalityPosition?: { x: number; y: number };
   guardianNamePosition?: { x: number; y: number };
   studentPhotoPosition?: { x: number; y: number; width?: number; height?: number };
-  qrCodePosition?: { x: number; y: number; width?: number; height?: number }; // For graduation certificates
+  qrCodePosition?: { x: number; y: number; width?: number; height?: number };
+  directorSignaturePosition?: { x: number; y: number }; // For course certificates
+  officialSealPosition?: { x: number; y: number }; // For course certificates
   // Editable text content for fields
   headerText?: string; // Custom header text (default: "Certificate of Completion" or "Graduation Certificate")
   courseNameText?: string; // Custom course name label/prefix (default: empty, uses actual course name)
   classNameText?: string; // Custom class name label/prefix (default: empty, uses actual class name)
   dateText?: string; // Custom date label/prefix (default: "Date:")
+  directorSignatureText?: string; // Custom director signature label (default: "Director Signature", empty string to hide)
+  officialSealText?: string; // Custom official seal label (default: "Official Seal", empty string to hide)
+  certificateNumberPrefix?: string; // Custom certificate number prefix (default: "Certificate No:", empty string to show only number)
+  qrCodeValueSource?: 'certificate_number' | 'admission_no' | 'student_id' | 'course_student_id'; // What data should be encoded in QR
   // Field visibility (optional fields - user can enable/disable)
   enabledFields?: string[]; // Array of field IDs that should be displayed
   // Global style settings (used as defaults)

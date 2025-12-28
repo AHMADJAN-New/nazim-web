@@ -56,6 +56,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import { useLanguage } from '@/hooks/useLanguage';
 
+// Available font families for certificate templates
+// These fonts are supported by pdfmake for certificate generation
+const fontFamilyOptions = [
+  { value: 'Roboto', label: 'Roboto (Default)' },
+  { value: 'Arial', label: 'Arial' },
+  { value: 'BahijNassim', label: 'Bahij Nassim (RTL Support)' },
+  { value: 'Times New Roman', label: 'Times New Roman' },
+  { value: 'Courier New', label: 'Courier New' },
+  { value: 'Helvetica', label: 'Helvetica' },
+  { value: 'Tahoma', label: 'Tahoma' },
+];
+
 export default function CertificateTemplates() {
   const { t } = useLanguage();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -73,7 +85,7 @@ export default function CertificateTemplates() {
   const [isActive, setIsActive] = useState(true);
   const [layoutConfig, setLayoutConfig] = useState<CertificateLayoutConfig>({
     fontSize: 24,
-    fontFamily: 'Arial',
+    fontFamily: 'Roboto',
     textColor: '#000000',
     rtl: true,
     enabledFields: ['header', 'studentName', 'fatherName', 'courseName', 'certificateNumber', 'date'],
@@ -102,7 +114,7 @@ export default function CertificateTemplates() {
     setIsActive(true);
     setLayoutConfig({
       fontSize: 24,
-      fontFamily: 'Arial',
+      fontFamily: 'Roboto',
       textColor: '#000000',
       rtl: true,
     });
@@ -377,10 +389,24 @@ export default function CertificateTemplates() {
                 </div>
                 <div className="space-y-2">
                   <Label>Font Family</Label>
-                  <Input
-                    value={layoutConfig.fontFamily || 'Arial'}
-                    onChange={(e) => setLayoutConfig({ ...layoutConfig, fontFamily: e.target.value })}
-                  />
+                  <Select
+                    value={layoutConfig.fontFamily || 'Roboto'}
+                    onValueChange={(value) => setLayoutConfig({ ...layoutConfig, fontFamily: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select font family" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fontFamilyOptions.map((font) => (
+                        <SelectItem key={font.value} value={font.value}>
+                          {font.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Select a font family for the certificate text. Bahij Nassim is recommended for RTL languages (Pashto, Arabic, Farsi).
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label>Text Color</Label>
