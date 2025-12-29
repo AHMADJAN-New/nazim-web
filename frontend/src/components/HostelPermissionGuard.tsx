@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useUserPermissions } from '@/hooks/usePermissions';
+import { useFeatures } from '@/hooks/useSubscription';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading';
@@ -25,20 +26,24 @@ export function HostelPermissionGuard({
 }: HostelPermissionGuardProps) {
   const { t } = useLanguage();
   const { data: permissions, isLoading } = useUserPermissions();
+  const { data: features, isLoading: featuresLoading, error: featuresError } = useFeatures();
   const hasHostelRead = useHasPermission('hostel.read');
   const hasRoomsRead = useHasPermission('rooms.read');
   const hasAdmissionsRead = useHasPermission('student_admissions.read');
+  const hasHostelFeature = !!features?.find((feature) => feature.featureKey === 'hostel')?.isEnabled;
 
   // Show loading state while permissions are being fetched
   const isInitialLoad = isLoading && permissions === undefined;
+  const hasFeatureData = Array.isArray(features) && features.length > 0;
+  const isFeatureLoading = featuresLoading && !hasFeatureData;
   
-  if (hasHostelRead === undefined || hasRoomsRead === undefined || hasAdmissionsRead === undefined || isInitialLoad) {
+  if (hasHostelRead === undefined || hasRoomsRead === undefined || hasAdmissionsRead === undefined || isInitialLoad || isFeatureLoading) {
     return <LoadingSpinner size="lg" text={t('guards.checkingPermissions')} />;
   }
 
   // Check: (hostel.read OR rooms.read) AND student_admissions.read
   const hasHostelOrRooms = hasHostelRead || hasRoomsRead;
-  const hasAllRequired = hasHostelOrRooms && hasAdmissionsRead;
+  const hasAllRequired = !featuresError && hasHostelFeature && hasHostelOrRooms && hasAdmissionsRead;
 
   if (hasAllRequired) {
     return <>{children}</>;
