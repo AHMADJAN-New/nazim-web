@@ -68,7 +68,14 @@ const STATUS_CONFIG = {
     badgeVariant: 'secondary' as const,
     label: 'Cancelled',
   },
-};
+  // Fallback for unknown/none status
+  none: {
+    icon: AlertCircle,
+    color: 'bg-gray-400',
+    badgeVariant: 'secondary' as const,
+    label: 'No Subscription',
+  },
+} as const;
 
 export function SubscriptionStatusCard() {
   const { data: status, isLoading } = useSubscriptionStatus();
@@ -112,7 +119,8 @@ export function SubscriptionStatusCard() {
     );
   }
 
-  const config = STATUS_CONFIG[status.status];
+  // Get config with fallback to 'none' if status is not recognized
+  const config = STATUS_CONFIG[status.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.none;
   const StatusIcon = config.icon;
 
   const showWarning = ['pending_renewal', 'grace_period', 'readonly', 'expired'].includes(status.status);
