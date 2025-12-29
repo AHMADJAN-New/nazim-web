@@ -22,7 +22,7 @@ import {
   School,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -65,40 +65,31 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useHasPermission } from '@/hooks/usePermissions';
 import {
-  useSubscriptionDashboard,
-  usePendingPayments,
-  usePendingRenewals,
-  useAdminSubscriptions,
-} from '@/hooks/useSubscriptionAdmin';
+  usePlatformDashboard,
+  usePlatformPendingPayments,
+  usePlatformPendingRenewals,
+  usePlatformSubscriptions,
+} from '@/platform/hooks/usePlatformAdminComplete';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { showToast } from '@/lib/toast';
 import { OrganizationsManagement } from '@/components/settings/OrganizationsManagement';
+import { OrganizationAdminsManagement } from '@/components/settings/OrganizationAdminsManagement';
 
 export default function SubscriptionAdminDashboard() {
   const { t } = useLanguage();
-  const hasAdminPermission = useHasPermission('subscription.admin');
-  const hasCreatePermission = useHasPermission('organizations.create');
-  const hasUpdatePermission = useHasPermission('organizations.update');
-  const hasDeletePermission = useHasPermission('organizations.delete');
   const [activeTab, setActiveTab] = useState('overview');
 
   const { data: dashboardData, isLoading: isDashboardLoading } =
-    useSubscriptionDashboard();
+    usePlatformDashboard();
   const { data: pendingPayments, isLoading: isPaymentsLoading } =
-    usePendingPayments();
+    usePlatformPendingPayments();
   const { data: pendingRenewals, isLoading: isRenewalsLoading } =
-    usePendingRenewals();
+    usePlatformPendingRenewals();
   const { data: subscriptions, isLoading: isSubscriptionsLoading } =
-    useAdminSubscriptions({});
-
-  // Access control - redirect if no permission
-  if (!hasAdminPermission) {
-    return <Navigate to="/dashboard" replace />;
-  }
+    usePlatformSubscriptions({});
 
   if (isDashboardLoading) {
     return (
@@ -139,13 +130,13 @@ export default function SubscriptionAdminDashboard() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link to="/admin/subscription/plans">
+            <Link to="/platform/plans">
               <Package className="mr-2 h-4 w-4" />
               Manage Plans
             </Link>
           </Button>
           <Button variant="outline" asChild>
-            <Link to="/admin/subscription/discount-codes">
+            <Link to="/platform/discount-codes">
               <Ticket className="mr-2 h-4 w-4" />
               Discount Codes
             </Link>
@@ -269,6 +260,10 @@ export default function SubscriptionAdminDashboard() {
             <Building2 className="mr-2 h-4 w-4" />
             Organizations
           </TabsTrigger>
+          <TabsTrigger value="admins">
+            <Users className="mr-2 h-4 w-4" />
+            Organization Admins
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 space-y-4">
@@ -359,13 +354,13 @@ export default function SubscriptionAdminDashboard() {
                 <div className="flex items-center justify-center py-8">
                   <RefreshCw className="h-6 w-6 animate-spin" />
                 </div>
-              ) : !pendingPayments?.data?.length ? (
+              ) : !pendingPayments?.data || pendingPayments.data.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
                   No pending payments
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {(pendingPayments.data || []).slice(0, 5).map((payment) => (
+                  {(pendingPayments.data || []).slice(0, 5).map((payment: any) => (
                     <div
                       key={payment.id}
                       className="flex items-center justify-between rounded-lg border p-4"
@@ -382,7 +377,7 @@ export default function SubscriptionAdminDashboard() {
                       </div>
                       <Button size="sm" asChild>
                         <Link
-                          to={`/admin/subscription/payments/${payment.id}`}
+                          to={`/platform/payments/${payment.id}`}
                         >
                           Review
                         </Link>
@@ -391,7 +386,7 @@ export default function SubscriptionAdminDashboard() {
                   ))}
                   {((pendingPayments?.data?.length || 0) > 5) && (
                     <Button variant="outline" className="w-full" asChild>
-                      <Link to="/admin/subscription/payments">
+                      <Link to="/platform/payments">
                         View All ({pendingPayments?.data?.length || 0})
                       </Link>
                     </Button>
@@ -422,13 +417,13 @@ export default function SubscriptionAdminDashboard() {
                 <div className="flex items-center justify-center py-8">
                   <RefreshCw className="h-6 w-6 animate-spin" />
                 </div>
-              ) : !pendingRenewals?.data?.length ? (
+              ) : !pendingRenewals?.data || pendingRenewals.data.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
                   No pending renewals
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {(pendingRenewals.data || []).slice(0, 5).map((renewal) => (
+                  {(pendingRenewals.data || []).slice(0, 5).map((renewal: any) => (
                     <div
                       key={renewal.id}
                       className="flex items-center justify-between rounded-lg border p-4"
@@ -442,7 +437,7 @@ export default function SubscriptionAdminDashboard() {
                         </div>
                       </div>
                       <Button size="sm" asChild>
-                        <Link to={`/admin/subscription/renewals/${renewal.id}`}>
+                        <Link to={`/platform/renewals/${renewal.id}`}>
                           Review
                         </Link>
                       </Button>
@@ -450,7 +445,7 @@ export default function SubscriptionAdminDashboard() {
                   ))}
                   {((pendingRenewals?.data?.length || 0) > 5) && (
                     <Button variant="outline" className="w-full" asChild>
-                      <Link to="/admin/subscription/renewals">
+                      <Link to="/platform/pending">
                         View All ({pendingRenewals?.data?.length || 0})
                       </Link>
                     </Button>
@@ -496,7 +491,7 @@ export default function SubscriptionAdminDashboard() {
                       </div>
                       <Button size="sm" variant="outline" asChild>
                         <Link
-                          to={`/admin/subscription/organizations/${sub.organization_id}`}
+                          to={`/platform/organizations/${sub.organization_id}`}
                         >
                           Manage
                         </Link>
@@ -505,7 +500,7 @@ export default function SubscriptionAdminDashboard() {
                   ))}
                   {(subscriptions.total || 0) > 10 && (
                     <Button variant="outline" className="w-full" asChild>
-                      <Link to="/admin/subscription/organizations">
+                      <Link to="/platform/organizations">
                         View All ({subscriptions.total})
                       </Link>
                     </Button>
@@ -518,6 +513,10 @@ export default function SubscriptionAdminDashboard() {
 
         <TabsContent value="organizations" className="mt-4">
           <OrganizationsManagement />
+        </TabsContent>
+
+        <TabsContent value="admins" className="mt-4">
+          <OrganizationAdminsManagement />
         </TabsContent>
       </Tabs>
 

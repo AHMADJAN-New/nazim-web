@@ -7,7 +7,6 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,12 +36,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { useHasPermission } from '@/hooks/usePermissions';
 import {
-  useAdminPlans,
-  useCreatePlan,
-  useUpdatePlan,
-} from '@/hooks/useSubscriptionAdmin';
+  usePlatformPlans,
+  useCreatePlatformPlan,
+  useUpdatePlatformPlan,
+} from '@/platform/hooks/usePlatformAdminComplete';
 import { showToast } from '@/lib/toast';
 
 interface PlanFormData {
@@ -78,19 +76,13 @@ const initialFormData: PlanFormData = {
 };
 
 export default function PlansManagement() {
-  const hasAdminPermission = useHasPermission('subscription.admin');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<string | null>(null);
   const [formData, setFormData] = useState<PlanFormData>(initialFormData);
 
-  const { data: plans, isLoading } = useAdminPlans();
-  const createPlan = useCreatePlan();
-  const updatePlan = useUpdatePlan();
-
-  // Access control
-  if (!hasAdminPermission) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  const { data: plans, isLoading } = usePlatformPlans();
+  const createPlan = useCreatePlatformPlan();
+  const updatePlan = useUpdatePlatformPlan();
 
   const handleOpenCreate = () => {
     setFormData(initialFormData);

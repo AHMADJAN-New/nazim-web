@@ -27,10 +27,11 @@ class User extends Authenticatable
     /**
      * Get the name of the guard used by this model
      * Required for Spatie permissions to work correctly
+     * Must return a Collection, not an array
      */
     public function getGuardNames()
     {
-        return ['web'];
+        return collect(['web']);
     }
 
     protected $fillable = [

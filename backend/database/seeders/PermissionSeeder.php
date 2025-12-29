@@ -401,6 +401,11 @@ class PermissionSeeder extends Seeder
                     foreach ($actions as $action) {
                         $permissionName = "{$resource}.{$action}";
 
+                        // CRITICAL: Skip subscription.admin - it's GLOBAL only (not organization-scoped)
+                        if ($permissionName === 'subscription.admin') {
+                            continue;
+                        }
+
                         // Check if organization-specific permission already exists
                         $exists = DB::table('permissions')
                             ->where('name', $permissionName)

@@ -293,6 +293,8 @@ class SubscriptionSeeder extends Seeder
                 array_merge($planData, [
                     'per_school_price_afn' => $planData['per_school_price_afn'] ?? 0,
                     'per_school_price_usd' => $planData['per_school_price_usd'] ?? 0,
+                    'is_active' => true, // CRITICAL: Plans must be active to appear in API
+                    'is_custom' => false, // CRITICAL: Only standard plans appear in public API
                 ])
             );
 

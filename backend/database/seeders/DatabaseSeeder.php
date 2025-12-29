@@ -32,6 +32,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 1: Seeding permissions...');
         $this->call(PermissionSeeder::class);
 
+        // Step 1a: Seed platform admin user (platform admin access)
+        $this->command->info('Step 1a: Seeding platform admin user...');
+        $this->call(PlatformAdminSeeder::class);
+
         // Step 1b: Seed residency types (lookup table)
         $this->command->info('Step 1b: Seeding residency types...');
         $this->call(ResidencyTypeSeeder::class);
@@ -218,7 +222,12 @@ class DatabaseSeeder extends Seeder
         $this->command->info('  - staff2@test.com / staff123 (Staff)');
         $this->command->info('  - teacher2@test.com / teacher123 (Teacher)');
         $this->command->info('');
+        $this->command->info('Platform Admin user:');
+        $this->command->info('  - platform-admin@nazim.app / platform-admin-123 (Platform Admin)');
+        $this->command->info('  Access at: /platform/login');
+        $this->command->info('');
         $this->command->info('Each user can only see data from their own organization.');
+        $this->command->info('Platform admin can see all organizations.');
     }
 
     /**

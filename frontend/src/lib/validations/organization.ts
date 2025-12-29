@@ -43,6 +43,11 @@ export const organizationSchema = z.object({
   
   // Media
   logoUrl: z.string().url('Invalid logo URL').optional().nullable().or(z.literal('')),
+  
+  // Admin user fields (required when creating, not when updating)
+  admin_email: z.string().email('Invalid admin email').optional(),
+  admin_password: z.string().min(8, 'Password must be at least 8 characters').optional(),
+  admin_full_name: z.string().min(1, 'Admin full name is required').optional(),
 });
 
 export type OrganizationFormData = z.infer<typeof organizationSchema>;

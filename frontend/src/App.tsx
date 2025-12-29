@@ -13,10 +13,16 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/hooks/useLanguage";
 import { SchoolProvider } from "@/contexts/SchoolContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { PlatformAdminRoute } from "@/components/PlatformAdminRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 import TimetableGeneration from "./pages/TimetableGeneration";
+import { PlatformAdminLogin } from "./platform/pages/PlatformAdminLogin";
+import { PlatformAdminDashboard } from "./platform/pages/PlatformAdminDashboard";
+import { PlatformAdminLayout } from "./platform/components/PlatformAdminLayout";
+import { OrganizationAdminsManagement } from "@/components/settings/OrganizationAdminsManagement";
+import { PlatformPermissionGroupsManagement } from "./platform/pages/PlatformPermissionGroupsManagement";
 
 // Lazy-loaded components with optimized loading
 import {
@@ -227,6 +233,77 @@ const App = () => (
                     <Suspense fallback={<PageSkeleton />}>
                       <VerifyCertificate />
                     </Suspense>
+                  } />
+
+                  {/* Platform Admin Routes - Separate app, not tied to organizations */}
+                  <Route path="/platform/login" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PlatformAdminLogin />
+                    </Suspense>
+                  } />
+                  <Route path="/platform/*" element={
+                    <PlatformAdminRoute>
+                      <PlatformAdminLayout>
+                        <Routes>
+                          <Route path="/dashboard" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <PlatformAdminDashboard />
+                            </Suspense>
+                          } />
+                          <Route path="/organizations" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <OrganizationsManagement />
+                            </Suspense>
+                          } />
+                          <Route path="/organizations/:organizationId" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <OrganizationSubscriptionDetail />
+                            </Suspense>
+                          } />
+                          <Route path="/admins" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <OrganizationAdminsManagement />
+                            </Suspense>
+                          } />
+                          <Route path="/permission-groups" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <PlatformPermissionGroupsManagement />
+                            </Suspense>
+                          } />
+                          <Route path="/subscriptions" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <SubscriptionAdminDashboard />
+                            </Suspense>
+                          } />
+                          <Route path="/plans" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <PlansManagement />
+                            </Suspense>
+                          } />
+                          <Route path="/pending" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <SubscriptionAdminDashboard />
+                            </Suspense>
+                          } />
+                          <Route path="/payments/:paymentId" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <SubscriptionAdminDashboard />
+                            </Suspense>
+                          } />
+                          <Route path="/renewals/:renewalId" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <RenewalReviewPage />
+                            </Suspense>
+                          } />
+                          <Route path="/discount-codes" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <DiscountCodesManagement />
+                            </Suspense>
+                          } />
+                          <Route path="/" element={<Navigate to="/platform/dashboard" replace />} />
+                        </Routes>
+                      </PlatformAdminLayout>
+                    </PlatformAdminRoute>
                   } />
 
                   {/* Protected routes with persistent layout */}

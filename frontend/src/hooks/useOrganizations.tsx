@@ -10,9 +10,13 @@ import { mapOrganizationApiToDomain, mapOrganizationDomainToInsert, mapOrganizat
 // Re-export domain types for convenience
 export type { Organization } from '@/types/domain/organization';
 
-export const useOrganizations = () => {
+export const useOrganizations = (options?: { enabled?: boolean }) => {
   const { user, loading: authLoading } = useAuth();
-  const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
+  // CRITICAL: Disable useAccessibleOrganizations if useOrganizations is disabled
+  // This prevents 403 errors for platform admins who don't have organization_id
+  const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations({
+    enabled: options?.enabled !== undefined ? options.enabled : undefined,
+  });
 
   return useQuery<Organization[]>({
     queryKey: ['organizations', orgIds.join(',')],
@@ -33,7 +37,7 @@ export const useOrganizations = () => {
       
       return organizations;
     },
-    enabled: !!user && !authLoading && !orgsLoading,
+    enabled: options?.enabled !== undefined ? options.enabled : (!!user && !authLoading && !orgsLoading),
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -154,6 +158,38 @@ export const useCurrentOrganization = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+  });
+};
+
+export const useOrganizationPreview = (formData?: { name?: string; slug?: string; admin_email?: string; admin_full_name?: string }) => {
+  return useQuery({
+    queryKey: ['organization-preview', formData],
+    queryFn: async () => {
+      return organizationsApi.preview(formData);
+    },
+    enabled: !!formData?.name,
+    staleTime: 1 * 60 * 1000, // 1 minute
+  });
+};
+
+export const useOrganizationPermissions = (organizationId: string) => {
+  return useQuery({
+    queryKey: ['organization-permissions', organizationId],
+    queryFn: async () => {
+      return organizationsApi.permissions(organizationId);
+    },
+    enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useOrganizationAdmins = () => {
+  return useQuery({
+    queryKey: ['organization-admins'],
+    queryFn: async () => {
+      return organizationsApi.admins();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 

@@ -11,7 +11,6 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Navigate } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -55,14 +54,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { useHasPermission } from '@/hooks/usePermissions';
 import {
-  useAdminDiscountCodes,
-  useAdminPlans,
-  useCreateDiscountCode,
-  useDeleteDiscountCode,
-  useUpdateDiscountCode,
-} from '@/hooks/useSubscriptionAdmin';
+  usePlatformDiscountCodes,
+  usePlatformPlans,
+  usePlatformCreateDiscountCode,
+  usePlatformDeleteDiscountCode,
+  usePlatformUpdateDiscountCode,
+} from '@/platform/hooks/usePlatformAdminComplete';
 import { showToast } from '@/lib/toast';
 import { formatDate } from '@/lib/utils';
 import type * as SubscriptionApi from '@/types/api/subscription';
@@ -98,23 +96,17 @@ const initialFormData: DiscountCodeFormData = {
 };
 
 export default function DiscountCodesManagement() {
-  const hasAdminPermission = useHasPermission('subscription.admin');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCode, setEditingCode] = useState<string | null>(null);
   const [formData, setFormData] = useState<DiscountCodeFormData>(initialFormData);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'expired'>('all');
 
-  const { data: codesResponse, isLoading } = useAdminDiscountCodes();
-  const { data: plans } = useAdminPlans();
-  const createCode = useCreateDiscountCode();
-  const updateCode = useUpdateDiscountCode();
-  const deleteCode = useDeleteDiscountCode();
-
-  // Access control
-  if (!hasAdminPermission) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  const { data: codesResponse, isLoading } = usePlatformDiscountCodes();
+  const { data: plans } = usePlatformPlans();
+  const createCode = usePlatformCreateDiscountCode();
+  const updateCode = usePlatformUpdateDiscountCode();
+  const deleteCode = usePlatformDeleteDiscountCode();
 
   const codes = codesResponse?.data || [];
 

@@ -36,6 +36,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLandingStats } from "@/hooks/useLandingStats";
+import { usePlatformAdminPermissions } from "@/platform/hooks/usePlatformAdminPermissions";
 // Contact form will be handled by Laravel API endpoint
 import { useToast } from "@/hooks/use-toast";
 
@@ -46,13 +47,21 @@ const Index = () => {
   const navigate = useNavigate();
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const { toast } = useToast();
+  const { data: platformPermissions } = usePlatformAdminPermissions();
 
   useEffect(() => {
-    // Redirect authenticated users to dashboard
+    // Redirect authenticated users to appropriate dashboard
     if (user) {
+      // Check if user is a platform admin
+      const isPlatformAdmin = platformPermissions && Array.isArray(platformPermissions) && platformPermissions.includes('subscription.admin');
+      
+      if (isPlatformAdmin) {
+        navigate('/platform/dashboard');
+      } else {
       navigate('/dashboard');
+      }
     }
-  }, [user, navigate]);
+  }, [user, navigate, platformPermissions]);
 
   const features = useMemo(() => [
     {

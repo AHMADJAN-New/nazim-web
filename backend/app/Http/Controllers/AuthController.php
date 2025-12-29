@@ -57,9 +57,26 @@ class AuthController extends Controller
             ]);
         }
 
-        // Auto-assign organization if user doesn't have one
-        // Only check if organization_id is missing (optimization: skip DB query if already assigned)
+        // Check if user is a platform admin (has subscription.admin permission)
+        // Platform admins should NOT have organization_id auto-assigned
+        $isPlatformAdmin = false;
         if (!$profile->organization_id) {
+            try {
+                $user = User::where('id', $authUser->id)->first();
+                if ($user) {
+                    // Check for global subscription.admin permission (organization_id = NULL)
+                    setPermissionsTeamId(null); // Clear team context to check global permissions
+                    $isPlatformAdmin = $user->hasPermissionTo('subscription.admin');
+                }
+            } catch (\Exception $e) {
+                // If permission check fails, continue with normal flow
+                \Log::debug('Could not check platform admin permission during login: ' . $e->getMessage());
+            }
+        }
+
+        // Auto-assign organization if user doesn't have one AND is not a platform admin
+        // Only check if organization_id is missing (optimization: skip DB query if already assigned)
+        if (!$profile->organization_id && !$isPlatformAdmin) {
             $defaultOrgId = OrganizationHelper::getDefaultOrganizationId();
             
             if ($defaultOrgId) {

@@ -41,25 +41,23 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
-import { useHasPermission } from '@/hooks/usePermissions';
 import {
-  useRenewalRequest,
-  useApproveRenewal,
-  useRejectRenewal,
-} from '@/hooks/useSubscriptionAdmin';
+  usePlatformRenewalRequest,
+  usePlatformApproveRenewal,
+  usePlatformRejectRenewal,
+} from '@/platform/hooks/usePlatformAdminComplete';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 export default function RenewalReviewPage() {
   const { renewalId } = useParams<{ renewalId: string }>();
   const navigate = useNavigate();
-  const hasAdminPermission = useHasPermission('subscription.admin');
 
-  const { data: renewal, isLoading, error } = useRenewalRequest(
+  const { data: renewal, isLoading, error } = usePlatformRenewalRequest(
     renewalId || ''
   );
-  const approveRenewal = useApproveRenewal();
-  const rejectRenewal = useRejectRenewal();
+  const approveRenewal = usePlatformApproveRenewal();
+  const rejectRenewal = usePlatformRejectRenewal();
 
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
@@ -75,11 +73,6 @@ export default function RenewalReviewPage() {
     notes: '',
   });
 
-  // Access control - redirect if no permission
-  if (!hasAdminPermission) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   // Handle missing renewalId
   if (!renewalId) {
     return (
@@ -89,7 +82,7 @@ export default function RenewalReviewPage() {
             Renewal ID is required
           </p>
           <Button asChild className="mt-4">
-            <Link to="/admin/subscription">Back to Dashboard</Link>
+            <Link to="/platform/dashboard">Back to Dashboard</Link>
           </Button>
         </div>
       </div>
@@ -115,7 +108,7 @@ export default function RenewalReviewPage() {
             {error instanceof Error ? error.message : 'Unknown error'}
           </p>
           <Button asChild className="mt-4">
-            <Link to="/admin/subscription">Back to Dashboard</Link>
+            <Link to="/platform/dashboard">Back to Dashboard</Link>
           </Button>
         </div>
       </div>
@@ -159,7 +152,7 @@ export default function RenewalReviewPage() {
           payment_date: new Date().toISOString().split('T')[0],
           notes: '',
         });
-        navigate('/admin/subscription');
+        navigate('/platform/dashboard');
       },
     });
   };
@@ -177,7 +170,7 @@ export default function RenewalReviewPage() {
         onSuccess: () => {
           setIsRejectDialogOpen(false);
           setRejectReason('');
-          navigate('/admin/subscription');
+          navigate('/platform/dashboard');
         },
       }
     );
@@ -213,7 +206,7 @@ export default function RenewalReviewPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link to="/admin/subscription">
+            <Link to="/platform/dashboard">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>

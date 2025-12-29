@@ -4394,4 +4394,430 @@ frontend/
    php artisan queue:work
    ```
 
+## Platform Admin Application
+
+**CRITICAL: The Platform Admin app is a separate application from the main Nazim app, designed for platform administrators who manage the entire platform. Platform admins are NOT tied to any organization.**
+
+### Overview
+
+The Platform Admin app provides:
+- **Separate login page** (`/platform/login`)
+- **Separate routes** (`/platform/*`)
+- **Separate hooks** (platform admin hooks)
+- **Separate API endpoints** (`/platform/*`)
+- **No organization requirement** (platform admins are global)
+- **Global permissions** (`subscription.admin` with `organization_id = NULL`)
+- **Complete platform management** (all organizations, subscriptions, plans, payments, renewals, discount codes)
+
+### Platform Admin Permission System
+
+**CRITICAL: Platform admin uses GLOBAL permissions, NOT organization-scoped permissions.**
+
+#### Permission Requirements
+
+- **`subscription.admin` permission**: REQUIRED for all platform admin access
+- **Global permission only**: `organization_id = NULL` (NOT organization-scoped)
+- **Cannot be assigned to organization roles**: This permission is excluded from organization role assignments
+- **Direct assignment only**: Must be assigned directly to users via `model_has_permissions` table
+
+#### Permission Assignment Pattern
+
+```php
+// In Laravel Tinker or seeder
+$user = \App\Models\User::where('email', 'admin@example.com')->first();
+
+// Get or create the global subscription.admin permission
+$permission = \App\Models\Permission::firstOrCreate(
+    [
+        'name' => 'subscription.admin',
+        'guard_name' => 'web',
+        'organization_id' => null,  // CRITICAL: NULL = Global
+    ],
+    [
+        'resource' => 'subscription',
+        'action' => 'admin',
+        'description' => 'Platform administration access',
+    ]
+);
+
+// Assign permission directly to user (global)
+$user->givePermissionTo($permission);
+```
+
+### Platform Admin File Structure
+
+```
+frontend/src/
+├── platform/
+│   ├── App.tsx                          # Platform admin app entry point
+│   ├── pages/
+│   │   ├── PlatformAdminLogin.tsx       # Dedicated login page
+│   │   ├── PlatformAdminDashboard.tsx  # Main dashboard
+│   │   ├── PlatformOrganizationsManagement.tsx
+│   │   ├── PlatformOrganizationAdminsManagement.tsx
+│   │   ├── PlatformSubscriptionPlansManagement.tsx
+│   │   ├── PlatformSubscriptionsManagement.tsx
+│   │   ├── PlatformPendingActionsPage.tsx
+│   │   ├── PlatformDiscountCodesManagement.tsx
+│   │   └── PlatformRenewalReviewPage.tsx
+│   ├── components/
+│   │   └── PlatformAdminLayout.tsx     # Layout with sidebar
+│   ├── hooks/
+│   │   ├── usePlatformAdmin.tsx         # Platform admin data hooks
+│   │   ├── usePlatformAdminComplete.tsx # Extended hooks
+│   │   └── usePlatformAdminPermissions.tsx # Permission checking
+│   └── lib/
+│       └── platformApi.ts              # Platform admin API client
+└── components/
+    └── PlatformAdminRoute.tsx           # Route guard component
+```
+
+### Platform Admin Routes
+
+#### Frontend Routes
+
+All platform admin routes are prefixed with `/platform/*`:
+
+- `/platform/login` - Platform admin login
+- `/platform/dashboard` - Platform overview
+- `/platform/organizations` - Manage all organizations
+- `/platform/organizations/:organizationId` - Organization subscription details
+- `/platform/admins` - View organization administrators
+- `/platform/subscriptions` - Manage subscriptions
+- `/platform/plans` - Manage subscription plans
+- `/platform/pending` - Review pending payments & renewals
+- `/platform/renewals/:renewalId` - Review specific renewal
+- `/platform/discount-codes` - Manage discount codes
+
+#### Backend API Routes
+
+All platform admin API routes are prefixed with `/platform/*` and protected by `platform.admin` middleware:
+
+```php
+// In backend/routes/api.php
+Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group(function () {
+    Route::get('/dashboard', [SubscriptionAdminController::class, 'dashboard']);
+    Route::get('/organizations', [OrganizationController::class, 'index']);
+    Route::get('/organizations/{id}', [OrganizationController::class, 'show']);
+    Route::get('/organizations/admins', [OrganizationController::class, 'admins']);
+    Route::get('/plans', [SubscriptionAdminController::class, 'listPlans']);
+    Route::post('/plans', [SubscriptionAdminController::class, 'createPlan']);
+    Route::get('/subscriptions', [SubscriptionAdminController::class, 'listSubscriptions']);
+    Route::get('/payments/pending', [SubscriptionAdminController::class, 'listPendingPayments']);
+    Route::get('/renewals/pending', [SubscriptionAdminController::class, 'listPendingRenewals']);
+    Route::get('/renewals/{id}', [SubscriptionAdminController::class, 'getRenewal']);
+    Route::get('/discount-codes', [SubscriptionAdminController::class, 'listDiscountCodes']);
+    Route::get('/permissions/platform-admin', [PermissionController::class, 'platformAdminPermissions']);
+    // ... more routes
+});
+```
+
+### Platform Admin Middleware
+
+**CRITICAL: The `EnsurePlatformAdmin` middleware enforces global `subscription.admin` permission.**
+
+```php
+// backend/app/Http/Middleware/EnsurePlatformAdmin.php
+public function handle(Request $request, Closure $next): Response
+{
+    $user = $request->user();
+
+    if (!$user) {
+        return response()->json(['message' => 'Unauthenticated.'], 401);
+    }
+
+    // CRITICAL: Clear team context for platform admin permissions
+    // This ensures that 'subscription.admin' is checked as a global permission
+    setPermissionsTeamId(null);
+
+    try {
+        if (!$user->hasPermissionTo('subscription.admin')) {
+            return response()->json([
+                'message' => 'You do not have permission to access platform administration.',
+                'required_permission' => 'subscription.admin',
+            ], 403);
+        }
+    } catch (\Exception $e) {
+        Log::error("Permission check failed for platform.admin middleware: " . $e->getMessage());
+        return response()->json(['message' => 'Authorization error.'], 500);
+    }
+
+    return $next($request);
+}
+```
+
+**Key Points:**
+- ✅ **ALWAYS** clear team context (`setPermissionsTeamId(null)`) before checking permission
+- ✅ **ALWAYS** check for `subscription.admin` permission (global)
+- ✅ **ALWAYS** register middleware as `'platform.admin'` in `bootstrap/app.php`
+
+### Platform Admin Frontend Patterns
+
+#### Route Guard Component
+
+**CRITICAL: Use `PlatformAdminRoute` component to protect platform admin routes.**
+
+```typescript
+// frontend/src/components/PlatformAdminRoute.tsx
+export function PlatformAdminRoute({ children }: PlatformAdminRouteProps) {
+  const { user, loading } = useAuth();
+  const { data: permissions, isLoading: permissionsLoading } = usePlatformAdminPermissions();
+
+  if (loading || permissionsLoading) {
+    return <LoadingSpinner size="lg" />;
+  }
+
+  if (!user) {
+    return <Navigate to="/platform/login" replace />;
+  }
+
+  // Check for platform admin permission (GLOBAL, not organization-scoped)
+  const hasPlatformAdmin = permissions?.includes('subscription.admin');
+
+  if (!hasPlatformAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+}
+```
+
+#### Platform Admin Hooks Pattern
+
+**CRITICAL: Platform admin hooks do NOT require organization_id.**
+
+```typescript
+// frontend/src/platform/hooks/usePlatformAdmin.tsx
+export const usePlatformOrganizations = () => {
+  return useQuery<Organization[]>({
+    queryKey: ['platform-organizations'],
+    queryFn: async () => {
+      const response = await platformApi.organizations.list();
+      return (response as OrganizationApi.Organization[]).map(mapOrganizationApiToDomain);
+    },
+    staleTime: 5 * 60 * 1000,
+    // NOTE: No organization_id in queryKey or enabled condition
+  });
+};
+
+export const usePlatformDashboard = () => {
+  return useQuery({
+    queryKey: ['platform-dashboard'],
+    queryFn: async () => {
+      const response = await platformApi.dashboard.get();
+      return response;
+    },
+    staleTime: 2 * 60 * 1000,
+    // NOTE: No organization_id required
+  });
+};
+```
+
+#### Platform Admin Permissions Hook
+
+**CRITICAL: Platform admin permissions hook checks for GLOBAL permissions only.**
+
+```typescript
+// frontend/src/platform/hooks/usePlatformAdminPermissions.tsx
+export const usePlatformAdminPermissions = () => {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['platform-admin-permissions', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+
+      // Call platform admin permissions endpoint (doesn't require organization_id)
+      const response = await apiClient.get<{ permissions: string[] }>('/platform/permissions/platform-admin');
+      return response.permissions || [];
+    },
+    enabled: !!user,
+    staleTime: 60 * 60 * 1000, // 1 hour
+  });
+};
+```
+
+#### Platform Admin API Client Pattern
+
+**CRITICAL: Platform admin API client uses `/platform/*` endpoints.**
+
+```typescript
+// frontend/src/platform/lib/platformApi.ts
+export const platformApi = {
+  dashboard: {
+    get: async () => {
+      return apiClient.get('/platform/dashboard');
+    },
+  },
+  organizations: {
+    list: async () => {
+      return apiClient.get<OrganizationApi.Organization[]>('/platform/organizations');
+    },
+    toggleFeature: async (organizationId: string, featureKey: string) => {
+      return apiClient.post(`/platform/organizations/${organizationId}/features/${featureKey}/toggle`);
+    },
+    admins: async () => {
+      return apiClient.get('/platform/organizations/admins');
+    },
+  },
+  plans: {
+    list: async () => {
+      return apiClient.get('/platform/plans');
+    },
+    create: async (data: PlanData) => {
+      return apiClient.post('/platform/plans', data);
+    },
+    update: async (id: string, data: PlanData) => {
+      return apiClient.put(`/platform/plans/${id}`, data);
+    },
+  },
+  // ... more API methods
+};
+```
+
+### Platform Admin Backend Patterns
+
+#### Controller Pattern
+
+**CRITICAL: Platform admin controllers MUST clear team context and check global permission.**
+
+```php
+// In SubscriptionAdminController or OrganizationController
+public function dashboard(Request $request)
+{
+    // CRITICAL: Clear team context for platform admin permissions
+    setPermissionsTeamId(null);
+
+    // The platform.admin middleware already checks for subscription.admin
+    // No need for explicit check here, but ensure context is clear for Spatie
+
+    try {
+        // Total organizations (no organization filtering)
+        $totalOrgs = Organization::whereNull('deleted_at')->count();
+        
+        // Total subscriptions (no organization filtering)
+        $totalSubscriptions = Subscription::whereNull('deleted_at')->count();
+        
+        // ... rest of platform-wide statistics
+    } catch (\Exception $e) {
+        Log::error("Error fetching subscription dashboard data: " . $e->getMessage());
+        return response()->json(['error' => 'Failed to fetch dashboard data'], 500);
+    }
+}
+```
+
+#### Permission Endpoint Pattern
+
+**CRITICAL: Platform admin permissions endpoint returns GLOBAL permissions only.**
+
+```php
+// In PermissionController
+public function platformAdminPermissions(Request $request)
+{
+    $user = $request->user();
+
+    if (!$user) {
+        return response()->json(['error' => 'Unauthenticated'], 401);
+    }
+
+    // CRITICAL: Clear team context to check global permissions
+    setPermissionsTeamId(null);
+
+    // Check if user has subscription.admin permission (GLOBAL)
+    try {
+        if (!$user->hasPermissionTo('subscription.admin')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'This endpoint is only accessible to platform administrators.',
+            ], 403);
+        }
+    } catch (\Exception $e) {
+        Log::warning("Platform admin permission check failed: " . $e->getMessage());
+        return response()->json([
+            'error' => 'Access Denied',
+            'message' => 'This endpoint is only accessible to platform administrators.',
+        ], 403);
+    }
+
+    // Get global permissions (organization_id = NULL) assigned to this user
+    $globalPermissions = DB::table('model_has_permissions')
+        ->join('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
+        ->where('model_has_permissions.model_id', $user->id)
+        ->where('model_has_permissions.model_type', 'App\\Models\\User')
+        ->whereNull('permissions.organization_id') // CRITICAL: Only global permissions
+        ->distinct()
+        ->pluck('permissions.name')
+        ->toArray();
+
+    // Ensure subscription.admin is included
+    $permissions = array_unique(array_merge($globalPermissions, ['subscription.admin']));
+
+    return response()->json([
+        'permissions' => $permissions
+    ]);
+}
+```
+
+### Platform Admin vs Main App Differences
+
+| Aspect | Main App | Platform Admin App |
+|--------|----------|-------------------|
+| **Login Route** | `/login` | `/platform/login` |
+| **Route Prefix** | `/` | `/platform/*` |
+| **Organization Required** | ✅ Yes | ❌ No |
+| **Permission Scope** | Organization-scoped | Global only |
+| **Permission Check** | `useUserPermissions()` | `usePlatformAdminPermissions()` |
+| **API Endpoints** | `/api/*` | `/api/platform/*` |
+| **Hooks** | `useOrganizations()`, etc. | `usePlatformOrganizations()`, etc. |
+| **Route Guard** | `ProtectedRoute` | `PlatformAdminRoute` |
+| **Middleware** | `EnsureOrganizationAccess` | `EnsurePlatformAdmin` |
+| **Query Keys** | Include `organization_id` | No `organization_id` |
+
+### Platform Admin Development Checklist
+
+Before creating or modifying platform admin features, verify:
+
+- [ ] Uses `/platform/*` route prefix (frontend and backend)
+- [ ] Uses `platform.admin` middleware (backend routes)
+- [ ] Uses `PlatformAdminRoute` component (frontend routes)
+- [ ] Uses platform admin hooks (not regular hooks)
+- [ ] Uses `platformApi` client (not regular `apiClient`)
+- [ ] Clears team context (`setPermissionsTeamId(null)`) before permission checks
+- [ ] Checks for `subscription.admin` permission (global)
+- [ ] Does NOT require `organization_id` in queries
+- [ ] Does NOT filter by `organization_id` (platform-wide access)
+- [ ] Uses `usePlatformAdminPermissions()` hook (not `useUserPermissions()`)
+
+### Platform Admin Security Rules
+
+**CRITICAL: Platform admin security is different from main app security.**
+
+1. **NO organization filtering**: Platform admins see ALL organizations
+2. **NO school filtering**: Platform admins see ALL schools
+3. **Global permissions only**: `subscription.admin` must be global (`organization_id = NULL`)
+4. **Clear team context**: Always call `setPermissionsTeamId(null)` before permission checks
+5. **Separate middleware**: Use `platform.admin` middleware, not `organization` middleware
+6. **Separate route guard**: Use `PlatformAdminRoute`, not `ProtectedRoute`
+7. **Separate hooks**: Use platform admin hooks, not regular hooks
+
+### Common Mistakes to Avoid
+
+❌ **DON'T:**
+- Use organization-scoped permissions for platform admin
+- Filter queries by `organization_id` in platform admin controllers
+- Use regular hooks (`useOrganizations`) in platform admin pages
+- Use regular API client in platform admin hooks
+- Require `organization_id` in platform admin queries
+- Use `EnsureOrganizationAccess` middleware for platform routes
+- Use `ProtectedRoute` component for platform routes
+
+✅ **DO:**
+- Use global `subscription.admin` permission (organization_id = NULL)
+- Clear team context before permission checks
+- Use platform admin hooks (`usePlatformOrganizations`, etc.)
+- Use `platformApi` client for platform admin API calls
+- Use `platform.admin` middleware for platform routes
+- Use `PlatformAdminRoute` component for platform routes
+- Access ALL organizations (no filtering)
+
 Remember: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your code. Always use translations for user-facing text, and ensure RTL support is properly implemented. The backend is now Laravel, so follow Laravel conventions and best practices.

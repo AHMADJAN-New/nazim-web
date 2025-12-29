@@ -472,6 +472,22 @@ export const organizationsApi = {
     return apiClient.get(`/organizations/${id}/statistics`);
   },
 
+  preview: async (data?: { name?: string; slug?: string; admin_email?: string; admin_full_name?: string }) => {
+    return apiClient.get('/organizations/preview', data);
+  },
+
+  permissions: async (id: string) => {
+    return apiClient.get(`/organizations/${id}/permissions`);
+  },
+
+  updatePermissions: async (id: string, data: { role: string; permission_ids: string[] }) => {
+    return apiClient.put(`/organizations/${id}/permissions`, data);
+  },
+
+  admins: async () => {
+    return apiClient.get('/organizations/admins');
+  },
+
   publicList: async () => {
     // Public endpoint for listing organizations (no auth required)
     // This makes a direct fetch call without authentication

@@ -140,8 +140,12 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     Route::get('/organizations', [OrganizationController::class, 'index']);
     Route::post('/organizations', [OrganizationController::class, 'store']);
     // IMPORTANT: More specific routes must come before parameterized routes
+    Route::get('/organizations/preview', [OrganizationController::class, 'preview']);
     Route::get('/organizations/accessible', [OrganizationController::class, 'accessible']);
+    Route::get('/organizations/admins', [OrganizationController::class, 'admins']);
     Route::get('/organizations/{id}/statistics', [OrganizationController::class, 'statistics']);
+    Route::get('/organizations/{id}/permissions', [OrganizationController::class, 'permissions']);
+    Route::put('/organizations/{id}/permissions', [OrganizationController::class, 'updatePermissions']);
     Route::put('/organizations/{id}', [OrganizationController::class, 'update']);
     Route::patch('/organizations/{id}', [OrganizationController::class, 'update']);
     Route::delete('/organizations/{id}', [OrganizationController::class, 'destroy']);
@@ -1152,7 +1156,83 @@ Route::middleware(['auth:sanctum', 'organization'])->prefix('subscription')->gro
     Route::get('/history', [SubscriptionController::class, 'subscriptionHistory']);
 });
 
-// Admin subscription management routes (requires subscription.admin permission)
+// Platform Admin routes (requires subscription.admin permission - GLOBAL, not organization-scoped)
+// CRITICAL: Platform admins are NOT tied to organizations
+Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [SubscriptionAdminController::class, 'dashboard']);
+    
+    // Plans management
+    Route::get('/plans', [SubscriptionAdminController::class, 'listPlans']);
+    Route::post('/plans', [SubscriptionAdminController::class, 'createPlan']);
+    Route::put('/plans/{id}', [SubscriptionAdminController::class, 'updatePlan']);
+    
+    // Organization subscriptions
+    Route::get('/subscriptions', [SubscriptionAdminController::class, 'listSubscriptions']);
+    Route::get('/organizations/{organizationId}/subscription', [SubscriptionAdminController::class, 'getOrganizationSubscription']);
+    Route::post('/organizations/{organizationId}/activate', [SubscriptionAdminController::class, 'activateSubscription']);
+    Route::post('/organizations/{organizationId}/suspend', [SubscriptionAdminController::class, 'suspendSubscription']);
+    Route::post('/organizations/{organizationId}/limit-override', [SubscriptionAdminController::class, 'addLimitOverride']);
+    Route::post('/organizations/{organizationId}/feature-addon', [SubscriptionAdminController::class, 'addFeatureAddon']);
+    Route::get('/organizations/{organizationId}/usage-snapshots', [SubscriptionAdminController::class, 'getUsageSnapshots']);
+    Route::post('/organizations/{organizationId}/recalculate-usage', [SubscriptionAdminController::class, 'recalculateUsage']);
+    
+    // Payments & renewals
+    Route::get('/payments/pending', [SubscriptionAdminController::class, 'listPendingPayments']);
+    Route::post('/payments/{paymentId}/confirm', [SubscriptionAdminController::class, 'confirmPayment']);
+    Route::post('/payments/{paymentId}/reject', [SubscriptionAdminController::class, 'rejectPayment']);
+    Route::get('/renewals/pending', [SubscriptionAdminController::class, 'listPendingRenewals']);
+    Route::get('/renewals/{renewalId}', [SubscriptionAdminController::class, 'getRenewal']);
+    Route::post('/renewals/{renewalId}/approve', [SubscriptionAdminController::class, 'approveRenewal']);
+    Route::post('/renewals/{renewalId}/reject', [SubscriptionAdminController::class, 'rejectRenewal']);
+    
+    // Organizations management
+    Route::get('/organizations', [SubscriptionAdminController::class, 'listOrganizations']);
+    Route::post('/organizations', [OrganizationController::class, 'storePlatformAdmin']);
+    
+    // Organization admins - MUST be before /organizations/{id} to avoid route conflict
+    Route::get('/organizations/admins', [OrganizationController::class, 'admins']);
+    
+    // Platform admin - User permissions management (can manage permissions for users in any organization)
+    Route::get('/permissions/all', [PermissionController::class, 'platformAdminAllPermissions']); // All permissions for global groups
+    Route::get('/organizations/{organizationId}/permissions', [PermissionController::class, 'platformAdminOrganizationPermissions']);
+    Route::get('/users/{userId}/permissions', [PermissionController::class, 'platformAdminUserPermissions']);
+    Route::post('/users/{userId}/permissions/assign', [PermissionController::class, 'platformAdminAssignPermissionToUser']);
+    Route::post('/users/{userId}/permissions/remove', [PermissionController::class, 'platformAdminRemovePermissionFromUser']);
+    
+    // Permission Groups Management (Platform Admin) - Global groups
+    Route::get('/permission-groups', [PermissionController::class, 'platformAdminListPermissionGroups']);
+    Route::post('/permission-groups', [PermissionController::class, 'platformAdminCreatePermissionGroup']);
+    Route::put('/permission-groups/{groupId}', [PermissionController::class, 'platformAdminUpdatePermissionGroup']);
+    Route::delete('/permission-groups/{groupId}', [PermissionController::class, 'platformAdminDeletePermissionGroup']);
+    Route::post('/users/{userId}/permission-groups/assign', [PermissionController::class, 'platformAdminAssignPermissionGroupToUser']);
+    Route::post('/users/{userId}/permission-groups/remove', [PermissionController::class, 'platformAdminRemovePermissionGroupFromUser']);
+    
+    // Organization CRUD - MUST be after /organizations/admins
+    Route::get('/organizations/{id}', [OrganizationController::class, 'showPlatformAdmin']);
+    Route::put('/organizations/{id}', [OrganizationController::class, 'updatePlatformAdmin']);
+    Route::delete('/organizations/{id}', [OrganizationController::class, 'destroyPlatformAdmin']);
+    Route::post('/organizations/{organizationId}/features/{featureKey}/toggle', [SubscriptionAdminController::class, 'toggleFeature']);
+    
+    // Discount codes
+    Route::get('/discount-codes', [SubscriptionAdminController::class, 'listDiscountCodes']);
+    Route::post('/discount-codes', [SubscriptionAdminController::class, 'createDiscountCode']);
+    Route::put('/discount-codes/{id}', [SubscriptionAdminController::class, 'updateDiscountCode']);
+    Route::delete('/discount-codes/{id}', [SubscriptionAdminController::class, 'deleteDiscountCode']);
+    
+    // Feature & Limit Definitions
+    Route::get('/feature-definitions', [SubscriptionAdminController::class, 'listFeatureDefinitions']);
+    Route::get('/limit-definitions', [SubscriptionAdminController::class, 'listLimitDefinitions']);
+    
+    // System Operations
+    Route::post('/process-transitions', [SubscriptionAdminController::class, 'processStatusTransitions']);
+    
+    // Platform admin permissions (global, not organization-scoped)
+    Route::get('/permissions/platform-admin', [PermissionController::class, 'platformAdminPermissions']);
+});
+
+// Legacy admin subscription routes (kept for backward compatibility, but will be deprecated)
+// These still require organization middleware but should migrate to platform routes
 Route::middleware(['auth:sanctum', 'organization'])->prefix('admin/subscription')->group(function () {
     // Dashboard
     Route::get('/dashboard', [SubscriptionAdminController::class, 'dashboard']);

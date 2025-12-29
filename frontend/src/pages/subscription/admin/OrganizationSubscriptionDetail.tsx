@@ -38,30 +38,29 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { useHasPermission } from '@/hooks/usePermissions';
 import {
-  useOrganizationSubscription,
-  useActivateSubscription,
-  useSuspendSubscription,
-  useAdminPlans,
-  useToggleFeature,
-} from '@/hooks/useSubscriptionAdmin';
+  usePlatformOrganizationSubscription,
+  usePlatformActivateSubscription,
+  usePlatformSuspendSubscription,
+  usePlatformPlans,
+  usePlatformToggleFeature,
+} from '@/platform/hooks/usePlatformAdminComplete';
 import type * as SubscriptionApi from '@/types/api/subscription';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
+import { OrganizationPermissionManagement } from '@/components/settings/OrganizationPermissionManagement';
 
 export default function OrganizationSubscriptionDetail() {
   const { organizationId } = useParams<{ organizationId: string }>();
-  const hasAdminPermission = useHasPermission('subscription.admin');
 
-  const { data, isLoading, error } = useOrganizationSubscription(
+  const { data, isLoading, error } = usePlatformOrganizationSubscription(
     organizationId || ''
   );
-  const { data: plans } = useAdminPlans();
+  const { data: plans } = usePlatformPlans();
 
-  const activateSubscription = useActivateSubscription();
-  const suspendSubscription = useSuspendSubscription();
-  const toggleFeature = useToggleFeature();
+  const activateSubscription = usePlatformActivateSubscription();
+  const suspendSubscription = usePlatformSuspendSubscription();
+  const toggleFeature = usePlatformToggleFeature();
 
   const [isActivateDialogOpen, setIsActivateDialogOpen] = useState(false);
   const [isSuspendDialogOpen, setIsSuspendDialogOpen] = useState(false);
@@ -74,11 +73,6 @@ export default function OrganizationSubscriptionDetail() {
   });
   const [suspendReason, setSuspendReason] = useState('');
 
-  // Access control - redirect if no permission
-  if (!hasAdminPermission) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   // Handle missing organizationId
   if (!organizationId) {
     return (
@@ -88,7 +82,7 @@ export default function OrganizationSubscriptionDetail() {
             Organization ID is required
           </p>
           <Button asChild className="mt-4">
-            <Link to="/admin/subscription">Back to Dashboard</Link>
+            <Link to="/platform/dashboard">Back to Dashboard</Link>
           </Button>
         </div>
       </div>
@@ -114,7 +108,7 @@ export default function OrganizationSubscriptionDetail() {
             {error instanceof Error ? error.message : 'Unknown error'}
           </p>
           <Button asChild className="mt-4">
-            <Link to="/admin/subscription">Back to Dashboard</Link>
+            <Link to="/platform/dashboard">Back to Dashboard</Link>
           </Button>
         </div>
       </div>
@@ -183,7 +177,7 @@ export default function OrganizationSubscriptionDetail() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link to="/admin/subscription">
+            <Link to="/platform/dashboard">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
@@ -743,6 +737,13 @@ export default function OrganizationSubscriptionDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Permissions Management */}
+      {organizationId && (
+        <div className="mt-8">
+          <OrganizationPermissionManagement organizationId={organizationId} />
+        </div>
+      )}
     </div>
   );
 }
