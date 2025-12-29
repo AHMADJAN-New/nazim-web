@@ -156,6 +156,7 @@ export const useCreateStudent = () => {
     onSuccess: () => {
       showToast.success('toast.studentRegistered');
       void queryClient.invalidateQueries({ queryKey: ['students'] });
+      void queryClient.invalidateQueries({ queryKey: ['subscription-usage'] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'toast.studentRegisterFailed');
@@ -181,6 +182,7 @@ export const useUpdateStudent = () => {
     onSuccess: () => {
       showToast.success('toast.studentInformationUpdated');
       void queryClient.invalidateQueries({ queryKey: ['students'] });
+      void queryClient.invalidateQueries({ queryKey: ['subscription-usage'] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'toast.studentUpdateFailed');
@@ -201,9 +203,12 @@ export const useDeleteStudent = () => {
       await studentsApi.delete(id);
       return id;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       showToast.success('toast.studentRemoved');
-      void queryClient.invalidateQueries({ queryKey: ['students'] });
+      await queryClient.invalidateQueries({ queryKey: ['students'] });
+      await queryClient.refetchQueries({ queryKey: ['students'] });
+      await queryClient.invalidateQueries({ queryKey: ['subscription-usage'] });
+      await queryClient.refetchQueries({ queryKey: ['subscription-usage'] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'toast.studentRemoveFailed');

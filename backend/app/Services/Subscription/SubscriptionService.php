@@ -33,8 +33,22 @@ class SubscriptionService
      */
     public function getCurrentPlan(string $organizationId): ?SubscriptionPlan
     {
-        $subscription = $this->getCurrentSubscription($organizationId);
-        return $subscription?->plan;
+        try {
+            $subscription = $this->getCurrentSubscription($organizationId);
+            if (!$subscription) {
+                return null;
+            }
+            
+            // Load plan relationship if not already loaded
+            if (!$subscription->relationLoaded('plan')) {
+                $subscription->load('plan');
+            }
+            
+            return $subscription->plan;
+        } catch (\Exception $e) {
+            \Log::warning("Failed to get current plan for organization {$organizationId}: " . $e->getMessage());
+            return null;
+        }
     }
 
     /**

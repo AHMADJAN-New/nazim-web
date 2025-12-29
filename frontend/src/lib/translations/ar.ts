@@ -335,7 +335,8 @@ export const ar: TranslationKeys = {
     shiftTooLong: 'الوردية طويلة جدًا',
     feeStatusTooLong: 'حالة الرسوم طويلة جدًا',
     admissionYearMaxLength: 'يجب أن يكون سنة القبول 10 أحرف أو أقل',
-    placementNotesMaxLength: 'يجب أن تكون الملاحظات 500 حرف أو أقل'
+    placementNotesMaxLength: 'يجب أن تكون الملاحظات 500 حرف أو أقل',
+    limitReached: 'تم الوصول إلى حد الطلاب. يرجى تعطيل سجل قبول قديم أولاً أو ترقية خطتك لإضافة قبولات جديدة.'
   },
   assets: {
     active: 'نشط',
@@ -1839,6 +1840,12 @@ export const ar: TranslationKeys = {
     importRulesHint: 'إذا كان admission_no فارغًا، سيقوم النظام بإنشاء student_code واستخدامه كـ admission_no.',
     uploadImportHint: 'تحقق أولًا لعرض الأخطاء، ثم قم بالاستيراد.',
     selectXlsx: 'اختر ملف .xlsx',
+    validateFile: 'التحقق',
+    importNow: 'استيراد',
+    limitReached: 'تم الوصول إلى حد الطلاب. يرجى ترقية خطتك لاستيراد المزيد من الطلاب.',
+    limitWarning: 'تحذير: فقط {remaining} مكان طالب متبقي. سيتم استيراد أول {remaining} صف(صفوف) صالحة فقط.',
+    uploadDisabled: 'تم تعطيل تحميل الملف لأن حد الطلاب قد تم الوصول إليه.',
+    importLimited: 'يحتوي ملفك على {validRows} صفوف صالحة، لكن فقط {remaining} مكان(أماكن) طالب متبقي. سيتم استيراد أول {remaining} صف(صفوف) صالحة فقط.',
     validateFile: 'تحقق',
     importNow: 'استيراد',
     validationSummary: 'ملخص التحقق',

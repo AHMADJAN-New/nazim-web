@@ -366,7 +366,8 @@ export const en: TranslationKeys = {
     shiftTooLong: 'Shift is too long',
     feeStatusTooLong: 'Fee status is too long',
     admissionYearMaxLength: 'Admission year must be 10 characters or less',
-    placementNotesMaxLength: 'Notes must be 500 characters or less'
+    placementNotesMaxLength: 'Notes must be 500 characters or less',
+    limitReached: 'Student limit reached. Please disable an old admission record first or upgrade your plan to add new admissions.'
   },
   assets: {
     active: 'Active',
@@ -2057,6 +2058,10 @@ export const en: TranslationKeys = {
     row: 'Row',
     field: 'Field',
     message: 'Message',
+    limitReached: 'Student limit reached. Please upgrade your plan to import more students.',
+    limitWarning: 'Warning: Only {remaining} student slot(s) remaining. Only the first {remaining} valid row(s) will be imported.',
+    uploadDisabled: 'File upload is disabled because the student limit has been reached.',
+    importLimited: 'Your file contains {validRows} valid rows, but only {remaining} student slot(s) remaining. Only the first {remaining} valid row(s) will be imported.',
     originAddress: 'Origin Address',
     originDistrict: 'Origin District',
     originProvince: 'Origin Province',

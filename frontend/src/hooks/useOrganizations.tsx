@@ -58,19 +58,17 @@ export const useCreateOrganization = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (orgData: { name: string; slug: string; settings?: Record<string, any> }) => {
+    mutationFn: async (orgData: Partial<Organization>) => {
       // Validate slug format (alphanumeric and hyphens only)
-      const slugRegex = /^[a-z0-9-]+$/;
-      if (!slugRegex.test(orgData.slug)) {
-        throw new Error('Slug must contain only lowercase letters, numbers, and hyphens');
+      if (orgData.slug) {
+        const slugRegex = /^[a-z0-9-]+$/;
+        if (!slugRegex.test(orgData.slug)) {
+          throw new Error('Slug must contain only lowercase letters, numbers, and hyphens');
+        }
       }
 
       // Convert domain model to API insert payload
-      const insertData = mapOrganizationDomainToInsert({
-        name: orgData.name.trim(),
-        slug: orgData.slug.trim().toLowerCase(),
-        settings: orgData.settings || {},
-      });
+      const insertData = mapOrganizationDomainToInsert(orgData);
 
       const apiOrganization = await organizationsApi.create(insertData);
       
@@ -93,19 +91,16 @@ export const useUpdateOrganization = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Organization> & { id: string }) => {
-      const updateData: Partial<Organization> = {};
-      if (updates.name) updateData.name = updates.name.trim();
+      // Validate slug format if provided
       if (updates.slug) {
         const slugRegex = /^[a-z0-9-]+$/;
         if (!slugRegex.test(updates.slug)) {
           throw new Error('Slug must contain only lowercase letters, numbers, and hyphens');
         }
-        updateData.slug = updates.slug.trim().toLowerCase();
       }
-      if (updates.settings !== undefined) updateData.settings = updates.settings;
 
       // Convert domain model to API update payload
-      const apiUpdateData = mapOrganizationDomainToUpdate(updateData);
+      const apiUpdateData = mapOrganizationDomainToUpdate(updates);
 
       const apiOrganization = await organizationsApi.update(id, apiUpdateData);
       

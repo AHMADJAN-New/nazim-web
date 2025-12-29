@@ -49,18 +49,18 @@ class UsageCurrent extends Model
     }
 
     /**
-     * Increment the count
+     * Increment the count (custom method to avoid conflict with Model::increment)
      */
-    public function increment(int $amount = 1): void
+    public function incrementCount(int $amount = 1): void
     {
         $this->current_count += $amount;
         $this->save();
     }
 
     /**
-     * Decrement the count
+     * Decrement the count (custom method to avoid conflict with Model::decrement)
      */
-    public function decrement(int $amount = 1): void
+    public function decrementCount(int $amount = 1): void
     {
         $this->current_count = max(0, $this->current_count - $amount);
         $this->save();

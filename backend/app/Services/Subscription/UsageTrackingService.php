@@ -23,7 +23,7 @@ class UsageTrackingService
         'users' => "SELECT COUNT(*) FROM profiles WHERE organization_id = :org_id AND is_active = true",
         'schools' => "SELECT COUNT(*) FROM school_branding WHERE organization_id = :org_id AND deleted_at IS NULL",
         'classes' => "SELECT COUNT(*) FROM classes WHERE organization_id = :org_id AND deleted_at IS NULL",
-        'documents' => "SELECT COUNT(*) FROM incoming_documents WHERE organization_id = :org_id AND deleted_at IS NULL",
+        'documents' => "SELECT COUNT(*) FROM incoming_documents WHERE organization_id = :org_id",
         'exams' => "SELECT COUNT(*) FROM exams WHERE organization_id = :org_id AND deleted_at IS NULL",
         'finance_accounts' => "SELECT COUNT(*) FROM finance_accounts WHERE organization_id = :org_id AND deleted_at IS NULL",
         'income_entries' => "SELECT COUNT(*) FROM income_entries WHERE organization_id = :org_id AND deleted_at IS NULL",
@@ -58,27 +58,37 @@ class UsageTrackingService
      */
     public function getUsage(string $organizationId, string $resourceKey): int
     {
-        // Check if we need to count from database
-        if (isset($this->countQueries[$resourceKey])) {
-            return $this->countFromDatabase($organizationId, $resourceKey);
+        try {
+            // Check if we need to count from database
+            if (isset($this->countQueries[$resourceKey])) {
+                return $this->countFromDatabase($organizationId, $resourceKey);
+            }
+
+            // Otherwise, get from usage_current table
+            $usage = UsageCurrent::where('organization_id', $organizationId)
+                ->where('resource_key', $resourceKey)
+                ->first();
+
+            if (!$usage) {
+                return 0;
+            }
+
+            // Check if period needs reset
+            try {
+                if ($usage->needsPeriodReset()) {
+                    $this->resetPeriod($organizationId, $resourceKey);
+                    return 0;
+                }
+            } catch (\Exception $e) {
+                \Log::warning("Failed to check/reset period for {$resourceKey}: " . $e->getMessage());
+                // Continue and return current count
+            }
+
+            return $usage->current_count ?? 0;
+        } catch (\Exception $e) {
+            \Log::warning("Failed to get usage for resource {$resourceKey} for organization {$organizationId}: " . $e->getMessage());
+            return 0; // Return 0 on error
         }
-
-        // Otherwise, get from usage_current table
-        $usage = UsageCurrent::where('organization_id', $organizationId)
-            ->where('resource_key', $resourceKey)
-            ->first();
-
-        if (!$usage) {
-            return 0;
-        }
-
-        // Check if period needs reset
-        if ($usage->needsPeriodReset()) {
-            $this->resetPeriod($organizationId, $resourceKey);
-            return 0;
-        }
-
-        return $usage->current_count;
     }
 
     /**
@@ -106,24 +116,34 @@ class UsageTrackingService
      */
     public function getLimit(string $organizationId, string $resourceKey): int
     {
-        // Check for organization-specific override first
-        $override = OrganizationLimitOverride::where('organization_id', $organizationId)
-            ->where('resource_key', $resourceKey)
-            ->active()
-            ->first();
+        try {
+            // Check for organization-specific override first
+            $override = OrganizationLimitOverride::where('organization_id', $organizationId)
+                ->where('resource_key', $resourceKey)
+                ->active()
+                ->first();
 
-        if ($override) {
-            return $override->limit_value;
+            if ($override) {
+                return $override->limit_value;
+            }
+
+            // Get from plan
+            $plan = $this->subscriptionService->getCurrentPlan($organizationId);
+            
+            if (!$plan) {
+                return 0; // No plan = no access
+            }
+
+            try {
+                return $plan->getLimit($resourceKey);
+            } catch (\Exception $e) {
+                \Log::warning("Failed to get limit from plan for resource {$resourceKey}: " . $e->getMessage());
+                return -1; // Return unlimited on plan error to allow access
+            }
+        } catch (\Exception $e) {
+            \Log::warning("Failed to get limit for resource {$resourceKey} for organization {$organizationId}: " . $e->getMessage());
+            return -1; // Return unlimited on error to allow access
         }
-
-        // Get from plan
-        $plan = $this->subscriptionService->getCurrentPlan($organizationId);
-        
-        if (!$plan) {
-            return 0; // No plan = no access
-        }
-
-        return $plan->getLimit($resourceKey);
     }
 
     /**
@@ -131,13 +151,23 @@ class UsageTrackingService
      */
     public function getWarningThreshold(string $organizationId, string $resourceKey): int
     {
-        $plan = $this->subscriptionService->getCurrentPlan($organizationId);
-        
-        if (!$plan) {
-            return 80;
-        }
+        try {
+            $plan = $this->subscriptionService->getCurrentPlan($organizationId);
+            
+            if (!$plan) {
+                return 80; // Default threshold
+            }
 
-        return $plan->getWarningThreshold($resourceKey);
+            try {
+                return $plan->getWarningThreshold($resourceKey);
+            } catch (\Exception $e) {
+                \Log::warning("Failed to get warning threshold from plan for {$resourceKey}: " . $e->getMessage());
+                return 80; // Default threshold
+            }
+        } catch (\Exception $e) {
+            \Log::warning("Failed to get warning threshold for {$resourceKey}: " . $e->getMessage());
+            return 80; // Default threshold
+        }
     }
 
     /**
@@ -145,14 +175,71 @@ class UsageTrackingService
      */
     public function canCreate(string $organizationId, string $resourceKey): array
     {
-        $currentUsage = $this->getUsage($organizationId, $resourceKey);
-        $limit = $this->getLimit($organizationId, $resourceKey);
+        try {
+            $currentUsage = $this->getUsage($organizationId, $resourceKey);
+            $limit = $this->getLimit($organizationId, $resourceKey);
 
-        // -1 means unlimited
-        if ($limit === -1) {
+            // -1 means unlimited
+            if ($limit === -1) {
+                return [
+                    'allowed' => true,
+                    'current' => $currentUsage,
+                    'limit' => -1,
+                    'remaining' => -1,
+                    'percentage' => 0,
+                    'warning' => false,
+                    'message' => null,
+                ];
+            }
+
+            // 0 means disabled
+            if ($limit === 0) {
+                return [
+                    'allowed' => false,
+                    'current' => $currentUsage,
+                    'limit' => 0,
+                    'remaining' => 0,
+                    'percentage' => 100,
+                    'warning' => false,
+                    'message' => "This feature is not available on your current plan.",
+                ];
+            }
+
+            $remaining = max(0, $limit - $currentUsage);
+            $percentage = ($limit > 0) ? round(($currentUsage / $limit) * 100, 1) : 0;
+            
+            try {
+                $warningThreshold = $this->getWarningThreshold($organizationId, $resourceKey);
+            } catch (\Exception $e) {
+                \Log::warning("Failed to get warning threshold for {$resourceKey}: " . $e->getMessage());
+                $warningThreshold = 80; // Default threshold
+            }
+            
+            $isWarning = $percentage >= $warningThreshold && $percentage < 100;
+            $allowed = $currentUsage < $limit;
+
+            $message = null;
+            if (!$allowed) {
+                $message = "You have reached your {$resourceKey} limit ({$limit}). Please upgrade your plan to add more.";
+            } elseif ($isWarning) {
+                $message = "You are using {$percentage}% of your {$resourceKey} limit ({$currentUsage}/{$limit}).";
+            }
+
             return [
-                'allowed' => true,
+                'allowed' => $allowed,
                 'current' => $currentUsage,
+                'limit' => $limit,
+                'remaining' => $remaining,
+                'percentage' => $percentage,
+                'warning' => $isWarning,
+                'message' => $message,
+            ];
+        } catch (\Exception $e) {
+            \Log::error("Failed to check canCreate for resource {$resourceKey} for organization {$organizationId}: " . $e->getMessage());
+            // Return safe defaults on error
+            return [
+                'allowed' => true, // Allow on error to prevent blocking
+                'current' => 0,
                 'limit' => -1,
                 'remaining' => -1,
                 'percentage' => 0,
@@ -160,42 +247,6 @@ class UsageTrackingService
                 'message' => null,
             ];
         }
-
-        // 0 means disabled
-        if ($limit === 0) {
-            return [
-                'allowed' => false,
-                'current' => $currentUsage,
-                'limit' => 0,
-                'remaining' => 0,
-                'percentage' => 100,
-                'warning' => false,
-                'message' => "This feature is not available on your current plan.",
-            ];
-        }
-
-        $remaining = max(0, $limit - $currentUsage);
-        $percentage = ($limit > 0) ? round(($currentUsage / $limit) * 100, 1) : 0;
-        $warningThreshold = $this->getWarningThreshold($organizationId, $resourceKey);
-        $isWarning = $percentage >= $warningThreshold && $percentage < 100;
-        $allowed = $currentUsage < $limit;
-
-        $message = null;
-        if (!$allowed) {
-            $message = "You have reached your {$resourceKey} limit ({$limit}). Please upgrade your plan to add more.";
-        } elseif ($isWarning) {
-            $message = "You are using {$percentage}% of your {$resourceKey} limit ({$currentUsage}/{$limit}).";
-        }
-
-        return [
-            'allowed' => $allowed,
-            'current' => $currentUsage,
-            'limit' => $limit,
-            'remaining' => $remaining,
-            'percentage' => $percentage,
-            'warning' => $isWarning,
-            'message' => $message,
-        ];
     }
 
     /**
@@ -221,7 +272,7 @@ class UsageTrackingService
         }
 
         $usage = $this->getOrCreateUsageRecord($organizationId, $resourceKey);
-        $usage->increment($amount);
+        $usage->incrementCount($amount);
     }
 
     /**
@@ -239,7 +290,7 @@ class UsageTrackingService
             ->first();
 
         if ($usage) {
-            $usage->decrement($amount);
+            $usage->decrementCount($amount);
         }
     }
 
@@ -314,24 +365,57 @@ class UsageTrackingService
     public function getAllUsage(string $organizationId): array
     {
         $usage = [];
-        $limitDefinitions = LimitDefinition::active()->get();
+        
+        try {
+            $limitDefinitions = LimitDefinition::active()->get();
 
-        foreach ($limitDefinitions as $definition) {
-            $resourceKey = $definition->resource_key;
-            $check = $this->canCreate($organizationId, $resourceKey);
-            
-            $usage[$resourceKey] = [
-                'name' => $definition->name,
-                'description' => $definition->description,
-                'category' => $definition->category,
-                'unit' => $definition->unit,
-                'current' => $check['current'],
-                'limit' => $check['limit'],
-                'remaining' => $check['remaining'],
-                'percentage' => $check['percentage'],
-                'warning' => $check['warning'],
-                'unlimited' => $check['limit'] === -1,
-            ];
+            if ($limitDefinitions->isEmpty()) {
+                \Log::warning("No limit definitions found for organization: {$organizationId}");
+                return [];
+            }
+
+            foreach ($limitDefinitions as $definition) {
+                try {
+                    $resourceKey = $definition->resource_key;
+                    $check = $this->canCreate($organizationId, $resourceKey);
+                    
+                    $usage[$resourceKey] = [
+                        'name' => $definition->name,
+                        'description' => $definition->description,
+                        'category' => $definition->category,
+                        'unit' => $definition->unit,
+                        'current' => $check['current'],
+                        'limit' => $check['limit'],
+                        'remaining' => $check['remaining'],
+                        'percentage' => $check['percentage'],
+                        'warning' => $check['warning'],
+                        'unlimited' => $check['limit'] === -1,
+                    ];
+                } catch (\Exception $e) {
+                    \Log::warning("Failed to get usage for resource {$definition->resource_key}: " . $e->getMessage(), [
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                    // Continue with next resource - add placeholder entry
+                    $usage[$definition->resource_key] = [
+                        'name' => $definition->name,
+                        'description' => $definition->description,
+                        'category' => $definition->category,
+                        'unit' => $definition->unit,
+                        'current' => 0,
+                        'limit' => -1,
+                        'remaining' => -1,
+                        'percentage' => 0,
+                        'warning' => false,
+                        'unlimited' => true,
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error("Failed to get all usage for organization {$organizationId}: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            // Return empty array instead of throwing to prevent 500 error
+            return [];
         }
 
         return $usage;
@@ -398,21 +482,41 @@ class UsageTrackingService
     public function hasWarnings(string $organizationId): array
     {
         $warnings = [];
-        $limitDefinitions = LimitDefinition::active()->get();
+        
+        try {
+            $limitDefinitions = LimitDefinition::active()->get();
 
-        foreach ($limitDefinitions as $definition) {
-            $check = $this->canCreate($organizationId, $definition->resource_key);
-            
-            if ($check['warning'] || !$check['allowed']) {
-                $warnings[] = [
-                    'resource_key' => $definition->resource_key,
-                    'name' => $definition->name,
-                    'current' => $check['current'],
-                    'limit' => $check['limit'],
-                    'percentage' => $check['percentage'],
-                    'blocked' => !$check['allowed'],
-                ];
+            if ($limitDefinitions->isEmpty()) {
+                return [];
             }
+
+            foreach ($limitDefinitions as $definition) {
+                try {
+                    $check = $this->canCreate($organizationId, $definition->resource_key);
+                    
+                    if ($check['warning'] || !$check['allowed']) {
+                        $warnings[] = [
+                            'resource_key' => $definition->resource_key,
+                            'name' => $definition->name,
+                            'current' => $check['current'],
+                            'limit' => $check['limit'],
+                            'percentage' => $check['percentage'],
+                            'blocked' => !$check['allowed'],
+                        ];
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning("Failed to check warnings for resource {$definition->resource_key}: " . $e->getMessage(), [
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                    // Continue with next resource
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error("Failed to get warnings for organization {$organizationId}: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            // Return empty array instead of throwing to prevent breaking the API
+            return [];
         }
 
         return $warnings;

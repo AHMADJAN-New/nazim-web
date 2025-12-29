@@ -669,6 +669,10 @@ export interface TranslationKeys {
     row: string;
     field: string;
     message: string;
+    limitReached: string;
+    limitWarning: string;
+    uploadDisabled: string;
+    importLimited: string;
     acrossSelected: string;
     registeredMale: string;
     registeredFemale: string;
@@ -942,6 +946,7 @@ export interface TranslationKeys {
     feeStatusTooLong: string;
     admissionYearMaxLength: string;
     placementNotesMaxLength: string;
+    limitReached: string;
   };
 
   // Forms and validation

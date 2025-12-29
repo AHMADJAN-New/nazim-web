@@ -186,6 +186,8 @@ export interface DiscountCode {
 // Dashboard types
 export interface SubscriptionDashboardStats {
   totalOrganizations: number;
+  totalSchools: number;
+  totalStudents: number;
   subscriptionsByStatus: Record<SubscriptionStatus, number>;
   subscriptionsByPlan: Record<string, number>;
   revenueThisYear: {

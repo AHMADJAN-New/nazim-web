@@ -336,7 +336,8 @@ export const fa: TranslationKeys = {
     shiftTooLong: 'شیفت خیلی طولانی است',
     feeStatusTooLong: 'وضعیت هزینه خیلی طولانی است',
     admissionYearMaxLength: 'سال پذیرش باید 10 کاراکتر یا کمتر باشد',
-    placementNotesMaxLength: 'یادداشت‌ها باید 500 کاراکتر یا کمتر باشند'
+    placementNotesMaxLength: 'یادداشت‌ها باید 500 کاراکتر یا کمتر باشند',
+    limitReached: 'محدودیت دانش‌آموز رسیده است. لطفاً ابتدا یک رکورد پذیرش قدیمی را غیرفعال کنید یا پلان خود را ارتقا دهید تا پذیرش‌های جدید اضافه کنید.'
   },
   assets: {
     active: 'فعال',
@@ -1840,6 +1841,12 @@ export const fa: TranslationKeys = {
     importRulesHint: 'اگر admission_no خالی باشد، سیستم student_code را تولید کرده و همان را به عنوان admission_no استفاده می‌کند.',
     uploadImportHint: 'ابتدا اعتبارسنجی کنید، سپس ورود را انجام دهید.',
     selectXlsx: 'انتخاب فایل .xlsx',
+    validateFile: 'اعتبارسنجی',
+    importNow: 'وارد کردن',
+    limitReached: 'محدودیت دانش‌آموز رسیده است. لطفاً پلان خود را ارتقا دهید تا دانش‌آموزان بیشتری وارد کنید.',
+    limitWarning: 'هشدار: فقط {remaining} جای دانش‌آموز باقی مانده است. فقط {remaining} ردیف معتبر اول وارد خواهد شد.',
+    uploadDisabled: 'آپلود فایل غیرفعال است زیرا محدودیت دانش‌آموز رسیده است.',
+    importLimited: 'فایل شما {validRows} ردیف معتبر دارد، اما فقط {remaining} جای دانش‌آموز باقی مانده است. فقط {remaining} ردیف معتبر اول وارد خواهد شد.',
     validateFile: 'اعتبارسنجی',
     importNow: 'ورود',
     validationSummary: 'خلاصه اعتبارسنجی',

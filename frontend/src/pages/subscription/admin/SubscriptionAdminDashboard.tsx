@@ -6,14 +6,26 @@ import {
   CreditCard,
   DollarSign,
   Package,
+  Plus,
   RefreshCw,
+  Search,
   Ticket,
   TrendingUp,
   Users,
   XCircle,
+  Eye,
+  Pencil,
+  Trash2,
+  Calendar,
+  Settings as SettingsIcon,
+  GraduationCap,
+  School,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,6 +37,34 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useHasPermission } from '@/hooks/usePermissions';
 import {
   useSubscriptionDashboard,
@@ -32,10 +72,18 @@ import {
   usePendingRenewals,
   useAdminSubscriptions,
 } from '@/hooks/useSubscriptionAdmin';
+import { useLanguage } from '@/hooks/useLanguage';
+import { formatDate } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { showToast } from '@/lib/toast';
+import { OrganizationsManagement } from '@/components/settings/OrganizationsManagement';
 
 export default function SubscriptionAdminDashboard() {
+  const { t } = useLanguage();
   const hasAdminPermission = useHasPermission('subscription.admin');
+  const hasCreatePermission = useHasPermission('organizations.create');
+  const hasUpdatePermission = useHasPermission('organizations.update');
+  const hasDeletePermission = useHasPermission('organizations.delete');
   const [activeTab, setActiveTab] = useState('overview');
 
   const { data: dashboardData, isLoading: isDashboardLoading } =
@@ -62,6 +110,8 @@ export default function SubscriptionAdminDashboard() {
 
   const stats = dashboardData || {
     totalOrganizations: 0,
+    totalSchools: 0,
+    totalStudents: 0,
     pendingPayments: 0,
     pendingRenewals: 0,
     expiringSoon: 0,
@@ -104,7 +154,7 @@ export default function SubscriptionAdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -116,6 +166,38 @@ export default function SubscriptionAdminDashboard() {
             <div className="text-2xl font-bold">
               {stats.totalOrganizations}
             </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Schools
+            </CardTitle>
+            <School className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {stats.totalSchools}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Across all organizations
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Students
+            </CardTitle>
+            <GraduationCap className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {stats.totalStudents.toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Across all schools
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -182,6 +264,10 @@ export default function SubscriptionAdminDashboard() {
           <TabsTrigger value="subscriptions">
             <Users className="mr-2 h-4 w-4" />
             All Subscriptions
+          </TabsTrigger>
+          <TabsTrigger value="organizations">
+            <Building2 className="mr-2 h-4 w-4" />
+            Organizations
           </TabsTrigger>
         </TabsList>
 
@@ -258,9 +344,9 @@ export default function SubscriptionAdminDashboard() {
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
                 Pending Payments
-                {(pendingPayments?.length || 0) > 0 && (
+                {((pendingPayments?.data?.length) || 0) > 0 && (
                   <Badge variant="destructive">
-                    {pendingPayments?.length}
+                    {pendingPayments?.data?.length || 0}
                   </Badge>
                 )}
               </CardTitle>
@@ -273,25 +359,25 @@ export default function SubscriptionAdminDashboard() {
                 <div className="flex items-center justify-center py-8">
                   <RefreshCw className="h-6 w-6 animate-spin" />
                 </div>
-              ) : !pendingPayments?.length ? (
+              ) : !pendingPayments?.data?.length ? (
                 <div className="py-8 text-center text-muted-foreground">
                   No pending payments
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {pendingPayments.slice(0, 5).map((payment) => (
+                  {(pendingPayments.data || []).slice(0, 5).map((payment) => (
                     <div
                       key={payment.id}
                       className="flex items-center justify-between rounded-lg border p-4"
                     >
                       <div>
                         <div className="font-medium">
-                          {payment.organizationName}
+                          Organization: {payment.organization_id}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {payment.amount.toLocaleString()} {payment.currency}
                           {' · '}
-                          {payment.paymentMethod}
+                          {payment.payment_method?.replace('_', ' ')}
                         </div>
                       </div>
                       <Button size="sm" asChild>
@@ -303,10 +389,10 @@ export default function SubscriptionAdminDashboard() {
                       </Button>
                     </div>
                   ))}
-                  {(pendingPayments?.length || 0) > 5 && (
+                  {((pendingPayments?.data?.length || 0) > 5) && (
                     <Button variant="outline" className="w-full" asChild>
                       <Link to="/admin/subscription/payments">
-                        View All ({pendingPayments?.length})
+                        View All ({pendingPayments?.data?.length || 0})
                       </Link>
                     </Button>
                   )}
@@ -321,9 +407,9 @@ export default function SubscriptionAdminDashboard() {
               <CardTitle className="flex items-center gap-2">
                 <RefreshCw className="h-5 w-5" />
                 Pending Renewals
-                {(pendingRenewals?.length || 0) > 0 && (
+                {((pendingRenewals?.data?.length || 0) > 0) && (
                   <Badge variant="secondary">
-                    {pendingRenewals?.length}
+                    {pendingRenewals?.data?.length || 0}
                   </Badge>
                 )}
               </CardTitle>
@@ -336,23 +422,23 @@ export default function SubscriptionAdminDashboard() {
                 <div className="flex items-center justify-center py-8">
                   <RefreshCw className="h-6 w-6 animate-spin" />
                 </div>
-              ) : !pendingRenewals?.length ? (
+              ) : !pendingRenewals?.data?.length ? (
                 <div className="py-8 text-center text-muted-foreground">
                   No pending renewals
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {pendingRenewals.slice(0, 5).map((renewal) => (
+                  {(pendingRenewals.data || []).slice(0, 5).map((renewal) => (
                     <div
                       key={renewal.id}
                       className="flex items-center justify-between rounded-lg border p-4"
                     >
                       <div>
                         <div className="font-medium">
-                          {renewal.organizationName}
+                          Organization: {renewal.organization_id}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {renewal.currentPlan} → {renewal.requestedPlan}
+                          {renewal.requested_plan?.name || 'Plan'} Request
                         </div>
                       </div>
                       <Button size="sm" asChild>
@@ -362,10 +448,10 @@ export default function SubscriptionAdminDashboard() {
                       </Button>
                     </div>
                   ))}
-                  {(pendingRenewals?.length || 0) > 5 && (
+                  {((pendingRenewals?.data?.length || 0) > 5) && (
                     <Button variant="outline" className="w-full" asChild>
                       <Link to="/admin/subscription/renewals">
-                        View All ({pendingRenewals?.length})
+                        View All ({pendingRenewals?.data?.length || 0})
                       </Link>
                     </Button>
                   )}
@@ -410,7 +496,7 @@ export default function SubscriptionAdminDashboard() {
                       </div>
                       <Button size="sm" variant="outline" asChild>
                         <Link
-                          to={`/admin/subscription/organizations/${sub.organizationId}`}
+                          to={`/admin/subscription/organizations/${sub.organization_id}`}
                         >
                           Manage
                         </Link>
@@ -429,7 +515,12 @@ export default function SubscriptionAdminDashboard() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="organizations" className="mt-4">
+          <OrganizationsManagement />
+        </TabsContent>
       </Tabs>
+
     </div>
   );
 }

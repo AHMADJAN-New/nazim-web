@@ -630,13 +630,22 @@ class StudentImportService
         $meta = $parsed['meta'] ?? [];
         $sheetsMeta = is_array($meta['sheets'] ?? null) ? $meta['sheets'] : [];
 
+        // Get valid row numbers from validation result to only process valid rows
+        $validRowNumbersBySheet = [];
+        foreach ($validation['sheets'] ?? [] as $sheetResult) {
+            $validRowNumbersBySheet[$sheetResult['sheet_name']] = $sheetResult['valid_row_numbers'] ?? [];
+        }
+
         $createdStudents = 0;
         $createdAdmissions = 0;
 
-        DB::transaction(function () use ($parsed, $sheetsMeta, $organizationId, $schoolId, &$createdStudents, &$createdAdmissions) {
+        DB::transaction(function () use ($parsed, $sheetsMeta, $organizationId, $schoolId, $validRowNumbersBySheet, &$createdStudents, &$createdAdmissions) {
             foreach (($parsed['sheets'] ?? []) as $sheet) {
                 $sheetName = (string) ($sheet['sheet_name'] ?? 'Sheet');
                 $rows = is_array($sheet['rows'] ?? null) ? $sheet['rows'] : [];
+                
+                // Get valid row numbers for this sheet
+                $validRowNumbers = $validRowNumbersBySheet[$sheetName] ?? [];
 
                 $sheetMeta = $this->findSheetMeta($sheetsMeta, $sheetName);
                 $metaAcademicYearId = $sheetMeta['academic_year_id'] ?? null;
@@ -645,6 +654,13 @@ class StudentImportService
                 $sheetDefaults = $this->getSheetDefaults($sheetMeta);
 
                 foreach ($rows as $row) {
+                    $rowNumber = (int) ($row['__row'] ?? 0);
+                    
+                    // Only process rows that are in the valid row numbers list
+                    if (!in_array($rowNumber, $validRowNumbers, true)) {
+                        continue;
+                    }
+                    
                     $studentData = $this->buildStudentInsert($row, $organizationId, $schoolId);
                     $student = Student::create($studentData);
                     $createdStudents++;

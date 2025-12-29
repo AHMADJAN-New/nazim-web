@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search, UserRound, DollarSign, X } from 'lucide-react';
+import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search, UserRound, DollarSign, X, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
@@ -23,6 +23,9 @@ import {
   type StudentAdmissionInsert,
   type AdmissionStatus,
 } from '@/hooks/useStudentAdmissions';
+import { useResourceUsage, useUsage } from '@/hooks/useSubscription';
+import { showToast } from '@/lib/toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -59,7 +62,20 @@ const getAdmissionSchema = (t: ReturnType<typeof useLanguage>['t']) => z.object(
   residency_type_id: z.string().uuid().optional().nullable(),
   room_id: z.string().uuid().optional().nullable(),
   admission_year: z.string().max(10, t('admissions.admissionYearMaxLength')).optional().nullable(),
-  admission_date: z.string().max(30, t('admissions.admissionDateTooLong')).optional(),
+  admission_date: z.preprocess(
+    (val) => {
+      // Handle Date object from CalendarDatePicker
+      if (val instanceof Date) {
+        return val.toISOString().slice(0, 10);
+      }
+      // Handle string
+      if (typeof val === 'string') {
+        return val;
+      }
+      return val;
+    },
+    z.string().max(30, t('admissions.admissionDateTooLong')).optional()
+  ),
   enrollment_status: z
     .enum(['pending', 'admitted', 'active', 'inactive', 'suspended', 'withdrawn', 'graduated'] as [AdmissionStatus, ...AdmissionStatus[]])
     .default('admitted'),
@@ -129,6 +145,11 @@ export function StudentAdmissions() {
   const updateAdmission = useUpdateStudentAdmission();
   const deleteAdmission = useDeleteStudentAdmission();
   const bulkDeactivate = useBulkDeactivateAdmissions();
+  
+  // Check subscription limits for students
+  const studentUsage = useResourceUsage('students');
+  const isLimitReached = !studentUsage.isUnlimited && studentUsage.remaining === 0;
+  const canCreateAdmission = !isLimitReached;
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -508,6 +529,25 @@ export function StudentAdmissions() {
   });
 
   const onSubmit = (data: z.infer<typeof admissionSchema>) => {
+    // Check limit before submitting
+    if (!isEdit && isLimitReached) {
+      showToast.error(
+        t('admissions.limitReached') || 
+        `Student limit reached (${studentUsage.current}/${studentUsage.limit}). Please disable an old admission record first or upgrade your plan.`
+      );
+      return;
+    }
+    
+    // Convert admission_date to string if it's a Date object
+    let admissionDateStr: string | undefined = undefined;
+    if (data.admission_date) {
+      if (data.admission_date instanceof Date) {
+        admissionDateStr = data.admission_date.toISOString().slice(0, 10);
+      } else if (typeof data.admission_date === 'string') {
+        admissionDateStr = data.admission_date;
+      }
+    }
+    
     const payload: StudentAdmissionInsert = {
       studentId: data.student_id,
       organizationId: data.organization_id || profile?.organization_id,
@@ -518,7 +558,7 @@ export function StudentAdmissions() {
       residencyTypeId: data.residency_type_id,
       roomId: data.room_id,
       admissionYear: data.admission_year,
-      admissionDate: data.admission_date,
+      admissionDate: admissionDateStr,
       enrollmentStatus: data.enrollment_status,
       enrollmentType: data.enrollment_type,
       shift: data.shift,
@@ -660,14 +700,24 @@ export function StudentAdmissions() {
             }}
           >
             <DialogTrigger asChild>
-              <Button onClick={() => {
-                // Clear edit state when opening create dialog
-                setSelectedAdmission(null);
-                setIsEdit(false);
-                setAdmissionToDelete(null);
-                setSelectedAcademicYear(undefined);
-                reset();
-              }}>
+              <Button 
+                disabled={isLimitReached}
+                onClick={() => {
+                  if (isLimitReached) {
+                    showToast.error(
+                      t('admissions.limitReached') || 
+                      `Student limit reached (${studentUsage.current}/${studentUsage.limit}). Please disable an old admission record first or upgrade your plan.`
+                    );
+                    return;
+                  }
+                  // Clear edit state when opening create dialog
+                  setSelectedAdmission(null);
+                  setIsEdit(false);
+                  setAdmissionToDelete(null);
+                  setSelectedAcademicYear(undefined);
+                  reset();
+                }}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 {t('admissions.add') || 'Admit Student'}
               </Button>
@@ -679,6 +729,15 @@ export function StudentAdmissions() {
                   {t('admissions.dialogDescription') || 'Map a registered learner into a class, academic year, and residency type with status tracking.'}
                 </DialogDescription>
               </DialogHeader>
+              {!isEdit && isLimitReached && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    {t('admissions.limitReached') || 
+                     `Student limit reached (${studentUsage.current}/${studentUsage.limit}). Please disable an old admission record first or upgrade your plan to add new admissions.`}
+                  </AlertDescription>
+                </Alert>
+              )}
               <FormProvider {...formMethods}>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
@@ -689,7 +748,11 @@ export function StudentAdmissions() {
                     control={control}
                     name="school_id"
                     render={({ field }) => (
-                      <Select value={field.value || ''} onValueChange={field.onChange}>
+                      <Select 
+                        value={field.value || ''} 
+                        onValueChange={field.onChange}
+                        disabled={!isEdit && !canCreateAdmission}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder={t('admissions.selectSchool') || 'Select school'} />
                         </SelectTrigger>
@@ -724,7 +787,7 @@ export function StudentAdmissions() {
                             placeholder={t('admissions.chooseStudent') || 'Choose student'}
                             searchPlaceholder={t('admissions.searchStudent') || 'Search by name or admission number...'}
                             emptyText={t('admissions.noStudentsFound') || 'No students found.'}
-                            disabled={isEdit}
+                            disabled={isEdit || (!isEdit && !canCreateAdmission)}
                           />
                         );
                       }}
@@ -747,6 +810,7 @@ export function StudentAdmissions() {
                             setValue('class_id', '');
                             setValue('room_id', '');
                           }}
+                          disabled={!isEdit && !canCreateAdmission}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder={t('admissions.selectAcademicYear') || 'Select academic year'} />
@@ -781,7 +845,7 @@ export function StudentAdmissions() {
                               }
                             }
                           }}
-                          disabled={!selectedAcademicYear}
+                          disabled={!selectedAcademicYear || (!isEdit && !canCreateAdmission)}
                         >
                           <SelectTrigger>
                             <SelectValue 
@@ -833,7 +897,11 @@ export function StudentAdmissions() {
                       control={control}
                       name="residency_type_id"
                       render={({ field }) => (
-                        <Select value={field.value || ''} onValueChange={field.onChange}>
+                        <Select 
+                          value={field.value || ''} 
+                          onValueChange={field.onChange}
+                          disabled={!isEdit && !canCreateAdmission}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder={t('admissions.selectResidency') || 'Select residency'} />
                           </SelectTrigger>
@@ -869,6 +937,7 @@ export function StudentAdmissions() {
                             placeholder={t('admissions.assignRoom') || 'Assign room'}
                             searchPlaceholder={t('admissions.searchRoom') || 'Search rooms...'}
                             emptyText={t('admissions.noRoomsFound') || 'No rooms found.'}
+                            disabled={!isEdit && !canCreateAdmission}
                           />
                         );
                       }}
@@ -876,11 +945,20 @@ export function StudentAdmissions() {
                   </div>
                   <div>
                     <Label>{t('admissions.admissionYear') || 'Admission Year'}</Label>
-                    <Input placeholder={new Date().getFullYear().toString()} {...register('admission_year')} />
+                    <Input 
+                      placeholder={new Date().getFullYear().toString()} 
+                      {...register('admission_year')}
+                      disabled={!isEdit && !canCreateAdmission}
+                    />
                   </div>
                   <div>
                     <Label>{t('admissions.admissionDate') || 'Admission Date'}</Label>
-                    <CalendarFormField control={control} name="admission_date" label={t('admissions.admissionDate') || 'Admission Date'} />
+                    <CalendarFormField 
+                      control={control} 
+                      name="admission_date" 
+                      label={t('admissions.admissionDate') || 'Admission Date'}
+                      disabled={!isEdit && !canCreateAdmission}
+                    />
                   </div>
                   <div>
                     <Label>{t('admissions.enrollmentStatus') || 'Enrollment Status'}</Label>
@@ -888,7 +966,11 @@ export function StudentAdmissions() {
                       control={control}
                       name="enrollment_status"
                       render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
+                        <Select 
+                          value={field.value} 
+                          onValueChange={field.onChange}
+                          disabled={!isEdit && !canCreateAdmission}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder={t('admissions.status') || 'Status'} />
                           </SelectTrigger>
@@ -907,15 +989,27 @@ export function StudentAdmissions() {
                   </div>
                   <div>
                     <Label>{t('admissions.enrollmentType') || 'Enrollment Type'}</Label>
-                    <Input placeholder={t('admissions.enrollmentTypePlaceholder') || 'Boarder / Day scholar'} {...register('enrollment_type')} />
+                    <Input 
+                      placeholder={t('admissions.enrollmentTypePlaceholder') || 'Boarder / Day scholar'} 
+                      {...register('enrollment_type')}
+                      disabled={!isEdit && !canCreateAdmission}
+                    />
                   </div>
                   <div>
                     <Label>{t('admissions.shift') || 'Shift'}</Label>
-                    <Input placeholder={t('admissions.shiftPlaceholder') || 'Morning / Evening'} {...register('shift')} />
+                    <Input 
+                      placeholder={t('admissions.shiftPlaceholder') || 'Morning / Evening'} 
+                      {...register('shift')}
+                      disabled={!isEdit && !canCreateAdmission}
+                    />
                   </div>
                   <div>
                     <Label>{t('admissions.feeStatus') || 'Fee Status'}</Label>
-                    <Input placeholder={t('admissions.feeStatusPlaceholder') || 'Paid / Partial / Waived'} {...register('fee_status')} />
+                    <Input 
+                      placeholder={t('admissions.feeStatusPlaceholder') || 'Paid / Partial / Waived'} 
+                      {...register('fee_status')}
+                      disabled={!isEdit && !canCreateAdmission}
+                    />
                   </div>
                   <div>
                     <Label>{t('admissions.boarder') || 'Boarder'}</Label>
@@ -923,7 +1017,11 @@ export function StudentAdmissions() {
                       control={control}
                       name="is_boarder"
                       render={({ field }) => (
-                        <Select value={field.value ? 'yes' : 'no'} onValueChange={(value) => field.onChange(value === 'yes')}>
+                        <Select 
+                          value={field.value ? 'yes' : 'no'} 
+                          onValueChange={(value) => field.onChange(value === 'yes')}
+                          disabled={!isEdit && !canCreateAdmission}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder={t('admissions.boarder') || 'Boarder'} />
                           </SelectTrigger>
@@ -939,14 +1037,22 @@ export function StudentAdmissions() {
 
                 <div className="space-y-2">
                   <Label>{t('admissions.placementNotes') || 'Placement Notes'}</Label>
-                  <Textarea placeholder={t('admissions.placementNotesPlaceholder') || 'Health, guardian approvals, or special considerations'} {...register('placement_notes')} />
+                  <Textarea 
+                    placeholder={t('admissions.placementNotesPlaceholder') || 'Health, guardian approvals, or special considerations'} 
+                    {...register('placement_notes')}
+                    disabled={!isEdit && !canCreateAdmission}
+                  />
                   {errors.placement_notes && (
                     <p className="text-destructive text-sm mt-1">{errors.placement_notes.message}</p>
                   )}
                 </div>
 
                 <DialogFooter>
-                  <Button type="submit" className="w-full">
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={!isEdit && !canCreateAdmission}
+                  >
                     {isEdit ? (t('admissions.updateAdmission') || 'Update admission') : (t('admissions.admitStudent') || 'Admit student')}
                   </Button>
                 </DialogFooter>

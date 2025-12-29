@@ -76,22 +76,58 @@ class SubscriptionController extends Controller
      */
     public function usage(Request $request)
     {
-        $user = $request->user();
-        $profile = DB::table('profiles')->where('id', $user->id)->first();
+        try {
+            $user = $request->user();
+            $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
-            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            if (!$profile || !$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            }
+
+            // Get usage with error handling - returns empty array on error
+            $usage = [];
+            try {
+                $usage = $this->usageTrackingService->getAllUsage($profile->organization_id);
+            } catch (\Exception $e) {
+                \Log::error('Failed to get usage: ' . $e->getMessage(), [
+                    'trace' => $e->getTraceAsString(),
+                    'organization_id' => $profile->organization_id,
+                ]);
+                // Continue with empty usage array
+            }
+
+            // Get warnings with error handling - returns empty array on error
+            $warnings = [];
+            try {
+                $warnings = $this->usageTrackingService->hasWarnings($profile->organization_id);
+            } catch (\Exception $e) {
+                \Log::error('Failed to get warnings: ' . $e->getMessage(), [
+                    'trace' => $e->getTraceAsString(),
+                    'organization_id' => $profile->organization_id,
+                ]);
+                // Continue with empty warnings array
+            }
+
+            return response()->json([
+                'data' => [
+                    'usage' => $usage,
+                    'warnings' => $warnings,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Subscription usage error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'user_id' => $request->user()?->id,
+            ]);
+            
+            // Return empty data instead of error to prevent frontend crashes
+            return response()->json([
+                'data' => [
+                    'usage' => [],
+                    'warnings' => [],
+                ],
+            ], 200);
         }
-
-        $usage = $this->usageTrackingService->getAllUsage($profile->organization_id);
-        $warnings = $this->usageTrackingService->hasWarnings($profile->organization_id);
-
-        return response()->json([
-            'data' => [
-                'usage' => $usage,
-                'warnings' => $warnings,
-            ],
-        ]);
     }
 
     /**

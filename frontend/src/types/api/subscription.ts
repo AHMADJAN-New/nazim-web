@@ -42,6 +42,10 @@ export interface OrganizationSubscription {
   additional_schools: number;
   notes: string | null;
   plan?: SubscriptionPlan;
+  organization?: {
+    id: string;
+    name: string;
+  };
   created_at: string;
   updated_at: string;
 }
@@ -163,6 +167,14 @@ export interface RenewalRequest {
   rejection_reason: string | null;
   requested_plan?: SubscriptionPlan;
   payment_record?: PaymentRecord;
+  organization?: {
+    id: string;
+    name: string;
+  };
+  subscription?: {
+    id: string;
+    plan?: SubscriptionPlan;
+  };
   created_at: string;
   updated_at: string;
 }
@@ -253,6 +265,8 @@ export interface LimitDefinition {
 // Admin Dashboard Types
 export interface SubscriptionDashboard {
   total_organizations: number;
+  total_schools: number;
+  total_students: number;
   subscriptions_by_status: Record<SubscriptionStatus, number>;
   subscriptions_by_plan: Record<string, number>;
   revenue_this_year: Record<string, number>;

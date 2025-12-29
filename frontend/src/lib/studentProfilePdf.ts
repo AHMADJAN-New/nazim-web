@@ -52,8 +52,23 @@ try {
     
     // Register Roboto fonts from vfs_fonts (default pdfmake fonts)
     // vfs_fonts typically includes: Roboto-Regular.ttf, Roboto-Medium.ttf, Roboto-Bold.ttf
-    if (!(pdfMake as any).fonts) {
-      (pdfMake as any).fonts = {};
+    try {
+      if (!(pdfMake as any).fonts) {
+        // Check if object is extensible before adding property
+        if (Object.isExtensible(pdfMake)) {
+          (pdfMake as any).fonts = {};
+        } else {
+          // Object is not extensible, try to use existing fonts or skip
+          if (!(pdfMake as any).fonts) {
+            console.warn('[studentProfilePdf] Cannot add fonts property, object is not extensible. Using existing fonts if available.');
+          }
+        }
+      }
+    } catch (e) {
+      // If fonts property already exists or object is not extensible, continue
+      if (!(pdfMake as any).fonts) {
+        console.warn('[studentProfilePdf] Could not initialize fonts property:', e);
+      }
     }
     
     // Check if Roboto fonts exist in VFS and register them

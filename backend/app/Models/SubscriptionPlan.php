@@ -164,11 +164,16 @@ class SubscriptionPlan extends Model
      */
     public function getWarningThreshold(string $resourceKey): int
     {
-        $limit = $this->limits()
-            ->where('resource_key', $resourceKey)
-            ->first();
+        try {
+            $limit = $this->limits()
+                ->where('resource_key', $resourceKey)
+                ->first();
 
-        return $limit ? $limit->warning_threshold : 80;
+            return $limit ? $limit->warning_threshold : 80;
+        } catch (\Exception $e) {
+            \Log::warning("Failed to get warning threshold for resource {$resourceKey} in plan {$this->id}: " . $e->getMessage());
+            return 80; // Default threshold
+        }
     }
 
     /**

@@ -336,7 +336,8 @@ export const ps: TranslationKeys = {
     shiftTooLong: 'شیفت ډیر اوږد دی',
     feeStatusTooLong: 'د فیس حالت ډیر اوږد دی',
     admissionYearMaxLength: 'د داخلې کال باید 10 حروف یا لږ وي',
-    placementNotesMaxLength: 'یادښتونه باید 500 حروف یا لږ وي'
+    placementNotesMaxLength: 'یادښتونه باید 500 حروف یا لږ وي',
+    limitReached: 'د زده کوونکو محدودیت ته رسیدلی. مهرباني وکړئ لومړی یو زوړ د داخلې ریکارډ غیرفعال کړئ یا خپله پلان لوړه کړئ ترڅو نوي داخلې اضافه کړئ.'
   },
   assets: {
     active: 'فعال',
@@ -1842,6 +1843,10 @@ export const ps: TranslationKeys = {
     selectXlsx: 'د .xlsx فایل وټاکئ',
     validateFile: 'کتنه (Validate)',
     importNow: 'واردول (Import)',
+    limitReached: 'د زده کوونکو محدودیت ته رسیدلی. مهرباني وکړئ خپله پلان لوړه کړئ ترڅو نور زده کوونکي وارد کړئ.',
+    limitWarning: 'خبرداری: یوازې {remaining} د زده کوونکو سلاټ پاتې دی. یوازې لومړی {remaining} د اعتبار وړ قطار(ونه) به وارد شي.',
+    uploadDisabled: 'د فایل اپلوډ غیرفعال دی ځکه چې د زده کوونکو محدودیت ته رسیدلی.',
+    importLimited: 'ستاسو فایل {validRows} د اعتبار وړ قطارونه لري، مګر یوازې {remaining} د زده کوونکو سلاټ(ونه) پاتې دي. یوازې لومړی {remaining} د اعتبار وړ قطار(ونه) به وارد شي.',
     validationSummary: 'د کتنې لنډیز',
     validRows: 'سم قطارونه',
     rows: 'قطارونه',

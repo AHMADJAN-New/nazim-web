@@ -53,10 +53,18 @@ export function formatDate(date: Date | string, locale: string = 'en-US'): strin
  */
 export function formatDateTime(date: Date | string, locale: string = 'en-US'): string {
   try {
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    // Ensure we have a valid Date object
+    let dateObj: Date;
+    if (date instanceof Date) {
+      dateObj = date;
+    } else if (typeof date === 'string') {
+      dateObj = new Date(date);
+    } else {
+      return 'Invalid Date';
+    }
 
-    // Check for invalid date
-    if (isNaN(dateObj.getTime())) {
+    // Check if dateObj is a valid Date instance
+    if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
       return 'Invalid Date';
     }
 

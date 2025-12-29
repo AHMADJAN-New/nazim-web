@@ -296,6 +296,16 @@ class SubscriptionSeeder extends Seeder
                 ])
             );
 
+            // Ensure we have the plan with id - fetch fresh from database if needed
+            if (empty($plan->id)) {
+                $plan = SubscriptionPlan::where('slug', $planData['slug'])->first();
+            }
+
+            // Validate that plan has an id before proceeding
+            if (empty($plan->id)) {
+                throw new \RuntimeException("Failed to create or retrieve plan with slug: {$planData['slug']}. Plan ID is missing.");
+            }
+
             // Create plan features
             foreach ($features as $featureKey => $isEnabled) {
                 PlanFeature::updateOrCreate(
