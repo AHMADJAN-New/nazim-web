@@ -3,12 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\Organization;
+use App\Services\OrganizationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class OrganizationController extends Controller
 {
+    protected OrganizationService $organizationService;
+
+    public function __construct(OrganizationService $organizationService)
+    {
+        $this->organizationService = $organizationService;
+    }
+
     /**
      * Display a listing of organizations (protected - requires authentication)
      * Returns organizations filtered by user's access
@@ -83,7 +91,13 @@ class OrganizationController extends Controller
     }
 
     /**
-     * Store a newly created organization
+     * Store a newly created organization with admin user and default school
+     *
+     * IMPORTANT: This creates a complete organization setup including:
+     * - Organization entity
+     * - Default school for the organization
+     * - Organization admin user account
+     * - Organization admin role and permissions
      */
     public function store(Request $request)
     {
@@ -111,7 +125,9 @@ class OrganizationController extends Controller
             ], 403);
         }
 
-        $request->validate([
+        // Validate organization and admin data
+        $validated = $request->validate([
+            // Organization data
             'name' => 'required|string|max:255',
             'slug' => 'required|string|max:100|unique:organizations,slug',
             'email' => 'nullable|email|max:255',
@@ -135,35 +151,78 @@ class OrganizationController extends Controller
             'contact_person_position' => 'nullable|string|max:100',
             'logo_url' => 'nullable|url|max:500',
             'settings' => 'nullable|array',
+
+            // Admin user data
+            'admin_email' => 'required|email|max:255|unique:users,email',
+            'admin_password' => 'required|string|min:8',
+            'admin_full_name' => 'required|string|max:255',
         ]);
 
-        $organization = Organization::create([
-            'name' => $request->name,
-            'slug' => $request->slug,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'website' => $request->website,
-            'street_address' => $request->street_address,
-            'city' => $request->city,
-            'state_province' => $request->state_province,
-            'country' => $request->country,
-            'postal_code' => $request->postal_code,
-            'registration_number' => $request->registration_number,
-            'tax_id' => $request->tax_id,
-            'license_number' => $request->license_number,
-            'type' => $request->type,
-            'description' => $request->description,
-            'established_date' => $request->established_date,
-            'is_active' => $request->is_active ?? true,
-            'contact_person_name' => $request->contact_person_name,
-            'contact_person_email' => $request->contact_person_email,
-            'contact_person_phone' => $request->contact_person_phone,
-            'contact_person_position' => $request->contact_person_position,
-            'logo_url' => $request->logo_url,
-            'settings' => $request->settings ?? [],
-        ]);
+        try {
+            // Prepare organization data
+            $organizationData = [
+                'name' => $validated['name'],
+                'slug' => $validated['slug'],
+                'email' => $validated['email'] ?? null,
+                'phone' => $validated['phone'] ?? null,
+                'website' => $validated['website'] ?? null,
+                'street_address' => $validated['street_address'] ?? null,
+                'city' => $validated['city'] ?? null,
+                'state_province' => $validated['state_province'] ?? null,
+                'country' => $validated['country'] ?? null,
+                'postal_code' => $validated['postal_code'] ?? null,
+                'registration_number' => $validated['registration_number'] ?? null,
+                'tax_id' => $validated['tax_id'] ?? null,
+                'license_number' => $validated['license_number'] ?? null,
+                'type' => $validated['type'] ?? null,
+                'description' => $validated['description'] ?? null,
+                'established_date' => $validated['established_date'] ?? null,
+                'is_active' => $validated['is_active'] ?? true,
+                'contact_person_name' => $validated['contact_person_name'] ?? null,
+                'contact_person_email' => $validated['contact_person_email'] ?? null,
+                'contact_person_phone' => $validated['contact_person_phone'] ?? null,
+                'contact_person_position' => $validated['contact_person_position'] ?? null,
+                'logo_url' => $validated['logo_url'] ?? null,
+                'settings' => $validated['settings'] ?? [],
+            ];
 
-        return response()->json($organization, 201);
+            // Prepare admin data
+            $adminData = [
+                'email' => $validated['admin_email'],
+                'password' => $validated['admin_password'],
+                'full_name' => $validated['admin_full_name'],
+            ];
+
+            // Create organization with admin and school
+            $result = $this->organizationService->createOrganizationWithAdmin(
+                $organizationData,
+                $adminData
+            );
+
+            return response()->json([
+                'organization' => $result['organization'],
+                'school' => [
+                    'id' => $result['school']->id,
+                    'school_name' => $result['school']->school_name,
+                ],
+                'admin' => [
+                    'id' => $result['admin_user']->id,
+                    'email' => $result['admin_user']->email,
+                ],
+                'message' => 'Organization created successfully with admin user and default school',
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to create organization: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->except(['admin_password'])
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to create organization',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
