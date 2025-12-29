@@ -3,6 +3,7 @@ import { permissionsApi, rolesApi } from '@/lib/api/client';
 import { useAuth } from './useAuth';
 import { showToast } from '@/lib/toast';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { useHasFeature, useFeatures } from './useSubscription';
 import type * as PermissionApi from '@/types/api/permission';
 import type { Permission, RolePermission } from '@/types/domain/permission';
 import { mapPermissionApiToDomain, mapRolePermissionApiToDomain } from '@/mappers/permissionMapper';
@@ -249,6 +250,212 @@ export const useHasPermission = (permissionName: string): boolean | undefined =>
 
   // No permissions found (not loading, but no permissions)
   return false;
+};
+
+/**
+ * Map permission names to feature keys
+ * This determines which subscription feature is required for a permission
+ */
+const PERMISSION_TO_FEATURE_MAP: Record<string, string> = {
+  // Hostel feature
+  'hostel.read': 'hostel',
+  'hostel.create': 'hostel',
+  'hostel.update': 'hostel',
+  'hostel.delete': 'hostel',
+  
+  // Finance feature
+  'finance_accounts.read': 'finance',
+  'finance_accounts.create': 'finance',
+  'finance_accounts.update': 'finance',
+  'finance_accounts.delete': 'finance',
+  'income_entries.read': 'finance',
+  'income_entries.create': 'finance',
+  'income_entries.update': 'finance',
+  'income_entries.delete': 'finance',
+  'expense_entries.read': 'finance',
+  'expense_entries.create': 'finance',
+  'expense_entries.update': 'finance',
+  'expense_entries.delete': 'finance',
+  'finance_projects.read': 'finance',
+  'finance_projects.create': 'finance',
+  'finance_projects.update': 'finance',
+  'finance_projects.delete': 'finance',
+  'donors.read': 'finance',
+  'donors.create': 'finance',
+  'donors.update': 'finance',
+  'donors.delete': 'finance',
+  'finance_reports.read': 'finance',
+  'currencies.read': 'finance',
+  'currencies.create': 'finance',
+  'currencies.update': 'finance',
+  'currencies.delete': 'finance',
+  'exchange_rates.read': 'finance',
+  'exchange_rates.create': 'finance',
+  'exchange_rates.update': 'finance',
+  'exchange_rates.delete': 'finance',
+  'fees.read': 'finance',
+  'fees.create': 'finance',
+  'fees.update': 'finance',
+  'fees.delete': 'finance',
+  'fee_payments.read': 'finance',
+  'fee_payments.create': 'finance',
+  'fee_payments.update': 'finance',
+  'fee_payments.delete': 'finance',
+  'fee_exceptions.read': 'finance',
+  'fee_exceptions.create': 'finance',
+  'fee_exceptions.update': 'finance',
+  'fee_exceptions.delete': 'finance',
+  'finance_documents.read': 'finance',
+  'finance_documents.create': 'finance',
+  'finance_documents.update': 'finance',
+  'finance_documents.delete': 'finance',
+  
+  // Library feature
+  'library_books.read': 'library',
+  'library_books.create': 'library',
+  'library_books.update': 'library',
+  'library_books.delete': 'library',
+  'library_categories.read': 'library',
+  'library_categories.create': 'library',
+  'library_categories.update': 'library',
+  'library_categories.delete': 'library',
+  'library_loans.read': 'library',
+  'library_loans.create': 'library',
+  'library_loans.update': 'library',
+  'library_loans.delete': 'library',
+  
+  // Events feature
+  'events.read': 'events',
+  'events.create': 'events',
+  'events.update': 'events',
+  'events.delete': 'events',
+  'event_types.read': 'events',
+  'event_types.create': 'events',
+  'event_types.update': 'events',
+  'event_types.delete': 'events',
+  'event_guests.read': 'events',
+  'event_guests.create': 'events',
+  'event_guests.update': 'events',
+  'event_guests.delete': 'events',
+  'event_checkins.read': 'events',
+  'event_checkins.create': 'events',
+  'event_checkins.update': 'events',
+  'event_checkins.delete': 'events',
+  
+  // Short-term courses feature
+  'short_term_courses.read': 'short_courses',
+  'short_term_courses.create': 'short_courses',
+  'short_term_courses.update': 'short_courses',
+  'short_term_courses.delete': 'short_courses',
+  'short_term_courses.close': 'short_courses',
+  'course_students.read': 'short_courses',
+  'course_students.create': 'short_courses',
+  'course_students.update': 'short_courses',
+  'course_students.delete': 'short_courses',
+  'course_students.report': 'short_courses',
+  'course_attendance.read': 'short_courses',
+  'course_attendance.create': 'short_courses',
+  'course_attendance.update': 'short_courses',
+  'course_attendance.delete': 'short_courses',
+  'course_documents.read': 'short_courses',
+  'course_documents.create': 'short_courses',
+  'course_documents.update': 'short_courses',
+  'course_documents.delete': 'short_courses',
+  'certificate_templates.read': 'short_courses',
+  'certificate_templates.create': 'short_courses',
+  'certificate_templates.update': 'short_courses',
+  'certificate_templates.delete': 'short_courses',
+};
+
+/**
+ * Get the feature key required for a permission (if any)
+ */
+function getFeatureKeyForPermission(permissionName: string): string | null {
+  return PERMISSION_TO_FEATURE_MAP[permissionName] || null;
+}
+
+/**
+ * Combined hook that checks both permission AND feature access
+ * Returns true only if BOTH conditions are met:
+ * 1. User has the permission
+ * 2. User's organization has the required feature enabled (if feature is required)
+ * 
+ * CRITICAL: Always calls useFeatures() unconditionally to follow Rules of Hooks
+ */
+export const useHasPermissionAndFeature = (permissionName: string): boolean | undefined => {
+  const hasPermission = useHasPermission(permissionName);
+  const featureKey = getFeatureKeyForPermission(permissionName);
+  
+  // CRITICAL: Always call useFeatures() unconditionally (Rules of Hooks)
+  // Even if no feature is required, we still call the hook to maintain hook order
+  const { data: features, isLoading: featuresLoading, error: featuresError } = useFeatures();
+  
+  // If no feature is required for this permission, just check permission
+  if (!featureKey) {
+    return hasPermission;
+  }
+  
+  // If permissions are loading, return undefined
+  if (hasPermission === undefined) {
+    return undefined;
+  }
+  
+  // If features query has an error (e.g., 402 Payment Required), treat as feature not available
+  // This ensures buttons are hidden when features are disabled, even if the query fails
+  if (featuresError) {
+    // If permission is false, return false
+    if (!hasPermission) {
+      return false;
+    }
+    // Permission is true but feature query failed - assume feature is not available
+    // This handles 402 errors where features endpoint itself might be blocked
+    return false;
+  }
+  
+  // If features are loading, return undefined (wait for data)
+  // But only if we have placeholder data (empty array) - otherwise wait
+  if (featuresLoading) {
+    // If we have placeholder data (empty array), we can make a decision
+    // Otherwise, wait for actual data
+    if (features !== undefined && Array.isArray(features)) {
+      // We have placeholder data, check if feature exists
+      if (features.length === 0) {
+        // Empty array means no features available
+        return false;
+      }
+      // Has some features, check if our feature is in the list
+      const feature = features.find((f) => f.featureKey === featureKey);
+      if (!feature) {
+        return false; // Feature not in list
+      }
+      return feature.isEnabled && hasPermission;
+    }
+    // No placeholder data yet, wait
+    return undefined;
+  }
+  
+  // If features data is not yet loaded (undefined), return undefined (wait for data)
+  if (features === undefined) {
+    return undefined;
+  }
+  
+  // If features array is empty, assume feature is not enabled
+  // This handles cases where the query returns empty array (e.g., 402 error handled in queryFn)
+  if (!features || features.length === 0) {
+    return false;
+  }
+  
+  // Check if the specific feature is enabled
+  const feature = features.find((f) => f.featureKey === featureKey);
+  const hasFeature = feature?.isEnabled ?? false;
+  
+  // Both must be true - if permission is false, return false immediately
+  if (!hasPermission) {
+    return false;
+  }
+  
+  // Permission is true, but feature must also be true
+  return hasFeature;
 };
 
 export const useAssignPermissionToRole = () => {

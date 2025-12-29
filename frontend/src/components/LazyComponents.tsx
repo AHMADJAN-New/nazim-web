@@ -141,6 +141,18 @@ export const GuestEditPage = lazy(() => import('@/pages/events/GuestEditPage'));
 export const CheckinPage = lazy(() => import('@/pages/events/CheckinPage'));
 export const EventUsersPage = lazy(() => import('@/pages/events/EventUsersPage'));
 
+// Subscription pages
+export const SubscriptionPage = lazy(() => import('@/pages/subscription/SubscriptionPage').then(module => ({ default: module.default })));
+export const PlansPage = lazy(() => import('@/pages/subscription/PlansPage').then(module => ({ default: module.default })));
+export const RenewPage = lazy(() => import('@/pages/subscription/RenewPage').then(module => ({ default: module.default })));
+
+// Subscription admin pages
+export const SubscriptionAdminDashboard = lazy(() => import('@/pages/subscription/admin/SubscriptionAdminDashboard').then(module => ({ default: module.default })));
+export const PlansManagement = lazy(() => import('@/pages/subscription/admin/PlansManagement').then(module => ({ default: module.default })));
+export const OrganizationSubscriptionDetail = lazy(() => import('@/pages/subscription/admin/OrganizationSubscriptionDetail').then(module => ({ default: module.default })));
+export const RenewalReviewPage = lazy(() => import('@/pages/subscription/admin/RenewalReviewPage').then(module => ({ default: module.default })));
+export const DiscountCodesManagement = lazy(() => import('@/pages/subscription/admin/DiscountCodesManagement').then(module => ({ default: module.default })));
+
 // Re-export loading components for backward compatibility
 export { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';
 

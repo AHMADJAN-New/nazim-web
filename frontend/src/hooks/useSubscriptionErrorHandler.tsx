@@ -20,12 +20,29 @@ interface SubscriptionErrorDetail {
  * 
  * Add this hook to your App or main layout component.
  */
+// Track recently shown error toasts to prevent duplicates
+const recentlyShownErrors = new Map<string, number>();
+const ERROR_TOAST_DEBOUNCE_MS = 3000; // Don't show same error toast within 3 seconds
+
 export function useSubscriptionErrorHandler() {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
   const handleSubscriptionError = useCallback((event: CustomEvent<SubscriptionErrorDetail>) => {
     const { code, message, resourceKey, featureKey, current, limit } = event.detail;
+    
+    // Create a unique key for this error to prevent duplicate toasts
+    const errorKey = `${code}-${featureKey || resourceKey || 'unknown'}`;
+    const now = Date.now();
+    const lastShown = recentlyShownErrors.get(errorKey);
+    
+    // Skip if we've shown this error recently
+    if (lastShown && now - lastShown < ERROR_TOAST_DEBOUNCE_MS) {
+      return;
+    }
+    
+    // Mark as shown
+    recentlyShownErrors.set(errorKey, now);
 
     switch (code) {
       case 'NO_SUBSCRIPTION':

@@ -153,7 +153,15 @@ import {
   FeeExceptionsPage,
   FeeReportsPage,
   StudentFeeStatementPage,
-  VerifyCertificate
+  VerifyCertificate,
+  SubscriptionPage,
+  PlansPage,
+  RenewPage,
+  SubscriptionAdminDashboard,
+  PlansManagement,
+  OrganizationSubscriptionDetail,
+  RenewalReviewPage,
+  DiscountCodesManagement
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -341,6 +349,43 @@ const App = () => (
                       <PermissionRoute permission="reports.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <ReportTemplatesManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+
+                    {/* Subscription Admin routes */}
+                    <Route path="/admin/subscription" element={
+                      <PermissionRoute permission="subscription.admin">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <SubscriptionAdminDashboard />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/admin/subscription/plans" element={
+                      <PermissionRoute permission="subscription.admin">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <PlansManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/admin/subscription/organizations/:organizationId" element={
+                      <PermissionRoute permission="subscription.admin">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <OrganizationSubscriptionDetail />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/admin/subscription/renewals/:renewalId" element={
+                      <PermissionRoute permission="subscription.admin">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <RenewalReviewPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/admin/subscription/discount-codes" element={
+                      <PermissionRoute permission="subscription.admin">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <DiscountCodesManagement />
                         </Suspense>
                       </PermissionRoute>
                     } />
@@ -1216,6 +1261,23 @@ const App = () => (
                           <FinanceSettings />
                         </Suspense>
                       </PermissionRoute>
+                    } />
+
+                    {/* Subscription routes */}
+                    <Route path="/subscription" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <SubscriptionPage />
+                      </Suspense>
+                    } />
+                    <Route path="/subscription/plans" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <PlansPage />
+                      </Suspense>
+                    } />
+                    <Route path="/subscription/renew" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <RenewPage />
+                      </Suspense>
                     } />
                   </Route>
 

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
@@ -193,31 +194,129 @@ export const useUsage = () => {
       };
     },
     enabled: !!user && !!profile?.organization_id,
-    staleTime: 30 * 1000, // 30 seconds - usage is real-time
+    staleTime: 0, // Always refetch - usage changes frequently
     refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchInterval: 60 * 1000, // Refetch every minute in case of background changes
   });
 };
 
 /**
  * Get all features and their status
  */
+// Track recently invalidated features to prevent infinite loops
+const recentlyInvalidatedFeatures = new Set<string>();
+const invalidationTimeouts = new Map<string, NodeJS.Timeout>();
+
 export const useFeatures = () => {
   const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
+  
+  // Use stable organization ID to prevent dependency array size changes
+  const organizationId = profile?.organization_id ?? null;
+
+  // Use a ref to store the debounced invalidation function to ensure it's stable
+  const invalidateFeaturesDebouncedRef = useRef<((featureKey: string) => void) | null>(null);
+
+  // Initialize the debounced function once
+  if (!invalidateFeaturesDebouncedRef.current) {
+    invalidateFeaturesDebouncedRef.current = (featureKey: string) => {
+      // Prevent infinite loops: only invalidate if we haven't invalidated this feature recently
+      if (recentlyInvalidatedFeatures.has(featureKey)) {
+        // Silently skip - no need to log every skip
+        return;
+      }
+      
+      // Mark as recently invalidated
+      recentlyInvalidatedFeatures.add(featureKey);
+      
+      // Clear feature from "recently invalidated" set after 5 seconds
+      const timeout = setTimeout(() => {
+        recentlyInvalidatedFeatures.delete(featureKey);
+        invalidationTimeouts.delete(featureKey);
+      }, 5000);
+      
+      // Clear any existing timeout for this feature
+      const existingTimeout = invalidationTimeouts.get(featureKey);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+      }
+      invalidationTimeouts.set(featureKey, timeout);
+      
+      // Only log when actually invalidating (not when skipping)
+      if (import.meta.env.DEV) {
+        console.log('[useFeatures] Invalidating features cache due to 402 error for feature:', featureKey);
+      }
+      
+      // Invalidate for all organizations (in case user switches orgs)
+      // Use a small delay to prevent immediate refetch loops
+      setTimeout(() => {
+        void queryClient.invalidateQueries({
+          queryKey: ['subscription-features'],
+        });
+      }, 100);
+    };
+  }
+
+  // Listen for subscription errors (402) and invalidate features cache
+  useEffect(() => {
+    const handleSubscriptionError = (event: CustomEvent) => {
+      const detail = event.detail as { featureKey?: string; code?: string };
+      
+      // If it's a feature-related error, invalidate features cache to refetch
+      if (detail.code === 'FEATURE_NOT_AVAILABLE' && detail.featureKey) {
+        invalidateFeaturesDebouncedRef.current?.(detail.featureKey);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('subscription-error', handleSubscriptionError as EventListener);
+      return () => {
+        window.removeEventListener('subscription-error', handleSubscriptionError as EventListener);
+      };
+    }
+    // CRITICAL: Only depend on queryClient to keep dependency array size constant
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryClient]);
 
   return useQuery<FeatureInfo[]>({
-    queryKey: ['subscription-features', profile?.organization_id],
+    queryKey: ['subscription-features', organizationId],
     queryFn: async () => {
-      if (!user || !profile?.organization_id) return [];
+      if (!user || !organizationId) return [];
 
-      const response = await apiClient.request<{ data: SubscriptionApi.FeatureStatus[] }>(
-        '/subscription/features',
-        { method: 'GET' }
-      );
-      return response.data.map(mapFeatureApiToDomain);
+      try {
+        const response = await apiClient.request<{ data: SubscriptionApi.FeatureStatus[] }>(
+          '/subscription/features',
+          { method: 'GET' }
+        );
+        return response.data.map(mapFeatureApiToDomain);
+      } catch (error: any) {
+        // If it's a 402 error (feature not available), return empty array
+        // This ensures buttons are hidden when features are disabled
+        if (error?.isSubscriptionError || error?.status === 402) {
+          if (import.meta.env.DEV) {
+            console.log('[useFeatures] Features query returned 402, returning empty array');
+          }
+          return [];
+        }
+        // Re-throw other errors
+        throw error;
+      }
     },
-    enabled: !!user && !!profile?.organization_id,
+    enabled: !!user && !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 402 errors (subscription/feature errors)
+      if (error?.isSubscriptionError || error?.status === 402 || error?.code === 'FEATURE_NOT_AVAILABLE') {
+        return false;
+      }
+      // Retry other errors up to 3 times
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    // Return empty array as placeholder data when query is disabled or fails
+    placeholderData: [],
   });
 };
 

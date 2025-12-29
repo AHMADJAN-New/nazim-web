@@ -6,10 +6,13 @@ import { useLanguage } from './useLanguage';
 import { apiClient } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 import type * as SubscriptionApi from '@/types/api/subscription';
+import type * as OrganizationApi from '@/types/api/organization';
 import type {
   SubscriptionDashboardStats,
   SubscriptionPlan,
 } from '@/types/domain/subscription';
+import type { Organization } from '@/types/domain/organization';
+import { mapOrganizationApiToDomain } from '@/mappers/organizationMapper';
 
 // =====================================================
 // MAPPERS
@@ -64,6 +67,8 @@ export const useSubscriptionDashboard = () => {
       
       return {
         totalOrganizations: response.data.total_organizations,
+        totalSchools: response.data.total_schools || 0,
+        totalStudents: response.data.total_students || 0,
         subscriptionsByStatus: response.data.subscriptions_by_status,
         subscriptionsByPlan: response.data.subscriptions_by_plan,
         revenueThisYear: {
@@ -226,7 +231,24 @@ export const useOrganizationSubscription = (organizationId: string) => {
         `/admin/subscription/organizations/${organizationId}/subscription`,
         { method: 'GET' }
       );
-      return response.data;
+      
+      // Map features to domain types
+      const mappedFeatures = response.data.features.map((apiFeature) => ({
+        featureKey: apiFeature.feature_key,
+        name: apiFeature.name,
+        description: apiFeature.description,
+        category: apiFeature.category,
+        isEnabled: apiFeature.is_enabled,
+        isAddon: apiFeature.is_addon,
+        canPurchaseAddon: apiFeature.can_purchase_addon,
+        addonPriceAfn: Number(apiFeature.addon_price_afn),
+        addonPriceUsd: Number(apiFeature.addon_price_usd),
+      }));
+      
+      return {
+        ...response.data,
+        features: mappedFeatures,
+      };
     },
     enabled: !!user && !!organizationId,
     staleTime: 60 * 1000,
@@ -459,6 +481,140 @@ export const usePendingRenewals = () => {
   });
 };
 
+/**
+ * Get a specific renewal request (admin)
+ */
+export const useRenewalRequest = (renewalId: string) => {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['subscription-admin-renewal', renewalId],
+    queryFn: async () => {
+      const response = await apiClient.request<{
+        data: SubscriptionApi.RenewalRequest;
+      }>(
+        `/admin/subscription/renewals/${renewalId}`,
+        { method: 'GET' }
+      );
+      return response.data;
+    },
+    enabled: !!user && !!renewalId,
+    staleTime: 60 * 1000,
+  });
+};
+
+/**
+ * Approve renewal request (admin)
+ */
+export const useApproveRenewal = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({
+      renewalId,
+      amount,
+      currency,
+      payment_method,
+      payment_reference,
+      payment_date,
+      notes,
+    }: {
+      renewalId: string;
+      amount?: number;
+      currency?: 'AFN' | 'USD';
+      payment_method?: 'bank_transfer' | 'cash' | 'check' | 'mobile_money' | 'other';
+      payment_reference?: string;
+      payment_date?: string;
+      notes?: string;
+    }) => {
+      const body: Record<string, any> = {};
+      
+      // Only include payment data if provided (for manual payment entry)
+      if (amount !== undefined) {
+        body.amount = amount;
+        body.currency = currency;
+        body.payment_method = payment_method;
+        body.payment_reference = payment_reference;
+        body.payment_date = payment_date;
+        body.notes = notes;
+      }
+
+      const response = await apiClient.request<{ data: SubscriptionApi.RenewalRequest }>(
+        `/admin/subscription/renewals/${renewalId}/approve`,
+        {
+          method: 'POST',
+          body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+        }
+      );
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      showToast.success(t('toast.renewalApproved') || 'Renewal request approved');
+      void queryClient.invalidateQueries({ queryKey: ['subscription-admin-renewal', variables.renewalId] });
+      void queryClient.invalidateQueries({ queryKey: ['subscription-admin-pending-renewals'] });
+      void queryClient.invalidateQueries({ queryKey: ['subscription-admin-list'] });
+      void queryClient.invalidateQueries({ queryKey: ['subscription-admin-dashboard'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to approve renewal');
+    },
+  });
+};
+
+/**
+ * Reject renewal request (admin)
+ */
+export const useRejectRenewal = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({ renewalId, reason }: { renewalId: string; reason: string }) => {
+      const response = await apiClient.request<{ data: SubscriptionApi.RenewalRequest }>(
+        `/admin/subscription/renewals/${renewalId}/reject`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ reason }),
+        }
+      );
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      showToast.success(t('toast.renewalRejected') || 'Renewal request rejected');
+      void queryClient.invalidateQueries({ queryKey: ['subscription-admin-renewal', variables.renewalId] });
+      void queryClient.invalidateQueries({ queryKey: ['subscription-admin-pending-renewals'] });
+      void queryClient.invalidateQueries({ queryKey: ['subscription-admin-list'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to reject renewal');
+    },
+  });
+};
+
+/**
+ * List all organizations (admin - for subscription admin)
+ */
+export const useAdminOrganizations = () => {
+  const { user } = useAuth();
+
+  return useQuery<Organization[]>({
+    queryKey: ['subscription-admin-organizations'],
+    queryFn: async () => {
+      const response = await apiClient.request<{
+        data: OrganizationApi.Organization[];
+      }>(
+        '/admin/subscription/organizations',
+        { method: 'GET' }
+      );
+      return response.data.map(mapOrganizationApiToDomain);
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
 // =====================================================
 // DISCOUNT CODES
 // =====================================================
@@ -670,6 +826,65 @@ export const useRecalculateUsage = () => {
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'Failed to recalculate usage');
+    },
+  });
+};
+
+/**
+ * Toggle a feature for an organization (enable/disable)
+ */
+export const useToggleFeature = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+  const { profile } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({
+      organizationId,
+      featureKey,
+    }: {
+      organizationId: string;
+      featureKey: string;
+    }) => {
+      const response = await apiClient.request<{ data: any; message: string }>(
+        `/admin/subscription/organizations/${organizationId}/features/${featureKey}/toggle`,
+        { method: 'POST' }
+      );
+      return response;
+    },
+    onSuccess: async (response, variables) => {
+      showToast.success(response.message || 'Feature toggled successfully');
+      
+      // Invalidate and refetch organization subscription data
+      await queryClient.invalidateQueries({
+        queryKey: ['subscription-admin-org', variables.organizationId],
+      });
+      await queryClient.refetchQueries({
+        queryKey: ['subscription-admin-org', variables.organizationId],
+      });
+      
+      // CRITICAL: Invalidate features cache for the organization AND refetch immediately
+      // This ensures UI updates immediately when features are toggled
+      // Invalidate all features queries to catch any organization
+      await queryClient.invalidateQueries({
+        queryKey: ['subscription-features'],
+      });
+      
+      // Refetch features for the toggled organization
+      await queryClient.refetchQueries({
+        queryKey: ['subscription-features', variables.organizationId],
+      });
+      
+      // If the toggled organization is different from current user's org, also refetch current user's features
+      // (in case they're viewing their own org and we toggled a different org, or vice versa)
+      if (profile?.organization_id && profile.organization_id !== variables.organizationId) {
+        await queryClient.refetchQueries({
+          queryKey: ['subscription-features', profile.organization_id],
+        });
+      }
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to toggle feature');
     },
   });
 };
