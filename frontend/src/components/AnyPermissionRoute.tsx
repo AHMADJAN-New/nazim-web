@@ -1,6 +1,5 @@
 import { ReactNode } from 'react';
-import { useUserPermissions } from '@/hooks/usePermissions';
-import { useAuth } from '@/hooks/useAuth';
+import { useHasAnyPermissionAndFeature } from '@/hooks/usePermissions';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield } from 'lucide-react';
@@ -18,20 +17,13 @@ interface AnyPermissionRouteProps {
  */
 export function AnyPermissionRoute({ permissions, children, showError = true }: AnyPermissionRouteProps) {
   const { t } = useLanguage();
-  const { profile } = useAuth();
-  const { data: userPermissions, isLoading } = useUserPermissions();
+  const hasAnyAccess = useHasAnyPermissionAndFeature(permissions);
 
-  const hasProfile = profile?.organization_id !== undefined && profile !== null;
-  const queryCanRun = hasProfile && !isLoading;
-  const hasPermissionsData = Array.isArray(userPermissions);
-  const permissionsReady = hasProfile && queryCanRun && hasPermissionsData;
-
-  if (!permissionsReady) {
+  if (hasAnyAccess === undefined) {
     return <LoadingSpinner size="lg" text="Loading permissions..." />;
   }
 
-  const hasAny = permissions.some((p) => userPermissions.includes(p));
-  if (hasAny) {
+  if (hasAnyAccess) {
     return <>{children}</>;
   }
 
