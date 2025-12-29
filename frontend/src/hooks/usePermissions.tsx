@@ -255,15 +255,21 @@ export const useHasPermission = (permissionName: string): boolean | undefined =>
 /**
  * Map permission names to feature keys
  * This determines which subscription feature is required for a permission
+ *
+ * CRITICAL: This mapping ensures that even if a user has permission to access a feature,
+ * they also need the feature enabled in their subscription plan to actually use it.
+ * Both conditions must be met: hasPermission(permission) AND hasFeature(feature)
+ *
+ * Permissions NOT in this map are considered "core features" available in all plans
  */
 const PERMISSION_TO_FEATURE_MAP: Record<string, string> = {
-  // Hostel feature
+  // ========== Hostel Management ==========
   'hostel.read': 'hostel',
   'hostel.create': 'hostel',
   'hostel.update': 'hostel',
   'hostel.delete': 'hostel',
-  
-  // Finance feature
+
+  // ========== Finance & Accounting ==========
   'finance_accounts.read': 'finance',
   'finance_accounts.create': 'finance',
   'finance_accounts.update': 'finance',
@@ -272,10 +278,18 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string> = {
   'income_entries.create': 'finance',
   'income_entries.update': 'finance',
   'income_entries.delete': 'finance',
+  'income_categories.read': 'finance',
+  'income_categories.create': 'finance',
+  'income_categories.update': 'finance',
+  'income_categories.delete': 'finance',
   'expense_entries.read': 'finance',
   'expense_entries.create': 'finance',
   'expense_entries.update': 'finance',
   'expense_entries.delete': 'finance',
+  'expense_categories.read': 'finance',
+  'expense_categories.create': 'finance',
+  'expense_categories.update': 'finance',
+  'expense_categories.delete': 'finance',
   'finance_projects.read': 'finance',
   'finance_projects.create': 'finance',
   'finance_projects.update': 'finance',
@@ -285,32 +299,36 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string> = {
   'donors.update': 'finance',
   'donors.delete': 'finance',
   'finance_reports.read': 'finance',
-  'currencies.read': 'finance',
-  'currencies.create': 'finance',
-  'currencies.update': 'finance',
-  'currencies.delete': 'finance',
-  'exchange_rates.read': 'finance',
-  'exchange_rates.create': 'finance',
-  'exchange_rates.update': 'finance',
-  'exchange_rates.delete': 'finance',
-  'fees.read': 'finance',
-  'fees.create': 'finance',
-  'fees.update': 'finance',
-  'fees.delete': 'finance',
-  'fee_payments.read': 'finance',
-  'fee_payments.create': 'finance',
-  'fee_payments.update': 'finance',
-  'fee_payments.delete': 'finance',
-  'fee_exceptions.read': 'finance',
-  'fee_exceptions.create': 'finance',
-  'fee_exceptions.update': 'finance',
-  'fee_exceptions.delete': 'finance',
   'finance_documents.read': 'finance',
   'finance_documents.create': 'finance',
   'finance_documents.update': 'finance',
   'finance_documents.delete': 'finance',
-  
-  // Library feature
+
+  // ========== Multi-Currency ==========
+  'currencies.read': 'multi_currency',
+  'currencies.create': 'multi_currency',
+  'currencies.update': 'multi_currency',
+  'currencies.delete': 'multi_currency',
+  'exchange_rates.read': 'multi_currency',
+  'exchange_rates.create': 'multi_currency',
+  'exchange_rates.update': 'multi_currency',
+  'exchange_rates.delete': 'multi_currency',
+
+  // ========== Fees Management ==========
+  'fees.read': 'fees',
+  'fees.create': 'fees',
+  'fees.update': 'fees',
+  'fees.delete': 'fees',
+  'fee_payments.read': 'fees',
+  'fee_payments.create': 'fees',
+  'fee_payments.update': 'fees',
+  'fee_payments.delete': 'fees',
+  'fee_exceptions.read': 'fees',
+  'fee_exceptions.create': 'fees',
+  'fee_exceptions.update': 'fees',
+  'fee_exceptions.delete': 'fees',
+
+  // ========== Library Management ==========
   'library_books.read': 'library',
   'library_books.create': 'library',
   'library_books.update': 'library',
@@ -323,8 +341,8 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string> = {
   'library_loans.create': 'library',
   'library_loans.update': 'library',
   'library_loans.delete': 'library',
-  
-  // Events feature
+
+  // ========== Events Management ==========
   'events.read': 'events',
   'events.create': 'events',
   'events.update': 'events',
@@ -341,8 +359,38 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string> = {
   'event_checkins.create': 'events',
   'event_checkins.update': 'events',
   'event_checkins.delete': 'events',
-  
-  // Short-term courses feature
+
+  // ========== Document Management System (DMS) ==========
+  'dms.incoming.read': 'dms',
+  'dms.incoming.create': 'dms',
+  'dms.incoming.update': 'dms',
+  'dms.incoming.delete': 'dms',
+  'dms.outgoing.read': 'dms',
+  'dms.outgoing.create': 'dms',
+  'dms.outgoing.update': 'dms',
+  'dms.outgoing.delete': 'dms',
+  'dms.templates.read': 'dms',
+  'dms.templates.create': 'dms',
+  'dms.templates.update': 'dms',
+  'dms.templates.delete': 'dms',
+  'dms.letterheads.read': 'dms',
+  'dms.letterheads.create': 'dms',
+  'dms.letterheads.update': 'dms',
+  'dms.letterheads.delete': 'dms',
+  'dms.letter_types.read': 'dms',
+  'dms.letter_types.create': 'dms',
+  'dms.letter_types.update': 'dms',
+  'dms.letter_types.delete': 'dms',
+  'dms.departments.read': 'dms',
+  'dms.departments.create': 'dms',
+  'dms.departments.update': 'dms',
+  'dms.departments.delete': 'dms',
+  'dms.archive.read': 'dms',
+  'dms.reports.read': 'dms',
+  'dms.settings.read': 'dms',
+  'dms.settings.update': 'dms',
+
+  // ========== Short-term Courses ==========
   'short_term_courses.read': 'short_courses',
   'short_term_courses.create': 'short_courses',
   'short_term_courses.update': 'short_courses',
@@ -361,10 +409,111 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string> = {
   'course_documents.create': 'short_courses',
   'course_documents.update': 'short_courses',
   'course_documents.delete': 'short_courses',
-  'certificate_templates.read': 'short_courses',
-  'certificate_templates.create': 'short_courses',
-  'certificate_templates.update': 'short_courses',
-  'certificate_templates.delete': 'short_courses',
+
+  // ========== Exams Management ==========
+  'exams.read': 'exams',
+  'exams.create': 'exams',
+  'exams.update': 'exams',
+  'exams.delete': 'exams',
+  'exams.manage': 'exams',
+  'exams.enroll_students': 'exams',
+  'exams.enter_marks': 'exams',
+  'exams.view_reports': 'exams',
+  'exams.manage_timetable': 'exams',
+  'exams.manage_attendance': 'exams',
+  'exams.roll_numbers.read': 'exams',
+  'exams.roll_numbers.create': 'exams',
+  'exams.roll_numbers.update': 'exams',
+  'exams.secret_numbers.read': 'exams',
+  'exams.secret_numbers.create': 'exams',
+  'exams.secret_numbers.update': 'exams',
+  'exams.questions.read': 'exams',
+  'exams.questions.create': 'exams',
+  'exams.questions.update': 'exams',
+  'exams.questions.delete': 'exams',
+  'exams.papers.read': 'exams',
+  'exams.papers.create': 'exams',
+  'exams.papers.update': 'exams',
+  'exams.papers.delete': 'exams',
+  'exam_types.read': 'exams',
+  'exam_types.create': 'exams',
+  'exam_types.update': 'exams',
+  'exam_types.delete': 'exams',
+  'exam_documents.read': 'exams',
+  'exam_documents.create': 'exams',
+  'exam_documents.update': 'exams',
+  'exam_documents.delete': 'exams',
+
+  // ========== Graduation & Certificates ==========
+  'graduation_batches.read': 'graduation',
+  'graduation_batches.create': 'graduation',
+  'graduation_batches.update': 'graduation',
+  'graduation_batches.delete': 'graduation',
+  'certificate_templates.read': 'graduation',
+  'certificate_templates.create': 'graduation',
+  'certificate_templates.update': 'graduation',
+  'certificate_templates.delete': 'graduation',
+  'issued_certificates.read': 'graduation',
+  'issued_certificates.create': 'graduation',
+  'issued_certificates.update': 'graduation',
+  'issued_certificates.delete': 'graduation',
+
+  // ========== ID Cards ==========
+  'id_cards.read': 'id_cards',
+  'id_cards.create': 'id_cards',
+  'id_cards.update': 'id_cards',
+  'id_cards.delete': 'id_cards',
+  'id_cards.export': 'id_cards',
+
+  // ========== Assets Management ==========
+  'assets.read': 'assets',
+  'assets.create': 'assets',
+  'assets.update': 'assets',
+  'assets.delete': 'assets',
+  'asset_categories.read': 'assets',
+  'asset_categories.create': 'assets',
+  'asset_categories.update': 'assets',
+  'asset_categories.delete': 'assets',
+  'asset_assignments.read': 'assets',
+  'asset_assignments.create': 'assets',
+  'asset_assignments.update': 'assets',
+  'asset_assignments.delete': 'assets',
+  'asset_maintenance.read': 'assets',
+  'asset_maintenance.create': 'assets',
+  'asset_maintenance.update': 'assets',
+  'asset_maintenance.delete': 'assets',
+
+  // ========== Leave Management ==========
+  'leave_requests.read': 'leave_management',
+  'leave_requests.create': 'leave_management',
+  'leave_requests.update': 'leave_management',
+  'leave_requests.delete': 'leave_management',
+  'leave_requests.approve': 'leave_management',
+  'leave_requests.reject': 'leave_management',
+
+  // ========== Timetable Management ==========
+  'timetables.read': 'timetable',
+  'timetables.create': 'timetable',
+  'timetables.update': 'timetable',
+  'timetables.delete': 'timetable',
+  'schedule_slots.read': 'timetable',
+  'schedule_slots.create': 'timetable',
+  'schedule_slots.update': 'timetable',
+  'schedule_slots.delete': 'timetable',
+  'teacher_subject_assignments.read': 'timetable',
+  'teacher_subject_assignments.create': 'timetable',
+  'teacher_subject_assignments.update': 'timetable',
+  'teacher_subject_assignments.delete': 'timetable',
+
+  // ========== Subjects Management ==========
+  'subjects.read': 'subjects',
+  'subjects.create': 'subjects',
+  'subjects.update': 'subjects',
+  'subjects.delete': 'subjects',
+  'class_subjects.read': 'subjects',
+  'class_subjects.create': 'subjects',
+  'class_subjects.update': 'subjects',
+  'class_subjects.delete': 'subjects',
 };
 
 /**
