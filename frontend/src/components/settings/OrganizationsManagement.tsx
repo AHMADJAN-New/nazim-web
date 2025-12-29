@@ -1,8 +1,18 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import { useOrganizations, useCreateOrganization, useUpdateOrganization, useDeleteOrganization, useOrganizationStatistics } from '@/hooks/useOrganizations';
+import { useOrganizations, useCreateOrganization, useUpdateOrganization, useDeleteOrganization } from '@/hooks/useOrganizations';
+import { organizationsApi } from '@/lib/api/client';
 import { useAdminOrganizations } from '@/hooks/useSubscriptionAdmin';
+import { 
+  usePlatformOrganizations, 
+  usePlatformCreateOrganization, 
+  usePlatformUpdateOrganization, 
+  usePlatformDeleteOrganization 
+} from '@/platform/hooks/usePlatformAdminComplete';
 import { useHasPermission } from '@/hooks/usePermissions';
+import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
+import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,7 +60,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
-import { Plus, Pencil, Trash2, Search, Building2, Eye, Users, Building, DoorOpen, Calendar, Settings as SettingsIcon, GraduationCap, BookOpen, UserCheck, Mail, Phone, Globe, MapPin, FileText, User, CheckCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Building2, Eye, Users, Building, DoorOpen, Calendar, Settings as SettingsIcon, GraduationCap, BookOpen, UserCheck, Mail, Phone, Globe, MapPin, FileText, User, CheckCircle, Package } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -59,21 +70,73 @@ import { useLanguage } from '@/hooks/useLanguage';
 
 export function OrganizationsManagement() {
   const { t } = useLanguage();
+  const location = useLocation();
+  const isPlatformAdminRoute = location.pathname.startsWith('/platform');
+  
+  // CRITICAL: Always call hooks unconditionally (Rules of Hooks)
+  // For platform admin routes, use platform admin permissions hook
+  // For regular routes, use regular permissions hook
+  const { data: platformPermissions } = usePlatformAdminPermissions();
   const hasCreatePermission = useHasPermission('organizations.create');
   const hasUpdatePermission = useHasPermission('organizations.update');
   const hasDeletePermission = useHasPermission('organizations.delete');
-  const hasSubscriptionAdminPermission = useHasPermission('subscription.admin');
+  const hasSubscriptionAdminPermissionRegular = useHasPermission('subscription.admin');
   
-  // Use admin organizations hook if user has subscription.admin permission, otherwise use regular hook
+  // Check if user has subscription.admin permission
+  // Platform admins use platformPermissions, regular users use hasSubscriptionAdminPermissionRegular
+  const hasSubscriptionAdminPermission = isPlatformAdminRoute
+    ? (platformPermissions?.includes('subscription.admin') ?? false)
+    : (hasSubscriptionAdminPermissionRegular ?? false);
+  
+  // Platform admins can manage organizations (they have subscription.admin permission)
+  // Regular users need organization-specific permissions
+  const canCreateOrganization = isPlatformAdminRoute 
+    ? hasSubscriptionAdminPermission 
+    : hasCreatePermission;
+  const canUpdateOrganization = isPlatformAdminRoute
+    ? hasSubscriptionAdminPermission
+    : hasUpdatePermission;
+  const canDeleteOrganization = isPlatformAdminRoute
+    ? hasSubscriptionAdminPermission
+    : hasDeletePermission;
+  
+  // Use platform admin hook if accessed from platform admin routes, otherwise use regular hooks
+  // CRITICAL: Disable useOrganizations on platform admin routes to avoid 403 errors
+  // Platform admins don't have organization_id, so useOrganizations will fail
+  const { data: platformOrganizations, isLoading: isPlatformLoading } = usePlatformOrganizations();
   const { data: adminOrganizations, isLoading: isAdminLoading } = useAdminOrganizations();
-  const { data: regularOrganizations, isLoading: isRegularLoading } = useOrganizations();
   
-  // Select the appropriate data source based on permission
-  const organizations = hasSubscriptionAdminPermission ? adminOrganizations : regularOrganizations;
-  const isLoading = hasSubscriptionAdminPermission ? isAdminLoading : isRegularLoading;
-  const createOrganization = useCreateOrganization();
-  const updateOrganization = useUpdateOrganization();
-  const deleteOrganization = useDeleteOrganization();
+  // Disable useOrganizations on platform admin routes (prevents 403 for platform admins)
+  const { data: regularOrganizations, isLoading: isRegularLoading } = useOrganizations({
+    enabled: !isPlatformAdminRoute, // Only enable if NOT on platform admin route
+  });
+  
+  // Select the appropriate data source
+  let organizations;
+  let isLoading;
+  if (isPlatformAdminRoute) {
+    organizations = platformOrganizations;
+    isLoading = isPlatformLoading;
+  } else if (hasSubscriptionAdminPermission) {
+    organizations = adminOrganizations;
+    isLoading = isAdminLoading;
+  } else {
+    organizations = regularOrganizations;
+    isLoading = isRegularLoading;
+  }
+  
+  // Use platform admin hooks if on platform admin route, otherwise use regular hooks
+  const platformCreateOrganization = usePlatformCreateOrganization();
+  const platformUpdateOrganization = usePlatformUpdateOrganization();
+  const platformDeleteOrganization = usePlatformDeleteOrganization();
+  const regularCreateOrganization = useCreateOrganization();
+  const regularUpdateOrganization = useUpdateOrganization();
+  const regularDeleteOrganization = useDeleteOrganization();
+  
+  // Select the appropriate mutation hooks
+  const createOrganization = isPlatformAdminRoute ? platformCreateOrganization : regularCreateOrganization;
+  const updateOrganization = isPlatformAdminRoute ? platformUpdateOrganization : regularUpdateOrganization;
+  const deleteOrganization = isPlatformAdminRoute ? platformDeleteOrganization : regularDeleteOrganization;
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -180,7 +243,15 @@ export function OrganizationsManagement() {
       );
     } else {
       if (data.name && data.slug) {
-        createOrganization.mutate(data, {
+        // For platform admins, include admin fields
+        const createData = isPlatformAdminRoute ? {
+          ...data,
+          admin_email: data.admin_email || '',
+          admin_password: data.admin_password || '',
+          admin_full_name: data.admin_full_name || '',
+        } : data;
+        
+        createOrganization.mutate(createData as any, {
           onSuccess: () => {
             handleCloseDialog();
           },
@@ -206,7 +277,40 @@ export function OrganizationsManagement() {
   };
 
   const selectedOrg = selectedOrganization ? organizations?.find(o => o.id === selectedOrganization) : null;
-  const { data: orgStats } = useOrganizationStatistics(selectedOrganization || '');
+  // CRITICAL: Disable useOrganizationStatistics on platform admin routes to avoid 403 errors
+  // Platform admins don't have organization_id, so this hook will fail
+  // Only fetch stats if NOT on platform admin route and organization is selected
+  const shouldFetchStats = !isPlatformAdminRoute && !!selectedOrganization;
+  const { data: orgStats } = useQuery({
+    queryKey: ['organization-statistics', selectedOrganization],
+    queryFn: async () => {
+      if (!selectedOrganization) {
+        return {
+          userCount: 0,
+          schoolCount: 0,
+          studentCount: 0,
+          classCount: 0,
+          staffCount: 0,
+          buildingCount: 0,
+          roomCount: 0,
+        };
+      }
+      const stats = await organizationsApi.statistics(selectedOrganization);
+      return stats as {
+        userCount: number;
+        schoolCount: number;
+        studentCount: number;
+        classCount: number;
+        staffCount: number;
+        buildingCount: number;
+        roomCount: number;
+      };
+    },
+    enabled: shouldFetchStats,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
 
   if (isLoading) {
     return (
@@ -239,7 +343,7 @@ export function OrganizationsManagement() {
               </CardTitle>
               <CardDescription>{t('organizations.subtitle')}</CardDescription>
             </div>
-            {hasCreatePermission && (
+            {canCreateOrganization && (
               <Button onClick={() => handleOpenDialog()}>
                 <Plus className="h-4 w-4 mr-2" />
                 {t('organizations.addOrganization')}
@@ -323,7 +427,19 @@ export function OrganizationsManagement() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            {hasUpdatePermission && (
+                            {isPlatformAdminRoute && hasSubscriptionAdminPermission && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                asChild
+                                title="View Subscription & Features"
+                              >
+                                <Link to={`/platform/organizations/${org.id}/subscription`}>
+                                  <Package className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            )}
+                            {canUpdateOrganization && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -333,7 +449,7 @@ export function OrganizationsManagement() {
                                 <Pencil className="h-4 w-4" />
                               </Button>
                             )}
-                            {hasDeletePermission && (
+                            {canDeleteOrganization && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -370,12 +486,15 @@ export function OrganizationsManagement() {
               </DialogDescription>
             </DialogHeader>
             <Tabs defaultValue="basic" className="w-full mt-4">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className={`grid w-full ${isPlatformAdminRoute && !selectedOrganization ? 'grid-cols-6' : 'grid-cols-5'}`}>
                 <TabsTrigger value="basic">Basic</TabsTrigger>
                 <TabsTrigger value="contact">Contact</TabsTrigger>
                 <TabsTrigger value="address">Address</TabsTrigger>
                 <TabsTrigger value="legal">Legal</TabsTrigger>
                 <TabsTrigger value="additional">Additional</TabsTrigger>
+                {isPlatformAdminRoute && !selectedOrganization && (
+                  <TabsTrigger value="admin">Admin User</TabsTrigger>
+                )}
               </TabsList>
 
               {/* Basic Information Tab */}
@@ -687,6 +806,60 @@ export function OrganizationsManagement() {
                   </div>
                 </div>
               </TabsContent>
+
+              {/* Admin User Tab - Only for platform admins creating new organizations */}
+              {isPlatformAdminRoute && !selectedOrganization && (
+                <TabsContent value="admin" className="space-y-4 mt-4">
+                  <div className="grid gap-4">
+                    <div className="border-t pt-4">
+                      <h4 className="font-semibold mb-4">Organization Admin User</h4>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Create an admin user account for this organization. This user will have full access to manage the organization.
+                      </p>
+                      <div className="grid gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="admin_full_name">Admin Full Name *</Label>
+                          <Input
+                            id="admin_full_name"
+                            {...register('admin_full_name')}
+                            placeholder="Full name"
+                            required
+                          />
+                          {errors.admin_full_name && (
+                            <p className="text-sm text-destructive">{errors.admin_full_name.message}</p>
+                          )}
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="admin_email">Admin Email *</Label>
+                          <Input
+                            id="admin_email"
+                            type="email"
+                            {...register('admin_email')}
+                            placeholder="admin@example.com"
+                            required
+                          />
+                          {errors.admin_email && (
+                            <p className="text-sm text-destructive">{errors.admin_email.message}</p>
+                          )}
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="admin_password">Admin Password *</Label>
+                          <Input
+                            id="admin_password"
+                            type="password"
+                            {...register('admin_password')}
+                            placeholder="Minimum 8 characters"
+                            required
+                          />
+                          {errors.admin_password && (
+                            <p className="text-sm text-destructive">{errors.admin_password.message}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+              )}
             </Tabs>
             <DialogFooter className="mt-6">
               <Button type="button" variant="outline" onClick={handleCloseDialog}>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,16 @@ class EnsureOrganizationAccess
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
+        // CRITICAL: Skip organization context for platform admin routes
+        // Platform admin routes use /api/platform/* and should NOT have organization context set
+        // The EnsurePlatformAdmin middleware handles platform admin authentication
+        $path = $request->path();
+        if (str_starts_with($path, 'api/platform') || str_starts_with($path, 'platform')) {
+            // Platform admin routes - don't set organization context
+            // The EnsurePlatformAdmin middleware already handles permission checks
+            return $next($request);
+        }
+
         // Get user profile
         $profile = DB::table('profiles')
             ->where('id', $user->id)
@@ -36,8 +47,30 @@ class EnsureOrganizationAccess
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Require organization_id for all users
+        // Require organization_id for all users EXCEPT platform admins
+        // Platform admins have subscription.admin permission and organization_id = NULL
         if (!$profile->organization_id) {
+            // Check if user is a platform admin (has global subscription.admin permission)
+            try {
+                setPermissionsTeamId(null); // Clear team context to check global permissions
+                $isPlatformAdmin = $user->hasPermissionTo('subscription.admin');
+                
+                if ($isPlatformAdmin) {
+                    // Platform admins can access routes without organization_id
+                    // They use platform routes (/api/platform/*) which don't require organization
+                    Log::debug('Platform admin accessing route without organization_id', [
+                        'user_id' => $user->id,
+                        'email' => $user->email ?? null,
+                    ]);
+                    // Don't set organization context for platform admins
+                    return $next($request);
+                }
+            } catch (\Exception $e) {
+                // If permission check fails, treat as regular user
+                Log::debug('Could not check platform admin permission in middleware: ' . $e->getMessage());
+            }
+            
+            // Regular users must have organization_id
             Log::warning('User has no organization assigned', [
                 'user_id' => $user->id,
                 'profile_id' => $profile->id,

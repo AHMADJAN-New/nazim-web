@@ -122,6 +122,8 @@ class OrganizationService
 
     /**
      * Assign organization admin role and permissions to the user
+     * CRITICAL: Assigns permissions to the role, not directly to the user
+     * This ensures permissions are properly managed via role_has_permissions table
      */
     protected function assignOrganizationAdminPermissions(User $user, Organization $organization): void
     {
@@ -143,33 +145,77 @@ class OrganizationService
         // Assign role to user
         $user->assignRole($role);
 
+        // Wait for OrganizationObserver to create permissions (if not already created)
         // Get all organization-scoped permissions
-        $orgPermissions = $this->getOrganizationAdminPermissions($organization);
+        $orgPermissions = DB::table('permissions')
+            ->where('organization_id', $organization->id)
+            ->where('guard_name', 'web')
+            ->pluck('id', 'name')
+            ->toArray();
 
-        // Assign permissions to the role
-        foreach ($orgPermissions as $permissionName) {
-            try {
-                // Insert permission directly into model_has_permissions to set organization_id
-                DB::table('model_has_permissions')->insert([
-                    'permission_id' => DB::table('permissions')
-                        ->where('name', $permissionName)
-                        ->where(function ($query) use ($organization) {
-                            $query->where('organization_id', $organization->id)
-                                ->orWhereNull('organization_id');
-                        })
-                        ->value('id'),
-                    'model_type' => get_class($user),
-                    'model_id' => $user->id,
-                    'team_id' => $organization->id, // CRITICAL: Set team context
-                ]);
-            } catch (\Exception $e) {
-                Log::warning("Failed to assign permission: $permissionName", [
-                    'user_id' => $user->id,
-                    'organization_id' => $organization->id,
-                    'error' => $e->getMessage()
-                ]);
+        // If permissions don't exist yet, wait a moment and retry
+        // OrganizationObserver should have created them, but if not, trigger it
+        if (empty($orgPermissions)) {
+            Log::warning("No permissions found for organization {$organization->name}. Waiting for OrganizationObserver...");
+            // Give observer time to run (observer runs synchronously, but just in case)
+            sleep(1);
+            $orgPermissions = DB::table('permissions')
+                ->where('organization_id', $organization->id)
+                ->where('guard_name', 'web')
+                ->pluck('id', 'name')
+                ->toArray();
+        }
+
+        // If still no permissions, log error but continue
+        if (empty($orgPermissions)) {
+            Log::error("No permissions found for organization {$organization->name} after waiting. Permissions may not be assigned correctly.");
+        }
+
+        // Assign ALL organization permissions to the organization_admin role
+        // CRITICAL: Use role_has_permissions table, not model_has_permissions
+        $tableNames = config('permission.table_names');
+        $roleHasPermissionsTable = $tableNames['role_has_permissions'] ?? 'role_has_permissions';
+
+        $assignedCount = 0;
+        $skippedCount = 0;
+
+        foreach ($orgPermissions as $permissionName => $permissionId) {
+            // Check if permission already assigned to role
+            $exists = DB::table($roleHasPermissionsTable)
+                ->where('role_id', $role->id)
+                ->where('permission_id', $permissionId)
+                ->where('organization_id', $organization->id)
+                ->exists();
+
+            if (!$exists) {
+                try {
+                    DB::table($roleHasPermissionsTable)->insert([
+                        'role_id' => $role->id,
+                        'permission_id' => $permissionId,
+                        'organization_id' => $organization->id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $assignedCount++;
+                } catch (\Exception $e) {
+                    Log::warning("Failed to assign permission to role: $permissionName", [
+                        'role_id' => $role->id,
+                        'permission_id' => $permissionId,
+                        'organization_id' => $organization->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            } else {
+                $skippedCount++;
             }
         }
+
+        Log::info("Organization admin role permissions assigned", [
+            'organization_id' => $organization->id,
+            'role_id' => $role->id,
+            'assigned' => $assignedCount,
+            'skipped' => $skippedCount,
+        ]);
 
         // Clear permission cache
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();

@@ -611,5 +611,643 @@ class OrganizationController extends Controller
             return response()->json(['error' => 'Failed to fetch accessible organizations'], 500);
         }
     }
+
+    /**
+     * Get preview of what will be created when organization is created
+     * Shows: organization, default school, admin user, roles, and permissions
+     */
+    public function preview(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::connection('pgsql')
+            ->table('profiles')
+            ->where('id', $user->id)
+            ->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission
+        if (!$user->hasPermissionTo('organizations.create')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'You do not have permission to access this resource.',
+                'required_permission' => 'organizations.create'
+            ], 403);
+        }
+
+        // Get permission definitions from PermissionSeeder
+        $permissions = \Database\Seeders\PermissionSeeder::getPermissions();
+        $rolePermissions = \Database\Seeders\PermissionSeeder::getRolePermissions();
+
+        // Build preview structure
+        $preview = [
+            'organization' => [
+                'name' => $request->input('name', 'New Organization'),
+                'slug' => $request->input('slug', 'new-organization'),
+                'description' => 'Organization will be created with the provided details',
+            ],
+            'school' => [
+                'name' => ($request->input('name', 'New Organization')) . ' - Main School',
+                'description' => 'Default school will be created automatically',
+            ],
+            'admin_user' => [
+                'email' => $request->input('admin_email', 'admin@example.com'),
+                'full_name' => $request->input('admin_full_name', 'Organization Administrator'),
+                'role' => 'organization_admin',
+                'description' => 'Admin user will be created with full access to organization',
+            ],
+            'roles' => [
+                [
+                    'name' => 'admin',
+                    'description' => 'Administrator with full access to all features',
+                    'permissions_count' => $rolePermissions['admin'] === '*' ? count($permissions, COUNT_RECURSIVE) - count($permissions) : count($rolePermissions['admin']),
+                ],
+                [
+                    'name' => 'staff',
+                    'description' => 'Staff member with limited access for operational tasks',
+                    'permissions_count' => count($rolePermissions['staff'] ?? []),
+                ],
+                [
+                    'name' => 'teacher',
+                    'description' => 'Teacher with access to academic content and student information',
+                    'permissions_count' => count($rolePermissions['teacher'] ?? []),
+                ],
+            ],
+            'permissions' => [
+                'total_count' => array_sum(array_map('count', $permissions)),
+                'resources' => array_keys($permissions),
+                'description' => 'All permissions will be created specifically for this organization',
+            ],
+        ];
+
+        return response()->json($preview);
+    }
+
+    /**
+     * Get organization permissions for management
+     */
+    public function permissions(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = DB::connection('pgsql')
+            ->table('profiles')
+            ->where('id', $user->id)
+            ->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission
+        if (!$user->hasPermissionTo('organizations.read')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'You do not have permission to access this resource.',
+                'required_permission' => 'organizations.read'
+            ], 403);
+        }
+
+        $organization = Organization::whereNull('deleted_at')->find($id);
+
+        if (!$organization) {
+            return response()->json(['error' => 'Organization not found'], 404);
+        }
+
+        // All users can only view their own organization
+        if ($profile->organization_id !== $organization->id) {
+            return response()->json(['error' => 'Organization not found'], 404);
+        }
+
+        // Get organization permissions
+        $permissions = DB::connection('pgsql')
+            ->table('permissions')
+            ->where('organization_id', $organization->id)
+            ->orderBy('resource')
+            ->orderBy('action')
+            ->get();
+
+        // Get roles and their permissions
+        $roles = DB::connection('pgsql')
+            ->table('roles')
+            ->where('organization_id', $organization->id)
+            ->where('guard_name', 'web')
+            ->get();
+
+        $rolesWithPermissions = [];
+        foreach ($roles as $role) {
+            $rolePerms = DB::connection('pgsql')
+                ->table('role_has_permissions')
+                ->join('permissions', 'role_has_permissions.permission_id', '=', 'permissions.id')
+                ->where('role_has_permissions.role_id', $role->id)
+                ->where('role_has_permissions.organization_id', $organization->id)
+                ->pluck('permissions.name')
+                ->toArray();
+
+            $rolesWithPermissions[] = [
+                'id' => $role->id,
+                'name' => $role->name,
+                'description' => $role->description,
+                'permissions' => $rolePerms,
+                'permissions_count' => count($rolePerms),
+            ];
+        }
+
+        return response()->json([
+            'organization' => [
+                'id' => $organization->id,
+                'name' => $organization->name,
+            ],
+            'permissions' => $permissions,
+            'roles' => $rolesWithPermissions,
+            'total_permissions' => $permissions->count(),
+        ]);
+    }
+
+    /**
+     * Update organization permissions (assign permissions to roles)
+     */
+    public function updatePermissions(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = DB::connection('pgsql')
+            ->table('profiles')
+            ->where('id', $user->id)
+            ->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission
+        if (!$user->hasPermissionTo('organizations.update')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'You do not have permission to access this resource.',
+                'required_permission' => 'organizations.update'
+            ], 403);
+        }
+
+        $organization = Organization::whereNull('deleted_at')->find($id);
+
+        if (!$organization) {
+            return response()->json(['error' => 'Organization not found'], 404);
+        }
+
+        // All users can only update their own organization
+        if ($profile->organization_id !== $organization->id) {
+            return response()->json(['error' => 'Cannot update organization from different organization'], 403);
+        }
+
+        $request->validate([
+            'role' => 'required|string',
+            'permission_ids' => 'required|array',
+            'permission_ids.*' => 'required|uuid|exists:permissions,id',
+        ]);
+
+        $role = DB::connection('pgsql')
+            ->table('roles')
+            ->where('name', $request->role)
+            ->where('organization_id', $organization->id)
+            ->where('guard_name', 'web')
+            ->first();
+
+        if (!$role) {
+            return response()->json(['error' => 'Role not found'], 404);
+        }
+
+        // Validate all permissions belong to this organization
+        $permissions = DB::connection('pgsql')
+            ->table('permissions')
+            ->whereIn('id', $request->permission_ids)
+            ->where('organization_id', $organization->id)
+            ->pluck('id')
+            ->toArray();
+
+        if (count($permissions) !== count($request->permission_ids)) {
+            return response()->json(['error' => 'Some permissions do not belong to this organization'], 403);
+        }
+
+        // Remove existing permissions for this role
+        DB::connection('pgsql')
+            ->table('role_has_permissions')
+            ->where('role_id', $role->id)
+            ->where('organization_id', $organization->id)
+            ->delete();
+
+        // Assign new permissions
+        $insertData = [];
+        foreach ($permissions as $permissionId) {
+            $insertData[] = [
+                'role_id' => $role->id,
+                'permission_id' => $permissionId,
+                'organization_id' => $organization->id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        if (!empty($insertData)) {
+            DB::connection('pgsql')
+                ->table('role_has_permissions')
+                ->insert($insertData);
+        }
+
+        // Clear permission cache
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        return response()->json([
+            'message' => 'Permissions updated successfully',
+            'role' => $role->name,
+            'permissions_count' => count($permissions),
+        ]);
+    }
+
+    /**
+     * Get all organization admins (platform management)
+     * Only accessible to platform admins (subscription.admin permission - GLOBAL)
+     * CRITICAL: Platform admins are NOT tied to organizations
+     */
+    public function admins(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check subscription.admin permission (GLOBAL, not organization-scoped)
+        try {
+            // CRITICAL: Use platform org UUID as team context for global permissions
+            // Global permissions are stored with platform org UUID (00000000-0000-0000-0000-000000000000)
+            // in model_has_permissions, but the permission itself has organization_id = NULL
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
+            
+            if (!$user->hasPermissionTo('subscription.admin')) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'This endpoint is only accessible to platform administrators.',
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subscription.admin: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'This endpoint is only accessible to platform administrators.',
+            ], 403);
+        }
+
+        // Get all organizations with their admin users
+        $organizations = DB::connection('pgsql')
+            ->table('organizations')
+            ->whereNull('deleted_at')
+            ->orderBy('name')
+            ->get();
+
+        $result = [];
+
+        foreach ($organizations as $org) {
+            // Get admin users for this organization
+            // Look for users with 'admin' or 'organization_admin' role
+            $adminUsers = DB::connection('pgsql')
+                ->table('profiles')
+                ->join('model_has_roles', 'profiles.id', '=', 'model_has_roles.model_id')
+                ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+                ->where('profiles.organization_id', $org->id)
+                ->where('model_has_roles.organization_id', $org->id)
+                ->whereIn('roles.name', ['admin', 'organization_admin'])
+                ->where('profiles.is_active', true)
+                ->whereNull('profiles.deleted_at')
+                ->select(
+                    'profiles.id',
+                    'profiles.email',
+                    'profiles.full_name',
+                    'profiles.phone',
+                    'profiles.created_at',
+                    'roles.name as role_name'
+                )
+                ->get();
+
+            $result[] = [
+                'organization' => [
+                    'id' => $org->id,
+                    'name' => $org->name,
+                    'slug' => $org->slug,
+                    'email' => $org->email,
+                    'phone' => $org->phone,
+                    'is_active' => $org->is_active,
+                    'created_at' => $org->created_at,
+                ],
+                'admins' => $adminUsers->map(function ($admin) {
+                    return [
+                        'id' => $admin->id,
+                        'email' => $admin->email,
+                        'full_name' => $admin->full_name,
+                        'phone' => $admin->phone,
+                        'role' => $admin->role_name,
+                        'created_at' => $admin->created_at,
+                    ];
+                }),
+                'admin_count' => $adminUsers->count(),
+            ];
+        }
+
+        return response()->json($result);
+    }
+
+    /**
+     * Store a newly created organization (Platform Admin)
+     * Platform admins can create organizations without having organization_id
+     */
+    public function storePlatformAdmin(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check subscription.admin permission (GLOBAL, not organization-scoped)
+        try {
+            setPermissionsTeamId(null); // Clear team context to check global permissions
+            if (!$user->hasPermissionTo('subscription.admin')) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'This endpoint is only accessible to platform administrators.',
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subscription.admin in storePlatformAdmin: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'This endpoint is only accessible to platform administrators.',
+            ], 403);
+        }
+
+        // Validate organization and admin data (same validation as regular store)
+        $validated = $request->validate([
+            // Organization data
+            'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:100|unique:organizations,slug',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:50',
+            'website' => 'nullable|url|max:255',
+            'street_address' => 'nullable|string|max:500',
+            'city' => 'nullable|string|max:100',
+            'state_province' => 'nullable|string|max:100',
+            'country' => 'nullable|string|max:100',
+            'postal_code' => 'nullable|string|max:20',
+            'registration_number' => 'nullable|string|max:100',
+            'tax_id' => 'nullable|string|max:100',
+            'license_number' => 'nullable|string|max:100',
+            'type' => 'nullable|string|max:100',
+            'description' => 'nullable|string|max:2000',
+            'established_date' => 'nullable|date',
+            'is_active' => 'nullable|boolean',
+            'contact_person_name' => 'nullable|string|max:255',
+            'contact_person_email' => 'nullable|email|max:255',
+            'contact_person_phone' => 'nullable|string|max:50',
+            'contact_person_position' => 'nullable|string|max:100',
+            'logo_url' => 'nullable|url|max:500',
+            'settings' => 'nullable|array',
+
+            // Admin user data
+            'admin_email' => 'required|email|max:255|unique:users,email',
+            'admin_password' => 'required|string|min:8',
+            'admin_full_name' => 'required|string|max:255',
+        ]);
+
+        try {
+            // Prepare organization data
+            $organizationData = [
+                'name' => $validated['name'],
+                'slug' => $validated['slug'],
+                'email' => $validated['email'] ?? null,
+                'phone' => $validated['phone'] ?? null,
+                'website' => $validated['website'] ?? null,
+                'street_address' => $validated['street_address'] ?? null,
+                'city' => $validated['city'] ?? null,
+                'state_province' => $validated['state_province'] ?? null,
+                'country' => $validated['country'] ?? null,
+                'postal_code' => $validated['postal_code'] ?? null,
+                'registration_number' => $validated['registration_number'] ?? null,
+                'tax_id' => $validated['tax_id'] ?? null,
+                'license_number' => $validated['license_number'] ?? null,
+                'type' => $validated['type'] ?? null,
+                'description' => $validated['description'] ?? null,
+                'established_date' => $validated['established_date'] ?? null,
+                'is_active' => $validated['is_active'] ?? true,
+                'contact_person_name' => $validated['contact_person_name'] ?? null,
+                'contact_person_email' => $validated['contact_person_email'] ?? null,
+                'contact_person_phone' => $validated['contact_person_phone'] ?? null,
+                'contact_person_position' => $validated['contact_person_position'] ?? null,
+                'logo_url' => $validated['logo_url'] ?? null,
+                'settings' => $validated['settings'] ?? [],
+            ];
+
+            // Prepare admin data
+            $adminData = [
+                'email' => $validated['admin_email'],
+                'password' => $validated['admin_password'],
+                'full_name' => $validated['admin_full_name'],
+            ];
+
+            // Create organization with admin and school
+            $result = $this->organizationService->createOrganizationWithAdmin(
+                $organizationData,
+                $adminData
+            );
+
+            return response()->json([
+                'data' => $result['organization'],
+                'message' => 'Organization created successfully',
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to create organization (platform admin): ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to create organization',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Show organization (Platform Admin)
+     */
+    public function showPlatformAdmin(Request $request, string $id)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check subscription.admin permission (GLOBAL)
+        try {
+            setPermissionsTeamId(null);
+            if (!$user->hasPermissionTo('subscription.admin')) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'This endpoint is only accessible to platform administrators.',
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subscription.admin in showPlatformAdmin: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'This endpoint is only accessible to platform administrators.',
+            ], 403);
+        }
+
+        $organization = Organization::whereNull('deleted_at')->findOrFail($id);
+
+        return response()->json([
+            'data' => $organization,
+        ]);
+    }
+
+    /**
+     * Update organization (Platform Admin)
+     */
+    public function updatePlatformAdmin(Request $request, string $id)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check subscription.admin permission (GLOBAL)
+        try {
+            setPermissionsTeamId(null);
+            if (!$user->hasPermissionTo('subscription.admin')) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'This endpoint is only accessible to platform administrators.',
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subscription.admin in updatePlatformAdmin: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'This endpoint is only accessible to platform administrators.',
+            ], 403);
+        }
+
+        $organization = Organization::whereNull('deleted_at')->findOrFail($id);
+
+        $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'slug' => 'sometimes|string|max:100|unique:organizations,slug,' . $id,
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:50',
+            'website' => 'nullable|url|max:255',
+            'street_address' => 'nullable|string|max:500',
+            'city' => 'nullable|string|max:100',
+            'state_province' => 'nullable|string|max:100',
+            'country' => 'nullable|string|max:100',
+            'postal_code' => 'nullable|string|max:20',
+            'registration_number' => 'nullable|string|max:100',
+            'tax_id' => 'nullable|string|max:100',
+            'license_number' => 'nullable|string|max:100',
+            'type' => 'nullable|string|max:100',
+            'description' => 'nullable|string|max:2000',
+            'established_date' => 'nullable|date',
+            'is_active' => 'nullable|boolean',
+            'contact_person_name' => 'nullable|string|max:255',
+            'contact_person_email' => 'nullable|email|max:255',
+            'contact_person_phone' => 'nullable|string|max:50',
+            'contact_person_position' => 'nullable|string|max:100',
+            'logo_url' => 'nullable|url|max:500',
+            'settings' => 'nullable|array',
+        ]);
+
+        $organization->update($request->only([
+            'name',
+            'slug',
+            'email',
+            'phone',
+            'website',
+            'street_address',
+            'city',
+            'state_province',
+            'country',
+            'postal_code',
+            'registration_number',
+            'tax_id',
+            'license_number',
+            'type',
+            'description',
+            'established_date',
+            'is_active',
+            'contact_person_name',
+            'contact_person_email',
+            'contact_person_phone',
+            'contact_person_position',
+            'logo_url',
+            'settings',
+        ]));
+
+        return response()->json([
+            'data' => $organization->fresh(),
+            'message' => 'Organization updated successfully',
+        ]);
+    }
+
+    /**
+     * Delete organization (Platform Admin)
+     */
+    public function destroyPlatformAdmin(Request $request, string $id)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check subscription.admin permission (GLOBAL)
+        try {
+            setPermissionsTeamId(null);
+            if (!$user->hasPermissionTo('subscription.admin')) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'This endpoint is only accessible to platform administrators.',
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subscription.admin in destroyPlatformAdmin: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'This endpoint is only accessible to platform administrators.',
+            ], 403);
+        }
+
+        $organization = Organization::whereNull('deleted_at')->findOrFail($id);
+
+        // Soft delete
+        $organization->delete();
+
+        return response()->noContent();
+    }
 }
 

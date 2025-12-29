@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Permission;
+use App\Models\PermissionGroup;
+use App\Models\PermissionGroupItem;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -13,13 +15,9 @@ class PermissionController extends Controller
 {
     /**
      * Display a listing of permissions
-     * Returns permissions available to the user's organization:
-     * - Global permissions (organization_id = NULL) - available to all organizations
-     * - Organization-specific permissions (organization_id = user's organization_id)
-     *
-     * This allows admins to see and manage permissions for their organization,
-     * enabling future feature where organizations can have restricted permissions
-     * based on their purchase plan.
+     * CRITICAL: Returns ONLY organization-specific permissions for the user's organization
+     * Global permissions are NOT visible to organization users
+     * Each organization has its own isolated set of permissions
      */
     public function index(Request $request)
     {
@@ -30,18 +28,15 @@ class PermissionController extends Controller
             return response()->json(['error' => 'User profile not found'], 404);
         }
 
+        // CRITICAL: Only show organization-specific permissions
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
         $query = Permission::query();
 
-        // All users see global + their org's permissions
-        if ($profile->organization_id) {
-            $query->where(function ($q) use ($profile) {
-                $q->whereNull('organization_id')
-                  ->orWhere('organization_id', $profile->organization_id);
-            });
-        } else {
-            // If no organization_id, only show global permissions
-            $query->whereNull('organization_id');
-        }
+        // ONLY show permissions for user's organization (no global permissions)
+        $query->where('organization_id', $profile->organization_id);
 
         $permissions = $query->orderBy('resource')->orderBy('action')->get();
 
@@ -73,6 +68,7 @@ class PermissionController extends Controller
         $organizationId = $profile->organization_id;
 
         // Get permissions via roles (bypasses model_has_permissions)
+        // CRITICAL: Only use organization-specific permissions (no global permissions)
         // Flow: model_has_roles -> role_has_permissions -> permissions
         $rolePermissions = DB::table('permissions')
             ->join('role_has_permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
@@ -86,20 +82,19 @@ class PermissionController extends Controller
                 $query->where('model_has_roles.organization_id', $organizationId);
             })
             ->where(function ($query) use ($organizationId) {
-                // Match organization context in role-permission assignments
-                $query->where('role_has_permissions.organization_id', $organizationId)
-                      ->orWhereNull('role_has_permissions.organization_id');
+                // CRITICAL: Only organization permissions in role-permission assignments
+                $query->where('role_has_permissions.organization_id', $organizationId);
             })
             ->where(function ($query) use ($organizationId) {
-                // Get global permissions OR organization-specific permissions
-                $query->whereNull('permissions.organization_id')
-                      ->orWhere('permissions.organization_id', $organizationId);
+                // CRITICAL: Only organization-specific permissions (no global)
+                $query->where('permissions.organization_id', $organizationId);
             })
             ->distinct()
             ->pluck('permissions.name')
             ->toArray();
 
         // Get direct user permissions from model_has_permissions table
+        // CRITICAL: Only organization-specific permissions
         $tableNames = config('permission.table_names');
         $columnNames = config('permission.column_names');
         $modelHasPermissionsTable = $tableNames['model_has_permissions'] ?? 'model_has_permissions';
@@ -110,16 +105,85 @@ class PermissionController extends Controller
             ->where($modelHasPermissionsTable . '.' . $modelMorphKey, $user->id)
             ->where($modelHasPermissionsTable . '.model_type', 'App\\Models\\User')
             ->where($modelHasPermissionsTable . '.organization_id', $organizationId)
-            ->where(function ($query) use ($organizationId) {
-                $query->whereNull('permissions.organization_id')
-                      ->orWhere('permissions.organization_id', $organizationId);
-            })
+            ->where('permissions.organization_id', $organizationId) // CRITICAL: Only org permissions
             ->distinct()
             ->pluck('permissions.name')
             ->toArray();
 
         // Combine role and direct permissions (direct permissions override role permissions)
         $permissions = array_unique(array_merge($rolePermissions, $directPermissions));
+
+        // Sort permissions alphabetically
+        sort($permissions);
+
+        return response()->json([
+            'permissions' => $permissions
+        ]);
+    }
+
+    /**
+     * Get platform admin permissions (GLOBAL, not organization-scoped)
+     * 
+     * CRITICAL: This endpoint is for platform admins who are NOT tied to organizations.
+     * It returns global permissions (organization_id = NULL), specifically subscription.admin
+     * 
+     * This endpoint does NOT require organization_id - platform admins can access it
+     */
+    public function platformAdminPermissions(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // CRITICAL: Use platform org UUID as team context for global permissions
+        // Global permissions are stored with platform org UUID (00000000-0000-0000-0000-000000000000)
+        // in model_has_permissions, but the permission itself has organization_id = NULL
+        $platformOrgId = '00000000-0000-0000-0000-000000000000';
+        setPermissionsTeamId($platformOrgId);
+
+        // Check if user has subscription.admin permission (GLOBAL)
+        try {
+            if (!$user->hasPermissionTo('subscription.admin')) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'This endpoint is only accessible to platform administrators.',
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Platform admin permission check failed: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'This endpoint is only accessible to platform administrators.',
+            ], 403);
+        }
+
+        // Get global permissions (organization_id = NULL) assigned to this user
+        $tableNames = config('permission.table_names');
+        $columnNames = config('permission.column_names');
+        $modelHasPermissionsTable = $tableNames['model_has_permissions'] ?? 'model_has_permissions';
+        $modelMorphKey = $columnNames['model_morph_key'] ?? 'model_id';
+
+        // Get direct global permissions
+        // CRITICAL: Global permissions are stored with platform org UUID (00000000-0000-0000-0000-000000000000)
+        // in model_has_permissions, but the permission itself has organization_id = NULL
+        $globalPermissions = DB::table($modelHasPermissionsTable)
+            ->join('permissions', $modelHasPermissionsTable . '.permission_id', '=', 'permissions.id')
+            ->where($modelHasPermissionsTable . '.' . $modelMorphKey, $user->id)
+            ->where($modelHasPermissionsTable . '.model_type', 'App\\Models\\User')
+            ->where(function ($query) use ($modelHasPermissionsTable, $platformOrgId) {
+                // Check for platform org UUID OR NULL (covers both cases)
+                $query->where($modelHasPermissionsTable . '.organization_id', $platformOrgId)
+                      ->orWhereNull($modelHasPermissionsTable . '.organization_id');
+            })
+            ->whereNull('permissions.organization_id') // CRITICAL: Only global permissions (permission itself is NULL)
+            ->distinct()
+            ->pluck('permissions.name')
+            ->toArray();
+
+        // Ensure subscription.admin is included (user already verified to have it above)
+        $permissions = array_unique(array_merge($globalPermissions, ['subscription.admin']));
 
         // Sort permissions alphabetically
         sort($permissions);
@@ -390,8 +454,13 @@ class PermissionController extends Controller
             return response()->json(['error' => 'Permission not found'], 404);
         }
 
-        // Validate permission belongs to user's organization or is global
-        if ($permission->organization_id !== null && $permission->organization_id !== $profile->organization_id) {
+        // CRITICAL: Only allow assigning organization-specific permissions (no global permissions)
+        if ($permission->organization_id === null) {
+            return response()->json(['error' => 'Cannot assign global permissions. Only organization-specific permissions can be assigned.'], 403);
+        }
+
+        // CRITICAL: Permission must belong to user's organization
+        if ($permission->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot assign permission from different organization'], 403);
         }
 
@@ -711,8 +780,13 @@ class PermissionController extends Controller
             return response()->json(['error' => 'Permission not found'], 404);
         }
 
-        // Validate permission belongs to user's organization or is global
-        if ($permission->organization_id !== null && $permission->organization_id !== $profile->organization_id) {
+        // CRITICAL: Only allow assigning organization-specific permissions (no global permissions)
+        if ($permission->organization_id === null) {
+            return response()->json(['error' => 'Cannot assign global permissions. Only organization-specific permissions can be assigned.'], 403);
+        }
+
+        // CRITICAL: Permission must belong to user's organization
+        if ($permission->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot assign permission from different organization'], 403);
         }
 
@@ -785,8 +859,13 @@ class PermissionController extends Controller
             return response()->json(['error' => 'Permission not found'], 404);
         }
 
-        // Validate permission belongs to user's organization or is global
-        if ($permission->organization_id !== null && $permission->organization_id !== $profile->organization_id) {
+        // CRITICAL: Only allow removing organization-specific permissions
+        if ($permission->organization_id === null) {
+            return response()->json(['error' => 'Cannot remove global permissions. Only organization-specific permissions can be removed.'], 403);
+        }
+
+        // CRITICAL: Permission must belong to user's organization
+        if ($permission->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot remove permission from different organization'], 403);
         }
 
@@ -848,5 +927,747 @@ class PermissionController extends Controller
             'user_id' => $userId,
             'roles' => $userRoles->toArray(),
         ]);
+    }
+
+    /**
+     * Get all permissions from all organizations (Platform Admin)
+     * Used for creating global permission groups
+     */
+    public function platformAdminAllPermissions(Request $request)
+    {
+        $this->enforcePlatformAdmin($request);
+
+        // Platform admins can see ALL permissions (both global and organization-scoped)
+        $permissions = Permission::orderBy('organization_id')
+            ->orderBy('resource')
+            ->orderBy('action')
+            ->get();
+
+        return response()->json($permissions);
+    }
+
+    /**
+     * Get permissions for an organization (Platform Admin)
+     * Platform admins can view permissions for any organization
+     */
+    public function platformAdminOrganizationPermissions(Request $request, string $organizationId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check subscription.admin permission (GLOBAL)
+        try {
+            // CRITICAL: Use platform org UUID as team context for global permissions
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
+            if (!$user->hasPermissionTo('subscription.admin')) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'This endpoint is only accessible to platform administrators.',
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subscription.admin in platformAdminOrganizationPermissions: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'This endpoint is only accessible to platform administrators.',
+            ], 403);
+        }
+
+        // Verify organization exists
+        $organization = DB::table('organizations')
+            ->where('id', $organizationId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$organization) {
+            return response()->json(['error' => 'Organization not found'], 404);
+        }
+
+        // Get organization-specific permissions
+        $permissions = Permission::where('organization_id', $organizationId)
+            ->orderBy('resource')
+            ->orderBy('action')
+            ->get();
+
+        return response()->json($permissions);
+    }
+
+    /**
+     * Get permissions for a specific user (Platform Admin)
+     * Platform admins can view permissions for users in any organization
+     */
+    public function platformAdminUserPermissions(Request $request, string $userId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check subscription.admin permission (GLOBAL)
+        try {
+            // CRITICAL: Use platform org UUID as team context for global permissions
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
+            if (!$user->hasPermissionTo('subscription.admin')) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'This endpoint is only accessible to platform administrators.',
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subscription.admin in platformAdminUserPermissions: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'This endpoint is only accessible to platform administrators.',
+            ], 403);
+        }
+
+        $targetUser = User::find($userId);
+        if (!$targetUser) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $targetProfile = DB::table('profiles')->where('id', $userId)->first();
+        if (!$targetProfile || !$targetProfile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 404);
+        }
+
+        // Set team context to target user's organization
+        setPermissionsTeamId($targetProfile->organization_id);
+
+        // Get role-based permissions (via model_has_roles -> role_has_permissions)
+        // CRITICAL: Use pgsql connection explicitly for UUID handling
+        $rolePermissions = DB::connection('pgsql')
+            ->table('permissions')
+            ->join('role_has_permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
+            ->join('model_has_roles', function ($join) use ($targetUser, $targetProfile) {
+                $join->on('role_has_permissions.role_id', '=', 'model_has_roles.role_id')
+                     ->where('model_has_roles.model_id', '=', $targetUser->id)
+                     ->where('model_has_roles.model_type', '=', 'App\\Models\\User')
+                     ->where('model_has_roles.organization_id', '=', $targetProfile->organization_id);
+            })
+            ->where('role_has_permissions.organization_id', $targetProfile->organization_id)
+            ->where('permissions.organization_id', $targetProfile->organization_id)
+            ->select('permissions.id', 'permissions.name', 'permissions.resource', 'permissions.action')
+            ->distinct()
+            ->get();
+
+        // Get direct user permissions (from model_has_permissions table)
+        $tableNames = config('permission.table_names');
+        $columnNames = config('permission.column_names');
+        $modelHasPermissionsTable = $tableNames['model_has_permissions'] ?? 'model_has_permissions';
+        $modelMorphKey = $columnNames['model_morph_key'] ?? 'model_id';
+
+        // CRITICAL: Use pgsql connection explicitly for UUID handling
+        // NOTE: model_has_permissions table does NOT have deleted_at column (no soft deletes)
+        $directPermissions = DB::connection('pgsql')
+            ->table($modelHasPermissionsTable)
+            ->join('permissions', $modelHasPermissionsTable . '.permission_id', '=', 'permissions.id')
+            ->where($modelHasPermissionsTable . '.' . $modelMorphKey, $targetUser->id)
+            ->where($modelHasPermissionsTable . '.model_type', 'App\\Models\\User')
+            ->where($modelHasPermissionsTable . '.organization_id', $targetProfile->organization_id)
+            ->where('permissions.organization_id', $targetProfile->organization_id)
+            ->select('permissions.id', 'permissions.name', 'permissions.resource', 'permissions.action')
+            ->distinct()
+            ->get();
+
+        // Combine role and direct permissions
+        $allPermissions = $rolePermissions->merge($directPermissions)->unique('id');
+
+        return response()->json([
+            'user_id' => $userId,
+            'organization_id' => $targetProfile->organization_id,
+            'all_permissions' => $allPermissions->pluck('name')->toArray(),
+            'direct_permissions' => $directPermissions->map(function ($perm) {
+                return [
+                    'id' => $perm->id,
+                    'name' => $perm->name,
+                ];
+            })->toArray(),
+            'role_permissions' => $rolePermissions->map(function ($perm) {
+                return [
+                    'id' => $perm->id,
+                    'name' => $perm->name,
+                ];
+            })->toArray(),
+        ]);
+    }
+
+    /**
+     * Assign permission to user (Platform Admin)
+     * Platform admins can assign permissions to users in any organization
+     */
+    public function platformAdminAssignPermissionToUser(Request $request, string $userId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check subscription.admin permission (GLOBAL)
+        try {
+            // CRITICAL: Use platform org UUID as team context for global permissions
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
+            if (!$user->hasPermissionTo('subscription.admin')) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'This endpoint is only accessible to platform administrators.',
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subscription.admin in platformAdminAssignPermissionToUser: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'This endpoint is only accessible to platform administrators.',
+            ], 403);
+        }
+
+        $request->validate([
+            'permission_id' => 'required|integer|exists:permissions,id',
+        ]);
+
+        $targetUser = User::find($userId);
+        if (!$targetUser) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $targetProfile = DB::table('profiles')->where('id', $userId)->first();
+        if (!$targetProfile || !$targetProfile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 404);
+        }
+
+        $permission = Permission::find($request->permission_id);
+        if (!$permission) {
+            return response()->json(['error' => 'Permission not found'], 404);
+        }
+
+        // CRITICAL: Permission must belong to target user's organization
+        if ($permission->organization_id !== $targetProfile->organization_id) {
+            return response()->json(['error' => 'Cannot assign permission from different organization'], 403);
+        }
+
+        // Set team context to target user's organization
+        setPermissionsTeamId($targetProfile->organization_id);
+
+        // Check if permission is already assigned (and not soft-deleted)
+        $tableNames = config('permission.table_names');
+        $columnNames = config('permission.column_names');
+        $modelHasPermissionsTable = $tableNames['model_has_permissions'] ?? 'model_has_permissions';
+        $modelMorphKey = $columnNames['model_morph_key'] ?? 'model_id';
+
+        // CRITICAL: Use pgsql connection explicitly for UUID handling
+        // NOTE: model_has_permissions table does NOT have deleted_at column (no soft deletes)
+        $existing = DB::connection('pgsql')
+            ->table($modelHasPermissionsTable)
+            ->where($modelMorphKey, $targetUser->id)
+            ->where('permission_id', $permission->id)
+            ->where('model_type', 'App\\Models\\User')
+            ->where('organization_id', $targetProfile->organization_id)
+            ->first();
+
+        if ($existing) {
+            return response()->json(['message' => 'Permission already assigned to user']);
+        }
+
+        // CRITICAL: model_has_permissions table does NOT have deleted_at column
+        // If permission already exists, just return success
+        // Otherwise, assign it using Spatie and update organization_id
+        if (!$existing) {
+            // Assign permission using Spatie
+            $targetUser->givePermissionTo($permission);
+
+            // CRITICAL: Manually update organization_id in model_has_permissions
+            // Use pgsql connection for UUID handling
+            DB::connection('pgsql')
+                ->table($modelHasPermissionsTable)
+                ->where($modelMorphKey, $targetUser->id)
+                ->where('permission_id', $permission->id)
+                ->where('model_type', 'App\\Models\\User')
+                ->update(['organization_id' => $targetProfile->organization_id]);
+        }
+
+        // Clear permission cache
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        return response()->json(['message' => 'Permission assigned to user successfully']);
+    }
+
+    /**
+     * Remove permission from user (Platform Admin)
+     * Platform admins can remove permissions from users in any organization
+     */
+    public function platformAdminRemovePermissionFromUser(Request $request, string $userId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check subscription.admin permission (GLOBAL)
+        try {
+            // CRITICAL: Use platform org UUID as team context for global permissions
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
+            if (!$user->hasPermissionTo('subscription.admin')) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'This endpoint is only accessible to platform administrators.',
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subscription.admin in platformAdminRemovePermissionFromUser: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'This endpoint is only accessible to platform administrators.',
+            ], 403);
+        }
+
+        $request->validate([
+            'permission_id' => 'required|integer|exists:permissions,id',
+        ]);
+
+        $targetUser = User::find($userId);
+        if (!$targetUser) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $targetProfile = DB::table('profiles')->where('id', $userId)->first();
+        if (!$targetProfile || !$targetProfile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 404);
+        }
+
+        $permission = Permission::find($request->permission_id);
+        if (!$permission) {
+            return response()->json(['error' => 'Permission not found'], 404);
+        }
+
+        // CRITICAL: Permission must belong to target user's organization
+        if ($permission->organization_id !== $targetProfile->organization_id) {
+            return response()->json(['error' => 'Cannot remove permission from different organization'], 403);
+        }
+
+        // Set team context to target user's organization
+        setPermissionsTeamId($targetProfile->organization_id);
+
+        // CRITICAL: model_has_permissions table does NOT have deleted_at column
+        // We need to use hard delete (DELETE) instead of soft delete
+        $tableNames = config('permission.table_names');
+        $columnNames = config('permission.column_names');
+        $modelHasPermissionsTable = $tableNames['model_has_permissions'] ?? 'model_has_permissions';
+        $modelMorphKey = $columnNames['model_morph_key'] ?? 'model_id';
+
+        // CRITICAL: Use pgsql connection explicitly for UUID handling
+        // Hard delete the permission assignment
+        DB::connection('pgsql')
+            ->table($modelHasPermissionsTable)
+            ->where($modelMorphKey, $targetUser->id)
+            ->where('permission_id', $permission->id)
+            ->where('model_type', 'App\\Models\\User')
+            ->where('organization_id', $targetProfile->organization_id)
+            ->delete();
+
+        // Clear permission cache
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        return response()->json(['message' => 'Permission removed from user successfully']);
+    }
+
+    /**
+     * ============================================
+     * PERMISSION GROUPS (Platform Admin)
+     * ============================================
+     */
+
+    /**
+     * List all permission groups (Platform Admin)
+     * Groups are global and can be assigned to any organization
+     */
+    public function platformAdminListPermissionGroups(Request $request)
+    {
+        $this->enforcePlatformAdmin($request);
+
+        $groups = PermissionGroup::whereNull('deleted_at')
+            ->whereNull('organization_id') // Only global groups
+            ->with('permissions')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json(['data' => $groups]);
+    }
+
+    /**
+     * Create permission group (Platform Admin)
+     * Groups are global and can be assigned to any organization
+     * Permission IDs can be from any organization (we store permission names, not IDs)
+     */
+    public function platformAdminCreatePermissionGroup(Request $request)
+    {
+        $this->enforcePlatformAdmin($request);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:permission_groups,name',
+            'description' => 'nullable|string|max:1000',
+            'permission_ids' => 'required|array',
+            'permission_ids.*' => 'required|integer|exists:permissions,id',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Create global group (organization_id = NULL)
+            $group = PermissionGroup::create([
+                'organization_id' => null, // Global group
+                'name' => $validated['name'],
+                'description' => $validated['description'] ?? null,
+            ]);
+
+            // Attach permissions (can be from any organization)
+            // We store permission IDs, but when assigning to users, we'll find by name within their organization
+            foreach ($validated['permission_ids'] as $permissionId) {
+                PermissionGroupItem::create([
+                    'permission_group_id' => $group->id,
+                    'permission_id' => $permissionId,
+                ]);
+            }
+
+            DB::commit();
+
+            $group->load('permissions');
+
+            return response()->json([
+                'data' => $group,
+                'message' => 'Permission group created successfully',
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to create permission group: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to create permission group: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update permission group (Platform Admin)
+     * Groups are global
+     */
+    public function platformAdminUpdatePermissionGroup(Request $request, string $groupId)
+    {
+        $this->enforcePlatformAdmin($request);
+
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'permission_ids' => 'sometimes|required|array',
+            'permission_ids.*' => 'required|integer|exists:permissions,id',
+        ]);
+
+        $group = PermissionGroup::where('id', $groupId)
+            ->whereNull('organization_id') // Only global groups
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$group) {
+            return response()->json(['error' => 'Permission group not found'], 404);
+        }
+
+        DB::beginTransaction();
+        try {
+            if (isset($validated['name'])) {
+                // Check unique name (excluding current group)
+                $existing = PermissionGroup::where('name', $validated['name'])
+                    ->where('id', '!=', $groupId)
+                    ->whereNull('deleted_at')
+                    ->first();
+                
+                if ($existing) {
+                    DB::rollBack();
+                    return response()->json(['error' => 'A permission group with this name already exists'], 400);
+                }
+                
+                $group->name = $validated['name'];
+            }
+            if (isset($validated['description'])) {
+                $group->description = $validated['description'];
+            }
+            $group->save();
+
+            // Update permissions if provided
+            if (isset($validated['permission_ids'])) {
+                // Remove existing permissions
+                PermissionGroupItem::where('permission_group_id', $group->id)->delete();
+
+                // Add new permissions (can be from any organization)
+                foreach ($validated['permission_ids'] as $permissionId) {
+                    PermissionGroupItem::create([
+                        'permission_group_id' => $group->id,
+                        'permission_id' => $permissionId,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            $group->load('permissions');
+
+            return response()->json([
+                'data' => $group,
+                'message' => 'Permission group updated successfully',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to update permission group: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to update permission group: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete permission group (Platform Admin)
+     * Groups are global
+     */
+    public function platformAdminDeletePermissionGroup(Request $request, string $groupId)
+    {
+        $this->enforcePlatformAdmin($request);
+
+        $group = PermissionGroup::where('id', $groupId)
+            ->whereNull('organization_id') // Only global groups
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$group) {
+            return response()->json(['error' => 'Permission group not found'], 404);
+        }
+
+        $group->delete();
+
+        return response()->noContent();
+    }
+
+    /**
+     * Assign permission group to user (Platform Admin)
+     * Assigns all permissions in the group to the user at once
+     */
+    public function platformAdminAssignPermissionGroupToUser(Request $request, string $userId)
+    {
+        $this->enforcePlatformAdmin($request);
+
+        $validated = $request->validate([
+            'permission_group_id' => 'required|uuid|exists:permission_groups,id',
+        ]);
+
+        $targetUser = User::find($userId);
+        if (!$targetUser) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $targetProfile = DB::table('profiles')->where('id', $userId)->first();
+        if (!$targetProfile || !$targetProfile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 400);
+        }
+
+        // Get global group (organization_id = NULL)
+        $group = PermissionGroup::where('id', $validated['permission_group_id'])
+            ->whereNull('organization_id') // Global group
+            ->whereNull('deleted_at')
+            ->with('permissions')
+            ->first();
+
+        if (!$group) {
+            return response()->json(['error' => 'Permission group not found'], 404);
+        }
+
+        // Get permission names from the global group
+        $permissionNames = $group->permissions->pluck('name')->toArray();
+
+        // Find these permissions within the user's organization
+        $orgPermissions = Permission::whereIn('name', $permissionNames)
+            ->where('organization_id', $targetProfile->organization_id)
+            ->get();
+
+        if ($orgPermissions->isEmpty()) {
+            return response()->json(['error' => 'No matching permissions found in user\'s organization'], 404);
+        }
+
+        // Set team context to target user's organization
+        setPermissionsTeamId($targetProfile->organization_id);
+
+        $tableNames = config('permission.table_names');
+        $columnNames = config('permission.column_names');
+        $modelHasPermissionsTable = $tableNames['model_has_permissions'] ?? 'model_has_permissions';
+        $modelMorphKey = $columnNames['model_morph_key'] ?? 'model_id';
+
+        DB::beginTransaction();
+        try {
+            $assignedCount = 0;
+            $skippedCount = 0;
+            $notFoundCount = 0;
+
+            foreach ($orgPermissions as $permission) {
+                // Check if permission already assigned
+                $existing = DB::connection('pgsql')
+                    ->table($modelHasPermissionsTable)
+                    ->where($modelMorphKey, $targetUser->id)
+                    ->where('permission_id', $permission->id)
+                    ->where('model_type', 'App\\Models\\User')
+                    ->where('organization_id', $targetProfile->organization_id)
+                    ->first();
+
+                if (!$existing) {
+                    // Assign permission using Spatie
+                    $targetUser->givePermissionTo($permission);
+
+                    // Manually update organization_id in model_has_permissions
+                    DB::connection('pgsql')
+                        ->table($modelHasPermissionsTable)
+                        ->where($modelMorphKey, $targetUser->id)
+                        ->where('permission_id', $permission->id)
+                        ->where('model_type', 'App\\Models\\User')
+                        ->update(['organization_id' => $targetProfile->organization_id]);
+
+                    $assignedCount++;
+                } else {
+                    $skippedCount++;
+                }
+            }
+
+            // Count permissions in group that weren't found in user's organization
+            $notFoundCount = count($permissionNames) - $orgPermissions->count();
+
+            DB::commit();
+
+            // Clear permission cache
+            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+            return response()->json([
+                'message' => 'Permission group assigned successfully',
+                'assigned' => $assignedCount,
+                'skipped' => $skippedCount,
+                'not_found' => $notFoundCount,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to assign permission group to user: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to assign permission group'], 500);
+        }
+    }
+
+    /**
+     * Remove permission group from user (Platform Admin)
+     * Removes all permissions in the group from the user
+     */
+    public function platformAdminRemovePermissionGroupFromUser(Request $request, string $userId)
+    {
+        $this->enforcePlatformAdmin($request);
+
+        $validated = $request->validate([
+            'permission_group_id' => 'required|uuid|exists:permission_groups,id',
+        ]);
+
+        $targetUser = User::find($userId);
+        if (!$targetUser) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $targetProfile = DB::table('profiles')->where('id', $userId)->first();
+        if (!$targetProfile || !$targetProfile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 400);
+        }
+
+        // Get global group (organization_id = NULL)
+        $group = PermissionGroup::where('id', $validated['permission_group_id'])
+            ->whereNull('organization_id') // Global group
+            ->whereNull('deleted_at')
+            ->with('permissions')
+            ->first();
+
+        if (!$group) {
+            return response()->json(['error' => 'Permission group not found'], 404);
+        }
+
+        // Get permission names from the global group
+        $permissionNames = $group->permissions->pluck('name')->toArray();
+
+        // Find these permissions within the user's organization
+        $orgPermissions = Permission::whereIn('name', $permissionNames)
+            ->where('organization_id', $targetProfile->organization_id)
+            ->get();
+
+        if ($orgPermissions->isEmpty()) {
+            return response()->json(['error' => 'No matching permissions found in user\'s organization'], 404);
+        }
+
+        // Set team context to target user's organization
+        setPermissionsTeamId($targetProfile->organization_id);
+
+        $tableNames = config('permission.table_names');
+        $columnNames = config('permission.column_names');
+        $modelHasPermissionsTable = $tableNames['model_has_permissions'] ?? 'model_has_permissions';
+        $modelMorphKey = $columnNames['model_morph_key'] ?? 'model_id';
+
+        DB::beginTransaction();
+        try {
+            $removedCount = 0;
+
+            foreach ($orgPermissions as $permission) {
+                // Remove permission (hard delete from model_has_permissions)
+                $deleted = DB::connection('pgsql')
+                    ->table($modelHasPermissionsTable)
+                    ->where($modelMorphKey, $targetUser->id)
+                    ->where('permission_id', $permission->id)
+                    ->where('model_type', 'App\\Models\\User')
+                    ->where('organization_id', $targetProfile->organization_id)
+                    ->delete();
+
+                if ($deleted) {
+                    $removedCount++;
+                }
+            }
+
+            DB::commit();
+
+            // Clear permission cache
+            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+            return response()->json([
+                'message' => 'Permission group removed successfully',
+                'removed' => $removedCount,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to remove permission group from user: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to remove permission group'], 500);
+        }
+    }
+
+    /**
+     * Helper method to enforce platform admin access
+     */
+    private function enforcePlatformAdmin(Request $request): void
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            abort(401, 'Unauthenticated');
+        }
+
+        // CRITICAL: Use platform org UUID as team context for global permissions
+        // Global permissions are stored with platform org UUID (00000000-0000-0000-0000-000000000000)
+        // in model_has_permissions, but the permission itself has organization_id = NULL
+        $platformOrgId = '00000000-0000-0000-0000-000000000000';
+        setPermissionsTeamId($platformOrgId);
+
+        try {
+            if (!$user->hasPermissionTo('subscription.admin')) {
+                abort(403, 'This action is only available to platform administrators');
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subscription.admin: " . $e->getMessage());
+            abort(403, 'This action is only available to platform administrators');
+        }
     }
 }

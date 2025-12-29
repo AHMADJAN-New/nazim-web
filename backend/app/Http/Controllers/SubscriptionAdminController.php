@@ -33,6 +33,7 @@ class SubscriptionAdminController extends Controller
     /**
      * Check if user has subscription admin permission
      * This is a super-admin level permission for managing all subscriptions
+     * CRITICAL: This is a GLOBAL permission (not organization-scoped)
      */
     private function checkSubscriptionAdminPermission(Request $request): bool
     {
@@ -42,7 +43,13 @@ class SubscriptionAdminController extends Controller
         }
 
         try {
-            // Check for subscription.admin permission
+            // CRITICAL: Use platform org UUID as team context for global permissions
+            // Global permissions are stored with platform org UUID (00000000-0000-0000-0000-000000000000)
+            // in model_has_permissions, but the permission itself has organization_id = NULL
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
+            
+            // Check for subscription.admin permission (global)
             return $user->hasPermissionTo('subscription.admin');
         } catch (\Exception $e) {
             \Log::warning("Permission check failed for subscription.admin: " . $e->getMessage());
