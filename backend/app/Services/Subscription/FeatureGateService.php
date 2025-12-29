@@ -15,12 +15,15 @@ class FeatureGateService
 
     /**
      * Check if an organization has access to a feature
+     * CRITICAL: Only returns true if feature is explicitly enabled in plan or as addon
+     * NO fallback to permission-based access - enforces subscription-based access control
      */
     public function hasFeature(string $organizationId, string $featureKey): bool
     {
         // First check subscription status
         $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
         
+        // If no subscription exists, deny access (enforce subscription requirement)
         if (!$subscription) {
             return false;
         }
@@ -30,19 +33,41 @@ class FeatureGateService
             return false;
         }
 
+        // Load plan relationship if not already loaded
+        try {
+            if (!$subscription->relationLoaded('plan')) {
+                $subscription->load('plan');
+            }
+        } catch (\Exception $e) {
+            // If plan loading fails, deny access (fail secure)
+            \Log::warning('Failed to load plan relationship in hasFeature: ' . $e->getMessage());
+            return false;
+        }
+
+        // Check for feature addon first (addons override plan features)
+        $addon = OrganizationFeatureAddon::where('organization_id', $organizationId)
+            ->where('feature_key', $featureKey)
+            ->where('is_enabled', true)
+            ->whereNull('deleted_at')
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->first();
+
+        if ($addon) {
+            return true;
+        }
+
         // Check if feature is enabled in plan
         $plan = $subscription->plan;
         if ($plan && $plan->hasFeature($featureKey)) {
             return true;
         }
 
-        // Check for feature addon
-        $addon = OrganizationFeatureAddon::where('organization_id', $organizationId)
-            ->where('feature_key', $featureKey)
-            ->active()
-            ->first();
-
-        return $addon !== null;
+        // CRITICAL: No fallback - if feature is not in plan and not an addon, deny access
+        // This enforces subscription-based access control
+        return false;
     }
 
     /**
@@ -65,20 +90,40 @@ class FeatureGateService
     {
         $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
         $enabledFeatures = [];
+        $hasPlanFeatures = false;
 
         // Get plan features
-        if ($subscription && $subscription->plan) {
-            $planFeatures = $subscription->plan->enabledFeatures()->pluck('feature_key')->toArray();
-            $enabledFeatures = array_merge($enabledFeatures, $planFeatures);
+        if ($subscription) {
+            // Load plan relationship if not already loaded
+            if (!$subscription->relationLoaded('plan')) {
+                $subscription->load('plan');
+            }
+            
+            if ($subscription->plan) {
+                $planFeatures = $subscription->plan->enabledFeatures()->pluck('feature_key')->toArray();
+                $enabledFeatures = array_merge($enabledFeatures, $planFeatures);
+                // Check if plan has any features assigned (even if disabled)
+                $hasPlanFeatures = $subscription->plan->features()->exists();
+            }
         }
 
-        // Get addon features
+        // Get addon features (addons override plan features)
         $addonFeatures = OrganizationFeatureAddon::where('organization_id', $organizationId)
-            ->active()
+            ->where('is_enabled', true)
+            ->whereNull('deleted_at')
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
             ->pluck('feature_key')
             ->toArray();
 
-        $enabledFeatures = array_merge($enabledFeatures, $addonFeatures);
+        // Addons override plan features - merge and deduplicate
+        $enabledFeatures = array_unique(array_merge($enabledFeatures, $addonFeatures));
+
+        // CRITICAL: Only return features that are explicitly enabled in the plan or as addons
+        // NO fallback to enable all features - this enforces subscription-based access control
+        // Users must have the feature in their plan or as an addon to access it
 
         return array_unique($enabledFeatures);
     }
@@ -99,11 +144,12 @@ class FeatureGateService
         foreach ($allFeatures as $feature) {
             $isEnabled = in_array($feature->feature_key, $enabledFeatures);
             
-            // Check if it's from addon
-            $isAddon = OrganizationFeatureAddon::where('organization_id', $organizationId)
+            // Check if it's from addon (including disabled addons for display)
+            $addon = OrganizationFeatureAddon::where('organization_id', $organizationId)
                 ->where('feature_key', $feature->feature_key)
-                ->active()
-                ->exists();
+                ->whereNull('deleted_at')
+                ->first();
+            $isAddon = $addon !== null;
 
             $result[] = [
                 'feature_key' => $feature->feature_key,
@@ -214,6 +260,16 @@ class FeatureGateService
             ];
         }
 
+        // Load plan relationship if not already loaded
+        try {
+            if (!$subscription->relationLoaded('plan')) {
+                $subscription->load('plan');
+            }
+        } catch (\Exception $e) {
+            // If plan loading fails, continue without plan
+            \Log::warning('Failed to load plan relationship in getSubscriptionStatus: ' . $e->getMessage());
+        }
+        
         $plan = $subscription->plan;
         $accessLevel = $this->getAccessLevel($organizationId);
 

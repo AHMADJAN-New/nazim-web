@@ -70,6 +70,7 @@ use App\Http\Controllers\ExamAttendanceController;
 use App\Http\Controllers\ExamNumberController;
 use App\Http\Controllers\ExamTypeController;
 use App\Http\Controllers\ExamDocumentController;
+use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\FinanceDocumentController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\GraduationBatchController;
@@ -111,6 +112,16 @@ Route::post('/verify/certificate/search', [CertificateVerifyController::class, '
 Route::get('/stats/students-count', [StatsController::class, 'studentsCount']);
 Route::get('/stats/staff-count', [StatsController::class, 'staffCount']);
 
+// Auth routes (require authentication but NO subscription checks - always allowed)
+// These routes must be accessible even without active subscription for login/auth checks
+Route::middleware(['auth:sanctum', 'organization'])->group(function () {
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/user', [AuthController::class, 'user']);
+    Route::get('/auth/profile', [AuthController::class, 'profile']);
+    Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
+});
+
 // Protected routes (organization context is mandatory everywhere)
 // All routes require subscription:read for basic access (allows read during grace/readonly periods)
 Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(function () {
@@ -124,12 +135,6 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     Route::get('/storage/info/{encodedPath}', [StorageController::class, 'info'])
         ->where('encodedPath', '.*')
         ->name('storage.info');
-    // Auth routes (no additional subscription checks - always allowed)
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
-    Route::get('/auth/user', [AuthController::class, 'user']);
-    Route::get('/auth/profile', [AuthController::class, 'profile']);
-    Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
-    Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
 
     // Organizations (protected - all operations require authentication)
     Route::get('/organizations', [OrganizationController::class, 'index']);
@@ -318,7 +323,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::post('/student-admissions/export', [StudentAdmissionController::class, 'export']);
             Route::post('/student-admissions/bulk-deactivate', [StudentAdmissionController::class, 'bulkDeactivate']);
             Route::post('/student-admissions/bulk-deactivate-by-student-ids', [StudentAdmissionController::class, 'bulkDeactivateByStudentIds']);
-            Route::post('/student-admissions', [StudentAdmissionController::class, 'store']);
+            Route::post('/student-admissions', [StudentAdmissionController::class, 'store'])->middleware('limit:students');
             Route::put('/student-admissions/{student_admission}', [StudentAdmissionController::class, 'update']);
             Route::delete('/student-admissions/{student_admission}', [StudentAdmissionController::class, 'destroy']);
         });
@@ -523,6 +528,19 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::post('/exams/{exam}/attendance/scan', [ExamAttendanceController::class, 'scan']);
             Route::put('/exam-attendance/{id}', [ExamAttendanceController::class, 'update']);
             Route::delete('/exam-attendance/{id}', [ExamAttendanceController::class, 'destroy']);
+        });
+    });
+
+    // Exam Questions (requires exams feature)
+    Route::middleware(['feature:exams'])->group(function () {
+        Route::get('/exam/questions', [QuestionController::class, 'index']);
+        Route::get('/exam/questions/{question}', [QuestionController::class, 'show']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/exam/questions', [QuestionController::class, 'store'])->middleware('limit:questions');
+            Route::put('/exam/questions/{question}', [QuestionController::class, 'update']);
+            Route::delete('/exam/questions/{question}', [QuestionController::class, 'destroy']);
+            Route::post('/exam/questions/{question}/duplicate', [QuestionController::class, 'duplicate']);
+            Route::post('/exam/questions/bulk-update', [QuestionController::class, 'bulkUpdate']);
         });
     });
 
@@ -1111,8 +1129,8 @@ use App\Http\Controllers\SubscriptionAdminController;
 // Public subscription routes
 Route::get('/subscription/plans', [SubscriptionController::class, 'plans']);
 
-// Authenticated subscription routes
-Route::middleware(['auth:sanctum'])->prefix('subscription')->group(function () {
+// Authenticated subscription routes (require organization context)
+Route::middleware(['auth:sanctum', 'organization'])->prefix('subscription')->group(function () {
     // Current subscription status
     Route::get('/status', [SubscriptionController::class, 'status']);
     Route::get('/usage', [SubscriptionController::class, 'usage']);
@@ -1159,6 +1177,13 @@ Route::middleware(['auth:sanctum', 'organization'])->prefix('admin/subscription'
     Route::post('/payments/{paymentId}/confirm', [SubscriptionAdminController::class, 'confirmPayment']);
     Route::post('/payments/{paymentId}/reject', [SubscriptionAdminController::class, 'rejectPayment']);
     Route::get('/renewals/pending', [SubscriptionAdminController::class, 'listPendingRenewals']);
+    Route::get('/renewals/{renewalId}', [SubscriptionAdminController::class, 'getRenewal']);
+    Route::post('/renewals/{renewalId}/approve', [SubscriptionAdminController::class, 'approveRenewal']);
+    Route::post('/renewals/{renewalId}/reject', [SubscriptionAdminController::class, 'rejectRenewal']);
+    
+    // Organizations (for subscription admin - all organizations)
+    Route::get('/organizations', [SubscriptionAdminController::class, 'listOrganizations']);
+    Route::post('/organizations/{organizationId}/features/{featureKey}/toggle', [SubscriptionAdminController::class, 'toggleFeature']);
     
     // Discount codes
     Route::get('/discount-codes', [SubscriptionAdminController::class, 'listDiscountCodes']);

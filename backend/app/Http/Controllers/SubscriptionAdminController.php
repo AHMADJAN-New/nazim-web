@@ -6,6 +6,7 @@ use App\Models\DiscountCode;
 use App\Models\FeatureDefinition;
 use App\Models\LimitDefinition;
 use App\Models\Organization;
+use App\Models\OrganizationFeatureAddon;
 use App\Models\OrganizationSubscription;
 use App\Models\PaymentRecord;
 use App\Models\RenewalRequest;
@@ -70,70 +71,107 @@ class SubscriptionAdminController extends Controller
     {
         $this->enforceSubscriptionAdmin($request);
 
-        // Total organizations
-        $totalOrgs = Organization::whereNull('deleted_at')->count();
+        try {
+            // Total organizations
+            $totalOrgs = Organization::whereNull('deleted_at')->count();
 
-        // Subscriptions by status
-        $subscriptionsByStatus = OrganizationSubscription::whereNull('deleted_at')
-            ->select('status', DB::raw('count(*) as count'))
-            ->groupBy('status')
-            ->get()
-            ->pluck('count', 'status')
-            ->toArray();
+            // Subscriptions by status
+            $subscriptionsByStatus = OrganizationSubscription::whereNull('deleted_at')
+                ->select('status', DB::raw('count(*) as count'))
+                ->groupBy('status')
+                ->get()
+                ->pluck('count', 'status')
+                ->toArray();
 
-        // Subscriptions by plan
-        $subscriptionsByPlan = OrganizationSubscription::whereNull('deleted_at')
-            ->join('subscription_plans', 'organization_subscriptions.plan_id', '=', 'subscription_plans.id')
-            ->select('subscription_plans.name', DB::raw('count(*) as count'))
-            ->groupBy('subscription_plans.name')
-            ->get()
-            ->pluck('count', 'name')
-            ->toArray();
+            // Subscriptions by plan (use left join to include subscriptions without plans)
+            $subscriptionsByPlan = OrganizationSubscription::whereNull('organization_subscriptions.deleted_at')
+                ->leftJoin('subscription_plans', 'organization_subscriptions.plan_id', '=', 'subscription_plans.id')
+                ->whereNull('subscription_plans.deleted_at')
+                ->select(DB::raw('COALESCE(subscription_plans.name, \'No Plan\') as name'), DB::raw('count(*) as count'))
+                ->groupBy(DB::raw('COALESCE(subscription_plans.name, \'No Plan\')'))
+                ->get()
+                ->pluck('count', 'name')
+                ->toArray();
 
-        // Revenue this year
-        $revenueThisYear = PaymentRecord::where('status', PaymentRecord::STATUS_CONFIRMED)
-            ->whereYear('confirmed_at', now()->year)
-            ->select('currency', DB::raw('sum(amount - discount_amount) as total'))
-            ->groupBy('currency')
-            ->get()
-            ->pluck('total', 'currency')
-            ->toArray();
+            // Revenue this year (only confirmed payments with confirmed_at date)
+            $revenueThisYear = PaymentRecord::where('status', PaymentRecord::STATUS_CONFIRMED)
+                ->whereNotNull('confirmed_at')
+                ->whereYear('confirmed_at', now()->year)
+                ->select('currency', DB::raw('sum(COALESCE(amount, 0) - COALESCE(discount_amount, 0)) as total'))
+                ->groupBy('currency')
+                ->get()
+                ->pluck('total', 'currency')
+                ->toArray();
 
-        // Pending payments
-        $pendingPayments = PaymentRecord::pending()->count();
+            // Ensure default values for currencies
+            if (!isset($revenueThisYear['AFN'])) {
+                $revenueThisYear['AFN'] = 0;
+            }
+            if (!isset($revenueThisYear['USD'])) {
+                $revenueThisYear['USD'] = 0;
+            }
 
-        // Pending renewal requests
-        $pendingRenewals = RenewalRequest::pending()->count();
+            // Pending payments
+            $pendingPayments = PaymentRecord::pending()->count();
 
-        // Expiring soon (next 30 days)
-        $expiringSoon = OrganizationSubscription::whereIn('status', [
-                OrganizationSubscription::STATUS_TRIAL,
-                OrganizationSubscription::STATUS_ACTIVE,
-            ])
-            ->where('expires_at', '<=', Carbon::now()->addDays(30))
-            ->where('expires_at', '>', Carbon::now())
-            ->count();
+            // Pending renewal requests
+            $pendingRenewals = RenewalRequest::pending()->count();
 
-        // Recently expired
-        $recentlyExpired = OrganizationSubscription::whereIn('status', [
-                OrganizationSubscription::STATUS_GRACE_PERIOD,
-                OrganizationSubscription::STATUS_READONLY,
-                OrganizationSubscription::STATUS_EXPIRED,
-            ])
-            ->count();
+            // Expiring soon (next 30 days)
+            $expiringSoon = OrganizationSubscription::whereNull('deleted_at')
+                ->whereIn('status', [
+                    OrganizationSubscription::STATUS_TRIAL,
+                    OrganizationSubscription::STATUS_ACTIVE,
+                ])
+                ->whereNotNull('expires_at')
+                ->where('expires_at', '<=', Carbon::now()->addDays(30))
+                ->where('expires_at', '>', Carbon::now())
+                ->count();
 
-        return response()->json([
-            'data' => [
-                'total_organizations' => $totalOrgs,
-                'subscriptions_by_status' => $subscriptionsByStatus,
-                'subscriptions_by_plan' => $subscriptionsByPlan,
-                'revenue_this_year' => $revenueThisYear,
-                'pending_payments' => $pendingPayments,
-                'pending_renewals' => $pendingRenewals,
-                'expiring_soon' => $expiringSoon,
-                'recently_expired' => $recentlyExpired,
-            ],
-        ]);
+            // Recently expired
+            $recentlyExpired = OrganizationSubscription::whereNull('deleted_at')
+                ->whereIn('status', [
+                    OrganizationSubscription::STATUS_GRACE_PERIOD,
+                    OrganizationSubscription::STATUS_READONLY,
+                    OrganizationSubscription::STATUS_EXPIRED,
+                ])
+                ->count();
+
+            // Total schools across all organizations
+            $totalSchools = DB::connection('pgsql')
+                ->table('school_branding')
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Total students across all organizations
+            $totalStudents = DB::connection('pgsql')
+                ->table('students')
+                ->whereNull('deleted_at')
+                ->count();
+
+            return response()->json([
+                'data' => [
+                    'total_organizations' => $totalOrgs,
+                    'total_schools' => $totalSchools,
+                    'total_students' => $totalStudents,
+                    'subscriptions_by_status' => $subscriptionsByStatus,
+                    'subscriptions_by_plan' => $subscriptionsByPlan,
+                    'revenue_this_year' => $revenueThisYear,
+                    'pending_payments' => $pendingPayments,
+                    'pending_renewals' => $pendingRenewals,
+                    'expiring_soon' => $expiringSoon,
+                    'recently_expired' => $recentlyExpired,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Subscription dashboard error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'error' => 'Failed to load dashboard data',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     // =====================================================
@@ -394,7 +432,7 @@ class SubscriptionAdminController extends Controller
             'plan_id' => 'required|uuid|exists:subscription_plans,id',
             'currency' => 'required|in:AFN,USD',
             'amount_paid' => 'required|numeric|min:0',
-            'additional_schools' => 'integer|min:0',
+            'additional_schools' => 'nullable|integer|min:0',
             'notes' => 'nullable|string|max:1000',
         ]);
 
@@ -533,6 +571,98 @@ class SubscriptionAdminController extends Controller
         }
     }
 
+    /**
+     * Toggle a feature for an organization (enable/disable)
+     */
+    public function toggleFeature(Request $request, string $organizationId, string $featureKey)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $user = $request->user();
+        if (!$user || !$user->id) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        // Validate feature exists
+        $featureDef = FeatureDefinition::where('feature_key', $featureKey)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$featureDef) {
+            return response()->json(['error' => 'Feature not found or inactive'], 404);
+        }
+
+        $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
+        $expiresAt = $subscription?->expires_at;
+
+        // Check if feature is currently enabled via addon (we only toggle addons)
+        $currentAddon = OrganizationFeatureAddon::where('organization_id', $organizationId)
+            ->where('feature_key', $featureKey)
+            ->whereNull('deleted_at')
+            ->first();
+
+        $isCurrentlyEnabled = $currentAddon && $currentAddon->is_enabled && 
+            (!$currentAddon->expires_at || $currentAddon->expires_at->isFuture());
+
+        if ($isCurrentlyEnabled) {
+            // Disable the feature
+            if ($currentAddon) {
+                $currentAddon->update(['is_enabled' => false]);
+            }
+
+            SubscriptionHistory::log(
+                $organizationId,
+                SubscriptionHistory::ACTION_ADDON_REMOVED,
+                $subscription?->id,
+                null,
+                null,
+                null,
+                null,
+                $user->id,
+                "Feature disabled: {$featureKey}",
+                ['feature_key' => $featureKey]
+            );
+
+            return response()->json([
+                'data' => $currentAddon->fresh(),
+                'message' => 'Feature disabled',
+            ]);
+        } else {
+            // Enable the feature
+            $addon = OrganizationFeatureAddon::updateOrCreate(
+                [
+                    'organization_id' => $organizationId,
+                    'feature_key' => $featureKey,
+                ],
+                [
+                    'is_enabled' => true,
+                    'started_at' => now(),
+                    'expires_at' => $expiresAt,
+                    'price_paid' => 0, // Free admin override
+                    'currency' => 'AFN',
+                ]
+            );
+
+            SubscriptionHistory::log(
+                $organizationId,
+                SubscriptionHistory::ACTION_ADDON_ADDED,
+                $subscription?->id,
+                null,
+                null,
+                null,
+                null,
+                $user->id,
+                "Feature enabled: {$featureKey}",
+                ['feature_key' => $featureKey]
+            );
+
+            return response()->json([
+                'data' => $addon,
+                'message' => 'Feature enabled',
+            ]);
+        }
+    }
+
     // =====================================================
     // PAYMENTS & RENEWALS
     // =====================================================
@@ -654,6 +784,174 @@ class SubscriptionAdminController extends Controller
             ->paginate($request->per_page ?? 20);
 
         return response()->json($renewals);
+    }
+
+    /**
+     * Get a specific renewal request
+     */
+    public function getRenewal(Request $request, string $renewalId)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $renewal = RenewalRequest::with(['organization', 'subscription.plan', 'requestedPlan', 'paymentRecord'])
+            ->findOrFail($renewalId);
+
+        return response()->json([
+            'data' => $renewal,
+        ]);
+    }
+
+    /**
+     * Approve a renewal request
+     */
+    public function approveRenewal(Request $request, string $renewalId)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $user = $request->user();
+        if (!$user || !$user->id) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        $renewal = RenewalRequest::with(['organization', 'subscription.plan', 'requestedPlan', 'paymentRecord', 'discountCode'])
+            ->findOrFail($renewalId);
+
+        if ($renewal->status !== 'pending') {
+            return response()->json(['error' => 'Renewal request is not pending'], 400);
+        }
+
+        $paymentRecordId = $renewal->payment_record_id;
+
+        // If no payment record exists, create one from request data
+        if (!$paymentRecordId) {
+            $validator = Validator::make($request->all(), [
+                'amount' => 'required|numeric|min:0',
+                'currency' => 'required|in:AFN,USD',
+                'payment_method' => 'required|in:bank_transfer,cash,check,mobile_money,other',
+                'payment_reference' => 'nullable|string|max:255',
+                'payment_date' => 'required|date',
+                'notes' => 'nullable|string|max:1000',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()->first()], 422);
+            }
+
+            // Calculate price with discount if applicable
+            $priceInfo = $this->subscriptionService->calculatePrice(
+                $renewal->requested_plan_id,
+                $renewal->additional_schools,
+                $renewal->discountCode?->code,
+                $request->currency,
+                $renewal->organization_id
+            );
+
+            $subscription = $this->subscriptionService->getCurrentSubscription($renewal->organization_id);
+
+            $paymentRecord = PaymentRecord::create([
+                'organization_id' => $renewal->organization_id,
+                'subscription_id' => $subscription?->id,
+                'amount' => $request->amount,
+                'currency' => $request->currency,
+                'payment_method' => $request->payment_method,
+                'payment_reference' => $request->payment_reference,
+                'payment_date' => $request->payment_date,
+                'period_start' => now()->toDateString(),
+                'period_end' => now()->addYear()->toDateString(),
+                'status' => PaymentRecord::STATUS_CONFIRMED, // Auto-confirm when created by admin
+                'confirmed_by' => $user->id,
+                'confirmed_at' => now(),
+                'discount_code_id' => $renewal->discount_code_id,
+                'discount_amount' => $priceInfo['discount_amount'],
+                'notes' => $request->notes,
+            ]);
+
+            $paymentRecordId = $paymentRecord->id;
+        }
+
+        try {
+            $subscription = $this->subscriptionService->approveRenewalRequest(
+                $renewalId,
+                $paymentRecordId,
+                $user->id
+            );
+
+            return response()->json([
+                'data' => $renewal->fresh(['organization', 'subscription.plan', 'requestedPlan', 'paymentRecord']),
+                'message' => 'Renewal request approved successfully',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to approve renewal request: ' . $e->getMessage(), [
+                'renewal_id' => $renewalId,
+                'user_id' => $user->id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    /**
+     * Reject a renewal request
+     */
+    public function rejectRenewal(Request $request, string $renewalId)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $user = $request->user();
+        if (!$user || !$user->id) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'reason' => 'required|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 422);
+        }
+
+        $renewal = RenewalRequest::with(['organization', 'subscription.plan', 'requestedPlan', 'paymentRecord'])
+            ->findOrFail($renewalId);
+
+        if ($renewal->status !== 'pending') {
+            return response()->json(['error' => 'Renewal request is not pending'], 400);
+        }
+
+        try {
+            $this->subscriptionService->rejectRenewalRequest(
+                $renewalId,
+                $request->reason,
+                $user->id
+            );
+
+            return response()->json([
+                'data' => $renewal->fresh(['organization', 'subscription.plan', 'requestedPlan', 'paymentRecord']),
+                'message' => 'Renewal request rejected',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to reject renewal request: ' . $e->getMessage(), [
+                'renewal_id' => $renewalId,
+                'user_id' => $user->id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    /**
+     * List all organizations (for subscription admin)
+     */
+    public function listOrganizations(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $organizations = Organization::whereNull('deleted_at')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'data' => $organizations,
+        ]);
     }
 
     // =====================================================
