@@ -43,6 +43,20 @@ export function PlatformAdminLogin() {
     setError(null);
 
     try {
+      // CRITICAL: Store the current main app token before platform admin login
+      // This allows us to restore it if login fails or user logs out of platform admin
+      const mainAppToken = localStorage.getItem('api_token');
+      const isMainAppLoggedIn = !!mainAppToken;
+      
+      // Store flag to indicate this is a platform admin session
+      // This prevents main app from auto-logging in when user is in platform admin context
+      if (isMainAppLoggedIn) {
+        localStorage.setItem('main_app_token_backup', mainAppToken);
+        localStorage.setItem('is_platform_admin_session', 'true');
+      } else {
+        localStorage.setItem('is_platform_admin_session', 'true');
+      }
+
       // Login
       await authApi.login(data.email, data.password);
 
@@ -59,19 +73,47 @@ export function PlatformAdminLogin() {
 
         if (!hasPlatformAdmin) {
           setError('You do not have platform administrator access. Please use the regular login.');
-          await authApi.logout();
+          // Restore main app token if it existed
+          if (isMainAppLoggedIn && mainAppToken) {
+            localStorage.setItem('api_token', mainAppToken);
+            localStorage.removeItem('main_app_token_backup');
+          } else {
+            await authApi.logout();
+          }
+          localStorage.removeItem('is_platform_admin_session');
           return;
         }
 
+        // CRITICAL: Ensure auth state is refreshed and permissions are loaded before navigation
+        // Force a refresh of auth state to ensure user is set
+        await refreshAuth();
+        
+        // Wait for auth state to fully settle
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Refetch permissions to ensure they're loaded
+        await refetchPermissions();
+        
+        // Wait a bit more for everything to settle
+        await new Promise(resolve => setTimeout(resolve, 200));
+
         // Redirect to platform dashboard
-        navigate('/platform/dashboard');
         showToast.success('Welcome to Platform Administration');
+        // Use window.location for a hard navigation to ensure route guard runs
+        window.location.href = '/platform/dashboard';
       } catch (permError: any) {
         // If permission check fails, it might be because user doesn't have the permission
         // or the endpoint is not accessible
         if (permError.message?.includes('platform administrators') || permError.message?.includes('403')) {
           setError('You do not have platform administrator access. Please use the regular login.');
-          await authApi.logout();
+          // Restore main app token if it existed
+          if (isMainAppLoggedIn && mainAppToken) {
+            localStorage.setItem('api_token', mainAppToken);
+            localStorage.removeItem('main_app_token_backup');
+          } else {
+            await authApi.logout();
+          }
+          localStorage.removeItem('is_platform_admin_session');
           return;
         }
         // Re-throw other errors
@@ -81,6 +123,13 @@ export function PlatformAdminLogin() {
       const errorMessage = err.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
       showToast.error(errorMessage);
+      // Clean up on error
+      localStorage.removeItem('is_platform_admin_session');
+      const mainAppTokenBackup = localStorage.getItem('main_app_token_backup');
+      if (mainAppTokenBackup) {
+        localStorage.setItem('api_token', mainAppTokenBackup);
+        localStorage.removeItem('main_app_token_backup');
+      }
     } finally {
       setIsLoading(false);
     }

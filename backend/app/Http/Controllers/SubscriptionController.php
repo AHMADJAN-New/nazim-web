@@ -12,6 +12,7 @@ use App\Services\Subscription\SubscriptionService;
 use App\Services\Subscription\UsageTrackingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class SubscriptionController extends Controller
@@ -64,6 +65,16 @@ class SubscriptionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('subscription.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subscription.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $status = $this->featureGateService->getSubscriptionStatus($profile->organization_id);
 
         return response()->json([
@@ -82,6 +93,16 @@ class SubscriptionController extends Controller
 
             if (!$profile || !$profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            }
+
+            // Check permission WITH organization context
+            try {
+                if (!$user->hasPermissionTo('subscription.read')) {
+                    return response()->json(['error' => 'This action is unauthorized'], 403);
+                }
+            } catch (\Exception $e) {
+                Log::warning("Permission check failed for subscription.read: " . $e->getMessage());
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
             // Get usage with error handling - returns empty array on error
@@ -140,6 +161,16 @@ class SubscriptionController extends Controller
 
         if (!$profile || !$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('subscription.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subscription.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $features = $this->featureGateService->getAllFeaturesStatus($profile->organization_id);
@@ -368,6 +399,16 @@ class SubscriptionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('subscription.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subscription.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $requests = RenewalRequest::where('organization_id', $profile->organization_id)
             ->with(['requestedPlan', 'paymentRecord'])
             ->orderBy('created_at', 'desc')
@@ -390,6 +431,16 @@ class SubscriptionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('subscription.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subscription.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $payments = PaymentRecord::where('organization_id', $profile->organization_id)
             ->orderBy('payment_date', 'desc')
             ->get();
@@ -409,6 +460,16 @@ class SubscriptionController extends Controller
 
         if (!$profile || !$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('subscription.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subscription.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $history = \App\Models\SubscriptionHistory::where('organization_id', $profile->organization_id)

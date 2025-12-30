@@ -67,6 +67,43 @@ class SubscriptionAdminController extends Controller
         }
     }
 
+    private function serializePlan(SubscriptionPlan $plan): array
+    {
+        $plan->loadMissing(['features', 'limits']);
+
+        $enabledFeatures = $plan->features
+            ->where('is_enabled', true)
+            ->pluck('feature_key')
+            ->values()
+            ->all();
+
+        $limits = $plan->limits->mapWithKeys(function ($limit) {
+            return [$limit->resource_key => $limit->limit_value];
+        })->toArray();
+
+        return [
+            'id' => $plan->id,
+            'name' => $plan->name,
+            'slug' => $plan->slug,
+            'description' => $plan->description,
+            'price_yearly_afn' => $plan->price_yearly_afn,
+            'price_yearly_usd' => $plan->price_yearly_usd,
+            'is_active' => $plan->is_active,
+            'is_default' => $plan->is_default,
+            'is_custom' => $plan->is_custom,
+            'trial_days' => $plan->trial_days,
+            'grace_period_days' => $plan->grace_period_days,
+            'readonly_period_days' => $plan->readonly_period_days,
+            'max_schools' => $plan->max_schools,
+            'per_school_price_afn' => $plan->per_school_price_afn,
+            'per_school_price_usd' => $plan->per_school_price_usd,
+            'sort_order' => $plan->sort_order,
+            'features' => $enabledFeatures,
+            'limits' => $limits,
+            'deleted_at' => $plan->deleted_at,
+        ];
+    }
+
     // =====================================================
     // DASHBOARD
     // =====================================================
@@ -193,32 +230,17 @@ class SubscriptionAdminController extends Controller
         $this->enforceSubscriptionAdmin($request);
 
         $plans = SubscriptionPlan::withTrashed()
+            ->with(['features', 'limits'])
+            ->withCount('subscriptions')
             ->orderBy('sort_order')
             ->get();
 
         return response()->json([
             'data' => $plans->map(function ($plan) {
-                return [
-                    'id' => $plan->id,
-                    'name' => $plan->name,
-                    'slug' => $plan->slug,
-                    'description' => $plan->description,
-                    'price_yearly_afn' => $plan->price_yearly_afn,
-                    'price_yearly_usd' => $plan->price_yearly_usd,
-                    'is_active' => $plan->is_active,
-                    'is_default' => $plan->is_default,
-                    'is_custom' => $plan->is_custom,
-                    'trial_days' => $plan->trial_days,
-                    'grace_period_days' => $plan->grace_period_days,
-                    'readonly_period_days' => $plan->readonly_period_days,
-                    'max_schools' => $plan->max_schools,
-                    'per_school_price_afn' => $plan->per_school_price_afn,
-                    'per_school_price_usd' => $plan->per_school_price_usd,
-                    'sort_order' => $plan->sort_order,
-                    'features_count' => $plan->enabledFeatures()->count(),
-                    'subscriptions_count' => $plan->subscriptions()->count(),
-                    'deleted_at' => $plan->deleted_at,
-                ];
+                $data = $this->serializePlan($plan);
+                $data['features_count'] = count($data['features']);
+                $data['subscriptions_count'] = $plan->subscriptions_count ?? 0;
+                return $data;
             }),
         ]);
     }
@@ -291,7 +313,7 @@ class SubscriptionAdminController extends Controller
             DB::commit();
 
             return response()->json([
-                'data' => $plan->fresh(['features', 'limits']),
+                'data' => $this->serializePlan($plan->fresh(['features', 'limits'])),
                 'message' => 'Plan created successfully',
             ], 201);
         } catch (\Exception $e) {
@@ -361,7 +383,7 @@ class SubscriptionAdminController extends Controller
             DB::commit();
 
             return response()->json([
-                'data' => $plan->fresh(['features', 'limits']),
+                'data' => $this->serializePlan($plan->fresh(['features', 'limits'])),
                 'message' => 'Plan updated successfully',
             ]);
         } catch (\Exception $e) {

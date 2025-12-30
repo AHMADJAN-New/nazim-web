@@ -44,12 +44,11 @@ class OrganizationController extends Controller
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
-            // Check permission - context already set by middleware
-            if (!$user->hasPermissionTo('organizations.read')) {
+            // Check permission using manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
+            if (!$this->userHasPermission($user, 'organizations.read', $profile->organization_id)) {
                 Log::warning("Permission denied for organizations.read", [
                     'user_id' => $user->id,
                     'organization_id' => $profile->organization_id,
-                    'team_id' => getPermissionsTeamId(),
                 ]);
                 return response()->json([
                     'error' => 'Access Denied',
@@ -116,8 +115,12 @@ class OrganizationController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission - context already set by middleware
-        if (!$user->hasPermissionTo('organizations.create')) {
+        // Check permission using manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
+        if (!$this->userHasPermission($user, 'organizations.create', $profile->organization_id)) {
+            Log::warning("Permission denied for organizations.create", [
+                'user_id' => $user->id,
+                'organization_id' => $profile->organization_id,
+            ]);
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
@@ -251,17 +254,12 @@ class OrganizationController extends Controller
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
-            // Check permission - context already set by middleware
-            try {
-                if (!$user->hasPermissionTo('organizations.read')) {
-                    return response()->json([
-                        'error' => 'Access Denied',
-                        'message' => 'You do not have permission to access this resource.',
-                        'required_permission' => 'organizations.read'
-                    ], 403);
-                }
-            } catch (\Exception $e) {
-                Log::warning("Permission check failed for organizations.read: " . $e->getMessage());
+            // Check permission using manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
+            if (!$this->userHasPermission($user, 'organizations.read', $profile->organization_id)) {
+                Log::warning("Permission denied for organizations.read", [
+                    'user_id' => $user->id,
+                    'organization_id' => $profile->organization_id,
+                ]);
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'You do not have permission to access this resource.',
@@ -325,8 +323,12 @@ class OrganizationController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission - context already set by middleware
-        if (!$user->hasPermissionTo('organizations.update')) {
+        // Check permission using manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
+        if (!$this->userHasPermission($user, 'organizations.update', $profile->organization_id)) {
+            Log::warning("Permission denied for organizations.update", [
+                'user_id' => $user->id,
+                'organization_id' => $profile->organization_id,
+            ]);
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
@@ -416,8 +418,12 @@ class OrganizationController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission - context already set by middleware
-        if (!$user->hasPermissionTo('organizations.delete')) {
+        // Check permission using manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
+        if (!$this->userHasPermission($user, 'organizations.delete', $profile->organization_id)) {
+            Log::warning("Permission denied for organizations.delete", [
+                'user_id' => $user->id,
+                'organization_id' => $profile->organization_id,
+            ]);
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
@@ -458,17 +464,12 @@ class OrganizationController extends Controller
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
-            // Check permission - context already set by middleware
-            try {
-                if (!$user->hasPermissionTo('organizations.read')) {
-                    return response()->json([
-                        'error' => 'Access Denied',
-                        'message' => 'You do not have permission to access this resource.',
-                        'required_permission' => 'organizations.read'
-                    ], 403);
-                }
-            } catch (\Exception $e) {
-                Log::warning("Permission check failed for organizations.read in statistics: " . $e->getMessage());
+            // Check permission using manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
+            if (!$this->userHasPermission($user, 'organizations.read', $profile->organization_id)) {
+                Log::warning("Permission denied for organizations.read in statistics", [
+                    'user_id' => $user->id,
+                    'organization_id' => $profile->organization_id,
+                ]);
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'You do not have permission to access this resource.',
@@ -633,8 +634,12 @@ class OrganizationController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission
-        if (!$user->hasPermissionTo('organizations.create')) {
+        // Check permission using manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
+        if (!$this->userHasPermission($user, 'organizations.create', $profile->organization_id)) {
+            Log::warning("Permission denied for organizations.create", [
+                'user_id' => $user->id,
+                'organization_id' => $profile->organization_id,
+            ]);
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
@@ -710,12 +715,22 @@ class OrganizationController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission
-        if (!$user->hasPermissionTo('organizations.read')) {
+        // Check permission WITH organization context
+        // CRITICAL: setPermissionsTeamId() is called in EnsureOrganizationAccess middleware
+        // So we don't need to pass organization_id as second parameter
+        try {
+            if (!$this->userHasPermission($user, 'organizations.read', $profile->organization_id)) {
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
                 'required_permission' => 'organizations.read'
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for organizations.read: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'This action is unauthorized.',
             ], 403);
         }
 
@@ -795,12 +810,22 @@ class OrganizationController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission
-        if (!$user->hasPermissionTo('organizations.update')) {
+        // Check permission WITH organization context
+        // CRITICAL: setPermissionsTeamId() is called in EnsureOrganizationAccess middleware
+        // So we don't need to pass organization_id as second parameter
+        try {
+            if (!$this->userHasPermission($user, 'organizations.update', $profile->organization_id)) {
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
                 'required_permission' => 'organizations.update'
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for organizations.update: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'This action is unauthorized.',
             ], 403);
         }
 
@@ -858,8 +883,6 @@ class OrganizationController extends Controller
                 'role_id' => $role->id,
                 'permission_id' => $permissionId,
                 'organization_id' => $organization->id,
-                'created_at' => now(),
-                'updated_at' => now(),
             ];
         }
 
@@ -986,7 +1009,9 @@ class OrganizationController extends Controller
 
         // Check subscription.admin permission (GLOBAL, not organization-scoped)
         try {
-            setPermissionsTeamId(null); // Clear team context to check global permissions
+            // CRITICAL: Use platform org UUID as team context for global permissions
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
             if (!$user->hasPermissionTo('subscription.admin')) {
                 return response()->json([
                     'error' => 'Access Denied',
@@ -1104,7 +1129,11 @@ class OrganizationController extends Controller
 
         // Check subscription.admin permission (GLOBAL)
         try {
-            setPermissionsTeamId(null);
+            // CRITICAL: Use platform org UUID as team context for global permissions
+            // Global permissions are stored with platform org UUID (00000000-0000-0000-0000-000000000000)
+            // in model_has_permissions, but the permission itself has organization_id = NULL
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
             if (!$user->hasPermissionTo('subscription.admin')) {
                 return response()->json([
                     'error' => 'Access Denied',
@@ -1139,7 +1168,9 @@ class OrganizationController extends Controller
 
         // Check subscription.admin permission (GLOBAL)
         try {
-            setPermissionsTeamId(null);
+            // CRITICAL: Use platform org UUID as team context for global permissions
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
             if (!$user->hasPermissionTo('subscription.admin')) {
                 return response()->json([
                     'error' => 'Access Denied',
@@ -1227,7 +1258,9 @@ class OrganizationController extends Controller
 
         // Check subscription.admin permission (GLOBAL)
         try {
-            setPermissionsTeamId(null);
+            // CRITICAL: Use platform org UUID as team context for global permissions
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
             if (!$user->hasPermissionTo('subscription.admin')) {
                 return response()->json([
                     'error' => 'Access Denied',

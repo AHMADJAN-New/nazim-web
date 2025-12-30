@@ -71,8 +71,6 @@ return new class extends Migration
                             'role_id' => $orgAdminRole->id,
                             'permission_id' => $permission->id,
                             'organization_id' => $org->id,
-                            'created_at' => now(),
-                            'updated_at' => now(),
                         ]);
                         $assignedCount++;
                         $totalAssigned++;

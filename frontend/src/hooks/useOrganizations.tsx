@@ -3,6 +3,7 @@ import { organizationsApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { useSubscriptionStatus } from './useSubscription';
 import type * as OrganizationApi from '@/types/api/organization';
 import type { Organization } from '@/types/domain/organization';
 import { mapOrganizationApiToDomain, mapOrganizationDomainToInsert, mapOrganizationDomainToUpdate } from '@/mappers/organizationMapper';
@@ -143,6 +144,16 @@ export const useDeleteOrganization = () => {
 export const useCurrentOrganization = () => {
   const { profile, profileLoading } = useAuth();
   const isEventUser = profile?.is_event_user === true;
+  const { data: subscriptionStatus } = useSubscriptionStatus();
+
+  // CRITICAL: Disable query if subscription is suspended/expired/blocked
+  // This prevents 402 errors from repeated requests
+  const isSubscriptionBlocked = subscriptionStatus && (
+    subscriptionStatus.status === 'suspended' || 
+    subscriptionStatus.status === 'expired' ||
+    subscriptionStatus.accessLevel === 'blocked' ||
+    subscriptionStatus.accessLevel === 'none'
+  );
 
   return useQuery<Organization | null>({
     queryKey: ['current-organization', profile?.organization_id, profile?.default_school_id ?? null],
@@ -154,10 +165,18 @@ export const useCurrentOrganization = () => {
       const apiOrganization = await organizationsApi.get(profile.organization_id);
       return mapOrganizationApiToDomain(apiOrganization as OrganizationApi.Organization);
     },
-    enabled: !!profile && !!profile.organization_id && !profileLoading && !isEventUser, // Disable for event users and wait for profile
+    enabled: !!profile && !!profile.organization_id && !profileLoading && !isEventUser && !isSubscriptionBlocked, // Disable for event users, wait for profile, and when subscription is blocked
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 402 errors (subscription/feature errors)
+      if (error?.isSubscriptionError || error?.status === 402) {
+        return false;
+      }
+      // Retry other errors up to 3 times
+      return failureCount < 3;
+    },
   });
 };
 

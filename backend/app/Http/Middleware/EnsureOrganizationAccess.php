@@ -28,9 +28,21 @@ class EnsureOrganizationAccess
         // Platform admin routes use /api/platform/* and should NOT have organization context set
         // The EnsurePlatformAdmin middleware handles platform admin authentication
         $path = $request->path();
-        if (str_starts_with($path, 'api/platform') || str_starts_with($path, 'platform')) {
+        $uri = $request->getRequestUri();
+        
+        // Check if this is a platform admin route (multiple ways to detect)
+        // CRITICAL: Check both path() and getRequestUri() to catch all cases
+        $isPlatformRoute = str_starts_with($path, 'api/platform') || 
+                          str_starts_with($path, 'platform') ||
+                          str_contains($uri, '/api/platform') ||
+                          str_contains($uri, '/platform');
+        
+        if ($isPlatformRoute) {
             // Platform admin routes - don't set organization context
             // The EnsurePlatformAdmin middleware already handles permission checks
+            // CRITICAL: Clear any existing organization context to prevent interference
+            setPermissionsTeamId(null);
+            // CRITICAL: Don't log organization context for platform routes (reduces log noise)
             return $next($request);
         }
 
@@ -89,7 +101,16 @@ class EnsureOrganizationAccess
         // This tells Spatie which organization to check permissions in
         // Without this, hasPermissionTo() will always return false for org-scoped permissions
         try {
+            // CRITICAL: Clear permission cache FIRST before setting team context
+            // This ensures Spatie uses fresh data when checking permissions
+            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+            
+            // Set team context
             setPermissionsTeamId($organizationId);
+            
+            // CRITICAL: Refresh user model to clear any cached permission data
+            // This ensures Spatie uses fresh data when checking permissions
+            $user->refresh();
 
             Log::debug('Organization context set for permissions', [
                 'user_id' => $user->id,

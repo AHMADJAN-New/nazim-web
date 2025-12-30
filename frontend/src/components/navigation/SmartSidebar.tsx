@@ -776,7 +776,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/settings/rooms",
             icon: DoorOpen,
           }] : []),
-          ...(hasReportsPermission ? [{
+          ...((hasReportsPermission && hasHostelPermission) ? [{
             title: "Hostel reports",
             titleKey: "hostel.reports",
             url: "/hostel/reports",

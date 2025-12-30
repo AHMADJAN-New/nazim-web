@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
+import { useHasPermission } from './usePermissions';
 
 import { apiClient } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
@@ -149,32 +150,55 @@ export const useSubscriptionPlans = () => {
 
 /**
  * Get current subscription status
+ * CRITICAL: Only accessible to users with subscription.read permission (admin and organization_admin)
  */
 export const useSubscriptionStatus = () => {
   const { user, profile } = useAuth();
+  const hasSubscriptionRead = useHasPermission('subscription.read');
 
   return useQuery<SubscriptionInfo | null>({
     queryKey: ['subscription-status', profile?.organization_id],
     queryFn: async () => {
       if (!user || !profile?.organization_id) return null;
 
-      const response = await apiClient.request<{ data: SubscriptionApi.SubscriptionStatusResponse }>(
-        '/subscription/status',
-        { method: 'GET' }
-      );
-      return mapStatusApiToDomain(response.data);
+      try {
+        const response = await apiClient.request<{ data: SubscriptionApi.SubscriptionStatusResponse }>(
+          '/subscription/status',
+          { method: 'GET' }
+        );
+        return mapStatusApiToDomain(response.data);
+      } catch (error: any) {
+        // If it's a 403 error (permission denied), return null gracefully
+        if (error?.status === 403 || error?.message?.includes('unauthorized') || error?.message?.includes('Forbidden')) {
+          if (import.meta.env.DEV) {
+            console.log('[useSubscriptionStatus] User does not have subscription.read permission, returning null');
+          }
+          return null;
+        }
+        throw error;
+      }
     },
-    enabled: !!user && !!profile?.organization_id,
+    enabled: !!user && !!profile?.organization_id && hasSubscriptionRead === true,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 403 errors (permission denied)
+      if (error?.status === 403 || error?.message?.includes('unauthorized') || error?.message?.includes('Forbidden')) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    placeholderData: null,
   });
 };
 
 /**
  * Get current usage statistics
+ * CRITICAL: Only accessible to users with subscription.read permission (admin and organization_admin)
  */
 export const useUsage = () => {
   const { user, profile } = useAuth();
+  const hasSubscriptionRead = useHasPermission('subscription.read');
 
   return useQuery<{ usage: UsageInfo[]; warnings: UsageWarning[] }>({
     queryKey: ['subscription-usage', profile?.organization_id],
@@ -183,21 +207,40 @@ export const useUsage = () => {
         return { usage: [], warnings: [] };
       }
 
-      const response = await apiClient.request<{ data: SubscriptionApi.UsageResponse }>(
-        '/subscription/usage',
-        { method: 'GET' }
-      );
-      
-      return {
-        usage: mapUsageApiToDomain(response.data.usage),
-        warnings: mapWarningsApiToDomain(response.data.warnings),
-      };
+      try {
+        const response = await apiClient.request<{ data: SubscriptionApi.UsageResponse }>(
+          '/subscription/usage',
+          { method: 'GET' }
+        );
+        
+        return {
+          usage: mapUsageApiToDomain(response.data.usage),
+          warnings: mapWarningsApiToDomain(response.data.warnings),
+        };
+      } catch (error: any) {
+        // If it's a 403 error (permission denied), return empty arrays gracefully
+        if (error?.status === 403 || error?.message?.includes('unauthorized') || error?.message?.includes('Forbidden')) {
+          if (import.meta.env.DEV) {
+            console.log('[useUsage] User does not have subscription.read permission, returning empty arrays');
+          }
+          return { usage: [], warnings: [] };
+        }
+        throw error;
+      }
     },
-    enabled: !!user && !!profile?.organization_id,
+    enabled: !!user && !!profile?.organization_id && hasSubscriptionRead === true,
     staleTime: 0, // Always refetch - usage changes frequently
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     refetchInterval: 60 * 1000, // Refetch every minute in case of background changes
+    retry: (failureCount, error: any) => {
+      // Don't retry on 403 errors (permission denied)
+      if (error?.status === 403 || error?.message?.includes('unauthorized') || error?.message?.includes('Forbidden')) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    placeholderData: { usage: [], warnings: [] },
   });
 };
 
@@ -211,6 +254,7 @@ const invalidationTimeouts = new Map<string, NodeJS.Timeout>();
 export const useFeatures = () => {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
+  const hasSubscriptionRead = useHasPermission('subscription.read');
   
   // Use stable organization ID to prevent dependency array size changes
   const organizationId = profile?.organization_id ?? null;
@@ -291,6 +335,13 @@ export const useFeatures = () => {
         );
         return response.data.map(mapFeatureApiToDomain);
       } catch (error: any) {
+        // If it's a 403 error (permission denied), return empty array gracefully
+        if (error?.status === 403 || error?.message?.includes('unauthorized') || error?.message?.includes('Forbidden')) {
+          if (import.meta.env.DEV) {
+            console.log('[useFeatures] User does not have subscription.read permission, returning empty array');
+          }
+          return [];
+        }
         // If it's a 402 error (feature not available), return empty array
         // This ensures buttons are hidden when features are disabled
         if (error?.isSubscriptionError || error?.status === 402) {
@@ -303,10 +354,14 @@ export const useFeatures = () => {
         throw error;
       }
     },
-    enabled: !!user && !!organizationId,
+    enabled: !!user && !!organizationId && hasSubscriptionRead === true,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     retry: (failureCount, error: any) => {
+      // Don't retry on 403 errors (permission denied)
+      if (error?.status === 403 || error?.message?.includes('unauthorized') || error?.message?.includes('Forbidden')) {
+        return false;
+      }
       // Don't retry on 402 errors (subscription/feature errors)
       if (error?.isSubscriptionError || error?.status === 402 || error?.code === 'FEATURE_NOT_AVAILABLE') {
         return false;

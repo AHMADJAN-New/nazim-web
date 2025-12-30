@@ -44,6 +44,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { showToast } from '@/lib/toast';
 
 const buildingSchema = z.object({
   building_name: z.string().min(1, 'Building name is required').max(100, 'Building name must be 100 characters or less'),
@@ -321,7 +322,7 @@ export function BuildingsManagement() {
     }
 
     if (!schoolId) {
-      toast.error(t('settings.buildings.schoolRequired'));
+      showToast.error(t('settings.buildings.schoolRequired'));
       return;
     }
 

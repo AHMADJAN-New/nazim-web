@@ -4,6 +4,7 @@ import { useProfile } from './useProfiles';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { useHasPermission } from './usePermissions';
+import { useSubscriptionStatus } from './useSubscription';
 import { schoolsApi } from '@/lib/api/client';
 import type * as SchoolApi from '@/types/api/school';
 import type { School } from '@/types/domain/school';
@@ -15,6 +16,16 @@ export type { School } from '@/types/domain/school';
 export const useSchools = (organizationId?: string) => {
   const { user, profile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
+  const { data: subscriptionStatus } = useSubscriptionStatus();
+
+  // CRITICAL: Disable query if subscription is suspended/expired/blocked
+  // This prevents 402 errors from repeated requests
+  const isSubscriptionBlocked = subscriptionStatus && (
+    subscriptionStatus.status === 'suspended' || 
+    subscriptionStatus.status === 'expired' ||
+    subscriptionStatus.accessLevel === 'blocked' ||
+    subscriptionStatus.accessLevel === 'none'
+  );
 
   return useQuery<School[]>({
     queryKey: ['schools', organizationId || profile?.organization_id, profile?.default_school_id ?? null, orgIds.join(',')],
@@ -34,10 +45,18 @@ export const useSchools = (organizationId?: string) => {
         a.schoolName.localeCompare(b.schoolName)
       );
     },
-    enabled: !!user && !!profile,
+    enabled: !!user && !!profile && !isSubscriptionBlocked, // Disable when subscription is blocked
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 402 errors (subscription/feature errors)
+      if (error?.isSubscriptionError || error?.status === 402) {
+        return false;
+      }
+      // Retry other errors up to 3 times
+      return failureCount < 3;
+    },
   });
 };
 

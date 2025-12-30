@@ -39,7 +39,7 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { useHasPermission } from '@/hooks/usePermissions';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import {
   usePlatformPlans,
@@ -47,6 +47,7 @@ import {
   useUpdatePlatformPlan,
 } from '@/platform/hooks/usePlatformAdmin';
 import { usePlatformFeatureDefinitions } from '@/platform/hooks/usePlatformAdminComplete';
+import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
 import { showToast } from '@/lib/toast';
 
 interface PlanFormData {
@@ -84,11 +85,11 @@ const initialFormData: PlanFormData = {
 };
 
 export default function PlansManagement() {
-  const hasAdminPermission = useHasPermission('subscription.admin');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<string | null>(null);
   const [formData, setFormData] = useState<PlanFormData>(initialFormData);
 
+  const { data: permissions, isLoading: permissionsLoading } = usePlatformAdminPermissions();
   const { data: plans, isLoading } = usePlatformPlans();
   const { data: featureDefinitions, isLoading: featuresLoading, error: featuresError } = usePlatformFeatureDefinitions();
   const createPlan = useCreatePlatformPlan();
@@ -105,9 +106,19 @@ export default function PlansManagement() {
     }
   }
 
-  // Access control
-  if (!hasAdminPermission) {
-    return <Navigate to="/dashboard" replace />;
+  // Wait for permissions to load
+  if (permissionsLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Access control - check for platform admin permission (GLOBAL, not organization-scoped)
+  const hasPlatformAdmin = Array.isArray(permissions) && permissions.includes('subscription.admin');
+  if (!hasPlatformAdmin) {
+    return <Navigate to="/platform/dashboard" replace />;
   }
 
   const handleOpenCreate = () => {
@@ -285,301 +296,348 @@ export default function PlansManagement() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-5xl h-[90vh] flex flex-col !grid-cols-1 p-0 gap-0">
-          <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4">
-            <DialogTitle>
+        <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
+            <DialogTitle className="text-2xl">
               {editingPlan ? 'Edit Plan' : 'Create New Plan'}
             </DialogTitle>
             <DialogDescription>
               {editingPlan
-                ? 'Update the plan details and features below'
-                : 'Fill in the plan details and select features below'}
+                ? 'Update the plan details and configure features'
+                : 'Fill in the plan details and configure features'}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-6 min-h-0">
-            <div className="space-y-6 py-4">
-              <div className="grid grid-cols-2 gap-4">
+          <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+            <Tabs defaultValue="details" className="flex-1 flex flex-col min-h-0">
+              <TabsList className="mx-6 mt-4 mb-0 flex-shrink-0">
+                <TabsTrigger value="details" className="flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Plan Details
+                </TabsTrigger>
+                <TabsTrigger value="features" className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Features
+                  {featureDefinitions && featureDefinitions.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {Object.values(formData.features).filter(Boolean).length}/{featureDefinitions.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="details" className="flex-1 overflow-y-auto px-6 py-4 mt-4 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Plan Name *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      placeholder="e.g., Basic Plan"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="slug">Slug *</Label>
+                    <Input
+                      id="slug"
+                      value={formData.slug}
+                      onChange={(e) =>
+                        setFormData({ ...formData, slug: e.target.value })
+                      }
+                      placeholder="e.g., basic-plan"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="name">Plan Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder="e.g., Basic"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="slug">Slug</Label>
-                <Input
-                  id="slug"
-                  value={formData.slug}
-                  onChange={(e) =>
-                    setFormData({ ...formData, slug: e.target.value })
-                  }
-                  placeholder="e.g., basic"
-                />
-              </div>
-            </div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    placeholder="Brief description of this plan"
+                    rows={3}
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="Brief description of this plan"
-              />
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price_afn">Yearly Price (AFN) *</Label>
+                    <Input
+                      id="price_afn"
+                      type="number"
+                      step="0.01"
+                      value={formData.price_yearly_afn}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          price_yearly_afn: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="price_usd">Yearly Price (USD) *</Label>
+                    <Input
+                      id="price_usd"
+                      type="number"
+                      step="0.01"
+                      value={formData.price_yearly_usd}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          price_yearly_usd: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="price_afn">Yearly Price (AFN)</Label>
-                <Input
-                  id="price_afn"
-                  type="number"
-                  value={formData.price_yearly_afn}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      price_yearly_afn: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="price_usd">Yearly Price (USD)</Label>
-                <Input
-                  id="price_usd"
-                  type="number"
-                  value={formData.price_yearly_usd}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      price_yearly_usd: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="trial_days">Trial Days</Label>
+                    <Input
+                      id="trial_days"
+                      type="number"
+                      value={formData.trial_days}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          trial_days: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="grace_days">Grace Period Days</Label>
+                    <Input
+                      id="grace_days"
+                      type="number"
+                      value={formData.grace_period_days}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          grace_period_days: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="14"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="readonly_days">Read-Only Period Days</Label>
+                    <Input
+                      id="readonly_days"
+                      type="number"
+                      value={formData.readonly_period_days}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          readonly_period_days: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="60"
+                    />
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="trial_days">Trial Days</Label>
-                <Input
-                  id="trial_days"
-                  type="number"
-                  value={formData.trial_days}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      trial_days: parseInt(e.target.value) || 0,
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="grace_days">Grace Period Days</Label>
-                <Input
-                  id="grace_days"
-                  type="number"
-                  value={formData.grace_period_days}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      grace_period_days: parseInt(e.target.value) || 0,
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="readonly_days">Read-Only Period Days</Label>
-                <Input
-                  id="readonly_days"
-                  type="number"
-                  value={formData.readonly_period_days}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      readonly_period_days: parseInt(e.target.value) || 0,
-                    })
-                  }
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="max_schools">Max Schools</Label>
+                    <Input
+                      id="max_schools"
+                      type="number"
+                      value={formData.max_schools}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          max_schools: parseInt(e.target.value) || 1,
+                        })
+                      }
+                      placeholder="1"
+                    />
+                    <p className="text-xs text-muted-foreground">Use -1 for unlimited</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="per_school_afn">Per School Price (AFN)</Label>
+                    <Input
+                      id="per_school_afn"
+                      type="number"
+                      step="0.01"
+                      value={formData.per_school_price_afn}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          per_school_price_afn: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="per_school_usd">Per School Price (USD)</Label>
+                    <Input
+                      id="per_school_usd"
+                      type="number"
+                      step="0.01"
+                      value={formData.per_school_price_usd}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          per_school_price_usd: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="max_schools">Max Schools</Label>
-                <Input
-                  id="max_schools"
-                  type="number"
-                  value={formData.max_schools}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      max_schools: parseInt(e.target.value) || 1,
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="per_school_afn">Per School (AFN)</Label>
-                <Input
-                  id="per_school_afn"
-                  type="number"
-                  value={formData.per_school_price_afn}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      per_school_price_afn: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="per_school_usd">Per School (USD)</Label>
-                <Input
-                  id="per_school_usd"
-                  type="number"
-                  value={formData.per_school_price_usd}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      per_school_price_usd: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="sort_order">Sort Order</Label>
+                    <Input
+                      id="sort_order"
+                      type="number"
+                      value={formData.sort_order}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          sort_order: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 pt-8">
+                    <Switch
+                      id="is_default"
+                      checked={formData.is_default}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, is_default: checked })
+                      }
+                    />
+                    <Label htmlFor="is_default" className="cursor-pointer">
+                      Set as default plan
+                    </Label>
+                  </div>
+                </div>
+              </TabsContent>
 
-            {/* Features Section - Always visible, prominent display */}
-            <div className="space-y-4 border-t-4 border-primary/40 pt-6 mt-8 bg-gradient-to-br from-primary/10 via-primary/5 to-primary/10 rounded-xl p-6 shadow-lg ring-1 ring-primary/20">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
+              <TabsContent value="features" className="flex-1 overflow-y-auto px-6 py-4 mt-4 space-y-4">
+                <div className="flex items-center justify-between pb-4 border-b">
                   <div className="flex items-center gap-3">
-                    <div className="p-3 bg-primary/20 rounded-xl ring-2 ring-primary/30">
-                      <Package className="h-7 w-7 text-primary" />
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Package className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <Label className="text-2xl font-bold text-foreground">Plan Features</Label>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Select which features are enabled for this plan. Scroll down to see all features.
+                      <h3 className="text-lg font-semibold">Plan Features</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {featureDefinitions && featureDefinitions.length > 0
+                          ? `Select which features are enabled for this plan`
+                          : 'No features available. Please create feature definitions first.'}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {featureDefinitions && !featuresLoading && (
-                      <>
-                        <div className="text-right bg-primary/10 rounded-lg px-4 py-2 border border-primary/20">
-                          <div className="text-3xl font-bold text-primary">
-                            {Object.values(formData.features).filter(Boolean).length}
-                          </div>
-                          <div className="text-xs text-muted-foreground font-medium">
-                            of {featureDefinitions.length} enabled
-                          </div>
-                        </div>
-                        <Badge variant="secondary" className="text-sm px-3 py-1.5 font-semibold">
-                          {featureDefinitions.length} available
-                        </Badge>
-                      </>
-                    )}
-                    {featuresLoading && (
-                      <Badge variant="outline" className="text-sm px-3 py-1.5">
-                        <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                        Loading...
-                      </Badge>
-                    )}
+                  {featureDefinitions && !featuresLoading && (
+                    <div className="text-right bg-primary/10 rounded-lg px-4 py-2 border border-primary/20">
+                      <div className="text-2xl font-bold text-primary">
+                        {Object.values(formData.features).filter(Boolean).length}
+                      </div>
+                      <div className="text-xs text-muted-foreground font-medium">
+                        of {featureDefinitions.length} enabled
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {featuresLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <span className="ml-3 text-sm text-muted-foreground">Loading features...</span>
                   </div>
-                </div>
-              </div>
-              
-              {featuresLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-                  <span className="ml-3 text-sm text-muted-foreground">Loading features...</span>
-                </div>
-              ) : featuresError ? (
-                <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-                  <p className="text-sm font-medium text-destructive">Error loading features</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {featuresError instanceof Error ? featuresError.message : 'Unknown error occurred'}
-                  </p>
-                </div>
-              ) : featureDefinitions && featureDefinitions.length > 0 ? (
-                <div className="space-y-4">
-                  {/* Group features by category */}
-                  {(() => {
-                    const grouped = featureDefinitions.reduce((acc, feature) => {
-                      const category = feature.category || 'Other';
-                      if (!acc[category]) {
-                        acc[category] = [];
-                      }
-                      acc[category].push(feature);
-                      return acc;
-                    }, {} as Record<string, typeof featureDefinitions>);
+                ) : featuresError ? (
+                  <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+                    <p className="text-sm font-medium text-destructive">Error loading features</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {featuresError instanceof Error ? featuresError.message : 'Unknown error occurred'}
+                    </p>
+                  </div>
+                ) : featureDefinitions && featureDefinitions.length > 0 ? (
+                  <div className="space-y-4">
+                    {(() => {
+                      const grouped = featureDefinitions.reduce((acc, feature) => {
+                        const category = feature.category || 'Other';
+                        if (!acc[category]) {
+                          acc[category] = [];
+                        }
+                        acc[category].push(feature);
+                        return acc;
+                      }, {} as Record<string, typeof featureDefinitions>);
 
-                    // Sort categories
-                    const sortedCategories = Object.keys(grouped).sort();
+                      const sortedCategories = Object.keys(grouped).sort();
 
-                    return (
-                      <div className="max-h-[500px] overflow-y-auto space-y-4 pr-2">
-                        {sortedCategories.map((category) => {
-                          const categoryFeatures = grouped[category].sort(
-                            (a, b) => (a.sort_order || 0) - (b.sort_order || 0)
-                          );
-                          const enabledCount = categoryFeatures.filter(
-                            (f) => formData.features[f.feature_key]
-                          ).length;
+                      return (
+                        <div className="space-y-4">
+                          {sortedCategories.map((category) => {
+                            const categoryFeatures = grouped[category].sort(
+                              (a, b) => (a.sort_order || 0) - (b.sort_order || 0)
+                            );
+                            const enabledCount = categoryFeatures.filter(
+                              (f) => formData.features[f.feature_key]
+                            ).length;
 
-                          return (
-                            <div key={category} className="space-y-2">
-                              <div className="flex items-center justify-between px-2 py-1 bg-muted/50 rounded-md">
-                                <h4 className="font-semibold text-sm capitalize">{category}</h4>
-                                <Badge variant="outline" className="text-xs">
-                                  {enabledCount} / {categoryFeatures.length}
-                                </Badge>
-                              </div>
-                              <div className="space-y-2 pl-2">
-                                {categoryFeatures.map((feature) => {
-                                  const isEnabled = formData.features[feature.feature_key] || false;
-                                  return (
-                                    <div
-                                      key={feature.feature_key}
-                                      className={cn(
-                                        'flex items-center justify-between p-4 rounded-lg border-2 transition-all duration-200',
-                                        isEnabled
-                                          ? 'bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-800 shadow-sm'
-                                          : 'bg-background border-border hover:border-primary/30'
-                                      )}
-                                    >
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-3 mb-1">
-                                          {isEnabled ? (
-                                            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
-                                          ) : (
-                                            <XCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                                          )}
-                                          <div className="font-medium text-base capitalize min-w-0">
-                                            {feature.name || feature.feature_key.replace(/_/g, ' ')}
+                            return (
+                              <Card key={category} className="overflow-hidden">
+                                <CardHeader className="pb-3">
+                                  <div className="flex items-center justify-between">
+                                    <CardTitle className="text-base capitalize">{category}</CardTitle>
+                                    <Badge variant="outline" className="text-xs">
+                                      {enabledCount} / {categoryFeatures.length} enabled
+                                    </Badge>
+                                  </div>
+                                </CardHeader>
+                                <CardContent className="space-y-2">
+                                  {categoryFeatures.map((feature) => {
+                                    const isEnabled = formData.features[feature.feature_key] || false;
+                                    return (
+                                      <div
+                                        key={feature.feature_key}
+                                        className={cn(
+                                          'flex items-center justify-between p-3 rounded-lg border transition-all',
+                                          isEnabled
+                                            ? 'bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-800'
+                                            : 'bg-background border-border hover:border-primary/50'
+                                        )}
+                                      >
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2">
+                                            {isEnabled ? (
+                                              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                                            ) : (
+                                              <XCircle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                            )}
+                                            <div className="font-medium text-sm capitalize">
+                                              {feature.name || feature.feature_key.replace(/_/g, ' ')}
+                                            </div>
+                                            {feature.is_addon && (
+                                              <Badge variant="secondary" className="text-xs">
+                                                Add-on
+                                              </Badge>
+                                            )}
                                           </div>
-                                          {feature.is_addon && (
-                                            <Badge variant="secondary" className="text-xs">
-                                              Add-on
-                                            </Badge>
+                                          {feature.description && (
+                                            <p className="text-xs text-muted-foreground ml-6 mt-1">
+                                              {feature.description}
+                                            </p>
                                           )}
                                         </div>
-                                        {feature.description && (
-                                          <p className="text-sm text-muted-foreground ml-8 mt-1">
-                                            {feature.description}
-                                          </p>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center gap-3 ml-4 flex-shrink-0">
                                         <Switch
                                           checked={isEnabled}
                                           onCheckedChange={(checked) => {
@@ -593,33 +651,32 @@ export default function PlansManagement() {
                                           }}
                                         />
                                       </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-muted bg-muted/30 p-8 text-center">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
-                  <p className="text-sm font-medium text-muted-foreground">
-                    No features available
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Please create feature definitions first
-                  </p>
-                </div>
-              )}
-            </div>
-            </div>
+                                    );
+                                  })}
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-muted bg-muted/30 p-12 text-center">
+                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                    <p className="text-sm font-medium text-muted-foreground">
+                      No features available
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Please create feature definitions first
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
 
-          <DialogFooter className="flex-shrink-0 border-t px-6 py-4 mt-0">
+          <DialogFooter className="flex-shrink-0 border-t px-6 py-4">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
             </Button>

@@ -37,7 +37,7 @@ class RoomController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('rooms.read')) {
+            if (!$this->userHasPermission($user, 'rooms.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -310,7 +310,7 @@ class RoomController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('rooms.read')) {
+            if (!$this->userHasPermission($user, 'rooms.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {

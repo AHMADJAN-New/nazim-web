@@ -122,6 +122,18 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
 });
 
+// Organization management routes (accessible without subscription for initial setup)
+// These routes are needed for permission management and organization setup
+Route::middleware(['auth:sanctum', 'organization'])->group(function () {
+    // IMPORTANT: More specific routes must come before parameterized routes
+    Route::get('/organizations/accessible', [OrganizationController::class, 'accessible']);
+    Route::get('/organizations/{id}/permissions', [OrganizationController::class, 'permissions']);
+    Route::put('/organizations/{id}/permissions', [OrganizationController::class, 'updatePermissions']);
+    
+    // User permissions (needed for UI to work correctly, even during setup)
+    Route::get('/permissions/user', [PermissionController::class, 'userPermissions']);
+});
+
 // Protected routes (organization context is mandatory everywhere)
 // All routes require subscription:read for basic access (allows read during grace/readonly periods)
 Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(function () {
@@ -141,11 +153,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     Route::post('/organizations', [OrganizationController::class, 'store']);
     // IMPORTANT: More specific routes must come before parameterized routes
     Route::get('/organizations/preview', [OrganizationController::class, 'preview']);
-    Route::get('/organizations/accessible', [OrganizationController::class, 'accessible']);
     Route::get('/organizations/admins', [OrganizationController::class, 'admins']);
     Route::get('/organizations/{id}/statistics', [OrganizationController::class, 'statistics']);
-    Route::get('/organizations/{id}/permissions', [OrganizationController::class, 'permissions']);
-    Route::put('/organizations/{id}/permissions', [OrganizationController::class, 'updatePermissions']);
     Route::put('/organizations/{id}', [OrganizationController::class, 'update']);
     Route::patch('/organizations/{id}', [OrganizationController::class, 'update']);
     Route::delete('/organizations/{id}', [OrganizationController::class, 'destroy']);
@@ -175,7 +184,6 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     Route::post('/permissions', [PermissionController::class, 'store']);
     Route::put('/permissions/{id}', [PermissionController::class, 'update']);
     Route::delete('/permissions/{id}', [PermissionController::class, 'destroy']);
-    Route::get('/permissions/user', [PermissionController::class, 'userPermissions']);
     Route::get('/permissions/user/{userId}', [PermissionController::class, 'userPermissionsForUser']);
     Route::get('/permissions/roles', [PermissionController::class, 'roles']);
     Route::get('/permissions/roles/{roleName}', [PermissionController::class, 'rolePermissions']);

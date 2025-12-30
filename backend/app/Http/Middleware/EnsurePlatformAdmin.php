@@ -28,6 +28,14 @@ class EnsurePlatformAdmin
 
         // Check for subscription.admin permission (global, not organization-scoped)
         try {
+            // CRITICAL: Clear any organization context FIRST before checking global permissions
+            // This ensures we're checking for global permissions, not organization-scoped ones
+            setPermissionsTeamId(null);
+            
+            // CRITICAL: Clear permission cache to ensure fresh permission check
+            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+            $user->refresh();
+            
             // CRITICAL: Use platform org UUID as team context for global permissions
             // Global permissions are stored with platform org UUID (00000000-0000-0000-0000-000000000000)
             // in model_has_permissions, but the permission itself has organization_id = NULL

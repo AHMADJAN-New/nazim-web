@@ -377,6 +377,16 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string | string[]> = {
   'library_loans.update': 'library',
   'library_loans.delete': 'library',
 
+  // Reports feature
+  'reports.read': ['pdf_reports', 'reports'],
+  'reports.create': ['pdf_reports', 'reports'],
+  'reports.update': ['pdf_reports', 'reports'],
+  'reports.delete': ['pdf_reports', 'reports'],
+  'staff_reports.read': ['pdf_reports', 'reports'],
+  'staff_reports.export': ['pdf_reports', 'reports'],
+  'student_reports.read': ['pdf_reports', 'reports'],
+  'student_reports.export': ['pdf_reports', 'reports'],
+
   // Short-term courses feature
   'short_term_courses.read': 'short_courses',
   'short_term_courses.create': 'short_courses',
@@ -615,13 +625,15 @@ export const useHasPermissionAndFeature = (permissionName: string): boolean | un
     // If we have placeholder data (empty array), we can make a decision
     // Otherwise, wait for actual data
     if (features !== undefined && Array.isArray(features)) {
+      // TypeScript: features is guaranteed to be defined and an array here
+      const featuresArray = features;
       // We have placeholder data, check if feature exists
-      if (features.length === 0) {
+      if (featuresArray.length === 0) {
         // Empty array means no features available
         return false;
       }
       // Has some features, check if our feature is in the list
-      const hasFeature = features.some((feature) => featureKeys.includes(feature.featureKey) && feature.isEnabled);
+      const hasFeature = featuresArray.some((feature) => featureKeys.includes(feature.featureKey) && feature.isEnabled === true);
       return hasFeature && hasPermission;
     }
     // No placeholder data yet, wait
@@ -636,19 +648,29 @@ export const useHasPermissionAndFeature = (permissionName: string): boolean | un
   // If features array is empty, assume feature is not enabled
   // This handles cases where the query returns empty array (e.g., 402 error handled in queryFn)
   if (!features || features.length === 0) {
+    // CRITICAL: If features array is empty, feature is not available
+    // Return false even if permission is true (feature access is required)
     return false;
   }
   
   // Check if the specific feature is enabled
-  const hasFeature = features.some((feature) => featureKeys.includes(feature.featureKey) && feature.isEnabled);
+  // CRITICAL: Must check if ANY of the featureKeys are in the enabled features list
+  const hasFeature = features.some((feature) => 
+    featureKeys.includes(feature.featureKey) && feature.isEnabled === true
+  );
   
   // Both must be true - if permission is false, return false immediately
   if (!hasPermission) {
     return false;
   }
   
-  // Permission is true, but feature must also be true
-  return hasFeature;
+  // CRITICAL: Permission is true, but feature must also be true
+  // If feature is not in the list or not enabled, return false
+  if (!hasFeature) {
+    return false;
+  }
+  
+  return true;
 };
 
 /**
@@ -693,7 +715,9 @@ export const useHasAnyPermissionAndFeature = (permissionNames: string[]): boolea
 
   if (featuresLoading) {
     if (features !== undefined && Array.isArray(features)) {
-      if (features.length === 0) {
+      // TypeScript: features is guaranteed to be defined and an array here
+      const featuresArray = features;
+      if (featuresArray.length === 0) {
         return false;
       }
     } else {
@@ -701,9 +725,12 @@ export const useHasAnyPermissionAndFeature = (permissionNames: string[]): boolea
     }
   }
 
-  if (!features || features.length === 0) {
+  if (!features || !Array.isArray(features) || features.length === 0) {
     return false;
   }
+  
+  // TypeScript: features is guaranteed to be defined and an array here
+  const featuresArray = features;
 
   for (const permissionName of permissionNames) {
     if (!permissionsSet.has(permissionName)) {

@@ -25,26 +25,10 @@ class HostelController extends Controller
         }
 
         // Enforce organization-scoped permission checks (allow hostel or rooms read)
-        try {
-            $hasHostelRead = $user->hasPermissionTo('hostel.read');
-        } catch (\Exception $e) {
-            Log::warning('Permission check failed for hostel.read: ' . $e->getMessage());
-            $hasHostelRead = false;
-        }
-
-        try {
-            $hasRoomsRead = $user->hasPermissionTo('rooms.read');
-        } catch (\Exception $e) {
-            Log::warning('Permission check failed for rooms.read: ' . $e->getMessage());
-            $hasRoomsRead = false;
-        }
-
-        try {
-            $hasAdmissionsRead = $user->hasPermissionTo('student_admissions.read');
-        } catch (\Exception $e) {
-            Log::warning('Permission check failed for student_admissions.read: ' . $e->getMessage());
-            $hasAdmissionsRead = false;
-        }
+        // Use manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
+        $hasHostelRead = $this->userHasPermission($user, 'hostel.read', $profile->organization_id);
+        $hasRoomsRead = $this->userHasPermission($user, 'rooms.read', $profile->organization_id);
+        $hasAdmissionsRead = $this->userHasPermission($user, 'student_admissions.read', $profile->organization_id);
 
         if ((!$hasHostelRead && !$hasRoomsRead) || !$hasAdmissionsRead) {
             return response()->json(['error' => 'This action is unauthorized'], 403);

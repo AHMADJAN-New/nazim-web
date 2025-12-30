@@ -255,8 +255,15 @@ const App = () => (
                               <OrganizationsManagement />
                             </Suspense>
                           } />
-                          <Route path="/organizations/:organizationId" element={
-                            <Suspense fallback={<PageSkeleton />}>
+                          <Route path="/organizations/:organizationId/subscription" element={
+                            <Suspense fallback={
+                              <div className="flex h-screen items-center justify-center bg-yellow-50 border-4 border-yellow-500">
+                                <div className="text-center">
+                                  <p className="text-lg font-bold text-yellow-800">Loading Organization Subscription Detail...</p>
+                                  <p className="text-sm text-yellow-700 mt-2">If this doesn't disappear, check console for errors</p>
+                                </div>
+                              </div>
+                            }>
                               <OrganizationSubscriptionDetail />
                             </Suspense>
                           } />
@@ -1340,21 +1347,27 @@ const App = () => (
                       </PermissionRoute>
                     } />
 
-                    {/* Subscription routes */}
+                    {/* Subscription routes - Only accessible to admin and organization_admin */}
                     <Route path="/subscription" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <SubscriptionPage />
-                      </Suspense>
+                      <PermissionRoute permission="subscription.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <SubscriptionPage />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/subscription/plans" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PlansPage />
-                      </Suspense>
+                      <PermissionRoute permission="subscription.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <PlansPage />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/subscription/renew" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <RenewPage />
-                      </Suspense>
+                      <PermissionRoute permission="subscription.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <RenewPage />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                   </Route>
 

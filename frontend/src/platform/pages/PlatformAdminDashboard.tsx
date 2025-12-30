@@ -379,7 +379,6 @@ export function PlatformAdminDashboard() {
         </TabsContent>
 
         <TabsContent value="subscriptions" className="mt-4">
-          {/* Subscriptions list will go here */}
           <Card>
             <CardHeader>
               <CardTitle>All Subscriptions</CardTitle>
@@ -389,9 +388,67 @@ export function PlatformAdminDashboard() {
             </CardHeader>
             <CardContent>
               {isSubscriptionsLoading ? (
-                <LoadingSpinner />
+                <div className="flex items-center justify-center py-8">
+                  <LoadingSpinner />
+                </div>
+              ) : !subscriptions || subscriptions.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  <p>No subscriptions found</p>
+                </div>
               ) : (
-                <p className="text-muted-foreground">Subscriptions list coming soon...</p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Organization</TableHead>
+                      <TableHead>Plan</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Started</TableHead>
+                      <TableHead>Expires</TableHead>
+                      <TableHead className="text-right">Amount Paid</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {subscriptions.map((sub: any) => (
+                      <TableRow key={sub.id}>
+                        <TableCell className="font-medium">
+                          {sub.organization?.name || 'Unknown Organization'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{sub.plan?.name || 'N/A'}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={sub.status} />
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {sub.started_at ? formatDate(new Date(sub.started_at)) : 'N/A'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {sub.expires_at ? formatDate(new Date(sub.expires_at)) : 'N/A'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {sub.amount_paid > 0 ? (
+                            <span>
+                              {sub.currency === 'AFN' ? '؋' : '$'}
+                              {sub.amount_paid.toLocaleString()}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="outline" asChild>
+                            <Link
+                              to={`/platform/organizations/${sub.organization_id}/subscription`}
+                            >
+                              Manage
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </CardContent>
           </Card>
@@ -425,5 +482,39 @@ function StatusIcon({ status }: { status: string }) {
     default:
       return <Clock className="h-8 w-8 text-muted-foreground" />;
   }
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const statusConfig: Record<
+    string,
+    { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }
+  > = {
+    active: { variant: 'default', label: 'Active' },
+    trial: { variant: 'secondary', label: 'Trial' },
+    grace_period: { variant: 'outline', label: 'Grace Period' },
+    readonly: { variant: 'outline', label: 'Read Only' },
+    expired: { variant: 'destructive', label: 'Expired' },
+    suspended: { variant: 'destructive', label: 'Suspended' },
+    cancelled: { variant: 'destructive', label: 'Cancelled' },
+  };
+
+  const config = statusConfig[status] || {
+    variant: 'outline' as const,
+    label: status,
+  };
+
+  return (
+    <Badge
+      variant={config.variant}
+      className={cn(
+        status === 'active' && 'bg-green-500',
+        status === 'trial' && 'bg-blue-500',
+        status === 'grace_period' && 'bg-yellow-500 text-yellow-900',
+        status === 'readonly' && 'bg-orange-500'
+      )}
+    >
+      {config.label}
+    </Badge>
+  );
 }
 

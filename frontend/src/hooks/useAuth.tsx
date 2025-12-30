@@ -86,9 +86,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
+      // CRITICAL: Check if we're in platform admin context
+      // If we are, we still need to set user/auth state for platform admin to work
+      // But we mark it as a platform admin session to prevent main app from using it
+      const isPlatformAdminRoute = typeof window !== 'undefined' && 
+        (window.location.pathname.startsWith('/platform') || 
+         localStorage.getItem('is_platform_admin_session') === 'true');
+      
       // Verify token is valid by fetching user
       const response = await authApi.getUser();
       if (response.user && response.profile) {
+        // CRITICAL: Always set user/auth state - both apps need it
+        // The separation is handled by the route guards, not by clearing auth state
         setUser(response.user);
         setSession({ token });
 
@@ -108,6 +117,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(null);
         setSession(null);
         setProfile(null);
+      }
+      
+      // If we're in platform admin context, we're done - don't proceed with main app logic
+      // But user/auth state is already set above, so platform admin can use it
+      if (isPlatformAdminRoute && !window.location.pathname.startsWith('/platform/login')) {
+        setLoading(false);
+        return;
       }
     } catch (error: any) {
       // Only log errors if we had a token (unexpected failure)
@@ -176,6 +192,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Check authentication on mount and when token changes
   useEffect(() => {
+    // CRITICAL: Always check auth - both apps need user state
+    // The separation is handled by route guards, not by preventing auth checks
     checkAuth();
 
     // Listen for storage changes (when token is set in another tab/window)
@@ -200,14 +218,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signOut = async () => {
     try {
+      // CRITICAL: Check if this is a platform admin logout
+      const isPlatformAdminSession = localStorage.getItem('is_platform_admin_session') === 'true';
+      const mainAppTokenBackup = localStorage.getItem('main_app_token_backup');
+      
       await authApi.logout();
+      
+      // If this was a platform admin session, restore main app token
+      if (isPlatformAdminSession && mainAppTokenBackup) {
+        localStorage.setItem('api_token', mainAppTokenBackup);
+        localStorage.removeItem('main_app_token_backup');
+        localStorage.removeItem('is_platform_admin_session');
+        // Don't clear auth state - main app token is restored
+        return;
+      }
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      apiClient.setToken(null);
-      setUser(null);
-      setSession(null);
-      setProfile(null);
+      // Only clear token if not restoring main app session
+      const isPlatformAdminSession = localStorage.getItem('is_platform_admin_session') === 'true';
+      const mainAppTokenBackup = localStorage.getItem('main_app_token_backup');
+      
+      if (!(isPlatformAdminSession && mainAppTokenBackup)) {
+        apiClient.setToken(null);
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+      }
     }
   };
 

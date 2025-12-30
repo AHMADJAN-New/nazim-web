@@ -30,9 +30,14 @@ import { showToast } from '@/lib/toast';
 
 interface OrganizationPermissionManagementProps {
   organizationId: string;
+  // Optional: Use platform admin API endpoints instead of regular endpoints
+  usePlatformAdminApi?: boolean;
 }
 
-export function OrganizationPermissionManagement({ organizationId }: OrganizationPermissionManagementProps) {
+export function OrganizationPermissionManagement({ 
+  organizationId,
+  usePlatformAdminApi = false,
+}: OrganizationPermissionManagementProps) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
@@ -40,13 +45,24 @@ export function OrganizationPermissionManagement({ organizationId }: Organizatio
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Use platform admin API if specified, otherwise use regular API
+  const permissionsApi = usePlatformAdminApi
+    ? async (id: string) => {
+        const { platformApi } = await import('@/platform/lib/platformApi');
+        // Platform admin API now returns the same format as regular API (with permissions, roles, etc.)
+        return platformApi.permissions.getForOrganization(id);
+      }
+    : (id: string) => organizationsApi.permissions(id);
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['organization-permissions', organizationId],
-    queryFn: () => organizationsApi.permissions(organizationId),
+    queryKey: ['organization-permissions', organizationId, usePlatformAdminApi ? 'platform' : 'regular'],
+    queryFn: () => permissionsApi(organizationId),
   });
 
   const updatePermissionsMutation = useMutation({
     mutationFn: async ({ role, permissionIds }: { role: string; permissionIds: string[] }) => {
+      // Platform admin API doesn't have updatePermissions endpoint yet
+      // For now, use regular API (platform admin should have access to it)
       return organizationsApi.updatePermissions(organizationId, {
         role,
         permission_ids: permissionIds,

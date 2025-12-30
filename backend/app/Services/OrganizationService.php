@@ -128,6 +128,7 @@ class OrganizationService
     protected function assignOrganizationAdminPermissions(User $user, Organization $organization): void
     {
         // Set permission team to organization context for Spatie permissions
+        // CRITICAL: Must set team context BEFORE assigning role or checking permissions
         setPermissionsTeamId($organization->id);
 
         // Find or create organization_admin role for this organization
@@ -142,33 +143,142 @@ class OrganizationService
             ]
         );
 
-        // Assign role to user
+        // CRITICAL: Set team context again before assigning role (Spatie requires this)
+        setPermissionsTeamId($organization->id);
+        
+        // Assign role to user with organization context
         $user->assignRole($role);
 
-        // Wait for OrganizationObserver to create permissions (if not already created)
+        // CRITICAL: Ensure organization_id is set in model_has_roles table
+        // Spatie's assignRole() might not automatically set organization_id
+        $tableNames = config('permission.table_names');
+        $modelHasRolesTable = $tableNames['model_has_roles'] ?? 'model_has_roles';
+        $columnNames = config('permission.column_names');
+        $modelMorphKey = $columnNames['model_morph_key'] ?? 'model_id';
+        
+        // Check if role assignment exists and update organization_id if needed
+        $roleAssignment = DB::table($modelHasRolesTable)
+            ->where($modelMorphKey, $user->id)
+            ->where('model_type', 'App\\Models\\User')
+            ->where('role_id', $role->id)
+            ->first();
+        
+        if ($roleAssignment) {
+            // Update organization_id if it's not set or incorrect
+            if ($roleAssignment->organization_id !== $organization->id) {
+                DB::table($modelHasRolesTable)
+                    ->where($modelMorphKey, $user->id)
+                    ->where('model_type', 'App\\Models\\User')
+                    ->where('role_id', $role->id)
+                    ->update(['organization_id' => $organization->id]);
+                
+                Log::info("Updated organization_id in model_has_roles", [
+                    'user_id' => $user->id,
+                    'role_id' => $role->id,
+                    'organization_id' => $organization->id,
+                ]);
+            }
+        } else {
+            // If role assignment doesn't exist, create it manually
+            DB::table($modelHasRolesTable)->insert([
+                $modelMorphKey => $user->id,
+                'model_type' => 'App\\Models\\User',
+                'role_id' => $role->id,
+                'organization_id' => $organization->id,
+            ]);
+            
+            Log::info("Manually created role assignment in model_has_roles", [
+                'user_id' => $user->id,
+                'role_id' => $role->id,
+                'organization_id' => $organization->id,
+            ]);
+        }
+        
+        // Verify role assignment
+        $user->refresh();
+        setPermissionsTeamId($organization->id);
+        $hasRole = $user->hasRole($role);
+        
+        if (!$hasRole) {
+            Log::error("Failed to assign organization_admin role to user", [
+                'user_id' => $user->id,
+                'role_id' => $role->id,
+                'organization_id' => $organization->id,
+            ]);
+            throw new \Exception("Failed to assign organization_admin role to user");
+        }
+        
+        Log::info("Organization admin role assigned to user", [
+            'user_id' => $user->id,
+            'role_id' => $role->id,
+            'organization_id' => $organization->id,
+        ]);
+
+        // OrganizationObserver runs synchronously when Organization::create() is called
+        // So permissions should already be created by now
+
         // Get all organization-scoped permissions
+        // OrganizationObserver should have created them
         $orgPermissions = DB::table('permissions')
             ->where('organization_id', $organization->id)
             ->where('guard_name', 'web')
             ->pluck('id', 'name')
             ->toArray();
 
-        // If permissions don't exist yet, wait a moment and retry
-        // OrganizationObserver should have created them, but if not, trigger it
+        // If permissions don't exist yet, create them manually
+        // OrganizationObserver should have created them, but if not, create them here
         if (empty($orgPermissions)) {
-            Log::warning("No permissions found for organization {$organization->name}. Waiting for OrganizationObserver...");
-            // Give observer time to run (observer runs synchronously, but just in case)
-            sleep(1);
+            Log::warning("No permissions found for organization {$organization->name}. Creating them now...");
+            
+            // Import PermissionSeeder to create permissions
+            $permissionSeeder = new \Database\Seeders\PermissionSeeder();
+            $permissions = \Database\Seeders\PermissionSeeder::getPermissions();
+            
+            foreach ($permissions as $resource => $actions) {
+                foreach ($actions as $action) {
+                    $permissionName = "{$resource}.{$action}";
+                    
+                    // CRITICAL: Skip subscription.admin - it's GLOBAL only (not organization-scoped)
+                    if ($permissionName === 'subscription.admin') {
+                        continue;
+                    }
+                    
+                    // Check if permission already exists
+                    $exists = DB::table('permissions')
+                        ->where('name', $permissionName)
+                        ->where('guard_name', 'web')
+                        ->where('organization_id', $organization->id)
+                        ->exists();
+                    
+                    if (!$exists) {
+                        DB::table('permissions')->insert([
+                            'name' => $permissionName,
+                            'guard_name' => 'web',
+                            'organization_id' => $organization->id,
+                            'resource' => $resource,
+                            'action' => $action,
+                            'description' => ucfirst($action) . ' ' . str_replace('_', ' ', $resource),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
+            }
+            
+            // Re-fetch permissions after creation
             $orgPermissions = DB::table('permissions')
                 ->where('organization_id', $organization->id)
                 ->where('guard_name', 'web')
                 ->pluck('id', 'name')
                 ->toArray();
+            
+            Log::info("Created " . count($orgPermissions) . " permissions for organization {$organization->name}");
         }
 
-        // If still no permissions, log error but continue
+        // If still no permissions, log error and throw exception
         if (empty($orgPermissions)) {
-            Log::error("No permissions found for organization {$organization->name} after waiting. Permissions may not be assigned correctly.");
+            Log::error("No permissions found for organization {$organization->name} after creation attempt. Cannot assign permissions to role.");
+            throw new \Exception("Failed to create permissions for organization {$organization->name}");
         }
 
         // Assign ALL organization permissions to the organization_admin role
@@ -193,8 +303,6 @@ class OrganizationService
                         'role_id' => $role->id,
                         'permission_id' => $permissionId,
                         'organization_id' => $organization->id,
-                        'created_at' => now(),
-                        'updated_at' => now(),
                     ]);
                     $assignedCount++;
                 } catch (\Exception $e) {
@@ -217,8 +325,32 @@ class OrganizationService
             'skipped' => $skippedCount,
         ]);
 
-        // Clear permission cache
+        // CRITICAL: Clear permission cache for user and globally
+        // This ensures permissions are fresh when user logs in
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        $user->refresh();
+        
+        // Verify permissions are accessible (test with a common permission)
+        setPermissionsTeamId($organization->id);
+        $testPermissionName = 'organizations.read';
+        if (isset($orgPermissions[$testPermissionName])) {
+            try {
+                $hasPermission = $user->hasPermissionTo($testPermissionName);
+                Log::info("Permission verification", [
+                    'user_id' => $user->id,
+                    'organization_id' => $organization->id,
+                    'test_permission' => $testPermissionName,
+                    'has_permission' => $hasPermission,
+                ]);
+            } catch (\Exception $e) {
+                Log::warning("Permission verification failed", [
+                    'user_id' => $user->id,
+                    'organization_id' => $organization->id,
+                    'test_permission' => $testPermissionName,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     /**

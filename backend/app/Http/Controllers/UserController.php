@@ -147,7 +147,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email|max:255',
             'password' => 'required|string|min:8',
             'full_name' => 'required|string|max:255',
-            'role' => 'required|string|in:admin,teacher,staff,student,parent',
+            'role' => 'required|string|max:255', // Changed: Allow any role name, validate existence later
             'organization_id' => 'nullable|uuid|exists:organizations,id',
             'default_school_id' => 'nullable|uuid',
             'staff_id' => 'nullable|uuid|exists:staff,id',
@@ -194,6 +194,23 @@ class UserController extends Controller
 
         if ($organizationId && !in_array($organizationId, $orgIds)) {
             return response()->json(['error' => 'Cannot create user for a non-accessible organization'], 403);
+        }
+
+        // CRITICAL: Validate that the role exists in the organization's roles table
+        // This allows custom roles created by the organization admin
+        if ($request->role && $organizationId) {
+            $roleExists = DB::table('roles')
+                ->where('name', $request->role)
+                ->where('organization_id', $organizationId)
+                ->where('guard_name', 'web')
+                ->exists();
+
+            if (!$roleExists) {
+                return response()->json([
+                    'error' => 'The selected role is invalid.',
+                    'message' => "Role '{$request->role}' does not exist in your organization. Please select a valid role.",
+                ], 422);
+            }
         }
 
         // Determine default_school_id

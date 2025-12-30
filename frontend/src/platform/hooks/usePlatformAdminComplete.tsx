@@ -21,20 +21,7 @@ export const usePlatformOrganizationSubscription = (organizationId: string) => {
     queryKey: ['platform-org-subscription', organizationId],
     queryFn: async () => {
       try {
-        if (import.meta.env.DEV) {
-          console.log('[usePlatformOrganizationSubscription] Fetching subscription for organization:', organizationId);
-        }
-        
         const response = await platformApi.subscriptions.get(organizationId);
-        
-        if (import.meta.env.DEV) {
-          console.log('[usePlatformOrganizationSubscription] Raw API response:', response);
-          console.log('[usePlatformOrganizationSubscription] Response type:', typeof response);
-          console.log('[usePlatformOrganizationSubscription] Is array:', Array.isArray(response));
-          console.log('[usePlatformOrganizationSubscription] Response keys:', response && typeof response === 'object' ? Object.keys(response) : 'N/A');
-          console.log('[usePlatformOrganizationSubscription] Has data:', 'data' in (response || {}));
-          console.log('[usePlatformOrganizationSubscription] Full response JSON:', JSON.stringify(response, null, 2));
-        }
         
         // Backend returns: { data: { subscription, status, usage, features } }
         // The API client returns response.json() directly, so response should be { data: { ... } }
@@ -56,14 +43,6 @@ export const usePlatformOrganizationSubscription = (organizationId: string) => {
           subscriptionData = null;
         }
         
-        if (import.meta.env.DEV) {
-          console.log('[usePlatformOrganizationSubscription] Extracted subscriptionData:', subscriptionData);
-          console.log('[usePlatformOrganizationSubscription] Subscription:', subscriptionData?.subscription);
-          console.log('[usePlatformOrganizationSubscription] Status:', subscriptionData?.status);
-          console.log('[usePlatformOrganizationSubscription] Usage:', subscriptionData?.usage);
-          console.log('[usePlatformOrganizationSubscription] Features:', subscriptionData?.features);
-        }
-        
         // Map features to domain types (same format as useOrganizationSubscription)
         const mappedFeatures = ((subscriptionData?.features || []) as any[]).map((apiFeature: any) => ({
           featureKey: apiFeature.feature_key || apiFeature.featureKey,
@@ -78,25 +57,15 @@ export const usePlatformOrganizationSubscription = (organizationId: string) => {
         }));
         
         // Return the data structure expected by the component
-        const result = {
+        return {
           subscription: subscriptionData?.subscription || null,
           status: subscriptionData?.status || 'inactive',
           usage: subscriptionData?.usage || {},
           features: mappedFeatures,
         };
-        
-        if (import.meta.env.DEV) {
-          console.log('[usePlatformOrganizationSubscription] Returning result:', result);
-        }
-        
-        return result;
       } catch (error) {
         if (import.meta.env.DEV) {
           console.error('[usePlatformOrganizationSubscription] Error fetching subscription:', error);
-          if (error instanceof Error) {
-            console.error('[usePlatformOrganizationSubscription] Error message:', error.message);
-            console.error('[usePlatformOrganizationSubscription] Error stack:', error.stack);
-          }
         }
         throw error;
       }
@@ -355,12 +324,35 @@ export const usePlatformToggleFeature = () => {
       featureKey: string;
     }) => {
       const response = await platformApi.organizations.toggleFeature(organizationId, featureKey);
-      return response;
+      return { response, organizationId, featureKey };
     },
-    onSuccess: async (response: any, variables) => {
-      showToast.success(response?.message || 'Feature toggled successfully');
+    onMutate: async ({ organizationId, featureKey }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['platform-org-subscription', organizationId] });
+
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(['platform-org-subscription', organizationId]);
+
+      // Optimistically update the cache
+      queryClient.setQueryData(['platform-org-subscription', organizationId], (old: any) => {
+        if (!old) return old;
+        
+        return {
+          ...old,
+          features: old.features?.map((feature: any) =>
+            feature.featureKey === featureKey
+              ? { ...feature, isEnabled: !feature.isEnabled }
+              : feature
+          ) || [],
+        };
+      });
+
+      return { previousData };
+    },
+    onSuccess: async (data, variables) => {
+      showToast.success(data.response?.message || 'Feature toggled successfully');
       
-      // Invalidate and refetch organization subscription data
+      // Invalidate and refetch to ensure we have the latest data from server
       await queryClient.invalidateQueries({
         queryKey: ['platform-org-subscription', variables.organizationId],
       });
@@ -368,7 +360,14 @@ export const usePlatformToggleFeature = () => {
         queryKey: ['platform-org-subscription', variables.organizationId],
       });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(
+          ['platform-org-subscription', variables.organizationId],
+          context.previousData
+        );
+      }
       showToast.error(error.message || 'Failed to toggle feature');
     },
   });

@@ -9,9 +9,33 @@ use App\Models\PlanFeature;
 
 class FeatureGateService
 {
+    private const FEATURE_ALIASES = [
+        'timetable' => 'timetables',
+        'reports' => 'pdf_reports',
+    ];
+
     public function __construct(
         private SubscriptionService $subscriptionService
     ) {}
+
+    private function normalizeFeatureKey(string $featureKey): string
+    {
+        return self::FEATURE_ALIASES[$featureKey] ?? $featureKey;
+    }
+
+    private function getFeatureKeyVariants(string $featureKey): array
+    {
+        $canonical = $this->normalizeFeatureKey($featureKey);
+        $aliases = [];
+
+        foreach (self::FEATURE_ALIASES as $alias => $canonicalKey) {
+            if ($canonicalKey === $canonical) {
+                $aliases[] = $alias;
+            }
+        }
+
+        return array_values(array_unique(array_merge([$featureKey, $canonical], $aliases)));
+    }
 
     /**
      * Check if an organization has access to a feature
@@ -44,9 +68,11 @@ class FeatureGateService
             return false;
         }
 
+        $featureKeys = $this->getFeatureKeyVariants($featureKey);
+
         // Check for feature addon first (addons override plan features)
         $addon = OrganizationFeatureAddon::where('organization_id', $organizationId)
-            ->where('feature_key', $featureKey)
+            ->whereIn('feature_key', $featureKeys)
             ->where('is_enabled', true)
             ->whereNull('deleted_at')
             ->where(function ($q) {
@@ -61,7 +87,10 @@ class FeatureGateService
 
         // Check if feature is enabled in plan
         $plan = $subscription->plan;
-        if ($plan && $plan->hasFeature($featureKey)) {
+        if ($plan && $plan->features()
+            ->whereIn('feature_key', $featureKeys)
+            ->where('is_enabled', true)
+            ->exists()) {
             return true;
         }
 
@@ -121,11 +150,16 @@ class FeatureGateService
         // Addons override plan features - merge and deduplicate
         $enabledFeatures = array_unique(array_merge($enabledFeatures, $addonFeatures));
 
+        $normalizedFeatures = [];
+        foreach ($enabledFeatures as $featureKey) {
+            $normalizedFeatures = array_merge($normalizedFeatures, $this->getFeatureKeyVariants($featureKey));
+        }
+
         // CRITICAL: Only return features that are explicitly enabled in the plan or as addons
         // NO fallback to enable all features - this enforces subscription-based access control
         // Users must have the feature in their plan or as an addon to access it
 
-        return array_unique($enabledFeatures);
+        return array_values(array_unique($normalizedFeatures));
     }
 
     /**

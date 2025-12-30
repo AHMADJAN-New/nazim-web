@@ -148,8 +148,8 @@ export const RenewPage = lazy(() => import('@/pages/subscription/RenewPage').the
 
 // Subscription admin pages
 export const SubscriptionAdminDashboard = lazy(() => import('@/pages/subscription/admin/SubscriptionAdminDashboard').then(module => ({ default: module.default })));
-export const PlansManagement = lazy(() => import('@/pages/subscription/admin/PlansManagement').then(module => ({ default: module.default })));
-export const OrganizationSubscriptionDetail = lazy(() => import('@/pages/subscription/admin/OrganizationSubscriptionDetail').then(module => ({ default: module.default })));
+export const PlansManagement = lazy(() => import('@/platform/pages/admin/PlansManagement').then(module => ({ default: module.default })));
+export const OrganizationSubscriptionDetail = lazy(() => import('@/platform/pages/admin/OrganizationSubscriptionDetail').then(module => ({ default: module.default })));
 export const RenewalReviewPage = lazy(() => import('@/pages/subscription/admin/RenewalReviewPage').then(module => ({ default: module.default })));
 export const DiscountCodesManagement = lazy(() => import('@/pages/subscription/admin/DiscountCodesManagement').then(module => ({ default: module.default })));
 

@@ -3,9 +3,9 @@
 namespace Database\Seeders;
 
 use App\Helpers\OrganizationHelper;
+use App\Models\Organization;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class OrganizationSeeder extends Seeder
 {
@@ -14,56 +14,69 @@ class OrganizationSeeder extends Seeder
      */
     public function run(): void
     {
-        // Check if "ناظم" organization already exists (by name or slug)
-        $existingOrg = DB::table('organizations')
-            ->where(function($query) {
-                $query->where('name', 'ناظم')
-                      ->orWhere('slug', 'nazim');
-            })
-            ->whereNull('deleted_at')
-            ->first();
+        $this->command->info('Seeding organizations...');
 
-        if (!$existingOrg) {
-            $orgId = (string) Str::uuid();
-
-            DB::table('organizations')->insert([
-                'id' => $orgId,
-                'name' => 'ناظم',
+        $organizations = [
+            [
+                'name' => 'Nazim',
                 'slug' => 'nazim',
-                'settings' => json_encode([]),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+                'description' => 'Default organization',
+            ],
+            [
+                'name' => 'Organization One',
+                'slug' => 'org-one',
+                'description' => 'First test organization',
+            ],
+            [
+                'name' => 'Organization Two',
+                'slug' => 'org-two',
+                'description' => 'Second test organization',
+            ],
+        ];
 
-            $this->command->info('Organization "ناظم" created with ID: ' . $orgId);
+        $createdOrgIds = [];
 
-            // Clear cache after creating organization
-            OrganizationHelper::clearCache();
+        foreach ($organizations as $orgData) {
+            $organization = Organization::firstOrCreate(
+                ['slug' => $orgData['slug']],
+                [
+                    'name' => $orgData['name'],
+                    'description' => $orgData['description'],
+                    'settings' => [],
+                    'is_active' => true,
+                ]
+            );
 
-            // Assign this organization to all users who don't have an organization
-            $updated = DB::table('profiles')
-                ->whereNull('organization_id')
-                ->update([
-                    'organization_id' => $orgId,
-                    'updated_at' => now(),
-                ]);
+            $createdOrgIds[$orgData['slug']] = $organization->id;
 
-            if ($updated > 0) {
-                $this->command->info("Assigned organization to {$updated} existing users.");
+            if ($organization->wasRecentlyCreated) {
+                $this->command->info("Created organization: {$organization->name} (ID: {$organization->id})");
+            } else {
+                $this->command->info("Organization '{$organization->name}' already exists.");
             }
-        } else {
-            $this->command->info('Organization "ناظم" already exists.');
+        }
 
-            // Still assign organization to users who don't have one
+        OrganizationHelper::clearCache();
+
+        $defaultOrgId = $createdOrgIds['nazim']
+            ?? Organization::where('slug', 'nazim')->whereNull('deleted_at')->value('id')
+            ?? $createdOrgIds['org-one']
+            ?? Organization::where('slug', 'org-one')->whereNull('deleted_at')->value('id');
+
+        if ($defaultOrgId) {
             $updated = DB::table('profiles')
                 ->whereNull('organization_id')
+                ->where(function ($query) {
+                    $query->whereNull('role')
+                        ->orWhere('role', '!=', 'platform_admin');
+                })
                 ->update([
-                    'organization_id' => $existingOrg->id,
+                    'organization_id' => $defaultOrgId,
                     'updated_at' => now(),
                 ]);
 
             if ($updated > 0) {
-                $this->command->info("Assigned organization to {$updated} existing users.");
+                $this->command->info("Assigned default organization to {$updated} existing users.");
             }
         }
     }

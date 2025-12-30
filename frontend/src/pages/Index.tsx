@@ -47,21 +47,73 @@ const Index = () => {
   const navigate = useNavigate();
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const { toast } = useToast();
+  
+  // CRITICAL: Only check platform admin permissions if user is authenticated
+  // And only if we're in a platform admin session (prevents 403 errors)
+  const isPlatformAdminSession = typeof window !== 'undefined' && 
+    localStorage.getItem('is_platform_admin_session') === 'true';
   const { data: platformPermissions } = usePlatformAdminPermissions();
 
   useEffect(() => {
     // Redirect authenticated users to appropriate dashboard
     if (user) {
-      // Check if user is a platform admin
-      const isPlatformAdmin = platformPermissions && Array.isArray(platformPermissions) && platformPermissions.includes('subscription.admin');
+      const isOnPlatformRoute = typeof window !== 'undefined' && 
+        window.location.pathname.startsWith('/platform');
       
-      if (isPlatformAdmin) {
-        navigate('/platform/dashboard');
-      } else {
-      navigate('/dashboard');
+      // CRITICAL: Check if redirect is already in progress (prevents loops)
+      const redirectInProgress = typeof window !== 'undefined' && 
+        sessionStorage.getItem('platform_redirect_in_progress') === 'true';
+      
+      if (redirectInProgress) {
+        return; // Redirect already in progress, don't do anything
+      }
+      
+      // CRITICAL: Only redirect if we're not already on the correct route
+      // This prevents infinite redirect loops
+      if (isOnPlatformRoute) {
+        return; // Already on platform route, don't redirect
+      }
+      
+      // If in platform admin session, check if user actually has permission
+      if (isPlatformAdminSession) {
+        // CRITICAL: Wait for permissions to load before checking
+        // If permissions are still loading, don't redirect yet
+        if (platformPermissions === undefined) {
+          return; // Still loading, wait
+        }
+        
+        const isPlatformAdmin = Array.isArray(platformPermissions) && platformPermissions.includes('subscription.admin');
+        
+        if (isPlatformAdmin) {
+          // User has permission, redirect to platform admin
+          navigate('/platform/dashboard', { replace: true });
+        } else {
+          // CRITICAL: User doesn't have permission, clear flag immediately and redirect to main app
+          // Use hard redirect to break any React Router loops
+          sessionStorage.setItem('platform_redirect_in_progress', 'true');
+          localStorage.removeItem('is_platform_admin_session');
+          localStorage.removeItem('platform_admin_token_backup');
+          setTimeout(() => {
+            sessionStorage.removeItem('platform_redirect_in_progress');
+            window.location.href = '/dashboard';
+          }, 50);
+        }
+        return;
+      }
+      
+      // Check if user is a platform admin (only if not in platform admin session)
+      // Only check if permissions are loaded
+      if (platformPermissions !== undefined) {
+        const isPlatformAdmin = Array.isArray(platformPermissions) && platformPermissions.includes('subscription.admin');
+        
+        if (isPlatformAdmin) {
+          navigate('/platform/dashboard', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
       }
     }
-  }, [user, navigate, platformPermissions]);
+  }, [user, navigate, platformPermissions, isPlatformAdminSession]);
 
   const features = useMemo(() => [
     {

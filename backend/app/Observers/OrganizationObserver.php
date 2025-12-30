@@ -34,6 +34,10 @@ class OrganizationObserver
                 'description' => 'Administrator with full access to all features',
             ],
             [
+                'name' => 'organization_admin',
+                'description' => 'Organization Administrator - Full access to organization resources',
+            ],
+            [
                 'name' => 'staff',
                 'description' => 'Staff member with limited access for operational tasks',
             ],
@@ -139,8 +143,6 @@ class OrganizationObserver
                                 'permission_id' => $permission->id,
                                 'role_id' => $roleToAssign->id,
                                 'organization_id' => $organization->id,
-                                'created_at' => now(),
-                                'updated_at' => now(),
                             ]);
                             $assignedCount++;
                         } else {
@@ -163,8 +165,6 @@ class OrganizationObserver
                                     'permission_id' => $permission->id,
                                     'role_id' => $roleToAssign->id,
                                     'organization_id' => $organization->id,
-                                    'created_at' => now(),
-                                    'updated_at' => now(),
                                 ]);
                                 $assignedCount++;
                             } else {

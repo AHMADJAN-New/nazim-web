@@ -34,7 +34,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.read')) {
+            if (!$this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -135,7 +135,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.read')) {
+            if (!$this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -519,7 +519,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.read')) {
+            if (!$this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -651,7 +651,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.read')) {
+            if (!$this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -859,7 +859,7 @@ class ClassController extends Controller
 
         // Check permission
         try {
-            if (!$user->hasPermissionTo('classes.read')) {
+            if (!$this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {

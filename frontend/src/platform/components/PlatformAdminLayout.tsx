@@ -32,7 +32,22 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleSignOut = async () => {
+    // CRITICAL: Before logging out, restore main app token if it existed
+    const mainAppTokenBackup = localStorage.getItem('main_app_token_backup');
+    const isPlatformAdminSession = localStorage.getItem('is_platform_admin_session') === 'true';
+    
+    // Log out from platform admin
     await signOut();
+    
+    // Restore main app token if it existed
+    if (isPlatformAdminSession && mainAppTokenBackup) {
+      localStorage.setItem('api_token', mainAppTokenBackup);
+      localStorage.removeItem('main_app_token_backup');
+    }
+    
+    // Clear platform admin session flag
+    localStorage.removeItem('is_platform_admin_session');
+    
     navigate('/platform/login');
   };
 
@@ -208,7 +223,6 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           {/* Debug: Log when children render */}
-          {import.meta.env.DEV && console.log('[PlatformAdminLayout] Rendering children:', location.pathname)}
           {children}
         </main>
       </div>

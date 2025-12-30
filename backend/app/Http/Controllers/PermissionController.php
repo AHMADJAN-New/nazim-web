@@ -993,7 +993,40 @@ class PermissionController extends Controller
             ->orderBy('action')
             ->get();
 
-        return response()->json($permissions);
+        // Get roles and their permissions for this organization (same format as regular endpoint)
+        $roles = DB::table('roles')
+            ->where('organization_id', $organizationId)
+            ->where('guard_name', 'web')
+            ->get();
+
+        $rolesWithPermissions = [];
+        foreach ($roles as $role) {
+            $rolePerms = DB::table('role_has_permissions')
+                ->join('permissions', 'role_has_permissions.permission_id', '=', 'permissions.id')
+                ->where('role_has_permissions.role_id', $role->id)
+                ->where('role_has_permissions.organization_id', $organizationId)
+                ->pluck('permissions.name')
+                ->toArray();
+
+            $rolesWithPermissions[] = [
+                'id' => $role->id,
+                'name' => $role->name,
+                'description' => $role->description ?? null,
+                'permissions' => $rolePerms,
+                'permissions_count' => count($rolePerms),
+            ];
+        }
+
+        // Return same format as regular permissions endpoint for consistency
+        return response()->json([
+            'organization' => [
+                'id' => $organization->id,
+                'name' => $organization->name,
+            ],
+            'permissions' => $permissions,
+            'roles' => $rolesWithPermissions,
+            'total_permissions' => $permissions->count(),
+        ]);
     }
 
     /**

@@ -51,50 +51,17 @@ import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
 import { OrganizationPermissionManagement } from '@/components/settings/OrganizationPermissionManagement';
 
-// CRITICAL: Log when module loads - ALWAYS (even in production)
-console.log('[OrganizationSubscriptionDetail] ====== MODULE LOADED ======');
-console.log('[OrganizationSubscriptionDetail] Module load timestamp:', new Date().toISOString());
-
 export default function OrganizationSubscriptionDetail() {
-  // CRITICAL: Log immediately when component mounts - ALWAYS (even in production)
-  console.log('[OrganizationSubscriptionDetail] ====== COMPONENT MOUNTED ======');
-  console.log('[OrganizationSubscriptionDetail] Timestamp:', new Date().toISOString());
-  
   const { organizationId } = useParams<{ organizationId: string }>();
   
-  // CRITICAL: Log organizationId immediately - ALWAYS
-  console.log('[OrganizationSubscriptionDetail] organizationId from params:', organizationId);
-  
-  // CRITICAL: Use platform admin permissions hook for platform admin routes
   const { data: platformPermissions, isLoading: permissionsLoading } = usePlatformAdminPermissions();
   const hasAdminPermission = platformPermissions?.includes('subscription.admin') ?? false;
-  
-  // CRITICAL: Log permission check - ALWAYS
-  console.log('[OrganizationSubscriptionDetail] Permission check:', {
-    permissionsLoading,
-    hasPermissions: !!platformPermissions,
-    permissionsCount: platformPermissions?.length || 0,
-    hasAdminPermission,
-  });
 
   const { data, isLoading, error } = usePlatformOrganizationSubscription(
     organizationId || ''
   );
   const { data: organization } = usePlatformOrganization(organizationId || null);
   const { data: plans } = usePlatformPlans();
-
-  // Debug logging
-  if (import.meta.env.DEV) {
-    console.log('[OrganizationSubscriptionDetail] Component state:', {
-      organizationId,
-      isLoading,
-      hasData: !!data,
-      data,
-      error: error ? (error instanceof Error ? error.message : String(error)) : null,
-      hasOrganization: !!organization,
-      hasPlans: !!plans,
-    });
-  }
 
   const activateSubscription = usePlatformActivateSubscription();
   const suspendSubscription = usePlatformSuspendSubscription();
@@ -113,14 +80,11 @@ export default function OrganizationSubscriptionDetail() {
 
   // Show loading while checking permissions
   if (permissionsLoading) {
-    console.log('[OrganizationSubscriptionDetail] Showing loading state (permissions)');
     return (
-      <div className="flex h-[50vh] items-center justify-center bg-red-50 border-4 border-red-500">
+      <div className="flex h-[50vh] items-center justify-center">
         <div className="text-center">
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground font-bold">Loading permissions...</p>
-          <p className="text-xs mt-2 font-mono">Organization ID: {organizationId || 'MISSING'}</p>
-          <p className="text-xs mt-1 text-red-600">If you see this, the component IS rendering!</p>
+          <p className="text-sm text-muted-foreground">Loading permissions...</p>
         </div>
       </div>
     );
@@ -128,23 +92,8 @@ export default function OrganizationSubscriptionDetail() {
 
   // Access control - redirect if no permission
   if (!hasAdminPermission) {
-    console.log('[OrganizationSubscriptionDetail] No admin permission, redirecting');
-    console.log('[OrganizationSubscriptionDetail] Platform permissions:', platformPermissions);
-    return (
-      <div className="flex h-[50vh] items-center justify-center bg-yellow-50 border-4 border-yellow-500">
-        <div className="text-center">
-          <p className="text-lg font-bold text-yellow-800">No Admin Permission</p>
-          <p className="text-sm text-yellow-700 mt-2">Redirecting to dashboard...</p>
-          <p className="text-xs mt-2 font-mono">Organization ID: {organizationId || 'MISSING'}</p>
-          <p className="text-xs mt-1">Permissions: {JSON.stringify(platformPermissions)}</p>
-          <Navigate to="/platform/dashboard" replace />
-        </div>
-      </div>
-    );
+    return <Navigate to="/platform/dashboard" replace />;
   }
-  
-  // CRITICAL: Log that we passed permission check - ALWAYS
-  console.log('[OrganizationSubscriptionDetail] ✅ Permission check passed, continuing to render');
 
   // Handle missing organizationId
   if (!organizationId) {
@@ -168,9 +117,6 @@ export default function OrganizationSubscriptionDetail() {
         <div className="text-center">
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">Loading subscription details...</p>
-          {import.meta.env.DEV && (
-            <p className="text-xs mt-2">Organization ID: {organizationId}</p>
-          )}
         </div>
       </div>
     );
@@ -187,13 +133,6 @@ export default function OrganizationSubscriptionDetail() {
           <p className="text-sm text-muted-foreground mb-4">
             {error instanceof Error ? error.message : 'Unknown error'}
           </p>
-          {import.meta.env.DEV && (
-            <div className="text-xs text-muted-foreground mb-4 p-4 bg-muted rounded">
-              <p>Debug Info:</p>
-              <p>Organization ID: {organizationId}</p>
-              <p>Error: {JSON.stringify(error, null, 2)}</p>
-            </div>
-          )}
           <Button asChild className="mt-4">
             <Link to="/platform/organizations">Back to Organizations</Link>
           </Button>
@@ -203,36 +142,17 @@ export default function OrganizationSubscriptionDetail() {
   }
 
   // Extract data with defaults - allow rendering even if subscription is null
-  // Handle case where data might be undefined (shouldn't happen after loading, but be safe)
   const subscription = data?.subscription || null;
-  const status = data?.status || 'inactive';
+  const statusObj = data?.status || { status: 'none', message: 'No subscription data' };
+  const status = statusObj.status || 'none';
   const usage = data?.usage || {};
   const features = Array.isArray(data?.features) ? data.features : [];
-
-  // Debug: Log extracted data
-  if (import.meta.env.DEV) {
-    console.log('[OrganizationSubscriptionDetail] Extracted data:', {
-      rawData: data,
-      subscription: subscription ? 'exists' : 'null',
-      subscriptionDetails: subscription ? {
-        id: subscription.id,
-        status: subscription.status,
-        planId: subscription.plan_id,
-        hasPlan: !!subscription.plan,
-      } : null,
-      status,
-      usageKeys: Object.keys(usage),
-      featuresCount: features.length,
-      features: features.slice(0, 3), // First 3 features for debugging
-    });
-  }
 
   const handleActivate = () => {
     if (!activateFormData.plan_id) {
       return;
     }
     
-    // Ensure all required fields are properly formatted
     const payload: SubscriptionApi.ActivateSubscriptionData = {
       plan_id: activateFormData.plan_id,
       currency: activateFormData.currency,
@@ -281,68 +201,37 @@ export default function OrganizationSubscriptionDetail() {
 
   const selectedPlan = plans?.find((p) => p.id === activateFormData.plan_id);
 
-  // Debug: Ensure component renders
-  if (import.meta.env.DEV) {
-    console.log('[OrganizationSubscriptionDetail] Rendering component with:', {
-      hasSubscription: !!subscription,
-      status,
-      featuresCount: features.length,
-      hasOrganization: !!organization,
-      hasPlans: !!plans,
-    });
-  }
+  // Group features by category
+  const featuresByCategory = features.reduce((acc, feature) => {
+    const category = feature.category || 'other';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(feature);
+    return acc;
+  }, {} as Record<string, typeof features>);
 
-  // CRITICAL: Log before rendering - ALWAYS (even in production)
-  console.log('[OrganizationSubscriptionDetail] About to render JSX', {
-    organizationId,
-    hasSubscription: !!subscription,
-    isLoading,
-    hasError: !!error,
-    hasData: !!data,
-    status,
-    featuresCount: features.length,
-  });
-  
-  // CRITICAL: Log before rendering - ALWAYS
-  console.log('[OrganizationSubscriptionDetail] ====== ABOUT TO RENDER JSX ======');
-  console.log('[OrganizationSubscriptionDetail] Render data:', {
-    organizationId,
-    hasSubscription: !!subscription,
-    isLoading,
-    hasError: !!error,
-    hasData: !!data,
-    status,
-    featuresCount: features.length,
-  });
-  
-  // Always render something - even if there's an error or no data
+  const categoryLabels: Record<string, string> = {
+    core: 'Core Features',
+    academic: 'Academic',
+    finance: 'Finance',
+    documents: 'Documents',
+    events: 'Events',
+    library: 'Library',
+    hostel: 'Hostel',
+    hr: 'Human Resources',
+    id_cards: 'ID Cards',
+    templates: 'Templates',
+    courses: 'Courses',
+    enterprise: 'Enterprise',
+    branding: 'Branding',
+    storage: 'Storage',
+    assets: 'Assets',
+    other: 'Other',
+  };
+
   return (
-    <div className="space-y-6 p-6 min-h-screen bg-green-50 border-4 border-green-500">
-      {/* Debug Banner - ALWAYS VISIBLE (even in production for now) */}
-      <div className="rounded-lg border-4 border-red-500 bg-red-100 p-4 text-sm font-bold">
-        <p className="text-lg text-red-800 mb-2">🚨 COMPONENT IS RENDERING! 🚨</p>
-        <p className="font-bold text-blue-900 mb-2">🔍 Debug Info (OrganizationSubscriptionDetail):</p>
-        <div className="grid grid-cols-2 gap-2 text-blue-800">
-          <div><strong>Organization ID:</strong> {organizationId || 'MISSING'}</div>
-          <div><strong>Loading:</strong> {isLoading ? 'Yes' : 'No'}</div>
-          <div><strong>Has Data:</strong> {data ? 'Yes' : 'No'}</div>
-          <div><strong>Has Subscription:</strong> {subscription ? 'Yes' : 'No'}</div>
-          <div><strong>Status:</strong> {status}</div>
-          <div><strong>Features:</strong> {features.length}</div>
-          <div><strong>Has Organization:</strong> {organization ? 'Yes' : 'No'}</div>
-          <div><strong>Has Plans:</strong> {plans ? `Yes (${plans.length})` : 'No'}</div>
-          <div className="col-span-2">
-            <strong>Error:</strong> {error ? (error instanceof Error ? error.message : String(error)) : 'None'}
-          </div>
-          <div className="col-span-2">
-            <strong>Raw Data Type:</strong> {typeof data}
-          </div>
-          <div className="col-span-2">
-            <strong>Raw Data:</strong> <pre className="text-xs mt-1 overflow-auto max-h-32 bg-white p-2 rounded border">{JSON.stringify(data, null, 2)}</pre>
-          </div>
-        </div>
-      </div>
-
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -353,11 +242,11 @@ export default function OrganizationSubscriptionDetail() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Organization Subscription
+              Subscription Management
             </h1>
             <p className="text-muted-foreground">
               {organization ? (
-                <>Manage subscription for: <strong>{organization.name}</strong></>
+                <>Manage subscription for <strong>{organization.name}</strong></>
               ) : (
                 <>Manage subscription for organization: {organizationId}</>
               )}
@@ -558,27 +447,32 @@ export default function OrganizationSubscriptionDetail() {
         <CardContent>
           {Object.keys(usage || {}).length > 0 ? (
             <div className="space-y-4">
-              {Object.entries(usage || {}).map(([key, info]) => (
+              {Object.entries(usage || {}).map(([key, info]: [string, any]) => (
                 <div
                   key={key}
                   className="flex items-center justify-between rounded-lg border p-4"
                 >
-                  <div>
-                    <div className="font-medium capitalize">
-                      {key.replace(/_/g, ' ')}
+                  <div className="flex-1">
+                    <div className="font-medium">
+                      {info.name || key.replace(/_/g, ' ')}
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {info.current} / {info.limit || '∞'}
+                    {info.description && (
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {info.description}
+                      </div>
+                    )}
+                    <div className="text-sm text-muted-foreground mt-1">
+                      {info.current} / {info.limit || '∞'} {info.unit && `(${info.unit})`}
                     </div>
                   </div>
-                  <div className="w-32">
+                  <div className="w-32 ml-4">
                     <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                       <div
                         className={cn(
-                          'h-full',
-                          (info.current / (info.limit || 1)) * 100 > 90
+                          'h-full transition-all',
+                          info.limit && info.current / info.limit > 0.9
                             ? 'bg-destructive'
-                            : (info.current / (info.limit || 1)) * 100 > 75
+                            : info.limit && info.current / info.limit > 0.75
                             ? 'bg-yellow-500'
                             : 'bg-primary'
                         )}
@@ -594,6 +488,11 @@ export default function OrganizationSubscriptionDetail() {
                         }}
                       />
                     </div>
+                    {info.limit && (
+                      <div className="text-xs text-muted-foreground mt-1 text-right">
+                        {Math.round((info.current / info.limit) * 100)}%
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -616,54 +515,72 @@ export default function OrganizationSubscriptionDetail() {
         </CardHeader>
         <CardContent>
           {features && features.length > 0 ? (
-            <div className="space-y-3">
-              {features.map((feature) => (
-                <div
-                  key={feature.featureKey}
-                  className={cn(
-                    'flex items-center justify-between rounded-lg border p-4 transition-colors',
-                    feature.isEnabled
-                      ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900'
-                      : 'bg-muted/50'
-                  )}
-                >
-                  <div className="flex-1">
-                    <div className="font-medium capitalize">
-                      {feature.name.replace(/_/g, ' ')}
-                    </div>
-                    {feature.description && (
-                      <div className="text-sm text-muted-foreground mt-1">
-                        {feature.description}
+            <div className="space-y-6">
+              {Object.entries(featuresByCategory).map(([category, categoryFeatures]) => (
+                <div key={category}>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+                    {categoryLabels[category] || category}
+                  </h3>
+                  <div className="space-y-2">
+                    {categoryFeatures.map((feature) => (
+                      <div
+                        key={feature.featureKey}
+                        className={cn(
+                          'flex items-center justify-between rounded-lg border p-4 transition-colors',
+                          feature.isEnabled
+                            ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900'
+                            : 'bg-muted/50'
+                        )}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium">
+                              {feature.name}
+                            </div>
+                            {feature.isAddon && (
+                              <Badge variant="outline" className="text-xs">
+                                Add-on
+                              </Badge>
+                            )}
+                          </div>
+                          {feature.description && (
+                            <div className="text-sm text-muted-foreground mt-1">
+                              {feature.description}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 ml-4">
+                          <Badge
+                            variant={feature.isEnabled ? 'default' : 'secondary'}
+                            className={cn(
+                              feature.isEnabled && 'bg-green-500 hover:bg-green-600',
+                              !feature.isEnabled && 'bg-muted'
+                            )}
+                          >
+                            {feature.isEnabled ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                          <Switch
+                            checked={feature.isEnabled}
+                            onCheckedChange={(checked) => {
+                              if (organizationId) {
+                                toggleFeature.mutate(
+                                  {
+                                    organizationId,
+                                    featureKey: feature.featureKey,
+                                  },
+                                  {
+                                    onError: () => {
+                                      // Error handling is done in the hook
+                                    },
+                                  }
+                                );
+                              }
+                            }}
+                            disabled={toggleFeature.isPending}
+                          />
+                        </div>
                       </div>
-                    )}
-                    {feature.isAddon && (
-                      <Badge variant="outline" className="mt-2 text-xs">
-                        Add-on
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 ml-4">
-                    <Badge
-                      variant={feature.isEnabled ? 'default' : 'secondary'}
-                      className={cn(
-                        feature.isEnabled && 'bg-green-500',
-                        !feature.isEnabled && 'bg-muted'
-                      )}
-                    >
-                      {feature.isEnabled ? 'Enabled' : 'Disabled'}
-                    </Badge>
-                    <Switch
-                      checked={feature.isEnabled}
-                      onCheckedChange={(checked) => {
-                        if (organizationId) {
-                          toggleFeature.mutate({
-                            organizationId,
-                            featureKey: feature.featureKey,
-                          });
-                        }
-                      }}
-                      disabled={toggleFeature.isPending}
-                    />
+                    ))}
                   </div>
                 </div>
               ))}
@@ -697,12 +614,7 @@ export default function OrganizationSubscriptionDetail() {
                   setActivateFormData({
                     ...activateFormData,
                     plan_id: value,
-                    amount_paid:
-                      selectedPlan && activateFormData.currency === 'AFN'
-                        ? selectedPlan.priceYearlyAfn
-                        : selectedPlan && activateFormData.currency === 'USD'
-                        ? selectedPlan.priceYearlyUsd
-                        : activateFormData.amount_paid,
+                    currency: selectedPlan?.currency || 'AFN',
                   });
                 }}
               >
@@ -710,90 +622,63 @@ export default function OrganizationSubscriptionDetail() {
                   <SelectValue placeholder="Select a plan" />
                 </SelectTrigger>
                 <SelectContent>
-                  {plans
-                    ?.filter((p) => p.isActive)
-                    .map((plan) => (
-                      <SelectItem key={plan.id} value={plan.id}>
-                        {plan.name} - {plan.priceYearlyAfn.toLocaleString()} AFN /{' '}
-                        {plan.priceYearlyUsd.toLocaleString()} USD
-                      </SelectItem>
-                    ))}
+                  {plans?.map((plan) => (
+                    <SelectItem key={plan.id} value={plan.id}>
+                      {plan.name} - {plan.price_afn} AFN / {plan.price_usd} USD
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             {selectedPlan && (
               <div className="rounded-lg border p-4 bg-muted/50">
-                <div className="text-sm font-medium">{selectedPlan.name}</div>
-                {selectedPlan.description && (
-                  <div className="mt-1 text-sm text-muted-foreground">
-                    {selectedPlan.description}
-                  </div>
-                )}
-                <div className="mt-2 text-sm">
-                  <div>
-                    Max Schools: {selectedPlan.maxSchools}
-                  </div>
-                  <div>
-                    Trial Days: {selectedPlan.trialDays}
-                  </div>
+                <div className="text-sm font-medium mb-2">Plan Details</div>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <div>Price: {selectedPlan.price_afn} AFN / {selectedPlan.price_usd} USD</div>
+                  {selectedPlan.description && (
+                    <div>{selectedPlan.description}</div>
+                  )}
                 </div>
               </div>
             )}
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="currency">
-                  Currency <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={activateFormData.currency}
-                  onValueChange={(value: 'AFN' | 'USD') => {
-                    const newCurrency = value;
-                    const selectedPlan = plans?.find(
-                      (p) => p.id === activateFormData.plan_id
-                    );
-                    setActivateFormData({
-                      ...activateFormData,
-                      currency: newCurrency,
-                      amount_paid:
-                        selectedPlan && newCurrency === 'AFN'
-                          ? selectedPlan.priceYearlyAfn
-                          : selectedPlan && newCurrency === 'USD'
-                          ? selectedPlan.priceYearlyUsd
-                          : activateFormData.amount_paid,
-                    });
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="AFN">AFN (Afghan Afghani)</SelectItem>
-                    <SelectItem value="USD">USD (US Dollar)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="currency">Currency</Label>
+              <Select
+                value={activateFormData.currency}
+                onValueChange={(value) =>
+                  setActivateFormData({
+                    ...activateFormData,
+                    currency: value as 'AFN' | 'USD',
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AFN">AFN (Afghan Afghani)</SelectItem>
+                  <SelectItem value="USD">USD (US Dollar)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="amount_paid">
-                  Amount Paid <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="amount_paid"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={activateFormData.amount_paid}
-                  onChange={(e) =>
-                    setActivateFormData({
-                      ...activateFormData,
-                      amount_paid: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                  placeholder="0.00"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="amount_paid">Amount Paid</Label>
+              <Input
+                id="amount_paid"
+                type="number"
+                min="0"
+                value={activateFormData.amount_paid}
+                onChange={(e) =>
+                  setActivateFormData({
+                    ...activateFormData,
+                    amount_paid: parseFloat(e.target.value) || 0,
+                  })
+                }
+                placeholder="0"
+              />
             </div>
 
             <div className="space-y-2">
@@ -915,7 +800,10 @@ export default function OrganizationSubscriptionDetail() {
       {/* Permissions Management */}
       {organizationId && (
         <div className="mt-8">
-          <OrganizationPermissionManagement organizationId={organizationId} />
+          <OrganizationPermissionManagement 
+            organizationId={organizationId} 
+            usePlatformAdminApi={true}
+          />
         </div>
       )}
     </div>
