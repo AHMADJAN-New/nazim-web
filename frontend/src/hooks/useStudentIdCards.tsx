@@ -5,6 +5,7 @@ import { useLanguage } from './useLanguage';
 import { renderIdCardToCanvas } from '@/lib/idCards/idCardCanvasRenderer';
 import { exportIdCardToPdf, exportBulkIdCardsToPdf } from '@/lib/idCards/idCardPdfExporter';
 import { exportIdCardsToZip } from '@/lib/idCards/idCardZipExporter';
+import { DEFAULT_ID_CARD_PADDING_PX, getDefaultPrintRenderSize, getDefaultScreenRenderSize } from '@/lib/idCards/idCardRenderMetrics';
 import type * as StudentIdCardApi from '@/types/api/studentIdCard';
 import type { 
   StudentIdCard, 
@@ -450,9 +451,14 @@ export const usePreviewIdCard = () => {
         throw new Error('Student data not available');
       }
 
+      const screenRenderSize = getDefaultScreenRenderSize();
+
       // Render card to Canvas and return data URL
       const canvas = await renderIdCardToCanvas(template, student, side, { 
         quality: 'screen',
+        renderWidthPx: screenRenderSize.width,
+        renderHeightPx: screenRenderSize.height,
+        paddingPx: DEFAULT_ID_CARD_PADDING_PX,
         notes: card.notes || null,
         expiryDate: card.printedAt ? new Date(card.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null,
       });
@@ -508,6 +514,7 @@ export const useExportIndividualIdCard = () => {
       const notes = card.notes || null;
       const expiryDate = card.printedAt ? new Date(card.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null;
       const baseFilename = `id-card-${card.student.admissionNumber || card.id}`;
+      const printRenderSize = getDefaultPrintRenderSize();
 
       if (format === 'pdf') {
         // For PDF, export each side separately if both sides requested
@@ -525,7 +532,10 @@ export const useExportIndividualIdCard = () => {
         // PNG export - export each side separately
         for (const exportSide of validSides) {
           const canvas = await renderIdCardToCanvas(template, student, exportSide, { 
-            quality: 'screen', // Use screen dimensions to match preview
+            quality: 'print',
+            renderWidthPx: printRenderSize.width,
+            renderHeightPx: printRenderSize.height,
+            paddingPx: DEFAULT_ID_CARD_PADDING_PX,
             notes,
             expiryDate,
           });
@@ -549,4 +559,3 @@ export const useExportIndividualIdCard = () => {
     },
   });
 };
-

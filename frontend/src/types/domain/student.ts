@@ -183,6 +183,12 @@ export interface Student {
     id: string;
     schoolName: string;
   };
+  currentClass?: {
+    id: string;
+    name: string;
+    code?: string;
+    gradeLevel?: string;
+  } | null;
 }
 
 export interface StudentFilters {

@@ -60,6 +60,12 @@ export interface Student {
     id: string;
     school_name: string;
   };
+  current_class?: {
+    id: string;
+    name: string;
+    code?: string;
+    grade_level?: string;
+  } | null;
 }
 
 export interface StudentInsert {

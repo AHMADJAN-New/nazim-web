@@ -37,7 +37,6 @@ class Letterhead extends Model
     // Ensure computed URLs are returned in API responses
     protected $appends = [
         'file_url',
-        'preview_url',
         'image_url',
     ];
 

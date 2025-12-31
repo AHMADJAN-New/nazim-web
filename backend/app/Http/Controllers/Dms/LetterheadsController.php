@@ -57,8 +57,7 @@ class LetterheadsController extends BaseDmsController
             'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp'],
             'file_type' => ['nullable', 'string', 'in:pdf,image,html'],
             'letter_type' => ['nullable', 'string', 'max:50'],
-            'default_for_layout' => ['nullable', 'string'],
-            'position' => ['nullable', 'string', 'in:header,background,watermark'],
+            'letterhead_type' => ['nullable', 'string', 'in:background,watermark'],
             'active' => ['boolean'],
         ]);
 
@@ -94,8 +93,7 @@ class LetterheadsController extends BaseDmsController
             'file_type' => $fileType,
             'image_path' => $imagePath,
             'letter_type' => $data['letter_type'] ?? null,
-            'default_for_layout' => $data['default_for_layout'] ?? null,
-            'position' => $data['position'] ?? 'header',
+            'letterhead_type' => $data['letterhead_type'] ?? 'background',
             'active' => $data['active'] ?? true,
         ]);
 
@@ -140,8 +138,7 @@ class LetterheadsController extends BaseDmsController
             'name' => ['sometimes', 'string', 'max:255'],
             'file_type' => ['nullable', 'string', 'in:pdf,image,html'],
             'letter_type' => ['nullable', 'string', 'max:50'],
-            'default_for_layout' => ['nullable', 'string'],
-            'position' => ['nullable', 'string', 'in:header,background,watermark'],
+            'letterhead_type' => ['nullable', 'string', 'in:background,watermark'],
             'active' => ['boolean'],
             'file' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png,webp'],
         ]);

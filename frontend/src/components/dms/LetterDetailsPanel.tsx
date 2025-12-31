@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { dmsApi } from "@/lib/api/client";
 import type { OutgoingDocument } from "@/types/dms";
@@ -15,8 +15,22 @@ import { SecurityBadge } from "@/components/dms/SecurityBadge";
 import { useLanguage } from "@/hooks/useLanguage";
 import { showToast } from "@/lib/toast";
 import { formatDate } from "@/lib/utils";
-import { Download, File, Loader2, FileText, X, Printer } from "lucide-react";
+import { Download, File, Image as ImageIcon, Loader2, FileText, X, Printer } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading";
+import { renderLetterToDataUrl } from "@/services/dms/LetterCanvasRenderer";
+import { generateLetterPdf } from "@/services/dms/LetterPdfGenerator";
+
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, data] = dataUrl.split(',');
+  const mimeMatch = header.match(/data:(.*?);base64/);
+  const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+  const binary = atob(data);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mime });
+}
 
 interface LetterDetailsPanelProps {
   letter: OutgoingDocument | null;
@@ -133,8 +147,12 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
     mime_type?: string;
     url?: string;
   } | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
+  const [filePreviewLoading, setFilePreviewLoading] = useState(false);
+  const [letterPreviewUrl, setLetterPreviewUrl] = useState<string | null>(null);
+  const [letterPreviewLoading, setLetterPreviewLoading] = useState(false);
+  const [letterPreviewError, setLetterPreviewError] = useState<string | null>(null);
   const previewUrlRef = useRef<string | null>(null);
+  const letterRenderIdRef = useRef(0);
 
   // Cleanup object URLs on unmount
   useEffect(() => {
@@ -159,6 +177,56 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
 
   // Use full letter data if available, otherwise use passed letter
   const displayLetter = fullLetter || letter;
+  const letterTemplate = displayLetter?.template || null;
+  const activeLetterhead = displayLetter?.letterhead || letterTemplate?.letterhead || null;
+
+  const letterheadImage = useMemo(() => {
+    if (!activeLetterhead) return null;
+    return activeLetterhead.image_url || activeLetterhead.preview_url || activeLetterhead.file_url || null;
+  }, [activeLetterhead]);
+
+  const watermarkImage = useMemo(() => {
+    if (!letterTemplate?.watermark) return null;
+    return (
+      letterTemplate.watermark.image_url ||
+      letterTemplate.watermark.preview_url ||
+      letterTemplate.watermark.file_url ||
+      null
+    );
+  }, [letterTemplate?.watermark]);
+
+  const letterheadPosition = useMemo(() => {
+    if (activeLetterhead?.position === "header") return "header";
+    return "background";
+  }, [activeLetterhead?.position]);
+
+  const letterBodyText = useMemo(() => {
+    return displayLetter?.body_html || letterTemplate?.body_text || "";
+  }, [displayLetter?.body_html, letterTemplate?.body_text]);
+
+  const renderVariables = useMemo(() => {
+    if (displayLetter?.body_html) return undefined;
+    const normalized: Record<string, string> = {};
+    Object.entries(displayLetter?.template_variables || {}).forEach(([key, value]) => {
+      normalized[key] = value !== null && value !== undefined ? String(value) : "";
+    });
+    return {
+      ...normalized,
+      subject: displayLetter?.subject || "",
+      issue_date: displayLetter?.issue_date || "",
+      document_number: displayLetter?.full_outdoc_number || "",
+      recipient_name: displayLetter?.external_recipient_name || "",
+      recipient_address: displayLetter?.recipient_address || "",
+    };
+  }, [
+    displayLetter?.body_html,
+    displayLetter?.template_variables,
+    displayLetter?.subject,
+    displayLetter?.issue_date,
+    displayLetter?.full_outdoc_number,
+    displayLetter?.external_recipient_name,
+    displayLetter?.recipient_address,
+  ]);
 
   // Fetch attachments
   const { data: files = [] } = useQuery<Array<{
@@ -179,6 +247,57 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
     refetchOnWindowFocus: false,
   });
 
+  const renderLetterPreview = useCallback(async () => {
+    if (!letterTemplate) return;
+    const renderId = ++letterRenderIdRef.current;
+    setLetterPreviewLoading(true);
+    setLetterPreviewError(null);
+    try {
+      const dataUrl = await renderLetterToDataUrl(letterTemplate, {
+        variables: renderVariables,
+        bodyText: letterBodyText,
+        letterheadImage,
+        letterheadPosition,
+        watermarkImage,
+        scale: 2,
+        mimeType: "image/jpeg",
+        quality: 0.95,
+        direction: isRTL ? "rtl" : "ltr",
+      });
+      if (renderId === letterRenderIdRef.current) {
+        setLetterPreviewUrl(dataUrl);
+      }
+    } catch (error: any) {
+      if (renderId === letterRenderIdRef.current) {
+        setLetterPreviewError(error?.message || "Failed to render preview");
+        setLetterPreviewUrl(null);
+      }
+    } finally {
+      if (renderId === letterRenderIdRef.current) {
+        setLetterPreviewLoading(false);
+      }
+    }
+  }, [
+    letterTemplate,
+    renderVariables,
+    letterBodyText,
+    letterheadImage,
+    letterheadPosition,
+    watermarkImage,
+    isRTL,
+  ]);
+
+  useEffect(() => {
+    if (!open || !letterTemplate) {
+      letterRenderIdRef.current += 1;
+      setLetterPreviewUrl(null);
+      setLetterPreviewError(null);
+      setLetterPreviewLoading(false);
+      return;
+    }
+    renderLetterPreview();
+  }, [open, letterTemplate, renderLetterPreview]);
+
   const isImageFile = (mimeType?: string) => {
     return mimeType?.startsWith('image/') ?? false;
   };
@@ -193,7 +312,7 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
 
   const handlePreview = async (file: { id: string; original_name: string; mime_type?: string }) => {
     try {
-      setPreviewLoading(true);
+      setFilePreviewLoading(true);
       if (previewUrlRef.current) {
         window.URL.revokeObjectURL(previewUrlRef.current);
         previewUrlRef.current = null;
@@ -211,7 +330,7 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
     } catch (error: any) {
       showToast.error(error.message || 'Failed to load preview');
     } finally {
-      setPreviewLoading(false);
+      setFilePreviewLoading(false);
     }
   };
 
@@ -241,63 +360,132 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
     }
   };
 
-  const handleDownloadPdf = async () => {
-    if (!displayLetter?.id) return;
+  const getRenderedImage = useCallback(async () => {
+    if (!letterTemplate) {
+      throw new Error("No template available for this letter.");
+    }
+    if (letterPreviewUrl && !letterPreviewLoading) {
+      return letterPreviewUrl;
+    }
+    return renderLetterToDataUrl(letterTemplate, {
+      variables: renderVariables,
+      bodyText: letterBodyText,
+      letterheadImage,
+      letterheadPosition,
+      watermarkImage,
+      scale: 2,
+      mimeType: "image/jpeg",
+      quality: 0.95,
+      direction: isRTL ? "rtl" : "ltr",
+    });
+  }, [
+    letterTemplate,
+    letterPreviewUrl,
+    letterPreviewLoading,
+    renderVariables,
+    letterBodyText,
+    letterheadImage,
+    letterheadPosition,
+    watermarkImage,
+    isRTL,
+  ]);
+
+  const handleDownloadImage = async () => {
+    if (!letterTemplate) {
+      showToast.error("No template available for this letter.");
+      return;
+    }
     try {
-      const blob = await dmsApi.outgoing.downloadPdf(displayLetter.id);
+      const dataUrl = await getRenderedImage();
+      const blob = dataUrlToBlob(dataUrl);
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `${displayLetter.full_outdoc_number || 'letter'}.pdf`;
+      a.download = `${displayLetter?.full_outdoc_number || "letter"}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      showToast.error(error.message || "Failed to download image");
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!letterTemplate) {
+      showToast.error("No template available for this letter.");
+      return;
+    }
+    try {
+      const imageDataUrl = await getRenderedImage();
+      const blob = await generateLetterPdf(letterTemplate, {
+        imageDataUrl,
+        variables: renderVariables,
+        bodyText: letterBodyText,
+        letterheadImage,
+        letterheadPosition,
+        watermarkImage,
+        direction: isRTL ? "rtl" : "ltr",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${displayLetter?.full_outdoc_number || "letter"}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      showToast.success('PDF downloaded successfully');
+      showToast.success("PDF downloaded successfully");
     } catch (error: any) {
-      showToast.error(error.message || 'Failed to download PDF');
+      showToast.error(error.message || "Failed to download PDF");
     }
   };
 
   const handlePrint = async () => {
-    if (!displayLetter?.id) return;
+    if (!letterTemplate) {
+      showToast.error("No template available for this letter.");
+      return;
+    }
     try {
-      // Download PDF and open in print dialog
-      const blob = await dmsApi.outgoing.downloadPdf(displayLetter.id);
+      const imageDataUrl = await getRenderedImage();
+      const blob = await generateLetterPdf(letterTemplate, {
+        imageDataUrl,
+        variables: renderVariables,
+        bodyText: letterBodyText,
+        letterheadImage,
+        letterheadPosition,
+        watermarkImage,
+        direction: isRTL ? "rtl" : "ltr",
+      });
       const url = window.URL.createObjectURL(blob);
-      
-      // Create a hidden iframe to load the PDF
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
+
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "0";
       iframe.src = url;
-      
+
       document.body.appendChild(iframe);
-      
-      // Wait for PDF to load, then trigger print
+
       iframe.onload = () => {
         setTimeout(() => {
           try {
             iframe.contentWindow?.print();
-            // Clean up after a delay
             setTimeout(() => {
               document.body.removeChild(iframe);
               window.URL.revokeObjectURL(url);
             }, 1000);
           } catch (error) {
-            // If print fails, fall back to opening PDF in new window
-            window.open(url, '_blank');
+            window.open(url, "_blank");
             document.body.removeChild(iframe);
             window.URL.revokeObjectURL(url);
           }
         }, 500);
       };
-      
-      // Fallback: if onload doesn't fire, try after 2 seconds
+
       setTimeout(() => {
         if (document.body.contains(iframe)) {
           try {
@@ -309,7 +497,7 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
               window.URL.revokeObjectURL(url);
             }, 1000);
           } catch (error) {
-            window.open(url, '_blank');
+            window.open(url, "_blank");
             if (document.body.contains(iframe)) {
               document.body.removeChild(iframe);
             }
@@ -318,7 +506,7 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
         }
       }, 2000);
     } catch (error: any) {
-      showToast.error(error.message || 'Failed to print letter');
+      showToast.error(error.message || "Failed to print letter");
     }
   };
 
@@ -431,15 +619,19 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
                     </>
                   )}
 
-                  {displayLetter.pdf_path && (
+                  {letterTemplate && (
                     <>
                       <Separator />
-                      <div className="flex gap-2">
-                        <Button onClick={handleDownloadPdf} variant="outline" className="flex-1">
+                      <div className="flex flex-wrap gap-2">
+                        <Button onClick={handleDownloadPdf} variant="outline" className="flex-1 min-w-[160px]">
                           <Download className="h-4 w-4 mr-2" />
                           {t("dms.issueLetter.letterDetails.downloadPdf") || "Download PDF"}
                         </Button>
-                        <Button onClick={handlePrint} variant="outline" className="flex-1">
+                        <Button onClick={handleDownloadImage} variant="outline" className="flex-1 min-w-[160px]">
+                          <ImageIcon className="h-4 w-4 mr-2" />
+                          {t("dms.issueLetter.letterDetails.downloadImage") || "Download Image"}
+                        </Button>
+                        <Button onClick={handlePrint} variant="outline" className="flex-1 min-w-[160px]">
                           <Printer className="h-4 w-4 mr-2" />
                           {t("dms.issueLetter.letterDetails.print") || "Print"}
                         </Button>
@@ -452,35 +644,47 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
 
             {/* Preview Tab */}
             <TabsContent value="preview" className="space-y-4 mt-4">
-              {displayLetter.body_html ? (
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex justify-end mb-2">
-                      <Button onClick={handlePrint} variant="outline" size="sm">
-                        <Printer className="h-4 w-4 mr-2" />
-                        {t("dms.issueLetter.letterDetails.print") || "Print"}
-                      </Button>
+              <Card>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button onClick={handleDownloadImage} variant="outline" size="sm" disabled={!letterTemplate}>
+                      <ImageIcon className="h-4 w-4 mr-2" />
+                      {t("dms.issueLetter.letterDetails.downloadImage") || "Download Image"}
+                    </Button>
+                    <Button onClick={handlePrint} variant="outline" size="sm" disabled={!letterTemplate}>
+                      <Printer className="h-4 w-4 mr-2" />
+                      {t("dms.issueLetter.letterDetails.print") || "Print"}
+                    </Button>
+                  </div>
+
+                  {letterPreviewLoading ? (
+                    <div className="border rounded-lg bg-muted/50 p-8 text-center min-h-[300px] flex items-center justify-center">
+                      <div className="space-y-2">
+                        <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
+                        <p className="text-sm text-muted-foreground">Generating preview...</p>
+                      </div>
                     </div>
+                  ) : letterPreviewError ? (
+                    <div className="border rounded-lg p-8 text-center text-muted-foreground bg-red-50">
+                      <FileText className="h-12 w-12 mx-auto mb-4 text-destructive" />
+                      <p className="text-sm text-destructive">{letterPreviewError}</p>
+                    </div>
+                  ) : letterPreviewUrl ? (
                     <div className="border rounded-lg bg-white overflow-hidden">
-                      <iframe
-                        srcDoc={displayLetter.body_html}
-                        className="w-full border-0"
-                        style={{ minHeight: "600px" }}
-                        title="Letter Preview"
+                      <img
+                        src={letterPreviewUrl}
+                        alt="Letter preview"
+                        className="w-full h-auto object-contain"
                       />
                     </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-center py-12 text-muted-foreground">
+                  ) : (
+                    <div className="border rounded-lg p-8 text-center text-muted-foreground bg-muted/50">
                       <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>{t("dms.issueLetter.letterDetails.noPreview") || "No preview available"}</p>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Attachments Tab */}
@@ -496,7 +700,7 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
                       canPreview={canPreview}
                       isImageFile={isImageFile}
                       isPdfFile={isPdfFile}
-                      previewLoading={previewLoading}
+                      previewLoading={filePreviewLoading}
                     />
                   ))}
                 </div>
@@ -534,7 +738,7 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
                   </Button>
                 </div>
                 <div className="flex-1 overflow-auto p-6 bg-muted/30" style={{ height: 'calc(95vh - 73px)' }}>
-                  {previewLoading ? (
+                  {filePreviewLoading ? (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
                         <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
@@ -598,4 +802,3 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
     </Sheet>
   );
 }
-

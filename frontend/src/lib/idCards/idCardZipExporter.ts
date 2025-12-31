@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import type { Student } from '@/types/domain/student';
 import type { IdCardTemplate } from '@/types/domain/idCardTemplate';
 import { renderIdCardToCanvas } from './idCardCanvasRenderer';
+import { DEFAULT_ID_CARD_PADDING_PX, getDefaultPrintRenderSize, getDefaultScreenRenderSize } from './idCardRenderMetrics';
 
 /**
  * Convert data URL to Blob (for ZIP export)
@@ -45,14 +46,19 @@ export async function exportIdCardsToZip(
   }
 
   const zip = new JSZip();
+  const renderQuality = quality === 'high' ? 'print' : 'screen';
+  const screenRenderSize = getDefaultScreenRenderSize();
+  const printRenderSize = getDefaultPrintRenderSize();
+  const renderSize = renderQuality === 'print' ? printRenderSize : screenRenderSize;
 
   // Generate PNG images for each card
   for (const { template, student, side, notes, expiryDate } of cards) {
     try {
-      // Use screen dimensions for both preview and export to match exactly
-      // Quality parameter doesn't affect dimensions - both use same canvas size
       const canvas = await renderIdCardToCanvas(template, student, side, { 
-        quality: 'screen', // Always use screen dimensions to match preview
+        quality: renderQuality,
+        renderWidthPx: renderSize.width,
+        renderHeightPx: renderSize.height,
+        paddingPx: DEFAULT_ID_CARD_PADDING_PX,
         notes: notes || null,
         expiryDate: expiryDate || null,
       });
@@ -106,4 +112,3 @@ export async function exportIdCardsToZip(
 
   return zipBlob;
 }
-

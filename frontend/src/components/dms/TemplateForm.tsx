@@ -208,6 +208,20 @@ export function TemplateForm({
 
   const selectedLetterhead = (allLetterheads || []).find((lh) => lh.id === selectedLetterheadId);
   const selectedWatermark = (allLetterheads || []).find((lh) => lh.id === selectedWatermarkId);
+  const letterheadSrc =
+    bgUrl ||
+    selectedLetterhead?.image_url ||
+    selectedLetterhead?.preview_url ||
+    selectedLetterhead?.file_url ||
+    selectedLetterhead?.file_path ||
+    null;
+  const watermarkSrc =
+    wmUrl ||
+    selectedWatermark?.image_url ||
+    selectedWatermark?.preview_url ||
+    selectedWatermark?.file_url ||
+    selectedWatermark?.file_path ||
+    null;
 
   // Fetch blob URL for background letterhead to avoid auth/CSP/embed issues
   useEffect(() => {
@@ -215,7 +229,7 @@ export function TemplateForm({
     setBgUrl(null);
     if (selectedLetterhead?.id) {
       dmsApi.letterheads
-        .download(selectedLetterhead.id)
+        .downloadImage(selectedLetterhead.id)
         .then(({ blob }: { blob: Blob }) => {
           if (blob instanceof Blob && blob.size > 0) {
             const url = URL.createObjectURL(blob);
@@ -238,7 +252,7 @@ export function TemplateForm({
     setWmUrl(null);
     if (selectedWatermark?.id) {
       dmsApi.letterheads
-        .download(selectedWatermark.id)
+        .downloadImage(selectedWatermark.id)
         .then(({ blob }: { blob: Blob }) => {
           if (blob instanceof Blob && blob.size > 0) {
             const url = URL.createObjectURL(blob);
@@ -1043,15 +1057,24 @@ export function TemplateForm({
               </div>
             )}
 
-            {/* Field Placeholder Selector */}
-            <Card>
-              <CardContent className="p-4">
-                <FieldPlaceholderSelector
-                  recipientType={category}
-                  onInsert={handleInsertField}
-                />
-              </CardContent>
-            </Card>
+            {/* Field Placeholder Selector - Always visible for easy access to all fields */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Available Fields</h3>
+              </div>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Insert common fields from <strong>students</strong>, <strong>staff</strong>, <strong>applicants</strong>, and <strong>general information</strong>. 
+                    All system fields are available regardless of template category.
+                  </p>
+                  <FieldPlaceholderSelector
+                    recipientType={category}
+                    onInsert={handleInsertField}
+                  />
+                </CardContent>
+              </Card>
+            </div>
 
           </div>
 
@@ -1235,36 +1258,22 @@ export function TemplateForm({
                     }
                   }}
                 >
-                  {/* Letterhead Background (image/PDF) */}
-                  {selectedLetterhead && (bgUrl || selectedLetterhead.file_url || selectedLetterhead.file_path) && (
-                    selectedLetterhead.file_type === "pdf" ? (
-                      <object
-                        data={bgUrl || selectedLetterhead.file_url || selectedLetterhead.file_path}
-                        type="application/pdf"
-                        className="absolute inset-0 w-full h-full"
-                        style={{ opacity: 0.35, pointerEvents: "none" }}
-                      >
-                        {/* Fallback for browsers that can't render PDF in object */}
-                        <div className="absolute inset-0 flex items-center justify-center bg-muted/30 text-xs text-muted-foreground">
-                          PDF letterhead preview not supported in this view
-                        </div>
-                      </object>
-                    ) : (
-                      <div
-                        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                        style={{
-                          backgroundImage: `url(${bgUrl || selectedLetterhead.file_url || selectedLetterhead.file_path})`,
-                          opacity: 0.95,
-                        }}
-                      />
-                    )
+                  {/* Letterhead Background (rendered image) */}
+                  {selectedLetterhead && letterheadSrc && (
+                    <div
+                      className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                      style={{
+                        backgroundImage: `url(${letterheadSrc})`,
+                        opacity: 0.95,
+                      }}
+                    />
                   )}
 
                   {/* Watermark */}
-                  {selectedWatermark && (wmUrl || selectedWatermark.file_url || selectedWatermark.file_path) && (
+                  {selectedWatermark && watermarkSrc && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <img
-                        src={wmUrl || selectedWatermark.file_url || selectedWatermark.file_path}
+                        src={watermarkSrc}
                         alt="Watermark"
                         className="max-w-[60%] max-h-[60%] object-contain"
                         style={{ opacity: 0.08 }}

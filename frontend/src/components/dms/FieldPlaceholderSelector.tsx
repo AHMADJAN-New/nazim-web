@@ -24,7 +24,8 @@ interface FieldPlaceholderSelectorProps {
 }
 
 // All available recipient types to fetch fields from
-const ALL_RECIPIENT_TYPES = ['general', 'students', 'staff', 'parents', 'applicants'];
+// Note: Backend expects singular forms: 'student', 'staff', 'applicant', 'general'
+const ALL_RECIPIENT_TYPES = ['general', 'student', 'staff', 'applicant'];
 
 export function FieldPlaceholderSelector({
   recipientType,
@@ -37,13 +38,21 @@ export function FieldPlaceholderSelector({
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Fetch available fields for ALL recipient types to allow inserting any field
-  const { data: allFieldsData, isLoading } = useQuery({
+  const { data: allFieldsData, isLoading, error } = useQuery({
     queryKey: ['template-fields', 'all'],
     queryFn: async () => {
       // Fetch fields for all recipient types
-      const allFieldsPromises = ALL_RECIPIENT_TYPES.map(type => 
-        dmsApi.templates.getAvailableFields(type).catch(() => ({ fields: [], grouped_fields: {} }))
-      );
+      const allFieldsPromises = ALL_RECIPIENT_TYPES.map(async (type) => {
+        try {
+          const result = await dmsApi.templates.getAvailableFields(type);
+          return result || { fields: [], grouped_fields: {} };
+        } catch (err) {
+          if (import.meta.env.DEV) {
+            console.warn(`[FieldPlaceholderSelector] Failed to fetch fields for type "${type}":`, err);
+          }
+          return { fields: [], grouped_fields: {} };
+        }
+      });
       const allResults = await Promise.all(allFieldsPromises);
       
       // Combine all fields, removing duplicates by key
@@ -65,6 +74,10 @@ export function FieldPlaceholderSelector({
         grouped[field.group].push(field);
       });
       
+      if (import.meta.env.DEV) {
+        console.log(`[FieldPlaceholderSelector] Loaded ${fieldsMap.size} unique fields from ${ALL_RECIPIENT_TYPES.length} recipient types`);
+      }
+      
       return {
         fields: Array.from(fieldsMap.values()),
         grouped_fields: grouped,
@@ -72,6 +85,7 @@ export function FieldPlaceholderSelector({
     },
     enabled: true, // Always enabled to fetch all fields
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    refetchOnWindowFocus: false,
   });
 
   const fields = allFieldsData?.fields || [];
@@ -127,6 +141,17 @@ export function FieldPlaceholderSelector({
       <div className={`space-y-2 ${className}`}>
         <Label>{t('dms.fields.available_fields')}</Label>
         <div className="text-sm text-muted-foreground">{t('common.loading')}...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={`space-y-2 ${className}`}>
+        <Label>{t('dms.fields.available_fields')}</Label>
+        <div className="text-sm text-destructive">
+          Failed to load fields. Please refresh the page.
+        </div>
       </div>
     );
   }

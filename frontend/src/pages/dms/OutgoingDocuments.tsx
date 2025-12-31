@@ -34,6 +34,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { FileText, Upload, Search, Plus, X, Eye, File, Download, Image as ImageIcon, X as XIcon, Edit, Trash2, MoreHorizontal } from "lucide-react";
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
+import { generateLetterPdf } from "@/services/dms/LetterPdfGenerator";
 
 const statusOptions = [
   { label: "Draft", value: "draft" },
@@ -440,7 +441,7 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
 }
 
 export default function OutgoingDocuments() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { profile } = useAuth();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState({
@@ -706,12 +707,38 @@ export default function OutgoingDocuments() {
         return;
       }
 
-      const { blob, filename } = await dmsApi.outgoing.downloadPdf(doc.id);
+      const fullDoc = doc.template ? doc : await dmsApi.outgoing.get(doc.id);
+      if (!fullDoc.template) {
+        showToast.error('Template data is missing for this document.');
+        return;
+      }
+
+      const letterhead = fullDoc.letterhead || fullDoc.template.letterhead || null;
+      const letterheadImage = letterhead?.image_url || letterhead?.preview_url || letterhead?.file_url || null;
+      const letterheadPosition = letterhead?.position === "header" ? "header" : "background";
+      const watermark = fullDoc.template.watermark || null;
+      const watermarkImage = watermark?.image_url || watermark?.preview_url || watermark?.file_url || null;
+      const bodyText = fullDoc.body_html || fullDoc.template.body_text || "";
+      const variables = fullDoc.body_html
+        ? undefined
+        : Object.entries(fullDoc.template_variables || {}).reduce<Record<string, string>>((acc, [key, value]) => {
+            acc[key] = value !== null && value !== undefined ? String(value) : "";
+            return acc;
+          }, {});
+
+      const blob = await generateLetterPdf(fullDoc.template, {
+        variables,
+        bodyText,
+        letterheadImage,
+        letterheadPosition,
+        watermarkImage,
+        direction: isRTL ? "rtl" : "ltr",
+      });
       const url = window.URL.createObjectURL(blob);
 
       const a = document.createElement('a');
       a.href = url;
-      a.download = filename || `${doc.full_outdoc_number || 'outgoing-document'}.pdf`;
+      a.download = `${fullDoc.full_outdoc_number || 'outgoing-document'}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();

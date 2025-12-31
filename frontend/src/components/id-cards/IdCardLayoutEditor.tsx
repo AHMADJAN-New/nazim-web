@@ -15,6 +15,14 @@ import { useStudents } from '@/hooks/useStudents';
 import type { Student } from '@/types/domain/student';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { formatDate } from '@/lib/calendarAdapter';
+import {
+  CARD_ASPECT_RATIO,
+  DEFAULT_ID_CARD_PADDING_PX,
+  DEFAULT_SCREEN_HEIGHT_PX,
+  DEFAULT_SCREEN_WIDTH_PX,
+  createIdCardRenderMetrics,
+  isIdCardRenderDebugEnabled,
+} from '@/lib/idCards/idCardRenderMetrics';
 
 // Available fonts for ID card templates
 const AVAILABLE_FONTS = [
@@ -164,6 +172,18 @@ export function IdCardLayoutEditor({
   const [studentPhotoUrl, setStudentPhotoUrl] = useState<string | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [previewStudent, setPreviewStudent] = useState<Student | null>(null);
+  const renderMetrics = useMemo(() => {
+    const width = containerDimensions.width || DEFAULT_SCREEN_WIDTH_PX;
+    const height = containerDimensions.height || DEFAULT_SCREEN_HEIGHT_PX;
+    return createIdCardRenderMetrics({
+      totalWidth: width,
+      totalHeight: height,
+      paddingPx: DEFAULT_ID_CARD_PADDING_PX,
+      designWidthPx: DEFAULT_SCREEN_WIDTH_PX,
+      designHeightPx: DEFAULT_SCREEN_HEIGHT_PX,
+    });
+  }, [containerDimensions.height, containerDimensions.width]);
+  const renderDebug = useMemo(() => isIdCardRenderDebugEnabled(), []);
 
   // Get current config based on active tab
   const currentConfig = activeTab === 'front' ? configFront : configBack;
@@ -494,14 +514,19 @@ export function IdCardLayoutEditor({
 
     const rect = containerRef.current.getBoundingClientRect();
     const position = getFieldPosition(field.key);
-    // Account for 20px padding
-    const padding = 20;
-    const fieldX = (position.x / 100) * (rect.width - 2 * padding);
-    const fieldY = (position.y / 100) * (rect.height - 2 * padding);
+    const metrics = createIdCardRenderMetrics({
+      totalWidth: rect.width,
+      totalHeight: rect.height,
+      paddingPx: DEFAULT_ID_CARD_PADDING_PX,
+      designWidthPx: DEFAULT_SCREEN_WIDTH_PX,
+      designHeightPx: DEFAULT_SCREEN_HEIGHT_PX,
+    });
+    const fieldX = metrics.pctToX(position.x);
+    const fieldY = metrics.pctToY(position.y);
 
     setDragOffset({
-      x: e.clientX - rect.left - padding - fieldX,
-      y: e.clientY - rect.top - padding - fieldY,
+      x: e.clientX - rect.left - fieldX,
+      y: e.clientY - rect.top - fieldY,
     });
   }, [currentConfig, currentFields]);
 
@@ -525,10 +550,15 @@ export function IdCardLayoutEditor({
       return;
     }
 
-    // Account for 20px padding
-    const padding = 20;
-    const startX = ((e.clientX - rect.left - padding) / (rect.width - 2 * padding)) * 100;
-    const startY = ((e.clientY - rect.top - padding) / (rect.height - 2 * padding)) * 100;
+    const metrics = createIdCardRenderMetrics({
+      totalWidth: rect.width,
+      totalHeight: rect.height,
+      paddingPx: DEFAULT_ID_CARD_PADDING_PX,
+      designWidthPx: DEFAULT_SCREEN_WIDTH_PX,
+      designHeightPx: DEFAULT_SCREEN_HEIGHT_PX,
+    });
+    const startX = metrics.xToPct(e.clientX - rect.left);
+    const startY = metrics.yToPct(e.clientY - rect.top);
 
     // Get current position and width/height
     let currentX = 20;
@@ -568,9 +598,15 @@ export function IdCardLayoutEditor({
     (e: MouseEvent) => {
       if (isResizing && selectedField && containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        const padding = 20;
-        const currentX = ((e.clientX - rect.left - padding) / (rect.width - 2 * padding)) * 100;
-        const currentY = ((e.clientY - rect.top - padding) / (rect.height - 2 * padding)) * 100;
+        const metrics = createIdCardRenderMetrics({
+          totalWidth: rect.width,
+          totalHeight: rect.height,
+          paddingPx: DEFAULT_ID_CARD_PADDING_PX,
+          designWidthPx: DEFAULT_SCREEN_WIDTH_PX,
+          designHeightPx: DEFAULT_SCREEN_HEIGHT_PX,
+        });
+        const currentX = metrics.xToPct(e.clientX - rect.left);
+        const currentY = metrics.yToPct(e.clientY - rect.top);
 
         const deltaX = currentX - resizeStart.x;
         const deltaY = currentY - resizeStart.y;
@@ -616,10 +652,15 @@ export function IdCardLayoutEditor({
         if (!field) return;
 
         const rect = containerRef.current.getBoundingClientRect();
-        // Account for 20px padding
-        const padding = 20;
-        const x = ((e.clientX - rect.left - dragOffset.x - padding) / (rect.width - 2 * padding)) * 100;
-        const y = ((e.clientY - rect.top - dragOffset.y - padding) / (rect.height - 2 * padding)) * 100;
+        const metrics = createIdCardRenderMetrics({
+          totalWidth: rect.width,
+          totalHeight: rect.height,
+          paddingPx: DEFAULT_ID_CARD_PADDING_PX,
+          designWidthPx: DEFAULT_SCREEN_WIDTH_PX,
+          designHeightPx: DEFAULT_SCREEN_HEIGHT_PX,
+        });
+        const x = metrics.xToPct(e.clientX - rect.left - dragOffset.x);
+        const y = metrics.yToPct(e.clientY - rect.top - dragOffset.y);
 
         // Clamp to container bounds
         const clampedX = Math.max(0, Math.min(100, x));
@@ -723,8 +764,8 @@ export function IdCardLayoutEditor({
       fontSize = fieldFont.fontSize;
     }
     
-    // Use exact font size for preview display (no scaling needed for screen preview)
-    const scaledFontSize = fontSize;
+    // Scale font size relative to the design preview size for consistent rendering
+    const scaledFontSize = fontSize * renderMetrics.fontScale;
     
     // Get text color: use per-field custom color, or fall back to global/default
     let textColor = currentConfig.textColor || '#000000';
@@ -738,27 +779,12 @@ export function IdCardLayoutEditor({
     if (field.isImage) {
       const imagePosition = position as { x: number; y: number; width?: number; height?: number };
       
-      // Convert percentage-based image sizing to pixel-based using containerDimensions
-      // Account for 20px padding on each side
-      const padding = 20;
-      const availableWidth = containerDimensions.width > 0 ? containerDimensions.width - (2 * padding) : 0;
-      const availableHeight = containerDimensions.height > 0 ? containerDimensions.height - (2 * padding) : 0;
-      
       const imageWidthPercent = imagePosition.width ?? (field.id === 'studentPhoto' ? 8 : 10);
       const imageHeightPercent = imagePosition.height ?? (field.id === 'studentPhoto' ? 12 : 10);
       
       // Calculate pixel dimensions from percentages and container dimensions
-      let imageWidthPx: number;
-      let imageHeightPx: number;
-      
-      if (availableWidth > 0 && availableHeight > 0) {
-        imageWidthPx = (imageWidthPercent / 100) * availableWidth;
-        imageHeightPx = (imageHeightPercent / 100) * availableHeight;
-      } else {
-        // Fallback: use percentage if container dimensions not yet available
-        imageWidthPx = (imageWidthPercent / 100) * 400; // Assume 400px container width
-        imageHeightPx = (imageHeightPercent / 100) * 250; // Assume 250px container height
-      }
+      let imageWidthPx = renderMetrics.pctToWidth(imageWidthPercent);
+      let imageHeightPx = renderMetrics.pctToHeight(imageHeightPercent);
       
       // For QR codes, force square dimensions (use smaller dimension)
       if (field.id === 'qrCode') {
@@ -769,13 +795,13 @@ export function IdCardLayoutEditor({
       
       return {
         position: 'absolute' as const,
-        left: `${imagePosition.x}%`,
-        top: `${imagePosition.y}%`,
+        left: `${renderMetrics.pctToX(imagePosition.x)}px`,
+        top: `${renderMetrics.pctToY(imagePosition.y)}px`,
         transform: 'translate(-50%, -50%)',
         width: `${imageWidthPx}px`,
         height: `${imageHeightPx}px`,
-        border: isSelected ? '2px dashed #3b82f6' : '2px dashed #666',
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        border: isSelected ? '2px dashed #3b82f6' : '2px dashed transparent',
+        backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.8)' : 'transparent',
         cursor: 'move',
         zIndex: isSelected || isDragging ? 10 : 1,
         opacity: isDragging ? 0.7 : 1,
@@ -785,8 +811,8 @@ export function IdCardLayoutEditor({
 
     return {
       position: 'absolute' as const,
-      left: `${position.x}%`,
-      top: `${position.y}%`,
+      left: `${renderMetrics.pctToX(position.x)}px`,
+      top: `${renderMetrics.pctToY(position.y)}px`,
       transform: 'translate(-50%, -50%)',
       fontSize: `${scaledFontSize}px`,
       fontFamily,
@@ -874,7 +900,11 @@ export function IdCardLayoutEditor({
                   <div
                     ref={containerRef}
                     className="relative w-full bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg overflow-visible"
-                    style={{ aspectRatio: '85.6/53.98', maxHeight: '400px', padding: '20px' }}
+                    style={{
+                      aspectRatio: CARD_ASPECT_RATIO,
+                      maxHeight: `${DEFAULT_SCREEN_HEIGHT_PX}px`,
+                      padding: `${DEFAULT_ID_CARD_PADDING_PX}px`,
+                    }}
                     onClick={() => setSelectedField(null)}
                   >
                     {currentImageError ? (
@@ -898,6 +928,54 @@ export function IdCardLayoutEditor({
                             style={{ display: currentImageLoaded ? 'block' : 'none' }}
                           />
                         )}
+                      </>
+                    )}
+
+                    {renderDebug && (
+                      <>
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            border: '1px solid rgba(220, 38, 38, 0.6)',
+                            pointerEvents: 'none',
+                            zIndex: 2,
+                          }}
+                        />
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: `${renderMetrics.paddingPx}px`,
+                            top: `${renderMetrics.paddingPx}px`,
+                            width: `${renderMetrics.contentWidth}px`,
+                            height: `${renderMetrics.contentHeight}px`,
+                            border: '1px dashed rgba(37, 99, 235, 0.7)',
+                            pointerEvents: 'none',
+                            zIndex: 2,
+                          }}
+                        />
+                        {currentFields
+                          .filter((field) => currentConfig.enabledFields?.includes(field.id))
+                          .map((field) => {
+                            const position = getFieldPosition(field.key);
+                            return (
+                              <div
+                                key={`debug-${field.id}`}
+                                style={{
+                                  position: 'absolute',
+                                  left: `${renderMetrics.pctToX(position.x)}px`,
+                                  top: `${renderMetrics.pctToY(position.y)}px`,
+                                  width: '6px',
+                                  height: '6px',
+                                  borderRadius: '50%',
+                                  backgroundColor: 'rgba(37, 99, 235, 0.9)',
+                                  transform: 'translate(-50%, -50%)',
+                                  pointerEvents: 'none',
+                                  zIndex: 3,
+                                }}
+                              />
+                            );
+                          })}
                       </>
                     )}
 
@@ -943,7 +1021,7 @@ export function IdCardLayoutEditor({
                         >
                           {isImageField ? (
                             <div 
-                              className="relative border-2 border-dashed border-blue-400 bg-blue-50 rounded p-2" 
+                              className="relative rounded p-2" 
                               style={{ 
                                 width: '100%',
                                 height: '100%',
@@ -953,6 +1031,8 @@ export function IdCardLayoutEditor({
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
+                                border: selectedField === field.id ? '2px dashed #3b82f6' : '2px dashed transparent',
+                                backgroundColor: selectedField === field.id ? 'rgba(59, 130, 246, 0.08)' : 'transparent',
                               }}
                             >
                               {/* Resize handles - only show when selected */}
@@ -1403,7 +1483,11 @@ export function IdCardLayoutEditor({
                   <div
                     ref={containerRef}
                     className="relative w-full bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg overflow-visible"
-                    style={{ aspectRatio: '85.6/53.98', maxHeight: '400px', padding: '20px' }}
+                    style={{
+                      aspectRatio: CARD_ASPECT_RATIO,
+                      maxHeight: `${DEFAULT_SCREEN_HEIGHT_PX}px`,
+                      padding: `${DEFAULT_ID_CARD_PADDING_PX}px`,
+                    }}
                     onClick={() => setSelectedField(null)}
                   >
                     {currentImageError ? (
@@ -1427,6 +1511,54 @@ export function IdCardLayoutEditor({
                             style={{ display: currentImageLoaded ? 'block' : 'none' }}
                           />
                         )}
+                      </>
+                    )}
+
+                    {renderDebug && (
+                      <>
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            border: '1px solid rgba(220, 38, 38, 0.6)',
+                            pointerEvents: 'none',
+                            zIndex: 2,
+                          }}
+                        />
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: `${renderMetrics.paddingPx}px`,
+                            top: `${renderMetrics.paddingPx}px`,
+                            width: `${renderMetrics.contentWidth}px`,
+                            height: `${renderMetrics.contentHeight}px`,
+                            border: '1px dashed rgba(37, 99, 235, 0.7)',
+                            pointerEvents: 'none',
+                            zIndex: 2,
+                          }}
+                        />
+                        {currentFields
+                          .filter((field) => currentConfig.enabledFields?.includes(field.id))
+                          .map((field) => {
+                            const position = getFieldPosition(field.key);
+                            return (
+                              <div
+                                key={`debug-${field.id}`}
+                                style={{
+                                  position: 'absolute',
+                                  left: `${renderMetrics.pctToX(position.x)}px`,
+                                  top: `${renderMetrics.pctToY(position.y)}px`,
+                                  width: '6px',
+                                  height: '6px',
+                                  borderRadius: '50%',
+                                  backgroundColor: 'rgba(37, 99, 235, 0.9)',
+                                  transform: 'translate(-50%, -50%)',
+                                  pointerEvents: 'none',
+                                  zIndex: 3,
+                                }}
+                              />
+                            );
+                          })}
                       </>
                     )}
 
@@ -1837,4 +1969,3 @@ export function IdCardLayoutEditor({
     </div>
   );
 }
-

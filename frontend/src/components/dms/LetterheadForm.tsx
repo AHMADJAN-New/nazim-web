@@ -77,6 +77,8 @@ export function LetterheadForm({
       } else {
         setPreviewUrl(null);
       }
+    } else if (letterhead?.image_url) {
+      setPreviewUrl(letterhead.image_url);
     } else if (letterhead?.preview_url) {
       setPreviewUrl(letterhead.preview_url);
     } else if (letterhead?.file_url && letterhead.file_type === "image") {
@@ -109,7 +111,7 @@ export function LetterheadForm({
 
   const removeFile = () => {
     setValue("file", undefined, { shouldValidate: true });
-    setPreviewUrl(letterhead?.preview_url || null);
+    setPreviewUrl(letterhead?.image_url || letterhead?.preview_url || null);
   };
 
   return (
@@ -185,7 +187,7 @@ export function LetterheadForm({
                 </div>
               </CardContent>
             </Card>
-            {previewUrl && fileType === "image" && (
+            {previewUrl && (
               <div className="border rounded-lg overflow-hidden">
                 <img
                   src={previewUrl}
@@ -335,4 +337,3 @@ export function LetterheadForm({
     </form>
   );
 }
-

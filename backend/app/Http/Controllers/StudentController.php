@@ -119,12 +119,42 @@ class StudentController extends Controller
             
             $students = $query->orderBy('created_at', 'desc')->paginate((int)$perPage);
             
+            // Add current class information from student admissions
+            $students->getCollection()->transform(function ($student) {
+                $admission = \App\Models\StudentAdmission::where('student_id', $student->id)
+                    ->whereNull('deleted_at')
+                    ->with(['classAcademicYear.class', 'class'])
+                    ->orderBy('admission_date', 'desc')
+                    ->first();
+                
+                if ($admission) {
+                    $student->current_class = $admission->classAcademicYear?->class ?? $admission->class;
+                }
+                
+                return $student;
+            });
+            
             // Return paginated response in Laravel's standard format
             return response()->json($students);
         }
 
         // Return all results if no pagination requested (backward compatibility)
         $students = $query->orderBy('created_at', 'desc')->get();
+        
+        // Add current class information from student admissions
+        $students->transform(function ($student) {
+            $admission = \App\Models\StudentAdmission::where('student_id', $student->id)
+                ->whereNull('deleted_at')
+                ->with(['classAcademicYear.class', 'class'])
+                ->orderBy('admission_date', 'desc')
+                ->first();
+            
+            if ($admission) {
+                $student->current_class = $admission->classAcademicYear?->class ?? $admission->class;
+            }
+            
+            return $student;
+        });
 
         return response()->json($students);
     }
@@ -171,6 +201,17 @@ class StudentController extends Controller
 
         if (!$student) {
             return response()->json(['error' => 'Student not found'], 404);
+        }
+
+        // Get current class from student admissions
+        $admission = \App\Models\StudentAdmission::where('student_id', $student->id)
+            ->whereNull('deleted_at')
+            ->with(['classAcademicYear.class', 'class'])
+            ->orderBy('admission_date', 'desc')
+            ->first();
+        
+        if ($admission) {
+            $student->current_class = $admission->classAcademicYear?->class ?? $admission->class;
         }
 
         // Org access is implicitly enforced by organization middleware + school scope.

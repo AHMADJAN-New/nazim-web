@@ -12,8 +12,9 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useStudentIdCard } from '@/hooks/useStudentIdCards';
 import { useIdCardTemplate } from '@/hooks/useIdCardTemplates';
 import { showToast } from '@/lib/toast';
-import { renderIdCardToDataUrl } from '@/lib/idCards/idCardCanvasRenderer';
+import { renderIdCardToCanvas, renderIdCardToDataUrl } from '@/lib/idCards/idCardCanvasRenderer';
 import { exportIdCardToPdf } from '@/lib/idCards/idCardPdfExporter';
+import { DEFAULT_ID_CARD_PADDING_PX, getDefaultPrintRenderSize, getDefaultScreenRenderSize } from '@/lib/idCards/idCardRenderMetrics';
 import type { StudentIdCard } from '@/types/domain/studentIdCard';
 import type { IdCardTemplate } from '@/types/domain/idCardTemplate';
 import type { Student } from '@/types/domain/student';
@@ -41,6 +42,8 @@ export function StudentIdCardPreview({
   const [side, setSide] = useState<'front' | 'back'>(initialSide);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const screenRenderSize = getDefaultScreenRenderSize();
+  const printRenderSize = getDefaultPrintRenderSize();
   
   // Fetch full card data if only ID is provided
   const cardId = card?.id;
@@ -143,6 +146,9 @@ export function StudentIdCardPreview({
           side,
           {
             quality: 'screen', // Use screen dimensions to match export
+            renderWidthPx: screenRenderSize.width,
+            renderHeightPx: screenRenderSize.height,
+            paddingPx: DEFAULT_ID_CARD_PADDING_PX,
             scale: 1,
             mimeType: 'image/jpeg',
             jpegQuality: 0.95,
@@ -201,6 +207,9 @@ export function StudentIdCardPreview({
       setIsLoadingPreview(true);
       const canvas = await renderIdCardToCanvas(actualTemplate, student, side, { 
         quality: 'print',
+        renderWidthPx: printRenderSize.width,
+        renderHeightPx: printRenderSize.height,
+        paddingPx: DEFAULT_ID_CARD_PADDING_PX,
         notes: actualCard?.notes || null,
         expiryDate: actualCard?.printedAt ? new Date(actualCard.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null,
       });
@@ -304,8 +313,11 @@ export function StudentIdCardPreview({
         student,
         side,
         {
-          quality: 'print',
-          scale: 2,
+          quality: 'screen',
+          renderWidthPx: screenRenderSize.width,
+          renderHeightPx: screenRenderSize.height,
+          paddingPx: DEFAULT_ID_CARD_PADDING_PX,
+          scale: 1,
           mimeType: 'image/jpeg',
           jpegQuality: 0.95,
           notes: actualCard?.notes || null,
@@ -513,4 +525,3 @@ export function StudentIdCardPreview({
     </Card>
   );
 }
-

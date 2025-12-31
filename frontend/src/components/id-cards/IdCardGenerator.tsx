@@ -360,10 +360,18 @@ export function IdCardGenerator({
                 const photoWidth = (photoWidthPercent / 100) * width;
                 const photoHeight = (photoHeightPercent / 100) * height;
 
+                // Save context state and disable stroke to prevent dark border
+                ctx.save();
+                ctx.lineWidth = 0;
+                ctx.strokeStyle = 'transparent';
+                
                 // Positions in the layout designer are CENTER-based, so draw image centered.
                 const drawX = pos.x - photoWidth / 2;
                 const drawY = pos.y - photoHeight / 2;
                 ctx.drawImage(photoImg, drawX, drawY, photoWidth, photoHeight);
+                
+                // Restore context state
+                ctx.restore();
                 resolve(null);
               };
               photoImg.onerror = reject;

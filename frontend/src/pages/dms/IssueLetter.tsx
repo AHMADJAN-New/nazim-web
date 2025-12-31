@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { formatDate } from '@/lib/utils';
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { dmsApi } from "@/lib/api/client";
 import type { LetterTemplate, TemplateVariable, OutgoingDocument } from "@/types/dms";
@@ -14,7 +14,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { showToast } from "@/lib/toast";
 import { SecurityBadge } from "@/components/dms/SecurityBadge";
 import { DocumentNumberBadge } from "@/components/dms/DocumentNumberBadge";
-import { AlertCircle, Loader2, RefreshCw, Printer } from "lucide-react";
+import { AlertCircle, Download, Image as ImageIcon, Loader2, Printer, RefreshCw, Upload } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { useClassAcademicYears } from "@/hooks/useClasses";
@@ -24,12 +24,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { IssuedLettersTable } from "@/components/dms/IssuedLettersTable";
 import { LetterDetailsPanel } from "@/components/dms/LetterDetailsPanel";
 import { ImageFileUploader } from "@/components/dms/ImageFileUploader";
+import { CalendarDatePicker } from "@/components/ui/calendar-date-picker";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Upload, X, File as FileIcon } from "lucide-react";
-
-type TemplatePreviewResponse = {
-  html?: string | null;
-};
+import { renderLetterToDataUrl } from "@/services/dms/LetterCanvasRenderer";
+import { generateLetterPdf } from "@/services/dms/LetterPdfGenerator";
 
 type IssuePayload = {
   subject: string;
@@ -63,16 +61,30 @@ type IssueRequestPayload = {
   security_level_key: string;
 };
 
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, data] = dataUrl.split(',');
+  const mimeMatch = header.match(/data:(.*?);base64/);
+  const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+  const binary = atob(data);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mime });
+}
+
 export default function IssueLetter() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { profile } = useAuth();
 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [template, setTemplate] = useState<LetterTemplate | null>(null);
   const [variables, setVariables] = useState<Record<string, string>>({});
-  const [previewHtml, setPreviewHtml] = useState<string>("");
+  const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const previewRenderIdRef = useRef(0);
+  const [lastRenderedKey, setLastRenderedKey] = useState<string>("");
   
   // State for issued letters tab
   const [selectedLetter, setSelectedLetter] = useState<OutgoingDocument | null>(null);
@@ -208,8 +220,11 @@ export default function IssueLetter() {
     }
     setVariables(initialVars);
 
-    setPreviewHtml("");
+    previewRenderIdRef.current += 1;
+    setPreviewImageUrl("");
+    setLastRenderedKey("");
     setPreviewError(null);
+    setIsPreviewLoading(false);
   }, [templateDetails]);
 
   // Reset student selection when academic year or class changes
@@ -330,79 +345,107 @@ export default function IssueLetter() {
     selectedApplicant,
   ]);
 
-  // Preview mutation
-  const previewMutation = useMutation({
-    mutationFn: async (): Promise<TemplatePreviewResponse> => {
-      if (!templateDetails?.id) return { html: "" };
-      setIsPreviewLoading(true);
-      try {
-        // Pass recipient_id and recipient_type so backend can use actual data instead of mock data
-        const response = await dmsApi.templates.preview(
-          templateDetails.id,
-          previewVariables,
-          {
-            recipient_type: payload.recipient_type,
-            recipient_id: payload.recipient_id || undefined,
-          }
-        );
-        return response as TemplatePreviewResponse;
-      } finally {
-        setIsPreviewLoading(false);
+  const letterheadImage = useMemo(() => {
+    if (!template?.letterhead) return null;
+    return template.letterhead.image_url || template.letterhead.preview_url || template.letterhead.file_url || null;
+  }, [template?.letterhead]);
+
+  const watermarkImage = useMemo(() => {
+    if (!template?.watermark) return null;
+    return template.watermark.image_url || template.watermark.preview_url || template.watermark.file_url || null;
+  }, [template?.watermark]);
+
+  const letterheadPosition = useMemo(() => {
+    if (template?.letterhead?.position === "header") return "header";
+    return "background";
+  }, [template?.letterhead?.position]);
+
+  const renderKey = useMemo(() => {
+    const varsKey = Object.keys(previewVariables)
+      .sort()
+      .map((key) => `${key}:${previewVariables[key] ?? ""}`)
+      .join("|");
+    return [
+      template?.id || "",
+      template?.updated_at || "",
+      letterheadImage || "",
+      watermarkImage || "",
+      letterheadPosition || "",
+      isRTL ? "rtl" : "ltr",
+      varsKey,
+    ].join("::");
+  }, [
+    template?.id,
+    template?.updated_at,
+    previewVariables,
+    letterheadImage,
+    watermarkImage,
+    letterheadPosition,
+    isRTL,
+  ]);
+
+  const canRenderPreview = useMemo(() => {
+    if (!template?.id) return false;
+    if (payload.recipient_type === "student" && !payload.student_admission_id) return false;
+    if (payload.recipient_type === "staff" && !payload.staff_id) return false;
+    if (payload.recipient_type === "applicant" && !payload.applicant_id) return false;
+    return true;
+  }, [
+    template?.id,
+    payload.recipient_type,
+    payload.student_admission_id,
+    payload.staff_id,
+    payload.applicant_id,
+  ]);
+
+  const renderPreview = useCallback(async () => {
+    if (!template) return;
+    const renderId = ++previewRenderIdRef.current;
+    setIsPreviewLoading(true);
+    setPreviewError(null);
+    try {
+      const dataUrl = await renderLetterToDataUrl(template, {
+        variables: previewVariables,
+        letterheadImage,
+        letterheadPosition,
+        watermarkImage,
+        scale: 2,
+        mimeType: "image/jpeg",
+        quality: 0.95,
+        direction: isRTL ? "rtl" : "ltr",
+      });
+      if (renderId === previewRenderIdRef.current) {
+        setPreviewImageUrl(dataUrl);
+        setLastRenderedKey(renderKey);
       }
-    },
-    onSuccess: (data) => {
-      setPreviewError(null);
-      setPreviewHtml(data?.html || "");
-      if (import.meta.env.DEV) {
-        console.log("[IssueLetter] Preview generated successfully, HTML length:", data?.html?.length || 0);
-        // Check if HTML contains letterhead background
-        const hasLetterhead = data?.html?.includes('letterhead-background') || data?.html?.includes('letterhead-header');
-        const hasBackgroundImage = data?.html?.includes('background-image');
-        const hasDataUrl = data?.html?.includes('data:image') || data?.html?.includes('data:application/pdf');
-        console.log("[IssueLetter] Preview HTML analysis:", {
-          hasLetterhead,
-          hasBackgroundImage,
-          hasDataUrl,
-          htmlPreview: data?.html?.substring(0, 500) + "...",
-        });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to render preview";
+      if (renderId === previewRenderIdRef.current) {
+        setPreviewError(message);
+        setPreviewImageUrl("");
       }
-    },
-    onError: (err: unknown) => {
-      const message =
-        err instanceof Error ? err.message : "Failed to generate preview";
-      setPreviewError(message);
-      setPreviewHtml("");
       if (import.meta.env.DEV) {
         console.error("[IssueLetter] Preview error:", err);
       }
-    },
-  });
+    } finally {
+      if (renderId === previewRenderIdRef.current) {
+        setIsPreviewLoading(false);
+      }
+    }
+  }, [template, previewVariables, letterheadImage, letterheadPosition, watermarkImage, isRTL, renderKey]);
 
   // Auto-generate preview when template or variables change
   useEffect(() => {
-    if (!templateDetails?.id) {
-      setPreviewHtml("");
+    if (!canRenderPreview) {
+      setPreviewImageUrl("");
       setPreviewError(null);
       return;
     }
-
-    // Only auto-preview if we have required data
-    if (payload.recipient_type === "student" && !payload.student_admission_id) {
-      return;
-    }
-    if (payload.recipient_type === "staff" && !payload.staff_id) {
-      return;
-    }
-    if (payload.recipient_type === "applicant" && !payload.applicant_id) {
-      return;
-    }
-
     const tmr = window.setTimeout(() => {
-      previewMutation.mutate();
-    }, 500);
+      renderPreview();
+    }, 300);
     return () => window.clearTimeout(tmr);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templateDetails?.id, previewVariables, payload.recipient_type, payload.student_admission_id, payload.staff_id, payload.applicant_id]);
+  }, [canRenderPreview, renderPreview]);
 
   // Create draft mutation
   const createDraftMutation = useMutation<unknown, unknown, IssueRequestPayload>({
@@ -465,8 +508,11 @@ export default function IssueLetter() {
     setSelectedTemplateId("");
     setTemplate(null);
     setVariables({});
-    setPreviewHtml("");
+    previewRenderIdRef.current += 1;
+    setPreviewImageUrl("");
+    setLastRenderedKey("");
     setPreviewError(null);
+    setIsPreviewLoading(false);
     setPayload({
       subject: "",
       issue_date: new Date().toISOString().slice(0, 10),
@@ -534,6 +580,7 @@ export default function IssueLetter() {
   };
 
   const templateVariables = (template?.variables as TemplateVariable[]) || [];
+  const previewAspectRatio = template?.page_layout === "A4_landscape" ? "297 / 210" : "210 / 297";
 
   // Prepare combobox options
   const academicYearOptions = academicYears.map((ay) => ({
@@ -566,88 +613,151 @@ export default function IssueLetter() {
     setIsDetailsPanelOpen(true);
   };
 
+  const getRenderedImage = useCallback(async () => {
+    if (!template) {
+      throw new Error(t("dms.issueLetter.selectTemplateFirst") || "Please select a template first");
+    }
+    if (previewImageUrl && !isPreviewLoading && lastRenderedKey === renderKey) {
+      return previewImageUrl;
+    }
+    return renderLetterToDataUrl(template, {
+      variables: previewVariables,
+      letterheadImage,
+      letterheadPosition,
+      watermarkImage,
+      scale: 2,
+      mimeType: "image/jpeg",
+      quality: 0.95,
+      direction: isRTL ? "rtl" : "ltr",
+    });
+  }, [
+    template,
+    previewImageUrl,
+    isPreviewLoading,
+    lastRenderedKey,
+    renderKey,
+    previewVariables,
+    letterheadImage,
+    letterheadPosition,
+    watermarkImage,
+    t,
+    isRTL,
+  ]);
+
+  const handleDownloadImage = async () => {
+    try {
+      const dataUrl = await getRenderedImage();
+      const blob = dataUrlToBlob(dataUrl);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${payload.subject || "letter"}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      showToast.error(error.message || "Failed to download image");
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!template) {
+      showToast.error(t("dms.issueLetter.selectTemplateFirst") || "Please select a template first");
+      return;
+    }
+    try {
+      showToast.info(t("dms.issueLetter.generatingPdf") || "Generating PDF...");
+      const imageDataUrl = await getRenderedImage();
+      const blob = await generateLetterPdf(template, {
+        imageDataUrl,
+        variables: previewVariables,
+        letterheadImage,
+        letterheadPosition,
+        watermarkImage,
+        direction: isRTL ? "rtl" : "ltr",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${payload.subject || "letter"}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      showToast.error(error.message || "Failed to download PDF");
+    }
+  };
+
   const handlePrintPreview = async () => {
-    if (!templateDetails?.id) {
+    if (!template) {
       showToast.error(t("dms.issueLetter.selectTemplateFirst") || "Please select a template first");
       return;
     }
 
     try {
-      // Show loading state
       showToast.info(t("dms.issueLetter.generatingPdf") || "Generating PDF...");
-      
-      // Generate PDF from preview data
-      const blob = await dmsApi.templates.previewPdf(
-        templateDetails.id,
-        previewVariables,
-        {
-          recipient_type: payload.recipient_type,
-          recipient_id: payload.recipient_id || undefined,
-        }
-      );
-      
+      const imageDataUrl = await getRenderedImage();
+      const blob = await generateLetterPdf(template, {
+        imageDataUrl,
+        variables: previewVariables,
+        letterheadImage,
+        letterheadPosition,
+        watermarkImage,
+        direction: isRTL ? "rtl" : "ltr",
+      });
       const url = window.URL.createObjectURL(blob);
-      
-      // Create a hidden iframe in the current page for printing
-      // This keeps the print dialog in the same tab
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = 'none';
-      iframe.style.opacity = '0';
-      iframe.style.pointerEvents = 'none';
-      iframe.style.zIndex = '-1';
+
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "none";
+      iframe.style.opacity = "0";
+      iframe.style.pointerEvents = "none";
+      iframe.style.zIndex = "-1";
       iframe.src = url;
-      
-      // Store iframe reference for cleanup
+
       let iframeRef: HTMLIFrameElement | null = iframe;
-      let urlRef: string = url;
-      
+      const urlRef = url;
+
       document.body.appendChild(iframe);
-      
-      // Cleanup function
+
       const cleanup = () => {
         if (iframeRef && iframeRef.parentNode) {
           document.body.removeChild(iframeRef);
         }
         window.URL.revokeObjectURL(urlRef);
         iframeRef = null;
-        window.removeEventListener('afterprint', handleAfterPrint);
+        window.removeEventListener("afterprint", handleAfterPrint);
       };
-      
-      // Handle after print event - only clean up when user closes print dialog
+
       const handleAfterPrint = () => {
-        // Wait a bit before cleaning up to ensure print dialog is fully closed
         setTimeout(cleanup, 1000);
       };
-      
-      window.addEventListener('afterprint', handleAfterPrint);
-      
-      // Wait for PDF to load, then trigger print
+
+      window.addEventListener("afterprint", handleAfterPrint);
+
       iframe.onload = () => {
-        // Give PDF more time to fully render (especially for letterheads with images)
         setTimeout(() => {
           try {
             if (iframe.contentWindow && iframeRef) {
               iframe.contentWindow.focus();
-              // Trigger print - dialog will stay open until user closes it
               iframe.contentWindow.print();
             }
           } catch (error) {
             if (import.meta.env.DEV) {
               console.error("[IssueLetter] Print error:", error);
             }
-            // Fallback: open PDF in new window
-            window.open(urlRef, '_blank');
+            window.open(urlRef, "_blank");
             cleanup();
           }
-        }, 2000); // Increased delay to ensure PDF and letterhead images are fully loaded
+        }, 1500);
       };
-      
-      // Fallback: if onload doesn't fire, try after 5 seconds
+
       setTimeout(() => {
         if (iframeRef && document.body.contains(iframeRef)) {
           try {
@@ -656,11 +766,11 @@ export default function IssueLetter() {
               iframeRef.contentWindow.print();
             }
           } catch (error) {
-            window.open(urlRef, '_blank');
+            window.open(urlRef, "_blank");
             cleanup();
           }
         }
-      }, 5000);
+      }, 4000);
     } catch (error: any) {
       if (import.meta.env.DEV) {
         console.error("[IssueLetter] Failed to generate PDF for print:", error);
@@ -1012,26 +1122,42 @@ export default function IssueLetter() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => previewMutation.mutate()}
-                  disabled={!templateDetails?.id || previewMutation.isPending || isPreviewLoading}
+                  onClick={() => renderPreview()}
+                  disabled={!canRenderPreview || isPreviewLoading}
                 >
-                  {previewMutation.isPending || isPreviewLoading ? (
+                  {isPreviewLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <RefreshCw className="h-4 w-4" />
                   )}
                 </Button>
-                {previewHtml && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handlePrintPreview}
-                    disabled={!previewHtml}
-                  >
-                    <Printer className="h-4 w-4 mr-2" />
-                    {t("dms.issueLetter.print") || "Print"}
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleDownloadPdf}
+                  disabled={!canRenderPreview}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {t("dms.issueLetter.downloadPdf") || "Download PDF"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleDownloadImage}
+                  disabled={!canRenderPreview}
+                >
+                  <ImageIcon className="h-4 w-4 mr-2" />
+                  {t("dms.issueLetter.downloadImage") || "Download Image"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handlePrintPreview}
+                  disabled={!canRenderPreview}
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  {t("dms.issueLetter.print") || "Print"}
+                </Button>
               </div>
             </CardTitle>
           </CardHeader>
@@ -1051,8 +1177,8 @@ export default function IssueLetter() {
               </Alert>
             )}
 
-            {(previewMutation.isPending || isPreviewLoading) && (
-              <div className="border rounded-lg bg-muted/50 p-8 text-center min-h-[300px] flex items-center justify-center">
+            {isPreviewLoading && (
+              <div className="border rounded-lg bg-muted/50 p-8 text-center min-h-[600px] flex items-center justify-center">
                 <div className="space-y-2">
                   <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
                   <p className="text-sm text-muted-foreground">Generating preview...</p>
@@ -1060,17 +1186,21 @@ export default function IssueLetter() {
               </div>
             )}
 
-            {!previewMutation.isPending && !isPreviewLoading && previewHtml ? (
+            {!isPreviewLoading && previewImageUrl ? (
               <div className="border rounded-lg bg-white overflow-hidden">
-                <iframe
-                  srcDoc={previewHtml}
-                  className="w-full border-0"
-                  style={{ minHeight: "800px" }}
-                  title="Outgoing Template Preview"
-                />
+                <div
+                  className="w-full"
+                  style={{ aspectRatio: previewAspectRatio, minHeight: "600px" }}
+                >
+                  <img
+                    src={previewImageUrl}
+                    alt="Letter preview"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
               </div>
-            ) : !previewMutation.isPending && !isPreviewLoading && !previewHtml ? (
-              <div className="rounded-md border bg-muted/50 p-6 text-sm text-muted-foreground min-h-[300px] flex items-center justify-center">
+            ) : !isPreviewLoading && !previewImageUrl ? (
+              <div className="rounded-md border bg-muted/50 p-6 text-sm text-muted-foreground min-h-[600px] flex items-center justify-center">
                 <div className="text-center">
                   <p>Select a template and recipient to see a live preview.</p>
                   {payload.recipient_type === "student" && !payload.student_admission_id && (
@@ -1112,51 +1242,31 @@ export default function IssueLetter() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {issuedDocument && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Document Number:</span>
-                  <DocumentNumberBadge value={issuedDocument.full_outdoc_number || 'N/A'} type="outgoing" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Subject:</span>
-                  <span className="text-sm text-muted-foreground">{issuedDocument.subject}</span>
-                </div>
-                {issuedDocument.issue_date && (
+            {draftLetterId ? (
+              <>
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Issue Date:</span>
-                    <span className="text-sm text-muted-foreground">
-                      {formatDate(issuedDocument.issue_date)}
-                    </span>
+                    <span className="text-sm font-medium">Subject:</span>
+                    <span className="text-sm text-muted-foreground">{payload.subject || template?.name || "N/A"}</span>
                   </div>
-                )}
+                  {payload.issue_date && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Issue Date:</span>
+                      <span className="text-sm text-muted-foreground">
+                        {formatDate(payload.issue_date)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <ImageFileUploader ownerType="outgoing" ownerId={draftLetterId} />
+              </>
+            ) : (
+              <div className="rounded-md border bg-muted/50 p-4 text-sm text-muted-foreground">
+                Create a draft to upload attachments.
               </div>
             )}
             <div className="flex gap-2 pt-2">
-              <Button
-                onClick={handleDownloadPdf}
-                disabled={!issuedDocument?.id || downloadPdfMutation.isPending}
-                className="flex-1"
-              >
-                {downloadPdfMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowSuccessDialog(false);
-                  setIssuedDocument(null);
-                }}
-              >
+              <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)} className="flex-1">
                 Close
               </Button>
             </div>

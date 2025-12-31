@@ -166,6 +166,12 @@ export function mapStudentApiToDomain(api: StudentApi.Student): Student {
       id: api.school.id,
       schoolName: api.school.school_name,
     } : undefined,
+    currentClass: api.current_class ? {
+      id: api.current_class.id,
+      name: api.current_class.name,
+      code: api.current_class.code,
+      gradeLevel: api.current_class.grade_level,
+    } : null,
   };
 }
 

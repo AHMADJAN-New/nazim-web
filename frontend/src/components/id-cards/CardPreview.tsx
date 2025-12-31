@@ -267,7 +267,15 @@ export function CardPreview({
             const photoImg = new Image();
             await new Promise((resolve, reject) => {
               photoImg.onload = () => {
+                // Save context state and disable stroke to prevent dark border
+                ctx.save();
+                ctx.lineWidth = 0;
+                ctx.strokeStyle = 'transparent';
+                
                 ctx.drawImage(photoImg, pos.x! - pos.width! / 2, pos.y! - pos.height! / 2, pos.width!, pos.height!);
+                
+                // Restore context state
+                ctx.restore();
                 resolve(null);
               };
               photoImg.onerror = reject;

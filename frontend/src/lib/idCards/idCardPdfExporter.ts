@@ -1,6 +1,7 @@
 import type { Student } from '@/types/domain/student';
 import type { IdCardTemplate } from '@/types/domain/idCardTemplate';
-import { renderIdCardToDataUrl, CR80_WIDTH_PX_PRINT, CR80_HEIGHT_PX_PRINT } from './idCardCanvasRenderer';
+import { renderIdCardToDataUrl } from './idCardCanvasRenderer';
+import { DEFAULT_ID_CARD_PADDING_PX, getDefaultPrintRenderSize, getDefaultScreenRenderSize } from './idCardRenderMetrics';
 
 // Import pdfmake for Arabic support - handle both default and named exports
 import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
@@ -164,13 +165,21 @@ export async function exportIdCardToPdf(
     throw new Error('pdfMake.createPdf is not available. Please check pdfmake-arabic import.');
   }
 
-  // Render card to image using screen dimensions to match preview exactly
+  const renderQuality = quality === 'high' ? 'print' : 'screen';
+  const screenRenderSize = getDefaultScreenRenderSize();
+  const printRenderSize = getDefaultPrintRenderSize();
+  const renderSize = renderQuality === 'print' ? printRenderSize : screenRenderSize;
+
+  // Render card to image using shared render metrics
   const cardImageDataUrl = await renderIdCardToDataUrl(
     template,
     student,
     side,
     {
-      quality: 'screen', // Always use screen dimensions to match preview
+      quality: renderQuality,
+      renderWidthPx: renderSize.width,
+      renderHeightPx: renderSize.height,
+      paddingPx: DEFAULT_ID_CARD_PADDING_PX,
       scale: 1,
       mimeType: 'image/jpeg',
       jpegQuality: 0.95,
@@ -185,7 +194,6 @@ export async function exportIdCardToPdf(
       width: CR80_WIDTH_MM * 2.83465, // Convert mm to points (1mm = 2.83465pt)
       height: CR80_HEIGHT_MM * 2.83465,
     },
-    pageOrientation: 'portrait' as const,
     pageMargins: [0, 0, 0, 0],
     content: [
       {
@@ -240,6 +248,11 @@ export async function exportBulkIdCardsToPdf(
     throw new Error('No cards to export');
   }
 
+  const renderQuality = quality === 'high' ? 'print' : 'screen';
+  const screenRenderSize = getDefaultScreenRenderSize();
+  const printRenderSize = getDefaultPrintRenderSize();
+  const renderSize = renderQuality === 'print' ? printRenderSize : screenRenderSize;
+
   // Calculate grid layout
   const cols = Math.ceil(Math.sqrt(cardsPerPage));
   const rows = Math.ceil(cardsPerPage / cols);
@@ -269,13 +282,16 @@ export async function exportBulkIdCardsToPdf(
         if (index < pageCards.length) {
           const { template, student, side, notes, expiryDate } = pageCards[index];
           
-          // Render card to image using screen dimensions to match preview exactly
+          // Render card to image using shared render metrics
           const cardImageDataUrl = await renderIdCardToDataUrl(
             template,
             student,
             side,
             { 
-              quality: 'screen', // Always use screen dimensions to match preview
+              quality: renderQuality,
+              renderWidthPx: renderSize.width,
+              renderHeightPx: renderSize.height,
+              paddingPx: DEFAULT_ID_CARD_PADDING_PX,
               scale: 1,
               mimeType: 'image/jpeg', 
               jpegQuality: 0.95, 
@@ -315,13 +331,16 @@ export async function exportBulkIdCardsToPdf(
   for (let index = 0; index < cards.length; index++) {
     const { template, student, side, notes, expiryDate } = cards[index];
 
-    // Render each card individually using screen dimensions to match preview exactly
+    // Render each card individually using shared render metrics
     const cardImageDataUrl = await renderIdCardToDataUrl(
       template,
       student,
       side,
       {
-        quality: 'screen', // Always use screen dimensions to match preview
+        quality: renderQuality,
+        renderWidthPx: renderSize.width,
+        renderHeightPx: renderSize.height,
+        paddingPx: DEFAULT_ID_CARD_PADDING_PX,
         scale: 1,
         mimeType: 'image/jpeg',
         jpegQuality: 0.95,
@@ -349,11 +368,9 @@ export async function exportBulkIdCardsToPdf(
       width: CR80_WIDTH_MM * 2.83465,
       height: CR80_HEIGHT_MM * 2.83465,
     },
-    pageOrientation: 'portrait' as const,
     pageMargins: [0, 0, 0, 0],
   };
 
   const defaultFilename = filename || `id-cards-${Date.now()}`;
   pdfMakeInstance.createPdf(docDefinition).download(`${defaultFilename}.pdf`);
 }
-

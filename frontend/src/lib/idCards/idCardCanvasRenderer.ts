@@ -1,13 +1,24 @@
 import type { Student } from '@/types/domain/student';
 import type { IdCardTemplate, IdCardLayoutConfig } from '@/types/domain/idCardTemplate';
+import {
+  DEFAULT_ID_CARD_PADDING_PX,
+  DEFAULT_PRINT_HEIGHT_PX,
+  DEFAULT_PRINT_WIDTH_PX,
+  DEFAULT_SCREEN_HEIGHT_PX,
+  DEFAULT_SCREEN_WIDTH_PX,
+  createIdCardRenderMetrics,
+  getDefaultPrintRenderSize,
+  getDefaultScreenRenderSize,
+  isIdCardRenderDebugEnabled,
+} from './idCardRenderMetrics';
 
 // CR80 dimensions: 85.6mm × 53.98mm
 // At 300 DPI: 1011px × 637px
-// At 96 DPI (screen): 323px × 204px
-export const CR80_WIDTH_PX = 323; // Screen preview
-export const CR80_HEIGHT_PX = 204; // Screen preview
-export const CR80_WIDTH_PX_PRINT = 1011; // Print quality (300 DPI)
-export const CR80_HEIGHT_PX_PRINT = 637; // Print quality (300 DPI)
+// Screen preview uses the layout editor's default preview height (400px)
+export const CR80_WIDTH_PX = DEFAULT_SCREEN_WIDTH_PX;
+export const CR80_HEIGHT_PX = DEFAULT_SCREEN_HEIGHT_PX;
+export const CR80_WIDTH_PX_PRINT = DEFAULT_PRINT_WIDTH_PX;
+export const CR80_HEIGHT_PX_PRINT = DEFAULT_PRINT_HEIGHT_PX;
 
 // QR Code generation - using external API
 async function generateQRCode(data: string, size: number = 200): Promise<string> {
@@ -73,9 +84,74 @@ async function convertImageToBase64(url: string): Promise<string | null> {
   }
 }
 
+// Font loading state
+let canvasFontsLoaded = false;
+let canvasFontsLoading: Promise<void> | null = null;
+
+/**
+ * Ensure canvas fonts are loaded before rendering
+ * This is critical for proper font rendering in exported ID cards
+ */
+async function ensureCanvasFontsLoaded(): Promise<void> {
+  if (canvasFontsLoaded) return;
+  if (canvasFontsLoading) return canvasFontsLoading;
+
+  canvasFontsLoading = (async () => {
+    try {
+      // Load both Regular + Bold WOFFs for proper weight matching in Canvas
+      // NOTE: Canvas uses CSS font matching; if we only load one weight, it may fallback
+      const [regularWoffModule, boldWoffModule] = await Promise.all([
+        import('@/fonts/Bahij Nassim-Regular.woff?url'),
+        import('@/fonts/Bahij Nassim-Bold.woff?url'),
+      ]);
+
+      const regularWoffUrl = regularWoffModule.default;
+      const boldWoffUrl = boldWoffModule.default;
+
+      const regularFace = new FontFace('Bahij Nassim', `url(${regularWoffUrl})`, {
+        weight: '400',
+        style: 'normal',
+      });
+      const boldFace = new FontFace('Bahij Nassim', `url(${boldWoffUrl})`, {
+        weight: '700',
+        style: 'normal',
+      });
+
+      // Load + register
+      await Promise.all([regularFace.load(), boldFace.load()]);
+      document.fonts.add(regularFace);
+      document.fonts.add(boldFace);
+
+      // Ensure font set is ready before drawing
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+
+      canvasFontsLoaded = true;
+      if (import.meta.env.DEV) {
+        console.log('[idCardCanvasRenderer] Canvas fonts loaded: Bahij Nassim (400/700)');
+      }
+    } catch (e) {
+      // Not fatal: browser will fall back to installed fonts
+      canvasFontsLoaded = false;
+      if (import.meta.env.DEV) {
+        console.warn('[idCardCanvasRenderer] Failed to load canvas fonts, using fallbacks');
+      }
+    }
+  })();
+
+  return canvasFontsLoading;
+}
+
 interface RenderOptions {
   quality?: 'screen' | 'print';
   scale?: number;
+  renderWidthPx?: number;
+  renderHeightPx?: number;
+  paddingPx?: number;
+  designWidthPx?: number;
+  designHeightPx?: number;
+  debug?: boolean;
 }
 
 /**
@@ -92,13 +168,37 @@ export async function renderIdCardToCanvas(
   side: 'front' | 'back',
   options: RenderOptions & { notes?: string | null; expiryDate?: Date | string | null } = {}
 ): Promise<HTMLCanvasElement> {
-  const { quality = 'screen', scale = 1, notes, expiryDate } = options;
-  const printQuality = quality === 'print';
-  
-  // Use screen dimensions for both preview and export to match exactly
-  // This ensures fonts and positioning match exactly between preview and exported files
-  const width = CR80_WIDTH_PX; // Use screen dimensions to match preview
-  const height = CR80_HEIGHT_PX;
+  // CRITICAL: Ensure fonts are loaded before rendering
+  // This ensures fonts are applied correctly in exported ID cards
+  await ensureCanvasFontsLoaded();
+
+  const {
+    quality = 'screen',
+    scale = 1,
+    renderWidthPx,
+    renderHeightPx,
+    paddingPx = DEFAULT_ID_CARD_PADDING_PX,
+    designWidthPx,
+    designHeightPx,
+    debug,
+    notes,
+    expiryDate,
+  } = options;
+
+  const screenSize = getDefaultScreenRenderSize();
+  const printSize = getDefaultPrintRenderSize();
+  const width = renderWidthPx ?? (quality === 'print' ? printSize.width : screenSize.width);
+  const height = renderHeightPx ?? (quality === 'print' ? printSize.height : screenSize.height);
+  const resolvedDesignWidth = designWidthPx ?? (quality === 'print' ? screenSize.width : width);
+  const resolvedDesignHeight = designHeightPx ?? (quality === 'print' ? screenSize.height : height);
+  const metrics = createIdCardRenderMetrics({
+    totalWidth: width,
+    totalHeight: height,
+    paddingPx,
+    designWidthPx: resolvedDesignWidth,
+    designHeightPx: resolvedDesignHeight,
+  });
+  const debugEnabled = debug ?? isIdCardRenderDebugEnabled();
 
   const canvas = document.createElement('canvas');
   canvas.width = width * scale;
@@ -163,6 +263,24 @@ export async function renderIdCardToCanvas(
       }
     }
 
+  if (debugEnabled) {
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(220, 38, 38, 0.6)';
+    ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
+    ctx.strokeStyle = 'rgba(37, 99, 235, 0.7)';
+    ctx.setLineDash([4, 3]);
+    if (metrics.contentWidth > 0 && metrics.contentHeight > 0) {
+      ctx.strokeRect(
+        metrics.paddingPx + 0.5,
+        metrics.paddingPx + 0.5,
+        Math.max(0, metrics.contentWidth - 1),
+        Math.max(0, metrics.contentHeight - 1)
+      );
+    }
+    ctx.restore();
+  }
+
   const isRtl = layout.rtl !== false;
   const defaultFontFamily = isRtl
     ? '"Bahij Nassim", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
@@ -170,14 +288,12 @@ export async function renderIdCardToCanvas(
   const textColor = layout.textColor || '#000000';
   const baseFontSize = layout.fontSize || 12;
   
-  // No font scaling - use exact font sizes to match preview exactly
-  // Both preview and export use the same canvas dimensions, so fonts match perfectly
-  const fontScaleFactor = 1;
+  const fontScaleFactor = metrics.fontScale;
 
   const getFieldFont = (fieldId: string, defaultMultiplier: number) => {
     const fieldFont = layout.fieldFonts?.[fieldId];
     // Use custom font size if set, otherwise use base font size directly
-    // No scaling - use exact font sizes to match preview exactly
+    // Scale fonts relative to the design preview size for consistent screen/print rendering
     const fieldFontSize = (fieldFont?.fontSize !== undefined
       ? fieldFont.fontSize
       : baseFontSize) * fontScaleFactor;
@@ -188,10 +304,10 @@ export async function renderIdCardToCanvas(
 
   const getPixelPosition = (position?: { x: number; y: number; width?: number; height?: number }) => {
     if (!position) return null;
-    const x = (position.x / 100) * width;
-    const y = (position.y / 100) * height;
-    const w = position.width ? (position.width / 100) * width : undefined;
-    const h = position.height ? (position.height / 100) * height : undefined;
+    const x = metrics.pctToX(position.x);
+    const y = metrics.pctToY(position.y);
+    const w = position.width ? metrics.pctToWidth(position.width) : undefined;
+    const h = position.height ? metrics.pctToHeight(position.height) : undefined;
     return { x, y, width: w, height: h };
   };
 
@@ -211,81 +327,101 @@ export async function renderIdCardToCanvas(
     });
   }
 
-  // Draw enabled fields
-  if (layout.enabledFields?.includes('studentName') && student.fullName) {
+  // Draw enabled fields - render all enabled fields even if data is missing
+  if (layout.enabledFields?.includes('studentName')) {
     const pos = getPixelPosition(layout.studentNamePosition);
     if (pos) {
-      const fieldFont = getFieldFont('studentName', 1.2);
-      ctx.fillStyle = fieldFont.textColor;
-      ctx.font = `bold ${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-      ctx.textAlign = 'center';
-      ctx.fillText(student.fullName, pos.x, pos.y);
-      if (import.meta.env.DEV) {
-        console.log('[idCardCanvasRenderer] Rendered studentName at:', pos);
+      // Use template-defined value if available, otherwise use student data
+      const studentNameValue = layout.fieldValues?.studentName || student.fullName;
+      if (studentNameValue) {
+        const fieldFont = getFieldFont('studentName', 1.2);
+        ctx.fillStyle = fieldFont.textColor;
+        ctx.font = `bold ${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(studentNameValue, pos.x, pos.y);
+        if (import.meta.env.DEV) {
+          console.log('[idCardCanvasRenderer] Rendered studentName at:', pos);
+        }
       }
     } else if (import.meta.env.DEV) {
       console.warn('[idCardCanvasRenderer] studentName enabled but no position found');
     }
   }
 
-  if (layout.enabledFields?.includes('fatherName') && student.fatherName) {
+  if (layout.enabledFields?.includes('fatherName')) {
     const pos = getPixelPosition(layout.fatherNamePosition);
     if (pos) {
-      const fieldFont = getFieldFont('fatherName', 1.0);
-      ctx.fillStyle = fieldFont.textColor;
-      ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-      ctx.textAlign = 'center';
-      ctx.fillText(student.fatherName, pos.x, pos.y);
-      if (import.meta.env.DEV) {
-        console.log('[idCardCanvasRenderer] Rendered fatherName at:', pos);
+      // Use template-defined value if available, otherwise use student data
+      const fatherNameValue = layout.fieldValues?.fatherName || student.fatherName;
+      if (fatherNameValue) {
+        const fieldFont = getFieldFont('fatherName', 1.0);
+        ctx.fillStyle = fieldFont.textColor;
+        ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(fatherNameValue, pos.x, pos.y);
+        if (import.meta.env.DEV) {
+          console.log('[idCardCanvasRenderer] Rendered fatherName at:', pos);
+        }
       }
     } else if (import.meta.env.DEV) {
       console.warn('[idCardCanvasRenderer] fatherName enabled but no position found');
     }
   }
 
-  if (layout.enabledFields?.includes('studentCode') && student.studentCode) {
+  if (layout.enabledFields?.includes('studentCode')) {
     const pos = getPixelPosition(layout.studentCodePosition);
     if (pos) {
-      const fieldFont = getFieldFont('studentCode', 0.9);
-      ctx.fillStyle = fieldFont.textColor;
-      ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-      ctx.textAlign = 'center';
-      ctx.fillText(student.studentCode, pos.x, pos.y);
-      if (import.meta.env.DEV) {
-        console.log('[idCardCanvasRenderer] Rendered studentCode at:', pos);
+      // Use template-defined value if available, otherwise use student data
+      const studentCodeValue = layout.fieldValues?.studentCode || student.studentCode;
+      if (studentCodeValue) {
+        const fieldFont = getFieldFont('studentCode', 0.9);
+        ctx.fillStyle = fieldFont.textColor;
+        ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(studentCodeValue, pos.x, pos.y);
+        if (import.meta.env.DEV) {
+          console.log('[idCardCanvasRenderer] Rendered studentCode at:', pos);
+        }
       }
     } else if (import.meta.env.DEV) {
       console.warn('[idCardCanvasRenderer] studentCode enabled but no position found');
     }
   }
 
-  if (layout.enabledFields?.includes('admissionNumber') && student.admissionNumber) {
+  if (layout.enabledFields?.includes('admissionNumber')) {
     const pos = getPixelPosition(layout.admissionNumberPosition);
     if (pos) {
-      const fieldFont = getFieldFont('admissionNumber', 0.9);
-      ctx.fillStyle = fieldFont.textColor;
-      ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-      ctx.textAlign = 'center';
-      ctx.fillText(student.admissionNumber, pos.x, pos.y);
-      if (import.meta.env.DEV) {
-        console.log('[idCardCanvasRenderer] Rendered admissionNumber at:', pos);
+      // Use template-defined value if available, otherwise use student data
+      const admissionNumberValue = layout.fieldValues?.admissionNumber || student.admissionNumber;
+      if (admissionNumberValue) {
+        const fieldFont = getFieldFont('admissionNumber', 0.9);
+        ctx.fillStyle = fieldFont.textColor;
+        ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(admissionNumberValue, pos.x, pos.y);
+        if (import.meta.env.DEV) {
+          console.log('[idCardCanvasRenderer] Rendered admissionNumber at:', pos);
+        }
       }
     } else if (import.meta.env.DEV) {
       console.warn('[idCardCanvasRenderer] admissionNumber enabled but no position found');
     }
   }
 
-  if (layout.enabledFields?.includes('class') && student.currentClass?.name) {
+  if (layout.enabledFields?.includes('class')) {
     const pos = getPixelPosition(layout.classPosition);
     if (pos) {
-      const fieldFont = getFieldFont('class', 0.9);
-      ctx.fillStyle = fieldFont.textColor;
-      ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-      ctx.textAlign = 'center';
-      ctx.fillText(student.currentClass.name, pos.x, pos.y);
-      if (import.meta.env.DEV) {
-        console.log('[idCardCanvasRenderer] Rendered class at:', pos);
+      // Use template-defined value if available, otherwise use student data
+      const classValue = layout.fieldValues?.class || student.currentClass?.name;
+      if (classValue) {
+        const fieldFont = getFieldFont('class', 0.9);
+        ctx.fillStyle = fieldFont.textColor;
+        ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(classValue, pos.x, pos.y);
+        if (import.meta.env.DEV) {
+          console.log('[idCardCanvasRenderer] Rendered class at:', pos);
+        }
       }
     } else if (import.meta.env.DEV) {
       console.warn('[idCardCanvasRenderer] class enabled but no position found');
@@ -313,16 +449,20 @@ export async function renderIdCardToCanvas(
   }
 
   // Card Number
-  if (layout.enabledFields?.includes('cardNumber') && student.cardNumber) {
+  if (layout.enabledFields?.includes('cardNumber')) {
     const pos = getPixelPosition(layout.cardNumberPosition);
     if (pos) {
-      const fieldFont = getFieldFont('cardNumber', 0.9);
-      ctx.fillStyle = fieldFont.textColor;
-      ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-      ctx.textAlign = 'center';
-      ctx.fillText(student.cardNumber, pos.x, pos.y);
-      if (import.meta.env.DEV) {
-        console.log('[idCardCanvasRenderer] Rendered cardNumber at:', pos);
+      // Use template-defined value if available, otherwise use student data
+      const cardNumberValue = layout.fieldValues?.cardNumber || student.cardNumber || (student as any).cardNumber;
+      if (cardNumberValue) {
+        const fieldFont = getFieldFont('cardNumber', 0.9);
+        ctx.fillStyle = fieldFont.textColor;
+        ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(cardNumberValue, pos.x, pos.y);
+        if (import.meta.env.DEV) {
+          console.log('[idCardCanvasRenderer] Rendered cardNumber at:', pos);
+        }
       }
     } else if (import.meta.env.DEV) {
       console.warn('[idCardCanvasRenderer] cardNumber enabled but no position found');
@@ -384,7 +524,7 @@ export async function renderIdCardToCanvas(
         const fieldFont = getFieldFont('notes', 0.8);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'left';
+        ctx.textAlign = 'center';
         ctx.fillText(notesValue, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered notes at:', pos);
@@ -407,10 +547,18 @@ export async function renderIdCardToCanvas(
           const photoImg = new Image();
           await new Promise((resolve, reject) => {
             photoImg.onload = () => {
+              // Save context state and disable stroke to prevent dark border
+              ctx.save();
+              ctx.lineWidth = 0;
+              ctx.strokeStyle = 'transparent';
+              
               // Center-based positioning
               const drawX = pos.x! - pos.width! / 2;
               const drawY = pos.y! - pos.height! / 2;
               ctx.drawImage(photoImg, drawX, drawY, pos.width!, pos.height!);
+              
+              // Restore context state
+              ctx.restore();
               resolve(null);
             };
             photoImg.onerror = reject;
@@ -488,6 +636,34 @@ export async function renderIdCardToCanvas(
     }
   }
 
+  if (debugEnabled) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(37, 99, 235, 0.9)';
+    const drawAnchor = (position?: { x: number; y: number } | null) => {
+      if (!position) return;
+      ctx.beginPath();
+      ctx.arc(position.x, position.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    };
+    const drawFieldAnchor = (fieldId: string, position?: { x: number; y: number; width?: number; height?: number }) => {
+      if (!layout.enabledFields?.includes(fieldId)) return;
+      drawAnchor(getPixelPosition(position));
+    };
+
+    drawFieldAnchor('studentName', layout.studentNamePosition);
+    drawFieldAnchor('fatherName', layout.fatherNamePosition);
+    drawFieldAnchor('studentCode', layout.studentCodePosition);
+    drawFieldAnchor('admissionNumber', layout.admissionNumberPosition);
+    drawFieldAnchor('class', layout.classPosition);
+    drawFieldAnchor('schoolName', layout.schoolNamePosition);
+    drawFieldAnchor('cardNumber', layout.cardNumberPosition);
+    drawFieldAnchor('expiryDate', layout.expiryDatePosition);
+    drawFieldAnchor('notes', layout.notesPosition);
+    drawFieldAnchor('studentPhoto', layout.studentPhotoPosition);
+    drawFieldAnchor('qrCode', layout.qrCodePosition);
+    ctx.restore();
+  }
+
   return canvas;
 }
 
@@ -513,4 +689,3 @@ export async function renderIdCardToDataUrl(
   }
   return canvas.toDataURL('image/png');
 }
-

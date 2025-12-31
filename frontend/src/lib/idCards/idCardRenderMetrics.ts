@@ -44,6 +44,14 @@ export const getDefaultPrintRenderSize = () => ({
   height: DEFAULT_PRINT_HEIGHT_PX,
 });
 
+export const isIdCardRenderDebugEnabled = () => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  const debugValue = new URLSearchParams(window.location.search).get('idCardDebug');
+  return debugValue === '1' || debugValue === 'true';
+};
+
 export const createIdCardRenderMetrics = ({
   totalWidth,
   totalHeight,
