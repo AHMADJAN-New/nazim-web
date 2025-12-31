@@ -3,29 +3,15 @@ import {
   Building2,
   CheckCircle,
   Clock,
-  CreditCard,
   DollarSign,
   Package,
-  Plus,
   RefreshCw,
-  Search,
   Ticket,
-  TrendingUp,
-  Users,
   XCircle,
-  Eye,
-  Pencil,
-  Trash2,
-  Calendar,
-  Settings as SettingsIcon,
   GraduationCap,
   School,
 } from 'lucide-react';
-import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,65 +22,19 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { useHasPermission } from '@/hooks/usePermissions';
 import {
   usePlatformDashboard,
-  usePlatformPendingPayments,
-  usePlatformPendingRenewals,
-  usePlatformSubscriptions,
 } from '@/platform/hooks/usePlatformAdmin';
 import { useLanguage } from '@/hooks/useLanguage';
-import { formatDate } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-import { showToast } from '@/lib/toast';
-import { OrganizationsManagement } from '@/components/settings/OrganizationsManagement';
-import { OrganizationAdminsManagement } from '@/components/settings/OrganizationAdminsManagement';
 
 export default function SubscriptionAdminDashboard() {
   const { t } = useLanguage();
   const hasAdminPermission = useHasPermission('subscription.admin');
-  const hasCreatePermission = useHasPermission('organizations.create');
-  const hasUpdatePermission = useHasPermission('organizations.update');
-  const hasDeletePermission = useHasPermission('organizations.delete');
-  const [activeTab, setActiveTab] = useState('overview');
 
   const { data: dashboardData, isLoading: isDashboardLoading } =
     usePlatformDashboard();
-  const { data: pendingPayments, isLoading: isPaymentsLoading } =
-    usePlatformPendingPayments();
-  const { data: pendingRenewals, isLoading: isRenewalsLoading } =
-    usePlatformPendingRenewals();
-  const { data: subscriptions, isLoading: isSubscriptionsLoading, error: subscriptionsError } =
-    usePlatformSubscriptions({});
 
   // Access control - redirect if no permission
   if (!hasAdminPermission) {
@@ -252,31 +192,7 @@ export default function SubscriptionAdminDashboard() {
       </div>
 
       {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="overview">
-            <TrendingUp className="mr-2 h-4 w-4" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="pending">
-            <Clock className="mr-2 h-4 w-4" />
-            Pending ({stats.pendingPayments + stats.pendingRenewals})
-          </TabsTrigger>
-          <TabsTrigger value="subscriptions">
-            <Users className="mr-2 h-4 w-4" />
-            All Subscriptions
-          </TabsTrigger>
-          <TabsTrigger value="organizations">
-            <Building2 className="mr-2 h-4 w-4" />
-            Organizations
-          </TabsTrigger>
-          <TabsTrigger value="admins">
-            <Users className="mr-2 h-4 w-4" />
-            Organization Admins
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="mt-4 space-y-4">
+      <div className="space-y-4">
           {/* Subscriptions by Plan */}
           <Card>
             <CardHeader>
@@ -340,230 +256,7 @@ export default function SubscriptionAdminDashboard() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="pending" className="mt-4 space-y-4">
-          {/* Pending Payments */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Pending Payments
-                {((pendingPayments?.data?.length) || 0) > 0 && (
-                  <Badge variant="destructive">
-                    {pendingPayments?.data?.length || 0}
-                  </Badge>
-                )}
-              </CardTitle>
-              <CardDescription>
-                Manual payments awaiting confirmation
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isPaymentsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <RefreshCw className="h-6 w-6 animate-spin" />
-                </div>
-              ) : !pendingPayments?.data?.length ? (
-                <div className="py-8 text-center text-muted-foreground">
-                  No pending payments
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {(pendingPayments.data || []).slice(0, 5).map((payment) => (
-                    <div
-                      key={payment.id}
-                      className="flex items-center justify-between rounded-lg border p-4"
-                    >
-                      <div>
-                        <div className="font-medium">
-                          Organization: {payment.organization_id}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {payment.amount.toLocaleString()} {payment.currency}
-                          {' · '}
-                          {payment.payment_method?.replace('_', ' ')}
-                        </div>
-                      </div>
-                      <Button size="sm" asChild>
-                        <Link
-                          to={`/platform/payments/${payment.id}`}
-                        >
-                          Review
-                        </Link>
-                      </Button>
-                    </div>
-                  ))}
-                  {((pendingPayments?.data?.length || 0) > 5) && (
-                    <Button variant="outline" className="w-full" asChild>
-                      <Link to="/platform/pending">
-                        View All ({pendingPayments?.data?.length || 0})
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Pending Renewals */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <RefreshCw className="h-5 w-5" />
-                Pending Renewals
-                {((pendingRenewals?.data?.length || 0) > 0) && (
-                  <Badge variant="secondary">
-                    {pendingRenewals?.data?.length || 0}
-                  </Badge>
-                )}
-              </CardTitle>
-              <CardDescription>
-                Renewal requests awaiting processing
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isRenewalsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <RefreshCw className="h-6 w-6 animate-spin" />
-                </div>
-              ) : !pendingRenewals?.data?.length ? (
-                <div className="py-8 text-center text-muted-foreground">
-                  No pending renewals
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {(pendingRenewals.data || []).slice(0, 5).map((renewal) => (
-                    <div
-                      key={renewal.id}
-                      className="flex items-center justify-between rounded-lg border p-4"
-                    >
-                      <div>
-                        <div className="font-medium">
-                          Organization: {renewal.organization_id}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {renewal.requested_plan?.name || 'Plan'} Request
-                        </div>
-                      </div>
-                      <Button size="sm" asChild>
-                        <Link to={`/platform/renewals/${renewal.id}`}>
-                          Review
-                        </Link>
-                      </Button>
-                    </div>
-                  ))}
-                  {((pendingRenewals?.data?.length || 0) > 5) && (
-                    <Button variant="outline" className="w-full" asChild>
-                      <Link to="/platform/pending">
-                        View All ({pendingRenewals?.data?.length || 0})
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="subscriptions" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>All Subscriptions</CardTitle>
-              <CardDescription>
-                View and manage all organization subscriptions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isSubscriptionsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <RefreshCw className="h-6 w-6 animate-spin" />
-                </div>
-              ) : subscriptionsError ? (
-                <div className="py-8 text-center">
-                  <p className="text-destructive">Error loading subscriptions</p>
-                  {import.meta.env.DEV && (
-                    <p className="text-xs mt-2 text-muted-foreground">
-                      {subscriptionsError instanceof Error ? subscriptionsError.message : String(subscriptionsError)}
-                    </p>
-                  )}
-                </div>
-              ) : !subscriptions || subscriptions.length === 0 ? (
-                <div className="py-8 text-center text-muted-foreground">
-                  <p>No subscriptions found</p>
-                  {import.meta.env.DEV && (
-                    <p className="text-xs mt-2">
-                      Debug: subscriptions = {subscriptions === undefined ? 'undefined' : subscriptions === null ? 'null' : `array(${subscriptions.length})`}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Organization</TableHead>
-                      <TableHead>Plan</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Started</TableHead>
-                      <TableHead>Expires</TableHead>
-                      <TableHead className="text-right">Amount Paid</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subscriptions.map((sub) => (
-                      <TableRow key={sub.id}>
-                        <TableCell className="font-medium">
-                          {sub.organization?.name || 'Unknown Organization'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{sub.plan?.name || 'N/A'}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={sub.status} />
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {sub.started_at ? new Date(sub.started_at).toLocaleDateString() : 'N/A'}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {sub.expires_at ? new Date(sub.expires_at).toLocaleDateString() : 'N/A'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {sub.amount_paid > 0 ? (
-                            <span>
-                              {sub.currency === 'AFN' ? '؋' : '$'}
-                              {sub.amount_paid.toLocaleString()}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button size="sm" variant="outline" asChild>
-                            <Link
-                              to={`/platform/organizations/${sub.organization_id}/subscription`}
-                            >
-                              Manage
-                            </Link>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="organizations" className="mt-4">
-          <OrganizationsManagement />
-        </TabsContent>
-
-        <TabsContent value="admins" className="mt-4">
-          <OrganizationAdminsManagement />
-        </TabsContent>
-      </Tabs>
+      </div>
 
     </div>
   );

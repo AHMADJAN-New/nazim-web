@@ -147,6 +147,70 @@ export const platformApi = {
     },
   },
 
+  // Platform Admin Users
+  users: {
+    list: async () => {
+      const response = await apiClient.get<{
+        data: Array<{
+          id: string;
+          email: string;
+          full_name: string;
+          phone?: string | null;
+          is_active: boolean;
+          has_platform_admin: boolean;
+          created_at: string;
+          updated_at: string;
+        }>;
+      }>('/platform/users');
+      return response.data;
+    },
+    create: async (data: {
+      email: string;
+      password: string;
+      full_name: string;
+      phone?: string;
+    }) => {
+      const response = await apiClient.post<{
+        data: {
+          id: string;
+          email: string;
+          full_name: string;
+          phone?: string | null;
+          is_active: boolean;
+          has_platform_admin: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+      }>('/platform/users', data);
+      return response.data;
+    },
+    update: async (id: string, data: {
+      email?: string;
+      full_name?: string;
+      phone?: string;
+    }) => {
+      const response = await apiClient.put<{
+        data: {
+          id: string;
+          email: string;
+          full_name: string;
+          phone?: string | null;
+          is_active: boolean;
+          has_platform_admin: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+      }>(`/platform/users/${id}`, data);
+      return response.data;
+    },
+    delete: async (id: string) => {
+      return apiClient.delete(`/platform/users/${id}`);
+    },
+    resetPassword: async (id: string, password: string) => {
+      return apiClient.post(`/platform/users/${id}/reset-password`, { password });
+    },
+  },
+
   // User Permissions Management (Platform Admin)
   userPermissions: {
     get: async (userId: string) => {

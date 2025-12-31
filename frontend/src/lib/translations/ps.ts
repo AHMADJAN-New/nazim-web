@@ -2182,7 +2182,8 @@ export const ps: TranslationKeys = {
     orEnterCustomFont: 'یا د فونټ نوم ولیکئ',
     fontFamilyHint: 'د ښکته لیست څخه فونټ وټاکئ یا د فونټ نوم ولیکئ',
     reportFontSizeHint: 'د راپورونو کې کارول شوی فونټ اندازه',
-    currentLogo: 'اوسنی لوګو'
+    currentLogo: 'اوسنی لوګو',
+    multiSchoolFeatureRequired: 'د اضافي ښوونځیو د جوړولو لپاره د ګڼو ښوونځیو ځانګړتیا اړینه ده. مهرباني وکړئ خپل ګډون پلان تازه کړئ.'
   },
   // Roles Management
   roles: {

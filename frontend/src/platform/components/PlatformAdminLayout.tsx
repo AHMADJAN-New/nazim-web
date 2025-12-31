@@ -211,12 +211,25 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
           </Button>
           <div className="flex-1" />
           <div className="flex items-center gap-4">
-            <Link
-              to="/"
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                // CRITICAL: Clear platform admin session flag to allow access to main app
+                localStorage.removeItem('is_platform_admin_session');
+                // Restore main app token if it was backed up
+                const mainAppTokenBackup = localStorage.getItem('main_app_token_backup');
+                if (mainAppTokenBackup) {
+                  localStorage.setItem('api_token', mainAppTokenBackup);
+                  localStorage.removeItem('main_app_token_backup');
+                }
+                // Navigate to main app dashboard
+                window.location.href = '/dashboard';
+              }}
               className="text-sm text-muted-foreground hover:text-foreground"
             >
               Main App
-            </Link>
+            </Button>
           </div>
         </header>
 

@@ -411,14 +411,18 @@ export function CertificatePdfGenerator({
     const baseWidth = 1123; // 297mm at 96 DPI
     const baseHeight = 794; // 210mm at 96 DPI
 
-    // Create high-res canvas
+    const previewMaxWidth = 800;
+    let fontScale = 1;
+
+    // Create high-res canvas (scale for quality)
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(baseWidth * scale);
     canvas.height = Math.round(baseHeight * scale);
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Failed to get canvas context');
 
-    // Scale drawing operations to base coordinate system
+    // Scale the context for high-resolution rendering
+    // This scales coordinates - font sizes will be handled separately to match editor
     ctx.scale(scale, scale);
 
     // Fill white background
@@ -430,6 +434,9 @@ export function CertificatePdfGenerator({
       const bgImg = new Image();
       await new Promise((resolve, reject) => {
         bgImg.onload = () => {
+          if (bgImg.width > 0) {
+            fontScale = bgImg.width > previewMaxWidth ? previewMaxWidth / bgImg.width : 1;
+          }
           ctx.drawImage(bgImg, 0, 0, baseWidth, baseHeight);
           resolve(null);
         };
@@ -453,10 +460,25 @@ export function CertificatePdfGenerator({
 
     const getFieldFont = (fieldId: string, defaultMultiplier: number) => {
       const fieldFont = layout.fieldFonts?.[fieldId];
-      const fieldFontSize =
-        fieldFont?.fontSize !== undefined ? fieldFont.fontSize : baseFontSize * defaultMultiplier;
+      // Get font size from config - use exactly as stored (standard way)
+      // The config stores the actual pixel size the user wants
+      // We'll use this size directly in drawText helper (no division by scale)
+      const rawFontSize = fieldFont?.fontSize !== undefined 
+          ? fieldFont.fontSize 
+          : baseFontSize * defaultMultiplier;
+      
+      // Apply legacy preview scaling so exports match the editor display
+      const fieldFontSize = rawFontSize * fontScale;
+      
+      if (import.meta.env.DEV && (fieldId === 'header' || fieldId === 'studentName')) {
+        console.log(`[CertificatePdfGenerator] Font size for ${fieldId}:`, {
+          configFontSize: rawFontSize,
+          scale,
+          note: 'Using font size directly from config (standard way)',
+        });
+      }
+      
       const rawFamily = fieldFont?.fontFamily ? normalizeCanvasFontFamily(fieldFont.fontFamily) : '';
-      // If user explicitly selected a font in the template, respect it
       const fieldFontFamily = rawFamily || defaultFontFamily;
       return { fontSize: fieldFontSize, fontFamily: fieldFontFamily };
     };
@@ -477,6 +499,31 @@ export function CertificatePdfGenerator({
       return { x, y };
     };
 
+    // Helper function to draw text with exact font size (not affected by context scaling)
+    const drawText = (
+      text: string,
+      x: number,
+      y: number,
+      fontSize: number,
+      fontFamily: string,
+      align: CanvasTextAlign = 'center'
+    ) => {
+      ctx.save();
+      // Reset transform to identity (no scaling) for font rendering
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      // Scale coordinates manually for high-res rendering
+      const scaledX = x * scale;
+      const scaledY = y * scale;
+      // Set font size directly (use exact size from config, no division needed)
+      ctx.font = `bold ${fontSize}px ${fontFamily}`;
+      ctx.fillStyle = textColor;
+      ctx.textAlign = align;
+      ctx.textBaseline = 'middle';
+      ctx.direction = isRtl ? 'rtl' : 'ltr';
+      ctx.fillText(prepareCanvasText(text), scaledX, scaledY);
+      ctx.restore();
+    };
+
     // Match designer (center)
     ctx.textBaseline = 'middle';
     ctx.direction = isRtl ? 'rtl' : 'ltr';
@@ -487,10 +534,8 @@ export function CertificatePdfGenerator({
       if (pos) {
         const fieldFont = getFieldFont('header', 1.5);
         const headerText = layout.headerText || 'Certificate of Completion';
-        ctx.fillStyle = textColor;
-        ctx.font = `bold ${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
-        ctx.fillText(prepareCanvasText(headerText), pos.x, pos.y);
+        // Use raw font size directly (no division by scale since we're not using context scaling for fonts)
+        drawText(headerText, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
 
@@ -499,10 +544,7 @@ export function CertificatePdfGenerator({
       const pos = getPixelPosition(layout.studentNamePosition, baseWidth / 2, 300);
       if (pos) {
         const fieldFont = getFieldFont('studentName', 1.17);
-        ctx.fillStyle = textColor;
-        ctx.font = `bold ${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
-        ctx.fillText(prepareCanvasText(data.student.full_name), pos.x, pos.y);
+        drawText(data.student.full_name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
 
@@ -511,10 +553,7 @@ export function CertificatePdfGenerator({
       const pos = getPixelPosition(layout.fatherNamePosition, baseWidth / 2, 360);
       if (pos) {
         const fieldFont = getFieldFont('fatherName', 1.0);
-        ctx.fillStyle = textColor;
-        ctx.font = `bold ${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
-        ctx.fillText(prepareCanvasText(data.student.father_name), pos.x, pos.y);
+        drawText(data.student.father_name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
 
@@ -523,10 +562,7 @@ export function CertificatePdfGenerator({
       const pos = getPixelPosition(layout.grandfatherNamePosition, baseWidth / 2, 380);
       if (pos) {
         const fieldFont = getFieldFont('grandfatherName', 0.9);
-        ctx.fillStyle = textColor;
-        ctx.font = `bold ${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
-        ctx.fillText(prepareCanvasText(data.student.grandfather_name), pos.x, pos.y);
+        drawText(data.student.grandfather_name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
 
@@ -535,10 +571,7 @@ export function CertificatePdfGenerator({
       const pos = getPixelPosition(layout.motherNamePosition, baseWidth / 2, 400);
       if (pos) {
         const fieldFont = getFieldFont('motherName', 0.9);
-        ctx.fillStyle = textColor;
-        ctx.font = `bold ${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
-        ctx.fillText(prepareCanvasText(data.student.mother_name), pos.x, pos.y);
+        drawText(data.student.mother_name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
 
@@ -547,14 +580,11 @@ export function CertificatePdfGenerator({
       const pos = getPixelPosition(layout.courseNamePosition, baseWidth / 2, 480);
       if (pos) {
         const fieldFont = getFieldFont('courseName', 1.0);
-        ctx.fillStyle = textColor;
-        ctx.font = `bold ${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
         const actualCourseName = data.course?.name || courseName;
         const courseNameText = layout.courseNameText
           ? `${layout.courseNameText} ${actualCourseName}`
           : actualCourseName;
-        ctx.fillText(prepareCanvasText(courseNameText), pos.x, pos.y);
+        drawText(courseNameText, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
 
@@ -563,15 +593,12 @@ export function CertificatePdfGenerator({
       const pos = getPixelPosition(layout.certificateNumberPosition, 100, baseHeight - 100);
       if (pos) {
         const fieldFont = getFieldFont('certificateNumber', 0.5);
-        ctx.fillStyle = textColor;
-        ctx.font = `bold ${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = isRtl ? 'right' : 'left';
         const certPrefix =
           layout.certificateNumberPrefix !== undefined ? layout.certificateNumberPrefix : 'Certificate No:';
         const certText = certPrefix
           ? `${certPrefix} ${data.student.certificate_number || 'N/A'}`
           : data.student.certificate_number || 'N/A';
-        ctx.fillText(prepareCanvasText(certText), pos.x, pos.y);
+        drawText(certText, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, isRtl ? 'right' : 'left');
       }
     }
 
@@ -580,15 +607,12 @@ export function CertificatePdfGenerator({
       const pos = getPixelPosition(layout.datePosition, baseWidth - 100, baseHeight - 100);
       if (pos) {
         const fieldFont = getFieldFont('date', 0.5);
-        ctx.fillStyle = textColor;
-        ctx.font = `bold ${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
         const dateLabel = layout.dateText || 'Date:';
         const formattedDate = data.student.certificate_issued_at
           ? formatDate(data.student.certificate_issued_at)
           : format(new Date(), 'MMM d, yyyy');
         const dateText = `${dateLabel} ${formattedDate}`;
-        ctx.fillText(prepareCanvasText(dateText), pos.x, pos.y);
+        drawText(dateText, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
 
@@ -885,6 +909,27 @@ export function CertificatePdfGenerator({
     }
   };
 
+  // Helper to convert data URL to Blob (for downloading images)
+  const dataURLtoBlob = async (dataUrl: string): Promise<Blob> => {
+    // Extract base64 data and MIME type from data URL
+    const arr = dataUrl.split(',');
+    if (arr.length !== 2) {
+      throw new Error('Invalid data URL format');
+    }
+    
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    
+    return new Blob([u8arr], { type: mimeType });
+  };
+
   // QR Code generation (data URL). Uses an external QR service for simplicity.
   // NOTE: If you want this fully offline, we can switch to a local QR encoder later.
   const generateQrCodeDataUrl = async (value: string, sizePx: number): Promise<string> => {
@@ -1030,8 +1075,8 @@ export function CertificatePdfGenerator({
         { scale: 1, mimeType: 'image/jpeg', quality: 0.95 }
       );
 
-      const response = await fetch(dataUrl);
-      const blob = await response.blob();
+      // Convert data URI directly to blob (can't fetch data URIs due to CSP)
+      const blob = await dataURLtoBlob(dataUrl);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -1335,20 +1380,20 @@ export function CertificatePdfGenerator({
         const photoPos = layout.studentPhotoPosition;
         if (photoPos) {
           try {
-            // Convert photo to base64
-            const photoBase64 = await convertImageToBase64(`/api/students/${data.student.id}/picture`);
-            if (photoBase64) {
-              const photoImg = new Image();
-              await new Promise((resolve, reject) => {
-                photoImg.onload = () => {
-                  const photoWidth = photoPos.width ? (photoPos.width / 100) * width : 100;
-                  const photoHeight = photoPos.height ? (photoPos.height / 100) * height : 100;
-                  const photoX = (photoPos.x / 100) * width;
-                  const photoY = (photoPos.y / 100) * height;
-                  
-                  ctx.drawImage(photoImg, photoX, photoY, photoWidth, photoHeight);
-                  resolve(null);
-                };
+          // Convert photo to base64
+          const photoBase64 = await convertImageToBase64(`/api/course-students/${data.student.id}/picture`);
+          if (photoBase64) {
+            const photoImg = new Image();
+            await new Promise((resolve, reject) => {
+              photoImg.onload = () => {
+                const photoWidth = photoPos.width ? (photoPos.width / 100) * width : 100;
+                const photoHeight = photoPos.height ? (photoPos.height / 100) * height : 100;
+                const photoX = (photoPos.x / 100) * width - photoWidth / 2;
+                const photoY = (photoPos.y / 100) * height - photoHeight / 2;
+                
+                ctx.drawImage(photoImg, photoX, photoY, photoWidth, photoHeight);
+                resolve(null);
+              };
                 photoImg.onerror = reject;
                 photoImg.src = photoBase64;
               });
@@ -1878,12 +1923,12 @@ export function CertificatePdfGenerator({
       if (photoPos) {
         try {
           // Convert photo to base64
-          const photoBase64 = await convertImageToBase64(`/api/students/${data.student.id}/picture`);
+          const photoBase64 = await convertImageToBase64(`/api/course-students/${data.student.id}/picture`);
           if (photoBase64) {
             const photoWidth = photoPos.width ? (photoPos.width / 100) * pageWidth : 100;
             const photoHeight = photoPos.height ? (photoPos.height / 100) * pageHeight : 100;
-            const photoX = (photoPos.x / 100) * pageWidth;
-            const photoY = (photoPos.y / 100) * pageHeight;
+            const photoX = (photoPos.x / 100) * pageWidth - photoWidth / 2;
+            const photoY = (photoPos.y / 100) * pageHeight - photoHeight / 2;
             
             content.push({
               image: photoBase64,
@@ -2200,8 +2245,26 @@ export function CertificatePdfGenerator({
                   backgroundImageBase64 = await convertImageToBase64(backgroundUrl);
                 }
 
-                // Generate PDF blob
-                const docDefinition = await buildPdfDocument(updatedData || certificateData, selectedTemplate!, backgroundImageBase64);
+                const certificateImageDataUrl = await renderCertificateToDataUrl(
+                  updatedData || certificateData,
+                  selectedTemplate!,
+                  backgroundImageBase64,
+                  { scale: 2, mimeType: 'image/jpeg', quality: 0.95 }
+                );
+
+                const docDefinition = {
+                  pageSize: 'A4',
+                  pageOrientation: 'landscape' as const,
+                  pageMargins: [0, 0, 0, 0],
+                  content: [
+                    {
+                      image: certificateImageDataUrl,
+                      width: 842,
+                      height: 595,
+                      absolutePosition: { x: 0, y: 0 },
+                    },
+                  ],
+                };
                 
                 // Get the actual pdfMake instance
                 const pdfMakeInstance = getPdfMakeInstance() || pdfMake;

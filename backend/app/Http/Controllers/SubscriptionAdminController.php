@@ -13,12 +13,17 @@ use App\Models\RenewalRequest;
 use App\Models\SubscriptionHistory;
 use App\Models\SubscriptionPlan;
 use App\Models\UsageSnapshot;
+use App\Models\User;
+use App\Models\SchoolBranding;
 use App\Services\Subscription\FeatureGateService;
+use Illuminate\Validation\ValidationException;
 use App\Services\Subscription\SubscriptionService;
+use Spatie\Permission\Models\Role;
 use App\Services\Subscription\UsageTrackingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -808,9 +813,32 @@ class SubscriptionAdminController extends Controller
         $this->enforceSubscriptionAdmin($request);
 
         $renewals = RenewalRequest::pending()
-            ->with(['organization', 'subscription.plan', 'requestedPlan', 'paymentRecord'])
+            ->with([
+                'organization', 
+                'subscription' => function($query) {
+                    $query->with('plan');
+                },
+                'requestedPlan', 
+                'paymentRecord'
+            ])
             ->orderBy('requested_at', 'asc')
             ->paginate($request->per_page ?? 20);
+
+        // Ensure plan is loaded for each renewal's subscription
+        $renewals->getCollection()->transform(function ($renewal) {
+            if ($renewal->subscription && !$renewal->subscription->relationLoaded('plan')) {
+                $renewal->subscription->load('plan');
+            }
+            // If subscription doesn't exist, try to get current subscription from organization
+            if (!$renewal->subscription && $renewal->organization_id) {
+                $currentSubscription = $this->subscriptionService->getCurrentSubscription($renewal->organization_id);
+                if ($currentSubscription) {
+                    $currentSubscription->load('plan');
+                    $renewal->setRelation('subscription', $currentSubscription);
+                }
+            }
+            return $renewal;
+        });
 
         return response()->json($renewals);
     }
@@ -981,6 +1009,480 @@ class SubscriptionAdminController extends Controller
         return response()->json([
             'data' => $organizations,
         ]);
+    }
+
+    /**
+     * List all platform admin users (users with subscription.admin permission)
+     */
+    public function listPlatformUsers(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            // Find the subscription.admin permission (global, organization_id = NULL)
+            $permission = DB::table('permissions')
+                ->where('name', 'subscription.admin')
+                ->whereNull('organization_id')
+                ->first();
+
+            if (!$permission) {
+                return response()->json([
+                    'data' => [],
+                ]);
+            }
+
+            // Find all users with this permission
+            $userIds = DB::table('model_has_permissions')
+                ->where('permission_id', $permission->id)
+                ->where('model_type', 'App\\Models\\User')
+                ->pluck('model_id')
+                ->toArray();
+
+            if (empty($userIds)) {
+                return response()->json([
+                    'data' => [],
+                ]);
+            }
+
+            // Get user details using User model and profiles
+            $users = collect($userIds)->map(function ($userId) {
+                $user = User::find($userId);
+                if (!$user) {
+                    return null;
+                }
+                
+                $profile = DB::table('profiles')
+                    ->where('id', $userId)
+                    ->whereNull('deleted_at')
+                    ->first();
+                
+                if (!$profile) {
+                    return null;
+                }
+                
+                return [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'full_name' => $profile->full_name ?? null,
+                    'phone' => $profile->phone ?? null,
+                    'is_active' => $profile->is_active !== false,
+                    'has_platform_admin' => true,
+                    'created_at' => $profile->created_at ?? $user->created_at ?? now(),
+                    'updated_at' => $profile->updated_at ?? $user->updated_at ?? now(),
+                ];
+            })->filter()->sortByDesc('created_at')->values();
+
+            return response()->json([
+                'data' => $users,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to list platform users: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to fetch platform users'], 500);
+        }
+    }
+
+    /**
+     * Create a platform admin user
+     */
+    public function createPlatformUser(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            $request->validate([
+                'email' => 'required|email|unique:users,email|max:255',
+                'password' => 'required|string|min:8',
+                'full_name' => 'required|string|max:255',
+                'phone' => 'nullable|string|max:20',
+            ]);
+            // Create user in users table
+            $userId = (string) Str::uuid();
+            $encryptedPassword = Hash::make($request->password);
+
+            DB::table('users')->insert([
+                'id' => $userId,
+                'email' => $request->email,
+                'encrypted_password' => $encryptedPassword,
+                'email_confirmed_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Create a test organization for the platform admin user
+            // Using Organization::create() so OrganizationObserver fires and creates roles/permissions
+            $organizationName = $request->full_name . "'s Test Organization";
+            
+            // Generate unique slug (max 100 chars, ensure uniqueness)
+            $baseSlug = 'test-' . strtolower(preg_replace('/[^a-zA-Z0-9-]/', '-', substr($request->full_name, 0, 30)));
+            $baseSlug = preg_replace('/-+/', '-', $baseSlug); // Remove multiple dashes
+            $baseSlug = trim($baseSlug, '-'); // Remove leading/trailing dashes
+            $uniqueId = substr((string) Str::uuid(), 0, 8);
+            $organizationSlug = substr($baseSlug . '-' . $uniqueId, 0, 100); // Ensure max 100 chars
+            
+            // Ensure slug is unique
+            $counter = 1;
+            $originalSlug = $organizationSlug;
+            while (DB::table('organizations')->where('slug', $organizationSlug)->exists()) {
+                $organizationSlug = substr($originalSlug . '-' . $counter, 0, 100);
+                $counter++;
+            }
+            
+            $organization = Organization::create([
+                'name' => $organizationName,
+                'slug' => $organizationSlug,
+                'settings' => [],
+            ]);
+            $organizationId = $organization->id;
+
+            // Create default school for the organization
+            $school = SchoolBranding::create([
+                'organization_id' => $organizationId,
+                'school_name' => 'Main School',
+                'is_active' => true,
+                'primary_color' => '#1e40af', // Default blue
+                'secondary_color' => '#64748b', // Default slate
+                'accent_color' => '#0ea5e9', // Default sky
+                'font_family' => 'Inter',
+                'report_font_size' => 12,
+                'table_alternating_colors' => true,
+                'show_page_numbers' => true,
+                'show_generation_date' => true,
+                'calendar_preference' => 'gregorian',
+            ]);
+            $schoolId = $school->id;
+
+            // Create profile with organization_id (so they can test app functionality)
+            DB::table('profiles')->insert([
+                'id' => $userId,
+                'full_name' => $request->full_name,
+                'phone' => $request->phone,
+                'organization_id' => $organizationId, // Assign to test organization
+                'default_school_id' => $schoolId,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Create trial subscription for the organization
+            $subscriptionService = app(SubscriptionService::class);
+            $subscriptionService->createTrialSubscription($organizationId, $userId);
+
+            // Assign admin role to user for the organization (gives all permissions)
+            setPermissionsTeamId($organizationId);
+            $userModel = User::find($userId);
+            
+            // Find or create admin role for this organization
+            $adminRole = Role::firstOrCreate(
+                [
+                    'name' => 'admin',
+                    'organization_id' => $organizationId,
+                    'guard_name' => 'web',
+                ],
+                [
+                    'description' => 'Administrator - Full access to organization resources'
+                ]
+            );
+
+            // Assign role to user
+            setPermissionsTeamId($organizationId);
+            $userModel->assignRole($adminRole);
+
+            // Ensure organization_id is set in model_has_roles
+            $roleAssignment = DB::table('model_has_roles')
+                ->where('model_id', $userId)
+                ->where('model_type', 'App\\Models\\User')
+                ->where('role_id', $adminRole->id)
+                ->first();
+            
+            if ($roleAssignment && !$roleAssignment->organization_id) {
+                DB::table('model_has_roles')
+                    ->where('model_id', $userId)
+                    ->where('model_type', 'App\\Models\\User')
+                    ->where('role_id', $adminRole->id)
+                    ->update(['organization_id' => $organizationId]);
+            }
+
+            // Get the global subscription.admin permission
+            $permission = DB::table('permissions')
+                ->where('name', 'subscription.admin')
+                ->whereNull('organization_id')
+                ->first();
+
+            if ($permission) {
+                // Special UUID for "platform" organization (all zeros) - represents global permissions
+                // This is used in model_has_permissions to work around the primary key constraint
+                // The actual permission has organization_id = NULL (global)
+                $platformOrgId = '00000000-0000-0000-0000-000000000000';
+
+                // Check if platform organization exists, create if not
+                $platformOrg = DB::table('organizations')
+                    ->where('id', $platformOrgId)
+                    ->first();
+
+                if (!$platformOrg) {
+                    // Create platform organization (special system organization for global permissions)
+                    DB::table('organizations')->insert([
+                        'id' => $platformOrgId,
+                        'name' => 'Platform (Global Permissions)',
+                        'slug' => 'platform-global',
+                        'settings' => json_encode([]),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                // Assign permission using platform organization UUID
+                // This works around the primary key constraint while still representing a global permission
+                DB::table('model_has_permissions')->insert([
+                    'permission_id' => $permission->id,
+                    'model_type' => 'App\\Models\\User',
+                    'model_id' => $userId,
+                    'organization_id' => $platformOrgId, // Use platform org UUID (represents global)
+                ]);
+            }
+
+            // Get created user
+            $user = User::find($userId);
+            $profile = DB::table('profiles')->where('id', $userId)->first();
+
+            return response()->json([
+                'data' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'full_name' => $profile->full_name,
+                    'phone' => $profile->phone,
+                    'is_active' => $profile->is_active !== false,
+                    'has_platform_admin' => true,
+                    'created_at' => $profile->created_at,
+                    'updated_at' => $profile->updated_at,
+                ],
+            ], 201);
+        } catch (ValidationException $e) {
+            // Return validation errors in proper format
+            return response()->json([
+                'error' => 'Validation failed',
+                'message' => 'The given data was invalid.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create platform user: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to create platform user: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update a platform admin user
+     */
+    public function updatePlatformUser(Request $request, string $id)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $request->validate([
+            'email' => ['sometimes', 'email', 'max:255', 'unique:users,email,' . $id],
+            'full_name' => 'sometimes|string|max:255',
+            'phone' => 'nullable|string|max:20',
+        ]);
+
+        try {
+            $user = User::find($id);
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            $profile = DB::table('profiles')->where('id', $id)->whereNull('deleted_at')->first();
+            if (!$profile) {
+                return response()->json(['error' => 'Profile not found'], 404);
+            }
+
+            // Verify this is a platform admin user (has subscription.admin permission)
+            $permission = DB::table('permissions')
+                ->where('name', 'subscription.admin')
+                ->whereNull('organization_id')
+                ->first();
+
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+
+            if ($permission) {
+                $hasPermission = DB::table('model_has_permissions')
+                    ->where('permission_id', $permission->id)
+                    ->where('model_type', 'App\\Models\\User')
+                    ->where('model_id', $id)
+                    ->where('organization_id', $platformOrgId) // Use platform org UUID
+                    ->exists();
+
+                if (!$hasPermission) {
+                    return response()->json(['error' => 'User is not a platform admin'], 403);
+                }
+            }
+
+            // Update user email if provided (validation already checked uniqueness)
+            if ($request->has('email')) {
+                DB::table('users')
+                    ->where('id', $id)
+                    ->update(['email' => $request->email, 'updated_at' => now()]);
+            }
+
+            // Update profile
+            $updateData = [];
+            if ($request->has('full_name')) {
+                $updateData['full_name'] = $request->full_name;
+            }
+            if ($request->has('phone')) {
+                $updateData['phone'] = $request->phone;
+            }
+            $updateData['updated_at'] = now();
+
+            if (!empty($updateData)) {
+                DB::table('profiles')
+                    ->where('id', $id)
+                    ->update($updateData);
+            }
+
+            // Get updated user
+            $updatedUser = User::find($id);
+            $updatedProfile = DB::table('profiles')->where('id', $id)->first();
+
+            return response()->json([
+                'data' => [
+                    'id' => $updatedUser->id,
+                    'email' => $updatedUser->email,
+                    'full_name' => $updatedProfile->full_name,
+                    'phone' => $updatedProfile->phone,
+                    'is_active' => $updatedProfile->is_active !== false,
+                    'has_platform_admin' => true,
+                    'created_at' => $updatedProfile->created_at,
+                    'updated_at' => $updatedProfile->updated_at,
+                ],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Return validation errors in proper format
+            return response()->json([
+                'error' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Failed to update platform user: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to update platform user: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete a platform admin user
+     */
+    public function deletePlatformUser(Request $request, string $id)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            $user = User::find($id);
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            // Verify this is a platform admin user
+            $permission = DB::table('permissions')
+                ->where('name', 'subscription.admin')
+                ->whereNull('organization_id')
+                ->first();
+
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+
+            if ($permission) {
+                $hasPermission = DB::table('model_has_permissions')
+                    ->where('permission_id', $permission->id)
+                    ->where('model_type', 'App\\Models\\User')
+                    ->where('model_id', $id)
+                    ->where('organization_id', $platformOrgId) // Use platform org UUID
+                    ->exists();
+
+                if (!$hasPermission) {
+                    return response()->json(['error' => 'User is not a platform admin'], 403);
+                }
+            }
+
+            // Remove subscription.admin permission first
+            if ($permission) {
+                DB::table('model_has_permissions')
+                    ->where('permission_id', $permission->id)
+                    ->where('model_type', 'App\\Models\\User')
+                    ->where('model_id', $id)
+                    ->where('organization_id', $platformOrgId) // Use platform org UUID
+                    ->delete();
+            }
+
+            // Delete user and profile
+            DB::table('profiles')->where('id', $id)->delete();
+            DB::table('users')->where('id', $id)->delete();
+
+            return response()->noContent();
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete platform user: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to delete platform user: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Reset password for a platform admin user
+     */
+    public function resetPlatformUserPassword(Request $request, string $id)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $request->validate([
+            'password' => 'required|string|min:8',
+        ]);
+
+        try {
+            $user = User::find($id);
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            // Verify this is a platform admin user
+            $permission = DB::table('permissions')
+                ->where('name', 'subscription.admin')
+                ->whereNull('organization_id')
+                ->first();
+
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+
+            if ($permission) {
+                $hasPermission = DB::table('model_has_permissions')
+                    ->where('permission_id', $permission->id)
+                    ->where('model_type', 'App\\Models\\User')
+                    ->where('model_id', $id)
+                    ->where('organization_id', $platformOrgId) // Use platform org UUID
+                    ->exists();
+
+                if (!$hasPermission) {
+                    return response()->json(['error' => 'User is not a platform admin'], 403);
+                }
+            }
+
+            // Update password
+            $encryptedPassword = Hash::make($request->password);
+            DB::table('users')
+                ->where('id', $id)
+                ->update([
+                    'encrypted_password' => $encryptedPassword,
+                    'updated_at' => now(),
+                ]);
+
+            return response()->json(['message' => 'Password reset successfully']);
+        } catch (\Exception $e) {
+            \Log::error('Failed to reset platform user password: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to reset password: ' . $e->getMessage()], 500);
+        }
     }
 
     // =====================================================

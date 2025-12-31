@@ -961,14 +961,39 @@ class CourseStudentController extends Controller
             }
 
             if (!$student->picture_path) {
-                abort(404, 'Picture not found');
+                Log::info('Course student picture requested but no picture_path', ['course_student_id' => $id]);
+                return response('', 404);
             }
 
-            // Use FileStorageService to download the file
-            return $this->fileStorageService->downloadFile(
-                $student->picture_path,
-                'student-picture.' . pathinfo($student->picture_path, PATHINFO_EXTENSION)
-            );
+            // Check if file exists using FileStorageService
+            if (!$this->fileStorageService->fileExists($student->picture_path)) {
+                Log::warning('Course student picture file not found on disk', [
+                    'course_student_id' => $id,
+                    'picture_path' => $student->picture_path,
+                ]);
+                return response('', 404);
+            }
+
+            // Get file content using FileStorageService
+            $file = $this->fileStorageService->getFile($student->picture_path);
+
+            if (!$file || empty($file)) {
+                Log::error('Course student picture file is empty', [
+                    'course_student_id' => $id,
+                    'picture_path' => $student->picture_path,
+                ]);
+                return response('', 404);
+            }
+
+            // Determine MIME type from file extension using FileStorageService
+            $mimeType = $this->fileStorageService->getMimeTypeFromExtension($student->picture_path);
+
+            return response($file, 200)
+                ->header('Content-Type', $mimeType)
+                ->header('Content-Disposition', 'inline; filename="' . basename($student->picture_path) . '"')
+                ->header('Cache-Control', 'private, max-age=3600');
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Error retrieving course student picture: ' . $e->getMessage(), [
                 'course_student_id' => $id,

@@ -2184,7 +2184,8 @@ export const fa: TranslationKeys = {
     orEnterCustomFont: 'یا نام فونت سفارشی را وارد کنید',
     fontFamilyHint: 'یک فونت از لیست انتخاب کنید یا نام فونت سفارشی را وارد کنید',
     reportFontSizeHint: 'اندازه فونت استفاده شده در گزارش‌های تولید شده',
-    currentLogo: 'لوگوی فعلی'
+    currentLogo: 'لوگوی فعلی',
+    multiSchoolFeatureRequired: 'برای ایجاد مدارس اضافی، ویژگی چند مدرسه‌ای لازم است. لطفاً طرح اشتراک خود را ارتقا دهید.'
   },
   // Roles Management
   roles: {

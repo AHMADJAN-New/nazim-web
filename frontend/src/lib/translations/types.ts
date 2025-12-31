@@ -2745,6 +2745,7 @@ export interface TranslationKeys {
     fontFamilyHint: string;
     reportFontSizeHint: string;
     currentLogo: string;
+    multiSchoolFeatureRequired: string;
   };
 
   // Roles Management

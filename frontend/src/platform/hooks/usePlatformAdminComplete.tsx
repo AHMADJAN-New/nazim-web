@@ -473,7 +473,9 @@ export const usePlatformOrganizationPermissions = (organizationId: string | null
     queryFn: async () => {
       if (!organizationId) return [];
       const response = await platformApi.permissions.getForOrganization(organizationId);
-      return response;
+      // Backend returns: { organization: {...}, permissions: [...], roles: [...], total_permissions: 123 }
+      // Extract the permissions array from the response
+      return (response as any)?.permissions || [];
     },
     enabled: !!organizationId,
     staleTime: 5 * 60 * 1000,
@@ -507,9 +509,11 @@ export const usePlatformAssignPermissionToUser = () => {
     mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: number }) => {
       return platformApi.userPermissions.assign(userId, permissionId);
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
       showToast.success(t('toast.permissionAssignedToUser') || 'Permission assigned successfully');
-      queryClient.invalidateQueries({ queryKey: ['platform-user-permissions', variables.userId] });
+      // Invalidate and refetch to get updated permissions
+      await queryClient.invalidateQueries({ queryKey: ['platform-user-permissions', variables.userId] });
+      await queryClient.refetchQueries({ queryKey: ['platform-user-permissions', variables.userId] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.permissionAssignFailed') || 'Failed to assign permission');
@@ -528,9 +532,11 @@ export const usePlatformRemovePermissionFromUser = () => {
     mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: number }) => {
       return platformApi.userPermissions.remove(userId, permissionId);
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
       showToast.success(t('toast.permissionRemovedFromUser') || 'Permission removed successfully');
-      queryClient.invalidateQueries({ queryKey: ['platform-user-permissions', variables.userId] });
+      // Invalidate and refetch to get updated permissions
+      await queryClient.invalidateQueries({ queryKey: ['platform-user-permissions', variables.userId] });
+      await queryClient.refetchQueries({ queryKey: ['platform-user-permissions', variables.userId] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.permissionRemoveFailed') || 'Failed to remove permission');
@@ -633,12 +639,14 @@ export const usePlatformAssignPermissionGroupToUser = () => {
     mutationFn: async ({ userId, permissionGroupId }: { userId: string; permissionGroupId: string }) => {
       return platformApi.permissionGroups.assignToUser(userId, permissionGroupId);
     },
-    onSuccess: (response, variables) => {
+    onSuccess: async (response, variables) => {
       const message = response.assigned > 0 
         ? `Assigned ${response.assigned} permission(s)${response.skipped > 0 ? ` (${response.skipped} already assigned)` : ''}`
         : 'All permissions were already assigned';
       showToast.success(message);
-      queryClient.invalidateQueries({ queryKey: ['platform-user-permissions', variables.userId] });
+      // Invalidate and refetch to get updated permissions
+      await queryClient.invalidateQueries({ queryKey: ['platform-user-permissions', variables.userId] });
+      await queryClient.refetchQueries({ queryKey: ['platform-user-permissions', variables.userId] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.permissionGroupAssignFailed') || 'Failed to assign permission group');
@@ -672,9 +680,11 @@ export const usePlatformRemovePermissionGroupFromUser = () => {
     mutationFn: async ({ userId, permissionGroupId }: { userId: string; permissionGroupId: string }) => {
       return platformApi.permissionGroups.removeFromUser(userId, permissionGroupId);
     },
-    onSuccess: (response, variables) => {
+    onSuccess: async (response, variables) => {
       showToast.success(`Removed ${response.removed} permission(s) from user`);
-      queryClient.invalidateQueries({ queryKey: ['platform-user-permissions', variables.userId] });
+      // Invalidate and refetch to get updated permissions
+      await queryClient.invalidateQueries({ queryKey: ['platform-user-permissions', variables.userId] });
+      await queryClient.refetchQueries({ queryKey: ['platform-user-permissions', variables.userId] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.permissionGroupRemoveFailed') || 'Failed to remove permission group');

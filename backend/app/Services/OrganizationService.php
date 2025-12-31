@@ -283,6 +283,7 @@ class OrganizationService
 
         // Assign ALL organization permissions to the organization_admin role
         // CRITICAL: Use role_has_permissions table, not model_has_permissions
+        // CRITICAL: Never assign subscription.admin - it's GLOBAL only (not organization-scoped)
         $tableNames = config('permission.table_names');
         $roleHasPermissionsTable = $tableNames['role_has_permissions'] ?? 'role_has_permissions';
 
@@ -290,6 +291,15 @@ class OrganizationService
         $skippedCount = 0;
 
         foreach ($orgPermissions as $permissionName => $permissionId) {
+            // CRITICAL: Skip subscription.admin - it's GLOBAL only and should NEVER be assigned to organization roles
+            if ($permissionName === 'subscription.admin') {
+                Log::warning("Skipping subscription.admin permission - it's GLOBAL only and cannot be assigned to organization roles", [
+                    'organization_id' => $organization->id,
+                    'role_id' => $role->id,
+                ]);
+                continue;
+            }
+
             // Check if permission already assigned to role
             $exists = DB::table($roleHasPermissionsTable)
                 ->where('role_id', $role->id)

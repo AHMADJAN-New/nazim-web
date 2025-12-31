@@ -4,99 +4,98 @@ import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Get platform admin permissions (GLOBAL, not organization-scoped)
- * 
- * CRITICAL: This hook is for platform admins who are NOT tied to organizations.
- * It checks for global permissions (organization_id = NULL), specifically subscription.admin
+ * - Reads permissions from /platform/permissions/platform-admin
+ * - This endpoint should return global permissions (organization_id = NULL)
  */
 export const usePlatformAdminPermissions = () => {
   const { user } = useAuth();
 
-  // CRITICAL: Only enable this query if:
-  // 1. User is authenticated
-  // 2. We're on a platform route OR user is in platform admin session
-  // This prevents 403 errors when regular users access the main app
-  const isOnPlatformRoute = typeof window !== 'undefined' && 
-    window.location.pathname.startsWith('/platform');
-  const isPlatformAdminSession = typeof window !== 'undefined' && 
+  const isOnPlatformRoute =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/platform');
+
+  const isPlatformAdminSession =
+    typeof window !== 'undefined' &&
     localStorage.getItem('is_platform_admin_session') === 'true';
-  
+
+  // We only fetch if user exists AND we are truly in platform context.
   const shouldFetch = !!user && (isOnPlatformRoute || isPlatformAdminSession);
 
-  return useQuery({
-    queryKey: ['platform-admin-permissions', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-
-      // CRITICAL: Call the API without organization context
-      // The backend should return global permissions for platform admins
-      // For now, we'll manually check subscription.admin by calling the API
-      // and checking if the user has the permission
-      
-      try {
-        // Call platform admin permissions endpoint (doesn't require organization_id)
-        // This endpoint is in the /platform route group, so it uses /platform/permissions/platform-admin
-        const response = await apiClient.get<{ permissions: string[] }>('/platform/permissions/platform-admin');
-        return response.permissions || [];
-      } catch (error: any) {
-        // If API fails with 403, user is not a platform admin
-        // CRITICAL: Clear the platform admin session flag IMMEDIATELY to prevent redirect loops
-        const is403Error = error?.message?.includes('403') || 
-                          error?.message?.includes('platform administrators') ||
-                          error?.message?.includes('Access Denied') ||
-                          error?.message?.includes('This endpoint is only accessible');
-        
-        if (is403Error) {
-          // CRITICAL: Clear flags immediately to break redirect loops
-          // Do this synchronously before any other code runs
-          localStorage.removeItem('is_platform_admin_session');
-          localStorage.removeItem('platform_admin_token_backup');
-          
-          // If we're on a platform route, redirect to main app immediately
-          // Use a flag to prevent multiple redirects
-          if (typeof window !== 'undefined' && window.location.pathname.startsWith('/platform')) {
-            const redirectKey = 'platform_redirect_in_progress';
-            if (!sessionStorage.getItem(redirectKey)) {
-              sessionStorage.setItem(redirectKey, 'true');
-              // Use setTimeout to avoid redirect during render
-              setTimeout(() => {
-                sessionStorage.removeItem(redirectKey);
-                window.location.href = '/dashboard';
-              }, 100);
-            }
-          }
-        }
-        
-        // If API fails (e.g., user has no organization), return empty array
-        // Platform admin check will happen in the route guard
-        if (import.meta.env.DEV) {
-          console.error('[usePlatformAdminPermissions] Error:', error);
-        }
-        return [];
-      }
-    },
-    enabled: shouldFetch, // Only fetch if conditions are met
-    staleTime: 60 * 60 * 1000, // 1 hour
-    gcTime: 24 * 60 * 60 * 1000, // 24 hours
+  return useQuery<string[], Error>({
+    queryKey: ['platform-admin-permissions', user?.id ?? 'guest'],
+    enabled: shouldFetch,
+    staleTime: 60 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: true,
     refetchOnReconnect: false,
     refetchInterval: false,
-    // CRITICAL: Don't use placeholderData - we need to know when data is actually loaded
-    // Using placeholderData causes the route guard to think permissions are empty when they're still loading
-    placeholderData: undefined,
+
+    queryFn: async () => {
+      if (!user) return [];
+
+      try {
+        // Be robust about apiClient response shapes:
+        // Some clients return raw JSON, others return { data: ... }
+        const res: any = await apiClient.get('/platform/permissions/platform-admin');
+
+        const permissions =
+          res?.permissions ??
+          res?.data?.permissions ??
+          res?.data?.data?.permissions ??
+          [];
+
+        return Array.isArray(permissions) ? permissions : [];
+      } catch (error: any) {
+        // Detect "not allowed" patterns
+        const msg = String(error?.message ?? '');
+        const status = error?.status ?? error?.response?.status;
+
+        const is403 =
+          status === 403 ||
+          msg.includes('403') ||
+          msg.includes('platform administrators') ||
+          msg.includes('Access Denied') ||
+          msg.includes('only accessible');
+
+        if (is403) {
+          // Break redirect loops immediately
+          localStorage.removeItem('is_platform_admin_session');
+          localStorage.removeItem('platform_admin_token_backup');
+
+          // If currently on platform routes, bounce out
+          if (typeof window !== 'undefined' && window.location.pathname.startsWith('/platform')) {
+            const redirectKey = 'platform_redirect_in_progress';
+            if (!sessionStorage.getItem(redirectKey)) {
+              sessionStorage.setItem(redirectKey, 'true');
+              setTimeout(() => {
+                sessionStorage.removeItem(redirectKey);
+                window.location.href = '/dashboard';
+              }, 50);
+            }
+          }
+        }
+
+        if (import.meta.env.DEV) {
+          console.error('[usePlatformAdminPermissions] Error:', error);
+        }
+
+        // IMPORTANT: return [] instead of throwing
+        // so UI doesn’t explode; guard will handle denial.
+        return [];
+      }
+    },
   });
 };
 
 /**
- * Check if user has platform admin permission
+ * Check if user is platform admin
+ * - Returns:
+ *   - true/false when loaded
+ *   - undefined while loading
  */
 export const useIsPlatformAdmin = (): boolean | undefined => {
-  const { data: permissions } = usePlatformAdminPermissions();
-  
-  if (permissions && permissions.length > 0) {
-    return permissions.includes('subscription.admin');
-  }
-  
-  return undefined;
-};
+  const { data, isLoading } = usePlatformAdminPermissions();
 
+  if (isLoading) return undefined;
+  return Array.isArray(data) ? data.includes('subscription.admin') : false;
+};

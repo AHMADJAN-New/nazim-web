@@ -270,4 +270,36 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Password changed successfully']);
     }
+
+    /**
+     * Check if current user is a platform admin
+     * This endpoint is accessible to all authenticated users
+     * Returns a simple boolean - no 403 errors for regular users
+     */
+    public function isPlatformAdmin(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['is_platform_admin' => false]);
+        }
+
+        try {
+            // CRITICAL: Use platform org UUID as team context for global permissions
+            // Global permissions are stored with platform org UUID (00000000-0000-0000-0000-000000000000)
+            // in model_has_permissions, but the permission itself has organization_id = NULL
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
+            
+            // Check for subscription.admin permission (global)
+            $isPlatformAdmin = $user->hasPermissionTo('subscription.admin');
+            
+            return response()->json(['is_platform_admin' => $isPlatformAdmin]);
+        } catch (\Exception $e) {
+            // If permission check fails, return false (not a platform admin)
+            // Don't log this as an error - it's expected for regular users
+            \Log::debug('Platform admin check failed: ' . $e->getMessage());
+            return response()->json(['is_platform_admin' => false]);
+        }
+    }
 }

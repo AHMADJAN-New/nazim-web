@@ -131,7 +131,17 @@ class OrganizationObserver
             foreach ($rolesToAssign as $roleToAssign) {
                 if ($permissionList === '*') {
                     // Admin gets all organization permissions
+                    // CRITICAL: Never assign subscription.admin - it's GLOBAL only
                     foreach ($orgPermissions as $permission) {
+                        // CRITICAL: Skip subscription.admin - it's GLOBAL only and should NEVER be assigned to organization roles
+                        if ($permission->name === 'subscription.admin') {
+                            Log::warning("Skipping subscription.admin permission - it's GLOBAL only and cannot be assigned to organization roles", [
+                                'organization_id' => $organization->id,
+                                'role_id' => $roleToAssign->id,
+                            ]);
+                            continue;
+                        }
+
                         $exists = DB::table('role_has_permissions')
                             ->where('permission_id', $permission->id)
                             ->where('role_id', $roleToAssign->id)
@@ -152,6 +162,15 @@ class OrganizationObserver
                 } else {
                     // Assign specific permissions for staff and teacher
                     foreach ($permissionList as $permissionName) {
+                        // CRITICAL: Skip subscription.admin - it's GLOBAL only and should NEVER be assigned to organization roles
+                        if ($permissionName === 'subscription.admin') {
+                            Log::warning("Skipping subscription.admin permission - it's GLOBAL only and cannot be assigned to organization roles", [
+                                'organization_id' => $organization->id,
+                                'role_id' => $roleToAssign->id,
+                            ]);
+                            continue;
+                        }
+
                         $permission = $orgPermissions->get($permissionName);
                         if ($permission) {
                             $exists = DB::table('role_has_permissions')

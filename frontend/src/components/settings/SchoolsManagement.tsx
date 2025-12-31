@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSchools, useCreateSchool, useUpdateSchool, useDeleteSchool, type School } from '@/hooks/useSchools';
 import { useHasPermission } from '@/hooks/usePermissions';
+import { useHasFeature } from '@/hooks/useSubscription';
 import { WatermarkManagement } from './WatermarkManagement';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -90,6 +91,7 @@ export function SchoolsManagement() {
   const hasCreatePermission = useHasPermission('school_branding.create');
   const hasUpdatePermission = useHasPermission('school_branding.update');
   const hasDeletePermission = useHasPermission('school_branding.delete');
+  const hasMultiSchoolFeature = useHasFeature('multi_school');
   const { data: schools, isLoading } = useSchools();
   const createSchool = useCreateSchool();
   const updateSchool = useUpdateSchool();
@@ -414,7 +416,11 @@ export function SchoolsManagement() {
               <CardDescription>{t('schools.subtitle')}</CardDescription>
             </div>
             {hasCreatePermission && (
-              <Button onClick={() => handleOpenDialog()}>
+              <Button 
+                onClick={() => handleOpenDialog()}
+                disabled={!hasMultiSchoolFeature}
+                title={!hasMultiSchoolFeature ? t('schools.multiSchoolFeatureRequired') || 'Multiple schools feature is required to create additional schools' : undefined}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 {t('schools.addSchool')}
               </Button>

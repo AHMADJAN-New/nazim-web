@@ -6,6 +6,11 @@ import {
   RefreshCw,
   XCircle,
   CheckCircle2,
+  Eye,
+  DollarSign,
+  Calendar,
+  Building2,
+  Info,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
@@ -86,6 +91,8 @@ const initialFormData: PlanFormData = {
 
 export default function PlansManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [viewingPlan, setViewingPlan] = useState<(typeof plans)[0] | null>(null);
   const [editingPlan, setEditingPlan] = useState<string | null>(null);
   const [formData, setFormData] = useState<PlanFormData>(initialFormData);
 
@@ -217,7 +224,7 @@ export default function PlansManagement() {
             All Plans
           </CardTitle>
           <CardDescription>
-            Click on a plan to edit its details
+            Click on a plan row to view details, or use the edit button to modify
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -236,7 +243,18 @@ export default function PlansManagement() {
             </TableHeader>
             <TableBody>
               {plans?.map((plan) => (
-                <TableRow key={plan.id}>
+                <TableRow 
+                  key={plan.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={(e) => {
+                    // Don't open view dialog if clicking on the edit button
+                    if ((e.target as HTMLElement).closest('button')) {
+                      return;
+                    }
+                    setViewingPlan(plan);
+                    setIsViewDialogOpen(true);
+                  }}
+                >
                   <TableCell className="font-medium">
                     {plan.name}
                     {plan.isDefault && (
@@ -278,7 +296,7 @@ export default function PlansManagement() {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -695,6 +713,343 @@ export default function PlansManagement() {
                 'Create Plan'
               )}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Plan Details Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
+            <DialogTitle className="text-2xl flex items-center gap-2">
+              <Package className="h-6 w-6" />
+              {viewingPlan?.name || 'Plan Details'}
+              {viewingPlan?.isDefault && (
+                <Badge variant="secondary">Default</Badge>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              Complete plan information, features, and limits
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+            {viewingPlan && (
+              <>
+                {/* Basic Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Info className="h-5 w-5" />
+                      Basic Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Plan Name</Label>
+                        <p className="font-medium">{viewingPlan.name}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Slug</Label>
+                        <p className="font-medium font-mono text-sm">{viewingPlan.slug}</p>
+                      </div>
+                    </div>
+                    {viewingPlan.description && (
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Description</Label>
+                        <p className="text-sm">{viewingPlan.description}</p>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Status</Label>
+                        <div className="mt-1">
+                          {viewingPlan.deletedAt ? (
+                            <Badge variant="destructive">
+                              <XCircle className="mr-1 h-3 w-3" />
+                              Inactive
+                            </Badge>
+                          ) : (
+                            <Badge variant="default" className="bg-green-500">
+                              <CheckCircle className="mr-1 h-3 w-3" />
+                              Active
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Sort Order</Label>
+                        <p className="font-medium">{viewingPlan.sortOrder}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Pricing Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      Pricing
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Yearly Price (AFN)</Label>
+                        <p className="font-medium text-lg">{viewingPlan.priceYearlyAfn.toLocaleString()} AFN</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Yearly Price (USD)</Label>
+                        <p className="font-medium text-lg">${viewingPlan.priceYearlyUsd.toLocaleString()} USD</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Per School Price (AFN)</Label>
+                        <p className="font-medium">{viewingPlan.perSchoolPriceAfn.toLocaleString()} AFN</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Per School Price (USD)</Label>
+                        <p className="font-medium">${viewingPlan.perSchoolPriceUsd.toLocaleString()} USD</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Periods & Limits */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      Periods & Limits
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Trial Days</Label>
+                        <p className="font-medium">{viewingPlan.trialDays} days</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Grace Period Days</Label>
+                        <p className="font-medium">{viewingPlan.gracePeriodDays} days</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Read-Only Period Days</Label>
+                        <p className="font-medium">{viewingPlan.readonlyPeriodDays} days</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Max Schools</Label>
+                        <p className="font-medium">
+                          {viewingPlan.maxSchools === -1 ? 'Unlimited' : viewingPlan.maxSchools}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Features */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5" />
+                      Features
+                      <Badge variant="outline" className="ml-2">
+                        {viewingPlan.features?.length || 0} enabled
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {featureDefinitions && featureDefinitions.length > 0 ? (
+                      <div className="space-y-4">
+                        {(() => {
+                          // Get all enabled feature keys from the plan
+                          const enabledFeatureKeys = viewingPlan.features && Array.isArray(viewingPlan.features) 
+                            ? viewingPlan.features 
+                            : [];
+                          
+                          if (enabledFeatureKeys.length === 0) {
+                            return (
+                              <div className="text-center py-8 text-muted-foreground">
+                                <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                <p className="text-sm">No features enabled for this plan</p>
+                              </div>
+                            );
+                          }
+
+                          // Group features by category
+                          const grouped = featureDefinitions.reduce((acc, feature) => {
+                            const category = feature.category || 'Other';
+                            if (!acc[category]) {
+                              acc[category] = [];
+                            }
+                            acc[category].push(feature);
+                            return acc;
+                          }, {} as Record<string, typeof featureDefinitions>);
+
+                          const sortedCategories = Object.keys(grouped).sort();
+
+                          // Filter to only show categories that have at least one enabled feature
+                          const categoriesWithEnabledFeatures = sortedCategories.filter((category) => {
+                            const categoryFeatures = grouped[category];
+                            return categoryFeatures.some((f) => enabledFeatureKeys.includes(f.feature_key));
+                          });
+
+                          if (categoriesWithEnabledFeatures.length === 0) {
+                            return (
+                              <div className="text-center py-8 text-muted-foreground">
+                                <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                <p className="text-sm">No enabled features found in any category</p>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="space-y-4">
+                              {categoriesWithEnabledFeatures.map((category) => {
+                                const categoryFeatures = grouped[category].sort(
+                                  (a, b) => (a.sort_order || 0) - (b.sort_order || 0)
+                                );
+                                // Filter to only show enabled features
+                                const enabledFeatures = categoryFeatures.filter((f) =>
+                                  enabledFeatureKeys.includes(f.feature_key)
+                                );
+
+                                return (
+                                  <Card key={category} className="overflow-hidden">
+                                    <CardHeader className="pb-3">
+                                      <div className="flex items-center justify-between">
+                                        <CardTitle className="text-base capitalize">{category}</CardTitle>
+                                        <Badge variant="outline" className="text-xs">
+                                          {enabledFeatures.length} / {categoryFeatures.length} enabled
+                                        </Badge>
+                                      </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2">
+                                      {enabledFeatures.map((feature) => (
+                                        <div
+                                          key={feature.feature_key}
+                                          className="flex items-start gap-3 p-3 rounded-lg border bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-800"
+                                        >
+                                          <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                              <div className="font-medium text-sm capitalize">
+                                                {feature.name || feature.feature_key.replace(/_/g, ' ')}
+                                              </div>
+                                              {feature.is_addon && (
+                                                <Badge variant="secondary" className="text-xs">
+                                                  Add-on
+                                                </Badge>
+                                              )}
+                                            </div>
+                                            {feature.description && (
+                                              <p className="text-xs text-muted-foreground mt-1">
+                                                {feature.description}
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p className="text-sm">No features available</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Limits */}
+                {viewingPlan.limits && Object.keys(viewingPlan.limits).length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Building2 className="h-5 w-5" />
+                        Limits
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {Object.entries(viewingPlan.limits).map(([key, value]) => (
+                          <div
+                            key={key}
+                            className="flex items-center justify-between p-3 rounded-lg border"
+                          >
+                            <div>
+                              <div className="font-medium text-sm capitalize">
+                                {key.replace(/_/g, ' ')}
+                              </div>
+                            </div>
+                            <div className="font-bold">
+                              {value === -1 ? 'Unlimited' : value.toLocaleString()}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Metadata */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Metadata</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm text-muted-foreground">Created At</Label>
+                      <p className="text-sm font-medium">
+                        {viewingPlan.createdAt ? new Date(viewingPlan.createdAt).toLocaleString() : 'N/A'}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm text-muted-foreground">Updated At</Label>
+                      <p className="text-sm font-medium">
+                        {viewingPlan.updatedAt ? new Date(viewingPlan.updatedAt).toLocaleString() : 'N/A'}
+                      </p>
+                    </div>
+                    {viewingPlan.deletedAt && (
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm text-muted-foreground">Deleted At</Label>
+                        <p className="text-sm font-medium text-destructive">
+                          {new Date(viewingPlan.deletedAt).toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
+
+          <DialogFooter className="flex-shrink-0 border-t px-6 py-4">
+            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+              Close
+            </Button>
+            {viewingPlan && (
+              <Button
+                onClick={() => {
+                  setIsViewDialogOpen(false);
+                  handleOpenEdit(viewingPlan);
+                }}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Plan
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

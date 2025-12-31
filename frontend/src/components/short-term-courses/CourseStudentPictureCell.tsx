@@ -36,10 +36,8 @@ export function CourseStudentPictureCell({ student, size = 'md' }: CourseStudent
       });
     }
     
-    // Always try to fetch if we have a student ID
-    // The backend will return 404 if no picture exists, which we handle gracefully
-    // This ensures we show pictures even if picturePath wasn't in the API response yet
-    const shouldTryFetch = student.id;
+    // Only try to fetch if we have a student ID and a known picture path.
+    const shouldTryFetch = !!student.id && !!student.picturePath;
     
     if (import.meta.env.DEV) {
       console.log('[CourseStudentPictureCell] Should try fetch?', shouldTryFetch, 'picturePath:', student.picturePath);
@@ -51,41 +49,25 @@ export function CourseStudentPictureCell({ student, size = 'md' }: CourseStudent
       const fetchImage = async () => {
         try {
           const { apiClient } = await import('@/lib/api/client');
-          const token = apiClient.getToken();
-          const url = `/api/course-students/${student.id}/picture`;
+          const endpoint = `/course-students/${student.id}/picture?v=${encodeURIComponent(student.picturePath)}`;
           
           if (import.meta.env.DEV) {
-            console.log('[CourseStudentPictureCell] Fetching picture from:', url);
+            console.log('[CourseStudentPictureCell] Fetching picture from:', endpoint);
           }
           
-          const response = await fetch(url, {
+          // Use apiClient.requestFile to properly handle base URL and authentication
+          // This ensures the request goes through the Vite proxy in dev or uses the correct API URL
+          const { blob } = await apiClient.requestFile(endpoint, {
             method: 'GET',
             headers: {
               'Accept': 'image/*',
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
             },
-            credentials: 'include',
           });
           
           if (import.meta.env.DEV) {
-            console.log('[CourseStudentPictureCell] Response status:', response.status, response.statusText);
-          }
-          
-          if (!response.ok) {
-            if (response.status === 404) {
-              if (import.meta.env.DEV) {
-                console.warn('[CourseStudentPictureCell] Picture not found (404)');
-              }
-              setImageError(true);
-              return;
-            }
-            throw new Error(`Failed to fetch image: ${response.status}`);
-          }
-          
-          const blob = await response.blob();
-          if (import.meta.env.DEV) {
             console.log('[CourseStudentPictureCell] Blob received:', blob.type, blob.size, 'bytes');
           }
+          
           const blobUrl = URL.createObjectURL(blob);
           currentBlobUrl = blobUrl;
           setImageUrl(blobUrl);
@@ -95,8 +77,29 @@ export function CourseStudentPictureCell({ student, size = 'md' }: CourseStudent
             console.log('[CourseStudentPictureCell] Picture loaded successfully');
           }
         } catch (error) {
-          if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
-            console.error('Failed to fetch course student picture:', error);
+          // Handle 404 gracefully (picture doesn't exist)
+          // Check status code directly if available, or check error message
+          const statusCode = (error as Error & { status?: number })?.status;
+          const is404 = statusCode === 404 || (
+            error instanceof Error && (
+              error.message.includes('404') || 
+              error.message.includes('Not Found') ||
+              error.message.includes('HTTP error! status: 404')
+            )
+          );
+          
+          if (is404) {
+            // 404 is expected when student has no picture - don't log as error
+            if (import.meta.env.DEV) {
+              console.log('[CourseStudentPictureCell] Picture not found (404) - showing placeholder');
+            }
+            setImageError(true);
+            return;
+          }
+          
+          // Log other errors (network issues, 500 errors, etc.)
+          if (import.meta.env.DEV && error instanceof Error) {
+            console.error('[CourseStudentPictureCell] Failed to fetch picture:', error);
           }
           setImageError(true);
         }
@@ -112,7 +115,7 @@ export function CourseStudentPictureCell({ student, size = 'md' }: CourseStudent
     } else {
       // No picture path, show placeholder immediately
       setImageUrl(null);
-      setImageError(true);
+      setImageError(false);
     }
   }, [student.id, student.picturePath]);
   

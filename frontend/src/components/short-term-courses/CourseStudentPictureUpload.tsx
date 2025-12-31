@@ -40,10 +40,9 @@ export function CourseStudentPictureUpload({
     // Fetch picture with authentication headers and convert to blob URL
     // Only fetch if we have a courseStudentId AND (currentFileName exists OR we just uploaded)
     useEffect(() => {
-        // Only fetch if we have a courseStudentId
-        // Prefer currentFileName check, but also try if it's undefined (might have been uploaded)
+        // Only fetch if we have a courseStudentId and no local preview, and a known picture file name.
         const hasFileName = currentFileName && currentFileName.trim() !== '';
-        const shouldFetch = courseStudentId && !previewUrl && (hasFileName || currentFileName === undefined);
+        const shouldFetch = courseStudentId && !previewUrl && hasFileName;
         
         if (import.meta.env.DEV) {
             console.log('[CourseStudentPictureUpload] Fetch check:', {
@@ -64,8 +63,9 @@ export function CourseStudentPictureUpload({
                     const { apiClient } = await import('@/lib/api/client');
                     // Get the token from apiClient
                     const token = apiClient.getToken();
+                    const version = currentFileName ? `?v=${encodeURIComponent(currentFileName)}` : '';
                     // Use relative URL - Vite proxy will handle it
-                    const url = `/api/course-students/${courseStudentId}/picture`;
+                    const url = `/api/course-students/${courseStudentId}/picture${version}`;
                     
                     const response = await fetch(url, {
                         method: 'GET',

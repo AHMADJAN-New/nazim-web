@@ -122,6 +122,11 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
 });
 
+// Platform admin check - accessible to all authenticated users (no organization requirement)
+// This endpoint doesn't require organization context since platform admins can have organization_id = NULL
+// Returns simple boolean - no 403 errors, completely hidden from network inspection
+Route::middleware(['auth:sanctum'])->get('/auth/is-platform-admin', [AuthController::class, 'isPlatformAdmin']);
+
 // Organization management routes (accessible without subscription for initial setup)
 // These routes are needed for permission management and organization setup
 Route::middleware(['auth:sanctum', 'organization'])->group(function () {
@@ -1237,6 +1242,13 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     
     // Platform admin permissions (global, not organization-scoped)
     Route::get('/permissions/platform-admin', [PermissionController::class, 'platformAdminPermissions']);
+    
+    // Platform admin users (users with subscription.admin permission)
+    Route::get('/users', [SubscriptionAdminController::class, 'listPlatformUsers']);
+    Route::post('/users', [SubscriptionAdminController::class, 'createPlatformUser']);
+    Route::put('/users/{id}', [SubscriptionAdminController::class, 'updatePlatformUser']);
+    Route::delete('/users/{id}', [SubscriptionAdminController::class, 'deletePlatformUser']);
+    Route::post('/users/{id}/reset-password', [SubscriptionAdminController::class, 'resetPlatformUserPassword']);
 });
 
 // Legacy admin subscription routes (kept for backward compatibility, but will be deprecated)

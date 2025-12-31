@@ -164,10 +164,13 @@ import {
   PlansPage,
   RenewPage,
   SubscriptionAdminDashboard,
+  PendingActionsPage,
+  AllSubscriptionsPage,
   PlansManagement,
   OrganizationSubscriptionDetail,
   RenewalReviewPage,
-  DiscountCodesManagement
+  DiscountCodesManagement,
+  PlatformSettings
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -279,7 +282,7 @@ const App = () => (
                           } />
                           <Route path="/subscriptions" element={
                             <Suspense fallback={<PageSkeleton />}>
-                              <SubscriptionAdminDashboard />
+                              <AllSubscriptionsPage />
                             </Suspense>
                           } />
                           <Route path="/plans" element={
@@ -289,7 +292,7 @@ const App = () => (
                           } />
                           <Route path="/pending" element={
                             <Suspense fallback={<PageSkeleton />}>
-                              <SubscriptionAdminDashboard />
+                              <PendingActionsPage />
                             </Suspense>
                           } />
                           <Route path="/payments/:paymentId" element={
@@ -305,6 +308,11 @@ const App = () => (
                           <Route path="/discount-codes" element={
                             <Suspense fallback={<PageSkeleton />}>
                               <DiscountCodesManagement />
+                            </Suspense>
+                          } />
+                          <Route path="/settings" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <PlatformSettings />
                             </Suspense>
                           } />
                           <Route path="/" element={<Navigate to="/platform/dashboard" replace />} />

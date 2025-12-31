@@ -307,12 +307,15 @@ export function OrganizationAdminsManagement() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {permissionGroups.map((group) => {
-                        const groupPermissionIds = group.permissions.map(p => p.id);
-                        const allAssigned = groupPermissionIds.every(pid => 
+                      {permissionGroups.map((group: any) => {
+                        // Ensure permission IDs are numbers
+                        const groupPermissionIds = group.permissions.map((p: any) => 
+                          typeof p.id === 'string' ? parseInt(p.id, 10) : p.id
+                        );
+                        const allAssigned = groupPermissionIds.every((pid: number) => 
                           userPermissionsData?.direct_permissions.some(p => p.id === pid)
                         );
-                        const someAssigned = groupPermissionIds.some(pid => 
+                        const someAssigned = groupPermissionIds.some((pid: number) => 
                           userPermissionsData?.direct_permissions.some(p => p.id === pid)
                         );
                         const isLoading = assignPermissionGroup.isPending || removePermissionGroup.isPending;
@@ -389,7 +392,7 @@ export function OrganizationAdminsManagement() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {!orgPermissions || orgPermissions.length === 0 ? (
+                  {!orgPermissions || !Array.isArray(orgPermissions) || orgPermissions.length === 0 ? (
                     <div className="text-center py-4 text-muted-foreground">
                       {orgPermissions === undefined ? (
                         <LoadingSpinner />
@@ -399,12 +402,15 @@ export function OrganizationAdminsManagement() {
                     </div>
                   ) : (
                     <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {orgPermissions.map((permission) => {
+                      {orgPermissions.map((permission: any) => {
+                        // Ensure permission.id is a number (backend expects integer)
+                        const permissionId = typeof permission.id === 'string' ? parseInt(permission.id, 10) : permission.id;
+                        
                         const isAssigned = userPermissionsData?.direct_permissions.some(
-                          (p) => p.id === permission.id
+                          (p) => p.id === permissionId
                         );
                         const isFromRole = userPermissionsData?.role_permissions.some(
-                          (p) => p.id === permission.id
+                          (p) => p.id === permissionId
                         );
                         const isLoading = assignPermission.isPending || removePermission.isPending;
 
@@ -413,7 +419,7 @@ export function OrganizationAdminsManagement() {
                             key={permission.id}
                             className={`flex items-center justify-between p-3 border rounded-md transition-colors ${
                               isFromRole ? 'bg-muted/50' : 'hover:bg-muted/30'
-                            }`}
+                            } ${isLoading ? 'opacity-60' : ''}`}
                           >
                             <div className="flex items-center gap-3 flex-1">
                               <Checkbox
@@ -425,12 +431,12 @@ export function OrganizationAdminsManagement() {
                                   if (checked) {
                                     assignPermission.mutate({
                                       userId: selectedAdmin.id,
-                                      permissionId: permission.id,
+                                      permissionId: permissionId,
                                     });
                                   } else {
                                     removePermission.mutate({
                                       userId: selectedAdmin.id,
-                                      permissionId: permission.id,
+                                      permissionId: permissionId,
                                     });
                                   }
                                 }}
@@ -438,8 +444,11 @@ export function OrganizationAdminsManagement() {
                               <div className="flex-1">
                                 <div className="font-medium flex items-center gap-2">
                                   {permission.name}
+                                  {isLoading && (
+                                    <LoadingSpinner size="sm" />
+                                  )}
                                   {isFromRole && (
-                                    <Badge variant="outline" className="text-xs">
+                                    <Badge variant="outline" className="text-xs" title="This permission comes from a role and cannot be removed directly. Remove the role or the permission from the role instead.">
                                       From Role
                                     </Badge>
                                   )}

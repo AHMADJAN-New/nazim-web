@@ -212,6 +212,9 @@ class ApiClient {
         // Laravel may return error in 'error' field or 'message' field
         const errorMessage = error.message || error.error || `HTTP error! status: ${response.status}`;
         const errorObj = new Error(errorMessage);
+        // Attach status code to error object for easier handling
+        (errorObj as any).status = response.status;
+        (errorObj as any).response = { status: response.status };
         if (isExpectedUnauth) {
           // Mark as expected so useAuth can handle it silently
           (errorObj as any).expected = true;
@@ -332,8 +335,26 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: response.statusText }));
-      throw new Error(error.message || error.error || `HTTP error! status: ${response.status}`);
+      // For file requests, try to parse JSON error, but handle binary responses gracefully
+      let errorMessage = response.statusText;
+      const statusCode = response.status;
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const error = await response.json();
+          errorMessage = error.message || error.error || response.statusText;
+        } else {
+          // For non-JSON responses (like images), use status text
+          errorMessage = `HTTP error! status: ${statusCode}`;
+        }
+      } catch {
+        // If parsing fails, use status text
+        errorMessage = `HTTP error! status: ${statusCode}`;
+      }
+      // Create error with status code as a property for easier checking
+      const error = new Error(errorMessage) as Error & { status?: number };
+      error.status = statusCode;
+      throw error;
     }
 
     const contentDisposition = response.headers.get('content-disposition');

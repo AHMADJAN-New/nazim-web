@@ -208,6 +208,7 @@ export function CertificateLayoutEditor({
     };
   }, [backgroundImageUrl]);
 
+
   const getFieldPosition = (fieldKey: keyof CertificateLayoutConfig) => {
     const position = config[fieldKey] as { x: number; y: number } | undefined;
     if (position) return position;

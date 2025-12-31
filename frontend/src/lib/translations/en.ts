@@ -2388,7 +2388,8 @@ export const en: TranslationKeys = {
     orEnterCustomFont: 'Or enter custom font name',
     fontFamilyHint: 'Select a font from the dropdown or enter a custom font name',
     reportFontSizeHint: 'Font size used in generated reports',
-    currentLogo: 'Current logo'
+    currentLogo: 'Current logo',
+    multiSchoolFeatureRequired: 'Multiple schools feature is required to create additional schools. Please upgrade your subscription plan.'
   },
   // Roles Management
   roles: {

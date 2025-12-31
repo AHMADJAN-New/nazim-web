@@ -2183,7 +2183,8 @@ export const ar: TranslationKeys = {
     orEnterCustomFont: 'أو أدخل اسم خط مخصص',
     fontFamilyHint: 'اختر خطًا من القائمة أو أدخل اسم خط مخصص',
     reportFontSizeHint: 'حجم الخط المستخدم في التقارير المُنشأة',
-    currentLogo: 'الشعار الحالي'
+    currentLogo: 'الشعار الحالي',
+    multiSchoolFeatureRequired: 'ميزة المدارس المتعددة مطلوبة لإنشاء مدارس إضافية. يرجى ترقية خطة الاشتراك الخاصة بك.'
   },
   // Roles Management
   roles: {

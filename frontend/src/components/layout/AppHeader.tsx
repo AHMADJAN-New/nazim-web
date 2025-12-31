@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useNavigate } from "react-router-dom";
-import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, School } from "lucide-react";
+import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, School, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -27,8 +27,8 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useSchools } from "@/hooks/useSchools";
 import { useSchoolContext } from "@/contexts/SchoolContext";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { authApi } from "@/lib/api/client";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { authApi, apiClient } from "@/lib/api/client";
 import { showToast } from "@/lib/toast";
 
 interface UserProfile {
@@ -57,6 +57,38 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const queryClient = useQueryClient();
   const { data: schools = [] } = useSchools(authProfile?.organization_id ?? undefined);
   const { selectedSchoolId, setSelectedSchoolId, hasSchoolsAccessAll } = useSchoolContext();
+
+  // Check if user is platform admin (for main app context)
+  // Only check if we're NOT on platform routes (we're in main app)
+  // Uses backend endpoint that returns boolean - no 403 errors for regular users
+  const isOnPlatformRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/platform');
+  const { data: platformAdminStatus } = useQuery<{ is_platform_admin: boolean }>({
+    queryKey: ['user-is-platform-admin', user?.id],
+    queryFn: async () => {
+      if (!user) return { is_platform_admin: false };
+      try {
+        const res = await apiClient.get<{ is_platform_admin: boolean }>('/auth/is-platform-admin');
+        return res || { is_platform_admin: false };
+      } catch (error: any) {
+        // If check fails, assume not a platform admin
+        // This endpoint should never return 403, but handle gracefully just in case
+        if (import.meta.env.DEV && error?.status !== 403) {
+          console.warn('[AppHeader] Error checking platform admin status:', error);
+        }
+        return { is_platform_admin: false };
+      }
+    },
+    enabled: !!user && !isOnPlatformRoute, // Only check in main app, not on platform routes
+    staleTime: 60 * 60 * 1000, // 1 hour
+    gcTime: 24 * 60 * 60 * 1000, // Keep in cache for 24 hours
+    refetchOnWindowFocus: false,
+    refetchOnMount: false, // Don't refetch on mount if we have cached data
+    refetchOnReconnect: false,
+    retry: false,
+    throwOnError: false,
+  });
+
+  const isPlatformAdmin = platformAdminStatus?.is_platform_admin ?? false;
 
   // Auto-select default school if user has one and no school is selected
   useEffect(() => {
@@ -197,6 +229,19 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
 
         {/* Right Section - Actions & Profile */}
         <div className="flex items-center gap-2">
+          {/* Platform Admin Button */}
+          {isPlatformAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/platform/dashboard')}
+              className="hidden md:flex items-center gap-2"
+            >
+              <Shield className="h-4 w-4" />
+              <span className="text-sm">Platform Admin</span>
+            </Button>
+          )}
+
           {/* School Switcher */}
           {showSchoolSwitcher && (
             <Select

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LanguageProvider } from '@/hooks/useLanguage';
 import { Toaster } from '@/components/ui/sonner';
@@ -11,6 +11,7 @@ import SubscriptionAdminDashboard from './pages/admin/SubscriptionAdminDashboard
 import PlansManagement from './pages/admin/PlansManagement';
 import DiscountCodesManagement from './pages/admin/DiscountCodesManagement';
 import RenewalReviewPage from './pages/admin/RenewalReviewPage';
+import PlatformSettings from './pages/admin/PlatformSettings';
 import { PlatformPermissionGroupsManagement } from './pages/PlatformPermissionGroupsManagement';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlatformAdminPermissions } from './hooks/usePlatformAdminPermissions';
@@ -25,73 +26,51 @@ const queryClient = new QueryClient({
   },
 });
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedPlatformLayout() {
   const { user, loading } = useAuth();
-  // CRITICAL: Use platform admin permissions hook (not regular useUserPermissions)
-  const { data: permissions, isLoading: permissionsLoading, error: permissionsError } = usePlatformAdminPermissions();
-  const [hasRedirected, setHasRedirected] = React.useState(false);
+  const location = useLocation();
 
-  // CRITICAL: If permissions query failed with 403, user is not a platform admin
-  // Clear the platform admin session flag and redirect to main app dashboard
-  // CRITICAL: This useEffect must always be called (same order) to follow Rules of Hooks
-  React.useEffect(() => {
-    // Early returns to avoid conditional hook calls
-    if (loading || permissionsLoading) return;
-    if (!user) return;
-    if (hasRedirected) return; // Already redirected
-    
-    const is403Error = permissionsError && (
-      (permissionsError as any)?.message?.includes('403') || 
-      (permissionsError as any)?.message?.includes('platform administrators') ||
-      (permissionsError as any)?.message?.includes('Access Denied') ||
-      (permissionsError as any)?.message?.includes('This endpoint is only accessible')
-    );
-    
-    // Check for platform admin permission (global, not organization-scoped)
-    const hasPlatformAdmin = permissions && Array.isArray(permissions) && permissions.includes('subscription.admin');
+  const {
+    data: permissions,
+    isLoading: permissionsLoading,
+    error: permissionsError,
+  } = usePlatformAdminPermissions();
 
-    // CRITICAL: If user doesn't have permission OR got 403 error, clear flag and redirect ONCE
-    if (is403Error || (!hasPlatformAdmin && permissions !== undefined)) {
-      // CRITICAL: Mark as redirected immediately to prevent multiple redirects
-      setHasRedirected(true);
-      
-      // CRITICAL: Clear platform admin session flag to prevent redirect loops
-      localStorage.removeItem('is_platform_admin_session');
-      localStorage.removeItem('platform_admin_token_backup');
-      
-      // User is authenticated but not a platform admin - redirect to main app
-      window.location.href = '/dashboard';
-    }
-  }, [loading, permissionsLoading, user, hasRedirected, permissionsError, permissions]);
+  // Debug logging (only in dev mode)
+  if (import.meta.env.DEV) {
+    console.log('[ProtectedPlatformLayout] State:', {
+      pathname: location.pathname,
+      loading,
+      permissionsLoading,
+      user: user ? { id: user.id, email: user.email } : null,
+      permissions: permissions === undefined ? 'undefined' : Array.isArray(permissions) ? `array[${permissions.length}]` : String(permissions),
+      permissionsError: permissionsError ? String(permissionsError) : null,
+    });
+  }
 
+  // If auth is loading OR permissions are loading, show spinner
   if (loading || permissionsLoading) {
+    if (import.meta.env.DEV) {
+      console.log('[ProtectedPlatformLayout] Showing loading spinner');
+    }
     return (
       <div className="flex h-screen items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner size="lg" text="Checking access..." />
       </div>
     );
   }
 
+  // If not logged in, go to platform login
   if (!user) {
-    return <Navigate to="/platform/login" replace />;
+    return <Navigate to="/platform/login" replace state={{ from: location }} />;
   }
 
-  // If we've redirected, show loading
-  if (hasRedirected) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <LoadingSpinner size="lg" text="Redirecting..." />
-      </div>
-    );
-  }
-
-  // Check for platform admin permission (global, not organization-scoped)
-  const hasPlatformAdmin = permissions && Array.isArray(permissions) && permissions.includes('subscription.admin');
-
-  // CRITICAL: Wait for permissions to load before making decisions
-  // If permissions are still loading (undefined), show loading spinner
-  if (permissions === undefined && !permissionsError && !permissionsLoading) {
-    // Permissions query hasn't started yet or is still initializing
+  // CRITICAL: Wait for permissions to be definitively loaded
+  // If permissions is undefined, the query hasn't completed yet
+  if (permissions === undefined && !permissionsError) {
+    if (import.meta.env.DEV) {
+      console.log('[ProtectedPlatformLayout] Permissions still loading, showing spinner');
+    }
     return (
       <div className="flex h-screen items-center justify-center">
         <LoadingSpinner size="lg" text="Checking permissions..." />
@@ -99,26 +78,54 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If permissions have loaded and user has permission, render children
-  if (hasPlatformAdmin) {
-    return <>{children}</>;
+  // Compute permission safely
+  const hasPlatformAdmin =
+    Array.isArray(permissions) && permissions.includes('subscription.admin');
+
+  // If endpoint errored (including 403 patterns), treat as denial
+  const errMsg = String((permissionsError as any)?.message ?? '');
+  const status = (permissionsError as any)?.status ?? (permissionsError as any)?.response?.status;
+
+  const looksDenied =
+    status === 403 ||
+    errMsg.includes('403') ||
+    errMsg.includes('platform administrators') ||
+    errMsg.includes('Access Denied') ||
+    errMsg.includes('only accessible');
+
+  if (import.meta.env.DEV) {
+    console.log('[ProtectedPlatformLayout] Permission check:', {
+      hasPlatformAdmin,
+      looksDenied,
+      permissionsArray: Array.isArray(permissions) ? permissions : 'not array',
+      permissionsCount: Array.isArray(permissions) ? permissions.length : 0,
+      willRedirect: !hasPlatformAdmin || looksDenied,
+    });
   }
 
-  // If permissions loaded but user doesn't have permission, redirect will happen in useEffect
-  // Just show loading spinner while redirect is in progress
-  if (permissions !== undefined && !hasPlatformAdmin) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <LoadingSpinner size="lg" text="Redirecting..." />
-      </div>
-    );
+  if (!hasPlatformAdmin || looksDenied) {
+    if (import.meta.env.DEV) {
+      console.warn('[ProtectedPlatformLayout] Access denied, redirecting to /dashboard', {
+        reason: !hasPlatformAdmin ? 'No subscription.admin permission' : '403 error detected',
+        userEmail: user?.email,
+      });
+    }
+    // Clear flags to prevent loops
+    localStorage.removeItem('is_platform_admin_session');
+    localStorage.removeItem('platform_admin_token_backup');
+
+    // Soft redirect using Navigate (no hard refresh)
+    return <Navigate to="/dashboard" replace />;
   }
 
-  // Default: show loading (permissions are still loading)
+  // ✅ Allowed: show platform layout + nested routes
+  if (import.meta.env.DEV) {
+    console.log('[ProtectedPlatformLayout] Access granted, rendering layout with Outlet');
+  }
   return (
-    <div className="flex h-screen items-center justify-center">
-      <LoadingSpinner size="lg" text="Loading..." />
-    </div>
+    <PlatformAdminLayout>
+      <Outlet />
+    </PlatformAdminLayout>
   );
 }
 
@@ -128,33 +135,41 @@ export function PlatformAdminApp() {
       <LanguageProvider>
         <BrowserRouter>
           <Routes>
+            {/* Login */}
             <Route path="/platform/login" element={<PlatformAdminLogin />} />
-            <Route
-              path="/platform/*"
-              element={
-                <ProtectedRoute>
-                  <PlatformAdminLayout>
-                    <Routes>
-                      <Route path="dashboard" element={<PlatformAdminDashboard />} />
-                      {/* CRITICAL: More specific routes must come BEFORE general routes */}
-                      <Route path="organizations/:organizationId/subscription" element={<OrganizationSubscriptionDetail />} />
-                      <Route path="organizations" element={<PlatformAdminDashboard />} />
-                      <Route path="subscriptions" element={<SubscriptionAdminDashboard />} />
-                      <Route path="plans" element={<PlansManagement />} />
-                      <Route path="discount-codes" element={<DiscountCodesManagement />} />
-                      <Route path="renewals/:renewalId" element={<RenewalReviewPage />} />
-                      <Route path="pending" element={<SubscriptionAdminDashboard />} />
-                      <Route path="admins" element={<PlatformAdminDashboard />} />
-                      <Route path="permission-groups" element={<PlatformPermissionGroupsManagement />} />
-                      <Route path="settings" element={<PlatformAdminDashboard />} />
-                      <Route path="" element={<Navigate to="/platform/dashboard" replace />} />
-                    </Routes>
-                  </PlatformAdminLayout>
-                </ProtectedRoute>
-              }
-            />
+
+            {/* Protected platform routes */}
+            <Route path="/platform" element={<ProtectedPlatformLayout />}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+
+              <Route path="dashboard" element={<PlatformAdminDashboard />} />
+
+              {/* IMPORTANT: specific routes first */}
+              <Route
+                path="organizations/:organizationId/subscription"
+                element={<OrganizationSubscriptionDetail />}
+              />
+
+              <Route path="organizations" element={<PlatformAdminDashboard />} />
+              <Route path="subscriptions" element={<SubscriptionAdminDashboard />} />
+              <Route path="plans" element={<PlansManagement />} />
+              <Route path="discount-codes" element={<DiscountCodesManagement />} />
+              <Route path="renewals/:renewalId" element={<RenewalReviewPage />} />
+              <Route path="pending" element={<SubscriptionAdminDashboard />} />
+              <Route path="admins" element={<PlatformAdminDashboard />} />
+              <Route path="permission-groups" element={<PlatformPermissionGroupsManagement />} />
+
+              {/* ✅ This is the page you said doesn't render */}
+              <Route path="settings" element={<PlatformSettings />} />
+
+              {/* Fallback inside platform */}
+              <Route path="*" element={<Navigate to="dashboard" replace />} />
+            </Route>
+
+            {/* Global fallback */}
             <Route path="*" element={<Navigate to="/platform/login" replace />} />
           </Routes>
+
           <Toaster />
         </BrowserRouter>
       </LanguageProvider>

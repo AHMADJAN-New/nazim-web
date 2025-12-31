@@ -147,9 +147,12 @@ export const PlansPage = lazy(() => import('@/pages/subscription/PlansPage').the
 export const RenewPage = lazy(() => import('@/pages/subscription/RenewPage').then(module => ({ default: module.default })));
 
 // Subscription admin pages
-export const SubscriptionAdminDashboard = lazy(() => import('@/pages/subscription/admin/SubscriptionAdminDashboard').then(module => ({ default: module.default })));
+export const SubscriptionAdminDashboard = lazy(() => import('@/platform/pages/admin/SubscriptionAdminDashboard').then(module => ({ default: module.default })));
+export const PendingActionsPage = lazy(() => import('@/platform/pages/admin/PendingActionsPage').then(module => ({ default: module.default })));
+export const AllSubscriptionsPage = lazy(() => import('@/platform/pages/admin/AllSubscriptionsPage').then(module => ({ default: module.default })));
 export const PlansManagement = lazy(() => import('@/platform/pages/admin/PlansManagement').then(module => ({ default: module.default })));
 export const OrganizationSubscriptionDetail = lazy(() => import('@/platform/pages/admin/OrganizationSubscriptionDetail').then(module => ({ default: module.default })));
+export const PlatformSettings = lazy(() => import('@/platform/pages/admin/PlatformSettings').then(module => ({ default: module.default })));
 export const RenewalReviewPage = lazy(() => import('@/pages/subscription/admin/RenewalReviewPage').then(module => ({ default: module.default })));
 export const DiscountCodesManagement = lazy(() => import('@/pages/subscription/admin/DiscountCodesManagement').then(module => ({ default: module.default })));
 

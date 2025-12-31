@@ -48,6 +48,8 @@ import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { OrganizationsManagement } from '@/components/settings/OrganizationsManagement';
 import { OrganizationAdminsManagement } from '@/components/settings/OrganizationAdminsManagement';
+import { OrganizationDetailsDialog } from '@/platform/components/OrganizationDetailsDialog';
+import { OrganizationSubscriptionDialog } from '@/platform/components/OrganizationSubscriptionDialog';
 
 export function PlatformAdminDashboard() {
   const { t } = useLanguage();
@@ -61,6 +63,8 @@ export function PlatformAdminDashboard() {
   };
   
   const [activeTab, setActiveTab] = useState(getInitialTab());
+  const [viewingOrganizationId, setViewingOrganizationId] = useState<string | null>(null);
+  const [viewingSubscriptionOrgId, setViewingSubscriptionOrgId] = useState<string | null>(null);
   
   // Update tab when route changes
   useEffect(() => {
@@ -347,6 +351,7 @@ export function PlatformAdminDashboard() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Organization</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead>Current Plan</TableHead>
                       <TableHead>Requested Plan</TableHead>
                       <TableHead>Requested Date</TableHead>
@@ -356,18 +361,119 @@ export function PlatformAdminDashboard() {
                   <TableBody>
                     {pendingRenewals.data.slice(0, 10).map((renewal: any) => (
                       <TableRow key={renewal.id}>
-                        <TableCell>{renewal.organization_name}</TableCell>
-                        <TableCell>{renewal.current_plan_name}</TableCell>
-                        <TableCell>{renewal.requested_plan_name}</TableCell>
                         <TableCell>
-                          {formatDate(new Date(renewal.created_at))}
+                          <div className="space-y-1">
+                            <div className="font-medium">
+                              {renewal.organization?.name || 'Unknown Organization'}
+                            </div>
+                            {renewal.organization && (
+                              <div className="text-xs text-muted-foreground space-y-0.5">
+                                {renewal.organization.contact_person_name && (
+                                  <div className="flex items-center gap-1">
+                                    <Users className="h-3 w-3" />
+                                    <span>{renewal.organization.contact_person_name}</span>
+                                    {renewal.organization.contact_person_position && (
+                                      <span className="text-muted-foreground">
+                                        ({renewal.organization.contact_person_position})
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                {renewal.organization.contact_person_email && (
+                                  <div className="flex items-center gap-1">
+                                    <span>📧</span>
+                                    <span>{renewal.organization.contact_person_email}</span>
+                                  </div>
+                                )}
+                                {renewal.organization.contact_person_phone && (
+                                  <div className="flex items-center gap-1">
+                                    <span>📞</span>
+                                    <span>{renewal.organization.contact_person_phone}</span>
+                                  </div>
+                                )}
+                                {!renewal.organization.contact_person_name && 
+                                 !renewal.organization.contact_person_email && 
+                                 !renewal.organization.contact_person_phone && (
+                                  <div className="text-muted-foreground italic">
+                                    No contact information
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <Button size="sm" variant="outline" asChild>
-                            <Link to={`/platform/renewals/${renewal.id}`}>
-                              Review
-                            </Link>
-                          </Button>
+                          <Badge 
+                            variant={
+                              renewal.status === 'approved' ? 'default' :
+                              renewal.status === 'rejected' ? 'destructive' :
+                              'secondary'
+                            }
+                            className={cn(
+                              renewal.status === 'approved' && 'bg-green-500',
+                              renewal.status === 'rejected' && 'bg-red-500',
+                              renewal.status === 'pending' && 'bg-yellow-500'
+                            )}
+                          >
+                            {renewal.status === 'approved' ? 'Approved' :
+                             renewal.status === 'rejected' ? 'Rejected' :
+                             'Pending'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-0.5">
+                            <div className="font-medium">
+                              {renewal.subscription?.plan?.name || 
+                               (renewal.subscription?.plan_id ? `Plan ID: ${renewal.subscription.plan_id}` : 'No Plan')}
+                            </div>
+                            {renewal.subscription && (
+                              <div className="text-xs text-muted-foreground">
+                                Status: {renewal.subscription.status || 'N/A'}
+                              </div>
+                            )}
+                            {!renewal.subscription && (
+                              <div className="text-xs text-muted-foreground italic">
+                                No active subscription
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-0.5">
+                            <div className="font-medium">
+                              {renewal.requested_plan?.name || 'N/A'}
+                            </div>
+                            {renewal.requested_plan && (
+                              <div className="text-xs text-muted-foreground">
+                                {renewal.additional_schools > 0 && (
+                                  <span>+{renewal.additional_schools} schools</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {renewal.requested_at 
+                            ? formatDate(new Date(renewal.requested_at))
+                            : formatDate(new Date(renewal.created_at))}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="outline" asChild>
+                              <Link to={`/platform/renewals/${renewal.id}`}>
+                                Review
+                              </Link>
+                            </Button>
+                            {renewal.organization_id && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setViewingOrganizationId(renewal.organization_id)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -437,13 +543,22 @@ export function PlatformAdminDashboard() {
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant="outline" asChild>
-                            <Link
-                              to={`/platform/organizations/${sub.organization_id}/subscription`}
+                          <div className="flex items-center gap-2 justify-end">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setViewingOrganizationId(sub.organization_id)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setViewingSubscriptionOrgId(sub.organization_id)}
                             >
                               Manage
-                            </Link>
-                          </Button>
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -462,6 +577,29 @@ export function PlatformAdminDashboard() {
           <OrganizationAdminsManagement />
         </TabsContent>
       </Tabs>
+
+      {/* Organization Details Dialog */}
+      <OrganizationDetailsDialog
+        organizationId={viewingOrganizationId}
+        open={!!viewingOrganizationId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setViewingOrganizationId(null);
+          }
+        }}
+        showManageButton={true}
+      />
+
+      {/* Subscription Management Dialog */}
+      <OrganizationSubscriptionDialog
+        organizationId={viewingSubscriptionOrgId}
+        open={!!viewingSubscriptionOrgId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setViewingSubscriptionOrgId(null);
+          }
+        }}
+      />
     </div>
   );
 }
