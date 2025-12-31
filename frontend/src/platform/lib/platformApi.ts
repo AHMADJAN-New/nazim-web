@@ -399,19 +399,29 @@ export const platformApi = {
         data: {
           is_maintenance_mode: boolean;
           message: string | null;
-          retry_after: number | null;
-          refresh_after: number | null;
+          scheduled_end_at: string | null;
+          affected_services: string[];
+          current_log: {
+            id: string;
+            started_at: string;
+            started_by: {
+              id: string;
+              name: string;
+              email: string;
+            } | null;
+          } | null;
         };
       }>('/platform/maintenance/status');
     },
     enable: async (data: {
       message?: string;
-      retry_after?: number;
-      refresh_after?: number;
+      scheduled_end_at?: string;
+      affected_services?: string[];
     }) => {
       return apiClient.post<{
         success: boolean;
         message: string;
+        log_id: string;
       }>('/platform/maintenance/enable', data);
     },
     disable: async () => {
@@ -419,6 +429,29 @@ export const platformApi = {
         success: boolean;
         message: string;
       }>('/platform/maintenance/disable');
+    },
+    history: async () => {
+      return apiClient.get<{
+        success: boolean;
+        data: Array<{
+          id: string;
+          message: string;
+          affected_services: string[];
+          started_at: string;
+          scheduled_end_at: string | null;
+          actual_end_at: string | null;
+          duration_minutes: number | null;
+          status: string;
+          started_by: {
+            name: string;
+            email: string;
+          } | null;
+          ended_by: {
+            name: string;
+            email: string;
+          } | null;
+        }>;
+      }>('/platform/maintenance/history');
     },
   },
 };

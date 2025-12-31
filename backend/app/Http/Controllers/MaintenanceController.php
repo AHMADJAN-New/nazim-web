@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MaintenanceLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
@@ -54,15 +55,36 @@ class MaintenanceController extends Controller
             $data = [
                 'is_maintenance_mode' => $isDown,
                 'message' => null,
-                'retry_after' => null,
-                'refresh_after' => null,
+                'scheduled_end_at' => null,
+                'affected_services' => [],
+                'current_log' => null,
             ];
 
             if ($isDown) {
-                $content = json_decode(File::get($maintenanceFilePath), true);
-                $data['message'] = $content['message'] ?? 'System is under maintenance';
-                $data['retry_after'] = $content['retry'] ?? null;
-                $data['refresh_after'] = $content['refresh'] ?? null;
+                // Get active maintenance log
+                $activeLog = MaintenanceLog::where('status', 'active')
+                    ->orderBy('started_at', 'desc')
+                    ->first();
+
+                if ($activeLog) {
+                    $activeLog->load(['startedBy:id,full_name,email']);
+                    $data['message'] = $activeLog->message;
+                    $data['scheduled_end_at'] = $activeLog->scheduled_end_at?->toDateTimeString();
+                    $data['affected_services'] = $activeLog->affected_services ?? [];
+                    $data['current_log'] = [
+                        'id' => $activeLog->id,
+                        'started_at' => $activeLog->started_at->toDateTimeString(),
+                        'started_by' => $activeLog->startedBy ? [
+                            'id' => $activeLog->startedBy->id,
+                            'name' => $activeLog->startedBy->full_name,
+                            'email' => $activeLog->startedBy->email,
+                        ] : null,
+                    ];
+                } else {
+                    // Fallback to file content if no log exists
+                    $content = json_decode(File::get($maintenanceFilePath), true);
+                    $data['message'] = $content['message'] ?? 'System is under maintenance';
+                }
             }
 
             return response()->json([
@@ -89,30 +111,53 @@ class MaintenanceController extends Controller
         try {
             $validated = $request->validate([
                 'message' => 'nullable|string|max:500',
-                'retry_after' => 'nullable|integer|min:0',
-                'refresh_after' => 'nullable|integer|min:0',
+                'scheduled_end_at' => 'nullable|date|after:now',
+                'affected_services' => 'nullable|array',
+                'affected_services.*' => 'string|max:100',
             ]);
 
-            $options = [];
+            $user = $request->user();
+            $message = $validated['message'] ?? 'We are performing scheduled maintenance. We\'ll be back soon!';
+            $scheduledEndAt = isset($validated['scheduled_end_at'])
+                ? Carbon::parse($validated['scheduled_end_at'])
+                : null;
+            $affectedServices = $validated['affected_services'] ?? [];
 
-            if (!empty($validated['message'])) {
-                $options['message'] = $validated['message'];
+            // Create maintenance log
+            $log = MaintenanceLog::create([
+                'message' => $message,
+                'affected_services' => $affectedServices,
+                'started_at' => Carbon::now(),
+                'scheduled_end_at' => $scheduledEndAt,
+                'started_by' => $user->id,
+                'status' => 'active',
+            ]);
+
+            // Build maintenance file payload
+            $payload = [
+                'time' => time(),
+                'message' => $message,
+                'retry' => 60, // Retry after 60 seconds
+            ];
+
+            if ($scheduledEndAt) {
+                $payload['scheduled_end'] = $scheduledEndAt->toDateTimeString();
             }
 
-            if (isset($validated['retry_after'])) {
-                $options['retry'] = $validated['retry_after'];
+            if (!empty($affectedServices)) {
+                $payload['affected_services'] = $affectedServices;
             }
 
-            if (isset($validated['refresh_after'])) {
-                $options['refresh'] = $validated['refresh_after'];
-            }
+            $payload['log_id'] = $log->id;
 
-            // Put application in maintenance mode
-            Artisan::call('down', $options);
+            // Write maintenance file
+            $maintenanceFilePath = storage_path('framework/down');
+            File::put($maintenanceFilePath, json_encode($payload, JSON_PRETTY_PRINT));
 
             return response()->json([
                 'success' => true,
                 'message' => 'Maintenance mode enabled successfully',
+                'log_id' => $log->id,
             ]);
         } catch (\Exception $e) {
             \Log::error('Enable maintenance mode failed: ' . $e->getMessage());
@@ -132,8 +177,26 @@ class MaintenanceController extends Controller
         $this->enforceSubscriptionAdmin($request);
 
         try {
-            // Bring application back up
-            Artisan::call('up');
+            $user = $request->user();
+
+            // Get active maintenance log
+            $activeLog = MaintenanceLog::where('status', 'active')
+                ->orderBy('started_at', 'desc')
+                ->first();
+
+            if ($activeLog) {
+                $activeLog->update([
+                    'actual_end_at' => Carbon::now(),
+                    'ended_by' => $user->id,
+                    'status' => 'completed',
+                ]);
+            }
+
+            // Remove maintenance file
+            $maintenanceFilePath = storage_path('framework/down');
+            if (File::exists($maintenanceFilePath)) {
+                File::delete($maintenanceFilePath);
+            }
 
             return response()->json([
                 'success' => true,
@@ -145,6 +208,55 @@ class MaintenanceController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to disable maintenance mode: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get maintenance history
+     */
+    public function history(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            $logs = MaintenanceLog::with(['startedBy:id,full_name,email', 'endedBy:id,full_name,email'])
+                ->orderBy('started_at', 'desc')
+                ->limit(50)
+                ->get()
+                ->map(function ($log) {
+                    return [
+                        'id' => $log->id,
+                        'message' => $log->message,
+                        'affected_services' => $log->affected_services,
+                        'started_at' => $log->started_at->toDateTimeString(),
+                        'scheduled_end_at' => $log->scheduled_end_at?->toDateTimeString(),
+                        'actual_end_at' => $log->actual_end_at?->toDateTimeString(),
+                        'duration_minutes' => $log->actual_end_at
+                            ? $log->started_at->diffInMinutes($log->actual_end_at)
+                            : null,
+                        'status' => $log->status,
+                        'started_by' => $log->startedBy ? [
+                            'name' => $log->startedBy->full_name,
+                            'email' => $log->startedBy->email,
+                        ] : null,
+                        'ended_by' => $log->endedBy ? [
+                            'name' => $log->endedBy->full_name,
+                            'email' => $log->endedBy->email,
+                        ] : null,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $logs,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get maintenance history failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get maintenance history: ' . $e->getMessage(),
             ], 500);
         }
     }

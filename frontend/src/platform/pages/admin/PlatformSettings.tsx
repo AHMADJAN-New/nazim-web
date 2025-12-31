@@ -111,7 +111,10 @@ export default function PlatformSettings() {
   const [restoringBackupFilename, setRestoringBackupFilename] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [maintenanceMessage, setMaintenanceMessage] = useState<string>('');
+  const [scheduledEndAt, setScheduledEndAt] = useState<string>('');
+  const [affectedServices, setAffectedServices] = useState<string>('');
   const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
+  const [showMaintenanceHistory, setShowMaintenanceHistory] = useState(false);
 
   const isEditing = !!editingUserId;
 
@@ -361,18 +364,34 @@ export default function PlatformSettings() {
   });
 
   const enableMaintenance = useMutation({
-    mutationFn: async (message: string) => {
-      return await platformApi.maintenance.enable({ message: message || undefined });
+    mutationFn: async (data: { message?: string; scheduled_end_at?: string; affected_services?: string[] }) => {
+      return await platformApi.maintenance.enable(data);
     },
     onSuccess: () => {
       showToast.success('Maintenance mode enabled successfully');
       setShowMaintenanceDialog(false);
       setMaintenanceMessage('');
+      setScheduledEndAt('');
+      setAffectedServices('');
       queryClient.invalidateQueries({ queryKey: ['maintenance-status'] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'Failed to enable maintenance mode');
     },
+  });
+
+  const { data: maintenanceHistory } = useQuery({
+    queryKey: ['maintenance-history'],
+    queryFn: async () => {
+      try {
+        const response = await platformApi.maintenance.history();
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching maintenance history:', error);
+        return [];
+      }
+    },
+    enabled: hasPlatformAdminPermission && !permissionsLoading && showMaintenanceHistory,
   });
 
   const disableMaintenance = useMutation({
@@ -786,12 +805,12 @@ export default function PlatformSettings() {
                     ) : (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between p-4 border rounded-lg">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 flex-1">
                             <div className={cn(
-                              "h-3 w-3 rounded-full",
+                              "h-3 w-3 rounded-full shrink-0",
                               maintenanceStatus?.is_maintenance_mode ? "bg-yellow-500 animate-pulse" : "bg-green-500"
                             )} />
-                            <div>
+                            <div className="flex-1">
                               <p className="font-medium">
                                 {maintenanceStatus?.is_maintenance_mode ? 'Maintenance Mode Active' : 'System Online'}
                               </p>
@@ -800,6 +819,16 @@ export default function PlatformSettings() {
                                   ? maintenanceStatus.message || 'System is currently under maintenance'
                                   : 'All systems operational'}
                               </p>
+                              {maintenanceStatus?.is_maintenance_mode && maintenanceStatus.scheduled_end_at && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Scheduled to end: {formatDateTime(new Date(maintenanceStatus.scheduled_end_at))}
+                                </p>
+                              )}
+                              {maintenanceStatus?.is_maintenance_mode && maintenanceStatus.affected_services && maintenanceStatus.affected_services.length > 0 && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Affected: {maintenanceStatus.affected_services.join(', ')}
+                                </p>
+                              )}
                             </div>
                           </div>
                           {maintenanceStatus?.is_maintenance_mode ? (
@@ -1275,6 +1304,36 @@ export default function PlatformSettings() {
               </p>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="scheduled-end">
+                Scheduled End Time (Optional)
+              </Label>
+              <Input
+                id="scheduled-end"
+                type="datetime-local"
+                value={scheduledEndAt}
+                onChange={(e) => setScheduledEndAt(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                When you expect maintenance to be completed. Users will see this estimated time.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="affected-services">
+                Affected Services (Optional)
+              </Label>
+              <Input
+                id="affected-services"
+                value={affectedServices}
+                onChange={(e) => setAffectedServices(e.target.value)}
+                placeholder="Student Portal, Finance Module, Library System (comma-separated)"
+              />
+              <p className="text-xs text-muted-foreground">
+                List the services that will be affected, separated by commas.
+              </p>
+            </div>
+
             <div className="rounded-lg border p-4 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
@@ -1295,12 +1354,20 @@ export default function PlatformSettings() {
               onClick={() => {
                 setShowMaintenanceDialog(false);
                 setMaintenanceMessage('');
+                setScheduledEndAt('');
+                setAffectedServices('');
               }}
             >
               Cancel
             </Button>
             <Button
-              onClick={() => enableMaintenance.mutate(maintenanceMessage)}
+              onClick={() => {
+                const data: { message?: string; scheduled_end_at?: string; affected_services?: string[] } = {};
+                if (maintenanceMessage) data.message = maintenanceMessage;
+                if (scheduledEndAt) data.scheduled_end_at = new Date(scheduledEndAt).toISOString();
+                if (affectedServices) data.affected_services = affectedServices.split(',').map(s => s.trim()).filter(Boolean);
+                enableMaintenance.mutate(data);
+              }}
               disabled={enableMaintenance.isPending}
               className="bg-yellow-600 hover:bg-yellow-700"
             >
