@@ -137,15 +137,40 @@ class GenerateReportJob implements ShouldQueue
             'branding_font_size' => $branding['report_font_size'] ?? null,
         ]);
 
+        // Get organization_id and school_id for file storage
+        // CRITICAL: Reports are school-scoped and MUST include both organizationId and schoolId
+        $organizationId = $reportRun->organization_id;
+        $schoolId = $config->brandingId ?? $reportRun->branding_id;
+        
+        // Validate required IDs
+        if (!$organizationId) {
+            throw new \Exception('Organization ID is required for report generation');
+        }
+        if (!$schoolId) {
+            throw new \Exception('School ID (branding_id) is required for report generation');
+        }
+
         // Generate the report
         if ($config->isPdf()) {
-            $result = $pdfService->generate($config, $context, function ($progress, $message) use ($reportRun) {
-                $reportRun->updateProgress(50 + ($progress * 0.4), $message);
-            });
+            $result = $pdfService->generate(
+                $config,
+                $context,
+                function ($progress, $message) use ($reportRun) {
+                    $reportRun->updateProgress(50 + ($progress * 0.4), $message);
+                },
+                $organizationId,
+                $schoolId
+            );
         } else {
-            $result = $excelService->generate($config, $context, function ($progress, $message) use ($reportRun) {
-                $reportRun->updateProgress(50 + ($progress * 0.4), $message);
-            });
+            $result = $excelService->generate(
+                $config,
+                $context,
+                function ($progress, $message) use ($reportRun) {
+                    $reportRun->updateProgress(50 + ($progress * 0.4), $message);
+                },
+                $organizationId,
+                $schoolId
+            );
         }
 
         $reportRun->updateProgress(95, 'Report generated');

@@ -115,7 +115,8 @@ export const useCertificateTemplates = (activeOnly?: boolean, filters?: { type?:
       return templates as CertificateTemplate[];
     },
     enabled: !!user && !!profile,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000, // 30 seconds - refresh more frequently for auto-updates
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 };
 

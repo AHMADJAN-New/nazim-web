@@ -26,8 +26,8 @@ export const useIdCardTemplates = (activeOnly?: boolean, filters?: { school_id?:
       return (templates as IdCardTemplateApi.IdCardTemplate[]).map(mapIdCardTemplateApiToDomain);
     },
     enabled: !!user && !!profile,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000, // 30 seconds (reduced from 5 minutes)
+    refetchOnWindowFocus: true, // Enable refetch on window focus
   });
 };
 
@@ -43,8 +43,8 @@ export const useIdCardTemplate = (templateId: string) => {
       return mapIdCardTemplateApiToDomain(template as IdCardTemplateApi.IdCardTemplate);
     },
     enabled: !!user && !!profile && !!templateId,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000, // 30 seconds (reduced from 5 minutes)
+    refetchOnWindowFocus: true, // Enable refetch on window focus
   });
 };
 

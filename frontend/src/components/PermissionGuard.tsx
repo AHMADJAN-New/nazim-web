@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { useHasPermission } from '@/hooks/usePermissions';
+import { useHasPermissionAndFeature, useHasPermission } from '@/hooks/usePermissions';
 import { useUserPermissions } from '@/hooks/usePermissions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield } from 'lucide-react';
@@ -11,28 +11,41 @@ interface PermissionGuardProps {
   children: ReactNode;
   fallback?: ReactNode;
   showError?: boolean;
+  /**
+   * If true, checks both permission AND feature access (default: true)
+   * If false, only checks permission (legacy behavior)
+   */
+  checkFeature?: boolean;
 }
 
 export function PermissionGuard({ 
   permission, 
   children, 
   fallback,
-  showError = true 
+  showError = true,
+  checkFeature = true,
 }: PermissionGuardProps) {
   const { t } = useLanguage();
   const { data: permissions, isLoading } = useUserPermissions();
-  const hasPermission = useHasPermission(permission);
+  
+  // CRITICAL: Always call both hooks (Rules of Hooks - hooks must be called unconditionally)
+  // Then use the result based on checkFeature flag
+  const hasPermissionAndFeature = useHasPermissionAndFeature(permission);
+  const hasPermissionOnly = useHasPermission(permission);
+  
+  // Use combined check by default (permission + feature), fallback to permission-only if checkFeature is false
+  const hasAccess = checkFeature ? hasPermissionAndFeature : hasPermissionOnly;
 
   // Show loading state while permissions are being fetched
-  // hasPermission === undefined means we're loading and have no cached data
+  // hasAccess === undefined means we're loading and have no cached data
   // Also check if we're loading and don't have permissions yet
   const isInitialLoad = isLoading && permissions === undefined;
   
-  if (hasPermission === undefined || isInitialLoad) {
+  if (hasAccess === undefined || isInitialLoad) {
     return <LoadingSpinner size="lg" text={t('guards.checkingPermissions')} />;
   }
 
-  if (hasPermission) {
+  if (hasAccess) {
     return <>{children}</>;
   }
 

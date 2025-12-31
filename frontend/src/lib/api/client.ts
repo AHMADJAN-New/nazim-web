@@ -44,20 +44,7 @@ class ApiClient {
       this.token = localStorage.getItem('api_token');
     }
 
-    // Development helper messages
-    if (import.meta.env.DEV && typeof window !== 'undefined') {
-      // Log helpful information once on initialization
-      if (!(window as any).__API_CLIENT_INITIALIZED__) {
-        (window as any).__API_CLIENT_INITIALIZED__ = true;
-        console.log('%c🔧 API Client Initialized', 'color: #10b981; font-weight: bold;');
-        console.log(`Base URL: ${baseUrl}`);
-        console.log('💡 Development Tips:');
-        console.log('  • Ensure Laravel backend is running: `php artisan serve` (port 8000)');
-        console.log('  • Check Vite proxy is working (should proxy /api to http://localhost:8000/api)');
-        console.log('  • Disable "Disable cache" in DevTools Network tab if requests are blocked');
-        console.log('  • Check browser console for CORS errors if requests fail');
-      }
-    }
+    // Silent initialization - no console logs
   }
 
   setToken(token: string | null) {
@@ -161,6 +148,12 @@ class ApiClient {
         // This is normal behavior, not an error
         const isExpectedUnauth = response.status === 401 && !hasToken && endpoint.includes('/auth/');
 
+        // Handle 404 errors
+        if (response.status === 404) {
+          const errorMsg = error.message || error.error || 'Route not found';
+          throw new Error(errorMsg);
+        }
+
         // For validation errors (400 or 422), include details if available
         if ((response.status === 400 || response.status === 422) && (error.details || error.errors)) {
           const validationErrors = error.details || error.errors;
@@ -170,10 +163,58 @@ class ApiClient {
           throw new Error(error.message || 'Validation failed' + (details ? ` - ${details}` : ''));
         }
 
+        // Handle 402 subscription errors (feature not available, limit reached, etc.)
+        if (response.status === 402) {
+          const subscriptionError = new Error(error.message || error.error || 'Subscription required');
+          // Attach subscription-specific data so components can handle it
+          (subscriptionError as any).isSubscriptionError = true;
+          (subscriptionError as any).code = error.code; // e.g., 'NO_SUBSCRIPTION', 'LIMIT_REACHED', 'FEATURE_NOT_AVAILABLE'
+          (subscriptionError as any).subscriptionStatus = error.subscription_status;
+          (subscriptionError as any).accessLevel = error.access_level;
+          (subscriptionError as any).resourceKey = error.resource_key;
+          (subscriptionError as any).featureKey = error.feature_key;
+          (subscriptionError as any).upgradeRequired = error.upgrade_required;
+          (subscriptionError as any).current = error.current;
+          (subscriptionError as any).limit = error.limit;
+          (subscriptionError as any).availableAddons = error.available_addons;
+          
+          // Dispatch custom event for global subscription error handling (with debouncing)
+          if (typeof window !== 'undefined') {
+            // Use a debounced event dispatch to prevent multiple events for the same error
+            const eventKey = `${error.code}-${error.feature_key || error.resource_key || 'unknown'}`;
+            const lastEventTime = (window as any).__lastSubscriptionErrorTime || {};
+            const now = Date.now();
+            
+            // Only dispatch if we haven't dispatched the same error in the last 2 seconds
+            if (!lastEventTime[eventKey] || now - lastEventTime[eventKey] > 2000) {
+              lastEventTime[eventKey] = now;
+              (window as any).__lastSubscriptionErrorTime = lastEventTime;
+              
+              window.dispatchEvent(new CustomEvent('subscription-error', {
+                detail: {
+                  code: error.code,
+                  message: error.message || error.error,
+                  resourceKey: error.resource_key,
+                  featureKey: error.feature_key,
+                  current: error.current,
+                  limit: error.limit,
+                  subscriptionStatus: error.subscription_status,
+                  accessLevel: error.access_level,
+                }
+              }));
+            }
+          }
+          
+          throw subscriptionError;
+        }
+
         // Create error but don't log expected 401s
         // Laravel may return error in 'error' field or 'message' field
         const errorMessage = error.message || error.error || `HTTP error! status: ${response.status}`;
         const errorObj = new Error(errorMessage);
+        // Attach status code to error object for easier handling
+        (errorObj as any).status = response.status;
+        (errorObj as any).response = { status: response.status };
         if (isExpectedUnauth) {
           // Mark as expected so useAuth can handle it silently
           (errorObj as any).expected = true;
@@ -294,8 +335,26 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: response.statusText }));
-      throw new Error(error.message || error.error || `HTTP error! status: ${response.status}`);
+      // For file requests, try to parse JSON error, but handle binary responses gracefully
+      let errorMessage = response.statusText;
+      const statusCode = response.status;
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const error = await response.json();
+          errorMessage = error.message || error.error || response.statusText;
+        } else {
+          // For non-JSON responses (like images), use status text
+          errorMessage = `HTTP error! status: ${statusCode}`;
+        }
+      } catch {
+        // If parsing fails, use status text
+        errorMessage = `HTTP error! status: ${statusCode}`;
+      }
+      // Create error with status code as a property for easier checking
+      const error = new Error(errorMessage) as Error & { status?: number };
+      error.status = statusCode;
+      throw error;
     }
 
     const contentDisposition = response.headers.get('content-disposition');
@@ -432,6 +491,22 @@ export const organizationsApi = {
 
   statistics: async (id: string) => {
     return apiClient.get(`/organizations/${id}/statistics`);
+  },
+
+  preview: async (data?: { name?: string; slug?: string; admin_email?: string; admin_full_name?: string }) => {
+    return apiClient.get('/organizations/preview', data);
+  },
+
+  permissions: async (id: string) => {
+    return apiClient.get(`/organizations/${id}/permissions`);
+  },
+
+  updatePermissions: async (id: string, data: { role: string; permission_ids: string[] }) => {
+    return apiClient.put(`/organizations/${id}/permissions`, data);
+  },
+
+  admins: async () => {
+    return apiClient.get('/organizations/admins');
   },
 
   publicList: async () => {

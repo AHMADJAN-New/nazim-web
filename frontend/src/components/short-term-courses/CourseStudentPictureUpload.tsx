@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useCourseStudentPictureUpload } from '@/hooks/useCourseStudentPictureUpload';
@@ -27,6 +27,9 @@ export function CourseStudentPictureUpload({
     const [imageError, setImageError] = useState(false);
     const upload = useCourseStudentPictureUpload();
 
+    // Hidden file input ref
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     // Reset preview URL when student changes (to show existing image instead of selected file preview)
     useEffect(() => {
         if (currentFileName && courseStudentId && organizationId) {
@@ -40,10 +43,9 @@ export function CourseStudentPictureUpload({
     // Fetch picture with authentication headers and convert to blob URL
     // Only fetch if we have a courseStudentId AND (currentFileName exists OR we just uploaded)
     useEffect(() => {
-        // Only fetch if we have a courseStudentId
-        // Prefer currentFileName check, but also try if it's undefined (might have been uploaded)
+        // Only fetch if we have a courseStudentId and no local preview, and a known picture file name.
         const hasFileName = currentFileName && currentFileName.trim() !== '';
-        const shouldFetch = courseStudentId && !previewUrl && (hasFileName || currentFileName === undefined);
+        const shouldFetch = courseStudentId && !previewUrl && hasFileName;
         
         if (import.meta.env.DEV) {
             console.log('[CourseStudentPictureUpload] Fetch check:', {
@@ -64,8 +66,9 @@ export function CourseStudentPictureUpload({
                     const { apiClient } = await import('@/lib/api/client');
                     // Get the token from apiClient
                     const token = apiClient.getToken();
+                    const version = currentFileName ? `?v=${encodeURIComponent(currentFileName)}` : '';
                     // Use relative URL - Vite proxy will handle it
-                    const url = `/api/course-students/${courseStudentId}/picture`;
+                    const url = `/api/course-students/${courseStudentId}/picture${version}`;
                     
                     const response = await fetch(url, {
                         method: 'GET',
@@ -142,7 +145,7 @@ export function CourseStudentPictureUpload({
 
     const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files?.[0] || null;
-        
+
         if (f) {
             // Validate file size (max 5MB = 5120 KB, matching backend validation)
             const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
@@ -156,7 +159,7 @@ export function CourseStudentPictureUpload({
                 onFileSelected?.(null);
                 return;
             }
-            
+
             // Validate file type
             const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
             if (!allowedTypes.includes(f.type)) {
@@ -168,134 +171,129 @@ export function CourseStudentPictureUpload({
                 onFileSelected?.(null);
                 return;
             }
-        }
-        
-        setFile(f);
-        if (f) {
+
+            // Set file and preview
+            setFile(f);
             const reader = new FileReader();
             reader.onload = () => setPreviewUrl(reader.result as string);
             reader.readAsDataURL(f);
+
+            // Notify parent component about file selection (for create mode)
+            onFileSelected?.(f);
+
+            // Auto-upload if we have all required data
+            if (courseStudentId && organizationId) {
+                if (import.meta.env.DEV) {
+                    console.log('[CourseStudentPictureUpload] Auto-uploading selected file');
+                }
+                await handleAutoUpload(f);
+            }
         } else {
+            setFile(null);
             setPreviewUrl(null);
+            onFileSelected?.(null);
         }
-        // Notify parent component about file selection (for create mode)
-        onFileSelected?.(f);
     };
 
-    const onUpload = async () => {
-        if (import.meta.env.DEV) {
-            console.log('[CourseStudentPictureUpload] onUpload called', {
-                hasFile: !!file,
-                courseStudentId,
-                organizationId,
-                schoolId,
-                fileName: file?.name,
-                fileSize: file?.size,
-            });
-        }
-        
-        if (!file || !courseStudentId || !organizationId) {
+    const handleAutoUpload = async (selectedFile: File) => {
+        if (!courseStudentId || !organizationId) {
             if (import.meta.env.DEV) {
-                console.warn('[CourseStudentPictureUpload] Cannot upload - missing required data', {
-                    hasFile: !!file,
-                    courseStudentId,
-                    organizationId,
-                });
+                console.warn('[CourseStudentPictureUpload] Cannot auto-upload - missing required data');
             }
             return;
         }
-        
+
         try {
             if (import.meta.env.DEV) {
-                console.log('[CourseStudentPictureUpload] Starting upload mutation...');
+                console.log('[CourseStudentPictureUpload] Starting auto-upload...');
             }
-            
-            const result = await upload.mutateAsync({ file, courseStudentId, organizationId, schoolId });
-            
+
+            const result = await upload.mutateAsync({
+                file: selectedFile,
+                courseStudentId,
+                organizationId,
+                schoolId
+            });
+
             if (import.meta.env.DEV) {
-                console.log('[CourseStudentPictureUpload] Upload successful, result:', result);
+                console.log('[CourseStudentPictureUpload] Auto-upload successful:', result);
             }
-            
+
+            // Clear the file input after successful upload
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
             setFile(null);
-            setPreviewUrl(null); // Clear preview so it shows the uploaded image
-            setImageError(false);
-            
-            // Re-fetch the image as a blob URL after upload
-            // This ensures the image displays correctly with authentication
-            const fetchImage = async () => {
-                try {
-                    const { apiClient } = await import('@/lib/api/client');
-                    const token = apiClient.getToken();
-                    const url = `/api/course-students/${courseStudentId}/picture?t=${Date.now()}`; // Cache busting
-                    
-                    if (import.meta.env.DEV) {
-                        console.log('[CourseStudentPictureUpload] Fetching uploaded picture from:', url);
-                    }
-                    
-                    const response = await fetch(url, {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'image/*',
-                            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-                        },
-                        credentials: 'include',
-                    });
-                    
-                    if (import.meta.env.DEV) {
-                        console.log('[CourseStudentPictureUpload] Fetch response status:', response.status);
-                    }
-                    
-                    if (response.ok) {
-                        const blob = await response.blob();
-                        const blobUrl = URL.createObjectURL(blob);
-                        // Clean up old blob URL if it exists
-                        if (imageUrl && imageUrl.startsWith('blob:')) {
-                            URL.revokeObjectURL(imageUrl);
-                        }
-                        setImageUrl(blobUrl);
-                        setImageError(false);
-                        
-                        if (import.meta.env.DEV) {
-                            console.log('[CourseStudentPictureUpload] Picture fetched and displayed');
-                        }
-                    } else {
-                        if (import.meta.env.DEV) {
-                            console.warn('[CourseStudentPictureUpload] Failed to fetch uploaded picture, status:', response.status);
-                        }
-                        setImageUrl(null);
-                        setImageError(false);
-                    }
-                } catch (error) {
-                    if (import.meta.env.DEV) {
-                        console.error('[CourseStudentPictureUpload] Failed to fetch uploaded picture:', error);
-                    }
-                    setImageError(true);
-                }
-            };
-            
-            await fetchImage();
-            
-            // Clear the file input
-            const input = document.getElementById('course-student-picture-input') as HTMLInputElement;
-            if (input) input.value = '';
-            // The query invalidation in the hook will trigger a refetch and update currentFileName
+            setPreviewUrl(null);
+
+            // Fetch and display the uploaded image
+            await fetchUploadedImage();
+
         } catch (error) {
             if (import.meta.env.DEV) {
-                console.error('[CourseStudentPictureUpload] Upload failed:', error);
+                console.error('[CourseStudentPictureUpload] Auto-upload failed:', error);
             }
             // Error is handled by the mutation's onError
         }
     };
 
-    // For create mode: allow file selection but disable upload until student is created
-    // For edit mode: require courseStudentId to upload
-    const canUpload = allowUploadWithoutStudent ? (!!file && !!organizationId) : (!!file && !!courseStudentId && !!organizationId);
-    const disabled = !canUpload || upload.isPending;
+    const fetchUploadedImage = async () => {
+        try {
+            const { apiClient } = await import('@/lib/api/client');
+            const token = apiClient.getToken();
+            const url = `/api/course-students/${courseStudentId}/picture?t=${Date.now()}`;
+
+            if (import.meta.env.DEV) {
+                console.log('[CourseStudentPictureUpload] Fetching uploaded picture from:', url);
+            }
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'image/*',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                },
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                // Clean up old blob URL if it exists
+                if (imageUrl && imageUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(imageUrl);
+                }
+                setImageUrl(blobUrl);
+                setImageError(false);
+
+                if (import.meta.env.DEV) {
+                    console.log('[CourseStudentPictureUpload] Picture fetched and displayed');
+                }
+            } else {
+                if (import.meta.env.DEV) {
+                    console.warn('[CourseStudentPictureUpload] Failed to fetch uploaded picture, status:', response.status);
+                }
+                setImageUrl(null);
+                setImageError(false);
+            }
+        } catch (error) {
+            if (import.meta.env.DEV) {
+                console.error('[CourseStudentPictureUpload] Failed to fetch uploaded picture:', error);
+            }
+            setImageError(true);
+        }
+    };
+
+
+    // Button is enabled if we have a courseStudentId (edit mode) or allowUploadWithoutStudent (create mode)
+    // Button opens file dialog, upload happens automatically on file selection
+    const canSelectFile = allowUploadWithoutStudent ? !!organizationId : !!courseStudentId && !!organizationId;
+    const disabled = !canSelectFile || upload.isPending;
 
     // Debug: Log button state
     if (import.meta.env.DEV) {
         console.log('[CourseStudentPictureUpload] Button state:', {
-            canUpload,
+            canSelectFile,
             disabled,
             hasFile: !!file,
             courseStudentId,
@@ -306,26 +304,21 @@ export function CourseStudentPictureUpload({
         });
     }
 
-    // Add click handler wrapper to ensure it's called
     const handleUploadClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        // Prevent form submission
         e.preventDefault();
         e.stopPropagation();
-        
+
         if (import.meta.env.DEV) {
-            console.log('[CourseStudentPictureUpload] Button clicked!', {
-                disabled,
-                canUpload,
-                hasFile: !!file,
-                courseStudentId,
-                organizationId,
-            });
+            console.log('[CourseStudentPictureUpload] Upload button clicked - opening file dialog');
         }
-        
-        if (!disabled) {
-            onUpload();
+
+        // Trigger file input click to open file dialog
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
         } else {
             if (import.meta.env.DEV) {
-                console.warn('[CourseStudentPictureUpload] Button click ignored - button is disabled');
+                console.error('[CourseStudentPictureUpload] File input ref not available');
             }
         }
     };
@@ -349,21 +342,31 @@ export function CourseStudentPictureUpload({
                 )}
             </div>
             <div className="space-y-2">
-                <div>
-                    <Label htmlFor="course-student-picture-input">{t('students.selectPicture') || 'Select Picture'}</Label>
-                    <input
-                        id="course-student-picture-input"
-                        type="file"
-                        accept="image/*"
-                        onChange={onFileChange}
-                        className="block text-sm"
-                    />
-                </div>
-                <div className="flex gap-2">
-                    <Button type="button" variant="secondary" onClick={handleUploadClick} disabled={disabled}>
-                        {upload.isPending ? (t('common.uploading') || 'Uploading...') : (t('students.uploadPicture') || 'Upload Picture')}
-                    </Button>
-                    {file ? <span className="text-xs text-muted-foreground">{file.name}</span> : null}
+                {/* Hidden file input */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={onFileChange}
+                    style={{ display: 'none' }}
+                />
+
+                {/* Upload button that triggers file dialog */}
+                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                    <div style={{ display: 'contents' }}>
+                        <button
+                            type="button"
+                            onClick={handleUploadClick}
+                            disabled={disabled}
+                            className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            form="" // Explicitly detach from any form
+                        >
+                            {upload.isPending ? (t('common.uploading') || 'Uploading...') : (t('students.selectPicture') || 'Select Picture')}
+                        </button>
+                    </div>
+                    {upload.isPending && (
+                        <span className="text-xs text-muted-foreground">Uploading...</span>
+                    )}
                 </div>
             </div>
         </div>

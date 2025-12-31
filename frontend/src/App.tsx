@@ -13,10 +13,16 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/hooks/useLanguage";
 import { SchoolProvider } from "@/contexts/SchoolContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { PlatformAdminRoute } from "@/components/PlatformAdminRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 import TimetableGeneration from "./pages/TimetableGeneration";
+import { PlatformAdminLogin } from "./platform/pages/PlatformAdminLogin";
+import { PlatformAdminDashboard } from "./platform/pages/PlatformAdminDashboard";
+import { PlatformAdminLayout } from "./platform/components/PlatformAdminLayout";
+import { OrganizationAdminsManagement } from "@/components/settings/OrganizationAdminsManagement";
+import { PlatformPermissionGroupsManagement } from "./platform/pages/PlatformPermissionGroupsManagement";
 
 // Lazy-loaded components with optimized loading
 import {
@@ -153,7 +159,18 @@ import {
   FeeExceptionsPage,
   FeeReportsPage,
   StudentFeeStatementPage,
-  VerifyCertificate
+  VerifyCertificate,
+  SubscriptionPage,
+  PlansPage,
+  RenewPage,
+  SubscriptionAdminDashboard,
+  PendingActionsPage,
+  AllSubscriptionsPage,
+  PlansManagement,
+  OrganizationSubscriptionDetail,
+  RenewalReviewPage,
+  DiscountCodesManagement,
+  PlatformSettings
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -219,6 +236,89 @@ const App = () => (
                     <Suspense fallback={<PageSkeleton />}>
                       <VerifyCertificate />
                     </Suspense>
+                  } />
+
+                  {/* Platform Admin Routes - Separate app, not tied to organizations */}
+                  <Route path="/platform/login" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PlatformAdminLogin />
+                    </Suspense>
+                  } />
+                  <Route path="/platform/*" element={
+                    <PlatformAdminRoute>
+                      <PlatformAdminLayout>
+                        <Routes>
+                          <Route path="/dashboard" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <PlatformAdminDashboard />
+                            </Suspense>
+                          } />
+                          <Route path="/organizations" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <OrganizationsManagement />
+                            </Suspense>
+                          } />
+                          <Route path="/organizations/:organizationId/subscription" element={
+                            <Suspense fallback={
+                              <div className="flex h-screen items-center justify-center bg-yellow-50 border-4 border-yellow-500">
+                                <div className="text-center">
+                                  <p className="text-lg font-bold text-yellow-800">Loading Organization Subscription Detail...</p>
+                                  <p className="text-sm text-yellow-700 mt-2">If this doesn't disappear, check console for errors</p>
+                                </div>
+                              </div>
+                            }>
+                              <OrganizationSubscriptionDetail />
+                            </Suspense>
+                          } />
+                          <Route path="/admins" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <OrganizationAdminsManagement />
+                            </Suspense>
+                          } />
+                          <Route path="/permission-groups" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <PlatformPermissionGroupsManagement />
+                            </Suspense>
+                          } />
+                          <Route path="/subscriptions" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <AllSubscriptionsPage />
+                            </Suspense>
+                          } />
+                          <Route path="/plans" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <PlansManagement />
+                            </Suspense>
+                          } />
+                          <Route path="/pending" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <PendingActionsPage />
+                            </Suspense>
+                          } />
+                          <Route path="/payments/:paymentId" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <SubscriptionAdminDashboard />
+                            </Suspense>
+                          } />
+                          <Route path="/renewals/:renewalId" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <RenewalReviewPage />
+                            </Suspense>
+                          } />
+                          <Route path="/discount-codes" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <DiscountCodesManagement />
+                            </Suspense>
+                          } />
+                          <Route path="/settings" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <PlatformSettings />
+                            </Suspense>
+                          } />
+                          <Route path="/" element={<Navigate to="/platform/dashboard" replace />} />
+                        </Routes>
+                      </PlatformAdminLayout>
+                    </PlatformAdminRoute>
                   } />
 
                   {/* Protected routes with persistent layout */}
@@ -341,6 +441,43 @@ const App = () => (
                       <PermissionRoute permission="reports.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <ReportTemplatesManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+
+                    {/* Subscription Admin routes */}
+                    <Route path="/admin/subscription" element={
+                      <PermissionRoute permission="subscription.admin">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <SubscriptionAdminDashboard />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/admin/subscription/plans" element={
+                      <PermissionRoute permission="subscription.admin">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <PlansManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/admin/subscription/organizations/:organizationId" element={
+                      <PermissionRoute permission="subscription.admin">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <OrganizationSubscriptionDetail />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/admin/subscription/renewals/:renewalId" element={
+                      <PermissionRoute permission="subscription.admin">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <RenewalReviewPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/admin/subscription/discount-codes" element={
+                      <PermissionRoute permission="subscription.admin">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <DiscountCodesManagement />
                         </Suspense>
                       </PermissionRoute>
                     } />
@@ -1214,6 +1351,29 @@ const App = () => (
                       <PermissionRoute permission="currencies.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <FinanceSettings />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+
+                    {/* Subscription routes - Only accessible to admin and organization_admin */}
+                    <Route path="/subscription" element={
+                      <PermissionRoute permission="subscription.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <SubscriptionPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/subscription/plans" element={
+                      <PermissionRoute permission="subscription.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <PlansPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/subscription/renew" element={
+                      <PermissionRoute permission="subscription.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <RenewPage />
                         </Suspense>
                       </PermissionRoute>
                     } />

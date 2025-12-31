@@ -57,9 +57,26 @@ class AuthController extends Controller
             ]);
         }
 
-        // Auto-assign organization if user doesn't have one
-        // Only check if organization_id is missing (optimization: skip DB query if already assigned)
+        // Check if user is a platform admin (has subscription.admin permission)
+        // Platform admins should NOT have organization_id auto-assigned
+        $isPlatformAdmin = false;
         if (!$profile->organization_id) {
+            try {
+                $user = User::where('id', $authUser->id)->first();
+                if ($user) {
+                    // Check for global subscription.admin permission (organization_id = NULL)
+                    setPermissionsTeamId(null); // Clear team context to check global permissions
+                    $isPlatformAdmin = $user->hasPermissionTo('subscription.admin');
+                }
+            } catch (\Exception $e) {
+                // If permission check fails, continue with normal flow
+                \Log::debug('Could not check platform admin permission during login: ' . $e->getMessage());
+            }
+        }
+
+        // Auto-assign organization if user doesn't have one AND is not a platform admin
+        // Only check if organization_id is missing (optimization: skip DB query if already assigned)
+        if (!$profile->organization_id && !$isPlatformAdmin) {
             $defaultOrgId = OrganizationHelper::getDefaultOrganizationId();
             
             if ($defaultOrgId) {
@@ -252,5 +269,37 @@ class AuthController extends Controller
             ]);
 
         return response()->json(['message' => 'Password changed successfully']);
+    }
+
+    /**
+     * Check if current user is a platform admin
+     * This endpoint is accessible to all authenticated users
+     * Returns a simple boolean - no 403 errors for regular users
+     */
+    public function isPlatformAdmin(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['is_platform_admin' => false]);
+        }
+
+        try {
+            // CRITICAL: Use platform org UUID as team context for global permissions
+            // Global permissions are stored with platform org UUID (00000000-0000-0000-0000-000000000000)
+            // in model_has_permissions, but the permission itself has organization_id = NULL
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
+            
+            // Check for subscription.admin permission (global)
+            $isPlatformAdmin = $user->hasPermissionTo('subscription.admin');
+            
+            return response()->json(['is_platform_admin' => $isPlatformAdmin]);
+        } catch (\Exception $e) {
+            // If permission check fails, return false (not a platform admin)
+            // Don't log this as an error - it's expected for regular users
+            \Log::debug('Platform admin check failed: ' . $e->getMessage());
+            return response()->json(['is_platform_admin' => false]);
+        }
     }
 }

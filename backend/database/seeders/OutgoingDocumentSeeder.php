@@ -18,9 +18,11 @@ class OutgoingDocumentSeeder extends Seeder
     {
         $this->command->info('Seeding outgoing documents...');
 
-        // Get all organizations
+        // Get all organizations (exclude platform organization)
+        $platformOrgId = '00000000-0000-0000-0000-000000000000';
         $organizations = DB::table('organizations')
             ->whereNull('deleted_at')
+            ->where('id', '!=', $platformOrgId) // Skip platform organization (no schools)
             ->get();
 
         if ($organizations->isEmpty()) {
@@ -54,6 +56,13 @@ class OutgoingDocumentSeeder extends Seeder
             ->where('organization_id', $organizationId)
             ->whereNull('deleted_at')
             ->get();
+
+        // CRITICAL: school_id is required (NOT NULL constraint)
+        // Skip this organization if no schools exist
+        if ($schools->isEmpty()) {
+            $this->command->warn("  ⚠ No schools found for organization. Skipping outgoing documents.");
+            return 0;
+        }
 
         $academicYears = DB::table('academic_years')
             ->where('organization_id', $organizationId)
@@ -208,7 +217,8 @@ class OutgoingDocumentSeeder extends Seeder
             }
 
             // Get random related data
-            $schoolId = $schools->isNotEmpty() ? $schools->random()->id : null;
+            // CRITICAL: school_id is required (NOT NULL constraint) - we already checked schools exist above
+            $schoolId = $schools->random()->id;
             $academicYearId = $academicYears->isNotEmpty() ? $academicYears->random()->id : null;
             $signedByUserId = $users->isNotEmpty() ? $users->random()->id : null;
 

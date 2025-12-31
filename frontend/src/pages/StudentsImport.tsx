@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, Upload, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -11,10 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useRooms } from '@/hooks/useRooms';
 import { useResidencyTypes } from '@/hooks/useResidencyTypes';
+import { useResourceUsage } from '@/hooks/useSubscription';
 import { studentImportApi } from '@/lib/api/client';
 
 type ValidationError = {
@@ -117,6 +119,9 @@ export default function StudentsImport() {
   const { data: classAcademicYears } = useClassAcademicYears(academicYearId ?? undefined);
   const { data: rooms } = useRooms(undefined, undefined, false);
   const { data: residencyTypes } = useResidencyTypes();
+  
+  // Check subscription limits for students
+  const studentUsage = useResourceUsage('students');
 
   const [studentFields, setStudentFields] = useState<string[]>(
     () => ['admission_no', ...REQUIRED_STUDENT_FIELDS, 'gender'] // gender is optional but selected by default
@@ -131,6 +136,10 @@ export default function StudentsImport() {
   const [isValidating, setIsValidating] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  
+  // Check if limit is reached
+  const isLimitReached = !studentUsage.isUnlimited && studentUsage.remaining === 0;
+  const canUploadFile = !isLimitReached;
 
   const requiresAcademicYear = selectedClassAcademicYearIds.length > 0;
 
@@ -215,15 +224,72 @@ export default function StudentsImport() {
     setValidation(null);
     try {
       const resp = await studentImportApi.validate(uploadFile);
-      const result = (resp as { result?: ValidationResult })?.result;
+      const result = (resp as { result?: ValidationResult; limit_warning?: any })?.result;
+      const limitWarning = (resp as { limit_warning?: any })?.limit_warning;
+      
       if (!result) {
         throw new Error('Invalid response from server');
       }
-      setValidation(result);
-      showToast.success('toast.success');
-    } catch (e) {
+      
+      // If there's a limit warning, adjust validation result to only allow remaining rows
+      let adjustedResult = result;
+      if (limitWarning && !studentUsage.isUnlimited && studentUsage.remaining !== -1) {
+        const remaining = studentUsage.remaining;
+        const validRowsToKeep = Math.min(result.valid_rows, remaining);
+        
+        if (validRowsToKeep < result.valid_rows) {
+          // Filter validation to only keep first N valid rows
+          adjustedResult = {
+            ...result,
+            valid_rows: validRowsToKeep,
+            invalid_rows: result.total_rows - validRowsToKeep,
+            is_valid: validRowsToKeep > 0,
+            sheets: result.sheets.map((sheet) => {
+              const validRowNumbers = sheet.valid_row_numbers || [];
+              const keptRows = validRowNumbers.slice(0, validRowsToKeep);
+              const excludedRows = validRowNumbers.slice(validRowsToKeep);
+              
+              // Mark excluded rows as errors
+              const newErrors = [...sheet.errors];
+              excludedRows.forEach((rowNum) => {
+                newErrors.push({
+                  row: rowNum,
+                  field: 'limit',
+                  message: `Cannot import: Only ${remaining} student slot(s) remaining. This row exceeds the limit.`,
+                });
+              });
+              
+              return {
+                ...sheet,
+                valid_rows: keptRows.length,
+                invalid_rows: sheet.total_rows - keptRows.length,
+                valid_row_numbers: keptRows,
+                errors: newErrors,
+              };
+            }),
+          };
+        }
+      }
+      
+      setValidation(adjustedResult);
+      
+      if (limitWarning) {
+        showToast.warning(
+          limitWarning.message || 
+          `Import contains ${limitWarning.total_rows || result.total_rows} students, but only ${limitWarning.remaining || studentUsage.remaining} slots remaining. Only the first ${Math.min(result.valid_rows, limitWarning.remaining || studentUsage.remaining)} valid rows will be imported.`
+        );
+      } else {
+        showToast.success('toast.success');
+      }
+    } catch (e: any) {
       const message = e instanceof Error ? e.message : String(e);
-      showToast.error(message || 'toast.error');
+      
+      // Check if it's a limit error
+      if (e?.code === 'LIMIT_REACHED' || message.includes('limit') || message.includes('LIMIT_REACHED')) {
+        showToast.error(message || 'Student limit reached. Please upgrade your plan.');
+      } else {
+        showToast.error(message || 'toast.error');
+      }
     } finally {
       setIsValidating(false);
     }
@@ -480,30 +546,74 @@ export default function StudentsImport() {
               <CardDescription>{t('students.uploadImportHint')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {isLimitReached && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    {t('students.limitReached') || 
+                     `Student limit reached (${studentUsage.current}/${studentUsage.limit}). Please upgrade your plan to import more students.`}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {!isLimitReached && !studentUsage.isUnlimited && studentUsage.remaining !== -1 && studentUsage.remaining < 10 && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    {t('students.limitWarning', { remaining: studentUsage.remaining })}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="xlsx">{t('students.selectXlsx')}</Label>
                 <Input
                   id="xlsx"
                   type="file"
                   accept=".xlsx"
+                  disabled={!canUploadFile}
                   onChange={(e) => {
                     const f = e.target.files?.[0] ?? null;
                     setUploadFile(f);
                     setValidation(null);
                   }}
                 />
+                {!canUploadFile && (
+                  <p className="text-sm text-muted-foreground">
+                    {t('students.uploadDisabled') || 'File upload is disabled because the student limit has been reached.'}
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <Button variant="secondary" onClick={onValidate} disabled={!uploadFile || isValidating}>
+                <Button 
+                  variant="secondary" 
+                  onClick={onValidate} 
+                  disabled={!canUploadFile || !uploadFile || isValidating}
+                >
                   <CheckCircle2 className="w-4 h-4 mr-2" />
                   {t('students.validateFile')}
                 </Button>
-                <Button onClick={onImport} disabled={!uploadFile || !validation?.is_valid || isImporting}>
+                <Button 
+                  onClick={onImport} 
+                  disabled={!canUploadFile || !uploadFile || !validation?.is_valid || isImporting}
+                >
                   <Upload className="w-4 h-4 mr-2" />
                   {t('students.importNow')}
                 </Button>
               </div>
+              
+              {validation && !studentUsage.isUnlimited && studentUsage.remaining !== -1 && validation.valid_rows > studentUsage.remaining && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    {t('students.importLimited', { 
+                      validRows: validation.valid_rows, 
+                      remaining: studentUsage.remaining 
+                    })}
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {validation && (
                 <div className="space-y-3">

@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { UsageLimitWarning, useCanCreate } from '@/components/subscription';
 import {
     Table,
     TableBody,
@@ -98,6 +99,9 @@ export function StaffList() {
     const { t } = useLanguage();
     const { data: profile } = useProfile();
     const hasCreatePermission = useHasPermission('staff.create');
+    
+    // Check usage limits for staff
+    const staffUsage = useCanCreate('staff');
     const hasUpdatePermission = useHasPermission('staff.update');
     const hasDeletePermission = useHasPermission('staff.delete');
     const hasReadPermission = useHasPermission('staff.read');
@@ -797,6 +801,11 @@ export function StaffList() {
                             </DialogDescription>
                         </DialogHeader>
 
+                        {/* Show usage limit warning when creating new staff */}
+                        {(staffUsage.isWarning || !staffUsage.canCreate) && (
+                            <UsageLimitWarning resourceKey="staff" compact />
+                        )}
+
                         <div className="grid grid-cols-[250px_1fr] gap-6 py-4">
                             {/* Step Navigation - Vertical Sidebar */}
                             <div className="border-r pr-6">
@@ -1171,7 +1180,7 @@ export function StaffList() {
                                 ) : (
                                     <Button
                                         type="submit"
-                                        disabled={createStaff.isPending}
+                                        disabled={createStaff.isPending || !staffUsage.canCreate}
                                     >
                                         {createStaff.isPending ? t('staff.creating') : t('staff.addStaff')}
                                     </Button>

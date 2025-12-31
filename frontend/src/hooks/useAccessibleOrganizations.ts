@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { organizationsApi } from '@/lib/api/client';
 import { useAuth } from './useAuth';
 
-export const useAccessibleOrganizations = () => {
+export const useAccessibleOrganizations = (options?: { enabled?: boolean }) => {
   const { user, profile, loading } = useAuth();
 
   const query = useQuery({
@@ -91,7 +91,7 @@ export const useAccessibleOrganizations = () => {
         };
       }
     },
-    enabled: !!user && !!profile && !loading,
+    enabled: options?.enabled !== undefined ? options.enabled : (!!user && !!profile && !loading),
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false, // REQUIRED: Performance optimization
     refetchOnReconnect: false, // REQUIRED: Performance optimization

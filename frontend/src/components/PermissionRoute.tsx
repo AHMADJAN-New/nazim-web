@@ -9,6 +9,11 @@ interface PermissionRouteProps {
   children: ReactNode;
   fallback?: ReactNode;
   showError?: boolean;
+  /**
+   * If true, checks both permission AND feature access (default: true)
+   * If false, only checks permission (legacy behavior)
+   */
+  checkFeature?: boolean;
 }
 
 /**
@@ -23,6 +28,7 @@ export function PermissionRoute({
   children,
   fallback,
   showError = true,
+  checkFeature = true,
 }: PermissionRouteProps) {
   const { profile } = useAuth();
   const { data: permissions, isLoading } = useUserPermissions();
@@ -49,7 +55,7 @@ export function PermissionRoute({
   // Once permissions are ready, use PermissionGuard to check the specific permission
   // Only now will React evaluate children, which triggers lazy component loading
   return (
-    <PermissionGuard permission={permission} fallback={fallback} showError={showError}>
+    <PermissionGuard permission={permission} fallback={fallback} showError={showError} checkFeature={checkFeature}>
       {children}
     </PermissionGuard>
   );

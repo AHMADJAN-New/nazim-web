@@ -1089,6 +1089,15 @@ export const useFeeReportDashboard = (filters?: {
     enabled: !!user && !!profile,
     staleTime: FIVE_MINUTES,
     refetchOnWindowFocus: false,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 402 errors (subscription/feature errors)
+      if (error?.isSubscriptionError || error?.code === 'FEATURE_NOT_AVAILABLE') {
+        return false;
+      }
+      // Retry other errors up to 3 times
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 

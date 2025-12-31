@@ -136,7 +136,7 @@ export default function Dashboard() {
       icon: BookOpen,
       description: t('dashboard.activeClasses') || "Active classes",
       color: "primary" as const,
-      onClick: "/classes"
+      onClick: "/settings/classes"
     },
     {
       title: t('dashboard.totalRooms') || "Total Rooms",
@@ -315,7 +315,7 @@ export default function Dashboard() {
               {[
                 { label: "Students", icon: Users, href: "/students", color: "hover:bg-primary/10 hover:border-primary" },
                 { label: "Staff", icon: GraduationCap, href: "/staff", color: "hover:bg-secondary/10 hover:border-secondary" },
-                { label: "Classes", icon: BookOpen, href: "/classes", color: "hover:bg-primary/10 hover:border-primary" },
+                { label: "Classes", icon: BookOpen, href: "/settings/classes", color: "hover:bg-primary/10 hover:border-primary" },
                 { label: "Buildings", icon: Building, href: "/settings/buildings", color: "hover:bg-accent/10 hover:border-accent" }
               ].map((action, index) => (
                 <Button

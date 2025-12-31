@@ -24,52 +24,54 @@ class ClassAcademicYearSubjectSeeder extends Seeder
     {
         $this->command->info('Seeding class academic years and subjects...');
 
-        // Get all organizations
-        $organizations = DB::table('organizations')
-            ->whereNull('deleted_at')
-            ->get();
-
-        if ($organizations->isEmpty()) {
-            $this->command->warn('No organizations found. Please run DatabaseSeeder first.');
-            return;
-        }
-
+        // Process organizations in chunks to avoid memory issues
         $totalClassAcademicYearsCreated = 0;
         $totalClassSubjectsCreated = 0;
 
-        foreach ($organizations as $organization) {
-            $this->command->info("Processing {$organization->name}...");
+        DB::table('organizations')
+            ->whereNull('deleted_at')
+            ->orderBy('id')
+            ->chunkById(10, function ($organizations) use (&$totalClassAcademicYearsCreated, &$totalClassSubjectsCreated) {
+                foreach ($organizations as $organization) {
+                    $this->command->info("Processing {$organization->name}...");
 
-            // Get all schools for this organization
-            $schools = DB::table('school_branding')
-                ->where('organization_id', $organization->id)
-                ->whereNull('deleted_at')
-                ->get();
+                    // Get all schools for this organization (chunked)
+                    $schools = DB::table('school_branding')
+                        ->where('organization_id', $organization->id)
+                        ->whereNull('deleted_at')
+                        ->get();
 
-            if ($schools->isEmpty()) {
-                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping class academic year subject seeding for this org.");
-                continue;
-            }
+                    if ($schools->isEmpty()) {
+                        $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping class academic year subject seeding for this org.");
+                        continue;
+                    }
 
-            foreach ($schools as $school) {
-                $this->command->info("Processing {$organization->name} - school: {$school->school_name}...");
+                    foreach ($schools as $school) {
+                        $this->command->info("Processing {$organization->name} - school: {$school->school_name}...");
 
-                // Step 1: Create class_academic_year entries if they don't exist
-                $classAcademicYearsCreated = $this->createClassAcademicYears($organization->id, $school->id);
-                $totalClassAcademicYearsCreated += $classAcademicYearsCreated;
+                        // Step 1: Create class_academic_year entries if they don't exist
+                        $classAcademicYearsCreated = $this->createClassAcademicYears($organization->id, $school->id);
+                        $totalClassAcademicYearsCreated += $classAcademicYearsCreated;
 
-                // Step 2: Assign subjects to class_academic_years
-                $classSubjectsCreated = $this->assignSubjectsToClassAcademicYears($organization->id, $school->id);
-                $totalClassSubjectsCreated += $classSubjectsCreated;
+                        // Step 2: Assign subjects to class_academic_years
+                        $classSubjectsCreated = $this->assignSubjectsToClassAcademicYears($organization->id, $school->id);
+                        $totalClassSubjectsCreated += $classSubjectsCreated;
 
-                if ($classAcademicYearsCreated > 0) {
-                    $this->command->info("  → Created {$classAcademicYearsCreated} class-academic year(s)");
+                        if ($classAcademicYearsCreated > 0) {
+                            $this->command->info("  → Created {$classAcademicYearsCreated} class-academic year(s)");
+                        }
+                        if ($classSubjectsCreated > 0) {
+                            $this->command->info("  → Created {$classSubjectsCreated} class-subject assignment(s)");
+                        }
+
+                        // Free memory
+                        unset($school);
+                    }
+
+                    // Free memory
+                    unset($organization, $schools);
                 }
-                if ($classSubjectsCreated > 0) {
-                    $this->command->info("  → Created {$classSubjectsCreated} class-subject assignment(s)");
-                }
-            }
-        }
+            });
 
         if ($totalClassAcademicYearsCreated > 0 || $totalClassSubjectsCreated > 0) {
             $this->command->info("  → Total: Created {$totalClassAcademicYearsCreated} class-academic year(s)");
@@ -85,10 +87,11 @@ class ClassAcademicYearSubjectSeeder extends Seeder
      */
     protected function createClassAcademicYears(string $organizationId, string $schoolId): int
     {
-        // Get all academic years for this school
+        // Get all academic years for this school (use select to reduce memory)
         $academicYears = AcademicYear::where('organization_id', $organizationId)
             ->where('school_id', $schoolId)
             ->whereNull('deleted_at')
+            ->select('id', 'name')
             ->get();
 
         if ($academicYears->isEmpty()) {
@@ -96,10 +99,11 @@ class ClassAcademicYearSubjectSeeder extends Seeder
             return 0;
         }
 
-        // Get all classes for this school
+        // Get all classes for this school (use select to reduce memory)
         $classes = ClassModel::where('organization_id', $organizationId)
             ->where('school_id', $schoolId)
             ->whereNull('deleted_at')
+            ->select('id', 'name', 'default_capacity')
             ->get();
 
         if ($classes->isEmpty()) {
@@ -112,13 +116,13 @@ class ClassAcademicYearSubjectSeeder extends Seeder
         // Create class_academic_year for each class + academic year combination
         foreach ($classes as $class) {
             foreach ($academicYears as $academicYear) {
-                // Check if class_academic_year already exists
-                $existing = ClassAcademicYear::where('class_id', $class->id)
+                // Check if class_academic_year already exists (use exists() for better performance)
+                $exists = ClassAcademicYear::where('class_id', $class->id)
                     ->where('academic_year_id', $academicYear->id)
                     ->whereNull('deleted_at')
-                    ->first();
+                    ->exists();
 
-                if ($existing) {
+                if ($exists) {
                     $this->command->info("  ✓ Class '{$class->name}' already assigned to academic year '{$academicYear->name}'");
                     continue;
                 }
@@ -142,6 +146,9 @@ class ClassAcademicYearSubjectSeeder extends Seeder
             }
         }
 
+        // Free memory
+        unset($academicYears, $classes);
+
         return $createdCount;
     }
 
@@ -151,74 +158,88 @@ class ClassAcademicYearSubjectSeeder extends Seeder
      */
     protected function assignSubjectsToClassAcademicYears(string $organizationId, string $schoolId): int
     {
-        // Get all class_academic_years for this school
-        $classAcademicYears = ClassAcademicYear::where('organization_id', $organizationId)
-            ->where('school_id', $schoolId)
-            ->whereNull('deleted_at')
-            ->with(['class'])
-            ->get();
-
-        if ($classAcademicYears->isEmpty()) {
-            $this->command->warn("  ⚠ No class-academic years found for this school. Skipping subject assignments.");
-            return 0;
-        }
-
         $createdCount = 0;
 
-        // For each class_academic_year, get subjects from class_subject_templates
-        foreach ($classAcademicYears as $classAcademicYear) {
-            if (!$classAcademicYear->class) {
-                continue;
-            }
+        // Process class_academic_years in chunks to avoid memory issues
+        ClassAcademicYear::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->whereNull('deleted_at')
+            ->select('id', 'class_id')
+            ->chunkById(50, function ($classAcademicYears) use ($organizationId, $schoolId, &$createdCount) {
+                foreach ($classAcademicYears as $classAcademicYear) {
+                    // Get class name separately to avoid eager loading
+                    $class = ClassModel::where('id', $classAcademicYear->class_id)
+                        ->select('name')
+                        ->first();
 
-            // Get all subject templates for this class (must match school_id)
-            $subjectTemplates = ClassSubjectTemplate::where('class_id', $classAcademicYear->class_id)
-                ->where('organization_id', $organizationId)
-                ->where('school_id', $schoolId)
-                ->whereNull('deleted_at')
-                ->with(['subject'])
-                ->get();
+                    if (!$class) {
+                        continue;
+                    }
 
-            if ($subjectTemplates->isEmpty()) {
-                $this->command->info("  ⚠ No subject templates found for class '{$classAcademicYear->class->name}'. Skipping.");
-                continue;
-            }
+                    // Get all subject templates for this class (must match school_id)
+                    // Use select to reduce memory and avoid eager loading
+                    $subjectTemplates = ClassSubjectTemplate::where('class_id', $classAcademicYear->class_id)
+                        ->where('organization_id', $organizationId)
+                        ->where('school_id', $schoolId)
+                        ->whereNull('deleted_at')
+                        ->select('id', 'subject_id', 'credits', 'hours_per_week', 'is_required')
+                        ->get();
 
-            // Assign each subject from template to class_academic_year
-            foreach ($subjectTemplates as $template) {
-                if (!$template->subject) {
-                    continue;
+                    if ($subjectTemplates->isEmpty()) {
+                        $this->command->info("  ⚠ No subject templates found for class '{$class->name}'. Skipping.");
+                        continue;
+                    }
+
+                    // Get subject IDs and names in one query
+                    $subjectIds = $subjectTemplates->pluck('subject_id')->unique()->toArray();
+                    $subjects = Subject::whereIn('id', $subjectIds)
+                        ->select('id', 'name')
+                        ->get()
+                        ->keyBy('id');
+
+                    // Assign each subject from template to class_academic_year
+                    foreach ($subjectTemplates as $template) {
+                        $subject = $subjects->get($template->subject_id);
+                        if (!$subject) {
+                            continue;
+                        }
+
+                        // Check if class_subject already exists (use exists() for better performance)
+                        $exists = ClassSubject::where('class_academic_year_id', $classAcademicYear->id)
+                            ->where('subject_id', $template->subject_id)
+                            ->whereNull('deleted_at')
+                            ->exists();
+
+                        if ($exists) {
+                            $this->command->info("  ✓ Subject '{$subject->name}' already assigned to class-academic year '{$class->name}'");
+                            continue;
+                        }
+
+                        // Create class_subject entry
+                        ClassSubject::create([
+                            'class_subject_template_id' => $template->id,
+                            'class_academic_year_id' => $classAcademicYear->id,
+                            'subject_id' => $template->subject_id,
+                            'organization_id' => $organizationId,
+                            'school_id' => $schoolId,
+                            'teacher_id' => null, // Can be assigned later
+                            'room_id' => null, // Can be assigned later
+                            'credits' => $template->credits,
+                            'hours_per_week' => $template->hours_per_week,
+                            'is_required' => $template->is_required,
+                        ]);
+
+                        $this->command->info("  ✓ Assigned subject '{$subject->name}' to class-academic year '{$class->name}'");
+                        $createdCount++;
+                    }
+
+                    // Free memory after each class_academic_year
+                    unset($class, $subjectTemplates, $subjects, $subjectIds);
                 }
 
-                // Check if class_subject already exists
-                $existing = ClassSubject::where('class_academic_year_id', $classAcademicYear->id)
-                    ->where('subject_id', $template->subject_id)
-                    ->whereNull('deleted_at')
-                    ->first();
-
-                if ($existing) {
-                    $this->command->info("  ✓ Subject '{$template->subject->name}' already assigned to class-academic year '{$classAcademicYear->class->name}'");
-                    continue;
-                }
-
-                // Create class_subject entry
-                ClassSubject::create([
-                    'class_subject_template_id' => $template->id,
-                    'class_academic_year_id' => $classAcademicYear->id,
-                    'subject_id' => $template->subject_id,
-                    'organization_id' => $organizationId,
-                    'school_id' => $schoolId,
-                    'teacher_id' => null, // Can be assigned later
-                    'room_id' => null, // Can be assigned later
-                    'credits' => $template->credits,
-                    'hours_per_week' => $template->hours_per_week,
-                    'is_required' => $template->is_required,
-                ]);
-
-                $this->command->info("  ✓ Assigned subject '{$template->subject->name}' to class-academic year '{$classAcademicYear->class->name}'");
-                $createdCount++;
-            }
-        }
+                // Free memory after each chunk
+                unset($classAcademicYears);
+            });
 
         return $createdCount;
     }

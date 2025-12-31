@@ -3,6 +3,7 @@ import { permissionsApi, rolesApi } from '@/lib/api/client';
 import { useAuth } from './useAuth';
 import { showToast } from '@/lib/toast';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { useHasFeature, useFeatures } from './useSubscription';
 import type * as PermissionApi from '@/types/api/permission';
 import type { Permission, RolePermission } from '@/types/domain/permission';
 import { mapPermissionApiToDomain, mapRolePermissionApiToDomain } from '@/mappers/permissionMapper';
@@ -248,6 +249,503 @@ export const useHasPermission = (permissionName: string): boolean | undefined =>
   }
 
   // No permissions found (not loading, but no permissions)
+  return false;
+};
+
+/**
+ * Map permission names to feature keys
+ * This determines which subscription feature is required for a permission
+ */
+const PERMISSION_TO_FEATURE_MAP: Record<string, string | string[]> = {
+  // Hostel feature
+  'hostel.read': 'hostel',
+  'hostel.create': 'hostel',
+  'hostel.update': 'hostel',
+  'hostel.delete': 'hostel',
+
+  // Subjects feature
+  'subjects.read': 'subjects',
+  'subjects.create': 'subjects',
+  'subjects.update': 'subjects',
+  'subjects.delete': 'subjects',
+  'subjects.assign': 'subjects',
+  'subjects.copy': 'subjects',
+  'teacher_subject_assignments.read': 'subjects',
+  'teacher_subject_assignments.create': 'subjects',
+  'teacher_subject_assignments.update': 'subjects',
+  'teacher_subject_assignments.delete': 'subjects',
+
+  // Exams feature
+  'exams.read': 'exams',
+  'exams.create': 'exams',
+  'exams.update': 'exams',
+  'exams.delete': 'exams',
+  'exams.assign': 'exams',
+  'exams.manage': 'exams',
+  'exams.manage_timetable': 'exams',
+  'exams.enroll_students': 'exams',
+  'exams.enter_marks': 'exams',
+  'exams.view_reports': 'exams',
+  'exams.view_grade_cards': 'exams',
+  'exams.view_consolidated_reports': 'exams',
+  'exams.view_class_reports': 'exams',
+  'exams.view_student_reports': 'exams',
+  'exams.manage_attendance': 'exams',
+  'exams.view_attendance_reports': 'exams',
+  'exams.roll_numbers.read': 'exams',
+  'exams.roll_numbers.assign': 'exams',
+  'exams.secret_numbers.read': 'exams',
+  'exams.secret_numbers.assign': 'exams',
+  'exams.numbers.print': 'exams',
+  'exam_classes.read': 'exams',
+  'exam_classes.create': 'exams',
+  'exam_classes.update': 'exams',
+  'exam_classes.delete': 'exams',
+  'exam_subjects.read': 'exams',
+  'exam_subjects.create': 'exams',
+  'exam_subjects.update': 'exams',
+  'exam_subjects.delete': 'exams',
+  'exam_students.read': 'exams',
+  'exam_students.create': 'exams',
+  'exam_students.update': 'exams',
+  'exam_students.delete': 'exams',
+  'exam_results.read': 'exams',
+  'exam_results.create': 'exams',
+  'exam_results.update': 'exams',
+  'exam_results.delete': 'exams',
+  'exam_times.read': 'exams',
+  'exam_times.create': 'exams',
+  'exam_times.update': 'exams',
+  'exam_times.delete': 'exams',
+  'exam_types.read': 'exams',
+  'exam_types.create': 'exams',
+  'exam_types.update': 'exams',
+  'exam_types.delete': 'exams',
+  'exam_documents.read': 'exams',
+  'exam_documents.create': 'exams',
+  'exam_documents.update': 'exams',
+  'exam_documents.delete': 'exams',
+  'exams.questions.read': 'exams',
+  'exams.questions.create': 'exams',
+  'exams.questions.update': 'exams',
+  'exams.questions.delete': 'exams',
+  'exams.papers.read': 'exams',
+  'exams.papers.create': 'exams',
+  'exams.papers.update': 'exams',
+  'exams.papers.delete': 'exams',
+  'grades.read': 'exams',
+  'grades.create': 'exams',
+  'grades.update': 'exams',
+  'grades.delete': 'exams',
+
+  // Timetables feature
+  'timetables.read': ['timetables', 'timetable'],
+  'timetables.create': ['timetables', 'timetable'],
+  'timetables.update': ['timetables', 'timetable'],
+  'timetables.delete': ['timetables', 'timetable'],
+  'timetables.export': ['timetables', 'timetable'],
+  'schedule_slots.read': ['timetables', 'timetable'],
+  'schedule_slots.create': ['timetables', 'timetable'],
+  'schedule_slots.update': ['timetables', 'timetable'],
+  'schedule_slots.delete': ['timetables', 'timetable'],
+  'teacher_timetable_preferences.read': ['timetables', 'timetable'],
+  'teacher_timetable_preferences.create': ['timetables', 'timetable'],
+  'teacher_timetable_preferences.update': ['timetables', 'timetable'],
+  'teacher_timetable_preferences.delete': ['timetables', 'timetable'],
+
+  // Assets feature
+  'assets.read': 'assets',
+  'assets.create': 'assets',
+  'assets.update': 'assets',
+  'assets.delete': 'assets',
+  'asset_categories.read': 'assets',
+  'asset_categories.create': 'assets',
+  'asset_categories.update': 'assets',
+  'asset_categories.delete': 'assets',
+
+  // Library feature
+  'library_books.read': 'library',
+  'library_books.create': 'library',
+  'library_books.update': 'library',
+  'library_books.delete': 'library',
+  'library_categories.read': 'library',
+  'library_categories.create': 'library',
+  'library_categories.update': 'library',
+  'library_categories.delete': 'library',
+  'library_loans.read': 'library',
+  'library_loans.create': 'library',
+  'library_loans.update': 'library',
+  'library_loans.delete': 'library',
+
+  // Reports feature
+  'reports.read': ['pdf_reports', 'reports'],
+  'reports.create': ['pdf_reports', 'reports'],
+  'reports.update': ['pdf_reports', 'reports'],
+  'reports.delete': ['pdf_reports', 'reports'],
+  'staff_reports.read': ['pdf_reports', 'reports'],
+  'staff_reports.export': ['pdf_reports', 'reports'],
+  'student_reports.read': ['pdf_reports', 'reports'],
+  'student_reports.export': ['pdf_reports', 'reports'],
+
+  // Short-term courses feature
+  'short_term_courses.read': 'short_courses',
+  'short_term_courses.create': 'short_courses',
+  'short_term_courses.update': 'short_courses',
+  'short_term_courses.delete': 'short_courses',
+  'short_term_courses.close': 'short_courses',
+  'course_students.read': 'short_courses',
+  'course_students.create': 'short_courses',
+  'course_students.update': 'short_courses',
+  'course_students.delete': 'short_courses',
+  'course_students.enroll_from_main': 'short_courses',
+  'course_students.copy_to_main': 'short_courses',
+  'course_students.report': 'short_courses',
+  'course_student_discipline_records.read': 'short_courses',
+  'course_student_discipline_records.create': 'short_courses',
+  'course_student_discipline_records.update': 'short_courses',
+  'course_student_discipline_records.delete': 'short_courses',
+  'course_attendance.read': 'short_courses',
+  'course_attendance.create': 'short_courses',
+  'course_attendance.update': 'short_courses',
+  'course_attendance.delete': 'short_courses',
+  'course_documents.read': 'short_courses',
+  'course_documents.create': 'short_courses',
+  'course_documents.update': 'short_courses',
+  'course_documents.delete': 'short_courses',
+
+  // Graduation feature
+  'certificate_templates.read': 'graduation',
+  'certificate_templates.create': 'graduation',
+  'certificate_templates.update': 'graduation',
+  'certificate_templates.delete': 'graduation',
+  'certificate_templates.activate': 'graduation',
+  'certificate_templates.deactivate': 'graduation',
+  'graduation_batches.read': 'graduation',
+  'graduation_batches.create': 'graduation',
+  'graduation_batches.generate_students': 'graduation',
+  'graduation_batches.approve': 'graduation',
+  'graduation_batches.issue': 'graduation',
+  'issued_certificates.read': 'graduation',
+  'certificates.issue': 'graduation',
+  'certificates.print': 'graduation',
+  'certificates.revoke': 'graduation',
+
+  // ID cards feature
+  'id_cards.read': 'id_cards',
+  'id_cards.create': 'id_cards',
+  'id_cards.update': 'id_cards',
+  'id_cards.delete': 'id_cards',
+  'id_cards.export': 'id_cards',
+
+  // Finance feature
+  'finance_accounts.read': 'finance',
+  'finance_accounts.create': 'finance',
+  'finance_accounts.update': 'finance',
+  'finance_accounts.delete': 'finance',
+  'income_entries.read': 'finance',
+  'income_entries.create': 'finance',
+  'income_entries.update': 'finance',
+  'income_entries.delete': 'finance',
+  'income_categories.read': 'finance',
+  'income_categories.create': 'finance',
+  'income_categories.update': 'finance',
+  'income_categories.delete': 'finance',
+  'expense_entries.read': 'finance',
+  'expense_entries.create': 'finance',
+  'expense_entries.update': 'finance',
+  'expense_entries.delete': 'finance',
+  'expense_categories.read': 'finance',
+  'expense_categories.create': 'finance',
+  'expense_categories.update': 'finance',
+  'expense_categories.delete': 'finance',
+  'finance_projects.read': 'finance',
+  'finance_projects.create': 'finance',
+  'finance_projects.update': 'finance',
+  'finance_projects.delete': 'finance',
+  'donors.read': 'finance',
+  'donors.create': 'finance',
+  'donors.update': 'finance',
+  'donors.delete': 'finance',
+  'finance_reports.read': 'finance',
+  'finance_documents.read': 'finance',
+  'finance_documents.create': 'finance',
+  'finance_documents.update': 'finance',
+  'finance_documents.delete': 'finance',
+
+  // Fees feature
+  'fees.read': 'fees',
+  'fees.create': 'fees',
+  'fees.update': 'fees',
+  'fees.delete': 'fees',
+  'fees.payments.create': 'fees',
+  'fees.exceptions.create': 'fees',
+  'fees.exceptions.approve': 'fees',
+
+  // Multi-currency feature
+  'currencies.read': 'multi_currency',
+  'currencies.create': 'multi_currency',
+  'currencies.update': 'multi_currency',
+  'currencies.delete': 'multi_currency',
+  'exchange_rates.read': 'multi_currency',
+  'exchange_rates.create': 'multi_currency',
+  'exchange_rates.update': 'multi_currency',
+  'exchange_rates.delete': 'multi_currency',
+
+  // DMS feature
+  'dms.incoming.read': 'dms',
+  'dms.incoming.create': 'dms',
+  'dms.incoming.update': 'dms',
+  'dms.incoming.delete': 'dms',
+  'dms.outgoing.read': 'dms',
+  'dms.outgoing.create': 'dms',
+  'dms.outgoing.update': 'dms',
+  'dms.outgoing.delete': 'dms',
+  'dms.outgoing.generate_pdf': 'dms',
+  'dms.templates.read': 'dms',
+  'dms.templates.create': 'dms',
+  'dms.templates.update': 'dms',
+  'dms.templates.delete': 'dms',
+  'dms.letterheads.read': 'dms',
+  'dms.letterheads.create': 'dms',
+  'dms.letterheads.update': 'dms',
+  'dms.letterheads.delete': 'dms',
+  'dms.letterheads.manage': 'dms',
+  'dms.letter_types.read': 'dms',
+  'dms.letter_types.create': 'dms',
+  'dms.letter_types.update': 'dms',
+  'dms.letter_types.delete': 'dms',
+  'dms.departments.read': 'dms',
+  'dms.departments.create': 'dms',
+  'dms.departments.update': 'dms',
+  'dms.departments.delete': 'dms',
+  'dms.files.read': 'dms',
+  'dms.files.create': 'dms',
+  'dms.files.update': 'dms',
+  'dms.files.delete': 'dms',
+  'dms.files.download': 'dms',
+  'dms.reports.read': 'dms',
+  'dms.settings.read': 'dms',
+  'dms.settings.manage': 'dms',
+  'dms.archive.read': 'dms',
+  'dms.archive.search': 'dms',
+
+  // Events feature
+  'events.read': 'events',
+  'events.create': 'events',
+  'events.update': 'events',
+  'events.delete': 'events',
+  'event_types.read': 'events',
+  'event_types.create': 'events',
+  'event_types.update': 'events',
+  'event_types.delete': 'events',
+  'event_guests.read': 'events',
+  'event_guests.create': 'events',
+  'event_guests.update': 'events',
+  'event_guests.delete': 'events',
+  'event_guests.import': 'events',
+  'event_guests.checkin': 'events',
+  'event_checkins.read': 'events',
+  'event_checkins.create': 'events',
+  'event_checkins.update': 'events',
+  'event_checkins.delete': 'events',
+
+  // Leave management feature
+  'leave_requests.read': 'leave_management',
+  'leave_requests.create': 'leave_management',
+  'leave_requests.update': 'leave_management',
+  'leave_requests.delete': 'leave_management',
+
+  // Legacy finance permissions (backward compatibility)
+  'finance_income.read': 'finance',
+  'finance_income.create': 'finance',
+  'finance_income.update': 'finance',
+  'finance_income.delete': 'finance',
+  'finance_expense.read': 'finance',
+  'finance_expense.create': 'finance',
+  'finance_expense.update': 'finance',
+  'finance_expense.delete': 'finance',
+  'finance_donors.read': 'finance',
+  'finance_donors.create': 'finance',
+  'finance_donors.update': 'finance',
+  'finance_donors.delete': 'finance',
+};
+
+/**
+ * Get the feature key(s) required for a permission (if any)
+ */
+function getFeatureKeysForPermission(permissionName: string): string[] {
+  const mapped = PERMISSION_TO_FEATURE_MAP[permissionName];
+  if (!mapped) {
+    return [];
+  }
+  return Array.isArray(mapped) ? mapped : [mapped];
+}
+
+/**
+ * Combined hook that checks both permission AND feature access
+ * Returns true only if BOTH conditions are met:
+ * 1. User has the permission
+ * 2. User's organization has the required feature enabled (if feature is required)
+ * 
+ * CRITICAL: Always calls useFeatures() unconditionally to follow Rules of Hooks
+ */
+export const useHasPermissionAndFeature = (permissionName: string): boolean | undefined => {
+  const hasPermission = useHasPermission(permissionName);
+  const featureKeys = getFeatureKeysForPermission(permissionName);
+  
+  // CRITICAL: Always call useFeatures() unconditionally (Rules of Hooks)
+  // Even if no feature is required, we still call the hook to maintain hook order
+  const { data: features, isLoading: featuresLoading, error: featuresError } = useFeatures();
+  
+  // If no feature is required for this permission, just check permission
+  if (featureKeys.length === 0) {
+    return hasPermission;
+  }
+  
+  // If permissions are loading, return undefined
+  if (hasPermission === undefined) {
+    return undefined;
+  }
+  
+  // If features query has an error (e.g., 402 Payment Required), treat as feature not available
+  // This ensures buttons are hidden when features are disabled, even if the query fails
+  if (featuresError) {
+    // If permission is false, return false
+    if (!hasPermission) {
+      return false;
+    }
+    // Permission is true but feature query failed - assume feature is not available
+    // This handles 402 errors where features endpoint itself might be blocked
+    return false;
+  }
+  
+  // If features are loading, return undefined (wait for data)
+  // But only if we have placeholder data (empty array) - otherwise wait
+  if (featuresLoading) {
+    // If we have placeholder data (empty array), we can make a decision
+    // Otherwise, wait for actual data
+    if (features !== undefined && Array.isArray(features)) {
+      // TypeScript: features is guaranteed to be defined and an array here
+      const featuresArray = features;
+      // We have placeholder data, check if feature exists
+      if (featuresArray.length === 0) {
+        // Empty array means no features available
+        return false;
+      }
+      // Has some features, check if our feature is in the list
+      const hasFeature = featuresArray.some((feature) => featureKeys.includes(feature.featureKey) && feature.isEnabled === true);
+      return hasFeature && hasPermission;
+    }
+    // No placeholder data yet, wait
+    return undefined;
+  }
+  
+  // If features data is not yet loaded (undefined), return undefined (wait for data)
+  if (features === undefined) {
+    return undefined;
+  }
+  
+  // If features array is empty, assume feature is not enabled
+  // This handles cases where the query returns empty array (e.g., 402 error handled in queryFn)
+  if (!features || features.length === 0) {
+    // CRITICAL: If features array is empty, feature is not available
+    // Return false even if permission is true (feature access is required)
+    return false;
+  }
+  
+  // Check if the specific feature is enabled
+  // CRITICAL: Must check if ANY of the featureKeys are in the enabled features list
+  const hasFeature = features.some((feature) => 
+    featureKeys.includes(feature.featureKey) && feature.isEnabled === true
+  );
+  
+  // Both must be true - if permission is false, return false immediately
+  if (!hasPermission) {
+    return false;
+  }
+  
+  // CRITICAL: Permission is true, but feature must also be true
+  // If feature is not in the list or not enabled, return false
+  if (!hasFeature) {
+    return false;
+  }
+  
+  return true;
+};
+
+/**
+ * Combined hook that checks whether the user has ANY of the permissions
+ * and the required feature access (if applicable).
+ */
+export const useHasAnyPermissionAndFeature = (permissionNames: string[]): boolean | undefined => {
+  const { profile } = useAuth();
+  const { data: userPermissions, isLoading: permissionsLoading } = useUserPermissions();
+  const { data: features, isLoading: featuresLoading, error: featuresError } = useFeatures();
+
+  const hasProfile = profile?.organization_id !== undefined && profile !== null;
+  const queryCanRun = hasProfile && !permissionsLoading;
+  const hasPermissionsData = Array.isArray(userPermissions);
+  const permissionsReady = hasProfile && queryCanRun && hasPermissionsData;
+
+  if (!permissionsReady) {
+    return undefined;
+  }
+
+  if (!permissionNames || permissionNames.length === 0 || !userPermissions) {
+    return false;
+  }
+
+  const permissionsSet = new Set(userPermissions);
+
+  // First pass: any permission without a feature requirement grants access.
+  for (const permissionName of permissionNames) {
+    if (!permissionsSet.has(permissionName)) {
+      continue;
+    }
+    const featureKeys = getFeatureKeysForPermission(permissionName);
+    if (featureKeys.length === 0) {
+      return true;
+    }
+  }
+
+  // Only feature-bound permissions could grant access.
+  if (featuresError) {
+    return false;
+  }
+
+  if (featuresLoading) {
+    if (features !== undefined && Array.isArray(features)) {
+      // TypeScript: features is guaranteed to be defined and an array here
+      const featuresArray = features;
+      if (featuresArray.length === 0) {
+        return false;
+      }
+    } else {
+      return undefined;
+    }
+  }
+
+  if (!features || !Array.isArray(features) || features.length === 0) {
+    return false;
+  }
+  
+  // TypeScript: features is guaranteed to be defined and an array here
+  const featuresArray = features;
+
+  for (const permissionName of permissionNames) {
+    if (!permissionsSet.has(permissionName)) {
+      continue;
+    }
+    const featureKeys = getFeatureKeysForPermission(permissionName);
+    if (featureKeys.length === 0) {
+      continue;
+    }
+    const hasFeature = features.some((feature) => featureKeys.includes(feature.featureKey) && feature.isEnabled);
+    if (hasFeature) {
+      return true;
+    }
+  }
+
   return false;
 };
 

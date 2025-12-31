@@ -188,6 +188,15 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
   }, [open, student, courseId, reset]);
 
   const onSubmit = async (values: StudentFormValues) => {
+    if (import.meta.env.DEV) {
+      console.log('[CourseStudentFormDialog] FORM SUBMITTED with values:', values);
+      console.log('[CourseStudentFormDialog] Form state:', {
+        isValid: form.formState.isValid,
+        isDirty: form.formState.isDirty,
+        errors: form.formState.errors,
+        isSubmitting: form.formState.isSubmitting,
+      });
+    }
     const payload: Partial<CourseStudent> = {
       courseId: values.courseId,
       admissionNo: values.admissionNo || undefined, // Let backend auto-generate if empty

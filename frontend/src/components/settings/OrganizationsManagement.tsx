@@ -1,10 +1,22 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import { useOrganizations, useCreateOrganization, useUpdateOrganization, useDeleteOrganization, useOrganizationStatistics } from '@/hooks/useOrganizations';
+import { useOrganizations, useCreateOrganization, useUpdateOrganization, useDeleteOrganization } from '@/hooks/useOrganizations';
+import { organizationsApi } from '@/lib/api/client';
+import { useAdminOrganizations } from '@/hooks/useSubscriptionAdmin';
+import { 
+  usePlatformOrganizations, 
+  usePlatformCreateOrganization, 
+  usePlatformUpdateOrganization, 
+  usePlatformDeleteOrganization 
+} from '@/platform/hooks/usePlatformAdminComplete';
 import { useHasPermission } from '@/hooks/usePermissions';
+import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
+import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -22,6 +34,19 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -33,32 +58,85 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Search, Building2, Eye, Users, Building, DoorOpen, Calendar, Settings as SettingsIcon, GraduationCap, BookOpen, UserCheck } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
+import { Plus, Pencil, Trash2, Search, Building2, Eye, Users, Building, DoorOpen, Calendar, Settings as SettingsIcon, GraduationCap, BookOpen, UserCheck, Mail, Phone, Globe, MapPin, FileText, User, CheckCircle, Package } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { organizationSchema, type OrganizationFormData } from '@/lib/validations/organization';
 import { useLanguage } from '@/hooks/useLanguage';
-
-const organizationSchema = z.object({
-  name: z.string().min(1, 'Organization name is required').max(255, 'Organization name must be 255 characters or less'),
-  slug: z.string()
-    .min(1, 'Slug is required')
-    .max(100, 'Slug must be 100 characters or less')
-    .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
-});
-
-type OrganizationFormData = z.infer<typeof organizationSchema>;
 
 export function OrganizationsManagement() {
   const { t } = useLanguage();
+  const location = useLocation();
+  const isPlatformAdminRoute = location.pathname.startsWith('/platform');
+  
+  // CRITICAL: Always call hooks unconditionally (Rules of Hooks)
+  // For platform admin routes, use platform admin permissions hook
+  // For regular routes, use regular permissions hook
+  const { data: platformPermissions } = usePlatformAdminPermissions();
   const hasCreatePermission = useHasPermission('organizations.create');
   const hasUpdatePermission = useHasPermission('organizations.update');
   const hasDeletePermission = useHasPermission('organizations.delete');
-  const { data: organizations, isLoading } = useOrganizations();
-  const createOrganization = useCreateOrganization();
-  const updateOrganization = useUpdateOrganization();
-  const deleteOrganization = useDeleteOrganization();
+  const hasSubscriptionAdminPermissionRegular = useHasPermission('subscription.admin');
+  
+  // Check if user has subscription.admin permission
+  // Platform admins use platformPermissions, regular users use hasSubscriptionAdminPermissionRegular
+  const hasSubscriptionAdminPermission = isPlatformAdminRoute
+    ? (platformPermissions?.includes('subscription.admin') ?? false)
+    : (hasSubscriptionAdminPermissionRegular ?? false);
+  
+  // Platform admins can manage organizations (they have subscription.admin permission)
+  // Regular users need organization-specific permissions
+  const canCreateOrganization = isPlatformAdminRoute 
+    ? hasSubscriptionAdminPermission 
+    : hasCreatePermission;
+  const canUpdateOrganization = isPlatformAdminRoute
+    ? hasSubscriptionAdminPermission
+    : hasUpdatePermission;
+  const canDeleteOrganization = isPlatformAdminRoute
+    ? hasSubscriptionAdminPermission
+    : hasDeletePermission;
+  
+  // Use platform admin hook if accessed from platform admin routes, otherwise use regular hooks
+  // CRITICAL: Disable useOrganizations on platform admin routes to avoid 403 errors
+  // Platform admins don't have organization_id, so useOrganizations will fail
+  const { data: platformOrganizations, isLoading: isPlatformLoading } = usePlatformOrganizations();
+  const { data: adminOrganizations, isLoading: isAdminLoading } = useAdminOrganizations();
+  
+  // Disable useOrganizations on platform admin routes (prevents 403 for platform admins)
+  const { data: regularOrganizations, isLoading: isRegularLoading } = useOrganizations({
+    enabled: !isPlatformAdminRoute, // Only enable if NOT on platform admin route
+  });
+  
+  // Select the appropriate data source
+  let organizations;
+  let isLoading;
+  if (isPlatformAdminRoute) {
+    organizations = platformOrganizations;
+    isLoading = isPlatformLoading;
+  } else if (hasSubscriptionAdminPermission) {
+    organizations = adminOrganizations;
+    isLoading = isAdminLoading;
+  } else {
+    organizations = regularOrganizations;
+    isLoading = isRegularLoading;
+  }
+  
+  // Use platform admin hooks if on platform admin route, otherwise use regular hooks
+  const platformCreateOrganization = usePlatformCreateOrganization();
+  const platformUpdateOrganization = usePlatformUpdateOrganization();
+  const platformDeleteOrganization = usePlatformDeleteOrganization();
+  const regularCreateOrganization = useCreateOrganization();
+  const regularUpdateOrganization = useUpdateOrganization();
+  const regularDeleteOrganization = useDeleteOrganization();
+  
+  // Select the appropriate mutation hooks
+  const createOrganization = isPlatformAdminRoute ? platformCreateOrganization : regularCreateOrganization;
+  const updateOrganization = isPlatformAdminRoute ? platformUpdateOrganization : regularUpdateOrganization;
+  const deleteOrganization = isPlatformAdminRoute ? platformDeleteOrganization : regularDeleteOrganization;
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -70,9 +148,13 @@ export function OrganizationsManagement() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<OrganizationFormData>({
     resolver: zodResolver(organizationSchema),
+    defaultValues: {
+      isActive: true,
+    },
   });
 
   const filteredOrganizations = organizations?.filter((org) => {
@@ -87,11 +169,57 @@ export function OrganizationsManagement() {
     if (orgId) {
       const org = organizations?.find((o) => o.id === orgId);
       if (org) {
-        reset({ name: org.name, slug: org.slug });
+        reset({
+          name: org.name || '',
+          slug: org.slug || '',
+          email: org.email || '',
+          phone: org.phone || '',
+          website: org.website || '',
+          streetAddress: org.streetAddress || '',
+          city: org.city || '',
+          stateProvince: org.stateProvince || '',
+          country: org.country || '',
+          postalCode: org.postalCode || '',
+          registrationNumber: org.registrationNumber || '',
+          taxId: org.taxId || '',
+          licenseNumber: org.licenseNumber || '',
+          type: org.type || '',
+          description: org.description || '',
+          establishedDate: org.establishedDate ? org.establishedDate.toISOString().slice(0, 10) : '',
+          isActive: org.isActive ?? true,
+          contactPersonName: org.contactPersonName || '',
+          contactPersonEmail: org.contactPersonEmail || '',
+          contactPersonPhone: org.contactPersonPhone || '',
+          contactPersonPosition: org.contactPersonPosition || '',
+          logoUrl: org.logoUrl || '',
+        });
         setSelectedOrganization(orgId);
       }
     } else {
-      reset({ name: '', slug: '' });
+      reset({
+        name: '',
+        slug: '',
+        email: '',
+        phone: '',
+        website: '',
+        streetAddress: '',
+        city: '',
+        stateProvince: '',
+        country: '',
+        postalCode: '',
+        registrationNumber: '',
+        taxId: '',
+        licenseNumber: '',
+        type: '',
+        description: '',
+        establishedDate: '',
+        isActive: true,
+        contactPersonName: '',
+        contactPersonEmail: '',
+        contactPersonPhone: '',
+        contactPersonPosition: '',
+        logoUrl: '',
+      });
       setSelectedOrganization(null);
     }
     setIsDialogOpen(true);
@@ -115,10 +243,15 @@ export function OrganizationsManagement() {
       );
     } else {
       if (data.name && data.slug) {
-        createOrganization.mutate({
-          name: data.name,
-          slug: data.slug,
-        }, {
+        // For platform admins, include admin fields
+        const createData = isPlatformAdminRoute ? {
+          ...data,
+          admin_email: data.admin_email || '',
+          admin_password: data.admin_password || '',
+          admin_full_name: data.admin_full_name || '',
+        } : data;
+        
+        createOrganization.mutate(createData as any, {
           onSuccess: () => {
             handleCloseDialog();
           },
@@ -144,7 +277,40 @@ export function OrganizationsManagement() {
   };
 
   const selectedOrg = selectedOrganization ? organizations?.find(o => o.id === selectedOrganization) : null;
-  const { data: orgStats } = useOrganizationStatistics(selectedOrganization || '');
+  // CRITICAL: Disable useOrganizationStatistics on platform admin routes to avoid 403 errors
+  // Platform admins don't have organization_id, so this hook will fail
+  // Only fetch stats if NOT on platform admin route and organization is selected
+  const shouldFetchStats = !isPlatformAdminRoute && !!selectedOrganization;
+  const { data: orgStats } = useQuery({
+    queryKey: ['organization-statistics', selectedOrganization],
+    queryFn: async () => {
+      if (!selectedOrganization) {
+        return {
+          userCount: 0,
+          schoolCount: 0,
+          studentCount: 0,
+          classCount: 0,
+          staffCount: 0,
+          buildingCount: 0,
+          roomCount: 0,
+        };
+      }
+      const stats = await organizationsApi.statistics(selectedOrganization);
+      return stats as {
+        userCount: number;
+        schoolCount: number;
+        studentCount: number;
+        classCount: number;
+        staffCount: number;
+        buildingCount: number;
+        roomCount: number;
+      };
+    },
+    enabled: shouldFetchStats,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
 
   if (isLoading) {
     return (
@@ -177,7 +343,7 @@ export function OrganizationsManagement() {
               </CardTitle>
               <CardDescription>{t('organizations.subtitle')}</CardDescription>
             </div>
-            {hasCreatePermission && (
+            {canCreateOrganization && (
               <Button onClick={() => handleOpenDialog()}>
                 <Plus className="h-4 w-4 mr-2" />
                 {t('organizations.addOrganization')}
@@ -261,7 +427,19 @@ export function OrganizationsManagement() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            {hasUpdatePermission && (
+                            {isPlatformAdminRoute && hasSubscriptionAdminPermission && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                asChild
+                                title="View Subscription & Features"
+                              >
+                                <Link to={`/platform/organizations/${org.id}/subscription`}>
+                                  <Package className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            )}
+                            {canUpdateOrganization && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -271,7 +449,7 @@ export function OrganizationsManagement() {
                                 <Pencil className="h-4 w-4" />
                               </Button>
                             )}
-                            {hasDeletePermission && (
+                            {canDeleteOrganization && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -295,7 +473,7 @@ export function OrganizationsManagement() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
               <DialogTitle>
@@ -307,34 +485,383 @@ export function OrganizationsManagement() {
                   : t('organizations.enterOrganizationDetails')}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">{t('organizations.organizationName')}</Label>
-                <Input
-                  id="name"
-                  {...register('name')}
-                  placeholder={t('organizations.enterOrganizationName')}
-                />
-                {errors.name && (
-                  <p className="text-sm text-destructive">{errors.name.message}</p>
+            <Tabs defaultValue="basic" className="w-full mt-4">
+              <TabsList className={`grid w-full ${isPlatformAdminRoute && !selectedOrganization ? 'grid-cols-6' : 'grid-cols-5'}`}>
+                <TabsTrigger value="basic">Basic</TabsTrigger>
+                <TabsTrigger value="contact">Contact</TabsTrigger>
+                <TabsTrigger value="address">Address</TabsTrigger>
+                <TabsTrigger value="legal">Legal</TabsTrigger>
+                <TabsTrigger value="additional">Additional</TabsTrigger>
+                {isPlatformAdminRoute && !selectedOrganization && (
+                  <TabsTrigger value="admin">Admin User</TabsTrigger>
                 )}
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="slug">{t('organizations.slug')}</Label>
-                <Input
-                  id="slug"
-                  {...register('slug')}
-                  placeholder={t('organizations.slugPlaceholder')}
-                />
-                {errors.slug && (
-                  <p className="text-sm text-destructive">{errors.slug.message}</p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  {t('organizations.slugHint')}
-                </p>
-              </div>
-            </div>
-            <DialogFooter>
+              </TabsList>
+
+              {/* Basic Information Tab */}
+              <TabsContent value="basic" className="space-y-4 mt-4">
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">Organization Name *</Label>
+                    <Input
+                      id="name"
+                      {...register('name')}
+                      placeholder="Enter organization name"
+                    />
+                    {errors.name && (
+                      <p className="text-sm text-destructive">{errors.name.message}</p>
+                    )}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="slug">Slug *</Label>
+                    <Input
+                      id="slug"
+                      {...register('slug')}
+                      placeholder="organization-slug"
+                    />
+                    {errors.slug && (
+                      <p className="text-sm text-destructive">{errors.slug.message}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Lowercase letters, numbers, and hyphens only
+                    </p>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="type">Organization Type</Label>
+                    <Controller
+                      control={control}
+                      name="type"
+                      render={({ field }) => (
+                        <Select value={field.value || ''} onValueChange={field.onChange}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select organization type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="school">School</SelectItem>
+                            <SelectItem value="university">University</SelectItem>
+                            <SelectItem value="institute">Institute</SelectItem>
+                            <SelectItem value="academy">Academy</SelectItem>
+                            <SelectItem value="college">College</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {errors.type && (
+                      <p className="text-sm text-destructive">{errors.type.message}</p>
+                    )}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      {...register('description')}
+                      placeholder="Enter organization description"
+                      rows={4}
+                    />
+                    {errors.description && (
+                      <p className="text-sm text-destructive">{errors.description.message}</p>
+                    )}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="establishedDate">Established Date</Label>
+                    <CalendarFormField
+                      control={control}
+                      name="establishedDate"
+                      placeholder="Select established date"
+                    />
+                    {errors.establishedDate && (
+                      <p className="text-sm text-destructive">{errors.establishedDate.message}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Controller
+                      control={control}
+                      name="isActive"
+                      render={({ field }) => (
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      )}
+                    />
+                    <Label htmlFor="isActive">Active Organization</Label>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Contact Information Tab */}
+              <TabsContent value="contact" className="space-y-4 mt-4">
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      {...register('email')}
+                      placeholder="organization@example.com"
+                    />
+                    {errors.email && (
+                      <p className="text-sm text-destructive">{errors.email.message}</p>
+                    )}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                      id="phone"
+                      {...register('phone')}
+                      placeholder="+1234567890"
+                    />
+                    {errors.phone && (
+                      <p className="text-sm text-destructive">{errors.phone.message}</p>
+                    )}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="website">Website</Label>
+                    <Input
+                      id="website"
+                      type="url"
+                      {...register('website')}
+                      placeholder="https://www.example.com"
+                    />
+                    {errors.website && (
+                      <p className="text-sm text-destructive">{errors.website.message}</p>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Address Information Tab */}
+              <TabsContent value="address" className="space-y-4 mt-4">
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="streetAddress">Street Address</Label>
+                    <Input
+                      id="streetAddress"
+                      {...register('streetAddress')}
+                      placeholder="123 Main Street"
+                    />
+                    {errors.streetAddress && (
+                      <p className="text-sm text-destructive">{errors.streetAddress.message}</p>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="city">City</Label>
+                      <Input
+                        id="city"
+                        {...register('city')}
+                        placeholder="City"
+                      />
+                      {errors.city && (
+                        <p className="text-sm text-destructive">{errors.city.message}</p>
+                      )}
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="stateProvince">State/Province</Label>
+                      <Input
+                        id="stateProvince"
+                        {...register('stateProvince')}
+                        placeholder="State/Province"
+                      />
+                      {errors.stateProvince && (
+                        <p className="text-sm text-destructive">{errors.stateProvince.message}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="country">Country</Label>
+                      <Input
+                        id="country"
+                        {...register('country')}
+                        placeholder="Country"
+                      />
+                      {errors.country && (
+                        <p className="text-sm text-destructive">{errors.country.message}</p>
+                      )}
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="postalCode">Postal Code</Label>
+                      <Input
+                        id="postalCode"
+                        {...register('postalCode')}
+                        placeholder="12345"
+                      />
+                      {errors.postalCode && (
+                        <p className="text-sm text-destructive">{errors.postalCode.message}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Legal & Registration Tab */}
+              <TabsContent value="legal" className="space-y-4 mt-4">
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="registrationNumber">Registration Number</Label>
+                    <Input
+                      id="registrationNumber"
+                      {...register('registrationNumber')}
+                      placeholder="Registration number"
+                    />
+                    {errors.registrationNumber && (
+                      <p className="text-sm text-destructive">{errors.registrationNumber.message}</p>
+                    )}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="taxId">Tax ID</Label>
+                    <Input
+                      id="taxId"
+                      {...register('taxId')}
+                      placeholder="Tax identification number"
+                    />
+                    {errors.taxId && (
+                      <p className="text-sm text-destructive">{errors.taxId.message}</p>
+                    )}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="licenseNumber">License Number</Label>
+                    <Input
+                      id="licenseNumber"
+                      {...register('licenseNumber')}
+                      placeholder="License number"
+                    />
+                    {errors.licenseNumber && (
+                      <p className="text-sm text-destructive">{errors.licenseNumber.message}</p>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Additional Information Tab */}
+              <TabsContent value="additional" className="space-y-4 mt-4">
+                <div className="grid gap-4">
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold mb-4">Contact Person</h4>
+                    <div className="grid gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="contactPersonName">Contact Person Name</Label>
+                        <Input
+                          id="contactPersonName"
+                          {...register('contactPersonName')}
+                          placeholder="Full name"
+                        />
+                        {errors.contactPersonName && (
+                          <p className="text-sm text-destructive">{errors.contactPersonName.message}</p>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="contactPersonEmail">Contact Person Email</Label>
+                          <Input
+                            id="contactPersonEmail"
+                            type="email"
+                            {...register('contactPersonEmail')}
+                            placeholder="contact@example.com"
+                          />
+                          {errors.contactPersonEmail && (
+                            <p className="text-sm text-destructive">{errors.contactPersonEmail.message}</p>
+                          )}
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="contactPersonPhone">Contact Person Phone</Label>
+                          <Input
+                            id="contactPersonPhone"
+                            {...register('contactPersonPhone')}
+                            placeholder="+1234567890"
+                          />
+                          {errors.contactPersonPhone && (
+                            <p className="text-sm text-destructive">{errors.contactPersonPhone.message}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="contactPersonPosition">Contact Person Position</Label>
+                        <Input
+                          id="contactPersonPosition"
+                          {...register('contactPersonPosition')}
+                          placeholder="e.g., Principal, Director"
+                        />
+                        {errors.contactPersonPosition && (
+                          <p className="text-sm text-destructive">{errors.contactPersonPosition.message}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold mb-4">Media</h4>
+                    <div className="grid gap-2">
+                      <Label htmlFor="logoUrl">Logo URL</Label>
+                      <Input
+                        id="logoUrl"
+                        type="url"
+                        {...register('logoUrl')}
+                        placeholder="https://example.com/logo.png"
+                      />
+                      {errors.logoUrl && (
+                        <p className="text-sm text-destructive">{errors.logoUrl.message}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Admin User Tab - Only for platform admins creating new organizations */}
+              {isPlatformAdminRoute && !selectedOrganization && (
+                <TabsContent value="admin" className="space-y-4 mt-4">
+                  <div className="grid gap-4">
+                    <div className="border-t pt-4">
+                      <h4 className="font-semibold mb-4">Organization Admin User</h4>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Create an admin user account for this organization. This user will have full access to manage the organization.
+                      </p>
+                      <div className="grid gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="admin_full_name">Admin Full Name *</Label>
+                          <Input
+                            id="admin_full_name"
+                            {...register('admin_full_name')}
+                            placeholder="Full name"
+                            required
+                          />
+                          {errors.admin_full_name && (
+                            <p className="text-sm text-destructive">{errors.admin_full_name.message}</p>
+                          )}
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="admin_email">Admin Email *</Label>
+                          <Input
+                            id="admin_email"
+                            type="email"
+                            {...register('admin_email')}
+                            placeholder="admin@example.com"
+                            required
+                          />
+                          {errors.admin_email && (
+                            <p className="text-sm text-destructive">{errors.admin_email.message}</p>
+                          )}
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="admin_password">Admin Password *</Label>
+                          <Input
+                            id="admin_password"
+                            type="password"
+                            {...register('admin_password')}
+                            placeholder="Minimum 8 characters"
+                            required
+                          />
+                          {errors.admin_password && (
+                            <p className="text-sm text-destructive">{errors.admin_password.message}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+              )}
+            </Tabs>
+            <DialogFooter className="mt-6">
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
                 {t('organizations.cancel')}
               </Button>

@@ -3,6 +3,7 @@ import { organizationsApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { useSubscriptionStatus } from './useSubscription';
 import type * as OrganizationApi from '@/types/api/organization';
 import type { Organization } from '@/types/domain/organization';
 import { mapOrganizationApiToDomain, mapOrganizationDomainToInsert, mapOrganizationDomainToUpdate } from '@/mappers/organizationMapper';
@@ -10,9 +11,13 @@ import { mapOrganizationApiToDomain, mapOrganizationDomainToInsert, mapOrganizat
 // Re-export domain types for convenience
 export type { Organization } from '@/types/domain/organization';
 
-export const useOrganizations = () => {
+export const useOrganizations = (options?: { enabled?: boolean }) => {
   const { user, loading: authLoading } = useAuth();
-  const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
+  // CRITICAL: Disable useAccessibleOrganizations if useOrganizations is disabled
+  // This prevents 403 errors for platform admins who don't have organization_id
+  const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations({
+    enabled: options?.enabled !== undefined ? options.enabled : undefined,
+  });
 
   return useQuery<Organization[]>({
     queryKey: ['organizations', orgIds.join(',')],
@@ -33,7 +38,7 @@ export const useOrganizations = () => {
       
       return organizations;
     },
-    enabled: !!user && !authLoading && !orgsLoading,
+    enabled: options?.enabled !== undefined ? options.enabled : (!!user && !authLoading && !orgsLoading),
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -58,19 +63,17 @@ export const useCreateOrganization = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (orgData: { name: string; slug: string; settings?: Record<string, any> }) => {
+    mutationFn: async (orgData: Partial<Organization>) => {
       // Validate slug format (alphanumeric and hyphens only)
-      const slugRegex = /^[a-z0-9-]+$/;
-      if (!slugRegex.test(orgData.slug)) {
-        throw new Error('Slug must contain only lowercase letters, numbers, and hyphens');
+      if (orgData.slug) {
+        const slugRegex = /^[a-z0-9-]+$/;
+        if (!slugRegex.test(orgData.slug)) {
+          throw new Error('Slug must contain only lowercase letters, numbers, and hyphens');
+        }
       }
 
       // Convert domain model to API insert payload
-      const insertData = mapOrganizationDomainToInsert({
-        name: orgData.name.trim(),
-        slug: orgData.slug.trim().toLowerCase(),
-        settings: orgData.settings || {},
-      });
+      const insertData = mapOrganizationDomainToInsert(orgData);
 
       const apiOrganization = await organizationsApi.create(insertData);
       
@@ -93,19 +96,16 @@ export const useUpdateOrganization = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Organization> & { id: string }) => {
-      const updateData: Partial<Organization> = {};
-      if (updates.name) updateData.name = updates.name.trim();
+      // Validate slug format if provided
       if (updates.slug) {
         const slugRegex = /^[a-z0-9-]+$/;
         if (!slugRegex.test(updates.slug)) {
           throw new Error('Slug must contain only lowercase letters, numbers, and hyphens');
         }
-        updateData.slug = updates.slug.trim().toLowerCase();
       }
-      if (updates.settings !== undefined) updateData.settings = updates.settings;
 
       // Convert domain model to API update payload
-      const apiUpdateData = mapOrganizationDomainToUpdate(updateData);
+      const apiUpdateData = mapOrganizationDomainToUpdate(updates);
 
       const apiOrganization = await organizationsApi.update(id, apiUpdateData);
       
@@ -144,6 +144,16 @@ export const useDeleteOrganization = () => {
 export const useCurrentOrganization = () => {
   const { profile, profileLoading } = useAuth();
   const isEventUser = profile?.is_event_user === true;
+  const { data: subscriptionStatus } = useSubscriptionStatus();
+
+  // CRITICAL: Disable query if subscription is suspended/expired/blocked
+  // This prevents 402 errors from repeated requests
+  const isSubscriptionBlocked = subscriptionStatus && (
+    subscriptionStatus.status === 'suspended' || 
+    subscriptionStatus.status === 'expired' ||
+    subscriptionStatus.accessLevel === 'blocked' ||
+    subscriptionStatus.accessLevel === 'none'
+  );
 
   return useQuery<Organization | null>({
     queryKey: ['current-organization', profile?.organization_id, profile?.default_school_id ?? null],
@@ -155,10 +165,50 @@ export const useCurrentOrganization = () => {
       const apiOrganization = await organizationsApi.get(profile.organization_id);
       return mapOrganizationApiToDomain(apiOrganization as OrganizationApi.Organization);
     },
-    enabled: !!profile && !!profile.organization_id && !profileLoading && !isEventUser, // Disable for event users and wait for profile
+    enabled: !!profile && !!profile.organization_id && !profileLoading && !isEventUser && !isSubscriptionBlocked, // Disable for event users, wait for profile, and when subscription is blocked
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 402 errors (subscription/feature errors)
+      if (error?.isSubscriptionError || error?.status === 402) {
+        return false;
+      }
+      // Retry other errors up to 3 times
+      return failureCount < 3;
+    },
+  });
+};
+
+export const useOrganizationPreview = (formData?: { name?: string; slug?: string; admin_email?: string; admin_full_name?: string }) => {
+  return useQuery({
+    queryKey: ['organization-preview', formData],
+    queryFn: async () => {
+      return organizationsApi.preview(formData);
+    },
+    enabled: !!formData?.name,
+    staleTime: 1 * 60 * 1000, // 1 minute
+  });
+};
+
+export const useOrganizationPermissions = (organizationId: string) => {
+  return useQuery({
+    queryKey: ['organization-permissions', organizationId],
+    queryFn: async () => {
+      return organizationsApi.permissions(organizationId);
+    },
+    enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useOrganizationAdmins = () => {
+  return useQuery({
+    queryKey: ['organization-admins'],
+    queryFn: async () => {
+      return organizationsApi.admins();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 

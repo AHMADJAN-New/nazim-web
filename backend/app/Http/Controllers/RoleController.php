@@ -107,6 +107,63 @@ class RoleController extends Controller
             'guard_name' => $request->guard_name ?? 'web',
         ]);
 
+        // CRITICAL: Automatically assign basic read permissions to the new role
+        // These are essential permissions that all roles should have for basic functionality
+        // NOTE: subscription.read is NOT included here - it should only be assigned to admin and organization_admin roles
+        $basicPermissions = [
+            'organizations.read',
+            'school_branding.read',
+            'rooms.read',
+            'classes.read',
+            'hostel.read',
+            'report_templates.read',
+            'reports.read',
+            'academic_years.read',
+            'buildings.read',
+            'staff.read', // Required for staff listing and dashboard stats
+            'student_admissions.read', // Required for hostel overview and student admissions
+        ];
+
+        $organizationId = $profile->organization_id;
+        $assignedCount = 0;
+
+        foreach ($basicPermissions as $permissionName) {
+            // Get permission ID for this organization
+            $permission = DB::table('permissions')
+                ->where('name', $permissionName)
+                ->where('organization_id', $organizationId)
+                ->where('guard_name', 'web')
+                ->first();
+
+            if ($permission) {
+                // Check if already assigned (shouldn't be, but check for safety)
+                $exists = DB::table('role_has_permissions')
+                    ->where('role_id', $role->id)
+                    ->where('permission_id', $permission->id)
+                    ->where('organization_id', $organizationId)
+                    ->exists();
+
+                if (!$exists) {
+                    DB::table('role_has_permissions')->insert([
+                        'role_id' => $role->id,
+                        'permission_id' => $permission->id,
+                        'organization_id' => $organizationId,
+                    ]);
+                    $assignedCount++;
+                }
+            } else {
+                // Log warning if permission doesn't exist (shouldn't happen in normal operation)
+                Log::warning("Basic permission '{$permissionName}' not found for organization {$organizationId} when creating role '{$role->name}'");
+            }
+        }
+
+        // Clear permission cache to ensure fresh data
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        if ($assignedCount > 0) {
+            Log::info("Assigned {$assignedCount} basic permissions to new role '{$role->name}' in organization {$organizationId}");
+        }
+
         return response()->json([
             'id' => $role->id,
             'name' => $role->name,

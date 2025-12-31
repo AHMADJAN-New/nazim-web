@@ -1,17 +1,23 @@
 import { SmartSidebar } from "@/components/navigation/SmartSidebar";
 import { AppHeader } from "./AppHeader";
 import { Outlet, useLocation } from "react-router-dom";
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useUserPermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
 import { LoadingSpinner } from "@/components/ui/loading";
+import { SubscriptionStatusBanner } from "@/components/subscription/SubscriptionStatusBanner";
+import { useSubscriptionErrorHandler } from "@/hooks/useSubscriptionErrorHandler";
 
 export function PersistentLayout() {
   const location = useLocation();
   const { isRTL } = useLanguage();
   const { profile } = useAuth();
   const { data: permissions, isLoading } = useUserPermissions();
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  
+  // Handle global subscription errors (shows toasts and redirects as needed)
+  useSubscriptionErrorHandler();
   
   // Extract page title from path (optional - can be enhanced)
   const pageTitle = useMemo(() => {
@@ -38,6 +44,16 @@ export function PersistentLayout() {
   // Show loading state if permissions are not ready
   // This blocks ALL routes from rendering until permissions are ready
   const showLoading = !permissionsReady;
+  
+  // Don't show banner on the subscription page itself
+  const isSubscriptionPage = location.pathname.startsWith('/subscription');
+  const showBanner = !bannerDismissed && !isSubscriptionPage;
+  
+  const handleDismissBanner = useCallback(() => {
+    setBannerDismissed(true);
+    // Auto-show again after 1 hour
+    setTimeout(() => setBannerDismissed(false), 60 * 60 * 1000);
+  }, []);
 
   return (
     <div className="min-h-screen flex w-full bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -49,6 +65,17 @@ export function PersistentLayout() {
           showBreadcrumb={false}
           breadcrumbItems={[]}
         />
+        
+        {/* Subscription status banner - shows for trial, grace, readonly, blocked */}
+        {showBanner && permissionsReady && (
+          <div className="px-4 py-2 border-b bg-background">
+            <SubscriptionStatusBanner 
+              compact={true}
+              onDismiss={handleDismissBanner}
+              showUsageWarnings={true}
+            />
+          </div>
+        )}
         
         <div className="flex-1 overflow-auto custom-scrollbar">
           {showLoading ? (

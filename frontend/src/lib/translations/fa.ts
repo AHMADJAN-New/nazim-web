@@ -336,7 +336,8 @@ export const fa: TranslationKeys = {
     shiftTooLong: 'شیفت خیلی طولانی است',
     feeStatusTooLong: 'وضعیت هزینه خیلی طولانی است',
     admissionYearMaxLength: 'سال پذیرش باید 10 کاراکتر یا کمتر باشد',
-    placementNotesMaxLength: 'یادداشت‌ها باید 500 کاراکتر یا کمتر باشند'
+    placementNotesMaxLength: 'یادداشت‌ها باید 500 کاراکتر یا کمتر باشند',
+    limitReached: 'محدودیت دانش‌آموز رسیده است. لطفاً ابتدا یک رکورد پذیرش قدیمی را غیرفعال کنید یا پلان خود را ارتقا دهید تا پذیرش‌های جدید اضافه کنید.'
   },
   assets: {
     active: 'فعال',
@@ -1841,6 +1842,12 @@ export const fa: TranslationKeys = {
     uploadImportHint: 'ابتدا اعتبارسنجی کنید، سپس ورود را انجام دهید.',
     selectXlsx: 'انتخاب فایل .xlsx',
     validateFile: 'اعتبارسنجی',
+    importNow: 'وارد کردن',
+    limitReached: 'محدودیت دانش‌آموز رسیده است. لطفاً پلان خود را ارتقا دهید تا دانش‌آموزان بیشتری وارد کنید.',
+    limitWarning: 'هشدار: فقط {remaining} جای دانش‌آموز باقی مانده است. فقط {remaining} ردیف معتبر اول وارد خواهد شد.',
+    uploadDisabled: 'آپلود فایل غیرفعال است زیرا محدودیت دانش‌آموز رسیده است.',
+    importLimited: 'فایل شما {validRows} ردیف معتبر دارد، اما فقط {remaining} جای دانش‌آموز باقی مانده است. فقط {remaining} ردیف معتبر اول وارد خواهد شد.',
+    validateFile: 'اعتبارسنجی',
     importNow: 'ورود',
     validationSummary: 'خلاصه اعتبارسنجی',
     validRows: 'ردیف‌های معتبر',
@@ -2177,7 +2184,8 @@ export const fa: TranslationKeys = {
     orEnterCustomFont: 'یا نام فونت سفارشی را وارد کنید',
     fontFamilyHint: 'یک فونت از لیست انتخاب کنید یا نام فونت سفارشی را وارد کنید',
     reportFontSizeHint: 'اندازه فونت استفاده شده در گزارش‌های تولید شده',
-    currentLogo: 'لوگوی فعلی'
+    currentLogo: 'لوگوی فعلی',
+    multiSchoolFeatureRequired: 'برای ایجاد مدارس اضافی، ویژگی چند مدرسه‌ای لازم است. لطفاً طرح اشتراک خود را ارتقا دهید.'
   },
   // Roles Management
   roles: {
@@ -2682,6 +2690,26 @@ export const fa: TranslationKeys = {
     studentRemoveFailed: 'حذف دانش‌آموز ناموفق بود',
     documentUploaded: 'سند با موفقیت آپلود شد',
     documentDeleted: 'سند با موفقیت حذف شد',
+    // Course Students
+    courseStudents: {
+      saved: 'دانش‌آموز دوره با موفقیت ذخیره شد',
+      updated: 'دانش‌آموز دوره با موفقیت به‌روزرسانی شد',
+      deleted: 'دانش‌آموز دوره با موفقیت حذف شد',
+      saveFailed: 'ذخیره دانش‌آموز دوره ناموفق بود',
+      updateFailed: 'به‌روزرسانی دانش‌آموز دوره ناموفق بود',
+      deleteFailed: 'حذف دانش‌آموز دوره ناموفق بود',
+      enrolled: 'دانش‌آموز(ان) با موفقیت ثبت‌نام شدند',
+      enrollFailed: 'ثبت‌نام دانش‌آموز(ان) ناموفق بود',
+      markedCompleted: 'دانش‌آموز دوره به عنوان تکمیل شده علامت‌گذاری شد',
+      markCompletedFailed: 'علامت‌گذاری دانش‌آموز دوره به عنوان تکمیل شده ناموفق بود',
+      markedDropped: 'دانش‌آموز دوره به عنوان ترک شده علامت‌گذاری شد',
+      markDroppedFailed: 'علامت‌گذاری دانش‌آموز دوره به عنوان ترک شده ناموفق بود',
+      certificateIssued: 'گواهینامه با موفقیت صادر شد',
+      certificateIssueFailed: 'صدور گواهینامه ناموفق بود',
+      copiedToMain: 'دانش‌آموز دوره به دانش‌آموزان اصلی کپی شد',
+      copyFailed: 'کپی دانش‌آموز دوره به دانش‌آموزان اصلی ناموفق بود',
+      noStudentsEnrolled: 'هیچ دانش‌آموزی ثبت‌نام نشد',
+    },
     documentUploadFailed: 'آپلود سند ناموفق بود',
     documentDeleteFailed: 'حذف سند ناموفق بود',
     // DMS Documents
@@ -3418,5 +3446,92 @@ export const fa: TranslationKeys = {
       selectTemplateFirst: 'لطفاً ابتدا یک قالب انتخاب کنید',
       fillRequiredFields: 'لطفاً تمام فیلدهای الزامی را پر کنید'
     }
-  }
+  },
+  
+  // Subscription/SaaS system
+  subscription: {
+    // Status banners
+    trialPeriod: 'دوره آزمایشی',
+    trialEndsIn: 'آزمایش به پایان می‌رسد در',
+    trialEnding: 'دوره آزمایشی شما به زودی تمام می‌شود. برای ادامه ارتقا دهید.',
+    upgradeToKeepAccess: 'برای حفظ دسترسی کامل ارتقا دهید.',
+    gracePeriod: 'دوره مهلت',
+    subscriptionExpired: 'اشتراک شما منقضی شده است.',
+    daysLeftToRenew: 'روز برای تمدید باقی مانده.',
+    renewNow: 'همین الان تمدید کنید برای دسترسی کامل.',
+    readOnlyMode: 'حالت فقط خواندنی',
+    cannotMakeChanges: 'شما می‌توانید داده‌ها را مشاهده کنید اما نمی‌توانید تغییرات ایجاد کنید. اشتراک خود را تمدید کنید.',
+    accountBlocked: 'حساب مسدود شده',
+    contactSupport: 'دسترسی حساب شما مسدود شده است. لطفاً با پشتیبانی تماس بگیرید یا اشتراک خود را تمدید کنید.',
+    usageLimitsWarning: 'هشدار محدودیت استفاده',
+    approachingLimits: 'شما به برخی محدودیت‌های استفاده نزدیک می‌شوید.',
+    manageSubscription: 'مدیریت',
+    upgrade: 'ارتقا',
+    
+    // Usage limits
+    limitReached: 'محدودیت رسیده',
+    limitReachedCantCreate: 'محدودیت رسیده. نمی‌توان بیشتر ایجاد کرد.',
+    approachingLimit: 'نزدیک به محدودیت',
+    cannotCreateMore: 'شما به حداکثر محدودیت برای این منبع رسیده‌اید. برای ایجاد بیشتر پلان خود را ارتقا دهید.',
+    usageWarningMessage: 'شما به محدودیت استفاده برای این منبع نزدیک می‌شوید.',
+    used: 'استفاده شده',
+    currentPlan: 'پلان فعلی',
+    upgradePlan: 'ارتقای پلان',
+    
+    // Features
+    featureNotAvailable: 'ویژگی در دسترس نیست',
+    isNotIncluded: 'در پلان فعلی شما شامل نمی‌شود.',
+    purchaseAddon: 'خرید افزونه',
+    viewFeatures: 'مشاهده ویژگی‌ها',
+    
+    // Errors
+    noSubscription: 'اشتراک فعالی وجود ندارد. لطفاً برای دسترسی به این ویژگی اشتراک بگیرید.',
+    limitReachedMessage: 'شما به محدودیت برای این منبع رسیده‌اید. لطفاً پلان خود را ارتقا دهید.',
+    featureNotAvailableMessage: 'این ویژگی در پلان فعلی شما در دسترس نیست.',
+    writeAccessDenied: 'اشتراک شما اجازه دسترسی نوشتن را نمی‌دهد. لطفاً برای ایجاد تغییرات تمدید کنید.',
+    readAccessDenied: 'اشتراک شما منقضی شده است. لطفاً برای دسترسی به داده‌های خود تمدید کنید.',
+    genericError: 'خطای اشتراک رخ داده است. لطفاً وضعیت اشتراک خود را بررسی کنید.',
+  },
+  
+  // Phone Book
+  phoneBook: {
+    title: 'دفترچه تلفن',
+    subtitle: 'مشاهده و جستجوی تمام شماره تلفن‌ها از دانش‌آموزان، کارکنان، اهداکنندگان و مهمانان',
+    name: 'نام',
+    phone: 'تلفن',
+    email: 'ایمیل',
+    category: 'دسته‌بندی',
+    relation: 'رابطه',
+    details: 'جزئیات',
+    address: 'آدرس',
+    all: 'همه',
+    students: 'دانش‌آموزان',
+    staff: 'کارکنان',
+    donors: 'اهداکنندگان',
+    guests: 'مهمانان',
+    others: 'سایرین',
+    studentGuardian: 'سرپرست دانش‌آموز',
+    studentEmergency: 'اضطراری دانش‌آموز',
+    studentZamin: 'ضامن دانش‌آموز',
+    donor: 'اهداکننده',
+    guest: 'مهمان',
+    other: 'سایر',
+    allEntries: 'تمام دفترچه تلفن',
+    allEntriesDescription: 'مشاهده تمام شماره تلفن‌ها از دانش‌آموزان، کارکنان، اهداکنندگان و مهمانان',
+    studentContacts: 'مخاطبین دانش‌آموز',
+    studentContactsDescription: 'شماره تلفن‌های سرپرستان، مخاطبین اضطراری و ضامنان دانش‌آموز',
+    staffContacts: 'مخاطبین کارکنان',
+    staffContactsDescription: 'شماره تلفن‌های تمام کارکنان',
+    donorContacts: 'مخاطبین اهداکنندگان',
+    donorContactsDescription: 'شماره تلفن‌های تمام اهداکنندگان',
+    guestContacts: 'مخاطبین مهمانان',
+    guestContactsDescription: 'شماره تلفن‌های مهمانان رویداد',
+    searchPlaceholder: 'جستجو بر اساس نام، تلفن، ایمیل...',
+    student: 'دانش‌آموز',
+    admissionNo: 'شماره ثبت‌نام',
+    employeeId: 'شناسه کارمند',
+    guestCode: 'کد مهمان',
+    contactPerson: 'شخص تماس',
+    noDataToExport: 'داده‌ای برای صادرات وجود ندارد',
+  },
 };

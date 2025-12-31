@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { GripVertical, Save, RotateCcw, Eye } from 'lucide-react';
 import type { CertificateLayoutConfig } from '@/hooks/useCertificateTemplates';
+import type { CourseStudent } from '@/types/domain/courseStudent';
 import { certificateTemplatesApi } from '@/lib/api/client';
 import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import { useCourseStudents } from '@/hooks/useCourseStudents';
@@ -70,11 +71,36 @@ export function CertificateLayoutEditor({
 
   // Update config when layoutConfig prop changes (preserves saved layout)
   useEffect(() => {
-    setConfig({
+    const updatedConfig = {
       ...layoutConfig,
       enabledFields: layoutConfig.enabledFields || ['header', 'studentName', 'fatherName', 'courseName', 'certificateNumber', 'date', 'directorSignature', 'officialSeal'],
       fieldFonts: layoutConfig.fieldFonts || {},
-    });
+    };
+
+    // Ensure default width/height for image fields if missing
+    if (updatedConfig.studentPhotoPosition) {
+      const photoPos = updatedConfig.studentPhotoPosition as any;
+      if (!photoPos.width || !photoPos.height) {
+        updatedConfig.studentPhotoPosition = {
+          ...photoPos,
+          width: photoPos.width ?? 6, // Passport size width
+          height: photoPos.height ?? 10, // Passport size height
+        };
+      }
+    }
+
+    if (updatedConfig.qrCodePosition) {
+      const qrPos = updatedConfig.qrCodePosition as any;
+      if (!qrPos.width || !qrPos.height) {
+        updatedConfig.qrCodePosition = {
+          ...qrPos,
+          width: qrPos.width ?? 12,
+          height: qrPos.height ?? 12,
+        };
+      }
+    }
+
+    setConfig(updatedConfig);
   }, [layoutConfig]);
   const [draggingField, setDraggingField] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -85,6 +111,11 @@ export function CertificateLayoutEditor({
   const [imageScale, setImageScale] = useState(1);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [studentPhotoUrl, setStudentPhotoUrl] = useState<string | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
   
   // Fetch course name if courseId is provided
   const { data: courses = [] } = useShortTermCourses();
@@ -92,8 +123,14 @@ export function CertificateLayoutEditor({
   const courseName = course?.name || 'Course Name'; // Use actual course name or generic placeholder
   
   // Fetch students for the course to get real names
-  const { data: courseStudents = [] } = useCourseStudents(courseId || undefined, false);
+  const { data: courseStudents = [] } = useCourseStudents(courseId || undefined, false) as { data: CourseStudent[] | undefined };
   const { language } = useLanguage();
+
+  // Get preview student (first student, or null if no students)
+  const previewStudent: CourseStudent | null = useMemo(() => {
+    if (courseStudents.length === 0) return null;
+    return courseStudents[0] || null;
+  }, [courseStudents]);
   
   // Load Bahij Nassim fonts for editor preview (same as PDF/image generator)
   useEffect(() => {
@@ -119,10 +156,123 @@ export function CertificateLayoutEditor({
     
     loadFonts();
   }, []);
+
+  // Load student photo for preview
+  useEffect(() => {
+    const loadStudentPhoto = async () => {
+      if (!previewStudent?.picturePath || !previewStudent?.id) {
+        setStudentPhotoUrl(null);
+        return;
+      }
+
+      try {
+        const { apiClient } = await import('@/lib/api/client');
+        const token = apiClient.getToken();
+        const url = `/api/course-students/${previewStudent.id}/picture?t=${Date.now()}`;
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'image/*',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          setStudentPhotoUrl(blobUrl);
+        } else {
+          setStudentPhotoUrl(null);
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('[CertificateLayoutEditor] Failed to load student photo:', error);
+        }
+        setStudentPhotoUrl(null);
+      }
+    };
+
+    loadStudentPhoto();
+  }, [previewStudent?.id ?? null, previewStudent?.picturePath ?? null]);
+
+  // Cleanup student photo blob URL
+  useEffect(() => {
+    return () => {
+      if (studentPhotoUrl && studentPhotoUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(studentPhotoUrl);
+      }
+    };
+  }, [studentPhotoUrl]);
+
+  // Generate QR code for preview
+  useEffect(() => {
+    const generateQRCode = async () => {
+      if (!previewStudent) {
+        setQrCodeUrl(null);
+        return;
+      }
+
+      try {
+        // Determine QR code value based on config
+        const layout = config;
+        const source = layout.qrCodeValueSource || 'certificate_number';
+
+        const qrValue = source === 'admission_no'
+          ? (previewStudent.admissionNo || '')
+          : source === 'student_id'
+            ? previewStudent.id
+            : source === 'course_student_id'
+              ? previewStudent.id
+              : previewStudent.id; // For certificate_number, use student ID as fallback (certificate number is assigned when certificate is issued)
+
+        if (!qrValue) {
+          setQrCodeUrl(null);
+          return;
+        }
+
+        // Generate QR code using external service (same as in CertificatePdfGenerator)
+        const size = 200;
+        const response = await fetch(
+          `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(qrValue)}`,
+          { mode: 'cors' }
+        );
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          setQrCodeUrl(blobUrl);
+        } else {
+          setQrCodeUrl(null);
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('[CertificateLayoutEditor] Failed to generate QR code:', error);
+        }
+        setQrCodeUrl(null);
+      }
+    };
+
+    if (config.enabledFields?.includes('qrCode')) {
+      generateQRCode();
+    } else {
+      setQrCodeUrl(null);
+    }
+  }, [previewStudent?.id ?? null, config.enabledFields, config.qrCodeValueSource]);
+
+  // Cleanup QR code blob URL
+  useEffect(() => {
+    return () => {
+      if (qrCodeUrl && qrCodeUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(qrCodeUrl);
+      }
+    };
+  }, [qrCodeUrl]);
   
   // Get first student's name and father name, or use language-aware sample names
   const { studentName, fatherName } = useMemo(() => {
-    if (courseStudents.length > 0) {
+    if (courseStudents.length > 0 && courseStudents[0]) {
       const firstStudent = courseStudents[0];
       return {
         studentName: firstStudent.fullName || '',
@@ -208,12 +358,22 @@ export function CertificateLayoutEditor({
     };
   }, [backgroundImageUrl]);
 
+
   const getFieldPosition = (fieldKey: keyof CertificateLayoutConfig) => {
-    const position = config[fieldKey] as { x: number; y: number } | undefined;
-    if (position) return position;
+    const position = config[fieldKey] as { x: number; y: number; width?: number; height?: number } | undefined;
+    if (position) {
+      // Ensure width/height are set for image fields
+      if (fieldKey === 'studentPhotoPosition' && (!position.width || !position.height)) {
+        return { ...position, width: position.width ?? 6, height: position.height ?? 10 }; // Passport size: 6% width x 10% height
+      }
+      if (fieldKey === 'qrCodePosition' && (!position.width || !position.height)) {
+        return { ...position, width: position.width ?? 12, height: position.height ?? 12 };
+      }
+      return position;
+    }
     
     // Default positions for each field (as percentages)
-    const defaultPositions: Record<string, { x: number; y: number }> = {
+    const defaultPositions: Record<string, { x: number; y: number; width?: number; height?: number }> = {
       headerPosition: { x: 50, y: 15 }, // Top center
       studentNamePosition: { x: 50, y: 35 }, // Upper center
       fatherNamePosition: { x: 50, y: 42 }, // Below student name
@@ -227,8 +387,8 @@ export function CertificateLayoutEditor({
       villagePosition: { x: 70, y: 75 }, // Lower right
       nationalityPosition: { x: 50, y: 80 }, // Bottom center
       guardianNamePosition: { x: 50, y: 70 }, // Lower middle
-      studentPhotoPosition: { x: 15, y: 40 }, // Left side, middle
-      qrCodePosition: { x: 85, y: 40, width: 12, height: 12 }, // Right side, middle
+      studentPhotoPosition: { x: 15, y: 40, width: 6, height: 10 }, // Left side, middle - default 6% width x 10% height (passport size portrait)
+      qrCodePosition: { x: 85, y: 40, width: 12, height: 12 }, // Right side, middle - default 12% x 12%
       directorSignaturePosition: { x: 20, y: 85 }, // Bottom left area
       officialSealPosition: { x: 80, y: 85 }, // Bottom right area
     };
@@ -237,10 +397,21 @@ export function CertificateLayoutEditor({
   };
 
   const updateFieldPosition = (fieldKey: keyof CertificateLayoutConfig, x: number, y: number) => {
-    setConfig((prev) => ({
-      ...prev,
-      [fieldKey]: { x, y },
-    }));
+    setConfig((prev) => {
+      const currentPosition = (prev[fieldKey] as any) || {};
+      // Preserve width and height when updating position
+      return {
+        ...prev,
+        [fieldKey]: { 
+          ...currentPosition,
+          x, 
+          y,
+          // Set default width/height if not already set
+          width: currentPosition.width ?? (fieldKey === 'qrCodePosition' ? 12 : fieldKey === 'studentPhotoPosition' ? 6 : undefined),
+          height: currentPosition.height ?? (fieldKey === 'qrCodePosition' ? 12 : fieldKey === 'studentPhotoPosition' ? 10 : undefined),
+        },
+      };
+    });
   };
 
   const handleMouseDown = useCallback((e: React.MouseEvent, fieldId: string) => {
@@ -254,8 +425,10 @@ export function CertificateLayoutEditor({
 
     const rect = containerRef.current.getBoundingClientRect();
     const position = getFieldPosition(field.key);
-    const fieldX = (position.x / 100) * rect.width;
-    const fieldY = (position.y / 100) * rect.height;
+    // Account for 20px padding
+    const padding = 20;
+    const fieldX = (position.x / 100) * (rect.width - 2 * padding) + padding;
+    const fieldY = (position.y / 100) * (rect.height - 2 * padding) + padding;
 
     setDragOffset({
       x: e.clientX - rect.left - fieldX,
@@ -265,30 +438,156 @@ export function CertificateLayoutEditor({
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
-      if (!draggingField || !containerRef.current) return;
+      if (!containerRef.current) return;
 
-      const field = FIELDS.find((f) => f.id === draggingField);
-      if (!field) return;
+      if (isResizing && selectedField) {
+        if (import.meta.env.DEV) {
+          console.log('[CertificateLayoutEditor] Resizing:', selectedField);
+        }
 
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
-      const y = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
+        const rect = containerRef.current.getBoundingClientRect();
+        // Account for 20px padding
+        const padding = 20;
+        const currentX = ((e.clientX - rect.left - padding) / (rect.width - 2 * padding)) * 100;
+        const currentY = ((e.clientY - rect.top - padding) / (rect.height - 2 * padding)) * 100;
 
-      // Clamp to container bounds
-      const clampedX = Math.max(0, Math.min(100, x));
-      const clampedY = Math.max(0, Math.min(100, y));
+        const deltaX = currentX - resizeStart.x;
+        const deltaY = currentY - resizeStart.y;
 
-      updateFieldPosition(field.key, clampedX, clampedY);
+        const newWidth = Math.max(1, resizeStart.width + deltaX);
+        const newHeight = Math.max(1, resizeStart.height + deltaY);
+
+        if (import.meta.env.DEV) {
+          console.log('[CertificateLayoutEditor] Resize values:', {
+            currentX, currentY, deltaX, deltaY, newWidth, newHeight
+          });
+        }
+
+        // Update width and height in config
+        if (selectedField === 'studentPhoto') {
+          setConfig(prev => ({
+            ...prev,
+            studentPhotoPosition: {
+              ...(prev.studentPhotoPosition as any),
+              width: newWidth,
+              height: newHeight,
+            },
+          }));
+        } else if (selectedField === 'qrCode') {
+          setConfig(prev => ({
+            ...prev,
+            qrCodePosition: {
+              ...(prev.qrCodePosition as any),
+              width: newWidth,
+              height: newHeight,
+            },
+          }));
+        }
+      } else if (draggingField) {
+        const field = FIELDS.find((f) => f.id === draggingField);
+        if (!field) return;
+
+        const rect = containerRef.current.getBoundingClientRect();
+        // Account for 20px padding
+        const padding = 20;
+        const x = ((e.clientX - rect.left - dragOffset.x - padding) / (rect.width - 2 * padding)) * 100;
+        const y = ((e.clientY - rect.top - dragOffset.y - padding) / (rect.height - 2 * padding)) * 100;
+
+        // Clamp to container bounds
+        const clampedX = Math.max(0, Math.min(100, x));
+        const clampedY = Math.max(0, Math.min(100, y));
+
+        updateFieldPosition(field.key, clampedX, clampedY);
+      }
     },
-    [draggingField, dragOffset, FIELDS]
+    [draggingField, dragOffset, isResizing, selectedField, resizeStart, FIELDS, updateFieldPosition]
   );
+
+  const handleResizeStart = useCallback((e: React.MouseEvent, fieldId: string, direction?: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (import.meta.env.DEV) {
+      console.log('[CertificateLayoutEditor] Resize start:', { fieldId, direction, clientX: e.clientX, clientY: e.clientY });
+    }
+
+    setSelectedField(fieldId);
+    setIsResizing(true);
+
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) {
+      if (import.meta.env.DEV) {
+        console.warn('[CertificateLayoutEditor] No container rect found');
+      }
+      return;
+    }
+
+    // Account for 20px padding
+    const padding = 20;
+    const startX = ((e.clientX - rect.left - padding) / (rect.width - 2 * padding)) * 100;
+    const startY = ((e.clientY - rect.top - padding) / (rect.height - 2 * padding)) * 100;
+
+    // Get current width/height
+    let currentWidth = 6; // default (passport size width)
+    let currentHeight = 10; // default (passport size height)
+
+    if (fieldId === 'studentPhoto') {
+      const pos = config.studentPhotoPosition as any;
+      currentWidth = pos?.width ?? 6;
+      currentHeight = pos?.height ?? 10;
+    } else if (fieldId === 'qrCode') {
+      const pos = config.qrCodePosition as any;
+      currentWidth = pos?.width ?? 12;
+      currentHeight = pos?.height ?? 12;
+    }
+
+    if (import.meta.env.DEV) {
+      console.log('[CertificateLayoutEditor] Initial resize values:', {
+        startX, startY, currentWidth, currentHeight
+      });
+    }
+
+    setResizeStart({
+      x: startX,
+      y: startY,
+      width: currentWidth,
+      height: currentHeight,
+    });
+  }, [config]);
 
   const handleMouseUp = useCallback(() => {
     setDraggingField(null);
+    setIsResizing(false);
   }, []);
 
+  // Track container dimensions for image sizing
   useEffect(() => {
-    if (draggingField) {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        setContainerDimensions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight,
+        });
+      }
+    };
+
+    // Initial measurement
+    updateDimensions();
+
+    // Update on window resize
+    window.addEventListener('resize', updateDimensions);
+    
+    // Also update when background image loads (might change container size)
+    if (backgroundImageLoaded) {
+      // Small delay to ensure layout has settled
+      setTimeout(updateDimensions, 100);
+    }
+    
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, [backgroundImageLoaded]);
+
+  useEffect(() => {
+    if (draggingField || isResizing) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -296,7 +595,7 @@ export function CertificateLayoutEditor({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [draggingField, handleMouseMove, handleMouseUp]);
+  }, [draggingField, isResizing, handleMouseMove, handleMouseUp]);
 
   const resetFieldPosition = (fieldKey: keyof CertificateLayoutConfig) => {
     setConfig((prev) => {
@@ -307,7 +606,34 @@ export function CertificateLayoutEditor({
   };
 
   const handleSave = () => {
-    onSave(config);
+    // Ensure default widths/heights are set for image fields before saving
+    const configToSave = { ...config };
+    
+    // Ensure studentPhotoPosition has default width/height if not set
+    if (configToSave.studentPhotoPosition) {
+      const photoPos = configToSave.studentPhotoPosition as any;
+      if (!photoPos.width || !photoPos.height) {
+        configToSave.studentPhotoPosition = {
+          ...photoPos,
+          width: photoPos.width ?? 6, // Passport size width (6%)
+          height: photoPos.height ?? 10, // Passport size height (10%)
+        };
+      }
+    }
+    
+    // Ensure qrCodePosition has default width/height if not set
+    if (configToSave.qrCodePosition) {
+      const qrPos = configToSave.qrCodePosition as any;
+      if (!qrPos.width || !qrPos.height) {
+        configToSave.qrCodePosition = {
+          ...qrPos,
+          width: qrPos.width ?? 12,
+          height: qrPos.height ?? 12,
+        };
+      }
+    }
+    
+    onSave(configToSave);
   };
 
   const getFieldStyle = (field: FieldConfig) => {
@@ -458,8 +784,8 @@ export function CertificateLayoutEditor({
             <CardContent>
               <div
                 ref={containerRef}
-                className="relative w-full bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg overflow-hidden"
-                style={{ aspectRatio: '297/210', maxHeight: '600px' }}
+                className="relative w-full bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg overflow-visible"
+                style={{ aspectRatio: '297/210', maxHeight: '600px', padding: '20px' }}
                 onClick={() => setSelectedField(null)}
               >
                 {backgroundImageError ? (
@@ -497,6 +823,29 @@ export function CertificateLayoutEditor({
                   const position = getFieldPosition(field.key);
                   const isImageField = field.isImage;
                   
+                  // Get image size configuration
+                  const posConfig = field.id === 'studentPhoto' 
+                    ? (config.studentPhotoPosition as any)
+                    : (config.qrCodePosition as any);
+                  
+                  // Use percentage values from config, or default passport size for photos (6% x 10%), QR (12% x 12%)
+                  const imageWidthPercent = posConfig?.width ?? (field.id === 'qrCode' ? 12 : 6);
+                  const imageHeightPercent = posConfig?.height ?? (field.id === 'qrCode' ? 12 : 10);
+                  
+                  // Calculate actual pixel size based on container dimensions
+                  // Account for 20px padding on each side
+                  const padding = 20;
+                  const availableWidth = containerDimensions.width > 0 ? containerDimensions.width - (2 * padding) : 0;
+                  const availableHeight = containerDimensions.height > 0 ? containerDimensions.height - (2 * padding) : 0;
+                  
+                  // Calculate pixel sizes, with fallback minimum sizes if container not ready
+                  const imageWidthPx = availableWidth > 0 
+                    ? (imageWidthPercent / 100) * availableWidth 
+                    : (imageWidthPercent / 100) * 600; // Fallback: assume 600px container width
+                  const imageHeightPx = availableHeight > 0 
+                    ? (imageHeightPercent / 100) * availableHeight 
+                    : (imageHeightPercent / 100) * 400; // Fallback: assume 400px container height
+                  
                   return (
                     <div
                       key={field.id}
@@ -508,10 +857,111 @@ export function CertificateLayoutEditor({
                       }}
                     >
                       {isImageField ? (
-                        <div className="flex items-center justify-center gap-1 border-2 border-dashed border-blue-400 bg-blue-50 rounded p-2">
-                          <GripVertical className="h-4 w-4 opacity-50" />
-                          <span className="text-2xl">{field.sampleText}</span>
-                          <span className="text-xs">{field.id === 'qrCode' ? 'QR' : 'Photo'}</span>
+                        <div 
+                          className="relative border-2 border-dashed border-blue-400 bg-blue-50 rounded p-2" 
+                          style={{ 
+                            width: imageWidthPx > 0 
+                              ? (field.id === 'qrCode' ? `${Math.min(imageWidthPx, imageHeightPx)}px` : `${imageWidthPx}px`)
+                              : 'auto',
+                            height: imageHeightPx > 0 
+                              ? (field.id === 'qrCode' ? `${Math.min(imageWidthPx, imageHeightPx)}px` : `${imageHeightPx}px`)
+                              : 'auto',
+                            minHeight: '40px', 
+                            minWidth: '40px', 
+                            pointerEvents: 'auto',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {/* Resize handles - only show when selected */}
+                          {selectedField === field.id && (
+                            <>
+                              {/* Corner resize handles */}
+                              <div
+                                className="absolute -top-1 -left-1 w-4 h-4 bg-blue-500 rounded-full cursor-nw-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                onMouseDown={(e) => handleResizeStart(e, field.id, 'nw')}
+                                style={{ zIndex: 30 }}
+                                title="Resize from top-left"
+                              />
+                              <div
+                                className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full cursor-ne-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                onMouseDown={(e) => handleResizeStart(e, field.id, 'ne')}
+                                style={{ zIndex: 30 }}
+                                title="Resize from top-right"
+                              />
+                              <div
+                                className="absolute -bottom-1 -left-1 w-4 h-4 bg-blue-500 rounded-full cursor-sw-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                onMouseDown={(e) => handleResizeStart(e, field.id, 'sw')}
+                                style={{ zIndex: 30 }}
+                                title="Resize from bottom-left"
+                              />
+                              <div
+                                className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-full cursor-se-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                onMouseDown={(e) => handleResizeStart(e, field.id, 'se')}
+                                style={{ zIndex: 30 }}
+                                title="Resize from bottom-right"
+                              />
+                              {/* Edge resize handles */}
+                              <div
+                                className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-4 bg-blue-500 rounded cursor-n-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                onMouseDown={(e) => handleResizeStart(e, field.id, 'n')}
+                                style={{ zIndex: 30 }}
+                                title="Resize from top"
+                              />
+                              <div
+                                className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-4 bg-blue-500 rounded cursor-s-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                onMouseDown={(e) => handleResizeStart(e, field.id, 's')}
+                                style={{ zIndex: 30 }}
+                                title="Resize from bottom"
+                              />
+                              <div
+                                className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-4 h-3 bg-blue-500 rounded cursor-w-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                onMouseDown={(e) => handleResizeStart(e, field.id, 'w')}
+                                style={{ zIndex: 30 }}
+                                title="Resize from left"
+                              />
+                              <div
+                                className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-4 h-3 bg-blue-500 rounded cursor-e-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                onMouseDown={(e) => handleResizeStart(e, field.id, 'e')}
+                                style={{ zIndex: 30 }}
+                                title="Resize from right"
+                              />
+                            </>
+                          )}
+
+                          <div className="flex items-center justify-center gap-1">
+                            <GripVertical className="h-4 w-4 opacity-50" />
+                            {field.id === 'studentPhoto' && studentPhotoUrl ? (
+                            <img
+                              src={studentPhotoUrl}
+                              alt="Student Photo"
+                              style={{
+                                width: `${imageWidthPx}px`,
+                                height: `${imageHeightPx}px`,
+                                objectFit: 'cover', // Cover maintains aspect ratio, crops if needed
+                                borderRadius: '4px',
+                                pointerEvents: 'none', // Allow resize handles to receive mouse events
+                              }}
+                            />
+                            ) : field.id === 'qrCode' && qrCodeUrl ? (
+                            <img
+                              src={qrCodeUrl}
+                              alt="QR Code"
+                              style={{
+                                width: `${Math.min(imageWidthPx, imageHeightPx)}px`, // Use smaller dimension for square
+                                height: `${Math.min(imageWidthPx, imageHeightPx)}px`, // Use smaller dimension for square
+                                objectFit: 'contain', // Contain maintains aspect ratio without distortion
+                                pointerEvents: 'none', // Allow resize handles to receive mouse events
+                              }}
+                            />
+                          ) : (
+                            <>
+                              <span className="text-2xl" style={{ pointerEvents: 'none' }}>{field.sampleText}</span>
+                              <span className="text-xs" style={{ pointerEvents: 'none' }}>{field.id === 'qrCode' ? 'QR' : 'Photo'}</span>
+                            </>
+                          )}
+                          </div>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1">
@@ -694,21 +1144,23 @@ export function CertificateLayoutEditor({
                           type="number"
                           value={
                             (selectedField === 'qrCode'
-                              ? (config.qrCodePosition as any)?.width
-                              : (config.studentPhotoPosition as any)?.width) ?? ''
+                              ? (config.qrCodePosition as any)?.width ?? 12
+                              : (config.studentPhotoPosition as any)?.width ?? 6)
                           }
                           onChange={(e) => {
                             const raw = e.target.value;
                             const val = raw === '' ? undefined : Math.max(1, Math.min(100, Number(raw)));
                             if (selectedField === 'qrCode') {
-                              const current = config.qrCodePosition || { x: 85, y: 40 };
+                              const current = config.qrCodePosition || { x: 85, y: 40, width: 12, height: 12 };
                               setConfig({ ...config, qrCodePosition: { ...current, width: val } });
                             } else {
-                              const current = config.studentPhotoPosition || { x: 15, y: 40 };
+                              const current = config.studentPhotoPosition || { x: 15, y: 40, width: 6, height: 10 };
                               setConfig({ ...config, studentPhotoPosition: { ...current, width: val } });
                             }
                           }}
-                          placeholder="e.g., 12"
+                          placeholder={selectedField === 'qrCode' ? "12 (default)" : "6 (default - passport size)"}
+                          min="1"
+                          max="100"
                         />
                       </div>
                       <div className="space-y-1">
@@ -717,21 +1169,23 @@ export function CertificateLayoutEditor({
                           type="number"
                           value={
                             (selectedField === 'qrCode'
-                              ? (config.qrCodePosition as any)?.height
-                              : (config.studentPhotoPosition as any)?.height) ?? ''
+                              ? (config.qrCodePosition as any)?.height ?? 12
+                              : (config.studentPhotoPosition as any)?.height ?? 10)
                           }
                           onChange={(e) => {
                             const raw = e.target.value;
                             const val = raw === '' ? undefined : Math.max(1, Math.min(100, Number(raw)));
                             if (selectedField === 'qrCode') {
-                              const current = config.qrCodePosition || { x: 85, y: 40 };
+                              const current = config.qrCodePosition || { x: 85, y: 40, width: 12, height: 12 };
                               setConfig({ ...config, qrCodePosition: { ...current, height: val } });
                             } else {
-                              const current = config.studentPhotoPosition || { x: 15, y: 40 };
+                              const current = config.studentPhotoPosition || { x: 15, y: 40, width: 6, height: 10 };
                               setConfig({ ...config, studentPhotoPosition: { ...current, height: val } });
                             }
                           }}
-                          placeholder="e.g., 12"
+                          placeholder={selectedField === 'qrCode' ? "12 (default)" : "10 (default - passport size)"}
+                          min="1"
+                          max="100"
                         />
                       </div>
                     </div>

@@ -7,7 +7,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfiles";
 import { useCurrentOrganization } from "@/hooks/useOrganizations";
-import { useHasPermission, useUserPermissions } from "@/hooks/usePermissions";
+import { useHasPermissionAndFeature, useUserPermissions } from "@/hooks/usePermissions";
 import type { UserRole } from "@/types/auth";
 import {
   Users,
@@ -171,113 +171,113 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const role = roleFromAuth || roleFromHook;
   const { data: currentOrg } = useCurrentOrganization();
   const { data: permissions, isLoading: permissionsLoading } = useUserPermissions();
-  const hasSettingsPermission = useHasPermission('settings.read');
-  const hasBuildingsPermission = useHasPermission('buildings.read');
-  const hasRoomsPermission = useHasPermission('rooms.read');
-  const hasHostelPermission = useHasPermission('hostel.read');
-  const hasOrganizationsPermission = useHasPermission('organizations.read');
-  const hasProfilesPermission = useHasPermission('profiles.read');
-  const hasUsersPermission = useHasPermission('users.read');
-  const hasAuthMonitoringPermission = useHasPermission('auth_monitoring.read');
-  const hasSecurityMonitoringPermission = useHasPermission('security_monitoring.read');
-  const hasBrandingPermission = useHasPermission('school_branding.read');
-  const hasReportsPermission = useHasPermission('reports.read');
-  const hasResidencyTypesPermission = useHasPermission('residency_types.read');
-  const hasAcademicYearsPermission = useHasPermission('academic_years.read');
-  const hasExamTypesPermission = useHasPermission('exam_types.read');
-  const hasClassesPermission = useHasPermission('classes.read');
-  const hasSubjectsPermission = useHasPermission('subjects.read');
-  const hasAssetsPermission = useHasPermission('assets.read');
-  const hasStaffPermission = useHasPermission('staff.read');
-  const hasStaffReportsPermission = useHasPermission('staff_reports.read');
-  const hasAttendanceSessionsPermission = useHasPermission('attendance_sessions.read');
-  const hasAttendanceReportsPermission = useHasPermission('attendance_sessions.report');
-  const hasLeaveRequestsPermission = useHasPermission('leave_requests.read');
-  const hasStudentsPermission = useHasPermission('students.read');
-  const hasStudentsImportPermission = useHasPermission('students.import');
-  const hasStudentAdmissionsPermission = useHasPermission('student_admissions.read');
-  const hasStudentReportsPermission = useHasPermission('student_reports.read');
-  const hasStudentAdmissionsReportPermission = useHasPermission('student_admissions.report');
-  const hasShortTermCoursesPermission = useHasPermission('short_term_courses.read');
-  const hasCourseStudentsPermission = useHasPermission('course_students.read');
-  const hasCourseReportsPermission = useHasPermission('course_students.report');
-  const hasCourseAttendancePermission = useHasPermission('course_attendance.read');
-  const hasCertificateTemplatesPermission = useHasPermission('certificate_templates.read');
-  const hasGraduationBatchesPermission = useHasPermission('graduation_batches.read');
-  const hasIssuedCertificatesPermission = useHasPermission('issued_certificates.read');
-  const hasIdCardsPermission = useHasPermission('id_cards.read');
-  const hasIdCardsExportPermission = useHasPermission('id_cards.export');
-  const hasCourseDocumentsPermission = useHasPermission('course_documents.read');
-  const hasExamDocumentsPermission = useHasPermission('exam_documents.read');
-  const hasStaffTypesPermission = useHasPermission('staff_types.read');
-  const hasScheduleSlotsPermission = useHasPermission('schedule_slots.read');
-  const hasTeacherSubjectAssignmentsPermission = useHasPermission('teacher_subject_assignments.read');
-  const hasTimetablesPermission = useHasPermission('timetables.read');
-  const hasExamsPermission = useHasPermission('exams.read');
-  const hasExamsManagePermission = useHasPermission('exams.manage');
-  const hasExamsTimetablePermission = useHasPermission('exams.manage_timetable');
-  const hasExamsEnrollPermission = useHasPermission('exams.enroll_students');
-  const hasExamsMarksPermission = useHasPermission('exams.enter_marks');
-  const hasExamsReportsPermission = useHasPermission('exams.view_reports');
-  const hasExamsViewGradeCardsPermission = useHasPermission('exams.view_grade_cards');
-  const hasExamsViewConsolidatedReportsPermission = useHasPermission('exams.view_consolidated_reports');
-  const hasExamsViewClassReportsPermission = useHasPermission('exams.view_class_reports');
-  const hasExamsViewStudentReportsPermission = useHasPermission('exams.view_student_reports');
-  const hasExamsAttendancePermission = useHasPermission('exams.manage_attendance');
-  const hasExamsViewAttendancePermission = useHasPermission('exams.view_attendance_reports');
-  const hasExamsRollNumbersReadPermission = useHasPermission('exams.roll_numbers.read');
-  const hasExamsRollNumbersAssignPermission = useHasPermission('exams.roll_numbers.assign');
-  const hasExamsSecretNumbersReadPermission = useHasPermission('exams.secret_numbers.read');
-  const hasExamsSecretNumbersAssignPermission = useHasPermission('exams.secret_numbers.assign');
-  const hasExamsNumbersPrintPermission = useHasPermission('exams.numbers.print');
-  const hasExamsQuestionsPermission = useHasPermission('exams.questions.read');
-  const hasExamsPapersPermission = useHasPermission('exams.papers.read');
+  const hasSettingsPermission = useHasPermissionAndFeature('settings.read');
+  const hasBuildingsPermission = useHasPermissionAndFeature('buildings.read');
+  const hasRoomsPermission = useHasPermissionAndFeature('rooms.read');
+  const hasHostelPermission = useHasPermissionAndFeature('hostel.read');
+  const hasOrganizationsPermission = useHasPermissionAndFeature('organizations.read');
+  const hasProfilesPermission = useHasPermissionAndFeature('profiles.read');
+  const hasUsersPermission = useHasPermissionAndFeature('users.read');
+  const hasAuthMonitoringPermission = useHasPermissionAndFeature('auth_monitoring.read');
+  const hasSecurityMonitoringPermission = useHasPermissionAndFeature('security_monitoring.read');
+  const hasBrandingPermission = useHasPermissionAndFeature('school_branding.read');
+  const hasReportsPermission = useHasPermissionAndFeature('reports.read');
+  const hasResidencyTypesPermission = useHasPermissionAndFeature('residency_types.read');
+  const hasAcademicYearsPermission = useHasPermissionAndFeature('academic_years.read');
+  const hasExamTypesPermission = useHasPermissionAndFeature('exam_types.read');
+  const hasClassesPermission = useHasPermissionAndFeature('classes.read');
+  const hasSubjectsPermission = useHasPermissionAndFeature('subjects.read');
+  const hasAssetsPermission = useHasPermissionAndFeature('assets.read');
+  const hasStaffPermission = useHasPermissionAndFeature('staff.read');
+  const hasStaffReportsPermission = useHasPermissionAndFeature('staff_reports.read');
+  const hasAttendanceSessionsPermission = useHasPermissionAndFeature('attendance_sessions.read');
+  const hasAttendanceReportsPermission = useHasPermissionAndFeature('attendance_sessions.report');
+  const hasLeaveRequestsPermission = useHasPermissionAndFeature('leave_requests.read');
+  const hasStudentsPermission = useHasPermissionAndFeature('students.read');
+  const hasStudentsImportPermission = useHasPermissionAndFeature('students.import');
+  const hasStudentAdmissionsPermission = useHasPermissionAndFeature('student_admissions.read');
+  const hasStudentReportsPermission = useHasPermissionAndFeature('student_reports.read');
+  const hasStudentAdmissionsReportPermission = useHasPermissionAndFeature('student_admissions.report');
+  const hasShortTermCoursesPermission = useHasPermissionAndFeature('short_term_courses.read');
+  const hasCourseStudentsPermission = useHasPermissionAndFeature('course_students.read');
+  const hasCourseReportsPermission = useHasPermissionAndFeature('course_students.report');
+  const hasCourseAttendancePermission = useHasPermissionAndFeature('course_attendance.read');
+  const hasCertificateTemplatesPermission = useHasPermissionAndFeature('certificate_templates.read');
+  const hasGraduationBatchesPermission = useHasPermissionAndFeature('graduation_batches.read');
+  const hasIssuedCertificatesPermission = useHasPermissionAndFeature('issued_certificates.read');
+  const hasIdCardsPermission = useHasPermissionAndFeature('id_cards.read');
+  const hasIdCardsExportPermission = useHasPermissionAndFeature('id_cards.export');
+  const hasCourseDocumentsPermission = useHasPermissionAndFeature('course_documents.read');
+  const hasExamDocumentsPermission = useHasPermissionAndFeature('exam_documents.read');
+  const hasStaffTypesPermission = useHasPermissionAndFeature('staff_types.read');
+  const hasScheduleSlotsPermission = useHasPermissionAndFeature('schedule_slots.read');
+  const hasTeacherSubjectAssignmentsPermission = useHasPermissionAndFeature('teacher_subject_assignments.read');
+  const hasTimetablesPermission = useHasPermissionAndFeature('timetables.read');
+  const hasExamsPermission = useHasPermissionAndFeature('exams.read');
+  const hasExamsManagePermission = useHasPermissionAndFeature('exams.manage');
+  const hasExamsTimetablePermission = useHasPermissionAndFeature('exams.manage_timetable');
+  const hasExamsEnrollPermission = useHasPermissionAndFeature('exams.enroll_students');
+  const hasExamsMarksPermission = useHasPermissionAndFeature('exams.enter_marks');
+  const hasExamsReportsPermission = useHasPermissionAndFeature('exams.view_reports');
+  const hasExamsViewGradeCardsPermission = useHasPermissionAndFeature('exams.view_grade_cards');
+  const hasExamsViewConsolidatedReportsPermission = useHasPermissionAndFeature('exams.view_consolidated_reports');
+  const hasExamsViewClassReportsPermission = useHasPermissionAndFeature('exams.view_class_reports');
+  const hasExamsViewStudentReportsPermission = useHasPermissionAndFeature('exams.view_student_reports');
+  const hasExamsAttendancePermission = useHasPermissionAndFeature('exams.manage_attendance');
+  const hasExamsViewAttendancePermission = useHasPermissionAndFeature('exams.view_attendance_reports');
+  const hasExamsRollNumbersReadPermission = useHasPermissionAndFeature('exams.roll_numbers.read');
+  const hasExamsRollNumbersAssignPermission = useHasPermissionAndFeature('exams.roll_numbers.assign');
+  const hasExamsSecretNumbersReadPermission = useHasPermissionAndFeature('exams.secret_numbers.read');
+  const hasExamsSecretNumbersAssignPermission = useHasPermissionAndFeature('exams.secret_numbers.assign');
+  const hasExamsNumbersPrintPermission = useHasPermissionAndFeature('exams.numbers.print');
+  const hasExamsQuestionsPermission = useHasPermissionAndFeature('exams.questions.read');
+  const hasExamsPapersPermission = useHasPermissionAndFeature('exams.papers.read');
   // Legacy compatibility
   const hasExamsAssignPermission = hasExamsManagePermission || hasExamsEnrollPermission;
   const hasExamsUpdatePermission = hasExamsMarksPermission;
-  const hasGradesPermission = useHasPermission('grades.read');
-  const hasLibraryBooksPermission = useHasPermission('library_books.read');
-  const hasLibraryCategoriesPermission = useHasPermission('library_categories.read');
-  const hasLibraryLoansPermission = useHasPermission('library_loans.read');
+  const hasGradesPermission = useHasPermissionAndFeature('grades.read');
+  const hasLibraryBooksPermission = useHasPermissionAndFeature('library_books.read');
+  const hasLibraryCategoriesPermission = useHasPermissionAndFeature('library_categories.read');
+  const hasLibraryLoansPermission = useHasPermissionAndFeature('library_loans.read');
   const hasLibraryPermission = hasLibraryBooksPermission || hasLibraryCategoriesPermission || hasLibraryLoansPermission;
 
   // Finance permissions
-  const hasFinanceAccountsPermission = useHasPermission('finance_accounts.read');
-  const hasIncomeCategoriesPermission = useHasPermission('income_categories.read');
-  const hasIncomeEntriesPermission = useHasPermission('income_entries.read');
-  const hasExpenseCategoriesPermission = useHasPermission('expense_categories.read');
-  const hasExpenseEntriesPermission = useHasPermission('expense_entries.read');
-  const hasFinanceProjectsPermission = useHasPermission('finance_projects.read');
-  const hasDonorsPermission = useHasPermission('donors.read');
-  const hasFinanceReportsPermission = useHasPermission('finance_reports.read');
-  const hasCurrenciesPermission = useHasPermission('currencies.read');
-  const hasExchangeRatesPermission = useHasPermission('exchange_rates.read');
-  const hasFeesPermission = useHasPermission('fees.read');
-  const hasFeePaymentsPermission = useHasPermission('fees.payments.create');
-  const hasFeeExceptionsPermission = useHasPermission('fees.exceptions.create');
-  const hasFinanceDocumentsPermission = useHasPermission('finance_documents.read');
+  const hasFinanceAccountsPermission = useHasPermissionAndFeature('finance_accounts.read');
+  const hasIncomeCategoriesPermission = useHasPermissionAndFeature('income_categories.read');
+  const hasIncomeEntriesPermission = useHasPermissionAndFeature('income_entries.read');
+  const hasExpenseCategoriesPermission = useHasPermissionAndFeature('expense_categories.read');
+  const hasExpenseEntriesPermission = useHasPermissionAndFeature('expense_entries.read');
+  const hasFinanceProjectsPermission = useHasPermissionAndFeature('finance_projects.read');
+  const hasDonorsPermission = useHasPermissionAndFeature('donors.read');
+  const hasFinanceReportsPermission = useHasPermissionAndFeature('finance_reports.read');
+  const hasCurrenciesPermission = useHasPermissionAndFeature('currencies.read');
+  const hasExchangeRatesPermission = useHasPermissionAndFeature('exchange_rates.read');
+  const hasFeesPermission = useHasPermissionAndFeature('fees.read');
+  const hasFeePaymentsPermission = useHasPermissionAndFeature('fees.payments.create');
+  const hasFeeExceptionsPermission = useHasPermissionAndFeature('fees.exceptions.create');
+  const hasFinanceDocumentsPermission = useHasPermissionAndFeature('finance_documents.read');
   const hasFinancePermission = hasFinanceAccountsPermission || hasIncomeEntriesPermission || hasExpenseEntriesPermission || hasFinanceProjectsPermission || hasDonorsPermission || hasFinanceReportsPermission || hasCurrenciesPermission || hasExchangeRatesPermission || hasFeesPermission || hasFeePaymentsPermission || hasFeeExceptionsPermission || hasFinanceDocumentsPermission;
 
   // DMS (Document Management System) permissions
-  const hasDmsIncomingPermission = useHasPermission('dms.incoming.read');
-  const hasDmsOutgoingPermission = useHasPermission('dms.outgoing.read');
-  const hasDmsTemplatesPermission = useHasPermission('dms.templates.read');
-  const hasDmsLetterheadsPermission = useHasPermission('dms.letterheads.read');
-  const hasDmsLetterTypesPermission = useHasPermission('dms.letter_types.read');
-  const hasDmsDepartmentsPermission = useHasPermission('dms.departments.read');
-  const hasDmsReportsPermission = useHasPermission('dms.reports.read');
-  const hasDmsSettingsPermission = useHasPermission('dms.settings.read');
-  const hasDmsArchivePermission = useHasPermission('dms.archive.read');
+  const hasDmsIncomingPermission = useHasPermissionAndFeature('dms.incoming.read');
+  const hasDmsOutgoingPermission = useHasPermissionAndFeature('dms.outgoing.read');
+  const hasDmsTemplatesPermission = useHasPermissionAndFeature('dms.templates.read');
+  const hasDmsLetterheadsPermission = useHasPermissionAndFeature('dms.letterheads.read');
+  const hasDmsLetterTypesPermission = useHasPermissionAndFeature('dms.letter_types.read');
+  const hasDmsDepartmentsPermission = useHasPermissionAndFeature('dms.departments.read');
+  const hasDmsReportsPermission = useHasPermissionAndFeature('dms.reports.read');
+  const hasDmsSettingsPermission = useHasPermissionAndFeature('dms.settings.read');
+  const hasDmsArchivePermission = useHasPermissionAndFeature('dms.archive.read');
   const hasDmsPermission = hasDmsIncomingPermission || hasDmsOutgoingPermission || hasDmsTemplatesPermission || hasDmsLetterheadsPermission || hasDmsLetterTypesPermission || hasDmsDepartmentsPermission || hasDmsReportsPermission || hasDmsSettingsPermission || hasDmsArchivePermission;
 
   // Events permissions
-  const hasEventsPermission = useHasPermission('events.read');
-  const hasEventTypesPermission = useHasPermission('event_types.read');
-  const hasEventGuestsPermission = useHasPermission('event_guests.read');
-  const hasEventGuestsCreatePermission = useHasPermission('event_guests.create');
-  const hasEventCheckinsCreatePermission = useHasPermission('event_checkins.create');
-  const hasEventCheckinsReadPermission = useHasPermission('event_checkins.read');
-  const hasEventUpdatePermission = useHasPermission('events.update');
+  const hasEventsPermission = useHasPermissionAndFeature('events.read');
+  const hasEventTypesPermission = useHasPermissionAndFeature('event_types.read');
+  const hasEventGuestsPermission = useHasPermissionAndFeature('event_guests.read');
+  const hasEventGuestsCreatePermission = useHasPermissionAndFeature('event_guests.create');
+  const hasEventCheckinsCreatePermission = useHasPermissionAndFeature('event_checkins.create');
+  const hasEventCheckinsReadPermission = useHasPermissionAndFeature('event_checkins.read');
+  const hasEventUpdatePermission = useHasPermissionAndFeature('events.update');
   // Show events navigation if user has ANY event-related permission
   const hasEventsNavigation = hasEventsPermission || hasEventTypesPermission || hasEventGuestsPermission || hasEventGuestsCreatePermission || hasEventCheckinsCreatePermission || hasEventCheckinsReadPermission || hasEventUpdatePermission;
   
@@ -296,8 +296,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const currentPath = location.pathname;
 
   // Permission checks for specific child items
-  const hasPermissionsPermission = useHasPermission('permissions.read'); // Assuming this permission exists for permissions management
-  const hasRolesPermission = useHasPermission('roles.read'); // Permission for roles management
+  const hasPermissionsPermission = useHasPermissionAndFeature('permissions.read'); // Assuming this permission exists for permissions management
+  const hasRolesPermission = useHasPermissionAndFeature('roles.read'); // Permission for roles management
   const hasAttendanceNavigation = hasAttendanceSessionsPermission || hasAttendanceReportsPermission;
 
   // Check if user is event user (profile already declared above)
@@ -776,7 +776,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/settings/rooms",
             icon: DoorOpen,
           }] : []),
-          ...(hasReportsPermission ? [{
+          ...((hasReportsPermission && hasHostelPermission) ? [{
             title: "Hostel reports",
             titleKey: "hostel.reports",
             url: "/hostel/reports",
@@ -1151,11 +1151,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
         iconColor: categoryColors.admin,
         children: [
           // Only show child items if user has the required permission
-          ...(hasOrganizationsPermission ? [{
-            title: "Organizations Management",
-            url: "/settings/organizations",
-            icon: Shield,
-          }] : []),
+          // Organizations Management moved to Subscription Admin page
           ...(hasProfilesPermission ? [{
             title: "Profile Management",
             url: "/settings/profile",

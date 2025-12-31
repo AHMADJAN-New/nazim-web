@@ -336,7 +336,8 @@ export const ps: TranslationKeys = {
     shiftTooLong: 'شیفت ډیر اوږد دی',
     feeStatusTooLong: 'د فیس حالت ډیر اوږد دی',
     admissionYearMaxLength: 'د داخلې کال باید 10 حروف یا لږ وي',
-    placementNotesMaxLength: 'یادښتونه باید 500 حروف یا لږ وي'
+    placementNotesMaxLength: 'یادښتونه باید 500 حروف یا لږ وي',
+    limitReached: 'د زده کوونکو محدودیت ته رسیدلی. مهرباني وکړئ لومړی یو زوړ د داخلې ریکارډ غیرفعال کړئ یا خپله پلان لوړه کړئ ترڅو نوي داخلې اضافه کړئ.'
   },
   assets: {
     active: 'فعال',
@@ -1842,6 +1843,10 @@ export const ps: TranslationKeys = {
     selectXlsx: 'د .xlsx فایل وټاکئ',
     validateFile: 'کتنه (Validate)',
     importNow: 'واردول (Import)',
+    limitReached: 'د زده کوونکو محدودیت ته رسیدلی. مهرباني وکړئ خپله پلان لوړه کړئ ترڅو نور زده کوونکي وارد کړئ.',
+    limitWarning: 'خبرداری: یوازې {remaining} د زده کوونکو سلاټ پاتې دی. یوازې لومړی {remaining} د اعتبار وړ قطار(ونه) به وارد شي.',
+    uploadDisabled: 'د فایل اپلوډ غیرفعال دی ځکه چې د زده کوونکو محدودیت ته رسیدلی.',
+    importLimited: 'ستاسو فایل {validRows} د اعتبار وړ قطارونه لري، مګر یوازې {remaining} د زده کوونکو سلاټ(ونه) پاتې دي. یوازې لومړی {remaining} د اعتبار وړ قطار(ونه) به وارد شي.',
     validationSummary: 'د کتنې لنډیز',
     validRows: 'سم قطارونه',
     rows: 'قطارونه',
@@ -2177,7 +2182,8 @@ export const ps: TranslationKeys = {
     orEnterCustomFont: 'یا د فونټ نوم ولیکئ',
     fontFamilyHint: 'د ښکته لیست څخه فونټ وټاکئ یا د فونټ نوم ولیکئ',
     reportFontSizeHint: 'د راپورونو کې کارول شوی فونټ اندازه',
-    currentLogo: 'اوسنی لوګو'
+    currentLogo: 'اوسنی لوګو',
+    multiSchoolFeatureRequired: 'د اضافي ښوونځیو د جوړولو لپاره د ګڼو ښوونځیو ځانګړتیا اړینه ده. مهرباني وکړئ خپل ګډون پلان تازه کړئ.'
   },
   // Roles Management
   roles: {
@@ -2681,6 +2687,26 @@ export const ps: TranslationKeys = {
     studentRemoveFailed: 'د زده کونکي لرې کولو کې ناکامي',
     documentUploaded: 'اسناد بریالۍ سره پورته شول',
     documentDeleted: 'اسناد بریالۍ سره پاک شول',
+    // Course Students
+    courseStudents: {
+      saved: 'د کورس زده کونکی بریالۍ سره خوندي شو',
+      updated: 'د کورس زده کونکی بریالۍ سره تازه شو',
+      deleted: 'د کورس زده کونکی بریالۍ سره پاک شو',
+      saveFailed: 'د کورس زده کونکي خوندي کولو کې ناکامي',
+      updateFailed: 'د کورس زده کونکي تازه کولو کې ناکامي',
+      deleteFailed: 'د کورس زده کونکي پاکولو کې ناکامي',
+      enrolled: 'زده کونکي بریالۍ سره نوم لیکنه شول',
+      enrollFailed: 'د زده کونکو نوم لیکنې کې ناکامي',
+      markedCompleted: 'د کورس زده کونکی د بشپړ شوي په توګه نښه شو',
+      markCompletedFailed: 'د کورس زده کونکي د بشپړ شوي په توګه نښه کولو کې ناکامي',
+      markedDropped: 'د کورس زده کونکی د پریښودل شوي په توګه نښه شو',
+      markDroppedFailed: 'د کورس زده کونکي د پریښودل شوي په توګه نښه کولو کې ناکامي',
+      certificateIssued: 'د تصدیق نامه بریالۍ سره صادر شوه',
+      certificateIssueFailed: 'د تصدیق نامې د صادرولو کې ناکامي',
+      copiedToMain: 'د کورس زده کونکی اصلي زده کونکو ته کاپي شو',
+      copyFailed: 'د کورس زده کونکي د اصلي زده کونکو ته کاپي کولو کې ناکامي',
+      noStudentsEnrolled: 'هیڅ زده کونکي نوم لیکنه نشول',
+    },
     documentUploadFailed: 'د اسنادو پورته کولو کې ناکامي',
     documentDeleteFailed: 'د اسنادو پاکولو کې ناکامي',
     // DMS Documents
@@ -3373,5 +3399,92 @@ export const ps: TranslationKeys = {
       selectTemplateFirst: 'لومړی یو کړکۍ وټاکئ',
       fillRequiredFields: 'لومړی اړینې ساحې ډک کړئ'
     }
-  }
+  },
+  
+  // Subscription/SaaS system
+  subscription: {
+    // Status banners
+    trialPeriod: 'آزموینې موده',
+    trialEndsIn: 'آزموینه پای ته رسیږي په',
+    trialEnding: 'ستاسو آزموینه ډیره ژر پای ته رسیږي. د دوام لپاره لوړ کړئ.',
+    upgradeToKeepAccess: 'د بشپړ لاسرسي لپاره لوړ کړئ.',
+    gracePeriod: 'د رحم موده',
+    subscriptionExpired: 'ستاسو ګډون پای ته رسیدلی.',
+    daysLeftToRenew: 'ورځې پاتې دي د نوي کولو لپاره.',
+    renewNow: 'اوس نوی کړئ د بشپړ لاسرسي لپاره.',
+    readOnlyMode: 'یوازې لوستلو حالت',
+    cannotMakeChanges: 'تاسو کولی شئ معلومات وګورئ خو بدلونونه نشئ کولی. د بشپړ لاسرسي بیرته راوړلو لپاره خپل ګډون نوی کړئ.',
+    accountBlocked: 'حساب بند دی',
+    contactSupport: 'ستاسو حساب لاسرسی بند شوی. مهرباني وکړئ د ملاتړ سره اړیکه ونیسئ یا خپل ګډون نوی کړئ.',
+    usageLimitsWarning: 'د کارولو محدودیتونو خبرداری',
+    approachingLimits: 'تاسو د ځینو کارولو محدودیتونو ته نژدې یاست.',
+    manageSubscription: 'اداره',
+    upgrade: 'لوړ کړئ',
+    
+    // Usage limits
+    limitReached: 'محدودیت رسیدلی',
+    limitReachedCantCreate: 'محدودیت رسیدلی. نور جوړول نه شی.',
+    approachingLimit: 'محدودیت ته نژدې',
+    cannotCreateMore: 'تاسو د دې سرچینې لپاره اعظمي محدودیت ته رسیدلي. د نورو جوړولو لپاره خپله پلان لوړه کړئ.',
+    usageWarningMessage: 'تاسو د دې سرچینې لپاره د کارولو محدودیت ته نژدې یاست.',
+    used: 'کارول شوی',
+    currentPlan: 'اوسنۍ پلان',
+    upgradePlan: 'پلان لوړ کړئ',
+    
+    // Features
+    featureNotAvailable: 'فیچر شتون نلري',
+    isNotIncluded: 'ستاسو په اوسني پلان کې شامل نه دی.',
+    purchaseAddon: 'ایڈ-آن واخلئ',
+    viewFeatures: 'فیچرونه وګورئ',
+    
+    // Errors
+    noSubscription: 'هیڅ فعال ګډون نشته. مهرباني وکړئ د دې فیچر لاسرسي لپاره ګډون وکړئ.',
+    limitReachedMessage: 'تاسو د دې سرچینې لپاره محدودیت ته رسیدلي. مهرباني وکړئ خپله پلان لوړه کړئ.',
+    featureNotAvailableMessage: 'دا فیچر ستاسو په اوسني پلان کې شتون نلري.',
+    writeAccessDenied: 'ستاسو ګډون د لیکلو لاسرسي اجازه نه ورکوي. مهرباني وکړئ د بدلونونو لپاره نوی کړئ.',
+    readAccessDenied: 'ستاسو ګډون پای ته رسیدلی. مهرباني وکړئ د خپلو معلوماتو لاسرسي لپاره نوی کړئ.',
+    genericError: 'د ګډون تېروتنه رامنځته شوه. مهرباني وکړئ د خپل ګډون حالت وګورئ.',
+  },
+  
+  // Phone Book
+  phoneBook: {
+    title: 'تلیفون لړلیک',
+    subtitle: 'د زده کونکو، کارمندانو، تمویلونکو، او میلمنو ټول تلیفون شمیرې وګورئ او لټون وکړئ',
+    name: 'نوم',
+    phone: 'تلیفون',
+    email: 'بریښنالیک',
+    category: 'کټګورۍ',
+    relation: 'اړیکه',
+    details: 'جزئیات',
+    address: 'پته',
+    all: 'ټول',
+    students: 'زده کونکي',
+    staff: 'کارمندان',
+    donors: 'تمویلونکي',
+    guests: 'میلمانه',
+    others: 'نور',
+    studentGuardian: 'د زده کونکي سرپرست',
+    studentEmergency: 'د زده کونکي بیړنی',
+    studentZamin: 'د زده کونکي ضامن',
+    donor: 'تمویلونکی',
+    guest: 'میلمه',
+    other: 'نور',
+    allEntries: 'ټول تلیفون لړلیک',
+    allEntriesDescription: 'د زده کونکو، کارمندانو، تمویلونکو، او میلمنو ټول تلیفون شمیرې وګورئ',
+    studentContacts: 'د زده کونکي اړیکې',
+    studentContactsDescription: 'د زده کونکي سرپرستانو، بیړنیو اړیکو، او ضامنانو تلیفون شمیرې',
+    staffContacts: 'د کارمندانو اړیکې',
+    staffContactsDescription: 'د ټولو کارمندانو تلیفون شمیرې',
+    donorContacts: 'د تمویلونکو اړیکې',
+    donorContactsDescription: 'د ټولو تمویلونکو تلیفون شمیرې',
+    guestContacts: 'د میلمنو اړیکې',
+    guestContactsDescription: 'د پیښو میلمنو تلیفون شمیرې',
+    searchPlaceholder: 'د نوم، تلیفون، بریښنالیک... له مخې لټون وکړئ',
+    student: 'زده کونکی',
+    admissionNo: 'داخله شمیره',
+    employeeId: 'کارمند پیژندنه',
+    guestCode: 'د میلمه کوډ',
+    contactPerson: 'اړیکه شخص',
+    noDataToExport: 'د صادرولو لپاره معلومات نشته',
+  },
 };

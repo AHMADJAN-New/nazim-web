@@ -27,19 +27,13 @@ class BuildingController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        try {
-            $organizationId = $profile->organization_id;
-            if (!$user->hasPermissionTo('buildings.read')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            // If permission doesn't exist, log but allow access (for migration period)
-            \Log::warning('Permission check failed in BuildingController::index - allowing access', [
+        // Check permission using manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
+        if (!$this->userHasPermission($user, 'buildings.read', $profile->organization_id)) {
+            \Log::warning("Permission denied for buildings.read", [
                 'user_id' => $user->id,
-                'permission' => 'buildings.read',
-                'error' => $e->getMessage()
+                'organization_id' => $profile->organization_id,
             ]);
-            // Allow access if permission doesn't exist (during migration)
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         // Get accessible organization IDs (user's organization only)

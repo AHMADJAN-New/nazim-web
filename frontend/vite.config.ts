@@ -41,6 +41,10 @@ export default defineConfig({
       // Handle CommonJS modules
       target: 'es2020',
     },
+    // Force re-optimization when dependencies change
+    // Set to true to force re-optimization (useful when cache issues occur)
+    // After restarting dev server, set back to false for better performance
+    force: true, // Temporarily set to true to fix cache issues
   },
   server: {
     port: 5173,

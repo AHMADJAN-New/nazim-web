@@ -27,7 +27,7 @@ class SchoolBrandingController extends Controller
 
         // Check permission: school_branding.read (all users)
         try {
-            if (!$user->hasPermissionTo('school_branding.read')) {
+            if (!$this->userHasPermission($user, 'school_branding.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -92,7 +92,7 @@ class SchoolBrandingController extends Controller
 
         // Check permission: school_branding.read (all users)
         try {
-            if (!$user->hasPermissionTo('school_branding.read')) {
+            if (!$this->userHasPermission($user, 'school_branding.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {

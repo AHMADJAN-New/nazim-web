@@ -584,10 +584,17 @@ class IdCardRenderService
             }
 
             $photoImage = new \Imagick($fullPath);
-            $targetWidth = $position['width'] ? (int)(($position['width'] / 100) * $width) : 100;
-            $targetHeight = $position['height'] ? (int)(($position['height'] / 100) * $height) : 100;
-            $x = (int)(($position['x'] / 100) * $width);
-            $y = (int)(($position['y'] / 100) * $height);
+            // Use saved width/height from config, or default 8% width x 12% height (ID card appropriate sizes)
+            $photoWidthPercent = $position['width'] ?? 8;
+            $photoHeightPercent = $position['height'] ?? 12;
+            $targetWidth = (int)(($photoWidthPercent / 100) * $width);
+            $targetHeight = (int)(($photoHeightPercent / 100) * $height);
+            
+            // Positions in the layout designer are CENTER-based, so draw image centered
+            $centerX = (int)(($position['x'] / 100) * $width);
+            $centerY = (int)(($position['y'] / 100) * $height);
+            $x = $centerX - ($targetWidth / 2);
+            $y = $centerY - ($targetHeight / 2);
 
             $photoImage->resizeImage($targetWidth, $targetHeight, \Imagick::FILTER_LANCZOS, 1, true);
             $image->compositeImage($photoImage, \Imagick::COMPOSITE_OVER, $x, $y);
@@ -633,10 +640,17 @@ class IdCardRenderService
             if ($photoImage) {
                 $photoWidth = imagesx($photoImage);
                 $photoHeight = imagesy($photoImage);
-                $targetWidth = $position['width'] ? (int)(($position['width'] / 100) * $width) : 100;
-                $targetHeight = $position['height'] ? (int)(($position['height'] / 100) * $height) : 100;
-                $x = (int)(($position['x'] / 100) * $width);
-                $y = (int)(($position['y'] / 100) * $height);
+                // Use saved width/height from config, or default 8% width x 12% height (ID card appropriate sizes)
+                $photoWidthPercent = $position['width'] ?? 8;
+                $photoHeightPercent = $position['height'] ?? 12;
+                $targetWidth = (int)(($photoWidthPercent / 100) * $width);
+                $targetHeight = (int)(($photoHeightPercent / 100) * $height);
+                
+                // Positions in the layout designer are CENTER-based, so draw image centered
+                $centerX = (int)(($position['x'] / 100) * $width);
+                $centerY = (int)(($position['y'] / 100) * $height);
+                $x = $centerX - ($targetWidth / 2);
+                $y = $centerY - ($targetHeight / 2);
 
                 imagecopyresampled($image, $photoImage, $x, $y, 0, 0, $targetWidth, $targetHeight, $photoWidth, $photoHeight);
                 imagedestroy($photoImage);
@@ -665,10 +679,21 @@ class IdCardRenderService
             $qrImage = new \Imagick();
             $qrImage->readImageBlob($qrData);
             
-            $targetWidth = $position['width'] ? (int)(($position['width'] / 100) * $width) : 120;
-            $targetHeight = $position['height'] ? (int)(($position['height'] / 100) * $height) : 120;
-            $x = (int)(($position['x'] / 100) * $width);
-            $y = (int)(($position['y'] / 100) * $height);
+            // Use saved width/height from config, or default 10% x 10% (square)
+            // QR codes should always be square - use the smaller dimension to prevent stretching
+            $qrWidthPercent = $position['width'] ?? 10;
+            $qrHeightPercent = $position['height'] ?? 10;
+            $qrWidth = (int)(($qrWidthPercent / 100) * $width);
+            $qrHeight = (int)(($qrHeightPercent / 100) * $height);
+            $targetSize = min($qrWidth, $qrHeight); // Use smaller dimension for square
+            $targetWidth = $targetSize;
+            $targetHeight = $targetSize;
+            
+            // Positions in the layout designer are CENTER-based, so draw QR code centered
+            $centerX = (int)(($position['x'] / 100) * $width);
+            $centerY = (int)(($position['y'] / 100) * $height);
+            $x = $centerX - ($targetSize / 2);
+            $y = $centerY - ($targetSize / 2);
 
             $qrImage->resizeImage($targetWidth, $targetHeight, \Imagick::FILTER_LANCZOS, 1, true);
             $image->compositeImage($qrImage, \Imagick::COMPOSITE_OVER, $x, $y);
@@ -699,10 +724,22 @@ class IdCardRenderService
             if ($qrImage) {
                 $qrWidth = imagesx($qrImage);
                 $qrHeight = imagesy($qrImage);
-                $targetWidth = $position['width'] ? (int)(($position['width'] / 100) * $width) : 120;
-                $targetHeight = $position['height'] ? (int)(($position['height'] / 100) * $height) : 120;
-                $x = (int)(($position['x'] / 100) * $width);
-                $y = (int)(($position['y'] / 100) * $height);
+                
+                // Use saved width/height from config, or default 10% x 10% (square)
+                // QR codes should always be square - use the smaller dimension to prevent stretching
+                $qrWidthPercent = $position['width'] ?? 10;
+                $qrHeightPercent = $position['height'] ?? 10;
+                $calcWidth = (int)(($qrWidthPercent / 100) * $width);
+                $calcHeight = (int)(($qrHeightPercent / 100) * $height);
+                $targetSize = min($calcWidth, $calcHeight); // Use smaller dimension for square
+                $targetWidth = $targetSize;
+                $targetHeight = $targetSize;
+                
+                // Positions in the layout designer are CENTER-based, so draw QR code centered
+                $centerX = (int)(($position['x'] / 100) * $width);
+                $centerY = (int)(($position['y'] / 100) * $height);
+                $x = $centerX - ($targetSize / 2);
+                $y = $centerY - ($targetSize / 2);
 
                 imagecopyresampled($image, $qrImage, $x, $y, 0, 0, $targetWidth, $targetHeight, $qrWidth, $qrHeight);
                 imagedestroy($qrImage);

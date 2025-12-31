@@ -669,6 +669,10 @@ export interface TranslationKeys {
     row: string;
     field: string;
     message: string;
+    limitReached: string;
+    limitWarning: string;
+    uploadDisabled: string;
+    importLimited: string;
     acrossSelected: string;
     registeredMale: string;
     registeredFemale: string;
@@ -942,6 +946,7 @@ export interface TranslationKeys {
     feeStatusTooLong: string;
     admissionYearMaxLength: string;
     placementNotesMaxLength: string;
+    limitReached: string;
   };
 
   // Forms and validation
@@ -2740,6 +2745,7 @@ export interface TranslationKeys {
     fontFamilyHint: string;
     reportFontSizeHint: string;
     currentLogo: string;
+    multiSchoolFeatureRequired: string;
   };
 
   // Roles Management
@@ -3331,6 +3337,26 @@ export interface TranslationKeys {
     documentUploaded: string;
     documentDeleted: string;
     documentUploadFailed: string;
+    // Course Students
+    courseStudents: {
+      saved: string;
+      updated: string;
+      deleted: string;
+      saveFailed: string;
+      updateFailed: string;
+      deleteFailed: string;
+      enrolled: string;
+      enrollFailed: string;
+      markedCompleted: string;
+      markCompletedFailed: string;
+      markedDropped: string;
+      markDroppedFailed: string;
+      certificateIssued: string;
+      certificateIssueFailed: string;
+      copiedToMain: string;
+      copyFailed: string;
+      noStudentsEnrolled: string;
+    };
     // DMS Documents
     documentCreated: string;
     documentUpdated: string;
@@ -4458,6 +4484,51 @@ export interface TranslationKeys {
     guestCode: string;
     contactPerson: string;
     noDataToExport: string;
+  };
+  
+  // Subscription/SaaS system
+  subscription: {
+    // Status banners
+    trialPeriod: string;
+    trialEndsIn: string;
+    trialEnding: string;
+    upgradeToKeepAccess: string;
+    gracePeriod: string;
+    subscriptionExpired: string;
+    daysLeftToRenew: string;
+    renewNow: string;
+    readOnlyMode: string;
+    cannotMakeChanges: string;
+    accountBlocked: string;
+    contactSupport: string;
+    usageLimitsWarning: string;
+    approachingLimits: string;
+    manageSubscription: string;
+    upgrade: string;
+    
+    // Usage limits
+    limitReached: string;
+    limitReachedCantCreate: string;
+    approachingLimit: string;
+    cannotCreateMore: string;
+    usageWarningMessage: string;
+    used: string;
+    currentPlan: string;
+    upgradePlan: string;
+    
+    // Features
+    featureNotAvailable: string;
+    isNotIncluded: string;
+    purchaseAddon: string;
+    viewFeatures: string;
+    
+    // Errors
+    noSubscription: string;
+    limitReachedMessage: string;
+    featureNotAvailableMessage: string;
+    writeAccessDenied: string;
+    readAccessDenied: string;
+    genericError: string;
   };
 }
 

@@ -92,17 +92,23 @@ class CertificateTemplateController extends Controller
             'is_active' => 'nullable|in:0,1,true,false',
         ]);
 
-        // Type defaults to 'graduation' for backward compatibility
-        $type = $validated['type'] ?? 'graduation';
-        
         // Note: school_id is optional - templates can be general (no school assignment) or assigned to specific schools
 
-        // Validate course_id is not set when type is 'graduation'
-        if ($type === 'graduation' && !empty($validated['course_id'])) {
-            return response()->json([
-                'error' => 'The course_id field cannot be set when type is graduation.',
-                'errors' => ['course_id' => ['Graduation certificates cannot be assigned to courses.']]
-            ], 422);
+        // If course_id is provided, automatically set type to 'course'
+        // But if type is explicitly set to 'graduation', reject it
+        if (!empty($validated['course_id'])) {
+            // Check if type was explicitly set to 'graduation'
+            if (isset($validated['type']) && $validated['type'] === 'graduation') {
+                return response()->json([
+                    'error' => 'The course_id field cannot be set when type is graduation.',
+                    'errors' => ['course_id' => ['Graduation certificates cannot be assigned to courses.']]
+                ], 422);
+            }
+            // Automatically set type to 'course' when course_id is provided
+            $type = 'course';
+        } else {
+            // Type defaults to 'graduation' for backward compatibility (only when no course_id)
+            $type = $validated['type'] ?? 'graduation';
         }
 
         // Strict school scoping: all certificate templates are school-scoped (including course templates)
@@ -269,17 +275,23 @@ class CertificateTemplateController extends Controller
             'is_active' => 'nullable|in:0,1,true,false',
         ]);
 
-        // Get current type or use provided type
-        $type = $validated['type'] ?? $template->type ?? 'graduation';
-        
         // Note: school_id is optional - templates can be general (no school assignment) or assigned to specific schools
 
-        // Validate course_id is not set when type is 'graduation'
-        if ($type === 'graduation' && !empty($validated['course_id'])) {
-            return response()->json([
-                'error' => 'The course_id field cannot be set when type is graduation.',
-                'errors' => ['course_id' => ['Graduation certificates cannot be assigned to courses.']]
-            ], 422);
+        // If course_id is provided, automatically set type to 'course'
+        // But if type is explicitly set to 'graduation', reject it
+        if (array_key_exists('course_id', $validated) && !empty($validated['course_id'])) {
+            // Check if type was explicitly set to 'graduation'
+            if (isset($validated['type']) && $validated['type'] === 'graduation') {
+                return response()->json([
+                    'error' => 'The course_id field cannot be set when type is graduation.',
+                    'errors' => ['course_id' => ['Graduation certificates cannot be assigned to courses.']]
+                ], 422);
+            }
+            // Automatically set type to 'course' when course_id is provided
+            $type = 'course';
+        } else {
+            // Get current type or use provided type, defaulting to 'graduation' for backward compatibility
+            $type = $validated['type'] ?? $template->type ?? 'graduation';
         }
 
         // Strict school scoping
@@ -366,10 +378,8 @@ class CertificateTemplateController extends Controller
                 ->update(['is_default' => false]);
         }
 
-        // Update type if provided
-        if (isset($validated['type'])) {
-            $validated['type'] = $type;
-        }
+        // Always update type (it may have been auto-set based on course_id)
+        $validated['type'] = $type;
 
         $template->update($validated);
 

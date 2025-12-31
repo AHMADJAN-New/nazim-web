@@ -203,12 +203,12 @@ export function PermissionsManagement() {
         await removePermission.mutateAsync({ role, permissionId });
       }
 
-      toast.success(t('permissions.permissionRolesUpdated'));
+      showToast.success(t('permissions.permissionRolesUpdated'));
       setIsEditMode(false);
       setEditingPermission(null);
       setSelectedRoles({});
     } catch (error: any) {
-      toast.error(error.message || t('permissions.failedToUpdate'));
+      showToast.error(error.message || t('permissions.failedToUpdate'));
     }
   };
 
@@ -277,7 +277,7 @@ export function PermissionsManagement() {
     try {
       await deletePermission.mutateAsync(permissionId);
     } catch (error: any) {
-      toast.error(error.message || t('permissions.failedToDelete'));
+      showToast.error(error.message || t('permissions.failedToDelete'));
     }
   };
 

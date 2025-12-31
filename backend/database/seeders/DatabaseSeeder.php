@@ -17,27 +17,29 @@ class DatabaseSeeder extends Seeder
      *
      * Creates:
      * - All permissions (via PermissionSeeder)
-     * - 2 organizations with default roles
-     * - 3 users per organization (admin, staff, teacher)
+     * - Platform admin user with test organization
      */
     public function run(): void
     {
         $this->command->info('Starting database seeding...');
 
+        // Step 0: Seed subscription plans (required for new organizations)
+        $this->command->info('Step 0: Seeding subscription plans...');
+        $this->call(SubscriptionSeeder::class);
+
         // Step 1: Seed permissions first (required for roles)
         $this->command->info('Step 1: Seeding permissions...');
         $this->call(PermissionSeeder::class);
+
+        // Step 1a: Seed platform admin user (platform admin access)
+        $this->command->info('Step 1a: Seeding platform admin user...');
+        $this->call(PlatformAdminSeeder::class);
 
         // Step 1b: Seed residency types (lookup table)
         $this->command->info('Step 1b: Seeding residency types...');
         $this->call(ResidencyTypeSeeder::class);
 
-        // Step 2: Create 2 organizations
-        $this->command->info('Step 2: Creating organizations...');
-        $org1 = $this->createOrganization('Organization One', 'org-one', 'First test organization');
-        $org2 = $this->createOrganization('Organization Two', 'org-two', 'Second test organization');
-
-        // Step 2b: Ensure role permissions for all organizations (idempotent)
+        // Step 2: Ensure role permissions for all organizations (idempotent)
         $this->command->info('Step 2b: Ensuring role permissions for all organizations...');
         $this->assignPermissionsForAllOrganizations();
 
@@ -73,23 +75,7 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 2g: Seeding grades...');
         $this->call(GradeSeeder::class);
 
-        // Step 3: Create users for Organization 1
-        $this->command->info('Step 3: Creating users for Organization One...');
-        $this->createUsersForOrganization($org1, [
-            ['email' => 'admin1@test.com', 'name' => 'Admin One', 'role' => 'admin', 'password' => 'admin123'],
-            ['email' => 'staff1@test.com', 'name' => 'Staff One', 'role' => 'staff', 'password' => 'staff123'],
-            ['email' => 'teacher1@test.com', 'name' => 'Teacher One', 'role' => 'teacher', 'password' => 'teacher123'],
-        ]);
-
-        // Step 4: Create users for Organization 2
-        $this->command->info('Step 4: Creating users for Organization Two...');
-        $this->createUsersForOrganization($org2, [
-            ['email' => 'admin2@test.com', 'name' => 'Admin Two', 'role' => 'admin', 'password' => 'admin123'],
-            ['email' => 'staff2@test.com', 'name' => 'Staff Two', 'role' => 'staff', 'password' => 'staff123'],
-            ['email' => 'teacher2@test.com', 'name' => 'Teacher Two', 'role' => 'teacher', 'password' => 'teacher123'],
-        ]);
-
-        // Step 5: Create schools for organizations
+        // Step 3: Create schools for organizations
         $this->command->info('Step 5: Creating schools...');
         $this->call(SchoolBrandingSeeder::class);
 
@@ -204,17 +190,11 @@ class DatabaseSeeder extends Seeder
         $this->command->info('');
         $this->command->info('✅ Database seeding completed successfully!');
         $this->command->info('');
-        $this->command->info('Organization One users:');
-        $this->command->info('  - admin1@test.com / admin123 (Admin)');
-        $this->command->info('  - staff1@test.com / staff123 (Staff)');
-        $this->command->info('  - teacher1@test.com / teacher123 (Teacher)');
+        $this->command->info('Platform Admin user:');
+        $this->command->info('  - platform-admin@nazim.app / platform-admin-123 (Platform Admin)');
+        $this->command->info('  Access at: /platform/login');
         $this->command->info('');
-        $this->command->info('Organization Two users:');
-        $this->command->info('  - admin2@test.com / admin123 (Admin)');
-        $this->command->info('  - staff2@test.com / staff123 (Staff)');
-        $this->command->info('  - teacher2@test.com / teacher123 (Teacher)');
-        $this->command->info('');
-        $this->command->info('Each user can only see data from their own organization.');
+        $this->command->info('Platform admin has a test organization with full access for testing app functionality.');
     }
 
     /**
@@ -316,6 +296,7 @@ class DatabaseSeeder extends Seeder
 
     /**
      * Assign permissions to a role
+     * CRITICAL: Uses organization-specific permissions (NOT global permissions)
      */
     protected function assignPermissionsToRole(string $organizationId, string $roleName): void
     {
@@ -332,23 +313,32 @@ class DatabaseSeeder extends Seeder
         $rolePermissions = \Database\Seeders\PermissionSeeder::getRolePermissions();
         $permissionList = $rolePermissions[$roleName] ?? [];
 
-        // Get all global permissions
-        $globalPermissions = DB::table('permissions')
-            ->whereNull('organization_id')
+        // CRITICAL: Get organization-specific permissions (NOT global)
+        // OrganizationObserver should have created these when the organization was created
+        $orgPermissions = DB::table('permissions')
+            ->where('organization_id', $organizationId)
             ->where('guard_name', 'web')
             ->get()
             ->keyBy('name');
 
-        if ($globalPermissions->isEmpty()) {
-            $this->command->warn("  ⚠ No global permissions found. Permissions not assigned to {$roleName} role.");
+        if ($orgPermissions->isEmpty()) {
+            $this->command->warn("  ⚠ No organization-specific permissions found for organization {$organizationId}.");
+            $this->command->warn("     Permissions should be created by OrganizationObserver when organization is created.");
+            $this->command->warn("     Skipping permission assignment for {$roleName} role.");
             return;
         }
 
         $assignedCount = 0;
+        $skippedCount = 0;
 
         if ($permissionList === '*') {
-            // Admin gets all permissions
-            foreach ($globalPermissions as $permission) {
+            // Admin gets all organization permissions (except subscription.admin - it's global only)
+            foreach ($orgPermissions as $permission) {
+                // CRITICAL: Skip subscription.admin - it's GLOBAL only and should NEVER be assigned to organization roles
+                if ($permission->name === 'subscription.admin') {
+                    continue;
+                }
+
                 $exists = DB::table('role_has_permissions')
                     ->where('permission_id', $permission->id)
                     ->where('role_id', $role->id)
@@ -362,12 +352,19 @@ class DatabaseSeeder extends Seeder
                         'organization_id' => $organizationId,
                     ]);
                     $assignedCount++;
+                } else {
+                    $skippedCount++;
                 }
             }
         } else {
             // Assign specific permissions
             foreach ($permissionList as $permissionName) {
-                $permission = $globalPermissions->get($permissionName);
+                // CRITICAL: Skip subscription.admin - it's GLOBAL only
+                if ($permissionName === 'subscription.admin') {
+                    continue;
+                }
+
+                $permission = $orgPermissions->get($permissionName);
                 if ($permission) {
                     $exists = DB::table('role_has_permissions')
                         ->where('permission_id', $permission->id)
@@ -382,13 +379,17 @@ class DatabaseSeeder extends Seeder
                             'organization_id' => $organizationId,
                         ]);
                         $assignedCount++;
+                    } else {
+                        $skippedCount++;
                     }
+                } else {
+                    $this->command->warn("  ⚠ Permission '{$permissionName}' not found for organization {$organizationId}");
                 }
             }
         }
 
-        if ($assignedCount > 0) {
-            $this->command->info("  ✓ Assigned {$assignedCount} permissions to '{$roleName}' role");
+        if ($assignedCount > 0 || $skippedCount > 0) {
+            $this->command->info("  ✓ Role '{$roleName}': Assigned {$assignedCount} permissions, Skipped {$skippedCount} existing");
         }
     }
 

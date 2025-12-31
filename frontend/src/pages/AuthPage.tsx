@@ -68,6 +68,18 @@ export default function AuthPage() {
     setAuthLoading(true);
 
     try {
+      // CRITICAL: Backup platform admin token if user is logged into platform admin
+      // This allows platform admin session to be restored if main app login fails
+      const isPlatformAdminSession = localStorage.getItem('is_platform_admin_session') === 'true';
+      const platformAdminToken = isPlatformAdminSession ? localStorage.getItem('api_token') : null;
+      
+      if (isPlatformAdminSession && platformAdminToken) {
+        localStorage.setItem('platform_admin_token_backup', platformAdminToken);
+      }
+
+      // Clear platform admin session flag - user is logging into main app
+      localStorage.removeItem('is_platform_admin_session');
+
       const response = await authApi.login(formData.email, formData.password);
 
       if (response.user && response.token) {
@@ -82,12 +94,28 @@ export default function AuthPage() {
         if (import.meta.env.DEV) {
           console.warn('Sign in returned no user data');
         }
+        // Restore platform admin token if login failed
+        if (isPlatformAdminSession && platformAdminToken) {
+          localStorage.setItem('api_token', platformAdminToken);
+          localStorage.setItem('is_platform_admin_session', 'true');
+          localStorage.removeItem('platform_admin_token_backup');
+        }
         toast.error(t('auth.signInFailed') || 'Sign in failed. Please try again.');
       }
     } catch (error: any) {
       if (import.meta.env.DEV) {
         console.error('Sign in error:', error);
       }
+      
+      // Restore platform admin token if login failed
+      const isPlatformAdminSession = localStorage.getItem('is_platform_admin_session') === 'true';
+      const platformAdminTokenBackup = localStorage.getItem('platform_admin_token_backup');
+      if (platformAdminTokenBackup) {
+        localStorage.setItem('api_token', platformAdminTokenBackup);
+        localStorage.setItem('is_platform_admin_session', 'true');
+        localStorage.removeItem('platform_admin_token_backup');
+      }
+      
       const errorMessage = error.message || t('auth.signInFailed') || 'Failed to sign in. Please check your credentials and try again.';
 
       if (errorMessage.includes('credentials') || errorMessage.includes('Invalid')) {

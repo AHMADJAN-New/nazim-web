@@ -878,11 +878,42 @@ class CourseStudentController extends Controller
 
             // Update course student record
             $oldPicturePath = $student->picture_path;
-            $student->picture_path = $path;
-            $student->save();
             
-            // Refresh the model to ensure we have the latest data
-            $student->refresh();
+            // Use update() method to ensure the change is persisted
+            // Also use DB::table() as a fallback to ensure the update happens
+            $updated = $student->update(['picture_path' => $path]);
+            
+            // Double-check by querying the database directly
+            if (!$updated) {
+                Log::warning('Course Student Picture Upload - update() returned false, trying DB::table()', [
+                    'course_student_id' => $id,
+                    'picture_path' => $path,
+                ]);
+                
+                // Try direct DB update as fallback
+                $dbUpdated = DB::table('course_students')
+                    ->where('id', $id)
+                    ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
+                    ->whereNull('deleted_at')
+                    ->update(['picture_path' => $path]);
+                
+                if (!$dbUpdated) {
+                    Log::error('Course Student Picture Upload - Failed to update picture_path via both methods', [
+                        'course_student_id' => $id,
+                        'picture_path' => $path,
+                        'update_result' => $updated,
+                        'db_update_result' => $dbUpdated,
+                    ]);
+                    return response()->json(['error' => 'Failed to save picture path'], 500);
+                }
+                
+                // Refresh the model after DB update
+                $student->refresh();
+            } else {
+                // Refresh the model to ensure we have the latest data
+                $student->refresh();
+            }
 
             Log::info('Course Student Picture Upload', [
                 'course_student_id' => $id,
@@ -892,6 +923,7 @@ class CourseStudentController extends Controller
                 'saved_picture_path' => $student->picture_path, // Verify it was saved
                 'file_size' => $fileSize,
                 'file_extension' => $extension,
+                'update_result' => $updated,
             ]);
 
             return response()->json([
@@ -960,15 +992,66 @@ class CourseStudentController extends Controller
                 return response()->json(['error' => 'Course student not found'], 404);
             }
 
-            if (!$student->picture_path) {
-                abort(404, 'Picture not found');
+            $picturePath = null;
+            $source = 'course_student';
+
+            // First, try course student's own picture
+            if ($student->picture_path) {
+                $picturePath = $student->picture_path;
+            } 
+            // If no picture_path, try main student's picture if linked
+            elseif ($student->main_student_id) {
+                $mainStudent = Student::where('id', $student->main_student_id)
+                    ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
+                    ->whereNull('deleted_at')
+                    ->first();
+                
+                if ($mainStudent && $mainStudent->picture_path) {
+                    $picturePath = $mainStudent->picture_path;
+                    $source = 'main_student';
+                }
             }
 
-            // Use FileStorageService to download the file
-            return $this->fileStorageService->downloadFile(
-                $student->picture_path,
-                'student-picture.' . pathinfo($student->picture_path, PATHINFO_EXTENSION)
-            );
+            if (!$picturePath) {
+                Log::info('Course student picture requested but no picture_path available', [
+                    'course_student_id' => $id,
+                    'main_student_id' => $student->main_student_id,
+                ]);
+                return response('', 404);
+            }
+
+            // Check if file exists using FileStorageService
+            if (!$this->fileStorageService->fileExists($picturePath)) {
+                Log::warning('Course student picture file not found on disk', [
+                    'course_student_id' => $id,
+                    'picture_path' => $picturePath,
+                    'source' => $source,
+                ]);
+                return response('', 404);
+            }
+
+            // Get file content using FileStorageService
+            $file = $this->fileStorageService->getFile($picturePath);
+
+            if (!$file || empty($file)) {
+                Log::error('Course student picture file is empty', [
+                    'course_student_id' => $id,
+                    'picture_path' => $picturePath,
+                    'source' => $source,
+                ]);
+                return response('', 404);
+            }
+
+            // Determine MIME type from file extension using FileStorageService
+            $mimeType = $this->fileStorageService->getMimeTypeFromExtension($picturePath);
+
+            return response($file, 200)
+                ->header('Content-Type', $mimeType)
+                ->header('Content-Disposition', 'inline; filename="' . basename($picturePath) . '"')
+                ->header('Cache-Control', 'private, max-age=3600');
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Error retrieving course student picture: ' . $e->getMessage(), [
                 'course_student_id' => $id,
