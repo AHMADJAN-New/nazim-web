@@ -12,6 +12,7 @@ import type { IdCardLayoutConfig } from '@/types/domain/idCardTemplate';
 import { idCardTemplatesApi } from '@/lib/api/client';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useStudents } from '@/hooks/useStudents';
+import type { Student } from '@/types/domain/student';
 
 // Available fonts for ID card templates
 const AVAILABLE_FONTS = [
@@ -97,11 +98,36 @@ export function IdCardLayoutEditor({
 
   // Update configs when props change
   useEffect(() => {
-    setConfigFront({
+    const updatedConfig = {
       ...layoutConfigFront,
       enabledFields: layoutConfigFront.enabledFields || ['studentName', 'studentCode', 'admissionNumber', 'class', 'studentPhoto', 'qrCode'],
       fieldFonts: layoutConfigFront.fieldFonts || {},
-    });
+    };
+
+    // Ensure default width/height for image fields if missing
+    if (updatedConfig.studentPhotoPosition) {
+      const photoPos = updatedConfig.studentPhotoPosition as any;
+      if (!photoPos.width || !photoPos.height) {
+        updatedConfig.studentPhotoPosition = {
+          ...photoPos,
+          width: photoPos.width ?? 8,
+          height: photoPos.height ?? 12,
+        };
+      }
+    }
+
+    if (updatedConfig.qrCodePosition) {
+      const qrPos = updatedConfig.qrCodePosition as any;
+      if (!qrPos.width || !qrPos.height) {
+        updatedConfig.qrCodePosition = {
+          ...qrPos,
+          width: qrPos.width ?? 10,
+          height: qrPos.height ?? 10,
+        };
+      }
+    }
+
+    setConfigFront(updatedConfig);
   }, [layoutConfigFront]);
 
   useEffect(() => {
@@ -123,6 +149,13 @@ export function IdCardLayoutEditor({
   const [imageUrlFront, setImageUrlFront] = useState<string | null>(null);
   const [imageUrlBack, setImageUrlBack] = useState<string | null>(null);
   const [imageScale, setImageScale] = useState(1);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [resizeHandle, setResizeHandle] = useState<string | null>(null);
+  const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
+  const [studentPhotoUrl, setStudentPhotoUrl] = useState<string | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [previewStudent, setPreviewStudent] = useState<Student | null>(null);
 
   // Get current config based on active tab
   const currentConfig = activeTab === 'front' ? configFront : configBack;
@@ -136,6 +169,16 @@ export function IdCardLayoutEditor({
   // Fetch students for sample data
   const { data: students = [] } = useStudents();
   const sampleStudent = students.length > 0 ? students[0] : null;
+
+  // Update preview student when students change
+  useEffect(() => {
+    if (students.length > 0 && !previewStudent) {
+      setPreviewStudent(students[0]);
+    } else if (previewStudent && !students.find(s => s.id === previewStudent.id)) {
+      // If current preview student is no longer in list, use first student
+      setPreviewStudent(students.length > 0 ? students[0] : null);
+    }
+  }, [students, previewStudent]);
 
   // Load background images
   useEffect(() => {
@@ -236,19 +279,149 @@ export function IdCardLayoutEditor({
     };
   }, [backgroundImageUrlBack, templateId]);
 
+  // Load student photo for preview
+  useEffect(() => {
+    const loadStudentPhoto = async () => {
+      if (!previewStudent?.id || activeTab !== 'front') {
+        setStudentPhotoUrl(null);
+        return;
+      }
+
+      try {
+        const { apiClient } = await import('@/lib/api/client');
+        const token = apiClient.getToken();
+        const url = `/api/students/${previewStudent.id}/picture?t=${Date.now()}`;
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'image/*',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          setStudentPhotoUrl(blobUrl);
+        } else {
+          setStudentPhotoUrl(null);
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('[IdCardLayoutEditor] Failed to load student photo:', error);
+        }
+        setStudentPhotoUrl(null);
+      }
+    };
+
+    loadStudentPhoto();
+  }, [previewStudent?.id ?? null, activeTab]);
+
+  // Cleanup student photo blob URL
+  useEffect(() => {
+    return () => {
+      if (studentPhotoUrl && studentPhotoUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(studentPhotoUrl);
+      }
+    };
+  }, [studentPhotoUrl]);
+
+  // Generate QR code for preview
+  useEffect(() => {
+    const generateQRCode = async () => {
+      if (!previewStudent || activeTab !== 'front') {
+        setQrCodeUrl(null);
+        return;
+      }
+
+      try {
+        // Use student code or admission number for QR code value
+        const qrValue = previewStudent.studentCode || previewStudent.admissionNumber || previewStudent.id;
+
+        if (!qrValue) {
+          setQrCodeUrl(null);
+          return;
+        }
+
+        // Generate QR code using external service
+        const size = 200;
+        const response = await fetch(
+          `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(qrValue)}`,
+          { mode: 'cors' }
+        );
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          setQrCodeUrl(blobUrl);
+        } else {
+          setQrCodeUrl(null);
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('[IdCardLayoutEditor] Failed to generate QR code:', error);
+        }
+        setQrCodeUrl(null);
+      }
+    };
+
+    if (currentConfig.enabledFields?.includes('qrCode')) {
+      generateQRCode();
+    } else {
+      setQrCodeUrl(null);
+    }
+  }, [previewStudent?.id ?? null, previewStudent?.studentCode ?? null, previewStudent?.admissionNumber ?? null, currentConfig.enabledFields, activeTab]);
+
+  // Cleanup QR code blob URL
+  useEffect(() => {
+    return () => {
+      if (qrCodeUrl && qrCodeUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(qrCodeUrl);
+      }
+    };
+  }, [qrCodeUrl]);
+
+  // Track container dimensions for image sizing
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        setContainerDimensions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight,
+        });
+      }
+    };
+
+    // Initial measurement
+    updateDimensions();
+
+    // Update on window resize
+    window.addEventListener('resize', updateDimensions);
+    
+    // Also update when background image loads (might change container size)
+    if (currentImageLoaded) {
+      // Small delay to ensure layout has settled
+      setTimeout(updateDimensions, 100);
+    }
+    
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, [currentImageLoaded, activeTab]);
+
   const getFieldPosition = (fieldKey: keyof IdCardLayoutConfig) => {
-    const position = currentConfig[fieldKey] as { x: number; y: number } | undefined;
+    const position = currentConfig[fieldKey] as { x: number; y: number; width?: number; height?: number } | undefined;
     if (position) return position;
     
     // Default positions for ID card (CR80: 85.6mm × 53.98mm)
-    const defaultPositions: Record<string, { x: number; y: number }> = {
+    const defaultPositions: Record<string, { x: number; y: number; width?: number; height?: number }> = {
       studentNamePosition: { x: 50, y: 40 },
       fatherNamePosition: { x: 50, y: 50 },
       studentCodePosition: { x: 50, y: 60 },
       admissionNumberPosition: { x: 50, y: 70 },
       classPosition: { x: 50, y: 80 },
-      studentPhotoPosition: { x: 20, y: 50 },
-      qrCodePosition: { x: 80, y: 50 },
+      studentPhotoPosition: { x: 20, y: 50, width: 8, height: 12 }, // Passport-like size for ID cards
+      qrCodePosition: { x: 80, y: 50, width: 10, height: 10 }, // Square
       schoolNamePosition: { x: 50, y: 30 },
       expiryDatePosition: { x: 50, y: 60 },
       cardNumberPosition: { x: 50, y: 80 },
@@ -257,11 +430,22 @@ export function IdCardLayoutEditor({
     return defaultPositions[fieldKey] || { x: 50, y: 50 };
   };
 
-  const updateFieldPosition = (fieldKey: keyof IdCardLayoutConfig, x: number, y: number) => {
-    setCurrentConfig((prev) => ({
-      ...prev,
-      [fieldKey]: { x, y },
-    }));
+  const updateFieldPosition = (fieldKey: keyof IdCardLayoutConfig, x: number, y: number, width?: number, height?: number) => {
+    setCurrentConfig((prev) => {
+      const currentPosition = (prev[fieldKey] as any) || {};
+      // Preserve width and height when updating position
+      return {
+        ...prev,
+        [fieldKey]: { 
+          ...currentPosition,
+          x, 
+          y,
+          // Set default width/height if not already set
+          width: width !== undefined ? width : (currentPosition.width ?? (fieldKey === 'qrCodePosition' ? 10 : fieldKey === 'studentPhotoPosition' ? 8 : undefined)),
+          height: height !== undefined ? height : (currentPosition.height ?? (fieldKey === 'qrCodePosition' ? 10 : fieldKey === 'studentPhotoPosition' ? 12 : undefined)),
+        },
+      };
+    });
   };
 
   const handleMouseDown = useCallback((e: React.MouseEvent, fieldId: string) => {
@@ -275,40 +459,151 @@ export function IdCardLayoutEditor({
 
     const rect = containerRef.current.getBoundingClientRect();
     const position = getFieldPosition(field.key);
-    const fieldX = (position.x / 100) * rect.width;
-    const fieldY = (position.y / 100) * rect.height;
+    // Account for 20px padding
+    const padding = 20;
+    const fieldX = (position.x / 100) * (rect.width - 2 * padding);
+    const fieldY = (position.y / 100) * (rect.height - 2 * padding);
 
     setDragOffset({
-      x: e.clientX - rect.left - fieldX,
-      y: e.clientY - rect.top - fieldY,
+      x: e.clientX - rect.left - padding - fieldX,
+      y: e.clientY - rect.top - padding - fieldY,
     });
   }, [currentConfig, currentFields]);
 
+  const handleResizeStart = useCallback((e: React.MouseEvent, fieldId: string, direction?: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (import.meta.env.DEV) {
+      console.log('[IdCardLayoutEditor] Resize start:', { fieldId, direction, clientX: e.clientX, clientY: e.clientY });
+    }
+
+    setSelectedField(fieldId);
+    setIsResizing(true);
+    setResizeHandle(direction || null);
+
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) {
+      if (import.meta.env.DEV) {
+        console.warn('[IdCardLayoutEditor] No container rect found');
+      }
+      return;
+    }
+
+    // Account for 20px padding
+    const padding = 20;
+    const startX = ((e.clientX - rect.left - padding) / (rect.width - 2 * padding)) * 100;
+    const startY = ((e.clientY - rect.top - padding) / (rect.height - 2 * padding)) * 100;
+
+    // Get current position and width/height
+    let currentX = 20;
+    let currentY = 50;
+    let currentWidth = 8; // default (ID card photo width)
+    let currentHeight = 12; // default (ID card photo height)
+
+    if (fieldId === 'studentPhoto') {
+      const pos = currentConfig.studentPhotoPosition as any;
+      currentX = pos?.x ?? 20;
+      currentY = pos?.y ?? 50;
+      currentWidth = pos?.width ?? 8;
+      currentHeight = pos?.height ?? 12;
+    } else if (fieldId === 'qrCode') {
+      const pos = currentConfig.qrCodePosition as any;
+      currentX = pos?.x ?? 80;
+      currentY = pos?.y ?? 50;
+      currentWidth = pos?.width ?? 10;
+      currentHeight = pos?.height ?? 10;
+    }
+
+    if (import.meta.env.DEV) {
+      console.log('[IdCardLayoutEditor] Initial resize values:', {
+        startX, startY, currentX, currentY, currentWidth, currentHeight, direction
+      });
+    }
+
+    setResizeStart({
+      x: startX,
+      y: startY,
+      width: currentWidth,
+      height: currentHeight,
+    });
+  }, [currentConfig]);
+
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
-      if (!draggingField || !containerRef.current) return;
+      if (isResizing && selectedField && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const padding = 20;
+        const currentX = ((e.clientX - rect.left - padding) / (rect.width - 2 * padding)) * 100;
+        const currentY = ((e.clientY - rect.top - padding) / (rect.height - 2 * padding)) * 100;
 
-      const field = currentFields.find((f) => f.id === draggingField);
-      if (!field) return;
+        const deltaX = currentX - resizeStart.x;
+        const deltaY = currentY - resizeStart.y;
 
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
-      const y = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
+        let newWidth = Math.max(1, Math.min(100, resizeStart.width + deltaX));
+        let newHeight = Math.max(1, Math.min(100, resizeStart.height + deltaY));
 
-      const clampedX = Math.max(0, Math.min(100, x));
-      const clampedY = Math.max(0, Math.min(100, y));
+        if (import.meta.env.DEV) {
+          console.log('[IdCardLayoutEditor] Resize values:', {
+            currentX, currentY, deltaX, deltaY, newWidth, newHeight
+          });
+        }
 
-      updateFieldPosition(field.key, clampedX, clampedY);
+        // For QR codes, keep it square (use smaller dimension)
+        if (selectedField === 'qrCode') {
+          const size = Math.min(newWidth, newHeight);
+          newWidth = size;
+          newHeight = size;
+        }
+
+        // Update width and height in config
+        if (selectedField === 'studentPhoto') {
+          setCurrentConfig(prev => ({
+            ...prev,
+            studentPhotoPosition: {
+              ...(prev.studentPhotoPosition as any),
+              width: newWidth,
+              height: newHeight,
+            },
+          }));
+        } else if (selectedField === 'qrCode') {
+          setCurrentConfig(prev => ({
+            ...prev,
+            qrCodePosition: {
+              ...(prev.qrCodePosition as any),
+              width: newWidth,
+              height: newHeight,
+            },
+          }));
+        }
+      } else if (draggingField && containerRef.current) {
+        const field = currentFields.find((f) => f.id === draggingField);
+        if (!field) return;
+
+        const rect = containerRef.current.getBoundingClientRect();
+        // Account for 20px padding
+        const padding = 20;
+        const x = ((e.clientX - rect.left - dragOffset.x - padding) / (rect.width - 2 * padding)) * 100;
+        const y = ((e.clientY - rect.top - dragOffset.y - padding) / (rect.height - 2 * padding)) * 100;
+
+        // Clamp to container bounds
+        const clampedX = Math.max(0, Math.min(100, x));
+        const clampedY = Math.max(0, Math.min(100, y));
+
+        updateFieldPosition(field.key, clampedX, clampedY);
+      }
     },
-    [draggingField, dragOffset, currentFields]
+    [draggingField, dragOffset, isResizing, selectedField, resizeStart, resizeHandle, currentFields, currentConfig, setCurrentConfig]
   );
 
   const handleMouseUp = useCallback(() => {
     setDraggingField(null);
+    setIsResizing(false);
+    setResizeHandle(null);
   }, []);
 
   useEffect(() => {
-    if (draggingField) {
+    if (draggingField || isResizing) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -316,7 +611,7 @@ export function IdCardLayoutEditor({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [draggingField, handleMouseMove, handleMouseUp]);
+  }, [draggingField, isResizing, handleMouseMove, handleMouseUp]);
 
   const toggleFieldEnabled = (fieldId: string) => {
     setCurrentConfig((prev) => {
@@ -331,28 +626,115 @@ export function IdCardLayoutEditor({
     });
   };
 
+  // Helper functions for per-field font customization
+  const updateFieldFont = (fieldId: string, property: 'fontSize' | 'fontFamily', value: number | string) => {
+    setCurrentConfig((prev) => {
+      const newFieldFonts = { ...(prev.fieldFonts || {}) };
+      if (!newFieldFonts[fieldId]) {
+        newFieldFonts[fieldId] = {};
+      }
+      newFieldFonts[fieldId] = {
+        ...newFieldFonts[fieldId],
+        [property]: value,
+      };
+      return {
+        ...prev,
+        fieldFonts: newFieldFonts,
+      };
+    });
+  };
+
+  const clearFieldFont = (fieldId: string, property: 'fontSize' | 'fontFamily') => {
+    setCurrentConfig((prev) => {
+      const newFieldFonts = { ...(prev.fieldFonts || {}) };
+      if (newFieldFonts[fieldId]) {
+        const updated = { ...newFieldFonts[fieldId] };
+        delete updated[property];
+        if (Object.keys(updated).length === 0) {
+          delete newFieldFonts[fieldId];
+        } else {
+          newFieldFonts[fieldId] = updated;
+        }
+      }
+      return {
+        ...prev,
+        fieldFonts: newFieldFonts,
+      };
+    });
+  };
+
   const getFieldStyle = (field: FieldConfig) => {
     const position = getFieldPosition(field.key);
     const baseFontSize = currentConfig.fontSize || field.defaultFontSize || 12;
-    const fontSize = baseFontSize * imageScale;
+    
+    // Get per-field font settings if available
+    const fieldFont = currentConfig.fieldFonts?.[field.id];
+    
+    // Use per-field font family or fall back to global/default
+    let fontFamily = currentConfig.fontFamily || 'Arial';
+    if (fieldFont?.fontFamily) {
+      fontFamily = fieldFont.fontFamily;
+    }
+    
+    // Calculate font size: use per-field custom size, or apply base size
+    let fontSize = baseFontSize;
+    if (fieldFont?.fontSize !== undefined) {
+      // Use custom font size for this field (absolute value, no multiplier)
+      fontSize = fieldFont.fontSize;
+    }
+    
+    // Scale font size based on image scale (to match preview container size)
+    const scaledFontSize = fontSize * imageScale;
+    
     const textColor = currentConfig.textColor || '#000000';
     const isSelected = selectedField === field.id;
     const isDragging = draggingField === field.id;
 
     if (field.isImage) {
       const imagePosition = position as { x: number; y: number; width?: number; height?: number };
+      
+      // Convert percentage-based image sizing to pixel-based using containerDimensions
+      // Account for 20px padding on each side
+      const padding = 20;
+      const availableWidth = containerDimensions.width > 0 ? containerDimensions.width - (2 * padding) : 0;
+      const availableHeight = containerDimensions.height > 0 ? containerDimensions.height - (2 * padding) : 0;
+      
+      const imageWidthPercent = imagePosition.width ?? (field.id === 'studentPhoto' ? 8 : 10);
+      const imageHeightPercent = imagePosition.height ?? (field.id === 'studentPhoto' ? 12 : 10);
+      
+      // Calculate pixel dimensions from percentages and container dimensions
+      let imageWidthPx: number;
+      let imageHeightPx: number;
+      
+      if (availableWidth > 0 && availableHeight > 0) {
+        imageWidthPx = (imageWidthPercent / 100) * availableWidth;
+        imageHeightPx = (imageHeightPercent / 100) * availableHeight;
+      } else {
+        // Fallback: use percentage if container dimensions not yet available
+        imageWidthPx = (imageWidthPercent / 100) * 400; // Assume 400px container width
+        imageHeightPx = (imageHeightPercent / 100) * 250; // Assume 250px container height
+      }
+      
+      // For QR codes, force square dimensions (use smaller dimension)
+      if (field.id === 'qrCode') {
+        const qrSizePx = Math.min(imageWidthPx, imageHeightPx);
+        imageWidthPx = qrSizePx;
+        imageHeightPx = qrSizePx;
+      }
+      
       return {
         position: 'absolute' as const,
         left: `${imagePosition.x}%`,
         top: `${imagePosition.y}%`,
         transform: 'translate(-50%, -50%)',
-        width: imagePosition.width ? `${imagePosition.width}%` : '15%',
-        height: imagePosition.height ? `${imagePosition.height}%` : '15%',
+        width: `${imageWidthPx}px`,
+        height: `${imageHeightPx}px`,
         border: isSelected ? '2px dashed #3b82f6' : '2px dashed #666',
         backgroundColor: 'rgba(255, 255, 255, 0.8)',
         cursor: 'move',
         zIndex: isSelected || isDragging ? 10 : 1,
         opacity: isDragging ? 0.7 : 1,
+        pointerEvents: 'auto' as const,
       };
     }
 
@@ -361,8 +743,8 @@ export function IdCardLayoutEditor({
       left: `${position.x}%`,
       top: `${position.y}%`,
       transform: 'translate(-50%, -50%)',
-      fontSize: `${fontSize}px`,
-      fontFamily: currentConfig.fontFamily || 'Arial',
+      fontSize: `${scaledFontSize}px`,
+      fontFamily,
       color: textColor,
       cursor: 'move',
       userSelect: 'none' as const,
@@ -373,11 +755,40 @@ export function IdCardLayoutEditor({
       backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
       borderRadius: '2px',
       whiteSpace: 'nowrap' as const,
+      pointerEvents: 'auto' as const,
     };
   };
 
   const handleSave = () => {
-    onSave(configFront, configBack);
+    // Ensure default widths/heights are set for image fields before saving
+    const configFrontToSave = { ...configFront };
+    const configBackToSave = { ...configBack };
+    
+    // Ensure studentPhotoPosition has default width/height if not set
+    if (configFrontToSave.studentPhotoPosition) {
+      const photoPos = configFrontToSave.studentPhotoPosition as any;
+      if (!photoPos.width || !photoPos.height) {
+        configFrontToSave.studentPhotoPosition = {
+          ...photoPos,
+          width: photoPos.width ?? 8,
+          height: photoPos.height ?? 12,
+        };
+      }
+    }
+    
+    // Ensure qrCodePosition has default width/height if not set
+    if (configFrontToSave.qrCodePosition) {
+      const qrPos = configFrontToSave.qrCodePosition as any;
+      if (!qrPos.width || !qrPos.height) {
+        configFrontToSave.qrCodePosition = {
+          ...qrPos,
+          width: qrPos.width ?? 10,
+          height: qrPos.height ?? 10,
+        };
+      }
+    }
+    
+    onSave(configFrontToSave, configBackToSave);
   };
 
   return (
@@ -417,8 +828,8 @@ export function IdCardLayoutEditor({
                 <CardContent>
                   <div
                     ref={containerRef}
-                    className="relative w-full bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg overflow-hidden"
-                    style={{ aspectRatio: '85.6/53.98', maxHeight: '400px' }}
+                    className="relative w-full bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg overflow-visible"
+                    style={{ aspectRatio: '85.6/53.98', maxHeight: '400px', padding: '20px' }}
                     onClick={() => setSelectedField(null)}
                   >
                     {currentImageError ? (
@@ -464,8 +875,109 @@ export function IdCardLayoutEditor({
                           }}
                         >
                           {isImageField ? (
-                            <div className="w-full h-full flex items-center justify-center bg-white border border-gray-300 rounded">
-                              <span className="text-xs">{sampleText}</span>
+                            <div 
+                              className="relative border-2 border-dashed border-blue-400 bg-blue-50 rounded p-2" 
+                              style={{ 
+                                width: '100%',
+                                height: '100%',
+                                minHeight: '40px', 
+                                minWidth: '40px', 
+                                pointerEvents: 'auto',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              {/* Resize handles - only show when selected */}
+                              {selectedField === field.id && (
+                                <>
+                                  {/* Corner resize handles */}
+                                  <div
+                                    className="absolute -top-1 -left-1 w-4 h-4 bg-blue-500 rounded-full cursor-nw-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                    onMouseDown={(e) => handleResizeStart(e, field.id, 'nw')}
+                                    style={{ zIndex: 30 }}
+                                    title="Resize from top-left"
+                                  />
+                                  <div
+                                    className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full cursor-ne-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                    onMouseDown={(e) => handleResizeStart(e, field.id, 'ne')}
+                                    style={{ zIndex: 30 }}
+                                    title="Resize from top-right"
+                                  />
+                                  <div
+                                    className="absolute -bottom-1 -left-1 w-4 h-4 bg-blue-500 rounded-full cursor-sw-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                    onMouseDown={(e) => handleResizeStart(e, field.id, 'sw')}
+                                    style={{ zIndex: 30 }}
+                                    title="Resize from bottom-left"
+                                  />
+                                  <div
+                                    className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-full cursor-se-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                    onMouseDown={(e) => handleResizeStart(e, field.id, 'se')}
+                                    style={{ zIndex: 30 }}
+                                    title="Resize from bottom-right"
+                                  />
+                                  {/* Edge resize handles */}
+                                  <div
+                                    className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-4 bg-blue-500 rounded cursor-n-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                    onMouseDown={(e) => handleResizeStart(e, field.id, 'n')}
+                                    style={{ zIndex: 30 }}
+                                    title="Resize from top"
+                                  />
+                                  <div
+                                    className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-4 bg-blue-500 rounded cursor-s-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                    onMouseDown={(e) => handleResizeStart(e, field.id, 's')}
+                                    style={{ zIndex: 30 }}
+                                    title="Resize from bottom"
+                                  />
+                                  <div
+                                    className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-4 h-3 bg-blue-500 rounded cursor-w-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                    onMouseDown={(e) => handleResizeStart(e, field.id, 'w')}
+                                    style={{ zIndex: 30 }}
+                                    title="Resize from left"
+                                  />
+                                  <div
+                                    className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-4 h-3 bg-blue-500 rounded cursor-e-resize border-2 border-white shadow-lg hover:bg-blue-600"
+                                    onMouseDown={(e) => handleResizeStart(e, field.id, 'e')}
+                                    style={{ zIndex: 30 }}
+                                    title="Resize from right"
+                                  />
+                                </>
+                              )}
+
+                              <div className="flex items-center justify-center gap-1">
+                                <GripVertical className="h-4 w-4 opacity-50" />
+                                {field.id === 'studentPhoto' && studentPhotoUrl ? (
+                                  <img
+                                    src={studentPhotoUrl}
+                                    alt="Student Photo"
+                                    style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      objectFit: 'cover',
+                                      borderRadius: '4px',
+                                      pointerEvents: 'none',
+                                    }}
+                                  />
+                                ) : field.id === 'qrCode' && qrCodeUrl ? (
+                                  <img
+                                    src={qrCodeUrl}
+                                    alt="QR Code"
+                                    style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      objectFit: 'contain', // Contain maintains aspect ratio without distortion
+                                      pointerEvents: 'none', // Allow resize handles to receive mouse events
+                                      // Force square container for QR codes
+                                      aspectRatio: '1 / 1',
+                                    }}
+                                  />
+                                ) : (
+                                  <>
+                                    <span className="text-2xl" style={{ pointerEvents: 'none' }}>{sampleText}</span>
+                                    <span className="text-xs" style={{ pointerEvents: 'none' }}>{field.id === 'qrCode' ? 'QR' : 'Photo'}</span>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           ) : (
                             <div className="flex items-center gap-1">
@@ -541,6 +1053,171 @@ export function IdCardLayoutEditor({
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Field Settings Panel - appears when a field is selected */}
+              {selectedField && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">
+                      {t('idCards.fieldSettings') || 'Field Settings'} - {currentFields.find(f => f.id === selectedField)?.label || selectedField}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Image Field Settings (Width/Height) */}
+                    {(selectedField === 'studentPhoto' || selectedField === 'qrCode') && (
+                      <div className="space-y-3 pt-2 border-t">
+                        <div className="space-y-2">
+                          <Label className="text-sm">{selectedField === 'qrCode' ? 'QR Code Size (% of card)' : 'Photo Size (% of card)'}</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Width (%)</Label>
+                              <Input
+                                type="number"
+                                value={
+                                  (selectedField === 'qrCode'
+                                    ? (currentConfig.qrCodePosition as any)?.width ?? 10
+                                    : (currentConfig.studentPhotoPosition as any)?.width ?? 8)
+                                }
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  const val = raw === '' ? undefined : Math.max(1, Math.min(100, Number(raw)));
+                                  if (selectedField === 'qrCode') {
+                                    const current = currentConfig.qrCodePosition || { x: 80, y: 50, width: 10, height: 10 };
+                                    // For QR codes, update both width and height to keep it square
+                                    setCurrentConfig({ ...currentConfig, qrCodePosition: { ...current, width: val, height: val } });
+                                  } else {
+                                    const current = currentConfig.studentPhotoPosition || { x: 20, y: 50, width: 8, height: 12 };
+                                    setCurrentConfig({ ...currentConfig, studentPhotoPosition: { ...current, width: val } });
+                                  }
+                                }}
+                                placeholder={selectedField === 'qrCode' ? "10 (default)" : "8 (default)"}
+                                min="1"
+                                max="100"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Height (%)</Label>
+                              <Input
+                                type="number"
+                                value={
+                                  (selectedField === 'qrCode'
+                                    ? (currentConfig.qrCodePosition as any)?.height ?? 10
+                                    : (currentConfig.studentPhotoPosition as any)?.height ?? 12)
+                                }
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  const val = raw === '' ? undefined : Math.max(1, Math.min(100, Number(raw)));
+                                  if (selectedField === 'qrCode') {
+                                    const current = currentConfig.qrCodePosition || { x: 80, y: 50, width: 10, height: 10 };
+                                    // For QR codes, update both width and height to keep it square
+                                    setCurrentConfig({ ...currentConfig, qrCodePosition: { ...current, width: val, height: val } });
+                                  } else {
+                                    const current = currentConfig.studentPhotoPosition || { x: 20, y: 50, width: 8, height: 12 };
+                                    setCurrentConfig({ ...currentConfig, studentPhotoPosition: { ...current, height: val } });
+                                  }
+                                }}
+                                placeholder={selectedField === 'qrCode' ? "10 (default)" : "12 (default)"}
+                                min="1"
+                                max="100"
+                              />
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Values are percentages of the card dimensions. Leave empty to use defaults.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Per-Field Font Settings (for text fields) */}
+                    {!currentFields.find(f => f.id === selectedField)?.isImage && (
+                      <div className="space-y-3 pt-2 border-t">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-semibold">{t('idCards.fieldSpecificFontSettings') || 'Field-Specific Font Settings'}</Label>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              clearFieldFont(selectedField, 'fontSize');
+                              clearFieldFont(selectedField, 'fontFamily');
+                            }}
+                            className="text-xs"
+                          >
+                            <RotateCcw className="h-3 w-3 mr-1" />
+                            {t('common.reset') || 'Reset'}
+                          </Button>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-xs">{t('idCards.fontFamily') || 'Font Family'}</Label>
+                          <Select
+                            value={currentConfig.fieldFonts?.[selectedField]?.fontFamily || 'global'}
+                            onValueChange={(value) => {
+                              if (value && value !== 'global') {
+                                updateFieldFont(selectedField, 'fontFamily', value);
+                              } else {
+                                clearFieldFont(selectedField, 'fontFamily');
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder={t('idCards.useGlobalFont') || 'Use global font'} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="global">{t('idCards.useGlobalFont') || 'Use Global Font'}</SelectItem>
+                              {AVAILABLE_FONTS.map((font) => (
+                                <SelectItem key={font.value} value={font.value}>
+                                  <span style={{ fontFamily: font.value }}>{font.label}</span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            {t('idCards.selectUseGlobalFont') || 'Select "Use Global Font" to use the global font setting'}
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs">{t('idCards.fontSize') || 'Font Size'} (px)</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              value={currentConfig.fieldFonts?.[selectedField]?.fontSize || ''}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (value === '') {
+                                  clearFieldFont(selectedField, 'fontSize');
+                                } else {
+                                  const numValue = parseInt(value);
+                                  if (!isNaN(numValue) && numValue > 0) {
+                                    updateFieldFont(selectedField, 'fontSize', numValue);
+                                  }
+                                }
+                              }}
+                              placeholder={t('idCards.autoBasedOnGlobal') || 'Auto (based on global)'}
+                              className="h-8 text-xs"
+                              min="8"
+                              max="72"
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => clearFieldFont(selectedField, 'fontSize')}
+                              className="h-8 px-2"
+                              title={t('common.resetToDefault') || 'Reset to default'}
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {t('idCards.leaveEmptyToUseGlobal') || 'Leave empty to use global font size'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </TabsContent>
@@ -556,8 +1233,8 @@ export function IdCardLayoutEditor({
                 <CardContent>
                   <div
                     ref={containerRef}
-                    className="relative w-full bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg overflow-hidden"
-                    style={{ aspectRatio: '85.6/53.98', maxHeight: '400px' }}
+                    className="relative w-full bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg overflow-visible"
+                    style={{ aspectRatio: '85.6/53.98', maxHeight: '400px', padding: '20px' }}
                     onClick={() => setSelectedField(null)}
                   >
                     {currentImageError ? (
@@ -669,6 +1346,162 @@ export function IdCardLayoutEditor({
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Field-Specific Settings */}
+              {selectedField && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">{t('idCards.fieldSettings') || 'Field Settings'}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Per-Field Font Settings */}
+                    <div className="space-y-3 pt-2 border-t">
+                      <div className="flex items-center justify-between">
+                        <Label className="font-semibold text-sm">{t('idCards.fieldFontSettings') || 'Field-Specific Font Settings'}</Label>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            clearFieldFont(selectedField, 'fontSize');
+                            clearFieldFont(selectedField, 'fontFamily');
+                          }}
+                          className="text-xs"
+                        >
+                          <RotateCcw className="h-3 w-3 mr-1" />
+                          {t('common.reset') || 'Reset'}
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-xs">{t('idCards.fontFamily') || 'Font Family'}</Label>
+                        <Select
+                          value={currentConfig.fieldFonts?.[selectedField]?.fontFamily || 'global'}
+                          onValueChange={(value) => {
+                            if (value && value !== 'global') {
+                              updateFieldFont(selectedField, 'fontFamily', value);
+                            } else {
+                              clearFieldFont(selectedField, 'fontFamily');
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder={t('idCards.useGlobalFont') || 'Use global font'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="global">{t('idCards.useGlobalFont') || 'Use Global Font'}</SelectItem>
+                            {AVAILABLE_FONTS.map((font) => (
+                              <SelectItem key={font.value} value={font.value}>
+                                {font.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">{t('idCards.fontSize') || 'Font Size (px)'}</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            value={currentConfig.fieldFonts?.[selectedField]?.fontSize || ''}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === '') {
+                                clearFieldFont(selectedField, 'fontSize');
+                              } else {
+                                const numValue = parseInt(value);
+                                if (!isNaN(numValue) && numValue > 0) {
+                                  updateFieldFont(selectedField, 'fontSize', numValue);
+                                }
+                              }
+                            }}
+                            placeholder={t('idCards.auto') || 'Auto (based on base size)'}
+                            className="h-8 text-xs"
+                            min="8"
+                            max="72"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => clearFieldFont(selectedField, 'fontSize')}
+                            className="h-8 px-2"
+                            title={t('common.reset') || 'Reset to default'}
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Image Sizing Controls */}
+                    {(selectedField === 'studentPhoto' || selectedField === 'qrCode') && (
+                      <div className="space-y-3 pt-2 border-t">
+                        <div className="space-y-2">
+                          <Label className="text-sm">{selectedField === 'qrCode' ? t('idCards.qrCodeSize') || 'QR Code Size (% of card)' : t('idCards.photoSize') || 'Photo Size (% of card)'}</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label className="text-xs">{t('idCards.width') || 'Width (%)'}</Label>
+                              <Input
+                                type="number"
+                                value={
+                                  (selectedField === 'qrCode'
+                                    ? (currentConfig.qrCodePosition as any)?.width ?? 10
+                                    : (currentConfig.studentPhotoPosition as any)?.width ?? 8)
+                                }
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  const val = raw === '' ? undefined : Math.max(1, Math.min(100, Number(raw)));
+                                  if (selectedField === 'qrCode') {
+                                    const current = currentConfig.qrCodePosition || { x: 80, y: 50, width: 10, height: 10 };
+                                    setCurrentConfig({ ...currentConfig, qrCodePosition: { ...current, width: val } });
+                                  } else {
+                                    const current = currentConfig.studentPhotoPosition || { x: 20, y: 50, width: 8, height: 12 };
+                                    setCurrentConfig({ ...currentConfig, studentPhotoPosition: { ...current, width: val } });
+                                  }
+                                }}
+                                placeholder={selectedField === 'qrCode' ? "10 (default)" : "8 (default)"}
+                                min="1"
+                                max="100"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">{t('idCards.height') || 'Height (%)'}</Label>
+                              <Input
+                                type="number"
+                                value={
+                                  (selectedField === 'qrCode'
+                                    ? (currentConfig.qrCodePosition as any)?.height ?? 10
+                                    : (currentConfig.studentPhotoPosition as any)?.height ?? 12)
+                                }
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  const val = raw === '' ? undefined : Math.max(1, Math.min(100, Number(raw)));
+                                  if (selectedField === 'qrCode') {
+                                    // For QR codes, update both width and height to keep it square
+                                    const current = currentConfig.qrCodePosition || { x: 80, y: 50, width: 10, height: 10 };
+                                    setCurrentConfig({ ...currentConfig, qrCodePosition: { ...current, width: val, height: val } });
+                                  } else {
+                                    const current = currentConfig.studentPhotoPosition || { x: 20, y: 50, width: 8, height: 12 };
+                                    setCurrentConfig({ ...currentConfig, studentPhotoPosition: { ...current, height: val } });
+                                  }
+                                }}
+                                placeholder={selectedField === 'qrCode' ? "10 (default)" : "12 (default)"}
+                                min="1"
+                                max="100"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {t('idCards.sizeDescription') || 'Values are percentages of the card. Leave empty to use default size.'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </TabsContent>

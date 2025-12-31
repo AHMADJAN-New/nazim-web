@@ -23,27 +23,33 @@ import { Loader2, Download, Image as ImageIcon, FileDown, CreditCard } from 'luc
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
 import { useStudents } from '@/hooks/useStudents';
+import { useIdCardTemplates } from '@/hooks/useIdCardTemplates';
 import type { Student } from '@/types/domain/student';
 
-// QR Code generation - using external API (similar to existing pattern)
-async function generateQRCode(data: string, size: number = 200): Promise<string> {
-  try {
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
-    const response = await fetch(qrUrl);
-    if (!response.ok) throw new Error('Failed to generate QR code');
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch (error) {
-    if (import.meta.env.DEV) {
-      console.error('[IdCardGenerator] QR code generation failed:', error);
-    }
-    throw error;
+// QR Code generation - using external API (matches certificate system pattern)
+async function generateQrCodeDataUrl(value: string, sizePx: number): Promise<string> {
+  const safeValue = String(value ?? '').trim();
+  if (!safeValue) {
+    throw new Error('QR value is empty');
   }
+  const size = Math.max(64, Math.min(600, Math.round(sizePx)));
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(safeValue)}`;
+  const response = await fetch(qrUrl);
+  if (!response.ok) {
+    throw new Error('Failed to generate QR code');
+  }
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Legacy function name for backward compatibility
+async function generateQRCode(data: string, size: number = 200): Promise<string> {
+  return generateQrCodeDataUrl(data, size);
 }
 
 // Convert image URL to base64
@@ -129,23 +135,36 @@ export function IdCardGenerator({
   const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
 
   const { data: students = [] } = useStudents(organizationId);
+  
+  // Fetch templates with auto-refresh when dialog opens
+  const { data: fetchedTemplates = [], refetch: refetchTemplates } = useIdCardTemplates(true);
+  
+  // Use fetched templates if available, otherwise use props
+  const availableTemplates = fetchedTemplates.length > 0 ? fetchedTemplates : templates;
 
-  const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
+  const selectedTemplate = availableTemplates.find((t) => t.id === selectedTemplateId);
+
+  // Refetch templates when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      void refetchTemplates();
+    }
+  }, [isOpen, refetchTemplates]);
 
   // Auto-select default template
   useEffect(() => {
-    if (isOpen && templates.length > 0 && !selectedTemplateId) {
-      const defaultTemplate = templates.find((t) => t.is_default && t.is_active);
+    if (isOpen && availableTemplates.length > 0 && !selectedTemplateId) {
+      const defaultTemplate = availableTemplates.find((t) => t.is_default && t.is_active);
       if (defaultTemplate) {
         setSelectedTemplateId(defaultTemplate.id);
       } else {
-        const activeTemplate = templates.find((t) => t.is_active);
+        const activeTemplate = availableTemplates.find((t) => t.is_active);
         if (activeTemplate) {
           setSelectedTemplateId(activeTemplate.id);
         }
       }
     }
-  }, [isOpen, templates, selectedTemplateId]);
+  }, [isOpen, availableTemplates, selectedTemplateId]);
 
   // Reset on close
   useEffect(() => {
@@ -323,10 +342,11 @@ export function IdCardGenerator({
       }
     }
 
-    // Student photo
-    if (layout.enabledFields?.includes('studentPhoto') && student.picturePath) {
-      const pos = getPixelPosition(layout.studentPhotoPosition);
-      if (pos && pos.width && pos.height) {
+    // Student photo (try to load even if picture_path is not set - API handles fallback)
+    if (layout.enabledFields?.includes('studentPhoto')) {
+      const photoPos = layout.studentPhotoPosition;
+      const pos = getPixelPosition(photoPos);
+      if (pos) {
         try {
           const photoUrl = `/api/students/${student.id}/picture`;
           const photoBase64 = await convertImageToBase64(photoUrl);
@@ -334,7 +354,16 @@ export function IdCardGenerator({
             const photoImg = new Image();
             await new Promise((resolve, reject) => {
               photoImg.onload = () => {
-                ctx.drawImage(photoImg, pos.x - pos.width / 2, pos.y - pos.height / 2, pos.width, pos.height);
+                // Use saved width/height from config, or default 8% width x 12% height (ID card appropriate sizes)
+                const photoWidthPercent = photoPos?.width ?? 8;
+                const photoHeightPercent = photoPos?.height ?? 12;
+                const photoWidth = (photoWidthPercent / 100) * width;
+                const photoHeight = (photoHeightPercent / 100) * height;
+
+                // Positions in the layout designer are CENTER-based, so draw image centered.
+                const drawX = pos.x - photoWidth / 2;
+                const drawY = pos.y - photoHeight / 2;
+                ctx.drawImage(photoImg, drawX, drawY, photoWidth, photoHeight);
                 resolve(null);
               };
               photoImg.onerror = reject;
@@ -349,23 +378,39 @@ export function IdCardGenerator({
       }
     }
 
-    // QR Code
-    if (layout.enabledFields?.includes('qrCode') && student.studentCode) {
-      const pos = getPixelPosition(layout.qrCodePosition);
-      if (pos && pos.width && pos.height) {
+    // QR Code (use studentCode, admissionNumber, or id as fallback)
+    if (layout.enabledFields?.includes('qrCode')) {
+      const qrPos = layout.qrCodePosition;
+      const pos = getPixelPosition(qrPos);
+      if (pos) {
         try {
-          const qrSize = Math.min(pos.width, pos.height);
-          const qrBase64 = await generateQRCode(student.studentCode, qrSize);
-          if (qrBase64) {
-            const qrImg = new Image();
-            await new Promise((resolve, reject) => {
-              qrImg.onload = () => {
-                ctx.drawImage(qrImg, pos.x - pos.width / 2, pos.y - pos.height / 2, pos.width, pos.height);
-                resolve(null);
-              };
-              qrImg.onerror = reject;
-              qrImg.src = qrBase64;
-            });
+          // Use default 10% x 10% if width/height not specified
+          // QR codes should always be square - use the smaller dimension to prevent stretching
+          const qrWidthPercent = qrPos?.width ?? 10;
+          const qrHeightPercent = qrPos?.height ?? 10;
+          const qrWidth = (qrWidthPercent / 100) * width;
+          const qrHeight = (qrHeightPercent / 100) * height;
+          const qrSizePx = Math.round(Math.min(qrWidth, qrHeight)); // Use smaller dimension for square
+
+          // Use studentCode, admissionNumber, or id as QR value
+          const qrValue = student.studentCode || student.admissionNumber || student.id;
+          if (qrValue) {
+            const qrBase64 = await generateQrCodeDataUrl(qrValue, qrSizePx);
+            if (qrBase64) {
+              const qrImg = new Image();
+              await new Promise((resolve, reject) => {
+                qrImg.onload = () => {
+                  // Center-based draw
+                  // Use square size for QR code to prevent stretching
+                  const drawX = pos.x - qrSizePx / 2;
+                  const drawY = pos.y - qrSizePx / 2;
+                  ctx.drawImage(qrImg, drawX, drawY, qrSizePx, qrSizePx);
+                  resolve(null);
+                };
+                qrImg.onerror = reject;
+                qrImg.src = qrBase64;
+              });
+            }
           }
         } catch (error) {
           if (import.meta.env.DEV) {
@@ -376,6 +421,17 @@ export function IdCardGenerator({
     }
 
     return canvas;
+  };
+
+  // Generate JPG preview (screen dimensions, not print quality)
+  const generateJpgPreview = async (
+    student: Student,
+    side: 'front' | 'back'
+  ): Promise<string> => {
+    // Use screen dimensions (CR80_WIDTH_PX, CR80_HEIGHT_PX) instead of print dimensions
+    const canvas = await generateIdCardImage(student, side, false);
+    // Export as JPG with quality 0.95
+    return canvas.toDataURL('image/jpeg', 0.95);
   };
 
   // Generate preview
@@ -540,7 +596,7 @@ export function IdCardGenerator({
                 <SelectValue placeholder={t('idCards.selectTemplatePlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                {templates
+                {availableTemplates
                   .filter((t) => t.is_active)
                   .map((template) => (
                     <SelectItem key={template.id} value={template.id}>
