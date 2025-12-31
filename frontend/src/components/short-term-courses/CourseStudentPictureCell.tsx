@@ -32,24 +32,34 @@ export function CourseStudentPictureCell({ student, size = 'md' }: CourseStudent
       console.log('[CourseStudentPictureCell] Student data:', {
         id: student.id,
         picturePath: student.picturePath,
+        mainStudentId: student.mainStudentId,
         fullName: student.fullName,
       });
     }
     
-    // Only try to fetch if we have a student ID and a known picture path.
-    const shouldTryFetch = !!student.id && !!student.picturePath;
+    // Try to fetch if:
+    // 1. We have a student ID, AND
+    // 2. Either the course student has a picture path OR is linked to a main student
+    // (Backend will handle fallback to main student picture if course student doesn't have one)
+    const shouldTryFetch = !!student.id && (!!student.picturePath || !!student.mainStudentId);
     
     if (import.meta.env.DEV) {
-      console.log('[CourseStudentPictureCell] Should try fetch?', shouldTryFetch, 'picturePath:', student.picturePath);
+      console.log('[CourseStudentPictureCell] Should try fetch?', shouldTryFetch, 'picturePath:', student.picturePath, 'mainStudentId:', student.mainStudentId);
     }
     
     if (shouldTryFetch) {
       let currentBlobUrl: string | null = null;
+      let cancelled = false;
       
       const fetchImage = async () => {
         try {
           const { apiClient } = await import('@/lib/api/client');
-          const endpoint = `/course-students/${student.id}/picture?v=${encodeURIComponent(student.picturePath)}`;
+          // Backend handles fallback to main student picture if course student doesn't have one
+          // Use picturePath + timestamp for cache busting to ensure fresh image after upload
+          const cacheBuster = student.picturePath 
+            ? `${encodeURIComponent(student.picturePath)}-${Date.now()}`
+            : Date.now().toString();
+          const endpoint = `/course-students/${student.id}/picture?v=${cacheBuster}`;
           
           if (import.meta.env.DEV) {
             console.log('[CourseStudentPictureCell] Fetching picture from:', endpoint);
@@ -64,6 +74,14 @@ export function CourseStudentPictureCell({ student, size = 'md' }: CourseStudent
             },
           });
           
+          // Check if component was unmounted or student changed
+          if (cancelled) {
+            if (currentBlobUrl) {
+              URL.revokeObjectURL(currentBlobUrl);
+            }
+            return;
+          }
+          
           if (import.meta.env.DEV) {
             console.log('[CourseStudentPictureCell] Blob received:', blob.type, blob.size, 'bytes');
           }
@@ -77,6 +95,11 @@ export function CourseStudentPictureCell({ student, size = 'md' }: CourseStudent
             console.log('[CourseStudentPictureCell] Picture loaded successfully');
           }
         } catch (error) {
+          // Check if component was unmounted or student changed
+          if (cancelled) {
+            return;
+          }
+          
           // Handle 404 gracefully (picture doesn't exist)
           // Check status code directly if available, or check error message
           const statusCode = (error as Error & { status?: number })?.status;
@@ -108,6 +131,7 @@ export function CourseStudentPictureCell({ student, size = 'md' }: CourseStudent
       fetchImage();
       
       return () => {
+        cancelled = true;
         if (currentBlobUrl) {
           URL.revokeObjectURL(currentBlobUrl);
         }
@@ -117,7 +141,7 @@ export function CourseStudentPictureCell({ student, size = 'md' }: CourseStudent
       setImageUrl(null);
       setImageError(false);
     }
-  }, [student.id, student.picturePath]);
+  }, [student.id, student.picturePath, student.mainStudentId]);
   
   return (
     <div className={`flex items-center justify-center ${classes.container}`}>

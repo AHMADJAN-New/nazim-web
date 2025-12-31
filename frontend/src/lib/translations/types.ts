@@ -3337,6 +3337,26 @@ export interface TranslationKeys {
     documentUploaded: string;
     documentDeleted: string;
     documentUploadFailed: string;
+    // Course Students
+    courseStudents: {
+      saved: string;
+      updated: string;
+      deleted: string;
+      saveFailed: string;
+      updateFailed: string;
+      deleteFailed: string;
+      enrolled: string;
+      enrollFailed: string;
+      markedCompleted: string;
+      markCompletedFailed: string;
+      markedDropped: string;
+      markDroppedFailed: string;
+      certificateIssued: string;
+      certificateIssueFailed: string;
+      copiedToMain: string;
+      copyFailed: string;
+      noStudentsEnrolled: string;
+    };
     // DMS Documents
     documentCreated: string;
     documentUpdated: string;
