@@ -364,6 +364,31 @@ export const platformApi = {
         message: string;
       }>(`/platform/backups/${filename}`);
     },
+    restore: async (filename: string) => {
+      return apiClient.post<{
+        success: boolean;
+        message: string;
+      }>(`/platform/backups/${filename}/restore`);
+    },
+    uploadAndRestore: async (file: File) => {
+      const formData = new FormData();
+      formData.append('backup_file', file);
+
+      const response = await fetch('/api/platform/backups/upload-restore', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to upload and restore backup');
+      }
+
+      return response.json();
+    },
   },
 };
 

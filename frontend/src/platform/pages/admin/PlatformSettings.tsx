@@ -14,6 +14,8 @@ import {
   Download,
   Database,
   HardDrive,
+  Upload,
+  RotateCcw,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
@@ -106,6 +108,8 @@ export default function PlatformSettings() {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [deletingBackupFilename, setDeletingBackupFilename] = useState<string | null>(null);
+  const [restoringBackupFilename, setRestoringBackupFilename] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   const isEditing = !!editingUserId;
 
@@ -298,6 +302,46 @@ export default function PlatformSettings() {
     }
   };
 
+  const restoreBackup = useMutation({
+    mutationFn: async (filename: string) => {
+      return await platformApi.backups.restore(filename);
+    },
+    onSuccess: () => {
+      showToast.success('Backup restored successfully. Please refresh the page.');
+      setRestoringBackupFilename(null);
+      queryClient.invalidateQueries({ queryKey: ['platform-backups'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to restore backup');
+      setRestoringBackupFilename(null);
+    },
+  });
+
+  const uploadAndRestore = useMutation({
+    mutationFn: async (file: File) => {
+      return await platformApi.backups.uploadAndRestore(file);
+    },
+    onSuccess: () => {
+      showToast.success('Backup uploaded and restored successfully. Please refresh the page.');
+      setUploadedFile(null);
+      queryClient.invalidateQueries({ queryKey: ['platform-backups'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to upload and restore backup');
+    },
+  });
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type !== 'application/zip' && !file.name.endsWith('.zip')) {
+        showToast.error('Please select a ZIP file');
+        return;
+      }
+      setUploadedFile(file);
+    }
+  };
+
 
   // FIX: Add error handling for permissions query
   if (permissionsError) {
@@ -427,6 +471,10 @@ export default function PlatformSettings() {
           <TabsTrigger value="system">
             <Settings className="mr-2 h-4 w-4" />
             System Settings
+          </TabsTrigger>
+          <TabsTrigger value="restore">
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Restore
           </TabsTrigger>
         </TabsList>
 
@@ -696,6 +744,141 @@ export default function PlatformSettings() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Restore Tab */}
+        <TabsContent value="restore" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <RotateCcw className="h-5 w-5" />
+                Restore from Backup
+              </CardTitle>
+              <CardDescription>
+                Restore your database and storage from a previous backup
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="rounded-lg border p-4 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-yellow-900 dark:text-yellow-100 mb-1">
+                      Warning: Data Loss Risk
+                    </h4>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      Restoring a backup will replace all current data in your database and storage.
+                      This action cannot be undone. Please ensure you have a recent backup before proceeding.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Restore from Existing Backup */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Restore from Existing Backup</h3>
+                {isBackupsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <LoadingSpinner />
+                  </div>
+                ) : !backups || backups.length === 0 ? (
+                  <div className="py-8 text-center text-muted-foreground">
+                    <Database className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No backups available</p>
+                    <p className="text-sm mt-1">Create a backup first in the System Settings tab</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Filename</TableHead>
+                        <TableHead>Size</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {backups.map((backup) => (
+                        <TableRow key={backup.filename}>
+                          <TableCell className="font-medium">
+                            {backup.filename}
+                          </TableCell>
+                          <TableCell>{backup.size}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {formatDateTime(new Date(backup.created_at))}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => setRestoringBackupFilename(backup.filename)}
+                              disabled={restoreBackup.isPending}
+                            >
+                              <RotateCcw className="mr-2 h-4 w-4" />
+                              Restore
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or</span>
+                </div>
+              </div>
+
+              {/* Upload and Restore */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Upload and Restore Backup</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="file"
+                      accept=".zip"
+                      onChange={handleFileUpload}
+                      disabled={uploadAndRestore.isPending}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={() => {
+                        if (uploadedFile) {
+                          uploadAndRestore.mutate(uploadedFile);
+                        } else {
+                          showToast.error('Please select a backup file first');
+                        }
+                      }}
+                      disabled={!uploadedFile || uploadAndRestore.isPending}
+                    >
+                      {uploadAndRestore.isPending ? (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                          Restoring...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload & Restore
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  {uploadedFile && (
+                    <p className="text-sm text-muted-foreground">
+                      Selected: {uploadedFile.name} ({(uploadedFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Create/Edit Platform User Dialog */}
@@ -884,6 +1067,56 @@ export default function PlatformSettings() {
                 </>
               ) : (
                 'Delete Backup'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Restore Backup Confirmation Dialog */}
+      <AlertDialog open={!!restoringBackupFilename} onOpenChange={(open) => !open && setRestoringBackupFilename(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Restore Backup - Warning
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p className="font-semibold text-foreground">
+                Are you sure you want to restore this backup?
+              </p>
+              <p>
+                This will replace <span className="font-semibold">ALL current data</span> in your database and storage with the data from this backup.
+              </p>
+              <p className="text-yellow-600 dark:text-yellow-400 font-medium">
+                This action is irreversible and cannot be undone!
+              </p>
+              <p className="text-sm mt-2">
+                Backup to restore: <span className="font-mono">{restoringBackupFilename}</span>
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (restoringBackupFilename) {
+                  restoreBackup.mutate(restoringBackupFilename);
+                }
+              }}
+              className="bg-yellow-600 text-white hover:bg-yellow-700"
+              disabled={restoreBackup.isPending}
+            >
+              {restoreBackup.isPending ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Restoring...
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Yes, Restore Backup
+                </>
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

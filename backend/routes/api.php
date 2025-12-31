@@ -1258,6 +1258,8 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::post('/backups', [App\Http\Controllers\BackupController::class, 'createBackup']);
     Route::get('/backups/{filename}/download', [App\Http\Controllers\BackupController::class, 'downloadBackup']);
     Route::delete('/backups/{filename}', [App\Http\Controllers\BackupController::class, 'deleteBackup']);
+    Route::post('/backups/{filename}/restore', [App\Http\Controllers\BackupController::class, 'restoreBackup']);
+    Route::post('/backups/upload-restore', [App\Http\Controllers\BackupController::class, 'uploadAndRestore']);
 });
 
 // Legacy admin subscription routes (kept for backward compatibility, but will be deprecated)
