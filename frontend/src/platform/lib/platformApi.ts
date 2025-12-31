@@ -390,5 +390,36 @@ export const platformApi = {
       return response.json();
     },
   },
+
+  // Maintenance Mode
+  maintenance: {
+    getStatus: async () => {
+      return apiClient.get<{
+        success: boolean;
+        data: {
+          is_maintenance_mode: boolean;
+          message: string | null;
+          retry_after: number | null;
+          refresh_after: number | null;
+        };
+      }>('/platform/maintenance/status');
+    },
+    enable: async (data: {
+      message?: string;
+      retry_after?: number;
+      refresh_after?: number;
+    }) => {
+      return apiClient.post<{
+        success: boolean;
+        message: string;
+      }>('/platform/maintenance/enable', data);
+    },
+    disable: async () => {
+      return apiClient.post<{
+        success: boolean;
+        message: string;
+      }>('/platform/maintenance/disable');
+    },
+  },
 };
 

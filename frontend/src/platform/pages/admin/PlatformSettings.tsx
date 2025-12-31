@@ -110,6 +110,8 @@ export default function PlatformSettings() {
   const [deletingBackupFilename, setDeletingBackupFilename] = useState<string | null>(null);
   const [restoringBackupFilename, setRestoringBackupFilename] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string>('');
+  const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
 
   const isEditing = !!editingUserId;
 
@@ -341,6 +343,50 @@ export default function PlatformSettings() {
       setUploadedFile(file);
     }
   };
+
+  // Maintenance mode queries and mutations
+  const { data: maintenanceStatus, isLoading: isMaintenanceLoading } = useQuery({
+    queryKey: ['maintenance-status'],
+    queryFn: async () => {
+      try {
+        const response = await platformApi.maintenance.getStatus();
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching maintenance status:', error);
+        return { is_maintenance_mode: false, message: null, retry_after: null, refresh_after: null };
+      }
+    },
+    enabled: hasPlatformAdminPermission && !permissionsLoading,
+    refetchInterval: 10000, // Refetch every 10 seconds
+  });
+
+  const enableMaintenance = useMutation({
+    mutationFn: async (message: string) => {
+      return await platformApi.maintenance.enable({ message: message || undefined });
+    },
+    onSuccess: () => {
+      showToast.success('Maintenance mode enabled successfully');
+      setShowMaintenanceDialog(false);
+      setMaintenanceMessage('');
+      queryClient.invalidateQueries({ queryKey: ['maintenance-status'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to enable maintenance mode');
+    },
+  });
+
+  const disableMaintenance = useMutation({
+    mutationFn: async () => {
+      return await platformApi.maintenance.disable();
+    },
+    onSuccess: () => {
+      showToast.success('Maintenance mode disabled successfully');
+      queryClient.invalidateQueries({ queryKey: ['maintenance-status'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to disable maintenance mode');
+    },
+  });
 
 
   // FIX: Add error handling for permissions query
@@ -721,15 +767,92 @@ export default function PlatformSettings() {
                   </CardContent>
                 </Card>
 
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <Label className="font-medium">System Maintenance</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Schedule maintenance windows and system updates
-                    </p>
-                  </div>
-                  <Badge variant="outline">Coming Soon</Badge>
-                </div>
+                {/* System Maintenance */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="h-5 w-5" />
+                      System Maintenance Mode
+                    </CardTitle>
+                    <CardDescription>
+                      Enable or disable maintenance mode for the entire platform
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isMaintenanceLoading ? (
+                      <div className="flex items-center justify-center py-4">
+                        <LoadingSpinner />
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "h-3 w-3 rounded-full",
+                              maintenanceStatus?.is_maintenance_mode ? "bg-yellow-500 animate-pulse" : "bg-green-500"
+                            )} />
+                            <div>
+                              <p className="font-medium">
+                                {maintenanceStatus?.is_maintenance_mode ? 'Maintenance Mode Active' : 'System Online'}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {maintenanceStatus?.is_maintenance_mode
+                                  ? maintenanceStatus.message || 'System is currently under maintenance'
+                                  : 'All systems operational'}
+                              </p>
+                            </div>
+                          </div>
+                          {maintenanceStatus?.is_maintenance_mode ? (
+                            <Button
+                              variant="default"
+                              onClick={() => disableMaintenance.mutate()}
+                              disabled={disableMaintenance.isPending}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              {disableMaintenance.isPending ? (
+                                <>
+                                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                  Disabling...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="mr-2 h-4 w-4" />
+                                  Disable Maintenance
+                                </>
+                              )}
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="default"
+                              onClick={() => setShowMaintenanceDialog(true)}
+                              className="bg-yellow-600 hover:bg-yellow-700"
+                            >
+                              <AlertTriangle className="mr-2 h-4 w-4" />
+                              Enable Maintenance
+                            </Button>
+                          )}
+                        </div>
+
+                        {maintenanceStatus?.is_maintenance_mode && (
+                          <div className="rounded-lg border p-4 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
+                            <div className="flex items-start gap-3">
+                              <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                              <div className="flex-1">
+                                <h4 className="font-medium text-yellow-900 dark:text-yellow-100 mb-1">
+                                  Platform in Maintenance Mode
+                                </h4>
+                                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                                  Users will see a maintenance page when trying to access the platform.
+                                  Only administrators can access the system during maintenance.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
@@ -1122,6 +1245,80 @@ export default function PlatformSettings() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Enable Maintenance Mode Dialog */}
+      <Dialog open={showMaintenanceDialog} onOpenChange={setShowMaintenanceDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Enable Maintenance Mode
+            </DialogTitle>
+            <DialogDescription>
+              Put the platform in maintenance mode. Users will be unable to access the system.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="maintenance-message">
+                Maintenance Message (Optional)
+              </Label>
+              <Input
+                id="maintenance-message"
+                value={maintenanceMessage}
+                onChange={(e) => setMaintenanceMessage(e.target.value)}
+                placeholder="We'll be back soon. Performing scheduled maintenance."
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground">
+                This message will be displayed to users trying to access the platform.
+              </p>
+            </div>
+
+            <div className="rounded-lg border p-4 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-yellow-900 dark:text-yellow-100 mb-1">
+                    Warning
+                  </h4>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                    All users (except administrators) will be immediately logged out and unable to access the platform until maintenance mode is disabled.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowMaintenanceDialog(false);
+                setMaintenanceMessage('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => enableMaintenance.mutate(maintenanceMessage)}
+              disabled={enableMaintenance.isPending}
+              className="bg-yellow-600 hover:bg-yellow-700"
+            >
+              {enableMaintenance.isPending ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Enabling...
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  Enable Maintenance Mode
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

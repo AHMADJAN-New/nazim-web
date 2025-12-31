@@ -410,7 +410,8 @@ class BackupController extends Controller
                 $items = File::directories($targetPath);
                 foreach ($items as $item) {
                     $basename = basename($item);
-                    if ($basename !== 'backups' && !str_starts_with($basename, 'pre_restore_backup_')) {
+                    // Use strpos for PHP 7.x compatibility
+                    if ($basename !== 'backups' && strpos($basename, 'pre_restore_backup_') !== 0) {
                         File::deleteDirectory($item);
                     }
                 }
