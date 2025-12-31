@@ -307,5 +307,63 @@ export const platformApi = {
   processTransitions: async () => {
     return apiClient.post<{ data: { to_grace_period: number; to_readonly: number; to_expired: number } }>('/platform/process-transitions');
   },
+
+  // Backup & Restore
+  backups: {
+    list: async () => {
+      const response = await apiClient.get<{
+        success: boolean;
+        backups: Array<{
+          filename: string;
+          size: string;
+          created_at: string;
+          path: string;
+        }>;
+      }>('/platform/backups');
+      return response.backups;
+    },
+    create: async () => {
+      return apiClient.post<{
+        success: boolean;
+        message: string;
+        backup: {
+          filename: string;
+          path: string;
+          size: string;
+          timestamp: string;
+          created_at: string;
+        };
+      }>('/platform/backups');
+    },
+    download: async (filename: string) => {
+      // Download backup file
+      const response = await fetch(`/api/platform/backups/${filename}/download`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download backup');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    },
+    delete: async (filename: string) => {
+      return apiClient.delete<{
+        success: boolean;
+        message: string;
+      }>(`/platform/backups/${filename}`);
+    },
+  },
 };
 

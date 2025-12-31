@@ -11,6 +11,9 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
+  Download,
+  Database,
+  HardDrive,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
@@ -102,6 +105,7 @@ export default function PlatformSettings() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [deletingBackupFilename, setDeletingBackupFilename] = useState<string | null>(null);
 
   const isEditing = !!editingUserId;
 
@@ -242,6 +246,57 @@ export default function PlatformSettings() {
       showToast.error(error.message || 'Failed to delete platform user');
     },
   });
+
+  // Backup queries and mutations
+  const { data: backups, isLoading: isBackupsLoading, error: backupsError } = useQuery({
+    queryKey: ['platform-backups'],
+    queryFn: async () => {
+      try {
+        return await platformApi.backups.list();
+      } catch (error) {
+        console.error('Error fetching backups:', error);
+        return [];
+      }
+    },
+    enabled: hasPlatformAdminPermission && !permissionsLoading,
+    staleTime: 30 * 1000, // 30 seconds
+  });
+
+  const createBackup = useMutation({
+    mutationFn: async () => {
+      return await platformApi.backups.create();
+    },
+    onSuccess: () => {
+      showToast.success('Backup created successfully');
+      queryClient.invalidateQueries({ queryKey: ['platform-backups'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to create backup');
+    },
+  });
+
+  const deleteBackup = useMutation({
+    mutationFn: async (filename: string) => {
+      return await platformApi.backups.delete(filename);
+    },
+    onSuccess: () => {
+      showToast.success('Backup deleted successfully');
+      setDeletingBackupFilename(null);
+      queryClient.invalidateQueries({ queryKey: ['platform-backups'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to delete backup');
+    },
+  });
+
+  const handleDownloadBackup = async (filename: string) => {
+    try {
+      await platformApi.backups.download(filename);
+      showToast.success('Backup download started');
+    } catch (error) {
+      showToast.error('Failed to download backup');
+    }
+  };
 
 
   // FIX: Add error handling for permissions query
@@ -524,15 +579,99 @@ export default function PlatformSettings() {
                   <Badge variant="outline">Coming Soon</Badge>
                 </div>
 
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <Label className="font-medium">Backup & Restore</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Manage automated backups and restore points
-                    </p>
-                  </div>
-                  <Badge variant="outline">Coming Soon</Badge>
-                </div>
+                {/* Backup & Restore Section */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <Database className="h-5 w-5" />
+                          Backup & Restore
+                        </CardTitle>
+                        <CardDescription>
+                          Create and manage database and storage backups
+                        </CardDescription>
+                      </div>
+                      <Button
+                        onClick={() => createBackup.mutate()}
+                        disabled={createBackup.isPending}
+                      >
+                        {createBackup.isPending ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          <>
+                            <HardDrive className="mr-2 h-4 w-4" />
+                            Create Backup
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {isBackupsLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <LoadingSpinner />
+                      </div>
+                    ) : backupsError ? (
+                      <div className="py-8 text-center">
+                        <p className="text-destructive">Error loading backups</p>
+                      </div>
+                    ) : !backups || backups.length === 0 ? (
+                      <div className="py-8 text-center text-muted-foreground">
+                        <Database className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p>No backups found</p>
+                        <p className="text-sm mt-1">Create your first backup to get started</p>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Filename</TableHead>
+                            <TableHead>Size</TableHead>
+                            <TableHead>Created</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {backups.map((backup) => (
+                            <TableRow key={backup.filename}>
+                              <TableCell className="font-medium">
+                                {backup.filename}
+                              </TableCell>
+                              <TableCell>{backup.size}</TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {formatDateTime(new Date(backup.created_at))}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center gap-2 justify-end">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDownloadBackup(backup.filename)}
+                                    title="Download backup"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setDeletingBackupFilename(backup.filename)}
+                                    title="Delete backup"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
@@ -694,7 +833,7 @@ export default function PlatformSettings() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Platform User</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this platform administrator? This will remove their 
+              Are you sure you want to delete this platform administrator? This will remove their
               subscription.admin permission and delete their user account. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -712,6 +851,39 @@ export default function PlatformSettings() {
                 </>
               ) : (
                 'Delete User'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Backup Confirmation Dialog */}
+      <AlertDialog open={!!deletingBackupFilename} onOpenChange={(open) => !open && setDeletingBackupFilename(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Backup</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this backup file? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deletingBackupFilename) {
+                  deleteBackup.mutate(deletingBackupFilename);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteBackup.isPending}
+            >
+              {deleteBackup.isPending ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete Backup'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

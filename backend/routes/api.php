@@ -1252,6 +1252,12 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::put('/users/{id}', [SubscriptionAdminController::class, 'updatePlatformUser']);
     Route::delete('/users/{id}', [SubscriptionAdminController::class, 'deletePlatformUser']);
     Route::post('/users/{id}/reset-password', [SubscriptionAdminController::class, 'resetPlatformUserPassword']);
+
+    // Backup & Restore
+    Route::get('/backups', [App\Http\Controllers\BackupController::class, 'listBackups']);
+    Route::post('/backups', [App\Http\Controllers\BackupController::class, 'createBackup']);
+    Route::get('/backups/{filename}/download', [App\Http\Controllers\BackupController::class, 'downloadBackup']);
+    Route::delete('/backups/{filename}', [App\Http\Controllers\BackupController::class, 'deleteBackup']);
 });
 
 // Legacy admin subscription routes (kept for backward compatibility, but will be deprecated)
