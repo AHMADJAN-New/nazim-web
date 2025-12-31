@@ -3487,4 +3487,25 @@ export const ps: TranslationKeys = {
     contactPerson: 'اړیکه شخص',
     noDataToExport: 'د صادرولو لپاره معلومات نشته',
   },
+
+  // Global Search
+  search: {
+    placeholder: 'زده کونکي، صنفونه، ښوونکي... لټون وکړئ',
+    noResults: 'هیڅ پایلې ونه موندل شوې',
+    startTyping: 'د لټون لپاره ولیکئ...',
+    keyboardShortcut: 'د لټون لپاره Ctrl+K فشار ورکړئ',
+    students: 'زده کونکي',
+    classes: 'صنفونه',
+    staff: 'کارمندان',
+    subjects: 'مضامین',
+    academicYears: 'اکادمیک کلونه',
+    schools: 'ښوونځي',
+    admissionNo: 'داخله شمیره',
+    class: 'صنف',
+    position: 'دنده',
+    code: 'کوډ',
+    employeeId: 'کارمند پیژندنه',
+    cardNumber: 'کارت شمیره',
+    fatherName: 'د پلار نوم',
+  },
 };

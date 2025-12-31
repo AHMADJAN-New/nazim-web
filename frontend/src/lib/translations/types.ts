@@ -4485,6 +4485,27 @@ export interface TranslationKeys {
     contactPerson: string;
     noDataToExport: string;
   };
+
+  // Global Search
+  search: {
+    placeholder: string;
+    noResults: string;
+    startTyping: string;
+    keyboardShortcut: string;
+    students: string;
+    classes: string;
+    staff: string;
+    subjects: string;
+    academicYears: string;
+    schools: string;
+    admissionNo: string;
+    class: string;
+    position: string;
+    code: string;
+    employeeId: string;
+    cardNumber: string;
+    fatherName: string;
+  };
   
   // Subscription/SaaS system
   subscription: {

@@ -72,6 +72,19 @@ class ApiClient {
     const url = new URL(fullPath, window.location.origin);
 
     if (params) {
+      // CRITICAL: Ensure params is a plain object, not a class instance or nested object
+      if (typeof params !== 'object' || params === null || Array.isArray(params)) {
+        if (import.meta.env.DEV) {
+          console.warn('[ApiClient] buildUrl() - Invalid params type:', typeof params, params);
+        }
+        return url.toString();
+      }
+
+      if (import.meta.env.DEV) {
+        console.log('[ApiClient] buildUrl() - Processing params:', params);
+        console.log('[ApiClient] buildUrl() - Params entries:', Object.entries(params));
+      }
+
       Object.entries(params).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           if (Array.isArray(value)) {
@@ -81,13 +94,29 @@ class ApiClient {
               const paramValue = typeof v === 'boolean' ? (v ? '1' : '0') : String(v);
               url.searchParams.append(`${key}[]`, paramValue);
             });
+          } else if (typeof value === 'object') {
+            // CRITICAL: If value is an object, stringify it (for nested objects)
+            // But this should not happen for query parameters - log a warning
+            if (import.meta.env.DEV) {
+              console.warn('[ApiClient] buildUrl() - Object value for key:', key, value);
+            }
+            url.searchParams.set(key, JSON.stringify(value));
           } else {
             // Convert booleans to 1/0 for better Laravel compatibility
             const paramValue = typeof value === 'boolean' ? (value ? '1' : '0') : String(value);
-            url.searchParams.append(key, paramValue);
+            // CRITICAL: Use set() to replace any existing value, not append()
+            url.searchParams.set(key, paramValue);
           }
         }
       });
+    }
+
+    if (import.meta.env.DEV) {
+      console.log('[ApiClient] buildUrl() - Final URL:', url.toString());
+      console.log('[ApiClient] buildUrl() - Search params:', url.searchParams.toString());
+      if (params?.q) {
+        console.log('[ApiClient] buildUrl() - Query param q:', url.searchParams.get('q'));
+      }
     }
 
     return url.toString();
@@ -117,8 +146,29 @@ class ApiClient {
         }
       }
     }
-    const { params, ...fetchOptions } = options;
+    
+    // CRITICAL: Extract params BEFORE destructuring to ensure it's a plain object
+    const params = options.params ? { ...options.params } : undefined;
+    const { params: _, ...fetchOptions } = options;
+    
+    // Debug logging
+    if (import.meta.env.DEV && params) {
+      console.log('[ApiClient] request() - endpoint:', endpoint);
+      console.log('[ApiClient] request() - params received:', params);
+      console.log('[ApiClient] request() - params type:', typeof params);
+      console.log('[ApiClient] request() - params is object:', params instanceof Object);
+      console.log('[ApiClient] request() - params keys:', Object.keys(params));
+    }
+    
     const url = this.buildUrl(endpoint, params);
+    
+    // Debug logging
+    if (import.meta.env.DEV) {
+      console.log('[ApiClient] request() - built URL:', url);
+      const urlObj = new URL(url);
+      console.log('[ApiClient] request() - URL search params:', urlObj.searchParams.toString());
+      console.log('[ApiClient] request() - URL search params entries:', Array.from(urlObj.searchParams.entries()));
+    }
 
     const headers: HeadersInit = {
       'Accept': 'application/json',
@@ -133,6 +183,13 @@ class ApiClient {
     const hasToken = !!this.token;
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    // CRITICAL: Log the actual URL being fetched
+    if (import.meta.env.DEV) {
+      console.log('[ApiClient] fetch() - URL:', url);
+      console.log('[ApiClient] fetch() - Method:', fetchOptions.method || 'GET');
+      console.log('[ApiClient] fetch() - Headers:', headers);
     }
 
     try {
@@ -3880,8 +3937,11 @@ export const graduationBatchesApi = {
     exclude_approved_leaves?: boolean;
   }, params?: { school_id?: string }) =>
     apiClient.put(`/graduation/batches/${id}`, { ...data, ...params }),
-  delete: async (id: string, params?: { school_id?: string }) =>
-    apiClient.delete(`/graduation/batches/${id}`, params),
+  delete: async (id: string, params?: { school_id?: string }) => {
+    // DELETE method doesn't support params, so we need to add school_id to URL if needed
+    const url = params?.school_id ? `/graduation/batches/${id}?school_id=${params.school_id}` : `/graduation/batches/${id}`;
+    return apiClient.delete(url);
+  },
   generateStudents: async (id: string, params?: { school_id?: string }) =>
     apiClient.post(`/graduation/batches/${id}/generate-students`, params),
   approve: async (id: string, params?: { school_id?: string }) =>

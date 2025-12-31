@@ -86,6 +86,7 @@ use App\Http\Controllers\Dms\LetterTemplatesController;
 use App\Http\Controllers\Dms\LetterTypesController;
 use App\Http\Controllers\Dms\OutgoingDocumentsController;
 use App\Http\Controllers\StorageController;
+use App\Http\Controllers\SearchController;
 
 /*
 |--------------------------------------------------------------------------
@@ -206,6 +207,11 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     // Translations (no permission required - accessible to all authenticated users)
     Route::get('/translations', [TranslationController::class, 'index']);
     Route::post('/translations', [TranslationController::class, 'store']);
+
+    // Global search (requires school context for filtering)
+    Route::middleware(['school.context'])->group(function () {
+        Route::get('/search', [SearchController::class, 'search']);
+    });
 
     // ============================================================
     // School-scoped routes

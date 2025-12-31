@@ -3534,4 +3534,25 @@ export const fa: TranslationKeys = {
     contactPerson: 'شخص تماس',
     noDataToExport: 'داده‌ای برای صادرات وجود ندارد',
   },
+
+  // Global Search
+  search: {
+    placeholder: 'جستجوی دانش‌آموزان، کلاس‌ها، معلمان...',
+    noResults: 'نتیجه‌ای یافت نشد',
+    startTyping: 'برای جستجو شروع به تایپ کنید...',
+    keyboardShortcut: 'برای جستجو Ctrl+K را فشار دهید',
+    students: 'دانش‌آموزان',
+    classes: 'کلاس‌ها',
+    staff: 'کارکنان',
+    subjects: 'موضوعات',
+    academicYears: 'سال‌های تحصیلی',
+    schools: 'مدارس',
+    admissionNo: 'شماره ثبت‌نام',
+    class: 'کلاس',
+    position: 'سمت',
+    code: 'کد',
+    employeeId: 'شناسه کارمند',
+    cardNumber: 'شماره کارت',
+    fatherName: 'نام پدر',
+  },
 };

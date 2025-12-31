@@ -3528,4 +3528,25 @@ export const ar: TranslationKeys = {
     contactPerson: 'جهة الاتصال',
     noDataToExport: 'لا توجد بيانات للتصدير',
   },
+
+  // Global Search
+  search: {
+    placeholder: 'البحث عن الطلاب والفصول والمعلمين...',
+    noResults: 'لم يتم العثور على نتائج',
+    startTyping: 'ابدأ الكتابة للبحث...',
+    keyboardShortcut: 'اضغط Ctrl+K للبحث',
+    students: 'الطلاب',
+    classes: 'الفصول',
+    staff: 'الموظفون',
+    subjects: 'المواد',
+    academicYears: 'السنوات الأكاديمية',
+    schools: 'المدارس',
+    admissionNo: 'رقم القبول',
+    class: 'الفصل',
+    position: 'المنصب',
+    code: 'الرمز',
+    employeeId: 'رقم الموظف',
+    cardNumber: 'رقم البطاقة',
+    fatherName: 'اسم الأب',
+  },
 };

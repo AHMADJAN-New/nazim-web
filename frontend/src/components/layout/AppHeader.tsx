@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useNavigate } from "react-router-dom";
 import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, School, Shield } from "lucide-react";
@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { GlobalSearchCommand } from "@/components/search/GlobalSearchCommand";
+import { InlineSearchDropdown } from "@/components/search/InlineSearchDropdown";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +51,8 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isInlineDropdownOpen, setIsInlineDropdownOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
   // Use React Query hook for notifications (properly cached)
@@ -184,6 +188,80 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
     document.documentElement.classList.toggle('dark');
   };
 
+  // Keyboard shortcut handler for Ctrl+K / Cmd+K
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for Ctrl+K (Windows/Linux) or Cmd+K (Mac) - case insensitive
+      // Only trigger if modifier key is pressed (not just typing 'k')
+      if ((event.ctrlKey || event.metaKey) && (event.key === 'k' || event.key === 'K')) {
+        const target = event.target as HTMLElement;
+        const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+        
+        // Always allow Ctrl+K / Cmd+K to work, even in input fields
+        // This is the standard behavior for command palettes
+        event.preventDefault();
+        setIsCommandPaletteOpen(true);
+        setIsInlineDropdownOpen(false);
+        // Don't clear search query - keep it so user can continue searching
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Handle search input focus to show inline dropdown
+  const handleSearchFocus = () => {
+    if (searchQuery.trim().length >= 2) {
+      setIsInlineDropdownOpen(true);
+    }
+  };
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Ensure we update the search query state - no restrictions on length
+    setSearchQuery(value);
+    
+    // Show dropdown if query is 2+ characters, hide if less
+    if (value.trim().length >= 2) {
+      setIsInlineDropdownOpen(true);
+    } else {
+      setIsInlineDropdownOpen(false);
+    }
+  };
+
+  // Handle search input blur (with delay to allow clicks on dropdown items)
+  const handleSearchBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Check if focus is moving to the dropdown
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    const isMovingToDropdown = relatedTarget && (
+      relatedTarget.closest('[cmdk-list]') !== null ||
+      relatedTarget.closest('[cmdk-item]') !== null
+    );
+    
+    // Only close if not moving to dropdown
+    if (!isMovingToDropdown) {
+      // Delay closing to allow clicks on dropdown items
+      setTimeout(() => {
+        // Double-check that focus hasn't returned to input
+        if (document.activeElement !== searchInputRef.current) {
+          setIsInlineDropdownOpen(false);
+        }
+      }, 200);
+    }
+  };
+
+  // Handle clicking search bar to show dropdown
+  const handleSearchClick = () => {
+    if (searchQuery.trim().length >= 2) {
+      setIsInlineDropdownOpen(true);
+    }
+  };
+
   return (
     <header className="h-16 bg-card border-b border-border sticky top-0 z-50">
       <div className="h-full px-4 flex items-center justify-between">
@@ -214,18 +292,62 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
         </div>
 
         {/* Center Section - Search */}
-        <div className="flex-1 max-w-md mx-4">
+        <div className="flex-1 max-w-md mx-4" ref={searchContainerRef}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              type="search"
-              placeholder="Search students, classes, teachers..."
+              ref={searchInputRef}
+              type="text"
+              placeholder={t('search.placeholder')}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-muted/50 border-0 focus:bg-background"
+              onChange={handleSearchChange}
+              onFocus={handleSearchFocus}
+              onBlur={handleSearchBlur}
+              onClick={handleSearchClick}
+              onKeyDown={(e) => {
+                // Allow Ctrl+K / Cmd+K to work in search input
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsCommandPaletteOpen(true);
+                  setIsInlineDropdownOpen(false);
+                  // Keep search query so user can continue searching in command palette
+                }
+                // Don't prevent other keys - allow normal typing
+                // Allow all other keys to work normally
+              }}
+              className="pl-10 pr-16 bg-muted/50 border-0 focus:bg-background"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+              <span className="text-xs">{typeof window !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? '⌘' : 'Ctrl'}</span>K
+            </kbd>
+            <InlineSearchDropdown
+              open={isInlineDropdownOpen}
+              onOpenChange={setIsInlineDropdownOpen}
+              searchQuery={searchQuery}
+              anchorEl={searchInputRef.current}
             />
           </div>
         </div>
+
+        {/* Global Search Command Palette */}
+        <GlobalSearchCommand
+          open={isCommandPaletteOpen}
+          onOpenChange={(open) => {
+            setIsCommandPaletteOpen(open);
+            // Clear search query when closing
+            if (!open) {
+              setSearchQuery('');
+            }
+          }}
+          searchQuery={searchQuery}
+          onSearchQueryChange={(value) => {
+            // Update search query immediately for normal typing
+            setSearchQuery(value);
+          }}
+        />
 
         {/* Right Section - Actions & Profile */}
         <div className="flex items-center gap-2">

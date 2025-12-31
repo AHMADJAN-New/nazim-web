@@ -3963,6 +3963,27 @@ export const en: TranslationKeys = {
     contactPerson: 'Contact Person',
     noDataToExport: 'No data to export',
   },
+
+  // Global Search
+  search: {
+    placeholder: 'Search students, classes, teachers...',
+    noResults: 'No results found',
+    startTyping: 'Start typing to search...',
+    keyboardShortcut: 'Press Ctrl+K to search',
+    students: 'Students',
+    classes: 'Classes',
+    staff: 'Staff',
+    subjects: 'Subjects',
+    academicYears: 'Academic Years',
+    schools: 'Schools',
+    admissionNo: 'Admission No',
+    class: 'Class',
+    position: 'Position',
+    code: 'Code',
+    employeeId: 'Employee ID',
+    cardNumber: 'Card Number',
+    fatherName: 'Father Name',
+  },
   
   // Subscription/SaaS system
   subscription: {
