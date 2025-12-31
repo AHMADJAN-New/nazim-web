@@ -379,7 +379,7 @@ export function GraduationCertificatePdfGenerator({
       ? `"${normalizeCanvasFontFamily('Bahij Nassim')}", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif`
       : (requestedGlobalFont || 'Arial');
 
-    const textColor = layout.textColor || '#1a365d';
+    const textColor = layout.textColor || '#000000';
     const baseFontSize = layout.fontSize || 24;
 
     const getFieldFont = (fieldId: string, defaultMultiplier: number) => {
@@ -473,7 +473,7 @@ export function GraduationCertificatePdfGenerator({
     if (layout.enabledFields?.includes('grandfatherName') && data.student?.grandfather_name) {
       const pos = getPixelPosition(layout.grandfatherNamePosition, baseWidth / 2, 380);
       if (pos) {
-        const fieldFont = getFieldFont('grandfatherName', 0.9);
+        const fieldFont = getFieldFont('grandfatherName', 1.0);
         drawText(data.student.grandfather_name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
@@ -482,7 +482,7 @@ export function GraduationCertificatePdfGenerator({
     if (layout.enabledFields?.includes('motherName') && data.student?.mother_name) {
       const pos = getPixelPosition(layout.motherNamePosition, baseWidth / 2, 400);
       if (pos) {
-        const fieldFont = getFieldFont('motherName', 0.9);
+        const fieldFont = getFieldFont('motherName', 1.0);
         drawText(data.student.mother_name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
@@ -503,7 +503,7 @@ export function GraduationCertificatePdfGenerator({
     if (layout.enabledFields?.includes('schoolName') && data.school) {
       const pos = getPixelPosition(layout.schoolNamePosition, baseWidth / 2, 500);
       if (pos) {
-        const fieldFont = getFieldFont('schoolName', 0.83);
+        const fieldFont = getFieldFont('schoolName', 1.0);
         drawText(data.school.school_name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
@@ -512,7 +512,7 @@ export function GraduationCertificatePdfGenerator({
     if (layout.enabledFields?.includes('academicYear') && data.academicYear) {
       const pos = getPixelPosition(layout.academicYearPosition, baseWidth / 2, 520);
       if (pos) {
-        const fieldFont = getFieldFont('academicYear', 0.75);
+        const fieldFont = getFieldFont('academicYear', 0.8);
         drawText(data.academicYear.name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
@@ -547,7 +547,7 @@ export function GraduationCertificatePdfGenerator({
     if (layout.enabledFields?.includes('position') && data.position) {
       const pos = getPixelPosition(layout.positionPosition, baseWidth - 100, baseHeight - 120);
       if (pos) {
-        const fieldFont = getFieldFont('position', 0.58);
+        const fieldFont = getFieldFont('position', 0.8);
         drawText(`Position: ${data.position}`, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, isRtl ? 'left' : 'right');
       }
     }
@@ -556,7 +556,7 @@ export function GraduationCertificatePdfGenerator({
     if (layout.enabledFields?.includes('province') && data.student?.curr_province) {
       const pos = getPixelPosition(layout.provincePosition, baseWidth / 2, 520);
       if (pos) {
-        const fieldFont = getFieldFont('province', 0.5);
+        const fieldFont = getFieldFont('province', 0.8);
         drawText(`Province: ${data.student.curr_province}`, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
@@ -565,7 +565,7 @@ export function GraduationCertificatePdfGenerator({
     if (layout.enabledFields?.includes('district') && data.student?.curr_district) {
       const pos = getPixelPosition(layout.districtPosition, baseWidth / 2, 540);
       if (pos) {
-        const fieldFont = getFieldFont('district', 0.5);
+        const fieldFont = getFieldFont('district', 0.8);
         drawText(`District: ${data.student.curr_district}`, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
@@ -574,7 +574,7 @@ export function GraduationCertificatePdfGenerator({
     if (layout.enabledFields?.includes('village') && data.student?.curr_village) {
       const pos = getPixelPosition(layout.villagePosition, baseWidth / 2, 560);
       if (pos) {
-        const fieldFont = getFieldFont('village', 0.5);
+        const fieldFont = getFieldFont('village', 0.8);
         drawText(`Village: ${data.student.curr_village}`, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
@@ -583,7 +583,7 @@ export function GraduationCertificatePdfGenerator({
     if (layout.enabledFields?.includes('nationality') && data.student?.nationality) {
       const pos = getPixelPosition(layout.nationalityPosition, baseWidth / 2, 580);
       if (pos) {
-        const fieldFont = getFieldFont('nationality', 0.5);
+        const fieldFont = getFieldFont('nationality', 0.8);
         drawText(`Nationality: ${data.student.nationality}`, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
@@ -592,7 +592,7 @@ export function GraduationCertificatePdfGenerator({
     if (layout.enabledFields?.includes('guardianName') && data.student?.guardian_name) {
       const pos = getPixelPosition(layout.guardianNamePosition, baseWidth / 2, 600);
       if (pos) {
-        const fieldFont = getFieldFont('guardianName', 0.58);
+        const fieldFont = getFieldFont('guardianName', 0.8);
         drawText(`Guardian: ${data.student.guardian_name}`, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }

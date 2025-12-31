@@ -462,7 +462,7 @@ export function CertificatePdfGenerator({
       ? `"${normalizeCanvasFontFamily('Bahij Nassim')}", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif`
       : (requestedGlobalFont || 'Arial');
 
-    const textColor = layout.textColor || '#1a365d';
+    const textColor = layout.textColor || '#000000';
     const baseFontSize = layout.fontSize || 24;
 
     const getFieldFont = (fieldId: string, defaultMultiplier: number) => {
@@ -568,7 +568,7 @@ export function CertificatePdfGenerator({
     if (layout.enabledFields?.includes('grandfatherName') && data.student.grandfather_name) {
       const pos = getPixelPosition(layout.grandfatherNamePosition, baseWidth / 2, 380);
       if (pos) {
-        const fieldFont = getFieldFont('grandfatherName', 0.9);
+        const fieldFont = getFieldFont('grandfatherName', 1.0);
         drawText(data.student.grandfather_name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
@@ -577,7 +577,7 @@ export function CertificatePdfGenerator({
     if (layout.enabledFields?.includes('motherName') && data.student.mother_name) {
       const pos = getPixelPosition(layout.motherNamePosition, baseWidth / 2, 400);
       if (pos) {
-        const fieldFont = getFieldFont('motherName', 0.9);
+        const fieldFont = getFieldFont('motherName', 1.0);
         drawText(data.student.mother_name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
       }
     }
