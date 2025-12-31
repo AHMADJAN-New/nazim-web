@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -20,8 +20,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Download, Award, Eye, Image as ImageIcon, Printer } from 'lucide-react';
 import { useCertificateTemplatesV2 } from '@/hooks/useGraduation';
-import { certificateTemplatesV2Api, issuedCertificatesApi, apiClient } from '@/lib/api/client';
-import { format } from 'date-fns';
+import { issuedCertificatesApi, apiClient } from '@/lib/api/client';
 
 // Import pdfmake for Arabic support - handle both default and named exports
 import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
