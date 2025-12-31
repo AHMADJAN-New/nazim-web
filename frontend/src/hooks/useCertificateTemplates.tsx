@@ -31,11 +31,12 @@ export interface CertificateLayoutConfig {
   headerText?: string; // Custom header text (default: "Certificate of Completion" or "Graduation Certificate")
   courseNameText?: string; // Custom course name label/prefix (default: empty, uses actual course name)
   classNameText?: string; // Custom class name label/prefix (default: empty, uses actual class name)
-  dateText?: string; // Custom date label/prefix (default: "Date:")
+  dateText?: string; // Custom date label/prefix for course certificates (default: "Date:")
+  graduationDateText?: string; // Custom date label/prefix for graduation certificates (default: "Date:")
   directorSignatureText?: string; // Custom director signature label (default: "Director Signature", empty string to hide)
   officialSealText?: string; // Custom official seal label (default: "Official Seal", empty string to hide)
   certificateNumberPrefix?: string; // Custom certificate number prefix (default: "Certificate No:", empty string to show only number)
-  qrCodeValueSource?: 'certificate_number' | 'admission_no' | 'student_id' | 'course_student_id'; // What data should be encoded in QR
+  qrCodeValueSource?: 'certificate_number' | 'admission_no' | 'student_id' | 'course_student_id' | 'verification_url'; // What data should be encoded in QR
   // Field visibility (optional fields - user can enable/disable)
   enabledFields?: string[]; // Array of field IDs that should be displayed
   // Global style settings (used as defaults)
