@@ -22,6 +22,7 @@ class Letterhead extends Model
         'school_id',
         'name',
         'file_path',
+        'image_path',
         'file_type',
         'letterhead_type',
         'letter_type',
@@ -37,6 +38,7 @@ class Letterhead extends Model
     protected $appends = [
         'file_url',
         'preview_url',
+        'image_url',
     ];
 
     /**
@@ -66,7 +68,31 @@ class Letterhead extends Model
             return $value;
         }
 
+        if ($this->image_url) {
+            return $this->image_url;
+        }
+
         return $this->file_url;
+    }
+
+    /**
+     * Get the rendered image URL for this letterhead.
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        if (!empty($this->attributes['image_path'])) {
+            try {
+                return route('dms.letterheads.serve', ['id' => $this->id, 'variant' => 'image']);
+            } catch (\Throwable $e) {
+                return null;
+            }
+        }
+
+        if ($this->file_type === 'image') {
+            return $this->file_url;
+        }
+
+        return null;
     }
 
     protected static function boot()

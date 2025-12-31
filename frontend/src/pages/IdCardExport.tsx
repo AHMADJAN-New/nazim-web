@@ -50,20 +50,66 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+const STORAGE_KEY = 'idCardExportSettings';
+
+interface ExportSettings {
+  academicYearId?: string;
+  schoolId?: string;
+  classId?: string;
+  classAcademicYearId?: string;
+  templateId?: string;
+  enrollmentStatus?: string;
+  printedStatus?: string;
+  feeStatus?: string;
+  exportFormat?: 'zip' | 'pdf';
+  exportSides?: 'front' | 'back' | 'both';
+  cardsPerPage?: number;
+  quality?: 'standard' | 'high';
+  includeUnprinted?: boolean;
+  includeUnpaid?: boolean;
+}
+
+function loadSettings(): ExportSettings {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.warn('[IdCardExport] Failed to load settings from localStorage:', error);
+    }
+  }
+  return {};
+}
+
+function saveSettings(settings: ExportSettings) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.warn('[IdCardExport] Failed to save settings to localStorage:', error);
+    }
+  }
+}
+
 export default function IdCardExport() {
   const { t } = useLanguage();
   const { profile } = useAuth();
   const organizationId = profile?.organization_id;
 
+  // Load saved settings
+  const savedSettings = loadSettings();
+
   // Filter states
-  const [academicYearId, setAcademicYearId] = useState<string>('');
-  const [schoolId, setSchoolId] = useState<string>('');
-  const [classId, setClassId] = useState<string>('');
-  const [classAcademicYearId, setClassAcademicYearId] = useState<string>('');
-  const [templateId, setTemplateId] = useState<string>('');
-  const [enrollmentStatus, setEnrollmentStatus] = useState<string>('active');
-  const [printedStatus, setPrintedStatus] = useState<string>('all');
-  const [feeStatus, setFeeStatus] = useState<string>('all');
+  const [academicYearId, setAcademicYearId] = useState<string>(savedSettings.academicYearId || '');
+  const [schoolId, setSchoolId] = useState<string>(savedSettings.schoolId || '');
+  const [classId, setClassId] = useState<string>(savedSettings.classId || '');
+  const [classAcademicYearId, setClassAcademicYearId] = useState<string>(savedSettings.classAcademicYearId || '');
+  const [templateId, setTemplateId] = useState<string>(savedSettings.templateId || '');
+  const [enrollmentStatus, setEnrollmentStatus] = useState<string>(savedSettings.enrollmentStatus || 'active');
+  const [printedStatus, setPrintedStatus] = useState<string>(savedSettings.printedStatus || 'all');
+  const [feeStatus, setFeeStatus] = useState<string>(savedSettings.feeStatus || 'all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Helper to convert empty string to 'all' for Select components
@@ -72,12 +118,12 @@ export default function IdCardExport() {
   const templateIdForSelect = templateId || 'all';
 
   // Export options
-  const [exportFormat, setExportFormat] = useState<'zip' | 'pdf'>('zip');
-  const [exportSides, setExportSides] = useState<'front' | 'back' | 'both'>('both');
-  const [cardsPerPage, setCardsPerPage] = useState<number>(6);
-  const [quality, setQuality] = useState<'standard' | 'high'>('high');
-  const [includeUnprinted, setIncludeUnprinted] = useState<boolean>(true);
-  const [includeUnpaid, setIncludeUnpaid] = useState<boolean>(true);
+  const [exportFormat, setExportFormat] = useState<'zip' | 'pdf'>(savedSettings.exportFormat || 'zip');
+  const [exportSides, setExportSides] = useState<'front' | 'back' | 'both'>(savedSettings.exportSides || 'both');
+  const [cardsPerPage, setCardsPerPage] = useState<number>(savedSettings.cardsPerPage || 6);
+  const [quality, setQuality] = useState<'standard' | 'high'>(savedSettings.quality || 'high');
+  const [includeUnprinted, setIncludeUnprinted] = useState<boolean>(savedSettings.includeUnprinted !== undefined ? savedSettings.includeUnprinted : true);
+  const [includeUnpaid, setIncludeUnpaid] = useState<boolean>(savedSettings.includeUnpaid !== undefined ? savedSettings.includeUnpaid : true);
 
   // Student selection
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
@@ -90,12 +136,33 @@ export default function IdCardExport() {
   const { data: classAcademicYears = [] } = useClassAcademicYears(academicYearId, organizationId);
   const { data: templates = [] } = useIdCardTemplates(true);
 
-  // Set default academic year
+  // Set default academic year (only if not already set from saved settings)
   useEffect(() => {
     if (currentAcademicYear && !academicYearId) {
       setAcademicYearId(currentAcademicYear.id);
     }
   }, [currentAcademicYear?.id, academicYearId]);
+
+  // Save settings to localStorage whenever they change
+  useEffect(() => {
+    const settings: ExportSettings = {
+      academicYearId,
+      schoolId,
+      classId,
+      classAcademicYearId,
+      templateId,
+      enrollmentStatus,
+      printedStatus,
+      feeStatus,
+      exportFormat,
+      exportSides,
+      cardsPerPage,
+      quality,
+      includeUnprinted,
+      includeUnpaid,
+    };
+    saveSettings(settings);
+  }, [academicYearId, schoolId, classId, classAcademicYearId, templateId, enrollmentStatus, printedStatus, feeStatus, exportFormat, exportSides, cardsPerPage, quality, includeUnprinted, includeUnpaid]);
 
   // Filters for ID cards
   const cardFilters: StudentIdCardFilters = useMemo(() => ({
@@ -465,22 +532,22 @@ export default function IdCardExport() {
 
                 {exportFormat === 'pdf' && (
                   <div>
-                    <Label>{t('idCards.export.cardsPerPage') || 'Cards Per Page'}</Label>
+                    <Label>{t('idCards.export.cardsPerPage') || 'Cards Per Page (Each card gets its own page)'}</Label>
                     <Select
                       value={cardsPerPage.toString()}
                       onValueChange={(value) => setCardsPerPage(parseInt(value))}
+                      disabled
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1">1</SelectItem>
-                        <SelectItem value="2">2</SelectItem>
-                        <SelectItem value="4">4</SelectItem>
-                        <SelectItem value="6">6</SelectItem>
-                        <SelectItem value="9">9</SelectItem>
+                        <SelectItem value="1">1 (Each card on separate page)</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Each ID card will be placed on its own page without A4 background
+                    </p>
                   </div>
                 )}
 

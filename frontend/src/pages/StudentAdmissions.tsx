@@ -52,15 +52,24 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
 
+// Helper to convert empty strings to null for UUID fields
+const uuidOrNull = z.preprocess(
+  (val) => {
+    if (val === '' || val === null || val === undefined) return null;
+    return val;
+  },
+  z.string().uuid().nullable().optional()
+);
+
 const getAdmissionSchema = (t: ReturnType<typeof useLanguage>['t']) => z.object({
   organization_id: z.string().uuid().optional(),
-  school_id: z.string().uuid().optional().nullable(),
+  school_id: uuidOrNull,
   student_id: z.string().uuid({ message: t('admissions.studentRequired') }),
-  academic_year_id: z.string().uuid().optional().nullable(),
-  class_id: z.string().uuid().optional().nullable(),
-  class_academic_year_id: z.string().uuid().optional().nullable(),
-  residency_type_id: z.string().uuid().optional().nullable(),
-  room_id: z.string().uuid().optional().nullable(),
+  academic_year_id: uuidOrNull,
+  class_id: uuidOrNull,
+  class_academic_year_id: uuidOrNull,
+  residency_type_id: uuidOrNull,
+  room_id: uuidOrNull,
   admission_year: z.string().max(10, t('admissions.admissionYearMaxLength')).optional().nullable(),
   admission_date: z.preprocess(
     (val) => {
@@ -548,15 +557,21 @@ export function StudentAdmissions() {
       }
     }
     
+    // Helper to convert empty strings to null for optional fields (for clearing on update)
+    const toNullIfEmpty = (value: string | undefined | null): string | null | undefined => {
+      if (value === '' || value === null) return null;
+      return value || undefined;
+    };
+
     const payload: StudentAdmissionInsert = {
       studentId: data.student_id,
       organizationId: data.organization_id || profile?.organization_id,
       schoolId: data.school_id,
-      academicYearId: data.academic_year_id,
-      classId: data.class_id,
-      classAcademicYearId: data.class_academic_year_id,
-      residencyTypeId: data.residency_type_id,
-      roomId: data.room_id,
+      academicYearId: data.academic_year_id || undefined,
+      classId: toNullIfEmpty(data.class_id),
+      classAcademicYearId: toNullIfEmpty(data.class_academic_year_id),
+      residencyTypeId: toNullIfEmpty(data.residency_type_id),
+      roomId: toNullIfEmpty(data.room_id),
       admissionYear: data.admission_year,
       admissionDate: admissionDateStr,
       enrollmentStatus: data.enrollment_status,
@@ -574,24 +589,53 @@ export function StudentAdmissions() {
 
     const selectedCay = classAcademicYears?.find((cay) => cay.id === data.class_academic_year_id);
     if (selectedCay) {
+      // When a class is selected, use its class_id and academic_year_id
       payload.classId = selectedCay.class_id;
       payload.academicYearId = selectedCay.academic_year_id;
       if (!payload.roomId && selectedCay.room_id) {
         payload.roomId = selectedCay.room_id;
       }
+    } else {
+      // When no class is selected (empty string or undefined), ensure class-related fields are cleared
+      // The toNullIfEmpty helper already handles this, but we need to ensure roomId is also cleared
+      // when class is cleared (unless it was explicitly set)
+      if (data.class_academic_year_id === '' || !data.class_academic_year_id) {
+        // If class was explicitly cleared, also clear roomId if it was tied to the class
+        // (This is a safety measure - the form already clears room_id when academic year changes)
+        if (data.room_id === '') {
+          payload.roomId = null;
+        }
+      }
+      // Keep academicYearId from form data (line above) - don't override it
+      // If academic year was changed, it should be in data.academic_year_id
     }
 
     if (selectedAdmission && isEdit) {
       // Remove organizationId and schoolId from update payload as they cannot be updated
       const { organizationId, schoolId, ...updatePayload } = payload;
+      
+      if (import.meta.env.DEV) {
+        console.log('[StudentAdmissions] Updating admission:', selectedAdmission.id);
+        console.log('[StudentAdmissions] Update payload:', updatePayload);
+      }
+      
       updateAdmission.mutate(
         { id: selectedAdmission.id, data: updatePayload },
         {
           onSuccess: () => {
+            if (import.meta.env.DEV) {
+              console.log('[StudentAdmissions] Update successful');
+            }
             setIsDialogOpen(false);
             setSelectedAdmission(null);
             setIsEdit(false);
             reset();
+          },
+          onError: (error: Error) => {
+            if (import.meta.env.DEV) {
+              console.error('[StudentAdmissions] Update error:', error);
+            }
+            // Error toast is handled by the mutation hook
           },
         },
       );
@@ -739,7 +783,16 @@ export function StudentAdmissions() {
                 </Alert>
               )}
               <FormProvider {...formMethods}>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={handleSubmit(onSubmit, (errors) => {
+                  if (import.meta.env.DEV) {
+                    console.error('[StudentAdmissions] Form validation errors:', errors);
+                  }
+                  // Show first validation error
+                  const firstError = Object.values(errors)[0];
+                  if (firstError?.message) {
+                    showToast.error(firstError.message);
+                  }
+                })} className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
               {schools && schools.length > 1 && (
                 <div>
@@ -1051,9 +1104,13 @@ export function StudentAdmissions() {
                   <Button 
                     type="submit" 
                     className="w-full"
-                    disabled={!isEdit && !canCreateAdmission}
+                    disabled={(!isEdit && !canCreateAdmission) || updateAdmission.isPending || createAdmission.isPending}
                   >
-                    {isEdit ? (t('admissions.updateAdmission') || 'Update admission') : (t('admissions.admitStudent') || 'Admit student')}
+                    {updateAdmission.isPending || createAdmission.isPending
+                      ? (t('common.saving') || 'Saving...')
+                      : isEdit 
+                        ? (t('admissions.updateAdmission') || 'Update admission') 
+                        : (t('admissions.admitStudent') || 'Admit student')}
                   </Button>
                 </DialogFooter>
               </form>

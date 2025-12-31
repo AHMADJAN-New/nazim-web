@@ -59,6 +59,7 @@
     "input-otp": "^1.2.4",
     "isomorphic-dompurify": "^2.26.0",
     "jalaali-js": "^1.2.8",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
     "pdfmake": "^0.2.20",

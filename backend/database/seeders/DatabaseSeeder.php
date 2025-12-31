@@ -191,7 +191,7 @@ class DatabaseSeeder extends Seeder
         $this->command->info('✅ Database seeding completed successfully!');
         $this->command->info('');
         $this->command->info('Platform Admin user:');
-        $this->command->info('  - platform-admin@nazim.app / platform-admin-123 (Platform Admin)');
+        $this->command->info('  - platform-admin@nazim.app / admin123 (Platform Admin)');
         $this->command->info('  Access at: /platform/login');
         $this->command->info('');
         $this->command->info('Platform admin has a test organization with full access for testing app functionality.');

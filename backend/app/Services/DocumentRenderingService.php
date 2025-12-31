@@ -580,11 +580,16 @@ CSS;
      */
     private function buildLetterheadStyles(?Letterhead $letterhead, bool $repeatOnPages, bool $forBrowser = false): string
     {
-        if (!$letterhead || !$letterhead->file_path || !Storage::exists($letterhead->file_path)) {
+        if (!$letterhead) {
             return '';
         }
 
-        $mimeType = Storage::mimeType($letterhead->file_path);
+        $renderPath = $this->resolveLetterheadRenderPath($letterhead);
+        if (!$renderPath) {
+            return '';
+        }
+
+        $mimeType = Storage::mimeType($renderPath);
         $isPdf = $mimeType === 'application/pdf';
 
         $backgroundRepeat = $repeatOnPages ? 'repeat' : 'no-repeat';
@@ -702,7 +707,7 @@ CSS;
             return '';
         }
         
-        if (!$letterhead->file_path) {
+        if (!$letterhead->file_path && !$letterhead->image_path) {
             if (config('app.debug')) {
                 \Log::debug('buildLetterheadHtml: Letterhead has no file_path', ['letterhead_id' => $letterhead->id]);
             }
@@ -713,26 +718,28 @@ CSS;
         </div>
 HTML;
         }
-        
-        if (!Storage::exists($letterhead->file_path)) {
-            \Log::warning('buildLetterheadHtml: Letterhead file does not exist', [
+
+        $renderPath = $this->resolveLetterheadRenderPath($letterhead);
+        if (!$renderPath) {
+            \Log::warning('buildLetterheadHtml: Letterhead render file does not exist', [
                 'letterhead_id' => $letterhead->id,
                 'file_path' => $letterhead->file_path,
+                'image_path' => $letterhead->image_path,
             ]);
             // Return visible placeholder instead of empty string so user knows letterhead should be there
             return <<<HTML
         <div class="letterhead-background" style="min-height: 100%; background-color: #f0f0f0; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; position: absolute; inset: 0; z-index: 1;">
-            <p style="color: #999; font-size: 12px;">Letterhead file not found: {$letterhead->file_path}</p>
+            <p style="color: #999; font-size: 12px;">Letterhead image not found. Please re-upload the letterhead.</p>
         </div>
 HTML;
         }
 
-        $mimeType = Storage::mimeType($letterhead->file_path);
+        $mimeType = Storage::mimeType($renderPath);
         $isPdf = $mimeType === 'application/pdf';
         
         // Fallback MIME type detection based on file extension if Storage::mimeType() fails
         if (!$mimeType || $mimeType === 'application/octet-stream') {
-            $extension = strtolower(pathinfo($letterhead->file_path, PATHINFO_EXTENSION));
+            $extension = strtolower(pathinfo($renderPath, PATHINFO_EXTENSION));
             $mimeTypeMap = [
                 'jpg' => 'image/jpeg',
                 'jpeg' => 'image/jpeg',
@@ -745,16 +752,29 @@ HTML;
             $mimeType = $mimeTypeMap[$extension] ?? 'image/jpeg'; // Default to JPEG if unknown
             $isPdf = $extension === 'pdf' || $mimeType === 'application/pdf';
         }
+
+        if ($isPdf) {
+            \Log::warning('PDF letterhead render requested without image conversion', [
+                'letterhead_id' => $letterhead->id,
+                'file_path' => $letterhead->file_path,
+                'image_path' => $letterhead->image_path,
+            ]);
+            return <<<HTML
+        <div class="letterhead-background" style="min-height: 100%; background-color: #f0f0f0; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; position: absolute; inset: 0; z-index: 1;">
+            <p style="color: #999; font-size: 12px;">PDF letterhead requires image conversion. Please re-upload the letterhead.</p>
+        </div>
+HTML;
+        }
         
         // CRITICAL: Browsershot doesn't allow file:// URLs in HTML for security reasons
         // Always use base64 data URLs for both browser preview and PDF generation
         $dataUrl = '';
         try {
-            $fileContents = Storage::get($letterhead->file_path);
+            $fileContents = Storage::get($renderPath);
             if (empty($fileContents)) {
                 \Log::warning("Letterhead file is empty", [
                     'letterhead_id' => $letterhead->id,
-                    'file_path' => $letterhead->file_path,
+                    'file_path' => $renderPath,
                 ]);
                 return '';
             }
@@ -763,7 +783,7 @@ HTML;
         } catch (\Exception $e) {
             \Log::error("Failed to base64 encode letterhead {$letterhead->id}: {$e->getMessage()}", [
                 'letterhead_id' => $letterhead->id,
-                'file_path' => $letterhead->file_path,
+                'file_path' => $renderPath,
                 'mime_type' => $mimeType,
                 'for_browser' => $forBrowser,
                 'exception' => $e,
@@ -1055,21 +1075,22 @@ HTML;
         }
         // Check if it's a Letterhead (old DMS system)
         elseif ($watermark instanceof \App\Models\Letterhead) {
-            if (!$watermark->file_path || !Storage::exists($watermark->file_path)) {
+            $renderPath = $this->resolveLetterheadRenderPath($watermark);
+            if (!$renderPath) {
                 return '';
             }
 
             // CRITICAL: Browsershot doesn't allow file:// URLs
             // Always use base64 data URLs for both browser preview and PDF generation
             try {
-                $fileContents = Storage::get($watermark->file_path);
-                $mimeType = Storage::mimeType($watermark->file_path);
+                $fileContents = Storage::get($renderPath);
+                $mimeType = Storage::mimeType($renderPath);
                 $base64 = base64_encode($fileContents);
                 $fileUrl = "data:{$mimeType};base64,{$base64}";
             } catch (\Exception $e) {
                 \Log::error("Failed to base64 encode watermark {$watermark->id}: {$e->getMessage()}", [
                     'watermark_id' => $watermark->id,
-                    'file_path' => $watermark->file_path,
+                    'file_path' => $renderPath,
                     'for_browser' => $forBrowser,
                     'exception' => $e,
                 ]);
@@ -1314,6 +1335,17 @@ HTML;
         };
     }
 
+    private function resolveLetterheadRenderPath(Letterhead $letterhead): ?string
+    {
+        if (!empty($letterhead->image_path) && Storage::exists($letterhead->image_path)) {
+            return $letterhead->image_path;
+        }
+        if (!empty($letterhead->file_path) && Storage::exists($letterhead->file_path)) {
+            return $letterhead->file_path;
+        }
+        return null;
+    }
+
     /**
      * Process letterhead file and convert to HTML (legacy support)
      *
@@ -1322,7 +1354,8 @@ HTML;
      */
     public function processLetterheadFile(Letterhead $letterhead): string
     {
-        if (!$letterhead->file_path || !Storage::exists($letterhead->file_path)) {
+        $renderPath = $this->resolveLetterheadRenderPath($letterhead);
+        if (!$renderPath) {
             return '';
         }
 
@@ -1333,8 +1366,8 @@ HTML;
             // CRITICAL: Browsershot doesn't allow file:// URLs
             // Use base64 data URL for legacy method as well
             try {
-                $fileContents = Storage::get($letterhead->file_path);
-                $mimeType = Storage::mimeType($letterhead->file_path);
+                $fileContents = Storage::get($renderPath);
+                $mimeType = Storage::mimeType($renderPath);
                 $base64 = base64_encode($fileContents);
                 $dataUrl = "data:{$mimeType};base64,{$base64}";
                 
@@ -1346,7 +1379,7 @@ HTML;
             } catch (\Exception $e) {
                 \Log::error("Failed to base64 encode letterhead for legacy watermark: {$e->getMessage()}", [
                     'letterhead_id' => $letterhead->id,
-                    'file_path' => $letterhead->file_path,
+                    'file_path' => $renderPath,
                     'exception' => $e,
                 ]);
                 return '';

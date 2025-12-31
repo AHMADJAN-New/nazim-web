@@ -226,7 +226,8 @@ class OutgoingDocumentsController extends BaseDmsController
         }
         [$user, $profile, $currentSchoolId] = $context;
 
-        $doc = OutgoingDocument::where('id', $id)
+        $doc = OutgoingDocument::with(['template.letterhead', 'template.watermark', 'letterhead'])
+            ->where('id', $id)
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->firstOrFail();

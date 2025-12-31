@@ -1,13 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Download, Eye, Printer } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Loader2, Download, Eye, Printer, ChevronDown } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
-import { usePreviewIdCard, useExportIndividualIdCard, useStudentIdCard } from '@/hooks/useStudentIdCards';
+import { useStudentIdCard } from '@/hooks/useStudentIdCards';
 import { useIdCardTemplate } from '@/hooks/useIdCardTemplates';
 import { showToast } from '@/lib/toast';
+import { renderIdCardToDataUrl } from '@/lib/idCards/idCardCanvasRenderer';
+import { exportIdCardToPdf } from '@/lib/idCards/idCardPdfExporter';
 import type { StudentIdCard } from '@/types/domain/studentIdCard';
 import type { IdCardTemplate } from '@/types/domain/idCardTemplate';
+import type { Student } from '@/types/domain/student';
 
 interface StudentIdCardPreviewProps {
   card: StudentIdCard | null;
@@ -43,46 +52,116 @@ export function StudentIdCardPreview({
   const { data: fetchedTemplate, isLoading: templateLoading } = useIdCardTemplate(templateId || null);
   const actualTemplate = providedTemplate || fetchedTemplate;
   
-  const previewCard = usePreviewIdCard();
-  const exportCard = useExportIndividualIdCard();
+  // Convert StudentIdCard to Student format for renderer
+  const getStudentForRenderer = (card: StudentIdCard | null): Student | null => {
+    if (!card || !card.student) return null;
+    
+    const student: Student = {
+      id: card.student.id,
+      fullName: card.student.fullName || '',
+      fatherName: card.student.fatherName || '',
+      admissionNumber: card.student.admissionNumber || '',
+      studentCode: card.student.studentCode || null,
+      cardNumber: card.cardNumber || card.student.cardNumber || null,
+      rollNumber: (card.student as any).rollNumber || null,
+      picturePath: card.student.picturePath || null,
+      currentClass: card.class ? {
+        id: card.class.id,
+        name: card.class.name,
+        gradeLevel: card.class.gradeLevel,
+      } : null,
+      school: card.organization ? {
+        id: card.organization.id,
+        schoolName: card.organization.name,
+      } : null,
+      // Add required fields with defaults
+      organizationId: card.organizationId,
+      schoolId: card.schoolId,
+      firstName: card.student.fullName?.split(' ')[0] || '',
+      lastName: card.student.fullName?.split(' ').slice(1).join(' ') || '',
+      gender: (card.student.gender as any) || 'male',
+      status: 'active' as any,
+      admissionFeeStatus: 'paid' as any,
+      isOrphan: false,
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        country: '',
+        postalCode: '',
+      },
+      guardians: [],
+      previousSchools: [],
+      healthInfo: {},
+      documents: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    if (import.meta.env.DEV) {
+      console.log('[StudentIdCardPreview] Student data for renderer:', {
+        fullName: student.fullName,
+        fatherName: student.fatherName,
+        admissionNumber: student.admissionNumber,
+        studentCode: student.studentCode,
+        currentClass: student.currentClass?.name,
+        school: student.school?.schoolName,
+      });
+    }
+    
+    return student;
+  };
 
   // Load preview image when card or side changes (auto-load on mount)
   useEffect(() => {
-    if (!actualCard?.id || cardLoading) {
+    if (!actualCard || !actualTemplate || cardLoading || templateLoading) {
       setPreviewImageUrl(null);
       return;
     }
 
-    // Always try to load backend preview (it handles missing layout config)
+    const student = getStudentForRenderer(actualCard);
+    if (!student) {
+      setPreviewImageUrl(null);
+      return;
+    }
+
+    // Generate preview using the same rendering function and quality as export
+    // This ensures preview matches exactly what will be exported to JPG/PDF
     const loadPreview = async () => {
       setIsLoadingPreview(true);
       try {
-        const previewBlob = await previewCard.mutateAsync({
-          id: actualCard.id,
-          side,
-        });
-        // The preview API returns a Blob
-        if (previewBlob instanceof Blob) {
-          // Revoke previous URL if exists
-          if (previewImageUrl && previewImageUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(previewImageUrl);
-          }
-          const url = URL.createObjectURL(previewBlob);
-          setPreviewImageUrl(url);
+        // Revoke previous URL if exists
+        if (previewImageUrl && previewImageUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(previewImageUrl);
         }
+
+        // Use screen quality to match export exactly
+        // Both preview and export now use the same dimensions and font sizes
+        const dataUrl = await renderIdCardToDataUrl(
+          actualTemplate,
+          student,
+          side,
+          {
+            quality: 'screen', // Use screen dimensions to match export
+            scale: 1,
+            mimeType: 'image/jpeg',
+            jpegQuality: 0.95,
+            notes: actualCard?.notes || null,
+            expiryDate: actualCard?.printedAt ? new Date(actualCard.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null, // 1 year from print date
+          }
+        );
+        setPreviewImageUrl(dataUrl);
       } catch (error) {
         if (import.meta.env.DEV) {
           console.error('[StudentIdCardPreview] Error loading preview:', error);
         }
-        // Don't show error toast on auto-load, only on manual preview
-        // User can click Preview button to retry
         setPreviewImageUrl(null);
       } finally {
         setIsLoadingPreview(false);
       }
     };
 
-    loadPreview();
+    void loadPreview();
     
     // Cleanup: revoke object URL when component unmounts
     return () => {
@@ -91,7 +170,7 @@ export function StudentIdCardPreview({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [actualCard?.id, side, cardLoading]);
+  }, [actualCard?.id, actualTemplate?.id, side, cardLoading, templateLoading]);
 
   // Check if we have the necessary data
   const hasStudentData = actualCard && actualCard.student;
@@ -110,34 +189,107 @@ export function StudentIdCardPreview({
   } : null);
 
   const handleDownload = async () => {
-    if (!actualCard?.id) return;
+    if (!actualCard || !actualTemplate) return;
+
+    const student = getStudentForRenderer(actualCard);
+    if (!student) {
+      showToast.error(t('toast.idCardDownloadFailed') || 'Student data not available');
+      return;
+    }
 
     try {
-      const blob = await exportCard.mutateAsync({
-        id: actualCard.id,
-        format: 'png',
+      setIsLoadingPreview(true);
+      const canvas = await renderIdCardToCanvas(actualTemplate, student, side, { 
+        quality: 'print',
+        notes: actualCard?.notes || null,
+        expiryDate: actualCard?.printedAt ? new Date(actualCard.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null,
       });
+      const dataUrl = canvas.toDataURL('image/png');
       
       // Create download link
-      const url = blob instanceof Blob ? URL.createObjectURL(blob) : blob;
       const link = document.createElement('a');
-      link.href = url;
-      link.download = `id-card-${actualCard.student?.admissionNumber || actualCard.id}.png`;
+      link.href = dataUrl;
+      link.download = `id-card-${actualCard.student?.admissionNumber || actualCard.id}-${side}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      if (blob instanceof Blob) {
-        URL.revokeObjectURL(url);
-      }
+      showToast.success(t('toast.idCardExported') || 'ID card downloaded');
     } catch (error) {
-      // Error handled by hook
+      if (import.meta.env.DEV) {
+        console.error('[StudentIdCardPreview] Download error:', error);
+      }
+      showToast.error(error instanceof Error ? error.message : (t('toast.idCardDownloadFailed') || 'Failed to download ID card'));
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
+  const handleDownloadPdf = async (exportSide?: 'front' | 'back' | 'both') => {
+    if (!actualCard || !actualTemplate) return;
+
+    const student = getStudentForRenderer(actualCard);
+    if (!student) {
+      showToast.error(t('toast.idCardDownloadFailed') || 'Student data not available');
+      return;
+    }
+
+    try {
+      setIsLoadingPreview(true);
+      
+      // Determine which sides to export
+      const sidesToExport: ('front' | 'back')[] = 
+        exportSide === 'both' ? ['front', 'back'] :
+        exportSide === 'back' ? ['back'] :
+        exportSide === 'front' ? ['front'] :
+        [side]; // Default to current side
+
+      // Filter out sides that don't have layouts
+      const validSides = sidesToExport.filter(s => {
+        const layout = s === 'front' ? actualTemplate.layoutConfigFront : actualTemplate.layoutConfigBack;
+        return layout && layout.enabledFields && layout.enabledFields.length > 0;
+      });
+
+      if (validSides.length === 0) {
+        throw new Error('No valid card sides to export');
+      }
+
+      const baseFilename = `id-card-${actualCard.student?.admissionNumber || actualCard.id}`;
+      const notes = actualCard.notes || null;
+      const expiryDate = actualCard.printedAt ? new Date(actualCard.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null;
+
+      // Export each side
+      for (const exportSideValue of validSides) {
+        await exportIdCardToPdf(
+          actualTemplate,
+          student,
+          exportSideValue,
+          validSides.length > 1 ? `${baseFilename}-${exportSideValue}` : baseFilename,
+          notes,
+          expiryDate
+        );
+      }
+      
+      showToast.success(t('toast.idCardExported') || 'ID card PDF downloaded');
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error('[StudentIdCardPreview] PDF download error:', error);
+      }
+      showToast.error(error instanceof Error ? error.message : (t('toast.idCardDownloadFailed') || 'Failed to download ID card PDF'));
+    } finally {
+      setIsLoadingPreview(false);
     }
   };
 
   const handlePreview = async () => {
-    if (!actualCard?.id) return;
+    if (!actualCard || !actualTemplate) return;
     
+    const student = getStudentForRenderer(actualCard);
+    if (!student) {
+      showToast.error(t('toast.idCardPreviewFailed') || 'Student data not available');
+      return;
+    }
+
     setIsLoadingPreview(true);
     try {
       // Revoke previous URL if exists
@@ -145,16 +297,26 @@ export function StudentIdCardPreview({
         URL.revokeObjectURL(previewImageUrl);
       }
       
-      const previewBlob = await previewCard.mutateAsync({
-        id: actualCard.id,
+      // Use the same quality settings as export (print quality, scale 2)
+      // This ensures preview matches exactly what will be exported
+      const dataUrl = await renderIdCardToDataUrl(
+        actualTemplate,
+        student,
         side,
-      });
-      
-      if (previewBlob instanceof Blob) {
-        const url = URL.createObjectURL(previewBlob);
-        setPreviewImageUrl(url);
-      }
+        {
+          quality: 'print',
+          scale: 2,
+          mimeType: 'image/jpeg',
+          jpegQuality: 0.95,
+          notes: actualCard?.notes || null,
+          expiryDate: actualCard?.printedAt ? new Date(actualCard.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null,
+        }
+      );
+      setPreviewImageUrl(dataUrl);
     } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error('[StudentIdCardPreview] Preview error:', error);
+      }
       showToast.error(t('toast.idCardPreviewFailed') || 'Failed to load preview');
       setPreviewImageUrl(null);
     } finally {
@@ -214,9 +376,9 @@ export function StudentIdCardPreview({
                 variant="outline"
                 size="sm"
                 onClick={handlePreview}
-                disabled={isLoadingPreview || previewCard.isPending}
+                disabled={isLoadingPreview || !actualCard || !actualTemplate}
               >
-                {isLoadingPreview || previewCard.isPending ? (
+                {isLoadingPreview ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
                   <Eye className="h-4 w-4 mr-2" />
@@ -229,15 +391,55 @@ export function StudentIdCardPreview({
                 variant="outline"
                 size="sm"
                 onClick={handleDownload}
-                disabled={exportCard.isPending || !actualCard.id}
+                disabled={isLoadingPreview || !actualCard || !actualTemplate}
               >
-                {exportCard.isPending ? (
+                {isLoadingPreview ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
                   <Download className="h-4 w-4 mr-2" />
                 )}
-                {t('common.download') || 'Download'}
+                {t('common.download') || 'Download PNG'}
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isLoadingPreview || !actualCard || !actualTemplate}
+                  >
+                    {isLoadingPreview ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
+                    {t('common.downloadPdf') || 'Download PDF'}
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => handleDownloadPdf('front')}
+                    disabled={!actualTemplate?.layoutConfigFront?.enabledFields?.length}
+                  >
+                    {t('idCards.front') || 'Front Only'}
+                  </DropdownMenuItem>
+                  {actualTemplate?.layoutConfigBack?.enabledFields?.length > 0 && (
+                    <DropdownMenuItem
+                      onClick={() => handleDownloadPdf('back')}
+                    >
+                      {t('idCards.back') || 'Back Only'}
+                    </DropdownMenuItem>
+                  )}
+                  {actualTemplate?.layoutConfigFront?.enabledFields?.length > 0 && 
+                   actualTemplate?.layoutConfigBack?.enabledFields?.length > 0 && (
+                    <DropdownMenuItem
+                      onClick={() => handleDownloadPdf('both')}
+                    >
+                      {t('idCards.both') || 'Both Sides'}
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 variant="outline"
                 size="sm"

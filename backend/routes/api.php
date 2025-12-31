@@ -806,15 +806,12 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::middleware(['feature:id_cards'])->group(function () {
             Route::get('/student-id-cards', [\App\Http\Controllers\StudentIdCardController::class, 'index']);
             Route::get('/student-id-cards/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'show']);
-            Route::get('/student-id-cards/export/preview', [\App\Http\Controllers\StudentIdCardController::class, 'preview']);
-            Route::get('/student-id-cards/export/individual/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'exportIndividual']);
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/student-id-cards/assign', [\App\Http\Controllers\StudentIdCardController::class, 'assign']);
                 Route::put('/student-id-cards/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'update']);
                 Route::delete('/student-id-cards/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'destroy']);
                 Route::post('/student-id-cards/{id}/mark-printed', [\App\Http\Controllers\StudentIdCardController::class, 'markPrinted']);
                 Route::post('/student-id-cards/{id}/mark-fee-paid', [\App\Http\Controllers\StudentIdCardController::class, 'markFeePaid']);
-                Route::post('/student-id-cards/export/bulk', [\App\Http\Controllers\StudentIdCardController::class, 'exportBulk']);
             });
         });
 

@@ -1,6 +1,7 @@
 export interface IdCardLayoutConfig {
   enabledFields?: string[];
   fieldFonts?: Record<string, { fontSize?: number; fontFamily?: string; textColor?: string }>;
+  fieldValues?: Record<string, string | null>; // Custom text/values for editable fields (notes, expiryDate, schoolName, etc.)
   
   // Text field positions (as percentages)
   studentNamePosition?: { x: number; y: number };
@@ -11,10 +12,14 @@ export interface IdCardLayoutConfig {
   classPosition?: { x: number; y: number };
   expiryDatePosition?: { x: number; y: number };
   schoolNamePosition?: { x: number; y: number };
+  notesPosition?: { x: number; y: number };
   
   // Image field positions (with dimensions)
   studentPhotoPosition?: { x: number; y: number; width?: number; height?: number };
   qrCodePosition?: { x: number; y: number; width?: number; height?: number };
+  
+  // QR Code configuration
+  qrCodeValueSource?: 'student_id' | 'student_code' | 'admission_number' | 'card_number' | 'roll_number';
   
   // Global styles
   fontSize?: number;

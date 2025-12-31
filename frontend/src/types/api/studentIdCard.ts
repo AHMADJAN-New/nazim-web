@@ -28,6 +28,10 @@ export interface StudentIdCard {
     id: string;
     full_name: string;
     admission_no: string;
+    student_code?: string | null;
+    card_number?: string | null;
+    father_name?: string | null;
+    gender?: string | null;
     picture_path: string | null;
   };
   student_admission?: {
@@ -50,10 +54,15 @@ export interface StudentIdCard {
     id: string;
     name: string;
     code: string;
+    grade_level?: number | null;
   };
   class_academic_year?: {
     id: string;
     section_name: string | null;
+  };
+  organization?: {
+    id: string;
+    name: string;
   };
   printed_by_user?: {
     id: string;

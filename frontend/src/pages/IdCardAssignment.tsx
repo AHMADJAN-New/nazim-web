@@ -14,8 +14,6 @@ import {
   useMarkCardPrinted,
   useMarkCardFeePaid,
   useDeleteStudentIdCard,
-  usePreviewIdCard,
-  useExportIndividualIdCard,
   type StudentIdCard,
   type StudentIdCardFilters,
   type AssignIdCardRequest,
@@ -165,8 +163,6 @@ export default function IdCardAssignment() {
   const markPrinted = useMarkCardPrinted();
   const markFeePaid = useMarkCardFeePaid();
   const deleteCard = useDeleteStudentIdCard();
-  const previewCard = usePreviewIdCard();
-  const exportIndividual = useExportIndividualIdCard();
 
   // Filter students by search query
   const filteredStudents = useMemo(() => {

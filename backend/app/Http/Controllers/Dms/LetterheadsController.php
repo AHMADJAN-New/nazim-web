@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Dms;
 
 use App\Models\Letterhead;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class LetterheadsController extends BaseDmsController
 {
@@ -63,9 +65,26 @@ class LetterheadsController extends BaseDmsController
         $file = $request->file('file');
         // Store with organization_id in path for multi-tenancy
         $path = $file->store("letterheads/{$profile->organization_id}/{$currentSchoolId}");
-        
+
         // Detect file type if not provided
         $fileType = $data['file_type'] ?? ($file->getMimeType() === 'application/pdf' ? 'pdf' : 'image');
+        $imagePath = null;
+
+        if ($fileType === 'pdf') {
+            try {
+                $imagePath = $this->convertPdfToImagePath($path, $profile->organization_id, $currentSchoolId);
+            } catch (\Exception $e) {
+                Log::warning('PDF letterhead conversion failed', [
+                    'error' => $e->getMessage(),
+                    'file_path' => $path,
+                ]);
+                return response()->json([
+                    'error' => 'PDF letterhead conversion failed. Please upload a PNG/JPG letterhead or enable PDF conversion on the server.',
+                ], 422);
+            }
+        } elseif ($fileType === 'image') {
+            $imagePath = $path;
+        }
 
         $record = Letterhead::create([
             'organization_id' => $profile->organization_id,
@@ -73,6 +92,7 @@ class LetterheadsController extends BaseDmsController
             'name' => $data['name'],
             'file_path' => $path,
             'file_type' => $fileType,
+            'image_path' => $imagePath,
             'letter_type' => $data['letter_type'] ?? null,
             'default_for_layout' => $data['default_for_layout'] ?? null,
             'position' => $data['position'] ?? 'header',
@@ -93,6 +113,9 @@ class LetterheadsController extends BaseDmsController
             } catch (\Exception $e) {
                 // Preview generation failed, continue without preview
             }
+        } elseif ($imagePath) {
+            $record->preview_url = route('dms.letterheads.serve', ['id' => $record->id, 'variant' => 'image']);
+            $record->save();
         }
 
         return response()->json($record, 201);
@@ -133,6 +156,22 @@ class LetterheadsController extends BaseDmsController
                 $data['file_type'] = $file->getMimeType() === 'application/pdf' ? 'pdf' : 'image';
             }
 
+            if ($data['file_type'] === 'pdf') {
+                try {
+                    $data['image_path'] = $this->convertPdfToImagePath($data['file_path'], $profile->organization_id, $currentSchoolId);
+                } catch (\Exception $e) {
+                    Log::warning('PDF letterhead conversion failed on update', [
+                        'error' => $e->getMessage(),
+                        'file_path' => $data['file_path'],
+                    ]);
+                    return response()->json([
+                        'error' => 'PDF letterhead conversion failed. Please upload a PNG/JPG letterhead or enable PDF conversion on the server.',
+                    ], 422);
+                }
+            } elseif ($data['file_type'] === 'image') {
+                $data['image_path'] = $data['file_path'];
+            }
+
             // Generate preview if image (will be handled by service when created)
             if ($data['file_type'] === 'image' && class_exists(\App\Services\LetterheadPreviewService::class)) {
                 try {
@@ -148,6 +187,8 @@ class LetterheadsController extends BaseDmsController
                 } catch (\Exception $e) {
                     // Preview generation failed, continue without preview
                 }
+            } elseif (!empty($data['image_path'])) {
+                $data['preview_url'] = route('dms.letterheads.serve', ['id' => $record->id, 'variant' => 'image']);
             }
         }
 
@@ -246,12 +287,18 @@ class LetterheadsController extends BaseDmsController
 
         $this->authorize('view', $record);
 
-        if (!$record->file_path || !Storage::exists($record->file_path)) {
+        $variant = $request->query('variant');
+        $servePath = $record->file_path;
+        if ($variant === 'image') {
+            $servePath = $record->image_path ?: ($record->file_type === 'image' ? $record->file_path : null);
+        }
+
+        if (!$servePath || !Storage::exists($servePath)) {
             abort(404, 'File not found');
         }
 
         // Determine content type based on file extension
-        $extension = pathinfo($record->file_path, PATHINFO_EXTENSION);
+        $extension = pathinfo($servePath, PATHINFO_EXTENSION);
         $contentType = match(strtolower($extension)) {
             'jpg', 'jpeg' => 'image/jpeg',
             'png' => 'image/png',
@@ -267,7 +314,7 @@ class LetterheadsController extends BaseDmsController
         }
 
         return Storage::response(
-            $record->file_path,
+            $servePath,
             $downloadName,
             ['Content-Type' => $contentType],
             'inline'
@@ -289,33 +336,98 @@ class LetterheadsController extends BaseDmsController
 
         $this->authorize('view', $record);
 
+        $imageUrl = $record->image_url;
         $html = '';
-        $letterheadBase64 = null;
-        $renderingService = app(\App\Services\DocumentRenderingService::class);
-
-        // Get base64 encoded letterhead for frontend positioning editor
-        if (method_exists($renderingService, 'getLetterheadBase64')) {
-            $letterheadBase64 = $renderingService->getLetterheadBase64($record);
-        }
-
-        if (method_exists($renderingService, 'processLetterheadFile')) {
-            $html = $renderingService->processLetterheadFile($record, true);
-        } else {
-            // Fallback: return file serve URL
-            $fileUrl = route('dms.letterheads.serve', ['id' => $record->id]);
-            if ($record->file_type === 'pdf') {
-                $html = '<iframe src="' . e($fileUrl) . '" style="width: 100%; height: 600px; border: none;"></iframe>';
-            } else {
-                $html = '<img src="' . e($fileUrl) . '" alt="' . e($record->name) . '" style="max-width: 100%; height: auto;" />';
-            }
+        if ($imageUrl) {
+            $html = '<img src="' . e($imageUrl) . '" alt="' . e($record->name) . '" style="max-width: 100%; height: auto;" />';
         }
 
         return response()->json([
             'html' => $html,
             'letterhead' => $record,
-            'letterhead_base64' => $letterheadBase64,
             'preview_url' => $record->preview_url,
             'file_url' => $record->file_url ?? route('dms.letterheads.serve', ['id' => $record->id]),
+            'image_url' => $imageUrl,
         ]);
+    }
+
+    private function convertPdfToImagePath(string $pdfPath, string $organizationId, string $schoolId): string
+    {
+        $pdfFullPath = Storage::path($pdfPath);
+        $imageData = $this->convertPdfToImageData($pdfFullPath);
+        if (!$imageData) {
+            throw new \RuntimeException('Unable to convert PDF to image.');
+        }
+
+        $imagePath = sprintf(
+            'letterheads/%s/%s/rendered/%s.png',
+            $organizationId,
+            $schoolId,
+            Str::uuid()->toString()
+        );
+        Storage::put($imagePath, $imageData);
+
+        return $imagePath;
+    }
+
+    private function convertPdfToImageData(string $pdfFullPath): ?string
+    {
+        if (extension_loaded('imagick')) {
+            try {
+                $imagick = new \Imagick();
+                $imagick->setResolution(300, 300);
+                $imagick->readImage($pdfFullPath . '[0]');
+                $imagick->setImageFormat('png');
+                $imagick->setImageCompressionQuality(95);
+                $imagick->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE);
+                $imagick->setImageBackgroundColor(new \ImagickPixel('white'));
+                $imagick->setImageCompose(\Imagick::COMPOSITE_OVER);
+                $imagick->setImageMatte(false);
+                $imageData = $imagick->getImageBlob();
+                $imagick->clear();
+                $imagick->destroy();
+
+                if ($imageData) {
+                    return $imageData;
+                }
+            } catch (\Exception $e) {
+                Log::warning('Imagick PDF conversion failed', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $gsCheck = @shell_exec('gs --version 2>&1');
+        if (!$gsCheck || str_contains($gsCheck, 'not found') || str_contains($gsCheck, 'command not found')) {
+            return null;
+        }
+
+        $tempPngPath = tempnam(sys_get_temp_dir(), 'dms_letterhead_');
+        if (!$tempPngPath) {
+            return null;
+        }
+        $tempPngPath .= '.png';
+
+        $command = sprintf(
+            'gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r300 -dFirstPage=1 -dLastPage=1 -sOutputFile=%s %s 2>&1',
+            escapeshellarg($tempPngPath),
+            escapeshellarg($pdfFullPath)
+        );
+
+        $output = [];
+        $returnVar = 0;
+        @exec($command, $output, $returnVar);
+
+        if ($returnVar !== 0 || !file_exists($tempPngPath)) {
+            if (file_exists($tempPngPath)) {
+                @unlink($tempPngPath);
+            }
+            return null;
+        }
+
+        $imageData = file_get_contents($tempPngPath);
+        @unlink($tempPngPath);
+
+        return $imageData && strlen($imageData) > 0 ? $imageData : null;
     }
 }

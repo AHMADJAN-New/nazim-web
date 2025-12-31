@@ -3541,6 +3541,8 @@ export const dmsApi = {
     update: async (id: string, data: FormData) => apiClient.put(`/dms/letterheads/${id}`, data),
     delete: async (id: string) => apiClient.delete(`/dms/letterheads/${id}`),
     download: async (id: string) => apiClient.requestFile(`/dms/letterheads/${id}/download`, { method: 'GET' }),
+    downloadImage: async (id: string) =>
+      apiClient.requestFile(`/dms/letterheads/${id}/serve`, { method: 'GET', params: { variant: 'image' } }),
     preview: async (id: string) => apiClient.get(`/dms/letterheads/${id}/preview`),
   },
 
@@ -4069,47 +4071,6 @@ export const studentIdCardsApi = {
   }) => apiClient.post(`/student-id-cards/${id}/mark-fee-paid`, data),
   
   delete: async (id: string) => apiClient.delete(`/student-id-cards/${id}`),
-  
-  preview: async (id: string, side: 'front' | 'back' = 'front') => {
-    const result = await apiClient.requestFile(`/student-id-cards/export/preview?id=${id}&side=${side}`, {
-      method: 'GET',
-    });
-    // Return just the blob for preview
-    return result.blob;
-  },
-  
-  exportBulk: async (data: {
-    card_ids?: string[];
-    filters?: {
-      academic_year_id?: string;
-      class_id?: string;
-      class_academic_year_id?: string;
-      enrollment_status?: string;
-      id_card_template_id?: string;
-      is_printed?: boolean;
-      card_fee_paid?: boolean;
-      search?: string;
-    };
-    format: 'zip' | 'pdf';
-    sides: 'front' | 'back' | 'both';
-    cards_per_page?: number;
-    quality?: 'standard' | 'high';
-    include_unprinted?: boolean;
-    include_unpaid?: boolean;
-    file_naming_template?: string;
-  }) => apiClient.requestFile('/student-id-cards/export/bulk', {
-    method: 'POST',
-    body: JSON.stringify(data),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  }),
-  
-  exportIndividual: async (id: string, format: 'png' | 'pdf' = 'png') =>
-    apiClient.requestFile(`/student-id-cards/export/individual/${id}`, {
-      method: 'GET',
-      params: { format },
-    }),
 };
 
 // ============================================

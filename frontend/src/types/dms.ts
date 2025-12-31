@@ -162,6 +162,7 @@ export interface Letterhead {
   file_path: string;
   file_type?: 'pdf' | 'image' | 'html';
   file_url?: string | null;
+  image_url?: string | null;
   letterhead_type?: 'background' | 'watermark';
   letter_type?: LetterType | null;
   default_for_layout?: string | null;

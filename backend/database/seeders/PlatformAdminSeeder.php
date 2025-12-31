@@ -98,7 +98,7 @@ class PlatformAdminSeeder extends Seeder
     protected function createPlatformAdminUser(): object
     {
         $email = 'platform-admin@nazim.app';
-        $password = 'platform-admin-123';
+        $password = 'admin123';
         $fullName = 'Platform Administrator';
 
         // Check if user already exists

@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
+import { renderIdCardToCanvas } from '@/lib/idCards/idCardCanvasRenderer';
+import { exportIdCardToPdf, exportBulkIdCardsToPdf } from '@/lib/idCards/idCardPdfExporter';
+import { exportIdCardsToZip } from '@/lib/idCards/idCardZipExporter';
 import type * as StudentIdCardApi from '@/types/api/studentIdCard';
 import type { 
   StudentIdCard, 
@@ -11,6 +14,8 @@ import type {
   AssignIdCardRequest,
   IdCardExportRequest as ExportIdCardRequest,
 } from '@/types/domain/studentIdCard';
+import type { Student } from '@/types/domain/student';
+import type { IdCardTemplate } from '@/types/domain/idCardTemplate';
 import { 
   mapStudentIdCardApiToDomain, 
   mapStudentIdCardDomainToInsert,
@@ -262,55 +267,152 @@ export const useDeleteStudentIdCard = () => {
 };
 
 /**
- * Export ID cards (ZIP/PDF)
+ * Convert StudentIdCard to Student format for renderer
+ */
+function getStudentForRenderer(card: StudentIdCard): Student | null {
+  if (!card.student) return null;
+  
+  return {
+    id: card.student.id,
+    fullName: card.student.fullName,
+    fatherName: card.student.fatherName || '',
+    admissionNumber: card.student.admissionNumber,
+    studentCode: card.student.studentCode || null,
+    cardNumber: card.cardNumber || card.student.cardNumber || null,
+    rollNumber: (card.student as any).rollNumber || null,
+    picturePath: card.student.picturePath || null,
+    currentClass: card.class ? {
+      id: card.class.id,
+      name: card.class.name,
+      gradeLevel: card.class.gradeLevel,
+    } : null,
+    school: card.organization ? {
+      id: card.organization.id,
+      schoolName: card.organization.name,
+    } : null,
+  } as Student;
+}
+
+/**
+ * Export ID cards (ZIP/PDF) using Canvas rendering
  */
 export const useExportIdCards = () => {
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: ExportIdCardRequest) => {
-      // Convert domain filters to API filters
-      const apiFilters = data.filters 
-        ? mapStudentIdCardFiltersDomainToApi(data.filters)
-        : undefined;
+      // Get cards to export
+      let cardsToExport: StudentIdCard[] = [];
+      
+      if (data.cardIds && data.cardIds.length > 0) {
+        // Fetch specific cards
+        const cardPromises = data.cardIds.map(id => 
+          queryClient.fetchQuery({
+            queryKey: ['student-id-card', id],
+            queryFn: async () => {
+              const apiCard = await studentIdCardsApi.get(id);
+              return mapStudentIdCardApiToDomain(apiCard as StudentIdCardApi.StudentIdCard);
+            },
+          })
+        );
+        cardsToExport = await Promise.all(cardPromises);
+      } else if (data.filters) {
+        // Fetch cards by filters
+        const apiFilters = mapStudentIdCardFiltersDomainToApi(data.filters);
+        const apiCards = await studentIdCardsApi.list(apiFilters);
+        cardsToExport = (apiCards as StudentIdCardApi.StudentIdCard[]).map(mapStudentIdCardApiToDomain);
+      } else {
+        throw new Error('Either cardIds or filters must be provided');
+      }
 
-      // Convert sides from 'front' | 'back' | 'both' to array
+      // Apply filters
+      if (data.includeUnprinted === false) {
+        cardsToExport = cardsToExport.filter(card => card.isPrinted);
+      }
+      if (data.includeUnpaid === false) {
+        cardsToExport = cardsToExport.filter(card => card.cardFeePaid);
+      }
+
+      if (cardsToExport.length === 0) {
+        throw new Error('No cards found to export');
+      }
+
+      // Fetch templates for all cards
+      const templateIds = [...new Set(cardsToExport.map(card => card.idCardTemplateId))];
+      const { idCardTemplatesApi } = await import('@/lib/api/client');
+      const { mapIdCardTemplateApiToDomain } = await import('@/mappers/idCardTemplateMapper');
+      
+      const templatePromises = templateIds.map(async (id) => {
+        try {
+          const apiTemplate = await idCardTemplatesApi.get(id);
+          return mapIdCardTemplateApiToDomain(apiTemplate as any);
+        } catch (error) {
+          if (import.meta.env.DEV) {
+            console.error(`[useExportIdCards] Failed to fetch template ${id}:`, error);
+          }
+          return null;
+        }
+      });
+      
+      const templates = (await Promise.all(templatePromises)).filter((t): t is IdCardTemplate => t !== null);
+      const templateMap = new Map(templates.map(t => [t.id, t]));
+
+      // Convert sides
       const sidesArray: ('front' | 'back')[] = 
         data.sides === 'both' ? ['front', 'back'] :
         data.sides === 'front' ? ['front'] :
         ['back'];
 
-      const exportData = {
-        card_ids: data.cardIds,
-        filters: apiFilters,
-        format: data.format,
-        sides: sidesArray,
-        cards_per_page: data.cardsPerPage,
-        quality: data.quality,
-        include_unprinted: data.includeUnprinted,
-        include_unpaid: data.includeUnpaid,
-        file_naming_template: data.fileNamingTemplate,
-      };
+      // Prepare cards for export
+      const exportCards: Array<{ template: IdCardTemplate; student: Student; side: 'front' | 'back'; notes?: string | null; expiryDate?: Date | null }> = [];
+      
+      for (const card of cardsToExport) {
+        const template = templateMap.get(card.idCardTemplateId);
+        if (!template) {
+          if (import.meta.env.DEV) {
+            console.warn(`[useExportIdCards] Template not found for card ${card.id}`);
+          }
+          continue;
+        }
 
-      const result = await studentIdCardsApi.exportBulk(exportData);
-      
-      // Trigger file download
-      if (result && result.blob) {
-        const blob = result.blob;
-        const filename = result.filename || `id-cards-export-${new Date().toISOString().split('T')[0]}.${data.format === 'zip' ? 'zip' : 'pdf'}`;
-        
-        // Create download link and trigger download
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
+        const student = getStudentForRenderer(card);
+        if (!student) {
+          if (import.meta.env.DEV) {
+            console.warn(`[useExportIdCards] Student not found for card ${card.id}`);
+          }
+          continue;
+        }
+
+        // Calculate expiry date (1 year from print date, or null if not printed)
+        const expiryDate = card.printedAt ? new Date(card.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null;
+
+        for (const side of sidesArray) {
+          // Check if layout exists for this side
+          const layout = side === 'front' ? template.layoutConfigFront : template.layoutConfigBack;
+          if (layout) {
+            exportCards.push({ 
+              template, 
+              student, 
+              side,
+              notes: card.notes || null,
+              expiryDate,
+            });
+          }
+        }
       }
-      
-      return result;
+
+      if (exportCards.length === 0) {
+        throw new Error('No valid cards to export');
+      }
+
+      // Export based on format
+      const quality = data.quality || 'high';
+      if (data.format === 'zip') {
+        await exportIdCardsToZip(exportCards, `id-cards-${Date.now()}`, quality);
+      } else {
+        await exportBulkIdCardsToPdf(exportCards, data.cardsPerPage || 6, `id-cards-${Date.now()}`, quality);
+      }
     },
     onSuccess: () => {
       showToast.success(t('toast.idCardsExported'));
@@ -322,26 +424,122 @@ export const useExportIdCards = () => {
 };
 
 /**
- * Preview ID card image
+ * Preview ID card image using Canvas rendering
  */
 export const usePreviewIdCard = () => {
+  const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: async ({ id, side }: { id: string; side: 'front' | 'back' }): Promise<Blob> => {
-      // The preview API now returns a Blob directly
-      return await studentIdCardsApi.preview(id, side);
+    mutationFn: async ({ id, side }: { id: string; side: 'front' | 'back' }): Promise<string> => {
+      // Fetch card data
+      const apiCard = await studentIdCardsApi.get(id);
+      const card = mapStudentIdCardApiToDomain(apiCard as StudentIdCardApi.StudentIdCard);
+
+      if (!card.student) {
+        throw new Error('Student data not found for this ID card');
+      }
+
+      // Fetch template
+      const { idCardTemplatesApi } = await import('@/lib/api/client');
+      const { mapIdCardTemplateApiToDomain } = await import('@/mappers/idCardTemplateMapper');
+      const apiTemplate = await idCardTemplatesApi.get(card.idCardTemplateId);
+      const template = mapIdCardTemplateApiToDomain(apiTemplate as any);
+
+      const student = getStudentForRenderer(card);
+      if (!student) {
+        throw new Error('Student data not available');
+      }
+
+      // Render card to Canvas and return data URL
+      const canvas = await renderIdCardToCanvas(template, student, side, { 
+        quality: 'screen',
+        notes: card.notes || null,
+        expiryDate: card.printedAt ? new Date(card.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null,
+      });
+      return canvas.toDataURL('image/png');
     },
   });
 };
 
 /**
- * Export individual ID card
+ * Export individual ID card using Canvas rendering
  */
 export const useExportIndividualIdCard = () => {
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, format }: { id: string; format: 'png' | 'pdf' }) => {
-      return await studentIdCardsApi.exportIndividual(id, format);
+    mutationFn: async ({ id, format, side }: { id: string; format: 'png' | 'pdf'; side?: 'front' | 'back' | 'both' }) => {
+      // Fetch card data
+      const apiCard = await studentIdCardsApi.get(id);
+      const card = mapStudentIdCardApiToDomain(apiCard as StudentIdCardApi.StudentIdCard);
+
+      if (!card.student) {
+        throw new Error('Student data not found for this ID card');
+      }
+
+      // Fetch template
+      const { idCardTemplatesApi } = await import('@/lib/api/client');
+      const { mapIdCardTemplateApiToDomain } = await import('@/mappers/idCardTemplateMapper');
+      const apiTemplate = await idCardTemplatesApi.get(card.idCardTemplateId);
+      const template = mapIdCardTemplateApiToDomain(apiTemplate as any);
+
+      const student = getStudentForRenderer(card);
+      if (!student) {
+        throw new Error('Student data not available');
+      }
+
+      // Determine which sides to export
+      const sidesToExport: ('front' | 'back')[] = 
+        side === 'both' ? ['front', 'back'] :
+        side === 'back' ? ['back'] :
+        ['front']; // Default to front
+
+      // Filter out sides that don't have layouts
+      const validSides = sidesToExport.filter(s => {
+        const layout = s === 'front' ? template.layoutConfigFront : template.layoutConfigBack;
+        return layout && layout.enabledFields && layout.enabledFields.length > 0;
+      });
+
+      if (validSides.length === 0) {
+        throw new Error('No valid card sides to export');
+      }
+
+      const notes = card.notes || null;
+      const expiryDate = card.printedAt ? new Date(card.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null;
+      const baseFilename = `id-card-${card.student.admissionNumber || card.id}`;
+
+      if (format === 'pdf') {
+        // For PDF, export each side separately if both sides requested
+        for (const exportSide of validSides) {
+          await exportIdCardToPdf(
+            template,
+            student,
+            exportSide,
+            validSides.length > 1 ? `${baseFilename}-${exportSide}` : baseFilename,
+            notes,
+            expiryDate
+          );
+        }
+      } else {
+        // PNG export - export each side separately
+        for (const exportSide of validSides) {
+          const canvas = await renderIdCardToCanvas(template, student, exportSide, { 
+            quality: 'screen', // Use screen dimensions to match preview
+            notes,
+            expiryDate,
+          });
+          const dataUrl = canvas.toDataURL('image/png');
+          
+          // Trigger download
+          const link = document.createElement('a');
+          link.href = dataUrl;
+          link.download = validSides.length > 1 ? `${baseFilename}-${exportSide}.png` : `${baseFilename}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      }
     },
     onSuccess: () => {
       showToast.success(t('toast.idCardExported'));
