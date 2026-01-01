@@ -6,12 +6,17 @@ use App\Models\Exam;
 use App\Models\ExamClass;
 use App\Models\ExamSubject;
 use App\Models\ExamTime;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ExamTimeController extends Controller
 {
+    public function __construct(
+        private NotificationService $notificationService
+    ) {
+    }
     /**
      * Get all exam times for an exam
      */
@@ -240,8 +245,31 @@ class ExamTimeController extends Controller
             'examClass.classAcademicYear.class',
             'examSubject.subject',
             'room',
-            'invigilator'
+            'invigilator',
+            'exam'
         ]);
+
+        // Notify about timetable update
+        try {
+            $exam = $examTime->exam;
+            if ($exam) {
+                $this->notificationService->notify(
+                    'exam.timetable_updated',
+                    $exam,
+                    $user,
+                    [
+                        'title' => '📅 Exam Timetable Updated',
+                        'body' => "Timetable for exam '{$exam->name}' has been updated.",
+                        'url' => "/exams/{$exam->id}/timetable",
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to send exam timetable notification', [
+                'exam_time_id' => $examTime->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json($examTime, 201);
     }
@@ -363,8 +391,31 @@ class ExamTimeController extends Controller
             'examClass.classAcademicYear.class',
             'examSubject.subject',
             'room',
-            'invigilator'
+            'invigilator',
+            'exam'
         ]);
+
+        // Notify about timetable update
+        try {
+            $exam = $examTime->exam;
+            if ($exam) {
+                $this->notificationService->notify(
+                    'exam.timetable_updated',
+                    $exam,
+                    $user,
+                    [
+                        'title' => '📅 Exam Timetable Updated',
+                        'body' => "Timetable for exam '{$exam->name}' has been updated.",
+                        'url' => "/exams/{$exam->id}/timetable",
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to send exam timetable notification', [
+                'exam_time_id' => $examTime->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json($examTime);
     }

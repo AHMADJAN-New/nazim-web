@@ -6,12 +6,17 @@ use App\Models\Exam;
 use App\Models\ExamResult;
 use App\Models\ExamSubject;
 use App\Models\ExamStudent;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ExamResultController extends Controller
 {
+    public function __construct(
+        private NotificationService $notificationService
+    ) {
+    }
     /**
      * Get all results for an exam or specific subject
      */
@@ -473,6 +478,10 @@ class ExamResultController extends Controller
             $validated['marks_obtained'] = null;
         }
 
+        // Track old marks for notification
+        $oldMarks = $result->marks_obtained;
+        $oldIsAbsent = $result->is_absent;
+        
         $result->update($validated);
 
         $result->load([
@@ -480,6 +489,37 @@ class ExamResultController extends Controller
             'examSubject.subject',
             'examStudent.studentAdmission.student',
         ]);
+
+        // Notify about marks update if marks actually changed
+        try {
+            $marksChanged = ($validated['marks_obtained'] ?? $oldMarks) !== $oldMarks;
+            $absentChanged = ($validated['is_absent'] ?? $oldIsAbsent) !== $oldIsAbsent;
+            
+            if ($marksChanged || $absentChanged) {
+                $studentName = $result->examStudent?->studentAdmission?->student?->full_name ?? 'Student';
+                $examName = $result->exam?->name ?? 'Exam';
+                $subjectName = $result->examSubject?->subject?->name ?? 'Subject';
+                $newMarks = $result->marks_obtained ?? 'N/A';
+                $totalMarks = $result->examSubject?->total_marks ?? 'N/A';
+                $isAbsent = $result->is_absent ? 'Yes' : 'No';
+                
+                $this->notificationService->notify(
+                    'exam.marks_updated',
+                    $result,
+                    $user,
+                    [
+                        'title' => '📝 Exam Marks Updated',
+                        'body' => "Marks for {$studentName} in {$examName} - {$subjectName} have been updated. Marks: {$newMarks}/{$totalMarks}, Absent: {$isAbsent}.",
+                        'url' => "/exams/{$result->exam_id}/results",
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to send exam marks update notification', [
+                'result_id' => $result->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json($result);
     }

@@ -7,11 +7,16 @@ use App\Models\FinanceAccount;
 use App\Models\ExpenseCategory;
 use App\Models\FinanceProject;
 use App\Models\ExchangeRate;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ExpenseEntryController extends Controller
 {
+    public function __construct(
+        private NotificationService $notificationService
+    ) {}
     /**
      * Display a listing of expense entries
      */
@@ -283,6 +288,47 @@ class ExpenseEntryController extends Controller
             // Load relationships for response
             $entry->load(['account', 'expenseCategory', 'project', 'approvedBy', 'currency']);
 
+            // Send notification when expense is created (invoice/payment created)
+            try {
+                $currencySymbol = $entry->currency->symbol ?? $entry->currency->code ?? '';
+                $amountFormatted = number_format((float)$entry->amount, 2) . ' ' . $currencySymbol;
+                $accountName = $entry->account->name ?? 'Account';
+                $categoryName = $entry->expenseCategory->name ?? 'Expense';
+                $projectName = $entry->project->name ?? null;
+                $paidTo = $entry->paid_to ?? null;
+                
+                $bodyParts = ["Expense of {$amountFormatted} recorded"];
+                if ($paidTo) {
+                    $bodyParts[] = "paid to {$paidTo}";
+                }
+                if ($projectName) {
+                    $bodyParts[] = "for project: {$projectName}";
+                }
+                $bodyParts[] = "from {$accountName}";
+                $bodyParts[] = "({$categoryName})";
+                
+                $body = implode(' ', $bodyParts) . '.';
+                
+                // Use invoice.created for expenses (they represent outgoing payments/invoices)
+                $this->notificationService->notify(
+                    'invoice.created',
+                    $entry,
+                    $user,
+                    [
+                        'title' => '📄 Expense Recorded',
+                        'body' => $body,
+                        'url' => "/finance/expenses/{$entry->id}",
+                        'exclude_actor' => false, // Include the creator so they see confirmation
+                    ]
+                );
+            } catch (\Exception $e) {
+                // Log error but don't fail the request
+                Log::warning('Failed to send invoice.created notification for expense', [
+                    'expense_entry_id' => $entry->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             return response()->json($entry, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -515,8 +561,61 @@ class ExpenseEntryController extends Controller
                 }
             }
 
+            // Track status change for notifications
+            $oldStatus = $entry->status;
+            $oldAmount = (float)$entry->amount;
+            
             $entry->update($validated);
             $entry->load(['account', 'expenseCategory', 'project', 'approvedBy', 'currency']);
+
+            // Send notification for significant amount changes or status changes
+            try {
+                $newStatus = $entry->status;
+                $newAmount = (float)($validated['amount'] ?? $entry->amount);
+                $amountChanged = abs($newAmount - $oldAmount) > 0.01;
+                $statusChanged = $oldStatus !== $newStatus;
+                
+                if ($statusChanged && $newStatus === 'approved') {
+                    $currencySymbol = $entry->currency->symbol ?? $entry->currency->code ?? '';
+                    $amountFormatted = number_format($newAmount, 2) . ' ' . $currencySymbol;
+                    $accountName = $entry->account->name ?? 'Account';
+                    $categoryName = $entry->expenseCategory->name ?? 'Expense';
+                    
+                    $this->notificationService->notify(
+                        'payment.received', // Using payment.received for approved expenses
+                        $entry,
+                        $user,
+                        [
+                            'title' => '✅ Expense Approved',
+                            'body' => "Expense of {$amountFormatted} ({$categoryName}) from {$accountName} has been approved.",
+                            'url' => "/finance/expenses/{$entry->id}",
+                            'exclude_actor' => false,
+                        ]
+                    );
+                } elseif ($amountChanged && abs(($newAmount - $oldAmount) / max($oldAmount, 1)) > 0.1) {
+                    // Notify if amount changed by more than 10%
+                    $currencySymbol = $entry->currency->symbol ?? $entry->currency->code ?? '';
+                    $oldAmountFormatted = number_format($oldAmount, 2) . ' ' . $currencySymbol;
+                    $newAmountFormatted = number_format($newAmount, 2) . ' ' . $currencySymbol;
+                    
+                    $this->notificationService->notify(
+                        'invoice.created',
+                        $entry,
+                        $user,
+                        [
+                            'title' => '📝 Expense Amount Updated',
+                            'body' => "Expense amount updated from {$oldAmountFormatted} to {$newAmountFormatted}.",
+                            'url' => "/finance/expenses/{$entry->id}",
+                            'exclude_actor' => false,
+                        ]
+                    );
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to send expense update notification', [
+                    'expense_entry_id' => $entry->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return response()->json($entry);
         } catch (\Illuminate\Validation\ValidationException $e) {

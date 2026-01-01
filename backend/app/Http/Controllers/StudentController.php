@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
+use App\Services\Notifications\NotificationService;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,8 @@ use Illuminate\Support\Facades\Log;
 class StudentController extends Controller
 {
     public function __construct(
-        private FileStorageService $fileStorageService
+        private FileStorageService $fileStorageService,
+        private NotificationService $notificationService
     ) {}
 
     /**
@@ -278,6 +280,28 @@ class StudentController extends Controller
 
         $student->load(['organization', 'school']);
 
+        // Notify about student creation
+        try {
+            $studentName = $student->full_name ?? 'Student';
+            $admissionNo = $student->admission_no ?? 'N/A';
+            
+            $this->notificationService->notify(
+                'student.created',
+                $student,
+                $user,
+                [
+                    'title' => '👤 New Student Registered',
+                    'body' => "Student '{$studentName}' (Admission No: {$admissionNo}) has been registered.",
+                    'url' => "/students/{$student->id}",
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to send student creation notification', [
+                'student_id' => $student->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return response()->json($student, 201);
     }
 
@@ -408,6 +432,31 @@ class StudentController extends Controller
                 'student_id' => $id,
                 'updated_fields' => array_keys($updateData),
             ]);
+            
+            // Notify about student update
+            try {
+                $student->refresh();
+                $student->load(['organization', 'school']);
+                $studentName = $student->full_name ?? 'Student';
+                $admissionNo = $student->admission_no ?? 'N/A';
+                $updatedFields = implode(', ', array_keys($updateData));
+                
+                $this->notificationService->notify(
+                    'student.updated',
+                    $student,
+                    $user,
+                    [
+                        'title' => '✏️ Student Record Updated',
+                        'body' => "Student '{$studentName}' (Admission No: {$admissionNo}) has been updated. Fields changed: {$updatedFields}.",
+                        'url' => "/students/{$student->id}",
+                    ]
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to send student update notification', [
+                    'student_id' => $id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         } else {
             Log::info('Student Update - No Changes', [
                 'student_id' => $id,
@@ -465,6 +514,29 @@ class StudentController extends Controller
         }
 
         // Org access is enforced by organization middleware + school scope.
+
+        // Notify about student deletion before deleting
+        try {
+            $studentName = $student->full_name ?? 'Student';
+            $admissionNo = $student->admission_no ?? 'N/A';
+            
+            $this->notificationService->notify(
+                'student.deleted',
+                $student,
+                $user,
+                [
+                    'title' => '🗑️ Student Record Deleted',
+                    'body' => "Student '{$studentName}' (Admission No: {$admissionNo}) has been deleted.",
+                    'url' => "/students",
+                    'level' => 'warning',
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to send student deletion notification', [
+                'student_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         $student->delete();
 

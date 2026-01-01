@@ -68,9 +68,18 @@ class NotificationRuleRegistry
         $this->register('payment.received', fn (Model $entity) => $this->usersWithPermission($entity, 'finance_documents.read'));
         $this->register('invoice.overdue', fn (Model $entity) => $this->usersWithPermission($entity, 'finance_reports.read'));
 
+        // Fees
+        $this->register('fee.assignment.created', fn (Model $entity) => $this->usersWithPermission($entity, 'fees.read'));
+        $this->register('fee.payment.received', fn (Model $entity) => $this->usersWithPermission($entity, 'fees.read'));
+        $this->register('fee.assignment.overdue', fn (Model $entity) => $this->usersWithPermission($entity, 'fees.read'));
+        $this->register('fee.assignment.paid', fn (Model $entity) => $this->usersWithPermission($entity, 'fees.read'));
+        $this->register('fee.assignment.status_changed', fn (Model $entity) => $this->usersWithPermission($entity, 'fees.read'));
+
         // Attendance
         $this->register('attendance.sync_failed', fn (Model $entity) => $this->organizationAdmins($entity->organization_id ?? ''));
         $this->register('attendance.anomaly', fn (Model $entity) => $this->usersWithPermission($entity, 'attendance_sessions.read'));
+        $this->register('attendance.session.created', fn (Model $entity) => $this->usersWithPermission($entity, 'attendance_sessions.read'));
+        $this->register('attendance.session.closed', fn (Model $entity) => $this->usersWithPermission($entity, 'attendance_sessions.read'));
 
         // DMS / Letters
         $this->register('doc.assigned', function (Model $entity) {
@@ -119,29 +128,53 @@ class NotificationRuleRegistry
         $this->register('exam.published', fn (Model $entity) => $this->usersWithPermission($entity, 'exams.read'));
         $this->register('exam.marks_published', fn (Model $entity) => $this->usersWithPermission($entity, 'exams.view_reports'));
         $this->register('exam.timetable_updated', fn (Model $entity) => $this->usersWithPermission($entity, 'exams.read'));
+        $this->register('exam.marks_updated', fn (Model $entity) => $this->usersWithPermission($entity, 'exams.read'));
+        
+        // Students
+        $this->register('student.created', fn (Model $entity) => $this->usersWithPermission($entity, 'students.read'));
+        $this->register('student.updated', fn (Model $entity) => $this->usersWithPermission($entity, 'students.read'));
+        $this->register('student.deleted', fn (Model $entity) => $this->usersWithPermission($entity, 'students.read'));
 
         // Library
         $this->register('library.book_overdue', function (Model $entity) {
-            // Entity should be LibraryLoan with borrower_user_id
+            // Entity should be LibraryLoan with student_id or staff_id
             $recipients = collect();
-            if (property_exists($entity, 'borrower_user_id') || isset($entity->borrower_user_id)) {
-                $borrower = User::find($entity->borrower_user_id);
-                if ($borrower) {
-                    $recipients->push($borrower);
+            
+            // Check for staff_id (staff have profile_id which links to users)
+            if (property_exists($entity, 'staff_id') && $entity->staff_id) {
+                $staff = DB::table('staff')->where('id', $entity->staff_id)->first();
+                if ($staff && $staff->profile_id) {
+                    $user = User::find($staff->profile_id);
+                    if ($user) {
+                        $recipients->push($user);
+                    }
                 }
             }
+            
+            // Note: Students don't have direct user links, so we skip student_id for now
+            // In the future, we could notify parents or guardians
+            
             return $recipients;
         });
 
         $this->register('library.book_due_soon', function (Model $entity) {
-            // Entity should be LibraryLoan with borrower_user_id
+            // Entity should be LibraryLoan with student_id or staff_id
             $recipients = collect();
-            if (property_exists($entity, 'borrower_user_id') || isset($entity->borrower_user_id)) {
-                $borrower = User::find($entity->borrower_user_id);
-                if ($borrower) {
-                    $recipients->push($borrower);
+            
+            // Check for staff_id (staff have profile_id which links to users)
+            if (property_exists($entity, 'staff_id') && $entity->staff_id) {
+                $staff = DB::table('staff')->where('id', $entity->staff_id)->first();
+                if ($staff && $staff->profile_id) {
+                    $user = User::find($staff->profile_id);
+                    if ($user) {
+                        $recipients->push($user);
+                    }
                 }
             }
+            
+            // Note: Students don't have direct user links, so we skip student_id for now
+            // In the future, we could notify parents or guardians
+            
             return $recipients;
         });
 
@@ -159,23 +192,47 @@ class NotificationRuleRegistry
 
         // Assets
         $this->register('asset.assigned', function (Model $entity) {
-            // Entity should be Asset with assigned_to_user_id
+            // Entity should be AssetAssignment with assigned_to_type and assigned_to_id
             $recipients = collect();
-            if (property_exists($entity, 'assigned_to_user_id') || isset($entity->assigned_to_user_id)) {
-                $assignedUser = User::find($entity->assigned_to_user_id);
-                if ($assignedUser) {
-                    $recipients->push($assignedUser);
+            
+            // Check if assigned to staff (staff have profile_id which links to users)
+            if (property_exists($entity, 'assigned_to_type') && $entity->assigned_to_type === 'staff' 
+                && property_exists($entity, 'assigned_to_id') && $entity->assigned_to_id) {
+                $staff = DB::table('staff')->where('id', $entity->assigned_to_id)->first();
+                if ($staff && $staff->profile_id) {
+                    $user = User::find($staff->profile_id);
+                    if ($user) {
+                        $recipients->push($user);
+                    }
                 }
             }
-            // Also notify asset managers
-            return $recipients->merge($this->usersWithPermission($entity, 'assets.read'));
+            
+            // Also notify asset managers (get asset from assignment)
+            if (property_exists($entity, 'asset_id') && $entity->asset_id) {
+                $asset = DB::table('assets')->where('id', $entity->asset_id)->first();
+                if ($asset) {
+                    $assetModel = new \App\Models\Asset();
+                    $assetModel->setRawAttributes((array) $asset);
+                    $recipients = $recipients->merge($this->usersWithPermission($assetModel, 'assets.read'));
+                }
+            }
+            
+            return $recipients;
         });
 
         $this->register('asset.maintenance_due', fn (Model $entity) => $this->usersWithPermission($entity, 'assets.update'));
 
         $this->register('asset.returned', function (Model $entity) {
-            // Notify asset managers
-            return $this->usersWithPermission($entity, 'assets.read');
+            // Entity should be AssetAssignment, notify asset managers
+            if (property_exists($entity, 'asset_id') && $entity->asset_id) {
+                $asset = DB::table('assets')->where('id', $entity->asset_id)->first();
+                if ($asset) {
+                    $assetModel = new \App\Models\Asset();
+                    $assetModel->setRawAttributes((array) $asset);
+                    return $this->usersWithPermission($assetModel, 'assets.read');
+                }
+            }
+            return collect();
         });
 
         // Subscription - notify organization admins

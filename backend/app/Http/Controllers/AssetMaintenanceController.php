@@ -6,11 +6,17 @@ use App\Http\Requests\StoreAssetMaintenanceRequest;
 use App\Http\Requests\UpdateAssetMaintenanceRequest;
 use App\Models\Asset;
 use App\Models\AssetMaintenanceRecord;
+use App\Services\Notifications\NotificationService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AssetMaintenanceController extends Controller
 {
+    public function __construct(
+        private NotificationService $notificationService
+    ) {
+    }
     public function index(Request $request, string $assetId)
     {
         $user = $request->user();
@@ -118,6 +124,45 @@ class AssetMaintenanceController extends Controller
             'status' => $record->status,
         ]);
 
+        // Check if maintenance is due soon or overdue
+        try {
+            if ($record->next_due_date) {
+                $nextDueDate = Carbon::parse($record->next_due_date);
+                $now = Carbon::now();
+                
+                if ($nextDueDate->isPast()) {
+                    // Maintenance is overdue
+                    $this->notificationService->notify(
+                        'asset.maintenance_due',
+                        $asset,
+                        $user,
+                        [
+                            'title' => '⚠️ Asset Maintenance Overdue',
+                            'body' => "Maintenance for asset '{$asset->name}' ({$asset->asset_tag}) is overdue. Next due date: {$record->next_due_date}",
+                            'url' => "/assets/{$asset->id}",
+                        ]
+                    );
+                } elseif ($nextDueDate->diffInDays($now) <= 7) {
+                    // Maintenance is due within 7 days
+                    $this->notificationService->notify(
+                        'asset.maintenance_due',
+                        $asset,
+                        $user,
+                        [
+                            'title' => '⚠️ Asset Maintenance Due Soon',
+                            'body' => "Maintenance for asset '{$asset->name}' ({$asset->asset_tag}) is due in {$nextDueDate->diffInDays($now)} day(s).",
+                            'url' => "/assets/{$asset->id}",
+                        ]
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send asset maintenance notification', [
+                'record_id' => $record->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return response()->json($record, 201);
     }
 
@@ -187,6 +232,45 @@ class AssetMaintenanceController extends Controller
             'updated_by' => $user->id,
             'status' => $record->status,
         ]);
+
+        // Check if maintenance is due soon or overdue after update
+        try {
+            if ($record->next_due_date && $asset) {
+                $nextDueDate = Carbon::parse($record->next_due_date);
+                $now = Carbon::now();
+                
+                if ($nextDueDate->isPast()) {
+                    // Maintenance is overdue
+                    $this->notificationService->notify(
+                        'asset.maintenance_due',
+                        $asset,
+                        $user,
+                        [
+                            'title' => '⚠️ Asset Maintenance Overdue',
+                            'body' => "Maintenance for asset '{$asset->name}' ({$asset->asset_tag}) is overdue. Next due date: {$record->next_due_date}",
+                            'url' => "/assets/{$asset->id}",
+                        ]
+                    );
+                } elseif ($nextDueDate->diffInDays($now) <= 7) {
+                    // Maintenance is due within 7 days
+                    $this->notificationService->notify(
+                        'asset.maintenance_due',
+                        $asset,
+                        $user,
+                        [
+                            'title' => '⚠️ Asset Maintenance Due Soon',
+                            'body' => "Maintenance for asset '{$asset->name}' ({$asset->asset_tag}) is due in {$nextDueDate->diffInDays($now)} day(s).",
+                            'url' => "/assets/{$asset->id}",
+                        ]
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send asset maintenance notification', [
+                'record_id' => $record->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json($record);
     }

@@ -7,12 +7,17 @@ use App\Http\Requests\UpdateAssetAssignmentRequest;
 use App\Models\Asset;
 use App\Models\AssetAssignment;
 use App\Models\AssetCopy;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class AssetAssignmentController extends Controller
 {
+    public function __construct(
+        private NotificationService $notificationService
+    ) {
+    }
     public function index(Request $request, string $assetId)
     {
         $user = $request->user();
@@ -257,6 +262,27 @@ class AssetAssignmentController extends Controller
             'updated_by' => $user->id,
             'status' => $assignment->status,
         ]);
+
+        // Notify about asset return
+        if ($wasReturned) {
+            try {
+                $this->notificationService->notify(
+                    'asset.returned',
+                    $assignment,
+                    $user,
+                    [
+                        'title' => '📦 Asset Returned',
+                        'body' => "Asset '{$asset->name}' ({$asset->asset_tag}) has been returned.",
+                        'url' => "/assets/{$asset->id}",
+                    ]
+                );
+            } catch (\Exception $e) {
+                \Log::warning('Failed to send asset return notification', [
+                    'assignment_id' => $assignment->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         // Reload asset with updated copy counts
         $asset->refresh();

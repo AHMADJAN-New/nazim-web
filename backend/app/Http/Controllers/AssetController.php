@@ -10,12 +10,17 @@ use App\Models\AssetAssignment;
 use App\Models\AssetCopy;
 use App\Models\AssetHistory;
 use App\Models\AssetMaintenanceRecord;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class AssetController extends Controller
 {
+    public function __construct(
+        private NotificationService $notificationService
+    ) {
+    }
     public function index(Request $request)
     {
         $user = $request->user();
@@ -807,7 +812,27 @@ class AssetController extends Controller
             ]);
         }
 
-        return response()->json($assignment->refresh(), 201);
+        // Notify about asset assignment
+        try {
+            $assignment->refresh();
+            $this->notificationService->notify(
+                'asset.assigned',
+                $assignment,
+                $user,
+                [
+                    'title' => '📦 Asset Assigned',
+                    'body' => "Asset '{$asset->name}' ({$asset->asset_tag}) has been assigned to you.",
+                    'url' => "/assets/{$asset->id}",
+                ]
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send asset assignment notification', [
+                'assignment_id' => $assignment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return response()->json($assignment, 201);
     }
 
     private function validateAssignee(string $type, ?string $id, string $organizationId, string $currentSchoolId): bool

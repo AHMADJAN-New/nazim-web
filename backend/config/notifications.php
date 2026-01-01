@@ -19,9 +19,17 @@ return [
         'invoice.created',
         'payment.received',
         'invoice.overdue',
+        // Fees
+        'fee.assignment.created',
+        'fee.payment.received',
+        'fee.assignment.overdue',
+        'fee.assignment.paid',
+        'fee.assignment.status_changed',
         // Attendance
         'attendance.sync_failed',
         'attendance.anomaly',
+        'attendance.session.created',
+        'attendance.session.closed',
         // DMS / Letters
         'doc.assigned',
         'doc.approved',
@@ -50,10 +58,17 @@ return [
         'subscription.limit_reached',
         'subscription.expiring_soon',
         'subscription.expired',
+        // Students
+        'student.created',
+        'student.updated',
+        'student.deleted',
+        // Exam Marks
+        'exam.marks_updated',
     ],
 
     'digest_event_types' => [
         'invoice.overdue',
+        'fee.assignment.overdue',
         'library.book_due_soon',
     ],
 
@@ -67,9 +82,17 @@ return [
         'invoice.created' => 'info',
         'payment.received' => 'info',
         'invoice.overdue' => 'warning',
+        // Fees
+        'fee.assignment.created' => 'info',
+        'fee.payment.received' => 'info',
+        'fee.assignment.overdue' => 'warning',
+        'fee.assignment.paid' => 'info',
+        'fee.assignment.status_changed' => 'info',
         // Attendance
         'attendance.sync_failed' => 'critical',
         'attendance.anomaly' => 'warning',
+        'attendance.session.created' => 'info',
+        'attendance.session.closed' => 'info',
         // DMS / Letters
         'doc.assigned' => 'info',
         'doc.approved' => 'info',
@@ -98,5 +121,11 @@ return [
         'subscription.limit_reached' => 'critical',
         'subscription.expiring_soon' => 'warning',
         'subscription.expired' => 'critical',
+        // Students
+        'student.created' => 'info',
+        'student.updated' => 'info',
+        'student.deleted' => 'warning',
+        // Exam Marks
+        'exam.marks_updated' => 'info',
     ],
 ];

@@ -8,11 +8,17 @@ use App\Http\Requests\Fees\FeeAssignmentUpdateRequest;
 use App\Models\FeeAssignment;
 use App\Models\FeeStructure;
 use App\Models\StudentAdmission;
+use App\Services\Notifications\NotificationService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class FeeAssignmentController extends Controller
 {
+    public function __construct(
+        private NotificationService $notificationService
+    ) {
+    }
     public function index(Request $request)
     {
         $user = $request->user();
@@ -135,6 +141,48 @@ class FeeAssignmentController extends Controller
         $assignment->updateStatus();
         $assignment->save();
 
+        // Load relationships for notification
+        $assignment->load(['feeStructure', 'student', 'studentAdmission', 'currency']);
+
+        // Notify about fee assignment created
+        try {
+            $feeStructureName = $assignment->feeStructure?->name ?? 'Fee';
+            $studentName = $assignment->student?->full_name ?? 'Student';
+            $amount = number_format((float) $assignment->assigned_amount, 2);
+            $currencyCode = $assignment->currency?->code ?? '';
+            $dueDate = $assignment->due_date ? Carbon::parse($assignment->due_date)->format('Y-m-d') : 'Not set';
+
+            $this->notificationService->notify(
+                'fee.assignment.created',
+                $assignment,
+                $user,
+                [
+                    'title' => '📋 Fee Assignment Created',
+                    'body' => "Fee assignment of {$amount} {$currencyCode} created for {$studentName} ({$feeStructureName}). Due date: {$dueDate}",
+                    'url' => "/fees/assignments/{$assignment->id}",
+                ]
+            );
+
+            // Check if already overdue
+            if ($assignment->due_date && Carbon::parse($assignment->due_date)->isPast()) {
+                $this->notificationService->notify(
+                    'fee.assignment.overdue',
+                    $assignment,
+                    $user,
+                    [
+                        'title' => '⚠️ Fee Overdue',
+                        'body' => "Fee assignment for {$studentName} ({$feeStructureName}) is overdue. Amount: {$amount} {$currencyCode}",
+                        'url' => "/fees/assignments/{$assignment->id}",
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send fee assignment notification', [
+                'assignment_id' => $assignment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return response()->json($assignment->fresh(['feeStructure', 'student', 'studentAdmission']), 201);
     }
 
@@ -196,10 +244,87 @@ class FeeAssignmentController extends Controller
         }
 
         unset($validated['organization_id'], $validated['school_id']);
+        
+        // Track old status and due date for status change notification (before update)
+        $oldStatus = $assignment->status;
+        $oldDueDate = $assignment->due_date ? Carbon::parse($assignment->due_date)->toDateString() : null;
+        $wasOverdue = $oldDueDate && Carbon::parse($oldDueDate)->isPast() && $oldStatus === 'overdue';
+        
         $assignment->update($validated);
         $assignment->calculateRemainingAmount();
         $assignment->updateStatus();
         $assignment->save();
+
+        // Load relationships for notification
+        $assignment->load(['feeStructure', 'student', 'studentAdmission', 'currency']);
+
+        // Notify about status changes and overdue
+        try {
+            $feeStructureName = $assignment->feeStructure?->name ?? 'Fee';
+            $studentName = $assignment->student?->full_name ?? 'Student';
+            $amount = number_format((float) $assignment->assigned_amount, 2);
+            $currencyCode = $assignment->currency?->code ?? '';
+
+            // Check if status changed
+            if ($assignment->status !== $oldStatus) {
+                $this->notificationService->notify(
+                    'fee.assignment.status_changed',
+                    $assignment,
+                    $user,
+                    [
+                        'title' => '📊 Fee Status Changed',
+                        'body' => "Fee assignment for {$studentName} ({$feeStructureName}) status changed from {$oldStatus} to {$assignment->status}.",
+                        'url' => "/fees/assignments/{$assignment->id}",
+                    ]
+                );
+            }
+
+            // Check if fully paid
+            if ($assignment->status === 'paid' && (float) $assignment->remaining_amount <= 0) {
+                $this->notificationService->notify(
+                    'fee.assignment.paid',
+                    $assignment,
+                    $user,
+                    [
+                        'title' => '✅ Fee Fully Paid',
+                        'body' => "Fee assignment for {$studentName} ({$feeStructureName}) has been fully paid.",
+                        'url' => "/fees/assignments/{$assignment->id}",
+                    ]
+                );
+            }
+
+            // Check if became overdue (wasn't overdue before, but is now)
+            $isNowOverdue = $assignment->due_date && Carbon::parse($assignment->due_date)->isPast() && $assignment->status === 'overdue';
+            if ($isNowOverdue && !$wasOverdue) {
+                $this->notificationService->notify(
+                    'fee.assignment.overdue',
+                    $assignment,
+                    $user,
+                    [
+                        'title' => '⚠️ Fee Overdue',
+                        'body' => "Fee assignment for {$studentName} ({$feeStructureName}) is now overdue. Amount: {$amount} {$currencyCode}",
+                        'url' => "/fees/assignments/{$assignment->id}",
+                    ]
+                );
+
+                // Also notify using generic invoice.overdue for finance module compatibility
+                $this->notificationService->notify(
+                    'invoice.overdue',
+                    $assignment,
+                    $user,
+                    [
+                        'title' => '⚠️ Invoice Overdue',
+                        'body' => "Fee assignment for {$studentName} ({$feeStructureName}) is overdue. Amount: {$amount} {$currencyCode}",
+                        'url' => "/fees/assignments/{$assignment->id}",
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send fee assignment notification', [
+                'assignment_id' => $assignment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json($assignment->fresh(['feeStructure', 'student', 'studentAdmission']));
     }

@@ -8,11 +8,16 @@ use App\Models\IncomeCategory;
 use App\Models\FinanceProject;
 use App\Models\Donor;
 use App\Models\ExchangeRate;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class IncomeEntryController extends Controller
 {
+    public function __construct(
+        private NotificationService $notificationService
+    ) {}
     /**
      * Display a listing of income entries
      */
@@ -275,6 +280,46 @@ class IncomeEntryController extends Controller
             // Load relationships for response
             $entry->load(['account', 'incomeCategory', 'project', 'donor', 'receivedBy', 'currency']);
 
+            // Send notification when payment is received (income entry created)
+            try {
+                $currencySymbol = $entry->currency->symbol ?? $entry->currency->code ?? '';
+                $amountFormatted = number_format((float)$entry->amount, 2) . ' ' . $currencySymbol;
+                $accountName = $entry->account->name ?? 'Account';
+                $categoryName = $entry->incomeCategory->name ?? 'Income';
+                $donorName = $entry->donor->name ?? null;
+                $projectName = $entry->project->name ?? null;
+                
+                $bodyParts = ["Payment of {$amountFormatted} received"];
+                if ($donorName) {
+                    $bodyParts[] = "from {$donorName}";
+                }
+                if ($projectName) {
+                    $bodyParts[] = "for project: {$projectName}";
+                }
+                $bodyParts[] = "in {$accountName}";
+                $bodyParts[] = "({$categoryName})";
+                
+                $body = implode(' ', $bodyParts) . '.';
+                
+                $this->notificationService->notify(
+                    'payment.received',
+                    $entry,
+                    $user,
+                    [
+                        'title' => '💰 Payment Received',
+                        'body' => $body,
+                        'url' => "/finance/income/{$entry->id}",
+                        'exclude_actor' => false, // Include the creator so they see confirmation
+                    ]
+                );
+            } catch (\Exception $e) {
+                // Log error but don't fail the request
+                Log::warning('Failed to send payment.received notification', [
+                    'income_entry_id' => $entry->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             return response()->json($entry, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -515,8 +560,42 @@ class IncomeEntryController extends Controller
                 }
             }
 
+            // Track amount change for notifications
+            $oldAmount = (float)$entry->amount;
+            
             $entry->update($validated);
             $entry->load(['account', 'incomeCategory', 'project', 'donor', 'receivedBy', 'currency']);
+
+            // Send notification for significant amount changes
+            try {
+                $newAmount = (float)($validated['amount'] ?? $entry->amount);
+                $amountChanged = abs($newAmount - $oldAmount) > 0.01;
+                
+                if ($amountChanged && abs(($newAmount - $oldAmount) / max($oldAmount, 1)) > 0.1) {
+                    // Notify if amount changed by more than 10%
+                    $currencySymbol = $entry->currency->symbol ?? $entry->currency->code ?? '';
+                    $oldAmountFormatted = number_format($oldAmount, 2) . ' ' . $currencySymbol;
+                    $newAmountFormatted = number_format($newAmount, 2) . ' ' . $currencySymbol;
+                    $accountName = $entry->account->name ?? 'Account';
+                    
+                    $this->notificationService->notify(
+                        'payment.received',
+                        $entry,
+                        $user,
+                        [
+                            'title' => '📝 Payment Amount Updated',
+                            'body' => "Payment amount in {$accountName} updated from {$oldAmountFormatted} to {$newAmountFormatted}.",
+                            'url' => "/finance/income/{$entry->id}",
+                            'exclude_actor' => false,
+                        ]
+                    );
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to send income update notification', [
+                    'income_entry_id' => $entry->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return response()->json($entry);
         } catch (\Illuminate\Validation\ValidationException $e) {
