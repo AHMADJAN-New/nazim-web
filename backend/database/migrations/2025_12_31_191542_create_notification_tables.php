@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -12,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('notification_events', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
             $table->uuid('organization_id')->index();
             $table->string('type')->index();
             $table->uuid('actor_user_id')->nullable()->index();
@@ -27,7 +28,7 @@ return new class extends Migration
         });
 
         Schema::create('notifications', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
             $table->uuid('organization_id')->index();
             $table->uuid('user_id')->index();
             $table->uuid('event_id')->nullable()->index();
@@ -47,7 +48,7 @@ return new class extends Migration
         });
 
         Schema::create('notification_deliveries', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
             $table->uuid('notification_id')->nullable()->index();
             $table->uuid('user_id')->nullable()->index();
             $table->uuid('event_id')->nullable()->index();
@@ -66,7 +67,7 @@ return new class extends Migration
         });
 
         Schema::create('notification_preferences', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
             $table->uuid('organization_id')->index();
             $table->uuid('user_id')->index();
             $table->string('type')->index();

@@ -49,19 +49,50 @@ class NotificationService
 
         $recipients = $this->ruleRegistry
             ->resolve($eventType, $entity, $actor)
-            ->filter(fn (User $user) => $user->id !== $actor?->id)
             ->unique('id');
+        
+        // Optionally filter out actor (default: true, but can be overridden in payload)
+        $excludeActor = $payload['exclude_actor'] ?? true;
+        if ($excludeActor && $actor) {
+            $recipients = $recipients->filter(fn (User $user) => $user->id !== $actor->id);
+        }
+
+        Log::info('Notification recipients resolved', [
+            'event' => $eventType,
+            'event_id' => $event->id,
+            'organization_id' => $organizationId,
+            'recipient_count' => $recipients->count(),
+            'recipient_ids' => $recipients->pluck('id')->toArray(),
+        ]);
 
         if ($recipients->isEmpty()) {
-            Log::info('Notification created without recipients', [
+            Log::warning('Notification created without recipients', [
                 'event' => $eventType,
                 'event_id' => $event->id,
+                'organization_id' => $organizationId,
+                'entity_type' => get_class($entity),
             ]);
             return;
         }
 
+        // Bulk load preferences for all recipients (performance optimization)
+        $userIds = $recipients->pluck('id')->toArray();
+        $preferences = NotificationPreference::where('organization_id', $organizationId)
+            ->where('type', $eventType)
+            ->whereIn('user_id', $userIds)
+            ->get()
+            ->keyBy('user_id');
+
+        $emailEligible = $this->isEmailEligible($eventType);
+        $defaultFrequency = $this->defaultFrequency($eventType);
+
         foreach ($recipients as $recipient) {
-            $preference = $this->getPreference($organizationId, $recipient->id, $eventType);
+            $preferenceModel = $preferences->get($recipient->id);
+            $preference = [
+                'in_app_enabled' => $preferenceModel?->in_app_enabled ?? true,
+                'email_enabled' => $preferenceModel?->email_enabled ?? $emailEligible,
+                'frequency' => $preferenceModel?->frequency ?? $defaultFrequency,
+            ];
 
             if ($preference['in_app_enabled']) {
                 $notification = Notification::create([

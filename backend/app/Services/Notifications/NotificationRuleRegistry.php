@@ -61,6 +61,7 @@ class NotificationRuleRegistry
         $this->register('admission.created', fn (Model $entity) => $this->usersWithPermission($entity, 'student_admissions.read'));
         $this->register('admission.approved', fn (Model $entity) => $this->usersWithPermission($entity, 'student_admissions.read'));
         $this->register('admission.rejected', fn (Model $entity) => $this->usersWithPermission($entity, 'student_admissions.read'));
+        $this->register('admission.deleted', fn (Model $entity) => $this->usersWithPermission($entity, 'student_admissions.read'));
 
         // Finance
         $this->register('invoice.created', fn (Model $entity) => $this->usersWithPermission($entity, 'finance_documents.read'));
@@ -188,17 +189,79 @@ class NotificationRuleRegistry
     {
         $organizationId = $entity->organization_id ?? $entity->organizationId ?? null;
         if (!$organizationId) {
+            Log::warning('usersWithPermission: No organization_id found', [
+                'entity_type' => get_class($entity),
+                'permission' => $permission,
+            ]);
             return collect();
         }
 
         try {
+            // CRITICAL: Set team context for Spatie permission checks
             setPermissionsTeamId($organizationId);
-            return User::permission($permission)->get();
+            
+            // Get permission ID
+            $permissionModel = \App\Models\Permission::where('name', $permission)
+                ->where('organization_id', $organizationId)
+                ->first();
+            
+            if (!$permissionModel) {
+                Log::warning('usersWithPermission: Permission not found', [
+                    'permission' => $permission,
+                    'organization_id' => $organizationId,
+                ]);
+                return collect();
+            }
+            
+            // Get users with this permission via roles
+            $userIds = DB::table('model_has_roles')
+                ->join('role_has_permissions', function($join) use ($permissionModel, $organizationId) {
+                    $join->on('model_has_roles.role_id', '=', 'role_has_permissions.role_id')
+                         ->where('role_has_permissions.permission_id', $permissionModel->id)
+                         ->where('role_has_permissions.organization_id', $organizationId);
+                })
+                ->where('model_has_roles.model_type', User::class)
+                ->where('model_has_roles.organization_id', $organizationId)
+                ->distinct()
+                ->pluck('model_has_roles.model_id')
+                ->toArray();
+            
+            // Also get users with direct permission assignment
+            // Note: model_has_permissions doesn't have deleted_at column
+            $directUserIds = DB::table('model_has_permissions')
+                ->where('permission_id', $permissionModel->id)
+                ->where('model_type', User::class)
+                ->distinct()
+                ->pluck('model_id')
+                ->toArray();
+            
+            // Combine and get unique user IDs
+            $allUserIds = array_unique(array_merge($userIds, $directUserIds));
+            
+            if (empty($allUserIds)) {
+                Log::info('usersWithPermission: No users found', [
+                    'permission' => $permission,
+                    'organization_id' => $organizationId,
+                ]);
+                return collect();
+            }
+            
+            $users = User::whereIn('id', $allUserIds)->get();
+            
+            Log::info('usersWithPermission: Found users', [
+                'permission' => $permission,
+                'organization_id' => $organizationId,
+                'user_count' => $users->count(),
+                'user_ids' => $users->pluck('id')->toArray(),
+            ]);
+            
+            return $users;
         } catch (\Throwable $e) {
             Log::warning('Permission-based recipient resolution failed', [
                 'permission' => $permission,
                 'organization_id' => $organizationId,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return collect();
