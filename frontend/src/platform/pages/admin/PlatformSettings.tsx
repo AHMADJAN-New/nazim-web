@@ -12,9 +12,15 @@ import {
   XCircle,
   AlertTriangle,
   MessageSquare,
+  Download,
+  Database,
+  HardDrive,
+  Upload,
+  RotateCcw,
+  History,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -71,6 +77,7 @@ import { cn } from '@/lib/utils';
 import { platformApi } from '@/platform/lib/platformApi';
 import { TestimonialsManagement } from '@/platform/components/TestimonialsManagement';
 import { ContactMessagesManagement } from '@/platform/components/ContactMessagesManagement';
+import { MaintenanceHistoryContent } from './MaintenanceHistory';
 
 // Validation schema for platform user (password optional for updates)
 const platformUserSchema = z.object({
@@ -105,6 +112,13 @@ export default function PlatformSettings() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [deletingBackupFilename, setDeletingBackupFilename] = useState<string | null>(null);
+  const [restoringBackupFilename, setRestoringBackupFilename] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string>('');
+  const [scheduledEndAt, setScheduledEndAt] = useState<string>('');
+  const [affectedServices, setAffectedServices] = useState<string>('');
+  const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
 
   const isEditing = !!editingUserId;
 
@@ -246,6 +260,146 @@ export default function PlatformSettings() {
     },
   });
 
+  // Backup queries and mutations
+  const { data: backups, isLoading: isBackupsLoading, error: backupsError } = useQuery({
+    queryKey: ['platform-backups'],
+    queryFn: async () => {
+      try {
+        return await platformApi.backups.list();
+      } catch (error) {
+        console.error('Error fetching backups:', error);
+        return [];
+      }
+    },
+    enabled: hasPlatformAdminPermission && !permissionsLoading,
+    staleTime: 30 * 1000, // 30 seconds
+  });
+
+  const createBackup = useMutation({
+    mutationFn: async () => {
+      return await platformApi.backups.create();
+    },
+    onSuccess: () => {
+      showToast.success('Backup created successfully');
+      queryClient.invalidateQueries({ queryKey: ['platform-backups'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to create backup');
+    },
+  });
+
+  const deleteBackup = useMutation({
+    mutationFn: async (filename: string) => {
+      return await platformApi.backups.delete(filename);
+    },
+    onSuccess: () => {
+      showToast.success('Backup deleted successfully');
+      setDeletingBackupFilename(null);
+      queryClient.invalidateQueries({ queryKey: ['platform-backups'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to delete backup');
+    },
+  });
+
+  const handleDownloadBackup = async (filename: string) => {
+    try {
+      await platformApi.backups.download(filename);
+      showToast.success('Backup download started');
+    } catch (error) {
+      showToast.error('Failed to download backup');
+    }
+  };
+
+  const restoreBackup = useMutation({
+    mutationFn: async (filename: string) => {
+      return await platformApi.backups.restore(filename);
+    },
+    onSuccess: () => {
+      showToast.success('Backup restored successfully. Please refresh the page.');
+      setRestoringBackupFilename(null);
+      queryClient.invalidateQueries({ queryKey: ['platform-backups'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to restore backup');
+      setRestoringBackupFilename(null);
+    },
+  });
+
+  const uploadAndRestore = useMutation({
+    mutationFn: async (file: File) => {
+      return await platformApi.backups.uploadAndRestore(file);
+    },
+    onSuccess: () => {
+      showToast.success('Backup uploaded and restored successfully. Please refresh the page.');
+      setUploadedFile(null);
+      queryClient.invalidateQueries({ queryKey: ['platform-backups'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to upload and restore backup');
+    },
+  });
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type !== 'application/zip' && !file.name.endsWith('.zip')) {
+        showToast.error('Please select a ZIP file');
+        return;
+      }
+      setUploadedFile(file);
+    }
+  };
+
+  // Maintenance mode queries and mutations
+  const { data: maintenanceStatus, isLoading: isMaintenanceLoading } = useQuery({
+    queryKey: ['maintenance-status'],
+    queryFn: async () => {
+      try {
+        const response = await platformApi.maintenance.getStatus();
+        // API returns { success: boolean, data: { ... } }
+        // response.data is the inner data object with is_maintenance_mode
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching maintenance status:', error);
+        return { is_maintenance_mode: false, message: null, retry_after: null, refresh_after: null };
+      }
+    },
+    enabled: hasPlatformAdminPermission && !permissionsLoading,
+    refetchInterval: 10000, // Refetch every 10 seconds
+  });
+
+  const enableMaintenance = useMutation({
+    mutationFn: async (data: { message?: string; scheduled_end_at?: string; affected_services?: string[] }) => {
+      return await platformApi.maintenance.enable(data);
+    },
+    onSuccess: () => {
+      showToast.success('Maintenance mode enabled successfully');
+      setShowMaintenanceDialog(false);
+      setMaintenanceMessage('');
+      setScheduledEndAt('');
+      setAffectedServices('');
+      queryClient.invalidateQueries({ queryKey: ['maintenance-status'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to enable maintenance mode');
+    },
+  });
+
+
+  const disableMaintenance = useMutation({
+    mutationFn: async () => {
+      return await platformApi.maintenance.disable();
+    },
+    onSuccess: () => {
+      showToast.success('Maintenance mode disabled successfully');
+      queryClient.invalidateQueries({ queryKey: ['maintenance-status'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to disable maintenance mode');
+    },
+  });
+
 
   // FIX: Add error handling for permissions query
   if (permissionsError) {
@@ -383,6 +537,14 @@ export default function PlatformSettings() {
           <TabsTrigger value="system">
             <Settings className="mr-2 h-4 w-4" />
             System Settings
+          </TabsTrigger>
+          <TabsTrigger value="restore">
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Restore
+          </TabsTrigger>
+          <TabsTrigger value="maintenance-history">
+            <History className="mr-2 h-4 w-4" />
+            Maintenance History
           </TabsTrigger>
         </TabsList>
 
@@ -545,25 +707,198 @@ export default function PlatformSettings() {
                   <Badge variant="outline">Coming Soon</Badge>
                 </div>
 
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <Label className="font-medium">Backup & Restore</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Manage automated backups and restore points
-                    </p>
-                  </div>
-                  <Badge variant="outline">Coming Soon</Badge>
-                </div>
+                {/* Backup & Restore Section */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <Database className="h-5 w-5" />
+                          Backup & Restore
+                        </CardTitle>
+                        <CardDescription>
+                          Create and manage database and storage backups
+                        </CardDescription>
+                      </div>
+                      <Button
+                        onClick={() => createBackup.mutate()}
+                        disabled={createBackup.isPending}
+                      >
+                        {createBackup.isPending ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          <>
+                            <HardDrive className="mr-2 h-4 w-4" />
+                            Create Backup
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {isBackupsLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <LoadingSpinner />
+                      </div>
+                    ) : backupsError ? (
+                      <div className="py-8 text-center">
+                        <p className="text-destructive">Error loading backups</p>
+                      </div>
+                    ) : !backups || backups.length === 0 ? (
+                      <div className="py-8 text-center text-muted-foreground">
+                        <Database className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p>No backups found</p>
+                        <p className="text-sm mt-1">Create your first backup to get started</p>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Filename</TableHead>
+                            <TableHead>Size</TableHead>
+                            <TableHead>Created</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {backups.map((backup) => (
+                            <TableRow key={backup.filename}>
+                              <TableCell className="font-medium">
+                                {backup.filename}
+                              </TableCell>
+                              <TableCell>{backup.size}</TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {formatDateTime(new Date(backup.created_at))}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center gap-2 justify-end">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDownloadBackup(backup.filename)}
+                                    title="Download backup"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setDeletingBackupFilename(backup.filename)}
+                                    title="Delete backup"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
 
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <Label className="font-medium">System Maintenance</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Schedule maintenance windows and system updates
-                    </p>
-                  </div>
-                  <Badge variant="outline">Coming Soon</Badge>
-                </div>
+                {/* System Maintenance */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="h-5 w-5" />
+                      System Maintenance Mode
+                    </CardTitle>
+                    <CardDescription>
+                      Enable or disable maintenance mode for the entire platform
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isMaintenanceLoading ? (
+                      <div className="flex items-center justify-center py-4">
+                        <LoadingSpinner />
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className={cn(
+                              "h-3 w-3 rounded-full shrink-0",
+                              maintenanceStatus?.is_maintenance_mode ? "bg-yellow-500 animate-pulse" : "bg-green-500"
+                            )} />
+                            <div className="flex-1">
+                              <p className="font-medium">
+                                {maintenanceStatus?.is_maintenance_mode ? 'Maintenance Mode Active' : 'System Online'}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {maintenanceStatus?.is_maintenance_mode
+                                  ? maintenanceStatus.message || 'System is currently under maintenance'
+                                  : 'All systems operational'}
+                              </p>
+                              {maintenanceStatus?.is_maintenance_mode && maintenanceStatus.scheduled_end_at && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Scheduled to end: {formatDateTime(new Date(maintenanceStatus.scheduled_end_at))}
+                                </p>
+                              )}
+                              {maintenanceStatus?.is_maintenance_mode && maintenanceStatus.affected_services && maintenanceStatus.affected_services.length > 0 && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Affected: {maintenanceStatus.affected_services.join(', ')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {/* CRITICAL: Always show disable button when maintenance is active */}
+                          {maintenanceStatus?.is_maintenance_mode === true ? (
+                            <Button
+                              variant="default"
+                              onClick={() => disableMaintenance.mutate()}
+                              disabled={disableMaintenance.isPending}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              {disableMaintenance.isPending ? (
+                                <>
+                                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                  Disabling...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="mr-2 h-4 w-4" />
+                                  Disable Maintenance
+                                </>
+                              )}
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="default"
+                              onClick={() => setShowMaintenanceDialog(true)}
+                              className="bg-yellow-600 hover:bg-yellow-700"
+                            >
+                              <AlertTriangle className="mr-2 h-4 w-4" />
+                              Enable Maintenance
+                            </Button>
+                          )}
+                        </div>
+
+                        {maintenanceStatus?.is_maintenance_mode && (
+                          <div className="rounded-lg border p-4 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
+                            <div className="flex items-start gap-3">
+                              <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                              <div className="flex-1">
+                                <h4 className="font-medium text-yellow-900 dark:text-yellow-100 mb-1">
+                                  Platform in Maintenance Mode
+                                </h4>
+                                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                                  Users will see a maintenance page when trying to access the platform.
+                                  Only administrators can access the system during maintenance.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
@@ -577,6 +912,146 @@ export default function PlatformSettings() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Restore Tab */}
+        <TabsContent value="restore" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <RotateCcw className="h-5 w-5" />
+                Restore from Backup
+              </CardTitle>
+              <CardDescription>
+                Restore your database and storage from a previous backup
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="rounded-lg border p-4 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-yellow-900 dark:text-yellow-100 mb-1">
+                      Warning: Data Loss Risk
+                    </h4>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      Restoring a backup will replace all current data in your database and storage.
+                      This action cannot be undone. Please ensure you have a recent backup before proceeding.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Restore from Existing Backup */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Restore from Existing Backup</h3>
+                {isBackupsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <LoadingSpinner />
+                  </div>
+                ) : !backups || backups.length === 0 ? (
+                  <div className="py-8 text-center text-muted-foreground">
+                    <Database className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No backups available</p>
+                    <p className="text-sm mt-1">Create a backup first in the System Settings tab</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Filename</TableHead>
+                        <TableHead>Size</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {backups.map((backup) => (
+                        <TableRow key={backup.filename}>
+                          <TableCell className="font-medium">
+                            {backup.filename}
+                          </TableCell>
+                          <TableCell>{backup.size}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {formatDateTime(new Date(backup.created_at))}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => setRestoringBackupFilename(backup.filename)}
+                              disabled={restoreBackup.isPending}
+                            >
+                              <RotateCcw className="mr-2 h-4 w-4" />
+                              Restore
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or</span>
+                </div>
+              </div>
+
+              {/* Upload and Restore */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Upload and Restore Backup</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="file"
+                      accept=".zip"
+                      onChange={handleFileUpload}
+                      disabled={uploadAndRestore.isPending}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={() => {
+                        if (uploadedFile) {
+                          uploadAndRestore.mutate(uploadedFile);
+                        } else {
+                          showToast.error('Please select a backup file first');
+                        }
+                      }}
+                      disabled={!uploadedFile || uploadAndRestore.isPending}
+                    >
+                      {uploadAndRestore.isPending ? (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                          Restoring...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload & Restore
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  {uploadedFile && (
+                    <p className="text-sm text-muted-foreground">
+                      Selected: {uploadedFile.name} ({(uploadedFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Maintenance History Tab */}
+        <TabsContent value="maintenance-history" className="space-y-6">
+          <MaintenanceHistoryContent />
         </TabsContent>
       </Tabs>
 
@@ -715,7 +1190,7 @@ export default function PlatformSettings() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Platform User</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this platform administrator? This will remove their 
+              Are you sure you want to delete this platform administrator? This will remove their
               subscription.admin permission and delete their user account. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -738,6 +1213,201 @@ export default function PlatformSettings() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete Backup Confirmation Dialog */}
+      <AlertDialog open={!!deletingBackupFilename} onOpenChange={(open) => !open && setDeletingBackupFilename(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Backup</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this backup file? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deletingBackupFilename) {
+                  deleteBackup.mutate(deletingBackupFilename);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteBackup.isPending}
+            >
+              {deleteBackup.isPending ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete Backup'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Restore Backup Confirmation Dialog */}
+      <AlertDialog open={!!restoringBackupFilename} onOpenChange={(open) => !open && setRestoringBackupFilename(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Restore Backup - Warning
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p className="font-semibold text-foreground">
+                Are you sure you want to restore this backup?
+              </p>
+              <p>
+                This will replace <span className="font-semibold">ALL current data</span> in your database and storage with the data from this backup.
+              </p>
+              <p className="text-yellow-600 dark:text-yellow-400 font-medium">
+                This action is irreversible and cannot be undone!
+              </p>
+              <p className="text-sm mt-2">
+                Backup to restore: <span className="font-mono">{restoringBackupFilename}</span>
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (restoringBackupFilename) {
+                  restoreBackup.mutate(restoringBackupFilename);
+                }
+              }}
+              className="bg-yellow-600 text-white hover:bg-yellow-700"
+              disabled={restoreBackup.isPending}
+            >
+              {restoreBackup.isPending ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Restoring...
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Yes, Restore Backup
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Enable Maintenance Mode Dialog */}
+      <Dialog open={showMaintenanceDialog} onOpenChange={setShowMaintenanceDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Enable Maintenance Mode
+            </DialogTitle>
+            <DialogDescription>
+              Put the platform in maintenance mode. Users will be unable to access the system.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="maintenance-message">
+                Maintenance Message (Optional)
+              </Label>
+              <Input
+                id="maintenance-message"
+                value={maintenanceMessage}
+                onChange={(e) => setMaintenanceMessage(e.target.value)}
+                placeholder="We'll be back soon. Performing scheduled maintenance."
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground">
+                This message will be displayed to users trying to access the platform.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="scheduled-end">
+                Scheduled End Time (Optional)
+              </Label>
+              <Input
+                id="scheduled-end"
+                type="datetime-local"
+                value={scheduledEndAt}
+                onChange={(e) => setScheduledEndAt(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                When you expect maintenance to be completed. Users will see this estimated time.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="affected-services">
+                Affected Services (Optional)
+              </Label>
+              <Input
+                id="affected-services"
+                value={affectedServices}
+                onChange={(e) => setAffectedServices(e.target.value)}
+                placeholder="Student Portal, Finance Module, Library System (comma-separated)"
+              />
+              <p className="text-xs text-muted-foreground">
+                List the services that will be affected, separated by commas.
+              </p>
+            </div>
+
+            <div className="rounded-lg border p-4 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-yellow-900 dark:text-yellow-100 mb-1">
+                    Warning
+                  </h4>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                    All users (except administrators) will be immediately logged out and unable to access the platform until maintenance mode is disabled.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowMaintenanceDialog(false);
+                setMaintenanceMessage('');
+                setScheduledEndAt('');
+                setAffectedServices('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                const data: { message?: string; scheduled_end_at?: string; affected_services?: string[] } = {};
+                if (maintenanceMessage) data.message = maintenanceMessage;
+                if (scheduledEndAt) data.scheduled_end_at = new Date(scheduledEndAt).toISOString();
+                if (affectedServices) data.affected_services = affectedServices.split(',').map(s => s.trim()).filter(Boolean);
+                enableMaintenance.mutate(data);
+              }}
+              disabled={enableMaintenance.isPending}
+              className="bg-yellow-600 hover:bg-yellow-700"
+            >
+              {enableMaintenance.isPending ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Enabling...
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  Enable Maintenance Mode
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -90,6 +90,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\HelpCenterCategoryController;
 use App\Http\Controllers\HelpCenterArticleController;
+use App\Http\Controllers\LandingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -97,9 +98,11 @@ use App\Http\Controllers\HelpCenterArticleController;
 |--------------------------------------------------------------------------
 */
 
-// Public routes
-Route::post('/auth/login', [AuthController::class, 'login']);
+// Public routes (no authentication required)
+Route::get('auth/login', [AuthController::class, 'loginGet']); // Handle GET requests gracefully
+Route::post('auth/login', [AuthController::class, 'login']);
 Route::get('/leave-requests/scan/{token}', [LeaveRequestController::class, 'scanPublic']);
+Route::get('/maintenance/status/public', [App\Http\Controllers\MaintenanceController::class, 'getPublicStatus']);
 
 // Public certificate verification routes (rate limited)
 use App\Http\Controllers\CertificateVerifyController;
@@ -115,6 +118,8 @@ Route::post('/verify/certificate/search', [CertificateVerifyController::class, '
 // Consider protecting if aggregate data is sensitive
 Route::get('/stats/students-count', [StatsController::class, 'studentsCount']);
 Route::get('/stats/staff-count', [StatsController::class, 'staffCount']);
+Route::post('/landing/contact', [LandingController::class, 'submitContact']);
+Route::post('/landing/plan-request', [LandingController::class, 'submitPlanRequest']);
 
 // Auth routes (require authentication but NO subscription checks - always allowed)
 // These routes must be accessible even without active subscription for login/auth checks
@@ -1337,6 +1342,20 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
         Route::put('/articles/{id}', [HelpCenterArticleController::class, 'platformUpdate']);
         Route::delete('/articles/{id}', [HelpCenterArticleController::class, 'platformDestroy']);
     });
+
+    // Backup & Restore
+    Route::get('/backups', [App\Http\Controllers\BackupController::class, 'listBackups']);
+    Route::post('/backups', [App\Http\Controllers\BackupController::class, 'createBackup']);
+    Route::get('/backups/{filename}/download', [App\Http\Controllers\BackupController::class, 'downloadBackup']);
+    Route::delete('/backups/{filename}', [App\Http\Controllers\BackupController::class, 'deleteBackup']);
+    Route::post('/backups/{filename}/restore', [App\Http\Controllers\BackupController::class, 'restoreBackup']);
+    Route::post('/backups/upload-restore', [App\Http\Controllers\BackupController::class, 'uploadAndRestore']);
+
+    // Maintenance Mode
+    Route::get('/maintenance/status', [App\Http\Controllers\MaintenanceController::class, 'getStatus']);
+    Route::post('/maintenance/enable', [App\Http\Controllers\MaintenanceController::class, 'enable']);
+    Route::post('/maintenance/disable', [App\Http\Controllers\MaintenanceController::class, 'disable']);
+    Route::get('/maintenance/history', [App\Http\Controllers\MaintenanceController::class, 'history']);
 });
 
 // Legacy admin subscription routes (kept for backward compatibility, but will be deprecated)

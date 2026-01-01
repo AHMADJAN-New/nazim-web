@@ -3445,6 +3445,26 @@ export const ps: TranslationKeys = {
     readAccessDenied: 'ستاسو ګډون پای ته رسیدلی. مهرباني وکړئ د خپلو معلوماتو لاسرسي لپاره نوی کړئ.',
     genericError: 'د ګډون تېروتنه رامنځته شوه. مهرباني وکړئ د خپل ګډون حالت وګورئ.',
   },
+
+  // Maintenance Mode
+  maintenance: {
+    title: 'سیستم د ساتنې لاندې دی',
+    defaultMessage: 'موږ د پلان شوې ساتنې کار ترسره کوو. موږ به ژر راستن شو!',
+    scheduledEnd: 'د بشپړیدو وروستۍ نیټه',
+    startedAt: 'ساتنه پیل شوه',
+    timeRemaining: 'پاتې وخت',
+    remaining: 'پاتې',
+    affectedServices: 'متأثر خدمات',
+    progress: 'د ساتنې پرمختګ',
+    inProgress: 'ساتنه روانه ده',
+    teamWorking: 'زموږ ټیم د خدمت د بیا راګرځولو لپاره سخت کار کوي',
+    refresh: 'پاڼه تازه کړئ',
+    retryAfter: 'تاسو کولی شئ په',
+    seconds: 'ثانیو کې بیا هڅه وکړئ',
+    retry: 'بیا اتصال',
+    autoRefresh: 'دا پاڼه به هر 30 ثانیو کې په اتوماتیک ډول تازه شي',
+    info: 'موږ د هرې ناخوښۍ لپاره بخښنه غواړو. زموږ ټیم د خدمت د ژر بیا راګرځولو لپاره سخت کار کوي. د تاسو صبر مننه.',
+  },
   
   // Phone Book
   phoneBook: {

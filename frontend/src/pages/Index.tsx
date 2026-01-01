@@ -1,9 +1,10 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+Claude/fix notification system w0 z hqClaude/fix notification system w0 z hqClaude/fix notification system w0 z hqClaude/fix notification system w0 z hq﻿import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,6 +70,8 @@ import { useLandingStats } from "@/hooks/useLandingStats";
 import { usePlatformAdminPermissions } from "@/platform/hooks/usePlatformAdminPermissions";
 import { useSubscriptionPlans } from "@/hooks/useSubscription";
 // Contact form will be handled by Laravel API endpoint
+import { useSubscriptionPlans, type SubscriptionPlan } from "@/hooks/useSubscription";
+import { apiClient } from "@/lib/api/client";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -77,15 +80,11 @@ const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [isContactSubmitting, setIsContactSubmitting] = useState(false);
+  const [isPlanSubmitting, setIsPlanSubmitting] = useState(false);
+  const [requestedPlanId, setRequestedPlanId] = useState('');
   const { toast } = useToast();
-
-  // Language options
-  const languages = [
-    { code: 'en' as const, name: 'English', flag: '🇺🇸', nativeName: 'English' },
-    { code: 'ps' as const, name: 'Pashto', flag: '🇦🇫', nativeName: 'پښتو' },
-    { code: 'fa' as const, name: 'Farsi', flag: '🇮🇷', nativeName: 'فارسی' },
-    { code: 'ar' as const, name: 'Arabic', flag: '🇸🇦', nativeName: 'العربية' },
-  ];
+  const { data: subscriptionPlans, isLoading: plansLoading } = useSubscriptionPlans();
   
   // CRITICAL: Only check platform admin permissions if user is authenticated
   // And only if we're in a platform admin session (prevents 403 errors)
@@ -289,82 +288,67 @@ const Index = () => {
     }
   ], [t]);
 
-  // Fetch actual plans from API
-  const { data: subscriptionPlans, isLoading: plansLoading, error: plansError } = useSubscriptionPlans();
-  
-  // Debug logging (only in dev)
-  if (import.meta.env.DEV && subscriptionPlans) {
-    console.log('[Index] Fetched plans:', subscriptionPlans.length, subscriptionPlans);
-  }
-  if (import.meta.env.DEV && plansError) {
-    console.error('[Index] Plans fetch error:', plansError);
-  }
-
-  // Feature key to display name mapping
-  const featureNameMap: Record<string, string> = {
-    students: 'Student Management',
-    attendance: 'Attendance Tracking',
-    classes: 'Class Management',
-    subjects: 'Subject Management',
-    exams: 'Exam Management',
-    grades: 'Grade Management',
-    question_bank: 'Question Bank',
-    exam_paper_generator: 'Exam Paper Generator',
-    timetables: 'Timetable Generation',
-    graduation: 'Graduation & Certificates',
-    finance: 'Finance Module',
-    fees: 'Fee Management',
-    multi_currency: 'Multi-Currency Support',
-    dms: 'Document Management',
-    letter_templates: 'Letter Templates',
-    excel_export: 'Excel Export',
-    pdf_reports: 'PDF Reports',
-    library: 'Library Management',
-    assets: 'Asset Management',
-    events: 'Event Management',
-    id_cards: 'ID Card Generation',
-    custom_id_templates: 'Custom ID Templates',
-    custom_branding: 'Custom Branding',
-    short_courses: 'Short Courses',
-    leave_management: 'Leave Management',
-    hostel: 'Hostel Management',
-    multi_school: 'Multi-School Support',
-    api_access: 'API Access',
+  const formatCurrency = (value: number, currency: 'AFN' | 'USD') => {
+    const formatted = new Intl.NumberFormat('en-US').format(value);
+    return `${currency} ${formatted}`;
   };
 
-  const PLAN_ICONS: Record<string, React.ElementType> = {
-    trial: Zap,
-    starter: Star,
-    basic: Star,
-    professional: Crown,
-    pro: Crown,
-    enterprise: Building2,
+  const buildPlanHighlights = (plan: SubscriptionPlan) => {
+    const highlights: string[] = [];
+
+    if (plan.maxSchools && plan.maxSchools > 0) {
+      highlights.push(plan.maxSchools === 1 ? "1 school included" : `Up to ${plan.maxSchools} schools`);
+    } else {
+      highlights.push("Unlimited schools");
+    }
+
+    if (plan.trialDays && plan.trialDays > 0) {
+      highlights.push(`${plan.trialDays}-day free trial`);
+    }
+
+    const currency: 'AFN' | 'USD' = plan.priceYearlyAfn > 0 ? 'AFN' : 'USD';
+    const perSchoolPrice = currency === 'AFN' ? plan.perSchoolPriceAfn : plan.perSchoolPriceUsd;
+    if (perSchoolPrice && perSchoolPrice > 0) {
+      highlights.push(`Additional schools: ${formatCurrency(perSchoolPrice, currency)} / year`);
+    }
+
+    if (plan.features && plan.features.length > 0) {
+      highlights.push(`${plan.features.length} modules included`);
+    } else {
+      highlights.push("Core modules included");
+    }
+
+    return highlights;
   };
 
-  // Map subscription plans to landing page format
   const pricingPlans = useMemo(() => {
     if (!subscriptionPlans || subscriptionPlans.length === 0) {
-      // Fallback to default plans if API fails
-      return [
-        {
-          slug: 'starter',
-          name: t('landing.pricing.starter.name') || "Starter",
-          price: "₹2,999",
-          period: t('landing.pricing.period') || "/year",
-          description: t('landing.pricing.starter.description') || "Perfect for small schools up to 200 students",
-          features: [
-            t('landing.pricing.starter.feature1') || "Up to 200 students",
-            t('landing.pricing.starter.feature2') || "Basic student management",
-            t('landing.pricing.starter.feature3') || "Attendance tracking",
-            t('landing.pricing.starter.feature4') || "Fee management",
-            t('landing.pricing.starter.feature5') || "Basic reports",
-            t('landing.pricing.starter.feature6') || "Email support"
-          ],
-          popular: false,
-          color: "border-gray-200"
-        }
-      ];
+      return [];
     }
+
+    return [...subscriptionPlans]
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .map((plan) => {
+        const currency: 'AFN' | 'USD' = plan.priceYearlyAfn > 0 ? 'AFN' : 'USD';
+        const priceValue = currency === 'AFN' ? plan.priceYearlyAfn : plan.priceYearlyUsd;
+        const priceLabel = priceValue > 0
+          ? formatCurrency(priceValue, currency)
+          : (t('landing.pricing.free') || "Free");
+
+        const popular = plan.isDefault || plan.slug === 'pro';
+
+        return {
+          id: plan.id,
+          name: plan.name,
+          price: priceLabel,
+          period: priceValue > 0 ? (t('landing.pricing.periodYear') || "/year") : "",
+          description: plan.description || (t('landing.pricing.defaultDescription') || "Flexible plan designed for modern schools."),
+          highlights: buildPlanHighlights(plan),
+          popular,
+          color: popular ? "border-primary ring-2 ring-primary/20" : "border-gray-200",
+        };
+      });
+  }, [subscriptionPlans, t]);
 
     // Filter out trial plans (backend already filters for active and non-custom)
     // Sort by sortOrder if available, otherwise by name
@@ -500,8 +484,57 @@ const Index = () => {
     { number: "24/7", label: t('landing.stats.supportAvailable') || "Support Available" }
   ], [landingStats, t]);
 
+  const handlePlanRequestSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (isPlanSubmitting) return;
+    setIsPlanSubmitting(true);
+    const formData = new FormData(e.currentTarget);
+    const submission = {
+      requested_plan_id: requestedPlanId || null,
+      organization_name: formData.get("organizationName") as string,
+      school_name: formData.get("schoolName") as string,
+      school_page_url: (formData.get("schoolPageUrl") as string) || null,
+      contact_name: formData.get("contactName") as string,
+      contact_email: formData.get("contactEmail") as string,
+      contact_phone: (formData.get("contactPhone") as string) || null,
+      contact_position: (formData.get("contactPosition") as string) || null,
+      number_of_schools: formData.get("numberOfSchools")
+        ? Number(formData.get("numberOfSchools"))
+        : null,
+      student_count: formData.get("studentCount")
+        ? Number(formData.get("studentCount"))
+        : null,
+      staff_count: formData.get("staffCount")
+        ? Number(formData.get("staffCount"))
+        : null,
+      city: (formData.get("city") as string) || null,
+      country: (formData.get("country") as string) || null,
+      message: (formData.get("message") as string) || null,
+    };
+
+    try {
+      await apiClient.post('/landing/plan-request', submission);
+      toast({
+        title: t('landing.planRequest.sent') || "Plan request submitted",
+        description: t('landing.planRequest.sentDescription') || "Our team will reach out with the best option for you.",
+      });
+      e.currentTarget.reset();
+      setRequestedPlanId('');
+    } catch (error: any) {
+      toast({
+        title: t('landing.planRequest.failed') || "Plan request failed",
+        description: error.message || t('landing.planRequest.failedDescription') || "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPlanSubmitting(false);
+    }
+  };
+
   const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isContactSubmitting) return;
+    setIsContactSubmitting(true);
     const formData = new FormData(e.currentTarget);
     const submission = {
       first_name: formData.get("firstName") as string,
@@ -516,7 +549,7 @@ const Index = () => {
     };
 
     try {
-      await apiClient.post('/contact', submission);
+      await apiClient.post('/landing/contact', submission);
       toast({
         title: t('landing.contact.messageSent') || "Message sent",
         description: t('landing.contact.messageSentDescription') || "We'll get back to you soon.",
@@ -528,6 +561,8 @@ const Index = () => {
         description: error.message || t('landing.contact.messageFailedDescription') || "Please try again later.",
         variant: "destructive",
       });
+    } finally {
+      setIsContactSubmitting(false);
     }
   };
 
@@ -552,26 +587,11 @@ const Index = () => {
           </div>
 
           <div className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
-              {t('landing.nav.features') || 'Features'}
-            </a>
-            <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">
-              {t('landing.nav.pricing') || 'Pricing'}
-            </a>
-            <a href="#testimonials" className="text-muted-foreground hover:text-foreground transition-colors">
-              {t('landing.nav.reviews') || 'Reviews'}
-            </a>
-            <Link 
-              to="/help-center" 
-              className="flex items-center gap-1.5 text-foreground hover:text-primary transition-colors font-medium relative group"
-            >
-              <HelpCircle className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              <span>{t('landing.nav.helpCenter') || 'Help Center'}</span>
-              <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
-            </Link>
-            <a href="#contact" className="text-muted-foreground hover:text-foreground transition-colors">
-              {t('landing.nav.contact') || 'Contact'}
-            </a>
+            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
+            <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+            <a href="#plan-request" className="text-muted-foreground hover:text-foreground transition-colors">Plan Request</a>
+            <a href="#testimonials" className="text-muted-foreground hover:text-foreground transition-colors">Reviews</a>
+            <a href="#contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -623,6 +643,7 @@ const Index = () => {
           <div className="max-w-4xl mx-auto text-center">
             <Badge variant="secondary" className="mb-6">
               {t('landing.hero.badge') || '🚀 Trusted by 500+ Schools Worldwide'}
+              Trusted by 500+ Schools Worldwide
             </Badge>
 
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
@@ -749,87 +770,57 @@ const Index = () => {
           </div>
 
           {plansLoading ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader>
-                    <div className="h-6 bg-gray-200 rounded w-1/2 mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-full"></div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                      <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            <div className="text-center text-muted-foreground">
+              Loading plans...
+            </div>
+          ) : pricingPlans.length === 0 ? (
+            <div className="text-center text-muted-foreground">
+              No plans available right now. Please check back soon.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {pricingPlans.map((plan) => (
+                <Card key={plan.id} className={`relative ${plan.color} ${plan.popular ? 'scale-105' : ''} hover:shadow-xl transition-all duration-300`}>
+                  {plan.popular && (
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                      <Badge className="bg-primary text-primary-foreground px-4 py-1">
+                        Most Popular
+                      </Badge>
                     </div>
+                  )}
+
+                  <CardHeader className="text-center pb-8">
+                    <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                    <div className="mt-4">
+                      <span className="text-4xl font-bold">{plan.price}</span>
+                      <span className="text-muted-foreground">{plan.period}</span>
+                    </div>
+                    <CardDescription className="mt-2">{plan.description}</CardDescription>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4">
+                    <ul className="space-y-3">
+                      {plan.highlights.map((feature, featureIndex) => (
+                        <li key={featureIndex} className="flex items-center space-x-3">
+                          <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                          <span className="text-sm">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Button
+                      className={`w-full mt-8 ${plan.popular ? 'bg-primary hover:bg-primary/90' : ''}`}
+                      variant={plan.popular ? "default" : "outline"}
+                      size="lg"
+                      asChild
+                    >
+                      <Link to="/auth">
+                        {plan.popular ? "Start Free Trial" : "Get Started"}
+                      </Link>
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
-            </div>
-          ) : pricingPlans.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
-              {pricingPlans.map((plan) => {
-                const Icon = PLAN_ICONS[plan.slug] || Star;
-                return (
-                  <Card 
-                    key={plan.id || plan.slug} 
-                    className={`relative flex flex-col ${plan.color} ${plan.popular ? 'border-yellow-400 border-2' : ''} hover:shadow-xl transition-all duration-300`}
-                  >
-                    {plan.popular && (
-                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                        <Badge className="bg-yellow-400 text-yellow-900">{t('landing.sections.pricing.mostPopular') || 'Most Popular'}</Badge>
-                      </div>
-                    )}
-
-                    <CardHeader>
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-5 w-5 text-primary" />
-                        <CardTitle>{plan.name}</CardTitle>
-                      </div>
-                      <CardDescription>{plan.description}</CardDescription>
-                    </CardHeader>
-
-                    <CardContent className="flex-1">
-                      <div className="mb-4">
-                        <span className="text-3xl font-bold">{plan.price}</span>
-                        {plan.period && (
-                          <span className="text-muted-foreground">{plan.period}</span>
-                        )}
-                      </div>
-
-                      <ul className="space-y-2">
-                        {plan.features.map((feature, featureIndex) => (
-                          <li key={featureIndex} className="flex items-center gap-2 text-sm">
-                            <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                            <span>{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-
-                    <CardFooter>
-                      <Button 
-                        className="w-full" 
-                        variant={plan.popular ? "default" : "outline"}
-                        size="lg"
-                        asChild
-                      >
-                        <Link to="/auth">
-                          {plan.popular 
-                            ? (t('landing.sections.pricing.startFreeTrial') || 'Start Free Trial')
-                            : (t('landing.sections.pricing.getStarted') || 'Get Started')
-                          }
-                        </Link>
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">{t('landing.sections.pricing.noPlansAvailable') || 'No plans available at the moment. Please check back later.'}</p>
             </div>
           )}
 
@@ -839,6 +830,10 @@ const Index = () => {
             </p>
             <Button variant="link" className="text-primary">
               {t('landing.sections.pricing.customPlanLink') || 'Need a custom plan? Contact our sales team →'}
+              All plans include 30-day free trial - No setup fees - Cancel anytime
+            </p>
+            <Button variant="link" className="text-primary" asChild>
+              <a href="#plan-request">Need a custom plan? Contact our sales team</a>
             </Button>
           </div>
 
@@ -924,6 +919,171 @@ const Index = () => {
               </div>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Plan Request Section */}
+      <section id="plan-request" className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4">Plan Request</Badge>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Tell Us About Your Organization
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Share your school details and we will recommend the best plan for your needs.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
+            <div className="space-y-8">
+              <div>
+                <h3 className="text-2xl font-bold mb-4">Get a tailored recommendation</h3>
+                <p className="text-muted-foreground">
+                  Our team reviews your organization details and maps the right plan, setup steps,
+                  and onboarding timeline for your schools.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex items-start space-x-4">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Right-sized pricing</h4>
+                    <p className="text-muted-foreground">
+                      We align the plan to your school count, students, and staffing needs.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-4">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Deployment guidance</h4>
+                    <p className="text-muted-foreground">
+                      Get a rollout plan, data migration guidance, and training recommendations.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Card className="p-8">
+              <CardHeader className="px-0 pt-0">
+                <CardTitle className="text-2xl">Request a Plan</CardTitle>
+                <CardDescription>
+                  Provide your organization details and preferred plan. We will respond within 24 hours.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="px-0 pb-0">
+                <form onSubmit={handlePlanRequestSubmit} className="space-y-6">
+                  <div>
+                    <Label htmlFor="requestedPlanId">Requested Plan</Label>
+                    <Select
+                      value={requestedPlanId}
+                      onValueChange={setRequestedPlanId}
+                      disabled={!subscriptionPlans || subscriptionPlans.length === 0}
+                    >
+                      <SelectTrigger id="requestedPlanId">
+                        <SelectValue placeholder={plansLoading ? "Loading plans..." : "Select a plan (optional)"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subscriptionPlans?.map((plan) => (
+                          <SelectItem key={plan.id} value={plan.id}>
+                            {plan.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="organizationName">Organization Name</Label>
+                      <Input id="organizationName" name="organizationName" placeholder="Nazim Education Group" required />
+                    </div>
+                    <div>
+                      <Label htmlFor="schoolName">School Name</Label>
+                      <Input id="schoolName" name="schoolName" placeholder="Nazim Academy" required />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="schoolPageUrl">School Website or Page</Label>
+                    <Input id="schoolPageUrl" name="schoolPageUrl" placeholder="https://school.edu" />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="contactName">Contact Name</Label>
+                      <Input id="contactName" name="contactName" placeholder="Amina Rahman" required />
+                    </div>
+                    <div>
+                      <Label htmlFor="contactEmail">Contact Email</Label>
+                      <Input id="contactEmail" name="contactEmail" type="email" placeholder="amina@school.edu" required />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="contactPhone">Contact Phone</Label>
+                      <Input id="contactPhone" name="contactPhone" type="tel" placeholder="+92-300-1234567" />
+                    </div>
+                    <div>
+                      <Label htmlFor="contactPosition">Contact Position</Label>
+                      <Input id="contactPosition" name="contactPosition" placeholder="Principal" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="numberOfSchools">Number of Schools</Label>
+                      <Input id="numberOfSchools" name="numberOfSchools" type="number" min="1" placeholder="1" />
+                    </div>
+                    <div>
+                      <Label htmlFor="studentCount">Students</Label>
+                      <Input id="studentCount" name="studentCount" type="number" min="0" placeholder="500" />
+                    </div>
+                    <div>
+                      <Label htmlFor="staffCount">Staff</Label>
+                      <Input id="staffCount" name="staffCount" type="number" min="0" placeholder="60" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="city">City</Label>
+                      <Input id="city" name="city" placeholder="Karachi" />
+                    </div>
+                    <div>
+                      <Label htmlFor="country">Country</Label>
+                      <Input id="country" name="country" placeholder="Pakistan" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="planMessage">Notes</Label>
+                    <Textarea
+                      id="planMessage"
+                      name="message"
+                      placeholder="Tell us about your goals, timelines, and any special requirements."
+                      rows={4}
+                    />
+                  </div>
+
+                  <Button type="submit" size="lg" className="w-full" disabled={isPlanSubmitting}>
+                    {isPlanSubmitting ? "Submitting..." : "Request Plan"}
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
 
@@ -1206,6 +1366,8 @@ const Index = () => {
 
                   <Button type="submit" size="lg" className="w-full">
                     {t('landing.sections.contact.sendMessageButton') || 'Send Message'}
+                  <Button type="submit" size="lg" className="w-full" disabled={isContactSubmitting}>
+                    {isContactSubmitting ? "Sending..." : "Send Message"}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </form>
@@ -1237,8 +1399,8 @@ const Index = () => {
             </Button>
           </div>
 
-          <div className="mt-8 text-primary-foreground/60">
-            <p>{t('landing.sections.cta.note') || '✓ 30-day free trial • ✓ No credit card required • ✓ Setup assistance included'}</p>
+Claude/fix notification system w0 z hqClaude/fix notification system w0 z hqClaude/fix notification system w0 z hq          <div className="mt-Claude/fix notification system w0 z hqClaude/fix notification system w0 z hqClaude/fix notification system w0 z hq8 text-primary-foreground/60">
+            <p>30-day free trial - Claude/fix notification system w0 z hq credit card required - Setup assistance included</p>
           </div>
         </div>
       </section>
@@ -1310,7 +1472,7 @@ const Index = () => {
 
           <div className="border-t mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-muted-foreground">
-              {t('landing.footer.copyright') || '© 2026 Nazim School Management System. All rights reserved.'}
+              Copyright 2024 Nazim School Management System. All rights reserved.
             </p>
             <div className="flex items-center space-x-4 mt-4 md:mt-0">
               <Badge variant="outline" className="flex items-center space-x-1">
@@ -1330,3 +1492,10 @@ const Index = () => {
 };
 
 export default Index;
+
+
+
+
+
+
+

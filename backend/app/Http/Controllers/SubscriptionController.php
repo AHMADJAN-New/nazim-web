@@ -80,6 +80,9 @@ class SubscriptionController extends Controller
                     'created_at' => $plan->created_at->toISOString(),
                     'updated_at' => $plan->updated_at->toISOString(),
                     'deleted_at' => $plan->deleted_at?->toISOString(),
+                    'created_at' => $plan->created_at,
+                    'updated_at' => $plan->updated_at,
+                    'deleted_at' => $plan->deleted_at,
                 ];
             }),
         ]);

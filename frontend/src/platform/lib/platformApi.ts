@@ -495,6 +495,128 @@ export const platformApi = {
       return apiClient.delete<T>(endpoint);
     }
     throw new Error(`Unsupported method: ${method}`);
+  // Backup & Restore
+  backups: {
+    list: async () => {
+      const response = await apiClient.get<{
+        success: boolean;
+        backups: Array<{
+          filename: string;
+          size: string;
+          created_at: string;
+          path: string;
+        }>;
+      }>('/platform/backups');
+      return response.backups;
+    },
+    create: async () => {
+      return apiClient.post<{
+        success: boolean;
+        message: string;
+        backup: {
+          filename: string;
+          path: string;
+          size: string;
+          timestamp: string;
+          created_at: string;
+        };
+      }>('/platform/backups');
+    },
+    download: async (filename: string) => {
+      const { blob, filename: responseFilename } = await apiClient.requestFile(
+        `/platform/backups/${filename}/download`,
+        { method: 'GET' }
+      );
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = responseFilename || filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    },
+    delete: async (filename: string) => {
+      return apiClient.delete<{
+        success: boolean;
+        message: string;
+      }>(`/platform/backups/${filename}`);
+    },
+    restore: async (filename: string) => {
+      return apiClient.post<{
+        success: boolean;
+        message: string;
+      }>(`/platform/backups/${filename}/restore`);
+    },
+    uploadAndRestore: async (file: File) => {
+      const formData = new FormData();
+      formData.append('backup_file', file);
+      return apiClient.post('/platform/backups/upload-restore', formData, { headers: {} });
+    },
+  },
+
+  // Maintenance Mode
+  maintenance: {
+    getStatus: async () => {
+      return apiClient.get<{
+        success: boolean;
+        data: {
+          is_maintenance_mode: boolean;
+          message: string | null;
+          scheduled_end_at: string | null;
+          affected_services: string[];
+          current_log: {
+            id: string;
+            started_at: string;
+            started_by: {
+              id: string;
+              name: string;
+              email: string;
+            } | null;
+          } | null;
+        };
+      }>('/platform/maintenance/status');
+    },
+    enable: async (data: {
+      message?: string;
+      scheduled_end_at?: string;
+      affected_services?: string[];
+    }) => {
+      return apiClient.post<{
+        success: boolean;
+        message: string;
+        log_id: string;
+      }>('/platform/maintenance/enable', data);
+    },
+    disable: async () => {
+      return apiClient.post<{
+        success: boolean;
+        message: string;
+      }>('/platform/maintenance/disable');
+    },
+    history: async () => {
+      return apiClient.get<{
+        success: boolean;
+        data: Array<{
+          id: string;
+          message: string;
+          affected_services: string[];
+          started_at: string;
+          scheduled_end_at: string | null;
+          actual_end_at: string | null;
+          duration_minutes: number | null;
+          status: string;
+          started_by: {
+            name: string;
+            email: string;
+          } | null;
+          ended_by: {
+            name: string;
+            email: string;
+          } | null;
+        }>;
+      }>('/platform/maintenance/history');
+    },
   },
 };
 

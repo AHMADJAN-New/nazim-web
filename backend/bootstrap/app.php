@@ -20,6 +20,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // Add CORS middleware to global middleware stack
         $middleware->append(HandleCors::class);
         
+        // CRITICAL: Replace Laravel's default maintenance mode middleware with our custom one
+        // This allows login and platform admin routes to work during maintenance
+        $middleware->replace(
+            \Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance::class,
+            \App\Http\Middleware\CustomMaintenanceMode::class
+        );
+        
         $middleware->alias([
             'auth' => \App\Http\Middleware\Authenticate::class,
             'auth.sanctum' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
@@ -56,6 +63,103 @@ return Application::configure(basePath: dirname(__DIR__))
             }
             
             // Let Laravel handle other route not found errors normally
+            return null;
+        });
+        
+        // Handle maintenance mode for API routes - return JSON with message
+        // BUT allow login endpoints and platform admin routes to bypass maintenance mode
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException $e, \Illuminate\Http\Request $request) {
+            // Check if maintenance mode file exists to confirm this is maintenance mode
+            $maintenanceFilePath = storage_path('framework/down');
+            if (!\Illuminate\Support\Facades\File::exists($maintenanceFilePath)) {
+                // Not maintenance mode, let Laravel handle it
+                return null;
+            }
+            
+            // Get maintenance data from file
+            $maintenanceData = [];
+            try {
+                $maintenanceData = json_decode(\Illuminate\Support\Facades\File::get($maintenanceFilePath), true) ?? [];
+            } catch (\Exception $fileException) {
+                // Ignore file read errors
+            }
+            
+            // Check if bypass flag is set (from BypassMaintenanceForRoutes middleware)
+            if ($request->attributes->get('bypass_maintenance', false)) {
+                // Allow request to proceed - don't block it
+                return null;
+            }
+            
+            // Allow login endpoints to work during maintenance (so platform admins can log in)
+            $isLoginRoute = $request->is('api/auth/login') || 
+                           $request->is('api/auth/*') ||
+                           str_contains($request->path(), 'api/auth/login');
+            
+            if ($isLoginRoute) {
+                // Allow login to proceed - don't block it
+                return null;
+            }
+            
+            // Allow public maintenance status endpoint (so users can see maintenance page)
+            $isPublicMaintenanceStatus = $request->is('api/maintenance/status/public') ||
+                                        str_contains($request->path(), 'api/maintenance/status/public');
+            
+            if ($isPublicMaintenanceStatus) {
+                // Allow public maintenance status to proceed - users need to see maintenance info
+                return null;
+            }
+            
+            // Allow platform admin permissions endpoint (needed for frontend to check if user is platform admin)
+            // This endpoint is used to show/hide platform admin button in dashboard
+            // CRITICAL: Don't check $request->user() here because auth middleware might not have run yet
+            // The route itself requires auth:sanctum, so unauthenticated users will get 401 anyway
+            $path = $request->path(); // Returns path like "api/platform/permissions/platform-admin"
+            $isPlatformAdminPermissions = 
+                $request->is('api/platform/permissions/platform-admin') ||
+                $request->is('platform/permissions/platform-admin') ||
+                $path === 'api/platform/permissions/platform-admin' ||
+                $path === 'platform/permissions/platform-admin' ||
+                str_ends_with($path, 'platform/permissions/platform-admin') ||
+                str_contains($path, '/platform/permissions/platform-admin');
+            
+            if ($isPlatformAdminPermissions) {
+                // Allow platform admin permissions endpoint to bypass maintenance mode
+                // Authentication will be checked by auth:sanctum middleware
+                // Permission check will be done by platform.admin middleware
+                return null;
+            }
+            
+            // Allow ALL platform admin routes to bypass maintenance mode
+            // CRITICAL: Don't check $request->user() here because auth middleware might not have run yet
+            // The route itself requires auth:sanctum and platform.admin middleware, which will handle authentication and permission checks
+            $isPlatformAdminRoute = $request->is('api/platform/*') || 
+                                   $request->is('platform/*') ||
+                                   str_contains($request->path(), 'api/platform') ||
+                                   str_contains($request->path(), 'platform');
+            
+            if ($isPlatformAdminRoute) {
+                // Allow all platform admin routes to bypass maintenance mode
+                // Authentication and permission checks will be handled by auth:sanctum and platform.admin middleware
+                return null;
+            }
+            
+            // For API routes or JSON requests, return JSON response with maintenance message
+            if ($request->is('api/*') || $request->expectsJson()) {
+                $message = $maintenanceData['message'] ?? $e->getMessage() ?? 'We are performing scheduled maintenance. We\'ll be back soon!';
+                $retryAfter = $maintenanceData['retry'] ?? null;
+                $scheduledEnd = $maintenanceData['scheduled_end'] ?? $maintenanceData['scheduled_end_at'] ?? null;
+                
+                return response()->json([
+                    'message' => $message,
+                    'error' => $message,
+                    'retry_after' => $retryAfter,
+                    'retry' => $retryAfter,
+                    'scheduled_end' => $scheduledEnd,
+                    'scheduled_end_at' => $scheduledEnd,
+                ], 503);
+            }
+            
+            // For web routes, let Laravel handle it normally (will show HTML maintenance page)
             return null;
         });
     })->create();

@@ -5023,6 +5023,24 @@ export interface TranslationKeys {
         content: string;
       };
     };
+  // Maintenance Mode
+  maintenance: {
+    startedAt: string;
+    timeRemaining: string;
+    remaining: string;
+    affectedServices: string;
+    progress: string;
+    inProgress: string;
+    teamWorking: string;
+    refresh: string;
+    autoRefresh: string;
+    title: string;
+    defaultMessage: string;
+    scheduledEnd: string;
+    retryAfter: string;
+    seconds: string;
+    retry: string;
+    info: string;
   };
 }
 

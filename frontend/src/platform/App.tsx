@@ -12,8 +12,14 @@ import PlansManagement from './pages/admin/PlansManagement';
 import DiscountCodesManagement from './pages/admin/DiscountCodesManagement';
 import RenewalReviewPage from './pages/admin/RenewalReviewPage';
 import PlatformSettings from './pages/admin/PlatformSettings';
+import MaintenanceHistory from './pages/admin/MaintenanceHistory';
 import { PlatformPermissionGroupsManagement } from './pages/PlatformPermissionGroupsManagement';
 import HelpCenterManagement from './pages/admin/HelpCenterManagement';
+
+// Debug: Verify MaintenanceHistory is imported
+console.log('[App] MaintenanceHistory imported:', typeof MaintenanceHistory, MaintenanceHistory);
+console.log('[App] MaintenanceHistory is function?', typeof MaintenanceHistory === 'function');
+console.log('[App] MaintenanceHistory name:', MaintenanceHistory?.name);
 import { useAuth } from '@/hooks/useAuth';
 import { usePlatformAdminPermissions } from './hooks/usePlatformAdminPermissions';
 import { LoadingSpinner } from '@/components/ui/loading';
@@ -30,6 +36,11 @@ const queryClient = new QueryClient({
 function ProtectedPlatformLayout() {
   const { user, loading } = useAuth();
   const location = useLocation();
+  
+  // Debug: Log route changes
+  if (import.meta.env.DEV) {
+    console.log('[ProtectedPlatformLayout] Route:', location.pathname);
+  }
 
   const {
     data: permissions,
@@ -159,10 +170,22 @@ export function PlatformAdminApp() {
               <Route path="pending" element={<SubscriptionAdminDashboard />} />
               <Route path="admins" element={<PlatformAdminDashboard />} />
               <Route path="permission-groups" element={<PlatformPermissionGroupsManagement />} />
-
-              {/* ✅ This is the page you said doesn't render */}
               <Route path="settings" element={<PlatformSettings />} />
               <Route path="help-center" element={<HelpCenterManagement />} />
+              <Route 
+                path="maintenance-history" 
+                element={
+                  (() => {
+                    console.log('🔴 [App] Route matched! Rendering MaintenanceHistory');
+                    try {
+                      return <MaintenanceHistory />;
+                    } catch (error) {
+                      console.error('🔴 [App] Error rendering MaintenanceHistory:', error);
+                      return <div>Error: {String(error)}</div>;
+                    }
+                  })()
+                } 
+              />
 
               {/* Fallback inside platform */}
               <Route path="*" element={<Navigate to="dashboard" replace />} />

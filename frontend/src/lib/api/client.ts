@@ -74,16 +74,9 @@ class ApiClient {
     if (params) {
       // CRITICAL: Ensure params is a plain object, not a class instance or nested object
       if (typeof params !== 'object' || params === null || Array.isArray(params)) {
-        if (import.meta.env.DEV) {
-          console.warn('[ApiClient] buildUrl() - Invalid params type:', typeof params, params);
-        }
         return url.toString();
       }
 
-      if (import.meta.env.DEV) {
-        console.log('[ApiClient] buildUrl() - Processing params:', params);
-        console.log('[ApiClient] buildUrl() - Params entries:', Object.entries(params));
-      }
 
       Object.entries(params).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
@@ -96,10 +89,7 @@ class ApiClient {
             });
           } else if (typeof value === 'object') {
             // CRITICAL: If value is an object, stringify it (for nested objects)
-            // But this should not happen for query parameters - log a warning
-            if (import.meta.env.DEV) {
-              console.warn('[ApiClient] buildUrl() - Object value for key:', key, value);
-            }
+            // But this should not happen for query parameters
             url.searchParams.set(key, JSON.stringify(value));
           } else {
             // Convert booleans to 1/0 for better Laravel compatibility
@@ -111,13 +101,6 @@ class ApiClient {
       });
     }
 
-    if (import.meta.env.DEV) {
-      console.log('[ApiClient] buildUrl() - Final URL:', url.toString());
-      console.log('[ApiClient] buildUrl() - Search params:', url.searchParams.toString());
-      if (params?.q) {
-        console.log('[ApiClient] buildUrl() - Query param q:', url.searchParams.get('q'));
-      }
-    }
 
     return url.toString();
   }
@@ -151,24 +134,7 @@ class ApiClient {
     const params = options.params ? { ...options.params } : undefined;
     const { params: _, ...fetchOptions } = options;
     
-    // Debug logging
-    if (import.meta.env.DEV && params) {
-      console.log('[ApiClient] request() - endpoint:', endpoint);
-      console.log('[ApiClient] request() - params received:', params);
-      console.log('[ApiClient] request() - params type:', typeof params);
-      console.log('[ApiClient] request() - params is object:', params instanceof Object);
-      console.log('[ApiClient] request() - params keys:', Object.keys(params));
-    }
-    
     const url = this.buildUrl(endpoint, params);
-    
-    // Debug logging
-    if (import.meta.env.DEV) {
-      console.log('[ApiClient] request() - built URL:', url);
-      const urlObj = new URL(url);
-      console.log('[ApiClient] request() - URL search params:', urlObj.searchParams.toString());
-      console.log('[ApiClient] request() - URL search params entries:', Array.from(urlObj.searchParams.entries()));
-    }
 
     const headers: HeadersInit = {
       'Accept': 'application/json',
@@ -185,12 +151,6 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
-    // CRITICAL: Log the actual URL being fetched
-    if (import.meta.env.DEV) {
-      console.log('[ApiClient] fetch() - URL:', url);
-      console.log('[ApiClient] fetch() - Method:', fetchOptions.method || 'GET');
-      console.log('[ApiClient] fetch() - Headers:', headers);
-    }
 
     try {
       const response = await fetch(url, {
@@ -265,6 +225,73 @@ class ApiClient {
           throw subscriptionError;
         }
 
+        // Handle 503 maintenance mode errors
+        if (response.status === 503) {
+          // Extract maintenance message from Laravel's maintenance mode response
+          // Laravel returns JSON with 'message' field when Accept: application/json header is present
+          const maintenanceMessage = error.message || error.error || 'We are performing scheduled maintenance. We\'ll be back soon!';
+          const retryAfter = error.retry_after || error.retry || null;
+          const scheduledEnd = error.scheduled_end || error.scheduled_end_at || null;
+          
+          // Check if this is a platform admin route or login - backend should allow these through
+          // But if we still get 503, it means backend didn't allow it, so we should still handle it
+          const isPlatformAdminRoute = endpoint.includes('/platform/');
+          const isLoginRoute = endpoint.includes('/auth/login');
+          
+          // Dispatch maintenance mode event (for showing maintenance message)
+          if (typeof window !== 'undefined') {
+            // Use a debounced event dispatch to prevent multiple events
+            const lastEventTime = (window as any).__lastMaintenanceErrorTime || 0;
+            const now = Date.now();
+            
+            // Only dispatch if we haven't dispatched in the last 2 seconds
+            if (!lastEventTime || now - lastEventTime > 2000) {
+              (window as any).__lastMaintenanceErrorTime = now;
+              
+              window.dispatchEvent(new CustomEvent('maintenance-mode', {
+                detail: {
+                  message: maintenanceMessage,
+                  retryAfter,
+                  scheduledEnd,
+                }
+              }));
+            }
+          }
+          
+          // For platform admin routes, don't throw error - let them see the maintenance message but continue
+          // The backend should allow platform admin routes through, but if it doesn't, we still show the message
+          if (isPlatformAdminRoute) {
+            // Platform admin routes should be allowed by backend, but if we get here,
+            // we'll still show the maintenance message via the event above
+            // Don't throw error - let the route handler deal with it
+            const maintenanceError = new Error(maintenanceMessage);
+            (maintenanceError as any).isMaintenanceMode = true;
+            (maintenanceError as any).status = 503;
+            (maintenanceError as any).retryAfter = retryAfter;
+            (maintenanceError as any).scheduledEnd = scheduledEnd;
+            throw maintenanceError;
+          }
+          
+          // For login routes, backend should allow them through, but if we get 503, throw error
+          // This allows login to fail gracefully and show maintenance message
+          if (isLoginRoute) {
+            const maintenanceError = new Error(maintenanceMessage);
+            (maintenanceError as any).isMaintenanceMode = true;
+            (maintenanceError as any).status = 503;
+            (maintenanceError as any).retryAfter = retryAfter;
+            (maintenanceError as any).scheduledEnd = scheduledEnd;
+            throw maintenanceError;
+          }
+          
+          // For all other routes, throw maintenance error
+          const maintenanceError = new Error(maintenanceMessage);
+          (maintenanceError as any).isMaintenanceMode = true;
+          (maintenanceError as any).status = 503;
+          (maintenanceError as any).retryAfter = retryAfter;
+          (maintenanceError as any).scheduledEnd = scheduledEnd;
+          throw maintenanceError;
+        }
+
         // Create error but don't log expected 401s
         // Laravel may return error in 'error' field or 'message' field
         const errorMessage = error.message || error.error || `HTTP error! status: ${response.status}`;
@@ -300,13 +327,6 @@ class ApiClient {
           this.lastDevToolsWarning = now;
           // Only show if not in iframe (iframe errors are expected and non-critical)
           const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
-          if (!isInIframe) {
-            const devToolsMessage =
-              '⚠️ Request appears to be blocked by DevTools. ' +
-              'To fix: Open DevTools → Network tab → Disable "Disable cache" and any request blocking. ' +
-              'Then refresh the page.';
-            console.warn(devToolsMessage);
-          }
         }
       }
 
@@ -318,47 +338,7 @@ class ApiClient {
         // Check if it's a CORS or network issue
         const isNetworkError = !error.response && (error.message?.includes('Failed to fetch') || error.name === 'TypeError');
         if (isNetworkError) {
-          // Provide helpful error message with troubleshooting steps
-          const backendUrl = this.baseUrl.includes('localhost') || this.baseUrl.includes('127.0.0.1')
-            ? 'http://localhost:8000'
-            : this.baseUrl;
-
-          // Try to diagnose the issue
-          let diagnosis = '';
-          if (import.meta.env.DEV) {
-            // Check if it's a proxy issue
-            const isProxyIssue = this.baseUrl.startsWith('/api') && !this.baseUrl.includes('localhost');
-            
-            diagnosis = `\n\n🔍 Diagnosis:`;
-            if (isProxyIssue) {
-              diagnosis += `\n• Using Vite proxy (/api → http://localhost:8000/api)`;
-              diagnosis += `\n• If this fails, check Vite dev server is running and proxy is configured`;
-            } else {
-              diagnosis += `\n• Direct connection to: ${backendUrl}`;
-            }
-            
-            diagnosis += `\n\n📋 Troubleshooting steps:`;
-            diagnosis += `\n1. ✅ Check Laravel backend is running:`;
-            diagnosis += `\n   → Open terminal and run: cd backend && php artisan serve`;
-            diagnosis += `\n   → Should see: "Laravel development server started: http://127.0.0.1:8000"`;
-            diagnosis += `\n   → Test in browser: http://localhost:8000/up (should return JSON)`;
-            diagnosis += `\n\n2. ✅ Check Vite dev server is running:`;
-            diagnosis += `\n   → Should be running on http://localhost:5173`;
-            diagnosis += `\n   → Check Vite console for proxy errors`;
-            diagnosis += `\n\n3. ✅ Check DevTools Network tab:`;
-            diagnosis += `\n   → Disable "Disable cache" checkbox`;
-            diagnosis += `\n   → Check if request shows as "blocked" or "failed"`;
-            diagnosis += `\n   → Look for CORS errors in console`;
-            diagnosis += `\n\n4. ✅ Verify ports are not in use:`;
-            diagnosis += `\n   → Port 8000 (Laravel) should be free`;
-            diagnosis += `\n   → Port 5173 (Vite) should be free`;
-            diagnosis += `\n   → Check: netstat -ano | findstr :8000 (Windows) or lsof -i :8000 (Mac/Linux)`;
-            diagnosis += `\n\n5. ✅ Check firewall/antivirus:`;
-            diagnosis += `\n   → May be blocking localhost connections`;
-            diagnosis += `\n   → Try temporarily disabling to test`;
-          }
-
-          const errorMessage = `Network error: Unable to connect to API server at ${this.baseUrl}.${diagnosis}`;
+          const errorMessage = `Network error: Unable to connect to API server at ${this.baseUrl}`;
           throw new Error(errorMessage);
         }
       }
@@ -466,6 +446,22 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient(API_URL);
+
+// Maintenance API (public - no auth required)
+export const maintenanceApi = {
+  getPublicStatus: async () => {
+    return apiClient.get<{
+      success: boolean;
+      data: {
+        is_maintenance_mode: boolean;
+        message: string | null;
+        scheduled_end_at: string | null;
+        started_at: string | null;
+        affected_services: string[];
+      };
+    }>('/maintenance/status/public');
+  },
+};
 
 // Auth API
 export const authApi = {
@@ -590,9 +586,6 @@ export const organizationsApi = {
       return response.json();
     } catch (error) {
       // If fetch fails (network error, CORS, etc.), return empty array
-      if (import.meta.env.DEV) {
-        console.warn('Could not fetch public organizations list:', error);
-      }
       return [];
     }
   },
@@ -4232,34 +4225,13 @@ export const eventGuestsApi = {
     // Explicitly append file with name to ensure Android Chrome compatibility
     formData.append('photo', file, file.name);
     
-    if (import.meta.env.DEV) {
-      console.log('[uploadPhoto] Uploading file:', {
-        guestId,
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-      });
-    }
-    
     try {
       const result = await apiClient.post<{ photo_url: string; photo_thumb_url: string }>(`/guests/${guestId}/photo`, formData, {
         headers: {}, // Let browser set Content-Type with boundary (important for Android Chrome)
       });
       
-      if (import.meta.env.DEV) {
-        console.log('[uploadPhoto] Upload successful:', result);
-      }
-      
       return result;
     } catch (error: any) {
-      if (import.meta.env.DEV) {
-        console.error('[uploadPhoto] Upload failed:', error);
-        console.error('[uploadPhoto] Error details:', {
-          message: error?.message,
-          response: error?.response,
-          status: error?.status,
-        });
-      }
       throw error;
     }
   },

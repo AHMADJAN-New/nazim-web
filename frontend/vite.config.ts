@@ -32,6 +32,7 @@ export default defineConfig({
       'react-dom',
       '@tanstack/react-table',
       'recharts',
+      'jszip',
     ],
     exclude: [
       'pdfmake-arabic',
@@ -69,6 +70,12 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
+        ws: true, // Enable WebSocket proxying
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, res) => {
+            console.log('proxy error', err);
+          });
+        },
       },
     },
   },

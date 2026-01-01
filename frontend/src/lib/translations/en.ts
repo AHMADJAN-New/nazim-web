@@ -4502,5 +4502,23 @@ export const en: TranslationKeys = {
       title: 'Contact Us',
       content: 'If you have any questions about these Terms of Service, please contact us at support@nazimapp.com or through our contact form.',
     },
+  // Maintenance Mode
+  maintenance: {
+    title: 'System Under Maintenance',
+    defaultMessage: 'We are performing scheduled maintenance. We\'ll be back soon!',
+    scheduledEnd: 'Scheduled Completion',
+    startedAt: 'Maintenance Started',
+    timeRemaining: 'Time Remaining',
+    remaining: 'remaining',
+    affectedServices: 'Affected Services',
+    progress: 'Maintenance Progress',
+    inProgress: 'Maintenance in Progress',
+    teamWorking: 'Our team is working hard to restore service',
+    refresh: 'Refresh Page',
+    retryAfter: 'You can try again in',
+    seconds: 'seconds',
+    retry: 'Retry Connection',
+    autoRefresh: 'This page will automatically refresh every 30 seconds',
+    info: 'We apologize for any inconvenience. Our team is working hard to restore service as quickly as possible. Thank you for your patience.',
   },
 };
