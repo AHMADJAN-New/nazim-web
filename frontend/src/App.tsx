@@ -75,6 +75,7 @@ import {
   StudentAdmissions,
   StudentReport,
   StudentAdmissionsReport,
+  NotificationsPage,
   ShortTermCourses,
   CourseStudents,
   CourseStudentReports,
@@ -339,6 +340,13 @@ const App = () => (
                       <Suspense fallback={<PageSkeleton />}>
                         <UserSettings />
                       </Suspense>
+                    } />
+                    <Route path="/notifications" element={
+                      <PermissionRoute permission="notifications.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <NotificationsPage />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/academic/timetable-generation" element={
                       <PermissionRoute permission="timetables.read">

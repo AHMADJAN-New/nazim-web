@@ -6,6 +6,7 @@ export const Dashboard = lazy(() => import('@/pages/Dashboard'));
 export const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
 export const UserProfile = lazy(() => import('@/pages/UserProfile'));
 export const UserSettings = lazy(() => import('@/pages/UserSettings'));
+export const NotificationsPage = lazy(() => import('@/pages/Notifications'));
 
 // Lazy load settings components
 export const BuildingsManagement = lazy(() => import('@/components/settings/BuildingsManagement').then(module => ({ default: module.BuildingsManagement })));

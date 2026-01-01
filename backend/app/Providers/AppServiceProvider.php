@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\Organization;
 use App\Observers\OrganizationObserver;
+use App\Services\Notifications\NotificationRuleRegistry;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -14,7 +16,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(NotificationRuleRegistry::class, function () {
+            return new NotificationRuleRegistry();
+        });
+
+        $this->app->singleton(NotificationService::class, function ($app) {
+            return new NotificationService($app->make(NotificationRuleRegistry::class));
+        });
     }
 
     /**

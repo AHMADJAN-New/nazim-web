@@ -87,6 +87,7 @@ use App\Http\Controllers\Dms\LetterTypesController;
 use App\Http\Controllers\Dms\OutgoingDocumentsController;
 use App\Http\Controllers\StorageController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -153,6 +154,12 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     Route::get('/storage/info/{encodedPath}', [StorageController::class, 'info'])
         ->where('encodedPath', '.*')
         ->name('storage.info');
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
 
     // Organizations (protected - all operations require authentication)
     Route::get('/organizations', [OrganizationController::class, 'index']);

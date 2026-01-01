@@ -98,6 +98,7 @@ class PermissionSeeder extends Seeder
             'exam_documents' => ['read', 'create', 'update', 'delete'],
             'finance_documents' => ['read', 'create', 'update', 'delete'],
             'phonebook' => ['read'],
+            'notifications' => ['read', 'update', 'manage_preferences'],
             // ID Cards permissions
             'id_cards' => ['read', 'create', 'update', 'delete', 'export'],
             // Finance Module permissions
@@ -163,6 +164,7 @@ class PermissionSeeder extends Seeder
                 'staff.read',
                 'classes.read',
                 'subjects.read',
+                'notifications.read', 'notifications.update', 'notifications.manage_preferences',
                 // Subscription - all roles can read their own subscription
                 'subscription.read',
                 // Exam permissions for staff - can manage enrollment and view reports
@@ -209,6 +211,7 @@ class PermissionSeeder extends Seeder
                 'students.read',
                 'classes.read',
                 'subjects.read', 'subjects.create', 'subjects.update',
+                'notifications.read', 'notifications.update', 'notifications.manage_preferences',
                 // Subscription - all roles can read their own subscription
                 'subscription.read',
                 // Exam permissions for teachers - full exam management including marks entry and attendance
@@ -263,6 +266,7 @@ class PermissionSeeder extends Seeder
                 'students.read',
                 'classes.read',
                 'subjects.read',
+                'notifications.read', 'notifications.update', 'notifications.manage_preferences',
                 // Subscription - all roles can read their own subscription
                 'subscription.read',
                 'exams.read', 'exams.create', 'exams.update', 'exams.assign', 'exams.manage',
@@ -292,6 +296,7 @@ class PermissionSeeder extends Seeder
                 'rooms.read', 'rooms.create', 'rooms.update',
                 'student_admissions.read', 'student_admissions.update',
                 'reports.read',
+                'notifications.read', 'notifications.update',
                 // Subscription - all roles can read their own subscription
                 'subscription.read',
             ],
@@ -303,6 +308,7 @@ class PermissionSeeder extends Seeder
                 'students.read',
                 'staff.read',
                 'profiles.read',
+                'notifications.read', 'notifications.update', 'notifications.manage_preferences',
                 // DMS permissions for librarians - can manage all documents
                 'dms.incoming.read', 'dms.incoming.create', 'dms.incoming.update',
                 'dms.outgoing.read', 'dms.outgoing.create', 'dms.outgoing.update', 'dms.outgoing.generate_pdf',

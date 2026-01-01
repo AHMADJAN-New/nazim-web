@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { formatDate, formatDateTime } from '@/lib/utils';
 import { useNavigate } from "react-router-dom";
 import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, School, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,13 +24,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotificationCount } from "@/hooks/useNotifications";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useSchools } from "@/hooks/useSchools";
 import { useSchoolContext } from "@/contexts/SchoolContext";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { authApi, apiClient } from "@/lib/api/client";
 import { showToast } from "@/lib/toast";
+import { NotificationDrawer } from "@/components/notifications/NotificationDrawer";
 
 interface UserProfile {
   full_name: string;
@@ -55,8 +55,8 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const [isInlineDropdownOpen, setIsInlineDropdownOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
-  // Use React Query hook for notifications (properly cached)
-  const { data: notifications = [] } = useNotifications();
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const { data: unreadCount } = useNotificationCount();
 
   const queryClient = useQueryClient();
   const { data: schools = [] } = useSchools(authProfile?.organization_id ?? undefined);
@@ -173,7 +173,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
     avatar_url: authProfile.avatar_url,
   } : null;
 
-  const unreadNotifications = notifications.filter(n => !n.is_read).length;
+  const unreadNotifications = unreadCount?.count ?? 0;
 
   const languages = [
     { code: "en" as const, name: "English", flag: "🇺🇸" },
@@ -429,48 +429,22 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
           </Button>
 
           {/* Notifications */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="relative">
-                <Bell className="h-4 w-4" />
-                {unreadNotifications > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center"
-                  >
-                    {unreadNotifications}
-                  </Badge>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>{t('common.notifications')}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {notifications.length > 0 ? (
-                notifications.map((notification) => (
-                  <DropdownMenuItem key={notification.id} className="flex-col items-start p-3">
-                    <div className="flex items-center justify-between w-full">
-                      <span className="font-medium text-sm">{notification.title}</span>
-                      {!notification.is_read && (
-                        <Badge variant="secondary" className="text-xs">New</Badge>
-                      )}
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDateTime(notification.created_at)}
-                    </span>
-                  </DropdownMenuItem>
-                ))
-              ) : (
-                <DropdownMenuItem className="text-center text-muted-foreground">
-                  No new notifications
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-center">
-                <span className="text-sm text-primary">View all notifications</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="relative"
+            onClick={() => setIsNotificationsOpen(true)}
+          >
+            <Bell className="h-4 w-4" />
+            {unreadNotifications > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center"
+              >
+                {unreadNotifications}
+              </Badge>
+            )}
+          </Button>
 
           {/* User Profile */}
           <DropdownMenu>
@@ -528,6 +502,11 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
           </DropdownMenu>
         </div>
       </div>
+
+      <NotificationDrawer
+        open={isNotificationsOpen}
+        onOpenChange={setIsNotificationsOpen}
+      />
     </header>
   );
 }

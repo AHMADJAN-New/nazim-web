@@ -187,6 +187,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 26: Seeding fee assignments...');
         $this->call(FeeAssignmentSeeder::class);
 
+        // Step 27: Seed notification samples
+        $this->command->info('Step 27: Seeding notification samples...');
+        $this->call(NotificationSeeder::class);
+
         $this->command->info('');
         $this->command->info('✅ Database seeding completed successfully!');
         $this->command->info('');
