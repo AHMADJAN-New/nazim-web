@@ -307,5 +307,130 @@ export const platformApi = {
   processTransitions: async () => {
     return apiClient.post<{ data: { to_grace_period: number; to_readonly: number; to_expired: number } }>('/platform/process-transitions');
   },
+
+  // Testimonials
+  testimonials: {
+    list: async () => {
+      return apiClient.get<{ data: Array<{
+        id: string;
+        name: string;
+        role?: string;
+        organization?: string;
+        content: string;
+        image_url?: string;
+        rating: number;
+        sort_order: number;
+        is_active: boolean;
+        created_at: string;
+        updated_at: string;
+      }> }>('/platform/testimonials');
+    },
+    create: async (data: {
+      name: string;
+      role?: string;
+      organization?: string;
+      content: string;
+      image_url?: string;
+      rating: number;
+      sort_order?: number;
+      is_active?: boolean;
+    }) => {
+      return apiClient.post<{ data: any }>('/platform/testimonials', data);
+    },
+    update: async (id: string, data: Partial<{
+      name: string;
+      role?: string;
+      organization?: string;
+      content: string;
+      image_url?: string;
+      rating: number;
+      sort_order?: number;
+      is_active?: boolean;
+    }>) => {
+      return apiClient.put<{ data: any }>(`/platform/testimonials/${id}`, data);
+    },
+    get: async (id: string) => {
+      return apiClient.get<{ data: any }>(`/platform/testimonials/${id}`);
+    },
+    delete: async (id: string) => {
+      return apiClient.delete(`/platform/testimonials/${id}`);
+    },
+  },
+
+  // Contact Messages
+  contactMessages: {
+    list: async (params?: { status?: string; search?: string; page?: number; per_page?: number }) => {
+      return apiClient.get<{
+        data: Array<{
+          id: string;
+          first_name: string;
+          last_name: string;
+          email: string;
+          phone?: string | null;
+          school_name?: string | null;
+          student_count?: number | null;
+          message: string;
+          status: 'new' | 'read' | 'replied' | 'archived';
+          admin_notes?: string | null;
+          replied_by?: string | null;
+          replied_at?: string | null;
+          reply_subject?: string | null;
+          reply_message?: string | null;
+          source: string;
+          created_at: string;
+          updated_at: string;
+        }>;
+        current_page: number;
+        last_page: number;
+        total: number;
+        per_page: number;
+      }>('/platform/contact-messages', params);
+    },
+    get: async (id: string) => {
+      return apiClient.get<{ data: any }>(`/platform/contact-messages/${id}`);
+    },
+    update: async (id: string, data: Partial<{
+      status?: 'new' | 'read' | 'replied' | 'archived';
+      admin_notes?: string;
+      reply_subject?: string;
+      reply_message?: string;
+    }>) => {
+      return apiClient.put<{ data: any }>(`/platform/contact-messages/${id}`, data);
+    },
+    delete: async (id: string) => {
+      return apiClient.delete(`/platform/contact-messages/${id}`);
+    },
+    stats: async () => {
+      return apiClient.get<{ data: {
+        total: number;
+        new: number;
+        read: number;
+        replied: number;
+        archived: number;
+        today: number;
+        this_week: number;
+        this_month: number;
+      } }>('/platform/contact-messages/stats');
+    },
+  },
+
+  // Generic request method for custom endpoints
+  request: async <T = any>(endpoint: string, options?: { method?: string; body?: string | object; params?: Record<string, string> }) => {
+    const method = options?.method || 'GET';
+    const params = options?.params;
+    
+    if (method === 'GET') {
+      return apiClient.get<T>(endpoint, params);
+    } else if (method === 'POST') {
+      const body = typeof options?.body === 'string' ? JSON.parse(options.body) : options?.body;
+      return apiClient.post<T>(endpoint, body);
+    } else if (method === 'PUT') {
+      const body = typeof options?.body === 'string' ? JSON.parse(options.body) : options?.body;
+      return apiClient.put<T>(endpoint, body);
+    } else if (method === 'DELETE') {
+      return apiClient.delete<T>(endpoint);
+    }
+    throw new Error(`Unsupported method: ${method}`);
+  },
 };
 

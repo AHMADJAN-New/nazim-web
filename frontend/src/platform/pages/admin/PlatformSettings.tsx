@@ -11,6 +11,7 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
+  MessageSquare,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
@@ -68,6 +69,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { platformApi } from '@/platform/lib/platformApi';
+import { TestimonialsManagement } from '@/platform/components/TestimonialsManagement';
+import { ContactMessagesManagement } from '@/platform/components/ContactMessagesManagement';
 
 // Validation schema for platform user (password optional for updates)
 const platformUserSchema = z.object({
@@ -369,6 +372,14 @@ export default function PlatformSettings() {
             <Users className="mr-2 h-4 w-4" />
             Platform Users
           </TabsTrigger>
+          <TabsTrigger value="testimonials">
+            <MessageSquare className="mr-2 h-4 w-4" />
+            Testimonials
+          </TabsTrigger>
+          <TabsTrigger value="messages">
+            <Mail className="mr-2 h-4 w-4" />
+            Contact Messages
+          </TabsTrigger>
           <TabsTrigger value="system">
             <Settings className="mr-2 h-4 w-4" />
             System Settings
@@ -485,6 +496,16 @@ export default function PlatformSettings() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Testimonials Tab */}
+        <TabsContent value="testimonials" className="space-y-6">
+          <TestimonialsManagement />
+        </TabsContent>
+
+        {/* Contact Messages Tab */}
+        <TabsContent value="messages" className="space-y-6">
+          <ContactMessagesManagement />
         </TabsContent>
 
         {/* System Settings Tab */}

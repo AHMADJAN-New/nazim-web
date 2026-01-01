@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DiscountCode;
+use App\Models\FeatureDefinition;
 use App\Models\OrganizationSubscription;
 use App\Models\PaymentRecord;
 use App\Models\RenewalRequest;
@@ -24,6 +25,29 @@ class SubscriptionController extends Controller
     ) {}
 
     /**
+     * Get all available features (public endpoint for landing page)
+     */
+    public function allFeatures(Request $request)
+    {
+        $features = FeatureDefinition::active()
+            ->orderBy('category')
+            ->orderBy('sort_order')
+            ->get();
+
+        return response()->json([
+            'data' => $features->map(function ($feature) {
+                return [
+                    'feature_key' => $feature->feature_key,
+                    'name' => $feature->name,
+                    'description' => $feature->description,
+                    'category' => $feature->category,
+                    'is_addon' => $feature->is_addon,
+                ];
+            }),
+        ]);
+    }
+
+    /**
      * Get available subscription plans
      */
     public function plans(Request $request)
@@ -39,15 +63,23 @@ class SubscriptionController extends Controller
                     'description' => $plan->description,
                     'price_yearly_afn' => $plan->price_yearly_afn,
                     'price_yearly_usd' => $plan->price_yearly_usd,
+                    'is_active' => $plan->is_active,
                     'is_default' => $plan->is_default,
+                    'is_custom' => $plan->is_custom,
                     'trial_days' => $plan->trial_days,
+                    'grace_period_days' => $plan->grace_period_days,
+                    'readonly_period_days' => $plan->readonly_period_days,
                     'max_schools' => $plan->max_schools,
                     'per_school_price_afn' => $plan->per_school_price_afn,
                     'per_school_price_usd' => $plan->per_school_price_usd,
+                    'sort_order' => $plan->sort_order,
                     'features' => $plan->enabledFeatures()->pluck('feature_key'),
                     'limits' => $plan->limits->mapWithKeys(function ($limit) {
                         return [$limit->resource_key => $limit->limit_value];
                     }),
+                    'created_at' => $plan->created_at->toISOString(),
+                    'updated_at' => $plan->updated_at->toISOString(),
+                    'deleted_at' => $plan->deleted_at?->toISOString(),
                 ];
             }),
         ]);
