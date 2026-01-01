@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Organization;
 use App\Models\OrganizationSubscription;
+use App\Services\Notifications\NotificationService;
 use App\Services\Subscription\SubscriptionNotificationService;
 use App\Services\Subscription\SubscriptionService;
 use Carbon\Carbon;
@@ -22,7 +24,8 @@ class ProcessSubscriptionTransitions extends Command
 
     public function __construct(
         private SubscriptionService $subscriptionService,
-        private SubscriptionNotificationService $notificationService
+        private SubscriptionNotificationService $notificationService,
+        private NotificationService $inAppNotificationService
     ) {
         parent::__construct();
     }
@@ -89,6 +92,30 @@ class ProcessSubscriptionTransitions extends Command
                     $subscription->organization_id,
                     $graceDays
                 );
+                
+                // Also send in-app notification
+                try {
+                    $organization = Organization::find($subscription->organization_id);
+                    if ($organization) {
+                        $this->inAppNotificationService->notify(
+                            'subscription.expired',
+                            $organization,
+                            null, // System-triggered
+                            [
+                                'title' => '⚠️ Subscription Expired - Grace Period Started',
+                                'body' => "Your subscription has expired. You have {$graceDays} days of grace period remaining.",
+                                'url' => '/subscription',
+                                'level' => 'critical',
+                            ]
+                        );
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to send in-app subscription notification', [
+                        'organization_id' => $subscription->organization_id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+                
                 $this->line("  - Sent grace period start notification to org: {$subscription->organization_id}");
             }
         }
@@ -117,6 +144,30 @@ class ProcessSubscriptionTransitions extends Command
 
             foreach ($subscriptions as $subscription) {
                 $this->notificationService->sendAccountSuspended($subscription->organization_id);
+                
+                // Also send in-app notification
+                try {
+                    $organization = Organization::find($subscription->organization_id);
+                    if ($organization) {
+                        $this->inAppNotificationService->notify(
+                            'subscription.expired',
+                            $organization,
+                            null, // System-triggered
+                            [
+                                'title' => '🚫 Account Blocked',
+                                'body' => 'Your subscription has expired and your account has been blocked. Please renew to restore access.',
+                                'url' => '/subscription',
+                                'level' => 'critical',
+                            ]
+                        );
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to send in-app subscription notification', [
+                        'organization_id' => $subscription->organization_id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+                
                 $this->line("  - Sent account suspended notification to org: {$subscription->organization_id}");
             }
         }
@@ -147,6 +198,29 @@ class ProcessSubscriptionTransitions extends Command
                             $subscription->organization_id,
                             $days
                         );
+                        
+                        // Also send in-app notification
+                        try {
+                            $organization = Organization::find($subscription->organization_id);
+                            if ($organization) {
+                                $this->inAppNotificationService->notify(
+                                    'subscription.expiring_soon',
+                                    $organization,
+                                    null, // System-triggered
+                                    [
+                                        'title' => '⏰ Subscription Expiring Soon',
+                                        'body' => "Your subscription expires in {$days} day(s). Please renew to avoid service interruption.",
+                                        'url' => '/subscription',
+                                        'level' => 'warning',
+                                    ]
+                                );
+                            }
+                        } catch (\Exception $e) {
+                            \Log::warning('Failed to send in-app subscription notification', [
+                                'organization_id' => $subscription->organization_id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
                     }
                     $this->line("  - " . ($dryRun ? '[DRY RUN] Would notify ' : 'Notified ') . "org: {$subscription->organization_id}");
                 }

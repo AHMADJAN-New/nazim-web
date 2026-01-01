@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Exam;
 use App\Models\AcademicYear;
 use App\Models\GraduationBatch;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +13,10 @@ use Illuminate\Validation\Rule;
 
 class ExamController extends Controller
 {
+    public function __construct(
+        private NotificationService $notificationService
+    ) {
+    }
     /**
      * Get all exams for the organization
      */
@@ -128,6 +133,26 @@ class ExamController extends Controller
         ]);
 
         $exam->load(['academicYear']);
+
+        // Notify about exam creation
+        try {
+            $academicYearName = $exam->academicYear?->name ?? 'Academic Year';
+            $this->notificationService->notify(
+                'exam.created',
+                $exam,
+                $user,
+                [
+                    'title' => '📝 New Exam Created',
+                    'body' => "Exam '{$exam->name}' has been created for {$academicYearName}.",
+                    'url' => "/exams/{$exam->id}",
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to send exam creation notification', [
+                'exam_id' => $exam->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json($exam, 201);
     }
@@ -263,10 +288,51 @@ class ExamController extends Controller
             }
         }
 
+        // Track old status for status change notification
+        $oldStatus = $exam->status;
+        
         $exam->fill($validated);
         $exam->save();
 
         $exam->load(['academicYear']);
+
+        // Notify if exam is published (status changed to scheduled) or marks published (status changed to completed)
+        try {
+            if (isset($validated['status'])) {
+                if ($validated['status'] === Exam::STATUS_SCHEDULED && $oldStatus !== Exam::STATUS_SCHEDULED) {
+                    $academicYearName = $exam->academicYear?->name ?? 'Academic Year';
+                    $this->notificationService->notify(
+                        'exam.published',
+                        $exam,
+                        $user,
+                        [
+                            'title' => '📢 Exam Published',
+                            'body' => "Exam '{$exam->name}' has been published and is now visible to students.",
+                            'url' => "/exams/{$exam->id}",
+                        ]
+                    );
+                }
+
+                if ($validated['status'] === Exam::STATUS_COMPLETED && $oldStatus !== Exam::STATUS_COMPLETED) {
+                    $academicYearName = $exam->academicYear?->name ?? 'Academic Year';
+                    $this->notificationService->notify(
+                        'exam.marks_published',
+                        $exam,
+                        $user,
+                        [
+                            'title' => '✅ Exam Results Published',
+                            'body' => "Results for exam '{$exam->name}' are now available.",
+                            'url' => "/exams/{$exam->id}/results",
+                        ]
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to send exam notification', [
+                'exam_id' => $exam->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json($exam);
     }
@@ -436,10 +502,48 @@ class ExamController extends Controller
             }
         }
 
+        $oldStatus = $exam->status;
         $exam->status = $newStatus;
         $exam->save();
 
         $exam->load(['academicYear']);
+
+        // Notify if exam is published (status changed to scheduled)
+        try {
+            if ($newStatus === Exam::STATUS_SCHEDULED && $oldStatus !== Exam::STATUS_SCHEDULED) {
+                $academicYearName = $exam->academicYear?->name ?? 'Academic Year';
+                $this->notificationService->notify(
+                    'exam.published',
+                    $exam,
+                    $user,
+                    [
+                        'title' => '📢 Exam Published',
+                        'body' => "Exam '{$exam->name}' has been published and is now visible to students.",
+                        'url' => "/exams/{$exam->id}",
+                    ]
+                );
+            }
+
+            // Notify when marks are published (status changed to completed)
+            if ($newStatus === Exam::STATUS_COMPLETED && $oldStatus !== Exam::STATUS_COMPLETED) {
+                $academicYearName = $exam->academicYear?->name ?? 'Academic Year';
+                $this->notificationService->notify(
+                    'exam.marks_published',
+                    $exam,
+                    $user,
+                    [
+                        'title' => '✅ Exam Results Published',
+                        'body' => "Results for exam '{$exam->name}' are now available.",
+                        'url' => "/exams/{$exam->id}/results",
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to send exam notification', [
+                'exam_id' => $exam->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'message' => "Exam status changed to '{$newStatus}'",

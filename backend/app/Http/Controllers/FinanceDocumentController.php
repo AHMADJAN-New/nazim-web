@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FinanceDocument;
 use App\Services\Storage\FileStorageService;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -11,7 +12,8 @@ use Illuminate\Support\Facades\Log;
 class FinanceDocumentController extends Controller
 {
     public function __construct(
-        private FileStorageService $fileStorageService
+        private FileStorageService $fileStorageService,
+        private NotificationService $notificationService
     ) {}
     
     private function getProfile($user)
@@ -165,6 +167,38 @@ class FinanceDocumentController extends Controller
             'file_size' => $file->getSize(),
             'uploaded_by' => (string) $user->id,
         ]);
+
+        // Send notification when invoice document is created
+        try {
+            if ($document->document_type === 'invoice') {
+                $amountText = $document->amount ? number_format((float)$document->amount, 2) : '';
+                $referenceText = $document->reference_number ? " (#{$document->reference_number})" : '';
+                
+                $body = "Invoice document '{$document->title}'{$referenceText}";
+                if ($amountText) {
+                    $body .= " for {$amountText}";
+                }
+                $body .= " has been uploaded.";
+                
+                $this->notificationService->notify(
+                    'invoice.created',
+                    $document,
+                    $user,
+                    [
+                        'title' => '📄 Invoice Document Created',
+                        'body' => $body,
+                        'url' => "/finance/documents/{$document->id}",
+                        'exclude_actor' => false, // Include the creator so they see confirmation
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the request
+            Log::warning('Failed to send invoice.created notification for document', [
+                'document_id' => $document->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json($document, 201);
     }

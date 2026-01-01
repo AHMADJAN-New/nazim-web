@@ -4,12 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\FinanceProject;
 use App\Models\Currency;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class FinanceProjectController extends Controller
 {
+    public function __construct(
+        private NotificationService $notificationService
+    ) {}
     /**
      * Display a listing of finance projects
      */
@@ -258,6 +263,63 @@ class FinanceProjectController extends Controller
 
             $project->update($validated);
             $project->load('currency');
+
+            // Check for budget warnings if budget is set
+            try {
+                if ($project->budget_amount && $project->budget_amount > 0) {
+                    $totals = $project->recalculateTotals();
+                    $totalExpense = $totals['total_expense'] ?? 0;
+                    $budgetAmount = (float)$project->budget_amount;
+                    $percentageUsed = ($totalExpense / $budgetAmount) * 100;
+                    
+                    // Warn if budget is 80% or more used
+                    if ($percentageUsed >= 80 && $percentageUsed < 100) {
+                        $currencySymbol = $project->currency->symbol ?? $project->currency->code ?? '';
+                        $expenseFormatted = number_format($totalExpense, 2) . ' ' . $currencySymbol;
+                        $budgetFormatted = number_format($budgetAmount, 2) . ' ' . $currencySymbol;
+                        $remainingFormatted = number_format($budgetAmount - $totalExpense, 2) . ' ' . $currencySymbol;
+                        
+                        $this->notificationService->notify(
+                            'invoice.overdue', // Using invoice.overdue for budget warnings (it's a digest event)
+                            $project,
+                            $request->user(),
+                            [
+                                'title' => '⚠️ Project Budget Warning',
+                                'body' => "Project '{$project->name}' has used {$percentageUsed}% of budget ({$expenseFormatted} / {$budgetFormatted}). Remaining: {$remainingFormatted}.",
+                                'url' => "/finance/projects/{$project->id}",
+                                'level' => 'warning',
+                                'exclude_actor' => false,
+                            ]
+                        );
+                    }
+                    // Critical if budget is exceeded
+                    elseif ($percentageUsed >= 100) {
+                        $currencySymbol = $project->currency->symbol ?? $project->currency->code ?? '';
+                        $expenseFormatted = number_format($totalExpense, 2) . ' ' . $currencySymbol;
+                        $budgetFormatted = number_format($budgetAmount, 2) . ' ' . $currencySymbol;
+                        $overBudget = number_format($totalExpense - $budgetAmount, 2) . ' ' . $currencySymbol;
+                        
+                        $this->notificationService->notify(
+                            'invoice.overdue', // Using invoice.overdue for budget exceeded (it's a digest event)
+                            $project,
+                            $request->user(),
+                            [
+                                'title' => '🚨 Project Budget Exceeded',
+                                'body' => "Project '{$project->name}' has exceeded its budget by {$overBudget} ({$expenseFormatted} / {$budgetFormatted}).",
+                                'url' => "/finance/projects/{$project->id}",
+                                'level' => 'critical',
+                                'exclude_actor' => false,
+                            ]
+                        );
+                    }
+                }
+            } catch (\Exception $e) {
+                // Log error but don't fail the request
+                Log::warning('Failed to send budget warning notification', [
+                    'project_id' => $project->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return response()->json($project);
         } catch (\Illuminate\Validation\ValidationException $e) {

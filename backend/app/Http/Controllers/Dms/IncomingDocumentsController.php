@@ -6,6 +6,7 @@ use App\Models\IncomingDocument;
 use App\Models\DocumentFile;
 use App\Models\DocumentSetting;
 use App\Services\DocumentNumberingService;
+use App\Services\Notifications\NotificationService;
 use App\Services\SecurityGateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,8 @@ class IncomingDocumentsController extends BaseDmsController
 {
     public function __construct(
         private DocumentNumberingService $numberingService,
-        private SecurityGateService $securityGateService
+        private SecurityGateService $securityGateService,
+        private NotificationService $notificationService
     ) {
     }
 
@@ -175,6 +177,27 @@ class IncomingDocumentsController extends BaseDmsController
 
         $doc = IncomingDocument::create($data);
 
+        // Notify if document is assigned to a user
+        try {
+            if ($doc->assigned_to_user_id) {
+                $this->notificationService->notify(
+                    'doc.assigned',
+                    $doc,
+                    $user,
+                    [
+                        'title' => '📄 Document Assigned',
+                        'body' => "Document '{$doc->subject}' ({$doc->full_indoc_number}) has been assigned to you.",
+                        'url' => "/dms/incoming/{$doc->id}",
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send document assignment notification', [
+                'document_id' => $doc->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return response()->json($doc, 201);
     }
 
@@ -233,9 +256,63 @@ class IncomingDocumentsController extends BaseDmsController
             'notes' => ['nullable', 'string'],
         ]);
 
+        // Track old status and assigned_to_user_id for notifications
+        $oldStatus = $doc->status;
+        $oldAssignedTo = $doc->assigned_to_user_id;
+
         $doc->fill($data);
         $doc->updated_by = $user->id;
         $doc->save();
+
+        // Notify about status changes and assignments
+        try {
+            // Notify if document is newly assigned
+            if (isset($data['assigned_to_user_id']) && $data['assigned_to_user_id'] && $data['assigned_to_user_id'] !== $oldAssignedTo) {
+                $this->notificationService->notify(
+                    'doc.assigned',
+                    $doc,
+                    $user,
+                    [
+                        'title' => '📄 Document Assigned',
+                        'body' => "Document '{$doc->subject}' ({$doc->full_indoc_number}) has been assigned to you.",
+                        'url' => "/dms/incoming/{$doc->id}",
+                    ]
+                );
+            }
+
+            // Notify if document is approved
+            if (isset($data['status']) && $data['status'] === 'approved' && $oldStatus !== 'approved') {
+                $this->notificationService->notify(
+                    'doc.approved',
+                    $doc,
+                    $user,
+                    [
+                        'title' => '✅ Document Approved',
+                        'body' => "Document '{$doc->subject}' ({$doc->full_indoc_number}) has been approved.",
+                        'url' => "/dms/incoming/{$doc->id}",
+                    ]
+                );
+            }
+
+            // Notify if document is returned
+            if (isset($data['status']) && $data['status'] === 'returned' && $oldStatus !== 'returned') {
+                $this->notificationService->notify(
+                    'doc.returned',
+                    $doc,
+                    $user,
+                    [
+                        'title' => '↩️ Document Returned',
+                        'body' => "Document '{$doc->subject}' ({$doc->full_indoc_number}) has been returned.",
+                        'url' => "/dms/incoming/{$doc->id}",
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send document notification', [
+                'document_id' => $doc->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return $doc;
     }

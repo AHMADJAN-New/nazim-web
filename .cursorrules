@@ -4488,6 +4488,189 @@ All platform admin routes are prefixed with `/platform/*`:
 - `/platform/pending` - Review pending payments & renewals
 - `/platform/renewals/:renewalId` - Review specific renewal
 - `/platform/discount-codes` - Manage discount codes
+- `/platform/settings` - Platform settings
+- `/platform/help-center` - Help center management
+
+### Creating Platform Management Pages
+
+**CRITICAL: When creating a new platform management page, you MUST follow these steps to ensure it renders correctly and triggers queries.**
+
+#### Step 1: Create the Component
+
+Create your component in `frontend/src/platform/pages/admin/YourManagementPage.tsx`:
+
+```typescript
+import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { useLanguage } from '@/hooks/useLanguage';
+import { platformApi } from '@/platform/lib/platformApi';
+import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
+import { RefreshCw } from 'lucide-react';
+
+export default function YourManagementPage() {
+  const { t } = useLanguage();
+  
+  // Use platform admin permissions directly (like PlansManagement and PlatformSettings)
+  const { data: permissions, isLoading: permissionsLoading } = usePlatformAdminPermissions();
+  const hasAdminPermission = Array.isArray(permissions) && permissions.includes('subscription.admin');
+
+  // Your data queries - only fetch when permissions are confirmed
+  const { data: items = [], isLoading: itemsLoading } = useQuery({
+    queryKey: ['platform-your-resource'],
+    enabled: !permissionsLoading && hasAdminPermission, // CRITICAL: Only fetch when permissions confirmed
+    queryFn: async () => {
+      const response = await platformApi.yourResource.list();
+      return Array.isArray(response) ? response : (response?.data || []);
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Show loading while permissions are loading
+  if (permissionsLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Access control - redirect if no permission (match PlansManagement pattern)
+  if (!hasAdminPermission) {
+    return <Navigate to="/platform/dashboard" replace />;
+  }
+
+  // Your component JSX
+  return (
+    <div className="space-y-6 p-6">
+      {/* Your content */}
+    </div>
+  );
+}
+```
+
+#### Step 2: Add to LazyComponents.tsx
+
+**CRITICAL: You MUST add your component to `frontend/src/components/LazyComponents.tsx` for lazy loading:**
+
+```typescript
+// In frontend/src/components/LazyComponents.tsx
+export const YourManagementPage = lazy(() => import('@/platform/pages/admin/YourManagementPage').then(module => ({ default: module.default })));
+```
+
+**Key Points:**
+- ✅ **ALWAYS** use `lazy()` for code splitting
+- ✅ **ALWAYS** use `.then(module => ({ default: module.default }))` for default exports
+- ✅ **ALWAYS** place it in the "Subscription admin pages" section
+
+#### Step 3: Add Route to platform/App.tsx
+
+**CRITICAL: You MUST add your route to `frontend/src/platform/App.tsx`:**
+
+```typescript
+// In frontend/src/platform/App.tsx
+import YourManagementPage from './pages/admin/YourManagementPage';
+
+// Inside the <Route path="/platform" element={<ProtectedPlatformLayout />}> block:
+<Route path="your-resource" element={<YourManagementPage />} />
+```
+
+**Key Points:**
+- ✅ **ALWAYS** import directly from the file (not from LazyComponents in platform App.tsx)
+- ✅ **ALWAYS** place routes in the correct order (specific routes before wildcard)
+- ✅ **ALWAYS** use kebab-case for route paths (e.g., `your-resource`, not `yourResource`)
+
+#### Step 4: Add Platform API Endpoints
+
+**CRITICAL: You MUST add your API endpoints to `frontend/src/platform/lib/platformApi.ts`:**
+
+```typescript
+// In frontend/src/platform/lib/platformApi.ts
+export const platformApi = {
+  // ... existing methods ...
+  yourResource: {
+    list: async (params?: YourResourceParams) => {
+      return apiClient.get<YourResourceApi.YourResource[] | { data: YourResourceApi.YourResource[] }>('/platform/your-resource', params);
+    },
+    get: async (id: string) => {
+      return apiClient.get<{ data: YourResourceApi.YourResource }>(`/platform/your-resource/${id}`);
+    },
+    create: async (data: YourResourceApi.YourResourceInsert) => {
+      return apiClient.post<{ data: YourResourceApi.YourResource }>('/platform/your-resource', data);
+    },
+    update: async (id: string, data: YourResourceApi.YourResourceUpdate) => {
+      return apiClient.put<{ data: YourResourceApi.YourResource }>(`/platform/your-resource/${id}`, data);
+    },
+    delete: async (id: string) => {
+      return apiClient.delete(`/platform/your-resource/${id}`);
+    },
+  },
+};
+```
+
+**Key Points:**
+- ✅ **ALWAYS** use `/platform/*` prefix for all endpoints
+- ✅ **ALWAYS** handle both array and paginated responses
+- ✅ **ALWAYS** use proper TypeScript types from `@/types/api/yourResource`
+
+#### Step 5: Add Backend Routes
+
+**CRITICAL: You MUST add backend routes in `backend/routes/api.php`:**
+
+```php
+// In backend/routes/api.php
+Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group(function () {
+    // ... existing routes ...
+    Route::get('/your-resource', [YourResourceController::class, 'index']);
+    Route::get('/your-resource/{id}', [YourResourceController::class, 'show']);
+    Route::post('/your-resource', [YourResourceController::class, 'store']);
+    Route::put('/your-resource/{id}', [YourResourceController::class, 'update']);
+    Route::delete('/your-resource/{id}', [YourResourceController::class, 'destroy']);
+});
+```
+
+**Key Points:**
+- ✅ **ALWAYS** use `platform.admin` middleware
+- ✅ **ALWAYS** use `/platform` prefix
+- ✅ **ALWAYS** follow RESTful conventions
+
+#### Platform Management Page Checklist
+
+Before marking a platform management page as complete, verify:
+
+- [ ] Component created in `frontend/src/platform/pages/admin/YourManagementPage.tsx`
+- [ ] Component uses `usePlatformAdminPermissions()` (not `useHasPermission()`)
+- [ ] Component shows loading spinner while `permissionsLoading` is true
+- [ ] Component redirects to `/platform/dashboard` if no permission
+- [ ] Queries have `enabled: !permissionsLoading && hasAdminPermission`
+- [ ] Component added to `frontend/src/components/LazyComponents.tsx` with lazy loading
+- [ ] Route added to `frontend/src/platform/App.tsx` with correct path
+- [ ] API endpoints added to `frontend/src/platform/lib/platformApi.ts` with `/platform/*` prefix
+- [ ] Backend routes added in `backend/routes/api.php` with `platform.admin` middleware
+- [ ] Backend controller clears team context (`setPermissionsTeamId(null)`)
+- [ ] Backend controller checks `subscription.admin` permission
+- [ ] No `organization_id` filtering in queries or controllers
+- [ ] All API calls use `platformApi` client (not regular `apiClient`)
+
+#### Common Mistakes to Avoid
+
+❌ **DON'T:**
+- Forget to add component to `LazyComponents.tsx` (page won't render)
+- Forget to add route to `platform/App.tsx` (route won't match)
+- Use `useHasPermission()` instead of `usePlatformAdminPermissions()` (won't work for platform admins)
+- Use regular `apiClient` instead of `platformApi` (wrong endpoints)
+- Add `organization_id` filtering (platform admins see all data)
+- Skip the `enabled` condition on queries (queries will run before permissions load)
+
+✅ **DO:**
+- Add component to `LazyComponents.tsx` for lazy loading
+- Add route to `platform/App.tsx` with correct path
+- Use `usePlatformAdminPermissions()` for permission checks
+- Use `platformApi` client for all API calls
+- Add `enabled: !permissionsLoading && hasAdminPermission` to queries
+- Show loading spinner while permissions load
+- Redirect to `/platform/dashboard` if no permission
 
 #### Backend API Routes
 

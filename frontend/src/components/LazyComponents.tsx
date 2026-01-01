@@ -6,6 +6,7 @@ export const Dashboard = lazy(() => import('@/pages/Dashboard'));
 export const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
 export const UserProfile = lazy(() => import('@/pages/UserProfile'));
 export const UserSettings = lazy(() => import('@/pages/UserSettings'));
+export const NotificationsPage = lazy(() => import('@/pages/Notifications'));
 
 // Lazy load settings components
 export const BuildingsManagement = lazy(() => import('@/components/settings/BuildingsManagement').then(module => ({ default: module.BuildingsManagement })));
@@ -153,6 +154,7 @@ export const AllSubscriptionsPage = lazy(() => import('@/platform/pages/admin/Al
 export const PlansManagement = lazy(() => import('@/platform/pages/admin/PlansManagement').then(module => ({ default: module.default })));
 export const OrganizationSubscriptionDetail = lazy(() => import('@/platform/pages/admin/OrganizationSubscriptionDetail').then(module => ({ default: module.default })));
 export const PlatformSettings = lazy(() => import('@/platform/pages/admin/PlatformSettings').then(module => ({ default: module.default })));
+export const HelpCenterManagement = lazy(() => import('@/platform/pages/admin/HelpCenterManagement').then(module => ({ default: module.default })));
 export const RenewalReviewPage = lazy(() => import('@/pages/subscription/admin/RenewalReviewPage').then(module => ({ default: module.default })));
 export const DiscountCodesManagement = lazy(() => import('@/pages/subscription/admin/DiscountCodesManagement').then(module => ({ default: module.default })));
 

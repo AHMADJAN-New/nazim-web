@@ -306,6 +306,9 @@ const StudentReport = () => {
         const student = row.original;
         return <StudentAvatar student={student} />;
       },
+      meta: {
+        className: 'w-[60px]',
+      },
     },
     {
       accessorKey: 'studentCode',
@@ -315,6 +318,9 @@ const StudentReport = () => {
           {row.original.studentCode || row.original.admissionNumber || '—'}
         </div>
       ),
+      meta: {
+        className: 'hidden sm:table-cell',
+      },
     },
     {
       accessorKey: 'admissionNumber',
@@ -327,7 +333,13 @@ const StudentReport = () => {
       accessorKey: 'fullName',
       header: t('studentReport.fullName') || 'Name',
       cell: ({ row }) => (
-        <div className="font-semibold">{row.original.fullName}</div>
+        <div className="font-semibold min-w-0 break-words">
+          {row.original.fullName}
+          {/* Show ID on mobile since ID column is hidden */}
+          <div className="text-xs text-muted-foreground sm:hidden font-mono mt-1">
+            ID: {row.original.studentCode || row.original.admissionNumber || '—'}
+          </div>
+        </div>
       ),
     },
     {
@@ -336,6 +348,9 @@ const StudentReport = () => {
       cell: ({ row }) => (
         <div className="text-sm">{row.original.cardNumber || '—'}</div>
       ),
+      meta: {
+        className: 'hidden md:table-cell',
+      },
     },
     {
       accessorKey: 'originLocation',
@@ -345,6 +360,9 @@ const StudentReport = () => {
           {buildLocation(row.original.origProvince, row.original.origDistrict, row.original.origVillage)}
         </div>
       ),
+      meta: {
+        className: 'hidden lg:table-cell',
+      },
     },
     {
       accessorKey: 'birthYear',
@@ -352,6 +370,9 @@ const StudentReport = () => {
       cell: ({ row }) => (
         <div className="text-sm">{row.original.birthYear || '—'}</div>
       ),
+      meta: {
+        className: 'hidden lg:table-cell',
+      },
     },
     {
       accessorKey: 'status',
@@ -376,6 +397,9 @@ const StudentReport = () => {
           <span className="sr-only">{t('common.view') || 'View details'}</span>
         </Button>
       ),
+      meta: {
+        className: 'w-[60px]',
+      },
     },
   ], [t]);
 
@@ -405,12 +429,12 @@ const StudentReport = () => {
   }), [page, pageSize, filteredStudents.length, totalPages]);
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+    <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold leading-tight">{t('studentReport.title') || 'Student Registration Report'}</h1>
-          <p className="text-muted-foreground">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between min-w-0">
+        <div className="space-y-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight">{t('studentReport.title') || 'Student Registration Report'}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             {t('studentReport.subtitle') || 'View and export student registration data with detailed information'}
           </p>
         </div>
@@ -464,8 +488,8 @@ const StudentReport = () => {
           <CardTitle>{t('studentReport.filters') || 'Filters'}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="relative">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+            <div className="relative min-w-0">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder={t('studentReport.searchPlaceholder') || 'Search by name, admission number...'}
@@ -474,7 +498,7 @@ const StudentReport = () => {
                   setSearchQuery(e.target.value);
                   setPage(1);
                 }}
-                className="pl-10"
+                className="pl-10 w-full"
               />
             </div>
             <Select
@@ -546,12 +570,21 @@ const StudentReport = () => {
             </div>
           ) : (
             <>
-              <div className="rounded-md border">
-                <Table>
+              <div className="rounded-md border overflow-x-auto -mx-4 sm:mx-0">
+                <Table className="w-full">
                   <TableHeader>
                     {table.getHeaderGroups().map((headerGroup) => (
                       <TableRow key={headerGroup.id}>
                           {headerGroup.headers.map((header) => {
+                            const columnId = header.column.id;
+                            let headerClassName = '';
+                            if (columnId === 'avatar') headerClassName = 'w-[60px]';
+                            else if (columnId === 'studentCode') headerClassName = 'hidden sm:table-cell';
+                            else if (columnId === 'cardNumber') headerClassName = 'hidden md:table-cell';
+                            else if (columnId === 'originLocation') headerClassName = 'hidden lg:table-cell';
+                            else if (columnId === 'birthYear') headerClassName = 'hidden lg:table-cell';
+                            else if (columnId === 'actions') headerClassName = 'w-[60px]';
+                            
                             const headerContent = header.isPlaceholder
                               ? null
                               : typeof header.column.columnDef.header === 'string'
@@ -560,7 +593,7 @@ const StudentReport = () => {
                               ? header.column.columnDef.header(header.getContext())
                               : header.column.columnDef.header;
                             return (
-                              <TableHead key={header.id}>
+                              <TableHead key={header.id} className={headerClassName}>
                                 {headerContent}
                               </TableHead>
                             );
@@ -575,13 +608,24 @@ const StudentReport = () => {
                           key={row.id}
                           data-state={row.getIsSelected() && 'selected'}
                         >
-                          {row.getVisibleCells().map((cell) => (
-                            <TableCell key={cell.id}>
-                              {typeof cell.column.columnDef.cell === 'function'
-                                ? cell.column.columnDef.cell(cell.getContext())
-                                : cell.getValue() as React.ReactNode}
-                            </TableCell>
-                          ))}
+                          {row.getVisibleCells().map((cell) => {
+                            const columnId = cell.column.id;
+                            let cellClassName = '';
+                            if (columnId === 'avatar') cellClassName = 'w-[60px]';
+                            else if (columnId === 'studentCode') cellClassName = 'hidden sm:table-cell';
+                            else if (columnId === 'cardNumber') cellClassName = 'hidden md:table-cell';
+                            else if (columnId === 'originLocation') cellClassName = 'hidden lg:table-cell';
+                            else if (columnId === 'birthYear') cellClassName = 'hidden lg:table-cell';
+                            else if (columnId === 'actions') cellClassName = 'w-[60px]';
+                            
+                            return (
+                              <TableCell key={cell.id} className={cellClassName}>
+                                {typeof cell.column.columnDef.cell === 'function'
+                                  ? cell.column.columnDef.cell(cell.getContext())
+                                  : cell.getValue() as React.ReactNode}
+                              </TableCell>
+                            );
+                          })}
                         </TableRow>
                       ))
                     ) : (

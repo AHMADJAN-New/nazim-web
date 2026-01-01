@@ -5,12 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\LibraryBook;
 use App\Models\LibraryCopy;
 use App\Models\LibraryLoan;
+use App\Services\Notifications\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class LibraryLoanController extends Controller
 {
+    public function __construct(
+        private NotificationService $notificationService
+    ) {
+    }
     public function index(Request $request)
     {
         $user = $request->user();
@@ -112,7 +117,49 @@ class LibraryLoanController extends Controller
 
         $copy->update(['status' => 'loaned']);
 
-        return response()->json($loan->load(['book', 'copy']), 201);
+        // Load relationships for notification
+        $loan->load(['book', 'copy']);
+
+        // Notify if book is overdue or due soon
+        try {
+            $now = Carbon::now();
+            $dueDate = $loan->due_date ? Carbon::parse($loan->due_date) : null;
+            
+            if ($dueDate) {
+                if ($dueDate->isPast()) {
+                    // Book is already overdue
+                    $this->notificationService->notify(
+                        'library.book_overdue',
+                        $loan,
+                        $user,
+                        [
+                            'title' => '📚 Book Overdue',
+                            'body' => "The book '{$loan->book->title}' is overdue. Please return it as soon as possible.",
+                            'url' => "/library/loans/{$loan->id}",
+                        ]
+                    );
+                } elseif ($dueDate->diffInDays($now) <= 3) {
+                    // Book is due within 3 days
+                    $this->notificationService->notify(
+                        'library.book_due_soon',
+                        $loan,
+                        $user,
+                        [
+                            'title' => '📚 Book Due Soon',
+                            'body' => "The book '{$loan->book->title}' is due in {$dueDate->diffInDays($now)} day(s).",
+                            'url' => "/library/loans/{$loan->id}",
+                        ]
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send library loan notification', [
+                'loan_id' => $loan->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return response()->json($loan, 201);
     }
 
     public function returnCopy(Request $request, string $id)
@@ -172,7 +219,13 @@ class LibraryLoanController extends Controller
                 $loan->copy->update(['status' => 'available']);
             }
 
-            return response()->json($loan->fresh()->load(['book', 'copy']));
+            // Load relationships
+            $loan->fresh()->load(['book', 'copy']);
+
+            // Notify about return (optional - asset.returned equivalent)
+            // Note: Library doesn't have a specific "returned" event, but we could add one if needed
+
+            return response()->json($loan);
         } catch (\Exception $e) {
             \Log::error('Error returning loan: ' . $e->getMessage(), [
                 'loan_id' => $id,

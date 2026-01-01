@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateStudentAdmissionRequest;
 use App\Services\Reports\ReportConfig;
 use App\Services\Reports\ReportService;
 use App\Services\Reports\DateConversionService;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +20,8 @@ class StudentAdmissionController extends Controller
 {
     public function __construct(
         private ReportService $reportService,
-        private DateConversionService $dateService
+        private DateConversionService $dateService,
+        private NotificationService $notificationService
     ) {}
     /**
      * Get accessible organization IDs for the current user
@@ -241,6 +243,31 @@ class StudentAdmissionController extends Controller
             'room'
         ]);
 
+        // Send notification when admission is created (fast - notification service is optimized)
+        try {
+            $className = $admission->class->name ?? 'class';
+            $academicYearName = $admission->academicYear->name ?? 'academic year';
+            $studentName = $admission->student->full_name ?? 'Student';
+            
+            $this->notificationService->notify(
+                'admission.created',
+                $admission,
+                $user,
+                [
+                    'title' => '✅ Admission Created',
+                    'body' => "{$studentName} has been successfully admitted to {$className} for {$academicYearName}.",
+                    'url' => "/admissions",
+                    'exclude_actor' => false, // Include the creator so they see confirmation
+                ]
+            );
+        } catch (\Exception $e) {
+            // Log error but don't fail the request
+            Log::warning('Failed to send admission.created notification', [
+                'admission_id' => $admission->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return response()->json($admission, 201);
     }
 
@@ -288,6 +315,10 @@ class StudentAdmissionController extends Controller
         // Remove organization_id from update data to prevent changes
         unset($validated['organization_id']);
 
+        // Track status changes for notifications
+        $oldStatus = $admission->enrollment_status;
+        $newStatus = $validated['enrollment_status'] ?? $oldStatus;
+
         $admission->update($validated);
         $admission->load([
             'student',
@@ -299,6 +330,48 @@ class StudentAdmissionController extends Controller
             'residencyType',
             'room'
         ]);
+
+        // Send notifications for status changes (fast - notification service is optimized)
+        try {
+            if ($oldStatus !== $newStatus) {
+                $studentName = $admission->student->full_name ?? 'Student';
+                $className = $admission->class->name ?? 'class';
+                
+                if ($newStatus === 'approved' || $newStatus === 'active') {
+                    $this->notificationService->notify(
+                        'admission.approved',
+                        $admission,
+                        $user,
+                        [
+                            'title' => '✅ Admission Approved',
+                            'body' => "{$studentName}'s admission to {$className} has been approved and is now active.",
+                            'url' => "/admissions",
+                            'exclude_actor' => false, // Include the approver so they see confirmation
+                        ]
+                    );
+                } elseif ($newStatus === 'rejected' || $newStatus === 'inactive') {
+                    $this->notificationService->notify(
+                        'admission.rejected',
+                        $admission,
+                        $user,
+                        [
+                            'title' => '⚠️ Admission Rejected',
+                            'body' => "{$studentName}'s admission to {$className} has been rejected or deactivated.",
+                            'url' => "/admissions",
+                            'exclude_actor' => false, // Include the rejector so they see confirmation
+                        ]
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the request
+            Log::warning('Failed to send admission status change notification', [
+                'admission_id' => $admission->id,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json($admission);
     }
@@ -330,7 +403,9 @@ class StudentAdmissionController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $admission = StudentAdmission::whereNull('deleted_at')->find($id);
+        $admission = StudentAdmission::whereNull('deleted_at')
+            ->with(['student', 'class', 'academicYear'])
+            ->find($id);
 
         if (!$admission) {
             return response()->json(['error' => 'Student admission not found'], 404);
@@ -342,9 +417,44 @@ class StudentAdmissionController extends Controller
             return response()->json(['error' => 'Cannot delete admission from different organization'], 403);
         }
 
+        // Store data for notification before deletion
+        $studentName = $admission->student->full_name ?? 'Student';
+        $className = $admission->class->name ?? 'class';
+        $academicYearName = $admission->academicYear->name ?? 'academic year';
+
         $admission->delete();
 
-        return response()->json(['message' => 'Student admission deleted successfully']);
+        // Send notification when admission is deleted (fast - notification service is optimized)
+        // Note: We need to create a temporary model instance for the notification since the original was deleted
+        try {
+            // Create a temporary model instance with the data we need for notification
+            $tempAdmission = new StudentAdmission();
+            $tempAdmission->id = $id;
+            $tempAdmission->organization_id = $admission->organization_id;
+            $tempAdmission->student_id = $admission->student_id;
+            $tempAdmission->class_id = $admission->class_id;
+            $tempAdmission->academic_year_id = $admission->academic_year_id;
+            
+            $this->notificationService->notify(
+                'admission.deleted',
+                $tempAdmission,
+                $user,
+                [
+                    'title' => '🗑️ Admission Deleted',
+                    'body' => "{$studentName}'s admission to {$className} ({$academicYearName}) has been deleted.",
+                    'url' => "/admissions",
+                    'exclude_actor' => false, // Include the deleter so they see confirmation
+                ]
+            );
+        } catch (\Exception $e) {
+            // Log error but don't fail the request
+            Log::warning('Failed to send admission.deleted notification', [
+                'admission_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return response()->noContent();
     }
 
     /**

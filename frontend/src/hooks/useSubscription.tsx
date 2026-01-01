@@ -32,20 +32,21 @@ function mapPlanApiToDomain(api: SubscriptionApi.SubscriptionPlan): Subscription
     description: api.description,
     priceYearlyAfn: Number(api.price_yearly_afn),
     priceYearlyUsd: Number(api.price_yearly_usd),
-    isActive: api.is_active,
-    isDefault: api.is_default,
-    isCustom: api.is_custom,
-    trialDays: api.trial_days,
-    gracePeriodDays: api.grace_period_days,
-    readonlyPeriodDays: api.readonly_period_days,
-    maxSchools: api.max_schools,
-    perSchoolPriceAfn: Number(api.per_school_price_afn),
-    perSchoolPriceUsd: Number(api.per_school_price_usd),
-    sortOrder: api.sort_order,
+    isActive: api.is_active ?? true, // Default to true if not provided
+    isDefault: api.is_default ?? false,
+    isCustom: api.is_custom ?? false, // Default to false if not provided
+    trialDays: api.trial_days ?? 0,
+    gracePeriodDays: api.grace_period_days ?? 0,
+    readonlyPeriodDays: api.readonly_period_days ?? 0,
+    maxSchools: api.max_schools ?? 1,
+    perSchoolPriceAfn: Number(api.per_school_price_afn ?? 0),
+    perSchoolPriceUsd: Number(api.per_school_price_usd ?? 0),
+    sortOrder: api.sort_order ?? 999, // Default to high number if not provided
     features: api.features || [],
     limits: api.limits || {},
-    createdAt: new Date(api.created_at),
-    updatedAt: new Date(api.updated_at),
+    createdAt: api.created_at ? new Date(api.created_at) : new Date(),
+    updatedAt: api.updated_at ? new Date(api.updated_at) : new Date(),
+    deletedAt: api.deleted_at ? new Date(api.deleted_at) : null,
   };
 }
 
@@ -372,6 +373,30 @@ export const useFeatures = () => {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     // Return empty array as placeholder data when query is disabled or fails
     placeholderData: [],
+  });
+};
+
+/**
+ * Get all available features (public endpoint for landing page)
+ */
+export const useAllFeatures = () => {
+  return useQuery({
+    queryKey: ['all-features'],
+    queryFn: async () => {
+      const response = await apiClient.request<{ data: Array<{
+        feature_key: string;
+        name: string;
+        description: string | null;
+        category: string;
+        is_addon: boolean;
+      }> }>(
+        '/subscription/features/all',
+        { method: 'GET' }
+      );
+      return response.data;
+    },
+    staleTime: 60 * 60 * 1000, // 1 hour - features don't change often
+    refetchOnWindowFocus: false,
   });
 };
 

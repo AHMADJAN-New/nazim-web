@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DiscountCode;
+use App\Models\FeatureDefinition;
 use App\Models\OrganizationSubscription;
 use App\Models\PaymentRecord;
 use App\Models\RenewalRequest;
@@ -22,6 +23,29 @@ class SubscriptionController extends Controller
         private FeatureGateService $featureGateService,
         private UsageTrackingService $usageTrackingService
     ) {}
+
+    /**
+     * Get all available features (public endpoint for landing page)
+     */
+    public function allFeatures(Request $request)
+    {
+        $features = FeatureDefinition::active()
+            ->orderBy('category')
+            ->orderBy('sort_order')
+            ->get();
+
+        return response()->json([
+            'data' => $features->map(function ($feature) {
+                return [
+                    'feature_key' => $feature->feature_key,
+                    'name' => $feature->name,
+                    'description' => $feature->description,
+                    'category' => $feature->category,
+                    'is_addon' => $feature->is_addon,
+                ];
+            }),
+        ]);
+    }
 
     /**
      * Get available subscription plans
@@ -53,6 +77,9 @@ class SubscriptionController extends Controller
                     'limits' => $plan->limits->mapWithKeys(function ($limit) {
                         return [$limit->resource_key => $limit->limit_value];
                     }),
+                    'created_at' => $plan->created_at->toISOString(),
+                    'updated_at' => $plan->updated_at->toISOString(),
+                    'deleted_at' => $plan->deleted_at?->toISOString(),
                     'created_at' => $plan->created_at,
                     'updated_at' => $plan->updated_at,
                     'deleted_at' => $plan->deleted_at,

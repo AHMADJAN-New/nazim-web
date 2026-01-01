@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Organization;
+use App\Services\Notifications\NotificationService;
 use App\Services\Subscription\UsageTrackingService;
 use Closure;
 use Illuminate\Http\Request;
@@ -11,7 +13,8 @@ use Symfony\Component\HttpFoundation\Response;
 class EnforceUsageLimit
 {
     public function __construct(
-        private UsageTrackingService $usageTrackingService
+        private UsageTrackingService $usageTrackingService,
+        private NotificationService $notificationService
     ) {}
 
     /**
@@ -60,8 +63,32 @@ class EnforceUsageLimit
             'usage_check' => $check,
         ]);
 
-        // If there's a warning, add it to response headers
+        // If there's a warning, add it to response headers and send notification
         if ($check['warning']) {
+            // Send notification about approaching limit
+            try {
+                $organization = Organization::find($organizationId);
+                if ($organization) {
+                    $this->notificationService->notify(
+                        'subscription.limit_approaching',
+                        $organization,
+                        $user,
+                        [
+                            'title' => '⚠️ Usage Limit Warning',
+                            'body' => $check['message'],
+                            'url' => '/subscription',
+                            'level' => 'warning',
+                        ]
+                    );
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Failed to send usage limit warning notification', [
+                    'organization_id' => $organizationId,
+                    'resource_key' => $resourceKey,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+            
             $response = $next($request);
             
             if ($response instanceof Response) {
@@ -72,6 +99,32 @@ class EnforceUsageLimit
             }
             
             return $response;
+        }
+        
+        // If limit is reached, send notification (even though request will be blocked)
+        if (!$check['allowed']) {
+            try {
+                $organization = Organization::find($organizationId);
+                if ($organization) {
+                    $this->notificationService->notify(
+                        'subscription.limit_reached',
+                        $organization,
+                        $user,
+                        [
+                            'title' => '🚫 Usage Limit Reached',
+                            'body' => $check['message'],
+                            'url' => '/subscription',
+                            'level' => 'critical',
+                        ]
+                    );
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Failed to send usage limit reached notification', [
+                    'organization_id' => $organizationId,
+                    'resource_key' => $resourceKey,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return $next($request);

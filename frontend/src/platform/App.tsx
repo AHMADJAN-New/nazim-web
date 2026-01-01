@@ -14,6 +14,7 @@ import RenewalReviewPage from './pages/admin/RenewalReviewPage';
 import PlatformSettings from './pages/admin/PlatformSettings';
 import MaintenanceHistory from './pages/admin/MaintenanceHistory';
 import { PlatformPermissionGroupsManagement } from './pages/PlatformPermissionGroupsManagement';
+import HelpCenterManagement from './pages/admin/HelpCenterManagement';
 
 // Debug: Verify MaintenanceHistory is imported
 console.log('[App] MaintenanceHistory imported:', typeof MaintenanceHistory, MaintenanceHistory);
@@ -170,6 +171,7 @@ export function PlatformAdminApp() {
               <Route path="admins" element={<PlatformAdminDashboard />} />
               <Route path="permission-groups" element={<PlatformPermissionGroupsManagement />} />
               <Route path="settings" element={<PlatformSettings />} />
+              <Route path="help-center" element={<HelpCenterManagement />} />
               <Route 
                 path="maintenance-history" 
                 element={

@@ -4030,6 +4030,478 @@ export const en: TranslationKeys = {
     genericError: 'A subscription error occurred. Please check your subscription status.',
   },
 
+  // Landing Page
+  landing: {
+    features: {
+      students: {
+        title: 'Student Management',
+        description: 'Complete student information system with admission, records, and progress tracking',
+      },
+      attendance: {
+        title: 'Attendance Tracking',
+        description: 'Real-time attendance management with automated reporting and notifications',
+      },
+      classes: {
+        title: 'Class Management',
+        description: 'Manage classes, academic years, and class assignments',
+      },
+      pdf_reports: {
+        title: 'PDF Reports',
+        description: 'Generate comprehensive PDF reports for students, academics, and finances',
+      },
+      subjects: {
+        title: 'Subject Management',
+        description: 'Manage subjects, assign to classes, and track subject offerings',
+      },
+      exams: {
+        title: 'Exam Management',
+        description: 'Create and manage exams, schedules, and exam results',
+      },
+      grades: {
+        title: 'Grade Management',
+        description: 'Track and manage student grades, transcripts, and academic performance',
+      },
+      question_bank: {
+        title: 'Question Bank',
+        description: 'Build and manage a comprehensive question bank for exams',
+      },
+      exam_paper_generator: {
+        title: 'Exam Paper Generator',
+        description: 'Automatically generate exam papers from question bank',
+      },
+      timetables: {
+        title: 'Timetable Generation',
+        description: 'Create and manage class timetables with automatic scheduling',
+      },
+      graduation: {
+        title: 'Graduation & Certificates',
+        description: 'Manage graduations and generate certificates for students',
+      },
+      finance: {
+        title: 'Finance Module',
+        description: 'Comprehensive financial management with income, expenses, and reporting',
+      },
+      fees: {
+        title: 'Fee Management',
+        description: 'Track fee collection, payment schedules, and outstanding balances',
+      },
+      multi_currency: {
+        title: 'Multi-Currency Support',
+        description: 'Support for multiple currencies in financial transactions',
+      },
+      dms: {
+        title: 'Document Management (DMS)',
+        description: 'Centralized document management system for all school documents',
+      },
+      letter_templates: {
+        title: 'Letter Templates',
+        description: 'Create and manage letter templates for official communications',
+      },
+      excel_export: {
+        title: 'Excel Export',
+        description: 'Export data to Excel format for analysis and reporting',
+      },
+      library: {
+        title: 'Library Management',
+        description: 'Digital library management with book tracking and student borrowing records',
+      },
+      assets: {
+        title: 'Asset Management',
+        description: 'Track and manage school assets, equipment, and inventory',
+      },
+      events: {
+        title: 'Event Management',
+        description: 'Plan and manage school events, activities, and announcements',
+      },
+      id_cards: {
+        title: 'ID Card Generation',
+        description: 'Generate student and staff ID cards with custom templates',
+      },
+      custom_id_templates: {
+        title: 'Custom ID Templates',
+        description: 'Create custom ID card templates with branding and design',
+      },
+      custom_branding: {
+        title: 'Custom Branding',
+        description: 'Customize reports, documents, and interfaces with your school branding',
+      },
+      short_courses: {
+        title: 'Short-Term Courses',
+        description: 'Manage short-term courses, workshops, and training programs',
+      },
+      leave_management: {
+        title: 'Leave Management',
+        description: 'Track and manage staff leave requests and approvals',
+      },
+      hostel: {
+        title: 'Hostel Management',
+        description: 'Complete hostel administration with room allocation and student management',
+      },
+      multi_school: {
+        title: 'Multi-School Support',
+        description: 'Manage multiple schools from a single platform',
+      },
+      api_access: {
+        title: 'API Access',
+        description: 'Access platform data and functionality through RESTful API',
+      },
+    },
+    benefits: {
+      secureReliable: {
+        title: 'Secure & Reliable',
+        description: 'Enterprise-grade security with 99.9% uptime guarantee',
+      },
+      lightningFast: {
+        title: 'Lightning Fast',
+        description: 'Optimized performance for instant access to all features',
+      },
+      multiLanguage: {
+        title: 'Multi-Language',
+        description: 'Support for English, Urdu, Arabic, and Pashto languages',
+      },
+      mobileReady: {
+        title: 'Mobile Ready',
+        description: 'Responsive design works perfectly on all devices',
+      },
+      cloudBased: {
+        title: 'Cloud-Based',
+        description: 'Access your data anywhere, anytime from any device',
+      },
+      support24x7: {
+        title: '24/7 Support',
+        description: 'Round-the-clock customer support and training assistance',
+      },
+    },
+    pricing: {
+      period: '/month',
+      noPlansAvailable: 'No plans available at the moment. Please check back later.',
+      comparisonTitle: 'Compare Plans & Features',
+      comparisonSubtitle: 'See which features are included in each plan',
+      feature: 'Feature',
+      starter: {
+        name: 'Starter',
+        description: 'Perfect for small schools up to 200 students',
+        feature1: 'Up to 200 students',
+        feature2: 'Basic student management',
+        feature3: 'Attendance tracking',
+        feature4: 'Fee management',
+        feature5: 'Basic reports',
+        feature6: 'Email support',
+      },
+      professional: {
+        name: 'Professional',
+        description: 'Ideal for medium schools up to 1000 students',
+        feature1: 'Up to 1000 students',
+        feature2: 'Complete academic management',
+        feature3: 'Advanced analytics',
+        feature4: 'Library management',
+        feature5: 'Hostel management',
+        feature6: 'SMS notifications',
+        feature7: 'Priority support',
+        feature8: 'Custom reports',
+      },
+      enterprise: {
+        name: 'Enterprise',
+        description: 'For large institutions with unlimited students',
+        feature1: 'Unlimited students',
+        feature2: 'Multi-branch support',
+        feature3: 'Advanced security',
+        feature4: 'API access',
+        feature5: 'Custom integrations',
+        feature6: 'Dedicated support',
+        feature7: 'Training sessions',
+        feature8: 'White-label options',
+      },
+    },
+    stats: {
+      studentsManaged: 'Students Managed',
+      staffMembers: 'Staff Members',
+      uptimeGuarantee: 'Uptime Guarantee',
+      supportAvailable: 'Support Available',
+    },
+    contact: {
+      messageSent: 'Message sent',
+      messageSentDescription: "We'll get back to you soon.",
+    },
+    nav: {
+      features: 'Features',
+      pricing: 'Pricing',
+      reviews: 'Reviews',
+      contact: 'Contact',
+      signIn: 'Sign In',
+      getStarted: 'Get Started',
+    },
+    hero: {
+      badge: '🚀 Trusted by 500+ Schools Worldwide',
+      title: 'Transform Your',
+      titleHighlight: 'School Management',
+      subtitle: 'Streamline operations, enhance learning outcomes, and strengthen community connections with our comprehensive Islamic school management platform.',
+      startFreeTrial: 'Start Free Trial',
+      watchDemo: 'Watch Demo',
+    },
+    sections: {
+      features: {
+        badge: 'Features',
+        title: 'Everything You Need to Manage Your School',
+        subtitle: 'From student admissions to graduation, our comprehensive platform covers every aspect of school management.',
+      },
+      benefits: {
+        badge: 'Why Choose Us',
+        title: 'Built for Modern Educational Institutions',
+        subtitle: 'Experience the difference with our cutting-edge technology and dedicated support.',
+      },
+      pricing: {
+        badge: 'Pricing',
+        title: 'Simple, Transparent Pricing',
+        subtitle: 'Choose the perfect plan for your institution. All plans include core features with no hidden fees.',
+        mostPopular: 'Most Popular',
+        getStarted: 'Get Started',
+        startFreeTrial: 'Start Free Trial',
+        allPlansNote: 'All plans include 30-day free trial • No setup fees • Cancel anytime',
+        customPlanLink: 'Need a custom plan? Contact our sales team →',
+      },
+      testimonials: {
+        badge: 'Testimonials',
+        title: 'Loved by Educators Worldwide',
+        subtitle: 'See what school administrators and teachers say about our platform.',
+      },
+      contact: {
+        badge: 'Contact Us',
+        title: 'Get in Touch',
+        subtitle: 'Ready to transform your school management? Our team is here to help you get started.',
+        letsStartConversation: "Let's Start a Conversation",
+        conversationDescription: 'Our education technology experts are ready to discuss your school\'s unique needs and show you how our platform can make a difference.',
+        phoneSupport: 'Phone Support',
+        whatsappSupport: 'WhatsApp Support',
+        emailSupport: 'Email Support',
+        officeAddress: 'Office Address',
+        businessHours: 'Business Hours',
+        sendMessage: 'Send us a Message',
+        formDescription: 'Fill out the form below and we\'ll get back to you within 24 hours.',
+        firstName: 'First Name',
+        lastName: 'Last Name',
+        emailAddress: 'Email Address',
+        phoneNumber: 'Phone Number',
+        schoolName: 'School Name',
+        numberOfStudents: 'Number of Students',
+        message: 'Message',
+        sendMessageButton: 'Send Message',
+        messageSent: 'Message sent',
+        messageSentDescription: 'We\'ll get back to you soon.',
+        messageFailed: 'Failed to send message',
+        messageFailedDescription: 'Please try again later.',
+      },
+      cta: {
+        title: 'Ready to Transform Your School Management?',
+        subtitle: 'Join thousands of schools that have already digitized their operations with our comprehensive management system.',
+        startFreeTrial: 'Start Your Free Trial',
+        scheduleDemo: 'Schedule Demo',
+        note: '✓ 30-day free trial • ✓ No credit card required • ✓ Setup assistance included',
+      },
+    },
+  },
+  helpCenter: {
+    title: 'Help Center',
+    subtitle: 'Find answers to your questions and learn how to use Nazim SMS',
+    searchPlaceholder: 'Search for help articles...',
+    allCategories: 'All Categories',
+    clearFilters: 'Clear Filters',
+    featuredArticles: 'Featured Articles',
+    popularArticles: 'Popular Articles',
+    articles: 'Articles',
+    allArticles: 'All Articles',
+    articlesFound: 'articles found',
+    noArticlesFound: 'No articles found',
+    noArticlesDescription: 'Try adjusting your search or filters',
+    contextualHelp: 'Get help',
+    articleFound: 'Here is the help article for this page',
+    noArticleFound: 'No specific help article found for this page',
+    errorLoading: 'Error loading help article',
+    viewFullArticle: 'View Full Article',
+    browseHelpCenter: 'Browse Help Center',
+  },
+  footer: {
+    tagline: 'Empowering educational institutions with modern technology solutions for better learning outcomes.',
+    product: 'Product',
+    support: 'Support',
+    company: 'Company',
+    features: 'Features',
+    pricing: 'Pricing',
+    apiDocumentation: 'API Documentation',
+    integrations: 'Integrations',
+    security: 'Security',
+    helpCenter: 'Help Center',
+    trainingVideos: 'Training Videos',
+    contactSupport: 'Contact Support',
+    systemStatus: 'System Status',
+    releaseNotes: 'Release Notes',
+    aboutUs: 'About Us',
+    careers: 'Careers',
+    privacyPolicy: 'Privacy Policy',
+    termsOfService: 'Terms of Service',
+    cookiePolicy: 'Cookie Policy',
+    copyright: '© 2026 Nazim School Management System. All rights reserved.',
+  },
+  aboutUs: {
+    title: 'About Nazim School Management System',
+      subtitle: 'Empowering educational institutions with modern technology solutions for better learning outcomes.',
+      mission: {
+        title: 'Our Mission',
+        content: 'Our mission is to provide comprehensive, user-friendly, and affordable school management solutions that help educational institutions streamline their operations, enhance learning outcomes, and strengthen community connections. We believe that every school, regardless of size, deserves access to modern technology that can transform the way they manage their institution.',
+      },
+      vision: {
+        title: 'Our Vision',
+        content: 'We envision a future where all educational institutions, especially Islamic schools and madrasas, have access to powerful, intuitive, and culturally-aware management systems that support their unique needs. We aim to be the leading provider of school management solutions in the region, helping thousands of schools digitize their operations and focus on what matters most: education.',
+      },
+      values: {
+        title: 'Our Values',
+        innovation: {
+          title: 'Innovation',
+          content: 'We continuously innovate to provide cutting-edge solutions that meet the evolving needs of educational institutions.',
+        },
+        integrity: {
+          title: 'Integrity',
+          content: 'We operate with honesty, transparency, and ethical practices in all our business dealings.',
+        },
+        excellence: {
+          title: 'Excellence',
+          content: 'We strive for excellence in every aspect of our service, from product development to customer support.',
+        },
+        community: {
+          title: 'Community',
+          content: 'We are committed to building strong relationships with our customers and supporting the educational community.',
+        },
+      },
+      whatWeOffer: {
+        title: 'What We Offer',
+        comprehensive: {
+          title: 'Comprehensive Solutions',
+          content: 'From student management to finance, attendance to exams, we cover all aspects of school administration.',
+        },
+        affordable: {
+          title: 'Affordable Pricing',
+          content: 'We offer flexible pricing plans that fit schools of all sizes, from small madrasas to large institutions.',
+        },
+        support: {
+          title: 'Dedicated Support',
+          content: 'Our team is always ready to help with training, technical support, and ongoing assistance.',
+        },
+      },
+      cta: {
+        text: 'Want to learn more about how we can help your school?',
+        button: 'Contact Us',
+      },
+  },
+  privacyPolicy: {
+    title: 'Privacy Policy',
+    lastUpdated: 'Last Updated: January 2026',
+    introduction: {
+      title: 'Introduction',
+      content: 'At Nazim School Management System, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform.',
+    },
+    informationWeCollect: {
+      title: 'Information We Collect',
+      personal: {
+        title: 'Personal Information',
+        content: 'We collect personal information that you provide to us, such as your name, email address, phone number, and school information when you register for our services.',
+      },
+      usage: {
+        title: 'Usage Information',
+        content: 'We automatically collect information about how you use our platform, including pages visited, features used, and time spent on the platform.',
+      },
+      technical: {
+        title: 'Technical Information',
+        content: 'We collect technical information such as IP address, browser type, device information, and operating system for security and performance purposes.',
+      },
+    },
+    howWeUse: {
+      title: 'How We Use Your Information',
+      provide: 'To provide, maintain, and improve our services',
+      communicate: 'To communicate with you about your account and our services',
+      security: 'To ensure the security and integrity of our platform',
+      support: 'To provide customer support and respond to your inquiries',
+      analytics: 'To analyze usage patterns and improve user experience',
+    },
+    dataSecurity: {
+      title: 'Data Security',
+      content: 'We implement industry-standard security measures to protect your information, including encryption, secure data storage, and access controls. However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.',
+    },
+    dataRetention: {
+      title: 'Data Retention',
+      content: 'We retain your personal information for as long as necessary to provide our services and comply with legal obligations. When you delete your account, we will delete or anonymize your personal information, except where we are required to retain it by law.',
+    },
+    yourRights: {
+      title: 'Your Rights',
+      intro: 'You have the right to:',
+      access: 'Access your personal information',
+      correct: 'Correct inaccurate or incomplete information',
+      delete: 'Request deletion of your personal information',
+      export: 'Export your data in a portable format',
+      object: 'Object to processing of your personal information',
+    },
+    contact: {
+      title: 'Contact Us',
+      content: 'If you have any questions about this Privacy Policy or our data practices, please contact us at support@nazimapp.com or through our contact form.',
+    },
+  },
+  termsOfService: {
+    title: 'Terms of Service',
+    lastUpdated: 'Last Updated: January 2026',
+    introduction: {
+      title: 'Introduction',
+      content: 'These Terms of Service ("Terms") govern your access to and use of the Nazim School Management System platform. By using our services, you agree to be bound by these Terms. Please read them carefully.',
+    },
+    acceptance: {
+      title: 'Acceptance of Terms',
+      content: 'By accessing or using our platform, you acknowledge that you have read, understood, and agree to be bound by these Terms. If you do not agree to these Terms, you may not use our services.',
+    },
+    account: {
+      title: 'Account Registration',
+      intro: 'To use our services, you must:',
+      accurate: 'Provide accurate and complete information',
+      maintain: 'Maintain the security of your account credentials',
+      notify: 'Notify us immediately of any unauthorized access',
+      responsible: 'Be responsible for all activities under your account',
+    },
+    use: {
+      title: 'Use of Services',
+      permitted: {
+        title: 'Permitted Use',
+        content: 'You may use our services for lawful educational and administrative purposes only. You agree to use the platform in accordance with all applicable laws and regulations.',
+      },
+      prohibited: {
+        title: 'Prohibited Activities',
+        unauthorized: 'Unauthorized access to other accounts or systems',
+        malicious: 'Introduction of viruses, malware, or harmful code',
+        interfere: 'Interference with the platform\'s operation',
+        violate: 'Violation of any applicable laws or regulations',
+      },
+    },
+    subscription: {
+      title: 'Subscription and Payment',
+      content: 'Subscription fees are billed in advance on a monthly or annual basis. All fees are non-refundable except as required by law. We reserve the right to change our pricing with 30 days notice.',
+      cancellation: 'You may cancel your subscription at any time. Cancellation will take effect at the end of your current billing period.',
+    },
+    intellectualProperty: {
+      title: 'Intellectual Property',
+      content: 'All content, features, and functionality of the platform are owned by Nazim School Management System and are protected by copyright, trademark, and other intellectual property laws. You may not copy, modify, or distribute any part of the platform without our written permission.',
+    },
+    liability: {
+      title: 'Limitation of Liability',
+      content: 'To the maximum extent permitted by law, Nazim School Management System shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform. Our total liability shall not exceed the amount you paid for the services in the 12 months preceding the claim.',
+    },
+    termination: {
+      title: 'Termination',
+      content: 'We reserve the right to suspend or terminate your account at any time for violation of these Terms or for any other reason. Upon termination, your right to use the platform will immediately cease.',
+    },
+    changes: {
+      title: 'Changes to Terms',
+      content: 'We may modify these Terms at any time. We will notify you of any material changes by email or through the platform. Your continued use of the platform after such changes constitutes acceptance of the modified Terms.',
+    },
+    contact: {
+      title: 'Contact Us',
+      content: 'If you have any questions about these Terms of Service, please contact us at support@nazimapp.com or through our contact form.',
+    },
   // Maintenance Mode
   maintenance: {
     title: 'System Under Maintenance',

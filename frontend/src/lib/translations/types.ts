@@ -4552,6 +4552,477 @@ export interface TranslationKeys {
     genericError: string;
   };
 
+  // Landing Page
+  landing: {
+    features: {
+      students: {
+        title: string;
+        description: string;
+      };
+      attendance: {
+        title: string;
+        description: string;
+      };
+      classes: {
+        title: string;
+        description: string;
+      };
+      pdf_reports: {
+        title: string;
+        description: string;
+      };
+      subjects: {
+        title: string;
+        description: string;
+      };
+      exams: {
+        title: string;
+        description: string;
+      };
+      grades: {
+        title: string;
+        description: string;
+      };
+      question_bank: {
+        title: string;
+        description: string;
+      };
+      exam_paper_generator: {
+        title: string;
+        description: string;
+      };
+      timetables: {
+        title: string;
+        description: string;
+      };
+      graduation: {
+        title: string;
+        description: string;
+      };
+      finance: {
+        title: string;
+        description: string;
+      };
+      fees: {
+        title: string;
+        description: string;
+      };
+      multi_currency: {
+        title: string;
+        description: string;
+      };
+      dms: {
+        title: string;
+        description: string;
+      };
+      letter_templates: {
+        title: string;
+        description: string;
+      };
+      excel_export: {
+        title: string;
+        description: string;
+      };
+      library: {
+        title: string;
+        description: string;
+      };
+      assets: {
+        title: string;
+        description: string;
+      };
+      events: {
+        title: string;
+        description: string;
+      };
+      id_cards: {
+        title: string;
+        description: string;
+      };
+      custom_id_templates: {
+        title: string;
+        description: string;
+      };
+      custom_branding: {
+        title: string;
+        description: string;
+      };
+      short_courses: {
+        title: string;
+        description: string;
+      };
+      leave_management: {
+        title: string;
+        description: string;
+      };
+      hostel: {
+        title: string;
+        description: string;
+      };
+      multi_school: {
+        title: string;
+        description: string;
+      };
+      api_access: {
+        title: string;
+        description: string;
+      };
+    };
+    benefits: {
+      secureReliable: {
+        title: string;
+        description: string;
+      };
+      lightningFast: {
+        title: string;
+        description: string;
+      };
+      multiLanguage: {
+        title: string;
+        description: string;
+      };
+      mobileReady: {
+        title: string;
+        description: string;
+      };
+      cloudBased: {
+        title: string;
+        description: string;
+      };
+      support24x7: {
+        title: string;
+        description: string;
+      };
+    };
+      pricing: {
+        period: string;
+        noPlansAvailable: string;
+        comparisonTitle: string;
+        comparisonSubtitle: string;
+        feature: string;
+        starter: {
+        name: string;
+        description: string;
+        feature1: string;
+        feature2: string;
+        feature3: string;
+        feature4: string;
+        feature5: string;
+        feature6: string;
+      };
+      professional: {
+        name: string;
+        description: string;
+        feature1: string;
+        feature2: string;
+        feature3: string;
+        feature4: string;
+        feature5: string;
+        feature6: string;
+        feature7: string;
+        feature8: string;
+      };
+      enterprise: {
+        name: string;
+        description: string;
+        feature1: string;
+        feature2: string;
+        feature3: string;
+        feature4: string;
+        feature5: string;
+        feature6: string;
+        feature7: string;
+        feature8: string;
+      };
+    };
+    stats: {
+      studentsManaged: string;
+      staffMembers: string;
+      uptimeGuarantee: string;
+      supportAvailable: string;
+    };
+    contact: {
+      messageSent: string;
+      messageSentDescription: string;
+      messageFailed: string;
+      messageFailedDescription: string;
+    };
+    nav: {
+      features: string;
+      pricing: string;
+      reviews: string;
+      contact: string;
+      signIn: string;
+      getStarted: string;
+    };
+    hero: {
+      badge: string;
+      title: string;
+      titleHighlight: string;
+      subtitle: string;
+      startFreeTrial: string;
+      watchDemo: string;
+    };
+    sections: {
+      features: {
+        badge: string;
+        title: string;
+        subtitle: string;
+      };
+      benefits: {
+        badge: string;
+        title: string;
+        subtitle: string;
+      };
+      pricing: {
+        badge: string;
+        title: string;
+        subtitle: string;
+        mostPopular: string;
+        getStarted: string;
+        startFreeTrial: string;
+        allPlansNote: string;
+        customPlanLink: string;
+      };
+      testimonials: {
+        badge: string;
+        title: string;
+        subtitle: string;
+      };
+      contact: {
+        badge: string;
+        title: string;
+        subtitle: string;
+        letsStartConversation: string;
+        conversationDescription: string;
+        phoneSupport: string;
+        whatsappSupport: string;
+        emailSupport: string;
+        officeAddress: string;
+        businessHours: string;
+        sendMessage: string;
+        formDescription: string;
+        firstName: string;
+        lastName: string;
+        emailAddress: string;
+        phoneNumber: string;
+        schoolName: string;
+        numberOfStudents: string;
+        message: string;
+        sendMessageButton: string;
+      };
+      cta: {
+        title: string;
+        subtitle: string;
+        startFreeTrial: string;
+        scheduleDemo: string;
+        note: string;
+      };
+    };
+  };
+  helpCenter: {
+    title: string;
+    subtitle: string;
+      searchPlaceholder: string;
+      allCategories: string;
+      clearFilters: string;
+      featuredArticles: string;
+      popularArticles: string;
+      articles: string;
+      allArticles: string;
+      articlesFound: string;
+      noArticlesFound: string;
+      noArticlesDescription: string;
+      contextualHelp: string;
+      articleFound: string;
+      noArticleFound: string;
+      errorLoading: string;
+      viewFullArticle: string;
+      browseHelpCenter: string;
+    };
+    footer: {
+      tagline: string;
+      product: string;
+      support: string;
+      company: string;
+      features: string;
+      pricing: string;
+      apiDocumentation: string;
+      integrations: string;
+      security: string;
+      helpCenter: string;
+      trainingVideos: string;
+      contactSupport: string;
+      systemStatus: string;
+      releaseNotes: string;
+      aboutUs: string;
+      careers: string;
+      privacyPolicy: string;
+      termsOfService: string;
+      cookiePolicy: string;
+      copyright: string;
+    };
+    aboutUs: {
+      title: string;
+      subtitle: string;
+      mission: {
+        title: string;
+        content: string;
+      };
+      vision: {
+        title: string;
+        content: string;
+      };
+      values: {
+        title: string;
+        innovation: {
+          title: string;
+          content: string;
+        };
+        integrity: {
+          title: string;
+          content: string;
+        };
+        excellence: {
+          title: string;
+          content: string;
+        };
+        community: {
+          title: string;
+          content: string;
+        };
+      };
+      whatWeOffer: {
+        title: string;
+        comprehensive: {
+          title: string;
+          content: string;
+        };
+        affordable: {
+          title: string;
+          content: string;
+        };
+        support: {
+          title: string;
+          content: string;
+        };
+      };
+      cta: {
+        text: string;
+        button: string;
+      };
+    };
+    privacyPolicy: {
+      title: string;
+      lastUpdated: string;
+      introduction: {
+        title: string;
+        content: string;
+      };
+      informationWeCollect: {
+        title: string;
+        personal: {
+          title: string;
+          content: string;
+        };
+        usage: {
+          title: string;
+          content: string;
+        };
+        technical: {
+          title: string;
+          content: string;
+        };
+      };
+      howWeUse: {
+        title: string;
+        provide: string;
+        communicate: string;
+        security: string;
+        support: string;
+        analytics: string;
+      };
+      dataSecurity: {
+        title: string;
+        content: string;
+      };
+      dataRetention: {
+        title: string;
+        content: string;
+      };
+      yourRights: {
+        title: string;
+        intro: string;
+        access: string;
+        correct: string;
+        delete: string;
+        export: string;
+        object: string;
+      };
+      contact: {
+        title: string;
+        content: string;
+      };
+    };
+    termsOfService: {
+      title: string;
+      lastUpdated: string;
+      introduction: {
+        title: string;
+        content: string;
+      };
+      acceptance: {
+        title: string;
+        content: string;
+      };
+      account: {
+        title: string;
+        intro: string;
+        accurate: string;
+        maintain: string;
+        notify: string;
+        responsible: string;
+      };
+      use: {
+        title: string;
+        permitted: {
+          title: string;
+          content: string;
+        };
+        prohibited: {
+          title: string;
+          unauthorized: string;
+          malicious: string;
+          interfere: string;
+          violate: string;
+        };
+      };
+      subscription: {
+        title: string;
+        content: string;
+        cancellation: string;
+      };
+      intellectualProperty: {
+        title: string;
+        content: string;
+      };
+      liability: {
+        title: string;
+        content: string;
+      };
+      termination: {
+        title: string;
+        content: string;
+      };
+      changes: {
+        title: string;
+        content: string;
+      };
+      contact: {
+        title: string;
+        content: string;
+      };
+    };
   // Maintenance Mode
   maintenance: {
     startedAt: string;

@@ -7,11 +7,16 @@ use App\Http\Requests\Fees\FeePaymentStoreRequest;
 use App\Models\FeeAssignment;
 use App\Models\FeePayment;
 use App\Models\FinanceAccount;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class FeePaymentController extends Controller
 {
+    public function __construct(
+        private NotificationService $notificationService
+    ) {
+    }
     public function index(Request $request)
     {
         $user = $request->user();
@@ -131,6 +136,78 @@ class FeePaymentController extends Controller
         ]);
 
         $payment = FeePayment::create($payload);
+
+        // Load relationships for notification
+        $payment->load(['feeAssignment.feeStructure', 'student', 'account', 'currency']);
+
+        // Notify about payment received
+        try {
+            $feeStructureName = $payment->feeAssignment?->feeStructure?->name ?? 'Fee';
+            $studentName = $payment->student?->full_name ?? 'Student';
+            $amount = number_format((float) $payment->amount, 2);
+            $currencyCode = $payment->currency?->code ?? '';
+
+            $this->notificationService->notify(
+                'fee.payment.received',
+                $payment,
+                $user,
+                [
+                    'title' => '💰 Fee Payment Received',
+                    'body' => "Payment of {$amount} {$currencyCode} received from {$studentName} for {$feeStructureName}.",
+                    'url' => "/fees/payments/{$payment->id}",
+                ]
+            );
+
+            // Also notify using generic payment.received event for finance module compatibility
+            $this->notificationService->notify(
+                'payment.received',
+                $payment,
+                $user,
+                [
+                    'title' => '💰 Payment Received',
+                    'body' => "Payment of {$amount} {$currencyCode} received for {$feeStructureName}.",
+                    'url' => "/fees/payments/{$payment->id}",
+                ]
+            );
+
+            // Check if fee assignment is now fully paid
+            $assignment = $payment->feeAssignment;
+            if ($assignment) {
+                $assignment->refresh();
+                if ($assignment->status === 'paid' && (float) $assignment->remaining_amount <= 0) {
+                    $this->notificationService->notify(
+                        'fee.assignment.paid',
+                        $assignment,
+                        $user,
+                        [
+                            'title' => '✅ Fee Fully Paid',
+                            'body' => "Fee assignment for {$studentName} ({$feeStructureName}) has been fully paid.",
+                            'url' => "/fees/assignments/{$assignment->id}",
+                        ]
+                    );
+                }
+
+                // Check if status changed
+                $oldStatus = $assignment->getOriginal('status') ?? 'pending';
+                if ($assignment->status !== $oldStatus) {
+                    $this->notificationService->notify(
+                        'fee.assignment.status_changed',
+                        $assignment,
+                        $user,
+                        [
+                            'title' => '📊 Fee Status Changed',
+                            'body' => "Fee assignment for {$studentName} ({$feeStructureName}) status changed from {$oldStatus} to {$assignment->status}.",
+                            'url' => "/fees/assignments/{$assignment->id}",
+                        ]
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send fee payment notification', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json($payment->fresh(['feeAssignment', 'incomeEntry', 'account']), 201);
     }

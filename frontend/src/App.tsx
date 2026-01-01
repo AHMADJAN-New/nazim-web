@@ -18,6 +18,11 @@ import { PlatformAdminRoute } from "@/components/PlatformAdminRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
+import AboutUs from "./pages/AboutUs";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import HelpCenter from "./pages/HelpCenter";
+import HelpCenterArticle from "./pages/HelpCenterArticle";
 import MaintenancePage from "./pages/MaintenancePage";
 import TimetableGeneration from "./pages/TimetableGeneration";
 import { PlatformAdminLogin } from "./platform/pages/PlatformAdminLogin";
@@ -77,6 +82,7 @@ import {
   StudentAdmissions,
   StudentReport,
   StudentAdmissionsReport,
+  NotificationsPage,
   ShortTermCourses,
   CourseStudents,
   CourseStudentReports,
@@ -172,7 +178,8 @@ import {
   OrganizationSubscriptionDetail,
   RenewalReviewPage,
   DiscountCodesManagement,
-  PlatformSettings
+  PlatformSettings,
+  HelpCenterManagement
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -218,6 +225,13 @@ const App = () => (
           >
             <SidebarProvider>
               <ErrorBoundary>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/about" element={<AboutUs />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <MaintenanceModeHandler>
                   <Routes>
                     <Route path="/" element={<Index />} />
@@ -323,6 +337,11 @@ const App = () => (
                               <PlatformSettings />
                             </Suspense>
                           } />
+                          <Route path="/help-center" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <HelpCenterManagement />
+                            </Suspense>
+                          } />
                           <Route path="/" element={<Navigate to="/platform/dashboard" replace />} />
                         </Routes>
                       </PlatformAdminLayout>
@@ -347,6 +366,43 @@ const App = () => (
                       <Suspense fallback={<PageSkeleton />}>
                         <UserSettings />
                       </Suspense>
+                    } />
+                    <Route path="/notifications" element={
+                      <PermissionRoute permission="notifications.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <NotificationsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Help Center */}
+                    <Route path="/help-center" element={
+                      <PermissionRoute permission="help_center.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <HelpCenter />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/help-center/s/:categorySlug" element={
+                      <PermissionRoute permission="help_center.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <HelpCenter />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/help-center/s/:categorySlug/:articleSlug" element={
+                      <PermissionRoute permission="help_center.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <HelpCenterArticle />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Keep ID-based route for admin/backoffice usage */}
+                    <Route path="/help-center/article/:id" element={
+                      <PermissionRoute permission="help_center.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <HelpCenterArticle />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/academic/timetable-generation" element={
                       <PermissionRoute permission="timetables.read">

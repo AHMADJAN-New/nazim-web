@@ -16,6 +16,7 @@ import {
   Clock,
   RefreshCw,
   Ticket,
+  HelpCircle,
   History,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -108,6 +109,10 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       description: 'Platform settings'
     },
     { 
+      name: 'Help Center', 
+      href: '/platform/help-center', 
+      icon: HelpCircle,
+      description: 'Manage help center articles and categories'
       name: 'Maintenance History', 
       href: '/platform/maintenance-history', 
       icon: History,

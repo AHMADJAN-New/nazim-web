@@ -255,6 +255,11 @@ class PlatformAdminSeeder extends Seeder
             if ($existingOrg) {
                 $this->command->info("  ✓ User already has organization: {$existingOrg->name}");
                 
+                // CRITICAL: Ensure all permissions are created for existing organization
+                // This includes help_center permissions and any other permissions defined in PermissionSeeder
+                $this->createOrganizationPermissionsIfNeeded($profile->organization_id);
+                $this->command->info("  ✓ Ensured all permissions exist for platform admin organization");
+                
                 // Check if subscription exists
                 $subscriptionRecord = DB::table('organization_subscriptions')
                     ->where('organization_id', $profile->organization_id)
@@ -311,6 +316,11 @@ class PlatformAdminSeeder extends Seeder
         ]);
 
         $this->command->info("  ✓ Created test organization: {$organizationName}");
+
+        // CRITICAL: Ensure all permissions are created for this organization
+        // This includes help_center permissions and any other permissions defined in PermissionSeeder
+        $this->createOrganizationPermissionsIfNeeded($organizationId);
+        $this->command->info("  ✓ Ensured all permissions exist for platform admin organization");
 
         // Create default school
         $school = SchoolBranding::create([

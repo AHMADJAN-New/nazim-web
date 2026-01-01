@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/api/client';
 import type * as SubscriptionApi from '@/types/api/subscription';
 import type * as OrganizationApi from '@/types/api/organization';
+import type * as HelpCenterApi from '@/types/api/helpCenter';
 
 /**
  * Platform Admin API Client
@@ -295,6 +296,69 @@ export const platformApi = {
     },
   },
 
+  // Help Center (Platform Admin - no organization scoping)
+  helpCenter: {
+    categories: {
+      list: async (params?: {
+        is_active?: boolean;
+        parent_id?: string | null;
+      }) => {
+        return apiClient.get<{ data: HelpCenterApi.HelpCenterCategory[] } | HelpCenterApi.HelpCenterCategory[]>('/platform/help-center/categories', params);
+      },
+      get: async (id: string) => {
+        return apiClient.get<{ data: HelpCenterApi.HelpCenterCategory }>(`/platform/help-center/categories/${id}`);
+      },
+      create: async (data: HelpCenterApi.HelpCenterCategoryInsert) => {
+        return apiClient.post<{ data: HelpCenterApi.HelpCenterCategory }>('/platform/help-center/categories', data);
+      },
+      update: async (id: string, data: HelpCenterApi.HelpCenterCategoryUpdate) => {
+        return apiClient.put<{ data: HelpCenterApi.HelpCenterCategory }>(`/platform/help-center/categories/${id}`, data);
+      },
+      delete: async (id: string) => {
+        return apiClient.delete(`/platform/help-center/categories/${id}`);
+      },
+    },
+    articles: {
+      list: async (params?: {
+        category_id?: string;
+        status?: 'draft' | 'published' | 'archived';
+        visibility?: 'public' | 'org_users' | 'staff_only';
+        is_featured?: boolean;
+        is_pinned?: boolean;
+        tag?: string;
+        search?: string;
+        order_by?: 'recent' | 'views' | 'relevance';
+        order_dir?: 'asc' | 'desc';
+        page?: number;
+        per_page?: number;
+        limit?: number;
+      }) => {
+        return apiClient.get<{ data: HelpCenterApi.HelpCenterArticle[] } | HelpCenterApi.HelpCenterArticle[]>('/platform/help-center/articles', params);
+      },
+      get: async (id: string) => {
+        return apiClient.get<{ data: HelpCenterApi.HelpCenterArticle }>(`/platform/help-center/articles/${id}`);
+      },
+      create: async (data: HelpCenterApi.HelpCenterArticleInsert) => {
+        return apiClient.post<{ data: HelpCenterApi.HelpCenterArticle }>('/platform/help-center/articles', data);
+      },
+      update: async (id: string, data: HelpCenterApi.HelpCenterArticleUpdate) => {
+        return apiClient.put<{ data: HelpCenterApi.HelpCenterArticle }>(`/platform/help-center/articles/${id}`, data);
+      },
+      delete: async (id: string) => {
+        return apiClient.delete(`/platform/help-center/articles/${id}`);
+      },
+      publish: async (id: string) => {
+        return apiClient.post(`/platform/help-center/articles/${id}/publish`);
+      },
+      unpublish: async (id: string) => {
+        return apiClient.post(`/platform/help-center/articles/${id}/unpublish`);
+      },
+      archive: async (id: string) => {
+        return apiClient.post(`/platform/help-center/articles/${id}/archive`);
+      },
+    },
+  },
+
   // Feature & Limit Definitions
   featureDefinitions: async () => {
     return apiClient.get<{ data: SubscriptionApi.FeatureDefinition[] }>('/platform/feature-definitions');
@@ -308,6 +372,129 @@ export const platformApi = {
     return apiClient.post<{ data: { to_grace_period: number; to_readonly: number; to_expired: number } }>('/platform/process-transitions');
   },
 
+  // Testimonials
+  testimonials: {
+    list: async () => {
+      return apiClient.get<{ data: Array<{
+        id: string;
+        name: string;
+        role?: string;
+        organization?: string;
+        content: string;
+        image_url?: string;
+        rating: number;
+        sort_order: number;
+        is_active: boolean;
+        created_at: string;
+        updated_at: string;
+      }> }>('/platform/testimonials');
+    },
+    create: async (data: {
+      name: string;
+      role?: string;
+      organization?: string;
+      content: string;
+      image_url?: string;
+      rating: number;
+      sort_order?: number;
+      is_active?: boolean;
+    }) => {
+      return apiClient.post<{ data: any }>('/platform/testimonials', data);
+    },
+    update: async (id: string, data: Partial<{
+      name: string;
+      role?: string;
+      organization?: string;
+      content: string;
+      image_url?: string;
+      rating: number;
+      sort_order?: number;
+      is_active?: boolean;
+    }>) => {
+      return apiClient.put<{ data: any }>(`/platform/testimonials/${id}`, data);
+    },
+    get: async (id: string) => {
+      return apiClient.get<{ data: any }>(`/platform/testimonials/${id}`);
+    },
+    delete: async (id: string) => {
+      return apiClient.delete(`/platform/testimonials/${id}`);
+    },
+  },
+
+  // Contact Messages
+  contactMessages: {
+    list: async (params?: { status?: string; search?: string; page?: number; per_page?: number }) => {
+      return apiClient.get<{
+        data: Array<{
+          id: string;
+          first_name: string;
+          last_name: string;
+          email: string;
+          phone?: string | null;
+          school_name?: string | null;
+          student_count?: number | null;
+          message: string;
+          status: 'new' | 'read' | 'replied' | 'archived';
+          admin_notes?: string | null;
+          replied_by?: string | null;
+          replied_at?: string | null;
+          reply_subject?: string | null;
+          reply_message?: string | null;
+          source: string;
+          created_at: string;
+          updated_at: string;
+        }>;
+        current_page: number;
+        last_page: number;
+        total: number;
+        per_page: number;
+      }>('/platform/contact-messages', params);
+    },
+    get: async (id: string) => {
+      return apiClient.get<{ data: any }>(`/platform/contact-messages/${id}`);
+    },
+    update: async (id: string, data: Partial<{
+      status?: 'new' | 'read' | 'replied' | 'archived';
+      admin_notes?: string;
+      reply_subject?: string;
+      reply_message?: string;
+    }>) => {
+      return apiClient.put<{ data: any }>(`/platform/contact-messages/${id}`, data);
+    },
+    delete: async (id: string) => {
+      return apiClient.delete(`/platform/contact-messages/${id}`);
+    },
+    stats: async () => {
+      return apiClient.get<{ data: {
+        total: number;
+        new: number;
+        read: number;
+        replied: number;
+        archived: number;
+        today: number;
+        this_week: number;
+        this_month: number;
+      } }>('/platform/contact-messages/stats');
+    },
+  },
+
+  // Generic request method for custom endpoints
+  request: async <T = any>(endpoint: string, options?: { method?: string; body?: string | object; params?: Record<string, string> }) => {
+    const method = options?.method || 'GET';
+    const params = options?.params;
+    
+    if (method === 'GET') {
+      return apiClient.get<T>(endpoint, params);
+    } else if (method === 'POST') {
+      const body = typeof options?.body === 'string' ? JSON.parse(options.body) : options?.body;
+      return apiClient.post<T>(endpoint, body);
+    } else if (method === 'PUT') {
+      const body = typeof options?.body === 'string' ? JSON.parse(options.body) : options?.body;
+      return apiClient.put<T>(endpoint, body);
+    } else if (method === 'DELETE') {
+      return apiClient.delete<T>(endpoint);
+    }
+    throw new Error(`Unsupported method: ${method}`);
   // Backup & Restore
   backups: {
     list: async () => {

@@ -87,6 +87,9 @@ use App\Http\Controllers\Dms\LetterTypesController;
 use App\Http\Controllers\Dms\OutgoingDocumentsController;
 use App\Http\Controllers\StorageController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\HelpCenterCategoryController;
+use App\Http\Controllers\HelpCenterArticleController;
 use App\Http\Controllers\LandingController;
 
 /*
@@ -159,6 +162,14 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         ->where('encodedPath', '.*')
         ->name('storage.info');
 
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+    Route::get('/notifications/preferences', [NotificationController::class, 'getPreferences']);
+    Route::put('/notifications/preferences/{type}', [NotificationController::class, 'updatePreference']);
+
     // Organizations (protected - all operations require authentication)
     Route::get('/organizations', [OrganizationController::class, 'index']);
     Route::post('/organizations', [OrganizationController::class, 'store']);
@@ -212,6 +223,43 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     // Translations (no permission required - accessible to all authenticated users)
     Route::get('/translations', [TranslationController::class, 'index']);
     Route::post('/translations', [TranslationController::class, 'store']);
+
+    // Help Center (organization-scoped, not school-scoped)
+    Route::prefix('help-center')->group(function () {
+        // Fixed routes first (to prevent slug conflicts)
+        // Categories
+        Route::get('/categories', [HelpCenterCategoryController::class, 'index']);
+        Route::get('/categories/slug/{slug}', [HelpCenterCategoryController::class, 'showBySlug']);
+        Route::get('/categories/{id}', [HelpCenterCategoryController::class, 'show']); // Keep for admin CRUD
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/categories', [HelpCenterCategoryController::class, 'store']);
+            Route::put('/categories/{id}', [HelpCenterCategoryController::class, 'update']);
+            Route::delete('/categories/{id}', [HelpCenterCategoryController::class, 'destroy']);
+        });
+
+        // Articles
+        Route::get('/articles', [HelpCenterArticleController::class, 'index']);
+        Route::get('/articles/featured', [HelpCenterArticleController::class, 'featured']);
+        Route::get('/articles/popular', [HelpCenterArticleController::class, 'popular']);
+        Route::get('/articles/context', [HelpCenterArticleController::class, 'getByContext']); // Contextual help
+        Route::get('/articles/{id}', [HelpCenterArticleController::class, 'show']); // Keep for admin CRUD - redirects to slug if accessed
+        Route::post('/articles/{id}/helpful', [HelpCenterArticleController::class, 'markHelpful']);
+        Route::post('/articles/{id}/not-helpful', [HelpCenterArticleController::class, 'markNotHelpful']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/articles', [HelpCenterArticleController::class, 'store']);
+            Route::put('/articles/{id}', [HelpCenterArticleController::class, 'update']);
+            Route::delete('/articles/{id}', [HelpCenterArticleController::class, 'destroy']);
+            Route::post('/articles/{id}/publish', [HelpCenterArticleController::class, 'publish']);
+            Route::post('/articles/{id}/unpublish', [HelpCenterArticleController::class, 'unpublish']);
+            Route::post('/articles/{id}/archive', [HelpCenterArticleController::class, 'archive']);
+        });
+
+        // Slug-based public routes (under /s prefix to avoid conflicts)
+        Route::prefix('s')->group(function () {
+            Route::get('/{categorySlug}', [HelpCenterArticleController::class, 'showCategoryBySlug']);
+            Route::get('/{categorySlug}/{articleSlug}', [HelpCenterArticleController::class, 'showBySlug']);
+        });
+    });
 
     // Global search (requires school context for filtering)
     Route::middleware(['school.context'])->group(function () {
@@ -1150,9 +1198,18 @@ Route::get('/reports/preview/template', [\App\Http\Controllers\ReportGenerationC
 
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SubscriptionAdminController;
+use App\Http\Controllers\TestimonialController;
+use App\Http\Controllers\ContactMessageController;
 
 // Public subscription routes
 Route::get('/subscription/plans', [SubscriptionController::class, 'plans']);
+Route::get('/subscription/features/all', [SubscriptionController::class, 'allFeatures']);
+
+// Public testimonials route (for landing page)
+Route::get('/testimonials', [TestimonialController::class, 'index']);
+
+// Public contact message route (for landing page)
+Route::post('/contact', [ContactMessageController::class, 'store']);
 
 // Authenticated subscription routes (require organization context)
 Route::middleware(['auth:sanctum', 'organization'])->prefix('subscription')->group(function () {
@@ -1257,6 +1314,34 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::put('/users/{id}', [SubscriptionAdminController::class, 'updatePlatformUser']);
     Route::delete('/users/{id}', [SubscriptionAdminController::class, 'deletePlatformUser']);
     Route::post('/users/{id}/reset-password', [SubscriptionAdminController::class, 'resetPlatformUserPassword']);
+    
+    // Testimonials management
+    Route::get('/testimonials', [TestimonialController::class, 'adminIndex']);
+    Route::post('/testimonials', [TestimonialController::class, 'store']);
+    Route::put('/testimonials/{id}', [TestimonialController::class, 'update']);
+    Route::delete('/testimonials/{id}', [TestimonialController::class, 'destroy']);
+    
+    // Contact messages management
+    Route::get('/contact-messages', [ContactMessageController::class, 'adminIndex']);
+    Route::get('/contact-messages/stats', [ContactMessageController::class, 'stats']);
+    Route::get('/contact-messages/{id}', [ContactMessageController::class, 'show']);
+    Route::put('/contact-messages/{id}', [ContactMessageController::class, 'update']);
+    Route::delete('/contact-messages/{id}', [ContactMessageController::class, 'destroy']);
+    
+    // Help Center management (platform admin - no organization filter)
+    Route::prefix('help-center')->group(function () {
+        // Categories CRUD
+        Route::get('/categories', [HelpCenterCategoryController::class, 'platformIndex']);
+        Route::post('/categories', [HelpCenterCategoryController::class, 'platformStore']);
+        Route::put('/categories/{id}', [HelpCenterCategoryController::class, 'platformUpdate']);
+        Route::delete('/categories/{id}', [HelpCenterCategoryController::class, 'platformDestroy']);
+        
+        // Articles CRUD
+        Route::get('/articles', [HelpCenterArticleController::class, 'platformIndex']);
+        Route::post('/articles', [HelpCenterArticleController::class, 'platformStore']);
+        Route::put('/articles/{id}', [HelpCenterArticleController::class, 'platformUpdate']);
+        Route::delete('/articles/{id}', [HelpCenterArticleController::class, 'platformDestroy']);
+    });
 
     // Backup & Restore
     Route::get('/backups', [App\Http\Controllers\BackupController::class, 'listBackups']);

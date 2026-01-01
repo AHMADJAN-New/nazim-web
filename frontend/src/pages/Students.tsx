@@ -859,25 +859,26 @@ export function Students() {
   });
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+    <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold">{t('students.title') || 'Students'}</h1>
-            <p className="text-muted-foreground">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold truncate">{t('students.title') || 'Students'}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               {t('students.subtitle') || 'Manage admissions with complete Afghan student records'}
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" asChild>
-              <Link to="/reports/student-registrations">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button variant="outline" asChild className="w-full sm:w-auto">
+              <Link to="/reports/student-registrations" className="flex items-center justify-center">
                 <FileText className="w-4 h-4 mr-2" />
-                {t('studentReport.title')}
+                <span className="text-xs sm:text-sm">{t('studentReport.title')}</span>
               </Link>
             </Button>
-            <Button onClick={() => setIsCreateOpen(true)}>
+            <Button onClick={() => setIsCreateOpen(true)} className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
-              {t('students.add') || 'Register Student'}
+              <span className="text-xs sm:text-sm">{t('students.add') || 'Register Student'}</span>
             </Button>
+          </div>
           <StudentFormDialog
             open={isCreateOpen}
             onOpenChange={setIsCreateOpen}
@@ -885,7 +886,6 @@ export function Students() {
             onSubmitData={onDialogSubmit}
           />
         </div>
-      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card>
@@ -941,16 +941,16 @@ export function Students() {
               <LoadingSpinner />
             </div>
           ) : (
-            <div className="space-y-4 overflow-x-auto">
+            <div className="space-y-4 overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
               <div className="space-y-3">
                 <div className="flex flex-wrap gap-2 items-center">
-                  <div className="relative flex-1 min-w-[200px]">
+                  <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder={t('students.searchPlaceholder') || 'Search by name, admission number, father name...'}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
+                      className="pl-9 w-full"
                     />
                   </div>
                   <Select value={schoolFilter} onValueChange={setSchoolFilter}>
@@ -990,17 +990,17 @@ export function Students() {
                   </Select>
                 </div>
 
-                <div className="border rounded-lg">
-                  <Table>
+                <div className="border rounded-lg overflow-x-auto -mx-4 sm:mx-0">
+                  <Table className="w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('students.picture') || 'Picture'}</TableHead>
-                        <TableHead>{t('students.admissionNo') || 'Admission #'}</TableHead>
-                        <TableHead>{t('students.student') || 'Student'}</TableHead>
-                        <TableHead>{t('students.school') || 'School'}</TableHead>
-                        <TableHead>{t('students.gender') || 'Gender'}</TableHead>
-                        <TableHead>{t('students.applyingGrade') || 'Applying Grade'}</TableHead>
-                        <TableHead className="text-right">{t('students.actions') || 'Actions'}</TableHead>
+                        <TableHead className="w-[60px]">{t('students.picture') || 'Picture'}</TableHead>
+                        <TableHead className="hidden sm:table-cell">{t('students.admissionNo') || 'Admission #'}</TableHead>
+                        <TableHead className="min-w-[200px]">{t('students.student') || 'Student'}</TableHead>
+                        <TableHead className="hidden md:table-cell">{t('students.school') || 'School'}</TableHead>
+                        <TableHead className="hidden lg:table-cell">{t('students.gender') || 'Gender'}</TableHead>
+                        <TableHead className="hidden lg:table-cell">{t('students.applyingGrade') || 'Applying Grade'}</TableHead>
+                        <TableHead className="text-right w-[100px]">{t('students.actions') || 'Actions'}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1011,15 +1011,15 @@ export function Students() {
                             onClick={() => handleView(student)}
                             className="cursor-pointer hover:bg-muted/50"
                           >
-                            <TableCell>
+                            <TableCell className="w-[60px]">
                               <StudentPictureCell student={student} />
                             </TableCell>
-                            <TableCell className="font-medium">{student.admissionNumber}</TableCell>
-                            <TableCell>
-                              <div className="space-y-1 min-w-[200px]">
+                            <TableCell className="font-medium hidden sm:table-cell">{student.admissionNumber}</TableCell>
+                            <TableCell className="min-w-[200px]">
+                              <div className="space-y-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-semibold break-words">{student.fullName}</span>
-                                  <Badge variant={statusBadge(student.status)} className="shrink-0">
+                                  <span className="font-semibold break-words min-w-0">{student.fullName}</span>
+                                  <Badge variant={statusBadge(student.status)} className="shrink-0 text-xs">
                                     {student.status === 'applied' ? t('students.applied') :
                                      student.status === 'admitted' ? t('students.admitted') :
                                      student.status === 'active' ? t('students.active') :
@@ -1027,7 +1027,7 @@ export function Students() {
                                      student.status}
                                   </Badge>
                                   {student.isOrphan && (
-                                    <Badge variant="destructive" className="shrink-0">
+                                    <Badge variant="destructive" className="shrink-0 text-xs">
                                       {t('students.orphan') || 'Orphan'}
                                     </Badge>
                                   )}
@@ -1035,21 +1035,25 @@ export function Students() {
                                 <div className="text-xs text-muted-foreground flex flex-wrap gap-2 items-center">
                                   <span className="break-words">{t('students.father') || 'Father'}: {student.fatherName}</span>
                                   {student.guardianPhone && (
-                                    <span className="break-words">{t('students.guardian') || 'Guardian'}: {student.guardianPhone}</span>
+                                    <span className="break-words hidden sm:inline">{t('students.guardian') || 'Guardian'}: {student.guardianPhone}</span>
                                   )}
+                                </div>
+                                {/* Show admission number on mobile */}
+                                <div className="text-xs text-muted-foreground sm:hidden">
+                                  {t('students.admissionNo') || 'Admission #'}: {student.admissionNumber}
                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="hidden md:table-cell">
                               {schools?.find((school) => school.id === student.schoolId)?.school_name || student.school?.schoolName || '—'}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="hidden lg:table-cell">
                               <Badge variant="outline">
                                 {student.gender === 'male' ? t('students.male') : t('students.female')}
                               </Badge>
                             </TableCell>
-                            <TableCell>{student.applyingGrade || '—'}</TableCell>
-                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <TableCell className="hidden lg:table-cell">{student.applyingGrade || '—'}</TableCell>
+                            <TableCell className="text-right w-[100px]" onClick={(e) => e.stopPropagation()}>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="sm">

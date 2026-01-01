@@ -44,6 +44,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
@@ -170,6 +171,7 @@ export function StudentAdmissions() {
   const [statusFilter, setStatusFilter] = useState<'all' | AdmissionStatus>('all');
   const [residencyFilter, setResidencyFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [activeTab, setActiveTab] = useState('basic');
 
   const admissionSchema = getAdmissionSchema(t);
 
@@ -367,6 +369,9 @@ export function StudentAdmissions() {
       id: 'picture',
       header: t('students.picture') || 'Picture',
       cell: ({ row }) => <AdmissionPictureCell admission={row.original} />,
+      meta: {
+        className: 'w-[60px]',
+      },
     },
     {
       accessorKey: 'studentCode',
@@ -379,6 +384,9 @@ export function StudentAdmissions() {
           </div>
         );
       },
+      meta: {
+        className: 'hidden sm:table-cell',
+      },
     },
     {
       accessorKey: 'student',
@@ -386,11 +394,11 @@ export function StudentAdmissions() {
       cell: ({ row }) => {
         const admission = row.original;
         return (
-          <div className="space-y-1 min-w-[200px]">
+          <div className="space-y-1 min-w-0 sm:min-w-[200px]">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold break-words">{admission.student?.fullName || t('hostel.unassigned')}</span>
+              <span className="font-semibold break-words min-w-0">{admission.student?.fullName || t('hostel.unassigned')}</span>
               {admission.enrollmentStatus && (
-                <Badge variant={statusVariant(admission.enrollmentStatus)} className="shrink-0">
+                <Badge variant={statusVariant(admission.enrollmentStatus)} className="shrink-0 text-xs">
                   {admission.enrollmentStatus === 'pending' ? t('admissions.pending') :
                    admission.enrollmentStatus === 'admitted' ? t('admissions.admitted') :
                    admission.enrollmentStatus === 'active' ? t('admissions.active') :
@@ -402,7 +410,7 @@ export function StudentAdmissions() {
                 </Badge>
               )}
               {admission.isBoarder && (
-                <Badge variant="secondary" className="shrink-0">
+                <Badge variant="secondary" className="shrink-0 text-xs">
                   {t('admissions.boarder') || 'Boarder'}
                 </Badge>
               )}
@@ -412,6 +420,10 @@ export function StudentAdmissions() {
                 {t('admissions.admissionNumber') || 'Admission #'}: {admission.student.admissionNumber}
               </div>
             )}
+            {/* Show ID on mobile since ID column is hidden */}
+            <div className="text-xs text-muted-foreground sm:hidden font-mono">
+              ID: {admission.student?.studentCode || admission.student?.admissionNumber || '—'}
+            </div>
           </div>
         );
       },
@@ -423,6 +435,9 @@ export function StudentAdmissions() {
         const school = schools?.find((s) => s.id === row.original.schoolId);
         return school?.schoolName || '—';
       },
+      meta: {
+        className: 'hidden md:table-cell',
+      },
     },
     {
       accessorKey: 'class',
@@ -432,10 +447,10 @@ export function StudentAdmissions() {
         const classInfo = admission.classAcademicYear;
         if (classInfo) {
           return (
-            <div className="space-y-1">
-              <div className="font-medium">{admission.class?.name || t('common.unknown')}</div>
+            <div className="space-y-1 min-w-0 sm:min-w-[150px]">
+              <div className="font-medium break-words">{admission.class?.name || t('common.unknown')}</div>
               {classInfo.sectionName && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs shrink-0">
                   {classInfo.sectionName}
                 </Badge>
               )}
@@ -455,6 +470,9 @@ export function StudentAdmissions() {
         const type = residencyTypes?.find((t) => t.id === row.original.residencyTypeId);
         return type ? type.name : '—';
       },
+      meta: {
+        className: 'hidden lg:table-cell',
+      },
     },
     {
       accessorKey: 'room',
@@ -462,6 +480,9 @@ export function StudentAdmissions() {
       cell: ({ row }) => {
         const room = rooms?.find((r) => r.id === row.original.roomId);
         return room ? room.roomNumber : '—';
+      },
+      meta: {
+        className: 'hidden lg:table-cell',
       },
     },
     {
@@ -516,6 +537,9 @@ export function StudentAdmissions() {
           </Button>
         </div>
       ),
+      meta: {
+        className: 'text-right w-[100px]',
+      },
     },
   ];
 
@@ -653,6 +677,7 @@ export function StudentAdmissions() {
     setSelectedAdmission(admission);
     setIsEdit(true);
     setIsDialogOpen(true);
+    setActiveTab('basic');
     // Clear delete state when editing
     setAdmissionToDelete(null);
     
@@ -711,20 +736,21 @@ export function StudentAdmissions() {
   );
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">{t('admissions.title') || 'Student Admissions'}</h1>
-          <p className="text-muted-foreground">
+    <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 min-w-0">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold">{t('admissions.title') || 'Student Admissions'}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             {t('admissions.subtitle') || 'Admit registered students into classes with residency and year tracking.'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           {canBulkDeactivate && (
             <Button
               variant="outline"
               onClick={() => setIsBulkDeactivateDialogOpen(true)}
               disabled={bulkDeactivate.isPending}
+              className="w-full sm:w-auto"
             >
               <X className="w-4 h-4 mr-2" />
               {t('admissions.bulkDeactivate') || `Deactivate (${selectedCount})`}
@@ -739,6 +765,7 @@ export function StudentAdmissions() {
                 setSelectedAdmission(null);
                 setIsEdit(false);
                 setSelectedAcademicYear(undefined);
+                setActiveTab('basic');
                 reset();
               }
             }}
@@ -759,6 +786,7 @@ export function StudentAdmissions() {
                   setIsEdit(false);
                   setAdmissionToDelete(null);
                   setSelectedAcademicYear(undefined);
+                  setActiveTab('basic');
                   reset();
                 }}
               >
@@ -766,21 +794,44 @@ export function StudentAdmissions() {
                 {t('admissions.add') || 'Admit Student'}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] md:w-full">
-              <DialogHeader>
-                <DialogTitle>{isEdit ? (t('admissions.updateAdmission') || 'Update admission') : (t('admissions.admitStudentFromRegistration') || 'Admit student from registration')}</DialogTitle>
-                <DialogDescription>
+            <DialogContent 
+              className="max-w-5xl max-h-[100vh] h-[100vh] sm:max-h-[95vh] sm:h-[95vh] w-full sm:w-[95vw] md:w-[90vw] lg:w-full p-0 gap-0 flex flex-col m-0 sm:m-4 rounded-none sm:rounded-lg"
+              aria-describedby="admission-form-description"
+            >
+              <style>{`
+                @media (max-width: 639px) {
+                  [data-radix-dialog-content][data-state="open"] {
+                    position: fixed !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    right: 0 !important;
+                    bottom: 0 !important;
+                    transform: none !important;
+                    margin: 0 !important;
+                    max-width: 100% !important;
+                    width: 100% !important;
+                    height: 100vh !important;
+                    max-height: 100vh !important;
+                    border-radius: 0 !important;
+                  }
+                }
+              `}</style>
+              <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex-shrink-0">
+                <DialogTitle className="text-lg sm:text-xl">{isEdit ? (t('admissions.updateAdmission') || 'Update admission') : (t('admissions.admitStudentFromRegistration') || 'Admit student from registration')}</DialogTitle>
+                <DialogDescription id="admission-form-description" className="text-sm">
                   {t('admissions.dialogDescription') || 'Map a registered learner into a class, academic year, and residency type with status tracking.'}
                 </DialogDescription>
               </DialogHeader>
               {!isEdit && isLimitReached && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    {t('admissions.limitReached') || 
-                     `Student limit reached (${studentUsage.current}/${studentUsage.limit}). Please disable an old admission record first or upgrade your plan to add new admissions.`}
-                  </AlertDescription>
-                </Alert>
+                <div className="px-4 sm:px-6 pb-3 sm:pb-4 flex-shrink-0">
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      {t('admissions.limitReached') || 
+                       `Student limit reached (${studentUsage.current}/${studentUsage.limit}). Please disable an old admission record first or upgrade your plan to add new admissions.`}
+                    </AlertDescription>
+                  </Alert>
+                </div>
               )}
               <FormProvider {...formMethods}>
                 <form onSubmit={handleSubmit(onSubmit, (errors) => {
@@ -792,8 +843,26 @@ export function StudentAdmissions() {
                   if (firstError?.message) {
                     showToast.error(firstError.message);
                   }
-                })} className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
+                })} className="flex flex-col flex-1 min-h-0">
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0 px-4 sm:px-6">
+                    <TabsList className="flex w-full gap-1 h-auto mb-3 sm:mb-4 flex-shrink-0 overflow-x-auto pb-1 scrollbar-hide">
+                      <TabsTrigger value="basic" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
+                        {t('admissions.basicInfo') || 'Basic Info'}
+                      </TabsTrigger>
+                      <TabsTrigger value="academic" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
+                        {t('admissions.academicInfo') || 'Academic'}
+                      </TabsTrigger>
+                      <TabsTrigger value="residency" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
+                        {t('admissions.residencyInfo') || 'Residency'}
+                      </TabsTrigger>
+                      <TabsTrigger value="additional" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
+                        {t('admissions.additionalInfo') || 'Additional'}
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    <div className="flex-1 overflow-y-auto pb-4 min-h-0">
+                      <TabsContent value="basic" className="space-y-4 mt-0">
+                        <div className="grid md:grid-cols-2 gap-4">
               {schools && schools.length > 1 && (
                 <div>
                   <Label>{t('admissions.school') || 'School'}</Label>
@@ -822,7 +891,10 @@ export function StudentAdmissions() {
                 </div>
               )}
               <div>
-                <Label>{t('admissions.studentFromRegistration') || 'Student (from registration)'}</Label>
+                <Label>
+                  {t('admissions.studentFromRegistration') || 'Student (from registration)'}
+                  <span className="text-destructive ml-1">*</span>
+                </Label>
                 <Controller
                       control={control}
                       name="student_id"
@@ -841,12 +913,18 @@ export function StudentAdmissions() {
                             searchPlaceholder={t('admissions.searchStudent') || 'Search by name or admission number...'}
                             emptyText={t('admissions.noStudentsFound') || 'No students found.'}
                             disabled={isEdit || (!isEdit && !canCreateAdmission)}
+                            className={errors.student_id ? 'border-destructive' : ''}
                           />
                         );
                       }}
                     />
                     {errors.student_id && <p className="text-destructive text-sm mt-1">{errors.student_id.message}</p>}
                   </div>
+                    </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="academic" className="space-y-4 mt-0">
+                        <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label>{t('admissions.academicYear') || 'Academic Year'}</Label>
                     <Controller
@@ -865,7 +943,7 @@ export function StudentAdmissions() {
                           }}
                           disabled={!isEdit && !canCreateAdmission}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className={errors.academic_year_id ? 'border-destructive' : ''}>
                             <SelectValue placeholder={t('admissions.selectAcademicYear') || 'Select academic year'} />
                           </SelectTrigger>
                           <SelectContent>
@@ -944,6 +1022,11 @@ export function StudentAdmissions() {
                       </p>
                     )}
                   </div>
+                        </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="residency" className="space-y-4 mt-0">
+                        <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label>{t('admissions.residencyType') || 'Residency Type'}</Label>
                     <Controller
@@ -955,7 +1038,7 @@ export function StudentAdmissions() {
                           onValueChange={field.onChange}
                           disabled={!isEdit && !canCreateAdmission}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className={errors.residency_type_id ? 'border-destructive' : ''}>
                             <SelectValue placeholder={t('admissions.selectResidency') || 'Select residency'} />
                           </SelectTrigger>
                           <SelectContent>
@@ -996,12 +1079,18 @@ export function StudentAdmissions() {
                       }}
                     />
                   </div>
+                        </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="additional" className="space-y-4 mt-0">
+                        <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label>{t('admissions.admissionYear') || 'Admission Year'}</Label>
                     <Input 
                       placeholder={new Date().getFullYear().toString()} 
                       {...register('admission_year')}
                       disabled={!isEdit && !canCreateAdmission}
+                      className={errors.admission_year ? 'border-destructive' : ''}
                     />
                   </div>
                   <div>
@@ -1099,19 +1188,56 @@ export function StudentAdmissions() {
                     <p className="text-destructive text-sm mt-1">{errors.placement_notes.message}</p>
                   )}
                 </div>
+                      </TabsContent>
+                    </div>
+                  </Tabs>
 
-                <DialogFooter>
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={(!isEdit && !canCreateAdmission) || updateAdmission.isPending || createAdmission.isPending}
-                  >
-                    {updateAdmission.isPending || createAdmission.isPending
-                      ? (t('common.saving') || 'Saving...')
-                      : isEdit 
-                        ? (t('admissions.updateAdmission') || 'Update admission') 
-                        : (t('admissions.admitStudent') || 'Admit student')}
-                  </Button>
+                <DialogFooter className="px-4 sm:px-6 pt-4 pb-4 sm:pb-6 flex-shrink-0 border-t">
+                  <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
+                    {activeTab !== 'basic' && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          const tabs = ['basic', 'academic', 'residency', 'additional'];
+                          const currentIndex = tabs.indexOf(activeTab);
+                          if (currentIndex > 0) {
+                            setActiveTab(tabs[currentIndex - 1]);
+                          }
+                        }}
+                        className="w-full sm:w-auto"
+                      >
+                        {t('common.previous') || 'Previous'}
+                      </Button>
+                    )}
+                    {activeTab !== 'additional' ? (
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const tabs = ['basic', 'academic', 'residency', 'additional'];
+                          const currentIndex = tabs.indexOf(activeTab);
+                          if (currentIndex < tabs.length - 1) {
+                            setActiveTab(tabs[currentIndex + 1]);
+                          }
+                        }}
+                        className="w-full sm:w-auto"
+                      >
+                        {t('common.next') || 'Next'}
+                      </Button>
+                    ) : (
+                      <Button 
+                        type="submit" 
+                        className="w-full sm:w-auto"
+                        disabled={(!isEdit && !canCreateAdmission) || updateAdmission.isPending || createAdmission.isPending}
+                      >
+                        {updateAdmission.isPending || createAdmission.isPending
+                          ? (t('common.saving') || 'Saving...')
+                          : isEdit 
+                            ? (t('admissions.updateAdmission') || 'Update admission') 
+                            : (t('admissions.admitStudent') || 'Admit student')}
+                      </Button>
+                    )}
+                  </div>
                 </DialogFooter>
               </form>
               </FormProvider>
@@ -1184,10 +1310,10 @@ export function StudentAdmissions() {
               </p>
             </div>
           ) : (
-            <div className="space-y-4 overflow-x-auto">
+            <div className="space-y-4 overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
               <div className="space-y-3">
                 <div className="flex flex-wrap gap-2 items-center">
-                  <div className="relative flex-1 min-w-[200px]">
+                  <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder={t('common.search') || 'Search by student name, admission number, class...'}
@@ -1239,20 +1365,31 @@ export function StudentAdmissions() {
                   </Select>
                 </div>
 
-                <div className="border rounded-lg">
-                  <Table>
+                <div className="border rounded-lg overflow-x-auto -mx-4 sm:mx-0">
+                  <Table className="w-full">
                     <TableHeader>
                       {table.getHeaderGroups().map((headerGroup) => (
                         <TableRow key={headerGroup.id}>
-                          {headerGroup.headers.map((header) => (
-                            <TableHead key={header.id}>
-                              {header.isPlaceholder
-                                ? null
-                                : typeof header.column.columnDef.header === 'function'
-                                ? header.column.columnDef.header({ column: header.column, header, table })
-                                : header.column.columnDef.header}
-                            </TableHead>
-                          ))}
+                          {headerGroup.headers.map((header) => {
+                            const columnId = header.column.id;
+                            let headerClassName = '';
+                            if (columnId === 'picture') headerClassName = 'w-[60px]';
+                            else if (columnId === 'studentCode') headerClassName = 'hidden sm:table-cell';
+                            else if (columnId === 'school') headerClassName = 'hidden md:table-cell';
+                            else if (columnId === 'residency') headerClassName = 'hidden lg:table-cell';
+                            else if (columnId === 'room') headerClassName = 'hidden lg:table-cell';
+                            else if (columnId === 'actions') headerClassName = 'text-right w-[100px]';
+                            
+                            return (
+                              <TableHead key={header.id} className={headerClassName}>
+                                {header.isPlaceholder
+                                  ? null
+                                  : typeof header.column.columnDef.header === 'function'
+                                  ? header.column.columnDef.header({ column: header.column, header, table })
+                                  : header.column.columnDef.header}
+                              </TableHead>
+                            );
+                          })}
                         </TableRow>
                       ))}
                     </TableHeader>
@@ -1266,13 +1403,26 @@ export function StudentAdmissions() {
                       ) : (
                         table.getRowModel().rows.map((row) => (
                           <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                            {row.getVisibleCells().map((cell) => (
-                              <TableCell key={cell.id}>
-                                {cell.column.columnDef.cell
-                                  ? cell.column.columnDef.cell({ row })
-                                  : null}
-                              </TableCell>
-                            ))}
+                            {row.getVisibleCells().map((cell) => {
+                              const columnId = cell.column.id;
+                              let cellClassName = '';
+                              if (columnId === 'picture') cellClassName = 'w-[60px]';
+                              else if (columnId === 'studentCode') cellClassName = 'hidden sm:table-cell';
+                              else if (columnId === 'school') cellClassName = 'hidden md:table-cell';
+                              else if (columnId === 'residency') cellClassName = 'hidden lg:table-cell';
+                              else if (columnId === 'room') cellClassName = 'hidden lg:table-cell';
+                              else if (columnId === 'actions') cellClassName = 'text-right w-[100px]';
+                              
+                              return (
+                                <TableCell key={cell.id} className={cellClassName}>
+                                  {cell.column.columnDef.cell
+                                    ? typeof cell.column.columnDef.cell === 'function'
+                                      ? cell.column.columnDef.cell(cell.getContext())
+                                      : cell.column.columnDef.cell
+                                    : null}
+                                </TableCell>
+                              );
+                            })}
                           </TableRow>
                         ))
                       )}

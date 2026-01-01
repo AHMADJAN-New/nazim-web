@@ -4,12 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\FinanceAccount;
 use App\Models\Currency;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class FinanceAccountController extends Controller
 {
+    public function __construct(
+        private NotificationService $notificationService
+    ) {}
     /**
      * Display a listing of finance accounts
      */
@@ -280,6 +285,38 @@ class FinanceAccountController extends Controller
             
             // Recalculate balance to include assets before returning
             $account->recalculateBalance();
+
+            // Check for low balance warning (if balance is below 10% of opening balance or below a threshold)
+            try {
+                $openingBalance = $account->opening_balance ?? 0;
+                $currentBalance = $account->current_balance ?? 0;
+                $lowBalanceThreshold = max($openingBalance * 0.1, 100); // 10% of opening or 100, whichever is higher
+                
+                if ($currentBalance < $lowBalanceThreshold && $currentBalance >= 0) {
+                    $currencySymbol = $account->currency->symbol ?? $account->currency->code ?? '';
+                    $balanceFormatted = number_format($currentBalance, 2) . ' ' . $currencySymbol;
+                    $thresholdFormatted = number_format($lowBalanceThreshold, 2) . ' ' . $currencySymbol;
+                    
+                    $this->notificationService->notify(
+                        'invoice.overdue', // Using invoice.overdue for low balance warnings (it's a digest event)
+                        $account,
+                        $request->user(),
+                        [
+                            'title' => '⚠️ Low Account Balance Warning',
+                            'body' => "Account '{$account->name}' has a low balance of {$balanceFormatted} (below threshold of {$thresholdFormatted}).",
+                            'url' => "/finance/accounts/{$account->id}",
+                            'level' => 'warning',
+                            'exclude_actor' => false,
+                        ]
+                    );
+                }
+            } catch (\Exception $e) {
+                // Log error but don't fail the request
+                Log::warning('Failed to send low balance notification', [
+                    'account_id' => $account->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return response()->json($account);
         } catch (\Illuminate\Validation\ValidationException $e) {

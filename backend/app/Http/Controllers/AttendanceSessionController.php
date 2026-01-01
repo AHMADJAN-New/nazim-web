@@ -8,6 +8,7 @@ use App\Http\Requests\StoreAttendanceSessionRequest;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\ClassModel;
+use App\Services\Notifications\NotificationService;
 use App\Services\Reports\DateConversionService;
 use App\Services\Reports\ReportConfig;
 use App\Services\Reports\ReportService;
@@ -22,7 +23,8 @@ class AttendanceSessionController extends Controller
 {
     public function __construct(
         private ReportService $reportService,
-        private DateConversionService $dateService
+        private DateConversionService $dateService,
+        private NotificationService $notificationService
     ) {}
     public function index(Request $request)
     {
@@ -170,6 +172,32 @@ class AttendanceSessionController extends Controller
             return $session->load(['classModel', 'classes', 'school', 'records']);
         });
 
+        // Load relationships for notification
+        $session->load(['classModel', 'classes', 'school', 'academicYear']);
+
+        // Notify about attendance session creation
+        try {
+            $classNames = $session->classes->pluck('name')->join(', ') ?: ($session->classModel?->name ?? 'Class');
+            $sessionDate = $session->session_date ? Carbon::parse($session->session_date)->format('Y-m-d') : 'N/A';
+            $method = ucfirst($session->method ?? 'manual');
+            
+            $this->notificationService->notify(
+                'attendance.session.created',
+                $session,
+                $user,
+                [
+                    'title' => '📋 Attendance Session Created',
+                    'body' => "New attendance session created for {$classNames} on {$sessionDate} using {$method} method.",
+                    'url' => "/attendance/sessions/{$session->id}",
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to send attendance session creation notification', [
+                'session_id' => $session->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return response()->json($session, 201);
     }
 
@@ -242,13 +270,43 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'Attendance session not found'], 404);
         }
 
+        // Track old status for status change notification
+        $oldStatus = $session->status;
+        
         $session->update([
             'status' => $validated['status'] ?? $session->status,
             'remarks' => $validated['remarks'] ?? $session->remarks,
             'closed_at' => ($validated['status'] ?? $session->status) === 'closed' ? now() : null,
         ]);
 
-        return response()->json($session->fresh(['classModel', 'classes', 'school']));
+        $session->fresh(['classModel', 'classes', 'school', 'academicYear']);
+
+        // Notify if session is closed
+        try {
+            if (isset($validated['status']) && $validated['status'] === 'closed' && $oldStatus !== 'closed') {
+                $classNames = $session->classes->pluck('name')->join(', ') ?: ($session->classModel?->name ?? 'Class');
+                $sessionDate = $session->session_date ? Carbon::parse($session->session_date)->format('Y-m-d') : 'N/A';
+                $recordsCount = $session->records()->whereNull('deleted_at')->count();
+                
+                $this->notificationService->notify(
+                    'attendance.session.closed',
+                    $session,
+                    $user,
+                    [
+                        'title' => '✅ Attendance Session Closed',
+                        'body' => "Attendance session for {$classNames} on {$sessionDate} has been closed. {$recordsCount} record(s) marked.",
+                        'url' => "/attendance/sessions/{$session->id}",
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to send attendance session closed notification', [
+                'session_id' => $session->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return response()->json($session);
     }
 
     public function close(string $id)
@@ -289,7 +347,33 @@ class AttendanceSessionController extends Controller
             'closed_at' => now(),
         ]);
 
-        return response()->json($session->fresh(['classModel', 'classes', 'school']));
+        // Load relationships for notification
+        $session->fresh(['classModel', 'classes', 'school', 'academicYear', 'records']);
+
+        // Notify about attendance session closure
+        try {
+            $classNames = $session->classes->pluck('name')->join(', ') ?: ($session->classModel?->name ?? 'Class');
+            $sessionDate = $session->session_date ? Carbon::parse($session->session_date)->format('Y-m-d') : 'N/A';
+            $recordsCount = $session->records()->whereNull('deleted_at')->count();
+            
+            $this->notificationService->notify(
+                'attendance.session.closed',
+                $session,
+                $user,
+                [
+                    'title' => '✅ Attendance Session Closed',
+                    'body' => "Attendance session for {$classNames} on {$sessionDate} has been closed. {$recordsCount} record(s) marked.",
+                    'url' => "/attendance/sessions/{$session->id}",
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to send attendance session closed notification', [
+                'session_id' => $session->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return response()->json($session);
     }
 
     public function markRecords(MarkAttendanceRecordsRequest $request, string $id)

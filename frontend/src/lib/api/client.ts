@@ -4284,3 +4284,161 @@ export const phoneBookApi = {
     return apiClient.get('/phonebook', params);
   },
 };
+
+// Help Center Categories API
+export const helpCenterCategoriesApi = {
+  list: async (params?: {
+    is_active?: boolean;
+    parent_id?: string | null;
+  }) => {
+    return apiClient.get('/help-center/categories', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/help-center/categories/${id}`);
+  },
+
+  getBySlug: async (slug: string) => {
+    return apiClient.get(`/help-center/categories/slug/${slug}`);
+  },
+
+  create: async (data: {
+    name: string;
+    slug?: string | null;
+    description?: string | null;
+    icon?: string | null;
+    color?: string | null;
+    order?: number;
+    is_active?: boolean;
+    parent_id?: string | null;
+  }) => {
+    return apiClient.post('/help-center/categories', data);
+  },
+
+  update: async (id: string, data: {
+    name?: string;
+    slug?: string | null;
+    description?: string | null;
+    icon?: string | null;
+    color?: string | null;
+    order?: number;
+    is_active?: boolean;
+    parent_id?: string | null;
+  }) => {
+    return apiClient.put(`/help-center/categories/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/help-center/categories/${id}`);
+  },
+};
+
+// Help Center Articles API
+export const helpCenterArticlesApi = {
+  list: async (params?: {
+    organization_id?: string;
+    category_id?: string;
+    category_slug?: string;
+    status?: 'draft' | 'published' | 'archived';
+    visibility?: 'public' | 'org_users' | 'staff_only';
+    is_featured?: boolean;
+    is_pinned?: boolean;
+    tag?: string;
+    search?: string;
+    order_by?: 'recent' | 'views' | 'relevance';
+    order_dir?: 'asc' | 'desc';
+    page?: number;
+    per_page?: number;
+    limit?: number;
+  }) => {
+    return apiClient.get('/help-center/articles', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/help-center/articles/${id}`);
+  },
+
+  getBySlug: async (categorySlug: string, articleSlug: string) => {
+    return apiClient.get(`/help-center/s/${categorySlug}/${articleSlug}`);
+  },
+
+  getCategoryBySlug: async (categorySlug: string) => {
+    return apiClient.get(`/help-center/s/${categorySlug}`);
+  },
+
+  getByContext: async (params: { route?: string; context?: string }) => {
+    return apiClient.get('/help-center/articles/context', params);
+  },
+
+  featured: async (params?: { limit?: number }) => {
+    return apiClient.get('/help-center/articles/featured', params);
+  },
+
+  popular: async (params?: { limit?: number }) => {
+    return apiClient.get('/help-center/articles/popular', params);
+  },
+
+  create: async (data: {
+    category_id: string;
+    title: string;
+    slug?: string | null;
+    excerpt?: string | null;
+    content: string;
+    content_type?: 'markdown' | 'html';
+    featured_image_url?: string | null;
+    is_published?: boolean;
+    is_featured?: boolean;
+    is_pinned?: boolean;
+    meta_title?: string | null;
+    meta_description?: string | null;
+    tags?: string[];
+    order?: number;
+    related_article_ids?: string[];
+  }) => {
+    return apiClient.post('/help-center/articles', data);
+  },
+
+  update: async (id: string, data: {
+    category_id?: string;
+    title?: string;
+    slug?: string | null;
+    excerpt?: string | null;
+    content?: string;
+    content_type?: 'markdown' | 'html';
+    featured_image_url?: string | null;
+    is_published?: boolean;
+    is_featured?: boolean;
+    is_pinned?: boolean;
+    meta_title?: string | null;
+    meta_description?: string | null;
+    tags?: string[];
+    order?: number;
+    related_article_ids?: string[];
+  }) => {
+    return apiClient.put(`/help-center/articles/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/help-center/articles/${id}`);
+  },
+
+  markHelpful: async (id: string) => {
+    return apiClient.post(`/help-center/articles/${id}/helpful`);
+  },
+
+    markNotHelpful: async (id: string) => {
+        return apiClient.post(`/help-center/articles/${id}/not-helpful`);
+    },
+
+    publish: async (id: string) => {
+        return apiClient.post(`/help-center/articles/${id}/publish`);
+    },
+
+    unpublish: async (id: string) => {
+        return apiClient.post(`/help-center/articles/${id}/unpublish`);
+    },
+
+    archive: async (id: string) => {
+        return apiClient.post(`/help-center/articles/${id}/archive`);
+    },
+};
