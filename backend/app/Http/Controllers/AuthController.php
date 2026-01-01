@@ -12,6 +12,19 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     /**
+     * Handle GET requests to login endpoint (returns error message)
+     * The login endpoint only accepts POST requests
+     */
+    public function loginGet(Request $request)
+    {
+        return response()->json([
+            'error' => 'Method Not Allowed',
+            'message' => 'The login endpoint only accepts POST requests. Please use the login form.',
+            'supported_methods' => ['POST'],
+        ], 405);
+    }
+
+    /**
      * Login user
      */
     public function login(Request $request)

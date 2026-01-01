@@ -1,9 +1,10 @@
-import { Button } from "@/components/ui/button";
+﻿import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   GraduationCap,
   Users,
@@ -37,7 +38,8 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLandingStats } from "@/hooks/useLandingStats";
 import { usePlatformAdminPermissions } from "@/platform/hooks/usePlatformAdminPermissions";
-// Contact form will be handled by Laravel API endpoint
+import { useSubscriptionPlans, type SubscriptionPlan } from "@/hooks/useSubscription";
+import { apiClient } from "@/lib/api/client";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -46,7 +48,11 @@ const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [isContactSubmitting, setIsContactSubmitting] = useState(false);
+  const [isPlanSubmitting, setIsPlanSubmitting] = useState(false);
+  const [requestedPlanId, setRequestedPlanId] = useState('');
   const { toast } = useToast();
+  const { data: subscriptionPlans, isLoading: plansLoading } = useSubscriptionPlans();
   
   // CRITICAL: Only check platform admin permissions if user is authenticated
   // And only if we're in a platform admin session (prevents 403 errors)
@@ -215,60 +221,67 @@ const Index = () => {
     }
   ], [t]);
 
-  const pricingPlans = useMemo(() => [
-    {
-      name: t('landing.pricing.starter.name') || "Starter",
-      price: "₹2,999",
-      period: t('landing.pricing.period') || "/month",
-      description: t('landing.pricing.starter.description') || "Perfect for small schools up to 200 students",
-      features: [
-        t('landing.pricing.starter.feature1') || "Up to 200 students",
-        t('landing.pricing.starter.feature2') || "Basic student management",
-        t('landing.pricing.starter.feature3') || "Attendance tracking",
-        t('landing.pricing.starter.feature4') || "Fee management",
-        t('landing.pricing.starter.feature5') || "Basic reports",
-        t('landing.pricing.starter.feature6') || "Email support"
-      ],
-      popular: false,
-      color: "border-gray-200"
-    },
-    {
-      name: t('landing.pricing.professional.name') || "Professional",
-      price: "₹5,999",
-      period: t('landing.pricing.period') || "/month",
-      description: t('landing.pricing.professional.description') || "Ideal for medium schools up to 1000 students",
-      features: [
-        t('landing.pricing.professional.feature1') || "Up to 1000 students",
-        t('landing.pricing.professional.feature2') || "Complete academic management",
-        t('landing.pricing.professional.feature3') || "Advanced analytics",
-        t('landing.pricing.professional.feature4') || "Library management",
-        t('landing.pricing.professional.feature5') || "Hostel management",
-        t('landing.pricing.professional.feature6') || "SMS notifications",
-        t('landing.pricing.professional.feature7') || "Priority support",
-        t('landing.pricing.professional.feature8') || "Custom reports"
-      ],
-      popular: true,
-      color: "border-primary ring-2 ring-primary/20"
-    },
-    {
-      name: t('landing.pricing.enterprise.name') || "Enterprise",
-      price: "₹12,999",
-      period: t('landing.pricing.period') || "/month",
-      description: t('landing.pricing.enterprise.description') || "For large institutions with unlimited students",
-      features: [
-        t('landing.pricing.enterprise.feature1') || "Unlimited students",
-        t('landing.pricing.enterprise.feature2') || "Multi-branch support",
-        t('landing.pricing.enterprise.feature3') || "Advanced security",
-        t('landing.pricing.enterprise.feature4') || "API access",
-        t('landing.pricing.enterprise.feature5') || "Custom integrations",
-        t('landing.pricing.enterprise.feature6') || "Dedicated support",
-        t('landing.pricing.enterprise.feature7') || "Training sessions",
-        t('landing.pricing.enterprise.feature8') || "White-label options"
-      ],
-      popular: false,
-      color: "border-gray-200"
+  const formatCurrency = (value: number, currency: 'AFN' | 'USD') => {
+    const formatted = new Intl.NumberFormat('en-US').format(value);
+    return `${currency} ${formatted}`;
+  };
+
+  const buildPlanHighlights = (plan: SubscriptionPlan) => {
+    const highlights: string[] = [];
+
+    if (plan.maxSchools && plan.maxSchools > 0) {
+      highlights.push(plan.maxSchools === 1 ? "1 school included" : `Up to ${plan.maxSchools} schools`);
+    } else {
+      highlights.push("Unlimited schools");
     }
-  ], [t]);
+
+    if (plan.trialDays && plan.trialDays > 0) {
+      highlights.push(`${plan.trialDays}-day free trial`);
+    }
+
+    const currency: 'AFN' | 'USD' = plan.priceYearlyAfn > 0 ? 'AFN' : 'USD';
+    const perSchoolPrice = currency === 'AFN' ? plan.perSchoolPriceAfn : plan.perSchoolPriceUsd;
+    if (perSchoolPrice && perSchoolPrice > 0) {
+      highlights.push(`Additional schools: ${formatCurrency(perSchoolPrice, currency)} / year`);
+    }
+
+    if (plan.features && plan.features.length > 0) {
+      highlights.push(`${plan.features.length} modules included`);
+    } else {
+      highlights.push("Core modules included");
+    }
+
+    return highlights;
+  };
+
+  const pricingPlans = useMemo(() => {
+    if (!subscriptionPlans || subscriptionPlans.length === 0) {
+      return [];
+    }
+
+    return [...subscriptionPlans]
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .map((plan) => {
+        const currency: 'AFN' | 'USD' = plan.priceYearlyAfn > 0 ? 'AFN' : 'USD';
+        const priceValue = currency === 'AFN' ? plan.priceYearlyAfn : plan.priceYearlyUsd;
+        const priceLabel = priceValue > 0
+          ? formatCurrency(priceValue, currency)
+          : (t('landing.pricing.free') || "Free");
+
+        const popular = plan.isDefault || plan.slug === 'pro';
+
+        return {
+          id: plan.id,
+          name: plan.name,
+          price: priceLabel,
+          period: priceValue > 0 ? (t('landing.pricing.periodYear') || "/year") : "",
+          description: plan.description || (t('landing.pricing.defaultDescription') || "Flexible plan designed for modern schools."),
+          highlights: buildPlanHighlights(plan),
+          popular,
+          color: popular ? "border-primary ring-2 ring-primary/20" : "border-gray-200",
+        };
+      });
+  }, [subscriptionPlans, t]);
 
   const testimonials = [
     {
@@ -302,8 +315,57 @@ const Index = () => {
     { number: "24/7", label: t('landing.stats.supportAvailable') || "Support Available" }
   ], [landingStats, t]);
 
+  const handlePlanRequestSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (isPlanSubmitting) return;
+    setIsPlanSubmitting(true);
+    const formData = new FormData(e.currentTarget);
+    const submission = {
+      requested_plan_id: requestedPlanId || null,
+      organization_name: formData.get("organizationName") as string,
+      school_name: formData.get("schoolName") as string,
+      school_page_url: (formData.get("schoolPageUrl") as string) || null,
+      contact_name: formData.get("contactName") as string,
+      contact_email: formData.get("contactEmail") as string,
+      contact_phone: (formData.get("contactPhone") as string) || null,
+      contact_position: (formData.get("contactPosition") as string) || null,
+      number_of_schools: formData.get("numberOfSchools")
+        ? Number(formData.get("numberOfSchools"))
+        : null,
+      student_count: formData.get("studentCount")
+        ? Number(formData.get("studentCount"))
+        : null,
+      staff_count: formData.get("staffCount")
+        ? Number(formData.get("staffCount"))
+        : null,
+      city: (formData.get("city") as string) || null,
+      country: (formData.get("country") as string) || null,
+      message: (formData.get("message") as string) || null,
+    };
+
+    try {
+      await apiClient.post('/landing/plan-request', submission);
+      toast({
+        title: t('landing.planRequest.sent') || "Plan request submitted",
+        description: t('landing.planRequest.sentDescription') || "Our team will reach out with the best option for you.",
+      });
+      e.currentTarget.reset();
+      setRequestedPlanId('');
+    } catch (error: any) {
+      toast({
+        title: t('landing.planRequest.failed') || "Plan request failed",
+        description: error.message || t('landing.planRequest.failedDescription') || "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPlanSubmitting(false);
+    }
+  };
+
   const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isContactSubmitting) return;
+    setIsContactSubmitting(true);
     const formData = new FormData(e.currentTarget);
     const submission = {
       first_name: formData.get("firstName") as string,
@@ -317,29 +379,22 @@ const Index = () => {
       message: formData.get("message") as string,
     };
 
-    // TODO: Create contact endpoint in Laravel API
-    // For now, just show success message
-    toast({
-      title: t('landing.contact.messageSent') || "Message sent",
-      description: t('landing.contact.messageSentDescription') || "We'll get back to you soon.",
-    });
-    e.currentTarget.reset();
-    
-    // Uncomment when Laravel contact endpoint is ready:
-    // try {
-    //   await apiClient.post('/contact', submission);
-    //   toast({
-    //     title: "Message sent",
-    //     description: "We'll get back to you soon.",
-    //   });
-    //   e.currentTarget.reset();
-    // } catch (error: any) {
-    //   toast({
-    //     title: "Failed to send message",
-    //     description: error.message || "Please try again later.",
-    //     variant: "destructive",
-    //   });
-    // }
+    try {
+      await apiClient.post('/landing/contact', submission);
+      toast({
+        title: t('landing.contact.messageSent') || "Message sent",
+        description: t('landing.contact.messageSentDescription') || "We'll get back to you soon.",
+      });
+      e.currentTarget.reset();
+    } catch (error: any) {
+      toast({
+        title: t('landing.contact.messageFailed') || "Failed to send message",
+        description: error.message || t('landing.contact.messageFailedDescription') || "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsContactSubmitting(false);
+    }
   };
 
   // Auto-rotate testimonials
@@ -365,6 +420,7 @@ const Index = () => {
           <div className="hidden md:flex items-center space-x-8">
             <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
             <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+            <a href="#plan-request" className="text-muted-foreground hover:text-foreground transition-colors">Plan Request</a>
             <a href="#testimonials" className="text-muted-foreground hover:text-foreground transition-colors">Reviews</a>
             <a href="#contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
           </div>
@@ -388,7 +444,7 @@ const Index = () => {
         <div className="container mx-auto px-4 relative">
           <div className="max-w-4xl mx-auto text-center">
             <Badge variant="secondary" className="mb-6">
-              🚀 Trusted by 500+ Schools Worldwide
+              Trusted by 500+ Schools Worldwide
             </Badge>
 
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
@@ -501,58 +557,233 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {pricingPlans.map((plan, index) => (
-              <Card key={index} className={`relative ${plan.color} ${plan.popular ? 'scale-105' : ''} hover:shadow-xl transition-all duration-300`}>
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-primary text-primary-foreground px-4 py-1">
-                      Most Popular
-                    </Badge>
-                  </div>
-                )}
+          {plansLoading ? (
+            <div className="text-center text-muted-foreground">
+              Loading plans...
+            </div>
+          ) : pricingPlans.length === 0 ? (
+            <div className="text-center text-muted-foreground">
+              No plans available right now. Please check back soon.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {pricingPlans.map((plan) => (
+                <Card key={plan.id} className={`relative ${plan.color} ${plan.popular ? 'scale-105' : ''} hover:shadow-xl transition-all duration-300`}>
+                  {plan.popular && (
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                      <Badge className="bg-primary text-primary-foreground px-4 py-1">
+                        Most Popular
+                      </Badge>
+                    </div>
+                  )}
 
-                <CardHeader className="text-center pb-8">
-                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                  <div className="mt-4">
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    <span className="text-muted-foreground">{plan.period}</span>
-                  </div>
-                  <CardDescription className="mt-2">{plan.description}</CardDescription>
-                </CardHeader>
+                  <CardHeader className="text-center pb-8">
+                    <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                    <div className="mt-4">
+                      <span className="text-4xl font-bold">{plan.price}</span>
+                      <span className="text-muted-foreground">{plan.period}</span>
+                    </div>
+                    <CardDescription className="mt-2">{plan.description}</CardDescription>
+                  </CardHeader>
 
-                <CardContent className="space-y-4">
-                  <ul className="space-y-3">
-                    {plan.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-center space-x-3">
-                        <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                        <span className="text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <CardContent className="space-y-4">
+                    <ul className="space-y-3">
+                      {plan.highlights.map((feature, featureIndex) => (
+                        <li key={featureIndex} className="flex items-center space-x-3">
+                          <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                          <span className="text-sm">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
 
-                  <Button
-                    className={`w-full mt-8 ${plan.popular ? 'bg-primary hover:bg-primary/90' : ''}`}
-                    variant={plan.popular ? "default" : "outline"}
-                    size="lg"
-                    asChild
-                  >
-                    <Link to="/auth">
-                      {plan.popular ? "Start Free Trial" : "Get Started"}
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    <Button
+                      className={`w-full mt-8 ${plan.popular ? 'bg-primary hover:bg-primary/90' : ''}`}
+                      variant={plan.popular ? "default" : "outline"}
+                      size="lg"
+                      asChild
+                    >
+                      <Link to="/auth">
+                        {plan.popular ? "Start Free Trial" : "Get Started"}
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
           <div className="text-center mt-12">
             <p className="text-muted-foreground mb-4">
-              All plans include 30-day free trial • No setup fees • Cancel anytime
+              All plans include 30-day free trial - No setup fees - Cancel anytime
             </p>
-            <Button variant="link" className="text-primary">
-              Need a custom plan? Contact our sales team →
+            <Button variant="link" className="text-primary" asChild>
+              <a href="#plan-request">Need a custom plan? Contact our sales team</a>
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Plan Request Section */}
+      <section id="plan-request" className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4">Plan Request</Badge>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Tell Us About Your Organization
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Share your school details and we will recommend the best plan for your needs.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
+            <div className="space-y-8">
+              <div>
+                <h3 className="text-2xl font-bold mb-4">Get a tailored recommendation</h3>
+                <p className="text-muted-foreground">
+                  Our team reviews your organization details and maps the right plan, setup steps,
+                  and onboarding timeline for your schools.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex items-start space-x-4">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Right-sized pricing</h4>
+                    <p className="text-muted-foreground">
+                      We align the plan to your school count, students, and staffing needs.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-4">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Deployment guidance</h4>
+                    <p className="text-muted-foreground">
+                      Get a rollout plan, data migration guidance, and training recommendations.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Card className="p-8">
+              <CardHeader className="px-0 pt-0">
+                <CardTitle className="text-2xl">Request a Plan</CardTitle>
+                <CardDescription>
+                  Provide your organization details and preferred plan. We will respond within 24 hours.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="px-0 pb-0">
+                <form onSubmit={handlePlanRequestSubmit} className="space-y-6">
+                  <div>
+                    <Label htmlFor="requestedPlanId">Requested Plan</Label>
+                    <Select
+                      value={requestedPlanId}
+                      onValueChange={setRequestedPlanId}
+                      disabled={!subscriptionPlans || subscriptionPlans.length === 0}
+                    >
+                      <SelectTrigger id="requestedPlanId">
+                        <SelectValue placeholder={plansLoading ? "Loading plans..." : "Select a plan (optional)"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subscriptionPlans?.map((plan) => (
+                          <SelectItem key={plan.id} value={plan.id}>
+                            {plan.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="organizationName">Organization Name</Label>
+                      <Input id="organizationName" name="organizationName" placeholder="Nazim Education Group" required />
+                    </div>
+                    <div>
+                      <Label htmlFor="schoolName">School Name</Label>
+                      <Input id="schoolName" name="schoolName" placeholder="Nazim Academy" required />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="schoolPageUrl">School Website or Page</Label>
+                    <Input id="schoolPageUrl" name="schoolPageUrl" placeholder="https://school.edu" />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="contactName">Contact Name</Label>
+                      <Input id="contactName" name="contactName" placeholder="Amina Rahman" required />
+                    </div>
+                    <div>
+                      <Label htmlFor="contactEmail">Contact Email</Label>
+                      <Input id="contactEmail" name="contactEmail" type="email" placeholder="amina@school.edu" required />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="contactPhone">Contact Phone</Label>
+                      <Input id="contactPhone" name="contactPhone" type="tel" placeholder="+92-300-1234567" />
+                    </div>
+                    <div>
+                      <Label htmlFor="contactPosition">Contact Position</Label>
+                      <Input id="contactPosition" name="contactPosition" placeholder="Principal" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="numberOfSchools">Number of Schools</Label>
+                      <Input id="numberOfSchools" name="numberOfSchools" type="number" min="1" placeholder="1" />
+                    </div>
+                    <div>
+                      <Label htmlFor="studentCount">Students</Label>
+                      <Input id="studentCount" name="studentCount" type="number" min="0" placeholder="500" />
+                    </div>
+                    <div>
+                      <Label htmlFor="staffCount">Staff</Label>
+                      <Input id="staffCount" name="staffCount" type="number" min="0" placeholder="60" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="city">City</Label>
+                      <Input id="city" name="city" placeholder="Karachi" />
+                    </div>
+                    <div>
+                      <Label htmlFor="country">Country</Label>
+                      <Input id="country" name="country" placeholder="Pakistan" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="planMessage">Notes</Label>
+                    <Textarea
+                      id="planMessage"
+                      name="message"
+                      placeholder="Tell us about your goals, timelines, and any special requirements."
+                      rows={4}
+                    />
+                  </div>
+
+                  <Button type="submit" size="lg" className="w-full" disabled={isPlanSubmitting}>
+                    {isPlanSubmitting ? "Submitting..." : "Request Plan"}
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
@@ -736,8 +967,8 @@ const Index = () => {
                     />
                   </div>
 
-                  <Button type="submit" size="lg" className="w-full">
-                    Send Message
+                  <Button type="submit" size="lg" className="w-full" disabled={isContactSubmitting}>
+                    {isContactSubmitting ? "Sending..." : "Send Message"}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </form>
@@ -771,7 +1002,7 @@ const Index = () => {
           </div>
 
           <div className="mt-8 text-primary-foreground/60">
-            <p>✓ 30-day free trial • ✓ No credit card required • ✓ Setup assistance included</p>
+            <p>30-day free trial - No credit card required - Setup assistance included</p>
           </div>
         </div>
       </section>
@@ -838,7 +1069,7 @@ const Index = () => {
 
           <div className="border-t mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-muted-foreground">
-              © 2024 Nazim School Management System. All rights reserved.
+              Copyright 2024 Nazim School Management System. All rights reserved.
             </p>
             <div className="flex items-center space-x-4 mt-4 md:mt-0">
               <Badge variant="outline" className="flex items-center space-x-1">
@@ -858,3 +1089,10 @@ const Index = () => {
 };
 
 export default Index;
+
+
+
+
+
+
+

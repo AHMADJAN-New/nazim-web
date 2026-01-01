@@ -39,15 +39,23 @@ class SubscriptionController extends Controller
                     'description' => $plan->description,
                     'price_yearly_afn' => $plan->price_yearly_afn,
                     'price_yearly_usd' => $plan->price_yearly_usd,
+                    'is_active' => $plan->is_active,
                     'is_default' => $plan->is_default,
+                    'is_custom' => $plan->is_custom,
                     'trial_days' => $plan->trial_days,
+                    'grace_period_days' => $plan->grace_period_days,
+                    'readonly_period_days' => $plan->readonly_period_days,
                     'max_schools' => $plan->max_schools,
                     'per_school_price_afn' => $plan->per_school_price_afn,
                     'per_school_price_usd' => $plan->per_school_price_usd,
+                    'sort_order' => $plan->sort_order,
                     'features' => $plan->enabledFeatures()->pluck('feature_key'),
                     'limits' => $plan->limits->mapWithKeys(function ($limit) {
                         return [$limit->resource_key => $limit->limit_value];
                     }),
+                    'created_at' => $plan->created_at,
+                    'updated_at' => $plan->updated_at,
+                    'deleted_at' => $plan->deleted_at,
                 ];
             }),
         ]);

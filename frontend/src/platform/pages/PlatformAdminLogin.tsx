@@ -67,44 +67,31 @@ export function PlatformAdminLogin() {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // Check for platform admin permission
+      // CRITICAL: During maintenance mode, permission check might fail
+      // In that case, proceed anyway - backend route guard will verify permissions
+      let hasPlatformAdmin = false;
       try {
         const { data: permissions } = await refetchPermissions();
-        const hasPlatformAdmin = permissions?.includes('subscription.admin');
-
-        if (!hasPlatformAdmin) {
-          setError('You do not have platform administrator access. Please use the regular login.');
-          // Restore main app token if it existed
-          if (isMainAppLoggedIn && mainAppToken) {
-            localStorage.setItem('api_token', mainAppToken);
-            localStorage.removeItem('main_app_token_backup');
-          } else {
-            await authApi.logout();
-          }
-          localStorage.removeItem('is_platform_admin_session');
-          return;
-        }
-
-        // CRITICAL: Ensure auth state is refreshed and permissions are loaded before navigation
-        // Force a refresh of auth state to ensure user is set
-        await refreshAuth();
-        
-        // Wait for auth state to fully settle
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Refetch permissions to ensure they're loaded
-        await refetchPermissions();
-        
-        // Wait a bit more for everything to settle
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        // Redirect to platform dashboard
-        showToast.success('Welcome to Platform Administration');
-        // Use window.location for a hard navigation to ensure route guard runs
-        window.location.href = '/platform/dashboard';
+        hasPlatformAdmin = permissions?.includes('subscription.admin') ?? false;
       } catch (permError: any) {
-        // If permission check fails, it might be because user doesn't have the permission
-        // or the endpoint is not accessible
-        if (permError.message?.includes('platform administrators') || permError.message?.includes('403')) {
+        // Handle maintenance mode or other errors gracefully
+        const isMaintenanceError = permError?.status === 503 || 
+                                  permError?.isMaintenanceMode ||
+                                  permError?.message?.includes('Service Unavailable') ||
+                                  permError?.message?.includes('maintenance');
+        
+        if (isMaintenanceError) {
+          // During maintenance mode, if user logged in successfully, 
+          // proceed anyway - backend route guard will verify permissions
+          if (import.meta.env.DEV) {
+            console.warn('[PlatformAdminLogin] Permission check failed due to maintenance mode, proceeding - backend will verify');
+          }
+          // Set flag to indicate we're proceeding despite maintenance mode
+          hasPlatformAdmin = true; // Allow to proceed, backend will verify
+        } else if (permError.message?.includes('platform administrators') || 
+                   permError.message?.includes('403') ||
+                   permError?.status === 403) {
+          // User doesn't have platform admin permission
           setError('You do not have platform administrator access. Please use the regular login.');
           // Restore main app token if it existed
           if (isMainAppLoggedIn && mainAppToken) {
@@ -114,11 +101,57 @@ export function PlatformAdminLogin() {
             await authApi.logout();
           }
           localStorage.removeItem('is_platform_admin_session');
+          setIsLoading(false);
           return;
+        } else {
+          // Other errors - log but proceed anyway (backend will verify)
+          if (import.meta.env.DEV) {
+            console.warn('[PlatformAdminLogin] Permission check failed, but proceeding - backend will verify:', permError);
+          }
+          // Allow to proceed - backend route guard will handle verification
+          hasPlatformAdmin = true;
         }
-        // Re-throw other errors
-        throw permError;
       }
+
+      // Only block if we're sure user doesn't have permission (and it's not maintenance mode)
+      if (!hasPlatformAdmin) {
+        setError('You do not have platform administrator access. Please use the regular login.');
+        // Restore main app token if it existed
+        if (isMainAppLoggedIn && mainAppToken) {
+          localStorage.setItem('api_token', mainAppToken);
+          localStorage.removeItem('main_app_token_backup');
+        } else {
+          await authApi.logout();
+        }
+        localStorage.removeItem('is_platform_admin_session');
+        setIsLoading(false);
+        return;
+      }
+
+      // CRITICAL: Ensure auth state is refreshed and permissions are loaded before navigation
+      // Force a refresh of auth state to ensure user is set
+      await refreshAuth();
+      
+      // Wait for auth state to fully settle
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Try to refetch permissions (but don't fail if it doesn't work during maintenance)
+      try {
+        await refetchPermissions();
+      } catch (refetchError) {
+        // Ignore refetch errors during maintenance mode
+        if (import.meta.env.DEV) {
+          console.warn('[PlatformAdminLogin] Permission refetch failed, but proceeding:', refetchError);
+        }
+      }
+      
+      // Wait a bit more for everything to settle
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Redirect to platform dashboard
+      showToast.success('Welcome to Platform Administration');
+      // Use window.location for a hard navigation to ensure route guard runs
+      window.location.href = '/platform/dashboard';
     } catch (err: any) {
       const errorMessage = err.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
