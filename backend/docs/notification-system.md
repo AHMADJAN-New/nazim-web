@@ -27,6 +27,10 @@ Registered event keys (snake/kebab free) are aligned with the product brief:
 - **DMS / Letters:** `doc.assigned`, `doc.approved`, `doc.returned`
 - **System:** `system.backup_failed` (critical), `system.license_expiring`
 - **Security:** `security.password_changed` (critical), `security.new_device_login` (critical)
+- **Exams:** `exam.created`, `exam.published`, `exam.marks_published`, `exam.timetable_updated` (warning)
+- **Library:** `library.book_overdue` (critical), `library.book_due_soon` (warning, digest), `library.book_reserved`
+- **Assets:** `asset.assigned`, `asset.maintenance_due` (warning), `asset.returned`
+- **Subscription:** `subscription.limit_approaching` (warning), `subscription.limit_reached` (critical), `subscription.expiring_soon` (warning), `subscription.expired` (critical)
 
 Email eligibility and severity levels are centralized in `config/notifications.php`.
 
@@ -101,6 +105,71 @@ $notificationService->notify(
         'url' => '/settings/security',
         'device_info' => $deviceInfo,
         'ip_address' => $ipAddress,
+    ]
+);
+
+// Example 4: Exam marks published
+$notificationService->notify(
+    'exam.marks_published',
+    $exam,               // Exam model
+    $request->user(),    // teacher/admin who published
+    [
+        'title' => 'Exam Results Published',
+        'body' => "Results for {$exam->name} are now available.",
+        'url' => "/exams/{$exam->id}/results",
+    ]
+);
+
+// Example 5: Library book overdue
+$notificationService->notify(
+    'library.book_overdue',
+    $libraryLoan,        // LibraryLoan model with borrower_user_id
+    null,                // system-triggered
+    [
+        'title' => 'Overdue Library Book',
+        'body' => "'{$book->title}' is overdue. Please return it as soon as possible to avoid penalties.",
+        'url' => '/library/my-loans',
+        'days_overdue' => $daysOverdue,
+    ]
+);
+
+// Example 6: Asset maintenance due
+$notificationService->notify(
+    'asset.maintenance_due',
+    $asset,              // Asset model
+    null,                // system-triggered
+    [
+        'title' => 'Asset Maintenance Due',
+        'body' => "{$asset->name} requires maintenance within the next 7 days.",
+        'url' => "/assets/{$asset->id}",
+        'maintenance_type' => $asset->scheduled_maintenance_type,
+    ]
+);
+
+// Example 7: Subscription limit approaching
+$notificationService->notify(
+    'subscription.limit_approaching',
+    $organization,       // Organization model
+    null,                // system-triggered
+    [
+        'title' => 'Subscription Limit Warning',
+        'body' => "You have used {$usage}% of your {$limitType} limit. Consider upgrading your plan.",
+        'url' => '/settings/subscription',
+        'limit_type' => $limitType,
+        'usage_percentage' => $usage,
+    ]
+);
+
+// Example 8: Subscription expired
+$notificationService->notify(
+    'subscription.expired',
+    $organization,       // Organization model
+    null,                // system-triggered
+    [
+        'title' => 'Subscription Expired',
+        'body' => 'Your subscription has expired. Please renew to continue using Nazim.',
+        'url' => '/settings/subscription',
+        'expired_at' => $subscription->expires_at,
     ]
 );
 ```

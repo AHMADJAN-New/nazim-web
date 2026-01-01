@@ -112,6 +112,76 @@ class NotificationRuleRegistry
             }
             return collect();
         });
+
+        // Exams
+        $this->register('exam.created', fn (Model $entity) => $this->usersWithPermission($entity, 'exams.read'));
+        $this->register('exam.published', fn (Model $entity) => $this->usersWithPermission($entity, 'exams.read'));
+        $this->register('exam.marks_published', fn (Model $entity) => $this->usersWithPermission($entity, 'exams.view_reports'));
+        $this->register('exam.timetable_updated', fn (Model $entity) => $this->usersWithPermission($entity, 'exams.read'));
+
+        // Library
+        $this->register('library.book_overdue', function (Model $entity) {
+            // Entity should be LibraryLoan with borrower_user_id
+            $recipients = collect();
+            if (property_exists($entity, 'borrower_user_id') || isset($entity->borrower_user_id)) {
+                $borrower = User::find($entity->borrower_user_id);
+                if ($borrower) {
+                    $recipients->push($borrower);
+                }
+            }
+            return $recipients;
+        });
+
+        $this->register('library.book_due_soon', function (Model $entity) {
+            // Entity should be LibraryLoan with borrower_user_id
+            $recipients = collect();
+            if (property_exists($entity, 'borrower_user_id') || isset($entity->borrower_user_id)) {
+                $borrower = User::find($entity->borrower_user_id);
+                if ($borrower) {
+                    $recipients->push($borrower);
+                }
+            }
+            return $recipients;
+        });
+
+        $this->register('library.book_reserved', function (Model $entity) {
+            // Entity should be LibraryReservation with user_id
+            $recipients = collect();
+            if (property_exists($entity, 'user_id') || isset($entity->user_id)) {
+                $user = User::find($entity->user_id);
+                if ($user) {
+                    $recipients->push($user);
+                }
+            }
+            return $recipients;
+        });
+
+        // Assets
+        $this->register('asset.assigned', function (Model $entity) {
+            // Entity should be Asset with assigned_to_user_id
+            $recipients = collect();
+            if (property_exists($entity, 'assigned_to_user_id') || isset($entity->assigned_to_user_id)) {
+                $assignedUser = User::find($entity->assigned_to_user_id);
+                if ($assignedUser) {
+                    $recipients->push($assignedUser);
+                }
+            }
+            // Also notify asset managers
+            return $recipients->merge($this->usersWithPermission($entity, 'assets.read'));
+        });
+
+        $this->register('asset.maintenance_due', fn (Model $entity) => $this->usersWithPermission($entity, 'assets.update'));
+
+        $this->register('asset.returned', function (Model $entity) {
+            // Notify asset managers
+            return $this->usersWithPermission($entity, 'assets.read');
+        });
+
+        // Subscription - notify organization admins
+        $this->register('subscription.limit_approaching', fn (Model $entity) => $this->organizationAdmins($entity->organization_id ?? ''));
+        $this->register('subscription.limit_reached', fn (Model $entity) => $this->organizationAdmins($entity->organization_id ?? ''));
+        $this->register('subscription.expiring_soon', fn (Model $entity) => $this->organizationAdmins($entity->organization_id ?? ''));
+        $this->register('subscription.expired', fn (Model $entity) => $this->organizationAdmins($entity->organization_id ?? ''));
     }
 
     private function usersWithPermission(Model $entity, string $permission): Collection
