@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
@@ -26,6 +26,7 @@ export function StudentPictureUpload({
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [imageError, setImageError] = useState(false);
     const upload = useStudentPictureUpload();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Reset preview URL when student changes (to show existing image instead of selected file preview)
     useEffect(() => {
@@ -157,23 +158,30 @@ export function StudentPictureUpload({
             const reader = new FileReader();
             reader.onload = () => setPreviewUrl(reader.result as string);
             reader.readAsDataURL(f);
+            
+            // Auto-upload if studentId exists (edit mode)
+            if (studentId && organizationId) {
+                await handleAutoUpload(f);
+            } else {
+                // For create mode, just notify parent
+                onFileSelected?.(f);
+            }
         } else {
             setPreviewUrl(null);
+            onFileSelected?.(null);
         }
-        // Notify parent component about file selection (for create mode)
-        onFileSelected?.(f);
     };
 
-    const onUpload = async () => {
-        if (!file || !studentId || !organizationId) return;
+    const handleAutoUpload = async (fileToUpload: File) => {
+        if (!fileToUpload || !studentId || !organizationId) return;
+        
         try {
-            await upload.mutateAsync({ file, studentId, organizationId, schoolId });
+            await upload.mutateAsync({ file: fileToUpload, studentId, organizationId, schoolId });
             setFile(null);
             setPreviewUrl(null); // Clear preview so it shows the uploaded image
             setImageError(false);
             
             // Re-fetch the image as a blob URL after upload
-            // This ensures the image displays correctly with authentication
             const fetchImage = async () => {
                 try {
                     const { apiClient } = await import('@/lib/api/client');
@@ -213,19 +221,35 @@ export function StudentPictureUpload({
             await fetchImage();
             
             // Clear the file input
-            const input = document.getElementById('student-picture-input') as HTMLInputElement;
-            if (input) input.value = '';
-            // The query invalidation in the hook will trigger a refetch and update currentFileName
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
         } catch (error) {
-            console.error('Failed to upload picture:', error);
+            if (import.meta.env.DEV) {
+                console.error('Failed to auto-upload picture:', error);
+            }
             // Error is handled by the mutation's onError
+            // Still notify parent about file selection even if upload fails
+            onFileSelected?.(fileToUpload);
         }
     };
 
-    // For create mode: allow file selection but disable upload until student is created
-    // For edit mode: require studentId to upload
-    const canUpload = allowUploadWithoutStudent ? (!!file && !!organizationId) : (!!file && !!studentId && !!organizationId);
-    const disabled = !canUpload || upload.isPending;
+    const handleSelectClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        // Prevent form submission
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Trigger file input click to open file dialog/camera
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
+    // Determine if button should be disabled
+    // For create mode: allow file selection if organizationId exists
+    // For edit mode: allow file selection if studentId and organizationId exist
+    const canSelect = allowUploadWithoutStudent ? !!organizationId : (!!studentId && !!organizationId);
+    const disabled = !canSelect || upload.isPending;
 
     return (
         <div className="flex items-start gap-4">
@@ -245,23 +269,48 @@ export function StudentPictureUpload({
                     <span className="text-xs text-muted-foreground">{t('students.noImage') || 'No Image'}</span>
                 )}
             </div>
-            <div className="space-y-2">
-                <div>
-                    <Label htmlFor="student-picture-input">{t('students.selectPicture') || 'Select Picture'}</Label>
-                    <input
-                        id="student-picture-input"
-                        type="file"
-                        accept="image/*"
-                        onChange={onFileChange}
-                        className="block text-sm"
-                    />
-                </div>
-                <div className="flex gap-2">
-                    <Button type="button" variant="secondary" onClick={onUpload} disabled={disabled}>
-                        {upload.isPending ? (t('common.uploading') || 'Uploading...') : (t('students.uploadPicture') || 'Upload Picture')}
-                    </Button>
-                    {file ? <span className="text-xs text-muted-foreground">{file.name}</span> : null}
-                </div>
+            <div className="space-y-2 flex-1">
+                {/* Hidden file input with camera capture support */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture // Enable camera on mobile devices (user can choose camera or gallery)
+                    onChange={onFileChange}
+                    style={{ display: 'none' }}
+                />
+                
+                {/* Single Select Picture button */}
+                <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleSelectClick}
+                    disabled={disabled}
+                    className="w-full sm:w-auto"
+                    form="" // Explicitly detach from any form
+                >
+                    {upload.isPending ? (
+                        <>
+                            <span className="mr-2">{t('common.uploading') || 'Uploading...'}</span>
+                        </>
+                    ) : (
+                        <>
+                            {t('students.selectPicture') || 'Select Picture'}
+                        </>
+                    )}
+                </Button>
+                
+                {/* Show file name or upload status */}
+                {upload.isPending && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                        {t('common.uploading') || 'Uploading...'}
+                    </p>
+                )}
+                {file && !upload.isPending && !studentId && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                        {file.name} {t('students.willBeUploadedOnSave') || '(will be uploaded on save)'}
+                    </p>
+                )}
             </div>
         </div>
     );

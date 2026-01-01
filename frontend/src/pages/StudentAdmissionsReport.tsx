@@ -212,13 +212,13 @@ const StudentAdmissionsReport = () => {
   }, [filters, profile?.organization_id]);
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+    <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-1">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between min-w-0">
+        <div className="space-y-1 min-w-0">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold leading-tight">{t('admissions.reportTitle') || 'Admissions Report'}</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight">{t('admissions.reportTitle') || 'Admissions Report'}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               {t('admissions.reportSubtitle') || 'Analyze admissions performance across schools and years.'}
             </p>
           </div>
@@ -434,14 +434,14 @@ const StudentAdmissionsReport = () => {
           </div>
 
           {/* Breakdown Tables - Compact Grid */}
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">{t('admissions.statusBreakdown') || 'Status breakdown'}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="rounded-md border">
-                  <Table>
+                <div className="rounded-md border overflow-x-auto -mx-4 sm:mx-0">
+                  <Table className="w-full">
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t('admissions.status') || 'Status'}</TableHead>
@@ -479,13 +479,13 @@ const StudentAdmissionsReport = () => {
                 <CardTitle className="text-base">{t('admissions.schoolBreakdown') || 'By school'}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="rounded-md border">
-                  <Table>
+                <div className="rounded-md border overflow-x-auto -mx-4 sm:mx-0">
+                  <Table className="w-full">
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t('admissions.school') || 'School'}</TableHead>
-                        <TableHead className="text-right">{t('admissions.active') || 'Active'}</TableHead>
-                        <TableHead className="text-right">{t('admissions.boarder') || 'Boarders'}</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">{t('admissions.active') || 'Active'}</TableHead>
+                        <TableHead className="text-right hidden md:table-cell">{t('admissions.boarder') || 'Boarders'}</TableHead>
                         <TableHead className="text-right">{t('admissions.totalAdmissions') || 'Total'}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -499,9 +499,9 @@ const StudentAdmissionsReport = () => {
                       ) : (
                         report.schoolBreakdown.map((item) => (
                           <TableRow key={item.schoolId || 'none'}>
-                            <TableCell className="font-medium">{item.schoolName}</TableCell>
-                            <TableCell className="text-right">{formatNumber(item.active)}</TableCell>
-                            <TableCell className="text-right">{formatNumber(item.boarders)}</TableCell>
+                            <TableCell className="font-medium min-w-0 break-words">{item.schoolName}</TableCell>
+                            <TableCell className="text-right hidden sm:table-cell">{formatNumber(item.active)}</TableCell>
+                            <TableCell className="text-right hidden md:table-cell">{formatNumber(item.boarders)}</TableCell>
                             <TableCell className="text-right font-semibold">{formatNumber(item.total)}</TableCell>
                           </TableRow>
                         ))
@@ -517,13 +517,13 @@ const StudentAdmissionsReport = () => {
                 <CardTitle className="text-base">{t('admissions.academicYearBreakdown') || 'By academic year'}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="rounded-md border">
-                  <Table>
+                <div className="rounded-md border overflow-x-auto -mx-4 sm:mx-0">
+                  <Table className="w-full">
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t('admissions.academicYear') || 'Year'}</TableHead>
-                        <TableHead className="text-right">{t('admissions.active') || 'Active'}</TableHead>
-                        <TableHead className="text-right">{t('admissions.boarder') || 'Boarders'}</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">{t('admissions.active') || 'Active'}</TableHead>
+                        <TableHead className="text-right hidden md:table-cell">{t('admissions.boarder') || 'Boarders'}</TableHead>
                         <TableHead className="text-right">{t('admissions.totalAdmissions') || 'Total'}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -537,9 +537,9 @@ const StudentAdmissionsReport = () => {
                       ) : (
                         report.academicYearBreakdown.map((item) => (
                           <TableRow key={item.academicYearId || 'none'}>
-                            <TableCell className="font-medium">{item.academicYearName}</TableCell>
-                            <TableCell className="text-right">{formatNumber(item.active)}</TableCell>
-                            <TableCell className="text-right">{formatNumber(item.boarders)}</TableCell>
+                            <TableCell className="font-medium min-w-0 break-words">{item.academicYearName}</TableCell>
+                            <TableCell className="text-right hidden sm:table-cell">{formatNumber(item.active)}</TableCell>
+                            <TableCell className="text-right hidden md:table-cell">{formatNumber(item.boarders)}</TableCell>
                             <TableCell className="text-right font-semibold">{formatNumber(item.total)}</TableCell>
                           </TableRow>
                         ))
@@ -555,13 +555,13 @@ const StudentAdmissionsReport = () => {
                 <CardTitle className="text-base">{t('admissions.residencyBreakdown') || 'Residency breakdown'}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="rounded-md border">
-                  <Table>
+                <div className="rounded-md border overflow-x-auto -mx-4 sm:mx-0">
+                  <Table className="w-full">
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t('admissions.residencyType') || 'Type'}</TableHead>
-                        <TableHead className="text-right">{t('admissions.active') || 'Active'}</TableHead>
-                        <TableHead className="text-right">{t('admissions.boarder') || 'Boarders'}</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">{t('admissions.active') || 'Active'}</TableHead>
+                        <TableHead className="text-right hidden md:table-cell">{t('admissions.boarder') || 'Boarders'}</TableHead>
                         <TableHead className="text-right">{t('admissions.totalAdmissions') || 'Total'}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -575,9 +575,9 @@ const StudentAdmissionsReport = () => {
                       ) : (
                         report.residencyBreakdown.map((item) => (
                           <TableRow key={item.residencyTypeId || 'none'}>
-                            <TableCell className="font-medium">{item.residencyTypeName}</TableCell>
-                            <TableCell className="text-right">{formatNumber(item.active)}</TableCell>
-                            <TableCell className="text-right">{formatNumber(item.boarders)}</TableCell>
+                            <TableCell className="font-medium min-w-0 break-words">{item.residencyTypeName}</TableCell>
+                            <TableCell className="text-right hidden sm:table-cell">{formatNumber(item.active)}</TableCell>
+                            <TableCell className="text-right hidden md:table-cell">{formatNumber(item.boarders)}</TableCell>
                             <TableCell className="text-right font-semibold">{formatNumber(item.total)}</TableCell>
                           </TableRow>
                         ))
@@ -607,16 +607,16 @@ const StudentAdmissionsReport = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
-                <Table>
+              <div className="rounded-md border overflow-x-auto -mx-4 sm:mx-0">
+                <Table className="w-full">
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('students.name') || 'Student'}</TableHead>
-                      <TableHead>{t('admissions.schoolClass') || 'School / Class'}</TableHead>
-                      <TableHead>{t('admissions.residency') || 'Residency'}</TableHead>
-                      <TableHead>{t('admissions.guardian') || 'Guardian'}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t('admissions.schoolClass') || 'School / Class'}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('admissions.residency') || 'Residency'}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('admissions.guardian') || 'Guardian'}</TableHead>
                       <TableHead>{t('admissions.status') || 'Status'}</TableHead>
-                      <TableHead>{t('admissions.admissionDate') || 'Date'}</TableHead>
+                      <TableHead className="hidden sm:table-cell">{t('admissions.admissionDate') || 'Date'}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -630,8 +630,8 @@ const StudentAdmissionsReport = () => {
                       report.recentAdmissions.map((admission) => (
                         <TableRow key={admission.id}>
                           <TableCell>
-                            <div className="space-y-1">
-                              <div className="font-semibold">{admission.student?.fullName || t('students.notAvailable')}</div>
+                            <div className="space-y-1 min-w-0">
+                              <div className="font-semibold break-words">{admission.student?.fullName || t('students.notAvailable')}</div>
                               <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
                                 {admission.student?.admissionNumber && (
                                   <Badge variant="outline" className="text-xs">
@@ -644,18 +644,28 @@ const StudentAdmissionsReport = () => {
                                   </Badge>
                                 )}
                               </div>
+                              {/* Show school/class on mobile since column is hidden */}
+                              <div className="md:hidden text-xs text-muted-foreground mt-1">
+                                {admission.school?.schoolName && <div>{admission.school.schoolName}</div>}
+                                {admission.class?.name && (
+                                  <div>
+                                    {admission.class.name}
+                                    {admission.classAcademicYear?.sectionName ? ` · ${admission.classAcademicYear.sectionName}` : ''}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <div className="space-y-0.5">
-                              <div className="font-medium">{admission.school?.schoolName || '—'}</div>
+                          <TableCell className="hidden md:table-cell">
+                            <div className="space-y-0.5 min-w-0">
+                              <div className="font-medium break-words">{admission.school?.schoolName || '—'}</div>
                               <div className="text-sm text-muted-foreground">
                                 {admission.class?.name || '—'}
                                 {admission.classAcademicYear?.sectionName ? ` · ${admission.classAcademicYear.sectionName}` : ''}
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden lg:table-cell">
                             <div className="space-y-1">
                               <Badge variant="outline" className="text-xs">
                                 {admission.residencyType?.name || '—'}
@@ -667,9 +677,9 @@ const StudentAdmissionsReport = () => {
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <div className="space-y-0.5">
-                              <div className="font-medium">{admission.student?.guardianName || t('students.notAvailable')}</div>
+                          <TableCell className="hidden lg:table-cell">
+                            <div className="space-y-0.5 min-w-0">
+                              <div className="font-medium break-words">{admission.student?.guardianName || t('students.notAvailable')}</div>
                               {admission.student?.guardianPhone && (
                                 <Button variant="ghost" size="sm" className="h-6 text-xs px-2" asChild>
                                   <a href={`tel:${admission.student.guardianPhone}`}>
@@ -684,7 +694,7 @@ const StudentAdmissionsReport = () => {
                               {statusLabels[admission.enrollmentStatus]}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
+                          <TableCell className="text-muted-foreground hidden sm:table-cell">
                             {admission.admissionDate
                               ? new Intl.DateTimeFormat(undefined, { dateStyle: 'short' }).format(admission.admissionDate)
                               : '—'}

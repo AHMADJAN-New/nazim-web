@@ -439,102 +439,126 @@ export function StaffList() {
     // StaffProfile is now a Dialog, so it can be rendered alongside the list
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
             {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 min-w-0">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold">{t('staff.management')}</h1>
+                    <p className="text-sm sm:text-base text-muted-foreground">
+                        {t('staff.subtitle')}
+                    </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    {hasReportPermission && (
+                        <Button variant="outline" asChild className="w-full sm:w-auto">
+                            <Link to="/reports/staff-registrations" className="flex items-center justify-center">
+                                <FileText className="w-4 h-4 mr-2" />
+                                <span className="text-xs sm:text-sm">{t('staff.registrationReport')}</span>
+                            </Link>
+                        </Button>
+                    )}
+                    {hasCreatePermission && (
+                        <Button 
+                            type="button" 
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                // Ensure profile has organization_id
+                                if (!profile?.organization_id) {
+                                    toast.error(t('common.notAssignedToOrganization'));
+                                    return;
+                                }
+                                if (import.meta.env.DEV) {
+                                    console.log('Create staff button clicked');
+                                }
+                                setIsCreateDialogOpen(true);
+                            }}
+                            disabled={!profile?.organization_id}
+                            className="w-full sm:w-auto"
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            <span className="text-xs sm:text-sm">{t('staff.addStaff')}</span>
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            {/* Stats */}
+            {stats && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">{t('staff.totalStaff')}</CardTitle>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats.total}</div>
+                            <p className="text-xs text-muted-foreground">{t('staff.acrossSelected') || 'Across selected organization'}</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">{t('staff.active')}</CardTitle>
+                            <Users className="h-4 w-4 text-green-600" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-green-600">{stats.active}</div>
+                            <p className="text-xs text-muted-foreground">{t('staff.activeStaff') || 'Active staff members'}</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">{t('staff.onLeave')}</CardTitle>
+                            <Users className="h-4 w-4 text-orange-600" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-orange-600">{stats.onLeave}</div>
+                            <p className="text-xs text-muted-foreground">{t('staff.onLeaveStaff') || 'Staff on leave'}</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">{t('staff.teachers')}</CardTitle>
+                            <Users className="h-4 w-4 text-blue-600" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-blue-600">{stats.byType.teacher}</div>
+                            <p className="text-xs text-muted-foreground">{t('staff.teacherCount') || 'Teaching staff'}</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">{t('staff.admins')}</CardTitle>
+                            <Users className="h-4 w-4 text-purple-600" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-purple-600">{stats.byType.admin}</div>
+                            <p className="text-xs text-muted-foreground">{t('staff.adminCount') || 'Administrative staff'}</p>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* Filters and Table Card */}
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="flex items-center gap-2">
-                                <Users className="h-5 w-5" />
-                                {t('staff.management')}
-                            </CardTitle>
-                            <CardDescription>
-                                {t('staff.subtitle')}
-                            </CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {hasReportPermission && (
-                                <Button variant="outline" asChild>
-                                    <Link to="/reports/staff-registrations">
-                                        <FileText className="w-4 h-4 mr-2" />
-                                        {t('staff.registrationReport')}
-                                    </Link>
-                                </Button>
-                            )}
-                            {hasCreatePermission && (
-                                <Button 
-                                    type="button" 
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        // Ensure profile has organization_id
-                                        if (!profile?.organization_id) {
-                                            toast.error(t('common.notAssignedToOrganization'));
-                                            return;
-                                        }
-                                        console.log('Create staff button clicked');
-                                        setIsCreateDialogOpen(true);
-                                    }}
-                                    disabled={!profile?.organization_id}
-                                >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    {t('staff.addStaff')}
-                                </Button>
-                            )}
-                        </div>
-                    </div>
+                    <CardTitle>{t('staff.list') || 'Staff List'}</CardTitle>
+                    <CardDescription>{t('staff.listDescription') || 'Search, filter and manage staff members.'}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {/* Stats */}
-                    {stats && (
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                            <Card>
-                                <CardContent className="p-4">
-                                    <div className="text-2xl font-bold">{stats.total}</div>
-                                    <div className="text-sm text-muted-foreground">{t('staff.totalStaff')}</div>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="p-4">
-                                    <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-                                    <div className="text-sm text-muted-foreground">{t('staff.active')}</div>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="p-4">
-                                    <div className="text-2xl font-bold text-orange-600">{stats.onLeave}</div>
-                                    <div className="text-sm text-muted-foreground">{t('staff.onLeave')}</div>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="p-4">
-                                    <div className="text-2xl font-bold text-blue-600">{stats.byType.teacher}</div>
-                                    <div className="text-sm text-muted-foreground">{t('staff.teachers')}</div>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="p-4">
-                                    <div className="text-2xl font-bold text-purple-600">{stats.byType.admin}</div>
-                                    <div className="text-sm text-muted-foreground">{t('staff.admins')}</div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    )}
-
                     {/* Filters */}
-                    <div className="flex flex-wrap items-center gap-4 mb-4">
-                        <div className="relative flex-1 min-w-[200px]">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-4">
+                        <div className="relative flex-1 min-w-0 w-full sm:min-w-[200px] sm:w-auto">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 placeholder={t('staff.searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10"
+                                className="pl-10 w-full min-w-0"
                             />
                         </div>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-[150px]">
+                            <SelectTrigger className="w-full sm:w-[150px] min-w-0">
                                 <SelectValue placeholder={t('staff.status')} />
                             </SelectTrigger>
                             <SelectContent>
@@ -547,7 +571,7 @@ export function StaffList() {
                             </SelectContent>
                         </Select>
                         <Select value={typeFilter} onValueChange={setTypeFilter}>
-                            <SelectTrigger className="w-[150px]">
+                            <SelectTrigger className="w-full sm:w-[150px] min-w-0">
                                 <SelectValue placeholder={t('staff.type')} />
                             </SelectTrigger>
                             <SelectContent>
@@ -561,7 +585,7 @@ export function StaffList() {
                         </Select>
                         {schools && schools.length > 0 && (
                             <Select value={schoolFilter} onValueChange={setSchoolFilter}>
-                            <SelectTrigger className="w-[150px]">
+                            <SelectTrigger className="w-full sm:w-[150px] min-w-0">
                                 <SelectValue placeholder={t('staff.school')} />
                             </SelectTrigger>
                             <SelectContent>
@@ -590,12 +614,8 @@ export function StaffList() {
                             </Button>
                         )}
                     </div>
-                </CardContent>
-            </Card>
 
-            {/* Staff Table */}
-            <Card>
-                <CardContent className="p-0">
+                    {/* Staff Table */}
                     {isLoading ? (
                         <div className="p-6">
                             <LoadingSpinner text={t('staff.loadingStaff')} />
@@ -610,13 +630,16 @@ export function StaffList() {
                         </div>
                     ) : (
                         <>
-                            <div className="rounded-md border">
-                                <Table>
+                            <div className="border rounded-lg overflow-x-auto -mx-4 sm:mx-0">
+                                <Table className="w-full">
                                     <TableHeader>
                                         {table.getHeaderGroups().map((headerGroup) => (
                                             <TableRow key={headerGroup.id}>
                                                 {headerGroup.headers.map((header) => (
-                                                    <TableHead key={header.id}>
+                                                    <TableHead 
+                                                        key={header.id}
+                                                        className={header.column.columnDef.meta?.className}
+                                                    >
                                                         {header.isPlaceholder
                                                             ? null
                                                             : typeof header.column.columnDef.header === 'function'
@@ -640,10 +663,13 @@ export function StaffList() {
                                             table.getRowModel().rows.map((row) => (
                                                 <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
                                                     {row.getVisibleCells().map((cell) => (
-                                                        <TableCell key={cell.id}>
+                                                        <TableCell 
+                                                            key={cell.id}
+                                                            className={cell.column.columnDef.meta?.className}
+                                                        >
                                                             {typeof cell.column.columnDef.cell === 'function'
                                                                 ? cell.column.columnDef.cell(cell.getContext())
-                                                                : cell.getValue() as React.ReactNode}
+                                                                : cell.renderValue() as React.ReactNode}
                                                         </TableCell>
                                                     ))}
                                                 </TableRow>
@@ -654,14 +680,16 @@ export function StaffList() {
                             </div>
 
                             {/* Pagination */}
-                            <DataTablePagination
-                                table={table}
-                                paginationMeta={pagination ?? null}
-                                onPageChange={setPage}
-                                onPageSizeChange={setPageSize}
-                                showPageSizeSelector={true}
-                                showTotalCount={true}
-                            />
+                            <div className="p-3 sm:p-4">
+                                <DataTablePagination
+                                    table={table}
+                                    paginationMeta={pagination ?? null}
+                                    onPageChange={setPage}
+                                    onPageSizeChange={setPageSize}
+                                    showPageSizeSelector={true}
+                                    showTotalCount={true}
+                                />
+                            </div>
                         </>
                     )}
                 </CardContent>

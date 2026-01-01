@@ -447,6 +447,11 @@ export function StudentDocumentsDialog({
                   <FileText className="h-5 w-5" />
                   {viewerDocument?.file_name || t('students.viewDocument') || 'View Document'}
                 </DialogTitle>
+                <DialogDescription>
+                  {viewerDocument?.document_type 
+                    ? `${t('students.documentType') || 'Document Type'}: ${viewerDocument.document_type}`
+                    : t('students.viewDocumentDescription') || 'View document details and content'}
+                </DialogDescription>
                 {viewerDocument?.document_type && (
                   <div className="mt-1">
                     <Badge variant="outline">
