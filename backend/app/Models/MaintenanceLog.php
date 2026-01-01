@@ -46,11 +46,11 @@ class MaintenanceLog extends Model
 
     public function startedBy()
     {
-        return $this->belongsTo(User::class, 'started_by');
+        return $this->belongsTo(Profile::class, 'started_by', 'id');
     }
 
     public function endedBy()
     {
-        return $this->belongsTo(User::class, 'ended_by');
+        return $this->belongsTo(Profile::class, 'ended_by', 'id');
     }
 }

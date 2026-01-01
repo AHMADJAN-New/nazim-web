@@ -16,9 +16,10 @@ import {
   HardDrive,
   Upload,
   RotateCcw,
+  History,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -73,6 +74,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { platformApi } from '@/platform/lib/platformApi';
+import { MaintenanceHistoryContent } from './MaintenanceHistory';
 
 // Validation schema for platform user (password optional for updates)
 const platformUserSchema = z.object({
@@ -114,7 +116,6 @@ export default function PlatformSettings() {
   const [scheduledEndAt, setScheduledEndAt] = useState<string>('');
   const [affectedServices, setAffectedServices] = useState<string>('');
   const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
-  const [showMaintenanceHistory, setShowMaintenanceHistory] = useState(false);
 
   const isEditing = !!editingUserId;
 
@@ -353,6 +354,8 @@ export default function PlatformSettings() {
     queryFn: async () => {
       try {
         const response = await platformApi.maintenance.getStatus();
+        // API returns { success: boolean, data: { ... } }
+        // response.data is the inner data object with is_maintenance_mode
         return response.data;
       } catch (error) {
         console.error('Error fetching maintenance status:', error);
@@ -380,19 +383,6 @@ export default function PlatformSettings() {
     },
   });
 
-  const { data: maintenanceHistory } = useQuery({
-    queryKey: ['maintenance-history'],
-    queryFn: async () => {
-      try {
-        const response = await platformApi.maintenance.history();
-        return response.data;
-      } catch (error) {
-        console.error('Error fetching maintenance history:', error);
-        return [];
-      }
-    },
-    enabled: hasPlatformAdminPermission && !permissionsLoading && showMaintenanceHistory,
-  });
 
   const disableMaintenance = useMutation({
     mutationFn: async () => {
@@ -540,6 +530,10 @@ export default function PlatformSettings() {
           <TabsTrigger value="restore">
             <RotateCcw className="mr-2 h-4 w-4" />
             Restore
+          </TabsTrigger>
+          <TabsTrigger value="maintenance-history">
+            <History className="mr-2 h-4 w-4" />
+            Maintenance History
           </TabsTrigger>
         </TabsList>
 
@@ -831,7 +825,8 @@ export default function PlatformSettings() {
                               )}
                             </div>
                           </div>
-                          {maintenanceStatus?.is_maintenance_mode ? (
+                          {/* CRITICAL: Always show disable button when maintenance is active */}
+                          {maintenanceStatus?.is_maintenance_mode === true ? (
                             <Button
                               variant="default"
                               onClick={() => disableMaintenance.mutate()}
@@ -878,6 +873,7 @@ export default function PlatformSettings() {
                             </div>
                           </div>
                         )}
+
                       </div>
                     )}
                   </CardContent>
@@ -1030,6 +1026,11 @@ export default function PlatformSettings() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Maintenance History Tab */}
+        <TabsContent value="maintenance-history" className="space-y-6">
+          <MaintenanceHistoryContent />
         </TabsContent>
       </Tabs>
 

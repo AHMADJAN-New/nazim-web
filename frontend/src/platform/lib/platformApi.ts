@@ -336,23 +336,14 @@ export const platformApi = {
       }>('/platform/backups');
     },
     download: async (filename: string) => {
-      // Download backup file
-      const response = await fetch(`/api/platform/backups/${filename}/download`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to download backup');
-      }
-
-      const blob = await response.blob();
+      const { blob, filename: responseFilename } = await apiClient.requestFile(
+        `/platform/backups/${filename}/download`,
+        { method: 'GET' }
+      );
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = filename;
+      a.download = responseFilename || filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -373,21 +364,7 @@ export const platformApi = {
     uploadAndRestore: async (file: File) => {
       const formData = new FormData();
       formData.append('backup_file', file);
-
-      const response = await fetch('/api/platform/backups/upload-restore', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to upload and restore backup');
-      }
-
-      return response.json();
+      return apiClient.post('/platform/backups/upload-restore', formData, { headers: {} });
     },
   },
 

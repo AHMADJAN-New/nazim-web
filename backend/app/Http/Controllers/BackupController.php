@@ -53,7 +53,18 @@ class BackupController extends Controller
 
         try {
             $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
-            $backupDir = storage_path('app/backups/' . $timestamp);
+            // Store backups next to project directory (not inside backend/)
+            // Use realpath to resolve the path correctly, then normalize for Windows
+            $backupBaseDir = realpath(base_path('../'));
+            if ($backupBaseDir === false) {
+                $backupBaseDir = dirname(base_path());
+            }
+            // Normalize path separators for current OS
+            $backupBaseDir = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $backupBaseDir) . DIRECTORY_SEPARATOR . 'backups';
+            if (!is_dir($backupBaseDir)) {
+                File::makeDirectory($backupBaseDir, 0755, true);
+            }
+            $backupDir = $backupBaseDir . DIRECTORY_SEPARATOR . $timestamp;
 
             // Create backup directory
             if (!File::exists($backupDir)) {
@@ -67,7 +78,8 @@ class BackupController extends Controller
             $storageBackupPath = $this->backupStorage($backupDir);
 
             // 3. Create ZIP archive
-            $zipPath = storage_path('app/backups/nazim_backup_' . $timestamp . '.zip');
+            // Normalize ZIP path for Windows (use same base directory)
+            $zipPath = $backupBaseDir . DIRECTORY_SEPARATOR . 'nazim_backup_' . $timestamp . '.zip';
             $this->createZipArchive($backupDir, $zipPath);
 
             // 4. Clean up temporary directory
@@ -313,12 +325,22 @@ class BackupController extends Controller
             $zip->extractTo($extractDir);
             $zip->close();
 
-            // Restore database
+            // Restore database - check for .sql file, .tar file, .dump file, or custom format directory
             $dbFile = $extractDir . '/database.sql';
+            $dbTarFile = $extractDir . '/database.tar';
+            $dbDumpFile = $extractDir . '/database.dump';
+            $dbDumpDir = $extractDir . '/database_dump'; // Custom format creates a directory
+            
             if (File::exists($dbFile)) {
                 $this->restoreDatabase($dbFile);
+            } elseif (File::exists($dbTarFile)) {
+                $this->restoreDatabase($dbTarFile);
+            } elseif (File::exists($dbDumpFile)) {
+                $this->restoreDatabase($dbDumpFile);
+            } elseif (is_dir($dbDumpDir)) {
+                $this->restoreDatabase($dbDumpDir);
             } else {
-                throw new \Exception('Database backup file not found in archive');
+                throw new \Exception('Database backup file not found in archive (expected database.sql, database.tar, database.dump, or database_dump directory)');
             }
 
             // Restore storage
@@ -342,9 +364,9 @@ class BackupController extends Controller
     }
 
     /**
-     * Restore database from SQL file
+     * Restore database from SQL file or custom format dump
      */
-    private function restoreDatabase(string $sqlFile): void
+    private function restoreDatabase(string $dbFile): void
     {
         $dbConnection = config('database.default');
         $dbConfig = config("database.connections.{$dbConnection}");
@@ -355,19 +377,73 @@ class BackupController extends Controller
         $dbUser = $dbConfig['username'];
         $dbPassword = $dbConfig['password'];
 
-        // Use psql for PostgreSQL
+        // Use psql for PostgreSQL SQL files, pg_restore for tar/custom format
         if ($dbConnection === 'pgsql') {
-            $command = sprintf(
-                'PGPASSWORD=%s psql -h %s -p %s -U %s -d %s -f %s',
-                escapeshellarg($dbPassword),
-                escapeshellarg($dbHost),
-                escapeshellarg($dbPort),
-                escapeshellarg($dbUser),
-                escapeshellarg($dbName),
-                escapeshellarg($sqlFile)
-            );
+            // Check if it's a tar/custom format (tar file, .dump file, or directory)
+            $isCustomFormat = str_ends_with($dbFile, '.tar') || str_ends_with($dbFile, '.dump') || is_dir($dbFile);
+            
+            if ($isCustomFormat) {
+                // Use pg_restore for custom format (.dump) files
+                $pgRestorePath = $this->findPgRestorePath();
+                
+                if (!$pgRestorePath) {
+                    $errorMessage = 'pg_restore executable not found. ';
+                    if (PHP_OS_FAMILY === 'Windows') {
+                        $errorMessage .= 'Please ensure PostgreSQL is installed and pg_restore.exe is available. ';
+                        $errorMessage .= 'You can either: 1) Add PostgreSQL bin directory to your system PATH, ';
+                        $errorMessage .= 'or 2) Install PostgreSQL if it is not already installed.';
+                    } else {
+                        $errorMessage .= 'Please install PostgreSQL client tools or add pg_restore to your system PATH.';
+                    }
+                    throw new \Exception($errorMessage);
+                }
+                
+                // Use pg_restore for custom format
+                $command = sprintf(
+                    '%s -h %s -p %s -U %s -d %s --clean --if-exists %s',
+                    escapeshellarg($pgRestorePath),
+                    escapeshellarg($dbHost),
+                    escapeshellarg($dbPort),
+                    escapeshellarg($dbUser),
+                    escapeshellarg($dbName),
+                    escapeshellarg($dbFile)
+                );
+                
+                $process = Process::fromShellCommandline($command);
+                $process->setEnv(['PGPASSWORD' => $dbPassword]);
+            } else {
+                // Use psql for plain SQL files
+                $psqlPath = $this->findPsqlPath();
+                
+                if (!$psqlPath) {
+                    $errorMessage = 'psql executable not found. ';
+                    if (PHP_OS_FAMILY === 'Windows') {
+                        $errorMessage .= 'Please ensure PostgreSQL is installed and psql.exe is available. ';
+                        $errorMessage .= 'You can either: 1) Add PostgreSQL bin directory to your system PATH, ';
+                        $errorMessage .= 'or 2) Install PostgreSQL if it is not already installed.';
+                    } else {
+                        $errorMessage .= 'Please install PostgreSQL client tools or add psql to your system PATH.';
+                    }
+                    throw new \Exception($errorMessage);
+                }
+                
+                // Use environment variable via Process::setEnv() for cross-platform compatibility
+                $command = sprintf(
+                    '%s -h %s -p %s -U %s -d %s -f %s',
+                    escapeshellarg($psqlPath),
+                    escapeshellarg($dbHost),
+                    escapeshellarg($dbPort),
+                    escapeshellarg($dbUser),
+                    escapeshellarg($dbName),
+                    escapeshellarg($dbFile)
+                );
+                
+                $process = Process::fromShellCommandline($command);
+                $process->setEnv(['PGPASSWORD' => $dbPassword]);
+            }
         } elseif ($dbConnection === 'mysql') {
             // Use mysql for MySQL
+            // Note: MySQL password is passed via -p flag (no space between -p and password)
             $command = sprintf(
                 'mysql -h %s -P %s -u %s -p%s %s < %s',
                 escapeshellarg($dbHost),
@@ -377,12 +453,13 @@ class BackupController extends Controller
                 escapeshellarg($dbName),
                 escapeshellarg($sqlFile)
             );
+            
+            $process = Process::fromShellCommandline($command);
         } else {
             throw new \Exception("Unsupported database connection: {$dbConnection}");
         }
 
         // Execute the command
-        $process = Process::fromShellCommandline($command);
         $process->setTimeout(600); // 10 minutes timeout
         $process->run();
 
@@ -456,36 +533,370 @@ class BackupController extends Controller
     }
 
     /**
+     * Find pg_dump executable path (Windows support)
+     */
+    private function findPgDumpPath(): ?string
+    {
+        $envPgDumpPath = env('PG_DUMP_PATH');
+        if ($envPgDumpPath && file_exists($envPgDumpPath)) {
+            return $envPgDumpPath;
+        }
+
+        // First, try to find pg_dump in PATH
+        $pgDump = $this->findExecutableInPath('pg_dump');
+        if ($pgDump) {
+            return $pgDump;
+        }
+
+        // On Windows, check common PostgreSQL installation paths
+        if (PHP_OS_FAMILY === 'Windows') {
+            $commonPaths = [
+                'C:\\Program Files\\PostgreSQL',
+                'C:\\Program Files (x86)\\PostgreSQL',
+            ];
+
+            foreach ($commonPaths as $basePath) {
+                if (is_dir($basePath)) {
+                    // Look for PostgreSQL versions (e.g., 14, 15, 16, etc.)
+                    $versions = glob($basePath . '\\*', GLOB_ONLYDIR);
+                    foreach ($versions as $versionPath) {
+                        $pgDumpPath = $versionPath . '\\bin\\pg_dump.exe';
+                        if (file_exists($pgDumpPath)) {
+                            return $pgDumpPath;
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find executable in system PATH
+     */
+    private function findExecutableInPath(string $executable): ?string
+    {
+        $pathEnv = getenv('PATH');
+        if (!$pathEnv) {
+            return null;
+        }
+
+        $paths = explode(PATH_SEPARATOR, $pathEnv);
+        $extension = PHP_OS_FAMILY === 'Windows' ? '.exe' : '';
+
+        foreach ($paths as $path) {
+            $fullPath = $path . DIRECTORY_SEPARATOR . $executable . $extension;
+            if (file_exists($fullPath) && is_executable($fullPath)) {
+                return $fullPath;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find psql executable path (Windows support)
+     */
+    private function findPsqlPath(): ?string
+    {
+        // First, try to find psql in PATH
+        $psql = $this->findExecutableInPath('psql');
+        if ($psql) {
+            return $psql;
+        }
+
+        // On Windows, check common PostgreSQL installation paths
+        if (PHP_OS_FAMILY === 'Windows') {
+            $commonPaths = [
+                'C:\\Program Files\\PostgreSQL',
+                'C:\\Program Files (x86)\\PostgreSQL',
+            ];
+
+            foreach ($commonPaths as $basePath) {
+                if (is_dir($basePath)) {
+                    // Look for PostgreSQL versions (e.g., 14, 15, 16, etc.)
+                    $versions = glob($basePath . '\\*', GLOB_ONLYDIR);
+                    foreach ($versions as $versionPath) {
+                        $psqlPath = $versionPath . '\\bin\\psql.exe';
+                        if (file_exists($psqlPath)) {
+                            return $psqlPath;
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find pg_restore executable path (Windows support)
+     */
+    private function findPgRestorePath(): ?string
+    {
+        // First, try to find pg_restore in PATH
+        $pgRestore = $this->findExecutableInPath('pg_restore');
+        if ($pgRestore) {
+            return $pgRestore;
+        }
+
+        // On Windows, check common PostgreSQL installation paths
+        if (PHP_OS_FAMILY === 'Windows') {
+            $commonPaths = [
+                'C:\\Program Files\\PostgreSQL',
+                'C:\\Program Files (x86)\\PostgreSQL',
+            ];
+
+            foreach ($commonPaths as $basePath) {
+                if (is_dir($basePath)) {
+                    // Look for PostgreSQL versions (e.g., 14, 15, 16, etc.)
+                    $versions = glob($basePath . '\\*', GLOB_ONLYDIR);
+                    foreach ($versions as $versionPath) {
+                        $pgRestorePath = $versionPath . '\\bin\\pg_restore.exe';
+                        if (file_exists($pgRestorePath)) {
+                            return $pgRestorePath;
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+
+    /**
+     * Get pg_dump version string
+     */
+    private function getPgDumpVersion(string $pgDumpPath): ?string
+    {
+        try {
+            $process = Process::fromShellCommandline(sprintf('%s --version', escapeshellarg($pgDumpPath)));
+            $process->setTimeout(10);
+            $process->run();
+            $output = trim($process->getOutput());
+            return $output !== '' ? $output : null;
+        } catch (\Exception $e) {
+            \Log::warning('Failed to read pg_dump version: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Backup database using pg_dump
      */
     private function backupDatabase(string $backupDir): string
     {
+        // Read database credentials directly from .env file
         $dbConnection = config('database.default');
         $dbConfig = config("database.connections.{$dbConnection}");
 
-        $dbHost = $dbConfig['host'];
-        $dbPort = $dbConfig['port'];
-        $dbName = $dbConfig['database'];
-        $dbUser = $dbConfig['username'];
-        $dbPassword = $dbConfig['password'];
+        // Use env() directly to ensure we get the actual .env values
+        $dbHost = env('DB_HOST', $dbConfig['host'] ?? '127.0.0.1');
+        $dbPort = env('DB_PORT', $dbConfig['port'] ?? '5432');
+        $dbName = env('DB_DATABASE', $dbConfig['database'] ?? '');
+        $dbUser = env('DB_USERNAME', $dbConfig['username'] ?? '');
+        $dbPassword = env('DB_PASSWORD', $dbConfig['password'] ?? '');
 
-        $backupFile = $backupDir . '/database.sql';
+        // Use tar format from the start - it doesn't require restrict keys
+        $backupFile = $backupDir . DIRECTORY_SEPARATOR . 'database.tar';
 
         // Use pg_dump for PostgreSQL
         if ($dbConnection === 'pgsql') {
-            $command = sprintf(
-                'PGPASSWORD=%s pg_dump -h %s -p %s -U %s -d %s -F p -f %s',
-                escapeshellarg($dbPassword),
-                escapeshellarg($dbHost),
-                escapeshellarg($dbPort),
-                escapeshellarg($dbUser),
-                escapeshellarg($dbName),
-                escapeshellarg($backupFile)
-            );
+            // Find pg_dump executable
+            $pgDumpPath = $this->findPgDumpPath();
+            
+            if (!$pgDumpPath) {
+                $errorMessage = 'pg_dump executable not found. ';
+                if (PHP_OS_FAMILY === 'Windows') {
+                    $errorMessage .= 'Please ensure PostgreSQL is installed and pg_dump.exe is available. ';
+                    $errorMessage .= 'You can either: 1) Add PostgreSQL bin directory to your system PATH, ';
+                    $errorMessage .= 'or 2) Install PostgreSQL if it is not already installed.';
+                } else {
+                    $errorMessage .= 'Please install PostgreSQL client tools or add pg_dump to your system PATH.';
+                }
+                throw new \Exception($errorMessage);
+            }
+
+            $pgDumpVersion = $this->getPgDumpVersion($pgDumpPath);
+
+            // On Windows, use a temporary batch file to ensure environment variables are set correctly
+            // This bypasses Laravel Process issues with environment variables on Windows
+            if (PHP_OS_FAMILY === 'Windows') {
+                // Create temporary batch file
+                // Normalize temp directory path for Windows
+                $tempDir = str_replace('/', '\\', sys_get_temp_dir());
+                $batchFile = $tempDir . '\\pg_dump_backup_' . uniqid() . '.bat';
+                // Escape password for batch file (double quotes and special characters)
+                $escapedPassword = str_replace(['"', '%', '!', '^', '&'], ['""', '%%', '!!', '^^', '^&'], $dbPassword);
+                // Normalize backup file path for Windows (use backslashes, escape backslashes and quotes)
+                $normalizedBackupFile = str_replace('/', '\\', $backupFile);
+                $escapedBackupFile = str_replace(['\\', '"'], ['\\\\', '\\"'], $normalizedBackupFile);
+                // Redirect stderr to stdout (2>&1) to capture all output
+                // Note: Don't use escapeshellarg() for paths in batch files - it adds extra quotes
+                $batchContent = sprintf(
+                    "@echo off\nset PGPASSWORD=%s\n\"%s\" -h %s -p %s -U %s -d %s -F t -f \"%s\" 2>&1\n",
+                    $escapedPassword,
+                    $pgDumpPath,
+                    escapeshellarg($dbHost),
+                    escapeshellarg($dbPort),
+                    escapeshellarg($dbUser),
+                    escapeshellarg($dbName),
+                    $escapedBackupFile
+                );
+                file_put_contents($batchFile, $batchContent);
+                
+                // Execute batch file using cmd /c to ensure proper execution on Windows
+                // Normalize batch file path for Windows
+                $normalizedBatchFile = str_replace('/', '\\', $batchFile);
+                
+                // Use exec() directly to bypass Laravel Process issues on Windows
+                // This is more reliable for batch file execution on Windows
+                $command = 'cmd /c "' . $normalizedBatchFile . '"';
+                
+                $output = [];
+                $returnVar = 0;
+                exec($command . ' 2>&1', $output, $returnVar);
+                $combinedOutput = implode("\n", $output);
+                
+                // Create a mock Process object for compatibility with existing error handling code
+                // We'll check the return code and output manually
+                if ($returnVar !== 0) {
+                    $errorOutput = $combinedOutput;
+                    $output = '';
+                } else {
+                    $errorOutput = '';
+                    $output = $combinedOutput;
+                }
+                
+                // Create a Process-like object for compatibility
+                // Since we already executed via exec(), this is just a wrapper for compatibility
+                $process = new class($returnVar, $output, $errorOutput) {
+                    private $exitCode;
+                    private $output;
+                    private $errorOutput;
+                    private $hasRun = false;
+                    
+                    public function __construct($exitCode, $output, $errorOutput) {
+                        $this->exitCode = $exitCode;
+                        $this->output = $output;
+                        $this->errorOutput = $errorOutput;
+                    }
+                    
+                    public function run($callback = null) {
+                        // Already executed via exec(), so this is a no-op
+                        // But we can call the callback if provided for compatibility
+                        if ($callback && is_callable($callback)) {
+                            // Call callback with output if any
+                            if (!empty($this->output)) {
+                                $callback(1, $this->output); // 1 = stdout
+                            }
+                            if (!empty($this->errorOutput)) {
+                                $callback(2, $this->errorOutput); // 2 = stderr
+                            }
+                        }
+                        $this->hasRun = true;
+                    }
+                    
+                    public function isSuccessful() {
+                        return $this->exitCode === 0;
+                    }
+                    
+                    public function getExitCode() {
+                        return $this->exitCode;
+                    }
+                    
+                    public function getOutput() {
+                        return $this->output;
+                    }
+                    
+                    public function getErrorOutput() {
+                        return $this->errorOutput;
+                    }
+                };
+            } else {
+                // On Unix-like systems, use Process::fromArray()
+                $commandArray = [
+                    $pgDumpPath,
+                    '-h', $dbHost,
+                    '-p', $dbPort,
+                    '-U', $dbUser,
+                    '-d', $dbName,
+                    '-F', 't',
+                    '-f', $backupFile
+                ];
+                
+                $process = Process::fromArray($commandArray);
+                $process->setEnv(['PGPASSWORD' => $dbPassword]);
+                $process->setTimeout(300); // 5 minutes timeout
+            }
+            
+            // Run the process with real-time output capture (for Unix-like systems)
+            if (PHP_OS_FAMILY !== 'Windows') {
+                $process->run();
+            }
+
+            // Clean up temporary batch file on Windows
+            if (PHP_OS_FAMILY === 'Windows' && isset($batchFile) && file_exists($batchFile)) {
+                @unlink($batchFile);
+            }
+
+            // If command failed with restrict key error, try with --restrict-key flag (PostgreSQL 17.6+)
+            // The restrict key feature requires an explicit key when auto-generation fails
+            if (!$process->isSuccessful()) {
+                $errorOutput = $process->getErrorOutput();
+                $output = $process->getOutput();
+                // Check both error output and standard output for restrict key errors
+                $fullErrorText = trim($errorOutput) . "\n" . trim($output);
+                $hasRestrictKeyError = str_contains($errorOutput, 'could not generate restrict key') ||
+                                      str_contains($errorOutput, 'restrict key') ||
+                                      str_contains($output, 'could not generate restrict key') ||
+                                      str_contains($output, 'restrict key');
+                
+                if ($hasRestrictKeyError) {
+                    // Try using tar format instead of plain text
+                    // Tar format doesn't require restrict keys and creates a single file (easier to handle)
+                    $tarBackupFile = str_replace('.sql', '.tar', $backupFile);
+                    
+                    // Use tar format (F t) - single file format that doesn't require restrict keys
+                    // Add verbose flag to get more detailed error information
+                    $command = sprintf(
+                        '%s -h %s -p %s -U %s -d %s -F t -v -f %s',
+                        escapeshellarg($pgDumpPath),
+                        escapeshellarg($dbHost),
+                        escapeshellarg($dbPort),
+                        escapeshellarg($dbUser),
+                        escapeshellarg($dbName),
+                        escapeshellarg($tarBackupFile)
+                    );
+                    
+                    $process = Process::fromShellCommandline($command);
+                    $process->setEnv(['PGPASSWORD' => $dbPassword]);
+                    $process->setTimeout(300);
+                    $process->run();
+                    
+                    // If tar format succeeded, update backupFile path
+                    if ($process->isSuccessful() && file_exists($tarBackupFile)) {
+                        $backupFile = $tarBackupFile;
+                    }
+                }
+            }
         } elseif ($dbConnection === 'mysql') {
+            // Find mysqldump executable
+            $mysqldumpPath = $this->findExecutableInPath('mysqldump');
+            
+            if (!$mysqldumpPath) {
+                $errorMessage = 'mysqldump executable not found. ';
+                $errorMessage .= 'Please install MySQL client tools or add mysqldump to your system PATH.';
+                throw new \Exception($errorMessage);
+            }
+            
             // Use mysqldump for MySQL
+            // Note: MySQL password is passed via -p flag (no space between -p and password)
             $command = sprintf(
-                'mysqldump -h %s -P %s -u %s -p%s %s > %s',
+                '%s -h %s -P %s -u %s -p%s %s > %s',
+                escapeshellarg($mysqldumpPath),
                 escapeshellarg($dbHost),
                 escapeshellarg($dbPort),
                 escapeshellarg($dbUser),
@@ -493,17 +904,57 @@ class BackupController extends Controller
                 escapeshellarg($dbName),
                 escapeshellarg($backupFile)
             );
+            
+            $process = Process::fromShellCommandline($command);
+            $process->setTimeout(300); // 5 minutes timeout
+            $process->run();
         } else {
             throw new \Exception("Unsupported database connection: {$dbConnection}");
         }
 
-        // Execute the command
-        $process = Process::fromShellCommandline($command);
-        $process->setTimeout(300); // 5 minutes timeout
-        $process->run();
-
+        // Check if command was successful
         if (!$process->isSuccessful()) {
-            throw new ProcessFailedException($process);
+            $errorOutput = $process->getErrorOutput();
+            $output = $process->getOutput();
+            
+            
+            // Combine both error output and standard output for full error message
+            $fullError = trim($errorOutput);
+            if ($output && !$fullError) {
+                $fullError = trim($output);
+            } elseif ($output && $fullError) {
+                $fullError = trim($errorOutput) . "\n" . trim($output);
+            }
+            
+            $errorMessage = 'Database backup command failed. ';
+            if ($fullError) {
+                $errorMessage .= 'Error: ' . $fullError;
+            } else {
+                $errorMessage .= 'Exit code: ' . $process->getExitCode();
+            }
+            
+            // Add more context for common errors
+            if (str_contains($fullError, 'could not generate restrict key')) {
+                $errorMessage .= ' This error is related to PostgreSQL 17.6+ restrict key feature. ';
+                $errorMessage .= 'Please ensure you are using a compatible version of pg_dump.';
+                if (isset($pgDumpPath) && isset($pgDumpVersion)) {
+                    $errorMessage .= " Detected pg_dump: {$pgDumpPath}";
+                    if ($pgDumpVersion) {
+                        $errorMessage .= " ({$pgDumpVersion})";
+                    }
+                    $errorMessage .= '.';
+                }
+                $errorMessage .= ' You can set PG_DUMP_PATH in .env to point to a newer pg_dump.';
+            } elseif (str_contains($errorOutput, 'illegal option') && str_contains($errorOutput, '--restrict-key')) {
+                $errorMessage .= ' The installed pg_dump does not support the --restrict-key option. ';
+                $errorMessage .= 'Please update pg_dump to version 17.6 or higher.';
+            } elseif (str_contains($errorOutput, 'password authentication failed')) {
+                $errorMessage .= ' Please check your database credentials.';
+            } elseif (str_contains($errorOutput, 'could not connect')) {
+                $errorMessage .= ' Please check your database connection settings.';
+            }
+            
+            throw new \Exception($errorMessage);
         }
 
         return $backupFile;
@@ -514,12 +965,12 @@ class BackupController extends Controller
      */
     private function backupStorage(string $backupDir): string
     {
-        $storageBackupDir = $backupDir . '/storage';
+        $storageBackupDir = $backupDir . DIRECTORY_SEPARATOR . 'storage';
         File::makeDirectory($storageBackupDir, 0755, true);
 
         // Copy storage/app directory
         $sourcePath = storage_path('app');
-        $destPath = $storageBackupDir . '/app';
+        $destPath = $storageBackupDir . DIRECTORY_SEPARATOR . 'app';
 
         if (File::exists($sourcePath)) {
             File::copyDirectory($sourcePath, $destPath);

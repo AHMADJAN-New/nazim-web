@@ -7,6 +7,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { PersistentLayout } from "@/components/layout/PersistentLayout";
+import { MaintenanceModeHandler } from "@/components/MaintenanceModeHandler";
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -17,6 +18,7 @@ import { PlatformAdminRoute } from "@/components/PlatformAdminRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
+import MaintenancePage from "./pages/MaintenancePage";
 import TimetableGeneration from "./pages/TimetableGeneration";
 import { PlatformAdminLogin } from "./platform/pages/PlatformAdminLogin";
 import { PlatformAdminDashboard } from "./platform/pages/PlatformAdminDashboard";
@@ -216,10 +218,16 @@ const App = () => (
           >
             <SidebarProvider>
               <ErrorBoundary>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <MaintenanceModeHandler>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/auth" element={<AuthPage />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/maintenance" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <MaintenancePage />
+                      </Suspense>
+                    } />
                   
                   {/* Public verification routes - no auth required */}
                   <Route path="/verify/certificate/:hash" element={
@@ -1381,7 +1389,8 @@ const App = () => (
 
                   {/* Catch-all route */}
                   <Route path="*" element={<NotFound />} />
-                </Routes>
+                  </Routes>
+                </MaintenanceModeHandler>
               </ErrorBoundary>
             </SidebarProvider>
           </BrowserRouter>

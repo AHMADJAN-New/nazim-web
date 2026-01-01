@@ -87,6 +87,7 @@ use App\Http\Controllers\Dms\LetterTypesController;
 use App\Http\Controllers\Dms\OutgoingDocumentsController;
 use App\Http\Controllers\StorageController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\LandingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -94,9 +95,11 @@ use App\Http\Controllers\SearchController;
 |--------------------------------------------------------------------------
 */
 
-// Public routes
-Route::post('/auth/login', [AuthController::class, 'login']);
+// Public routes (no authentication required)
+Route::get('auth/login', [AuthController::class, 'loginGet']); // Handle GET requests gracefully
+Route::post('auth/login', [AuthController::class, 'login']);
 Route::get('/leave-requests/scan/{token}', [LeaveRequestController::class, 'scanPublic']);
+Route::get('/maintenance/status/public', [App\Http\Controllers\MaintenanceController::class, 'getPublicStatus']);
 
 // Public certificate verification routes (rate limited)
 use App\Http\Controllers\CertificateVerifyController;
@@ -112,6 +115,8 @@ Route::post('/verify/certificate/search', [CertificateVerifyController::class, '
 // Consider protecting if aggregate data is sensitive
 Route::get('/stats/students-count', [StatsController::class, 'studentsCount']);
 Route::get('/stats/staff-count', [StatsController::class, 'staffCount']);
+Route::post('/landing/contact', [LandingController::class, 'submitContact']);
+Route::post('/landing/plan-request', [LandingController::class, 'submitPlanRequest']);
 
 // Auth routes (require authentication but NO subscription checks - always allowed)
 // These routes must be accessible even without active subscription for login/auth checks

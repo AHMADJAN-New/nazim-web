@@ -135,3 +135,6 @@ class FixMissingBasicPermissions extends Command
     }
 }
 
+
+
+

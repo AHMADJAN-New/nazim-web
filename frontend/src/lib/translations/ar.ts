@@ -3486,6 +3486,26 @@ export const ar: TranslationKeys = {
     readAccessDenied: 'انتهى اشتراكك. يرجى التجديد للوصول إلى بياناتك.',
     genericError: 'حدث خطأ في الاشتراك. يرجى التحقق من حالة اشتراكك.',
   },
+
+  // Maintenance Mode
+  maintenance: {
+    title: 'النظام قيد الصيانة',
+    defaultMessage: 'نقوم بإجراء صيانة مجدولة. سنعود قريباً!',
+    scheduledEnd: 'وقت الإكمال المجدول',
+    startedAt: 'بدأت الصيانة',
+    timeRemaining: 'الوقت المتبقي',
+    remaining: 'متبقي',
+    affectedServices: 'الخدمات المتأثرة',
+    progress: 'تقدم الصيانة',
+    inProgress: 'الصيانة قيد التنفيذ',
+    teamWorking: 'يعمل فريقنا بجد لاستعادة الخدمة',
+    refresh: 'تحديث الصفحة',
+    retryAfter: 'يمكنك المحاولة مرة أخرى خلال',
+    seconds: 'ثانية',
+    retry: 'إعادة الاتصال',
+    autoRefresh: 'ستتم إعادة تحميل هذه الصفحة تلقائياً كل 30 ثانية',
+    info: 'نعتذر عن أي إزعاج. يعمل فريقنا بجد لاستعادة الخدمة في أسرع وقت ممكن. شكراً لصبركم.',
+  },
   
   // Phone Book
   phoneBook: {

@@ -107,6 +107,17 @@ export default function AuthPage() {
         console.error('Sign in error:', error);
       }
       
+      // Check if this is a maintenance mode error
+      if (error.isMaintenanceMode || error.status === 503) {
+        // Maintenance mode is active - show maintenance message but don't block login attempt
+        // The backend should allow login through, but if it doesn't, show the maintenance message
+        const maintenanceMessage = error.message || t('maintenance.defaultMessage') || 'We are performing scheduled maintenance. We\'ll be back soon!';
+        toast.error(maintenanceMessage);
+        // Don't restore tokens on maintenance mode - let user try again
+        setAuthLoading(false);
+        return;
+      }
+      
       // Restore platform admin token if login failed
       const isPlatformAdminSession = localStorage.getItem('is_platform_admin_session') === 'true';
       const platformAdminTokenBackup = localStorage.getItem('platform_admin_token_backup');

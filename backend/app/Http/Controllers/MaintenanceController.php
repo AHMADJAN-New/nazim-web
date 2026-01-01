@@ -42,7 +42,57 @@ class MaintenanceController extends Controller
     }
 
     /**
-     * Get maintenance mode status
+     * Get public maintenance mode status (no authentication required)
+     */
+    public function getPublicStatus(Request $request)
+    {
+        try {
+            $maintenanceFilePath = storage_path('framework/down');
+            $isDown = File::exists($maintenanceFilePath);
+
+            $data = [
+                'is_maintenance_mode' => $isDown,
+                'message' => null,
+                'scheduled_end_at' => null,
+                'started_at' => null,
+                'affected_services' => [],
+            ];
+
+            if ($isDown) {
+                // Get active maintenance log
+                $activeLog = MaintenanceLog::where('status', 'active')
+                    ->orderBy('started_at', 'desc')
+                    ->first();
+
+                if ($activeLog) {
+                    $data['message'] = $activeLog->message;
+                    $data['scheduled_end_at'] = $activeLog->scheduled_end_at?->toDateTimeString();
+                    $data['started_at'] = $activeLog->started_at->toDateTimeString();
+                    $data['affected_services'] = $activeLog->affected_services ?? [];
+                } else {
+                    // Fallback to file content if no log exists
+                    $content = json_decode(File::get($maintenanceFilePath), true);
+                    $data['message'] = $content['message'] ?? 'System is under maintenance';
+                    $data['scheduled_end_at'] = $content['scheduled_end'] ?? $content['scheduled_end_at'] ?? null;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get public maintenance status failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get maintenance status',
+            ], 500);
+        }
+    }
+
+    /**
+     * Get maintenance mode status (requires platform admin)
      */
     public function getStatus(Request $request)
     {
@@ -67,7 +117,14 @@ class MaintenanceController extends Controller
                     ->first();
 
                 if ($activeLog) {
-                    $activeLog->load(['startedBy:id,full_name,email']);
+                    // Try to load startedBy relationship, but handle errors gracefully
+                    try {
+                        $activeLog->load(['startedBy:id,full_name,email']);
+                    } catch (\Exception $e) {
+                        // If relationship fails (e.g., invalid foreign key data), log and continue
+                        \Log::warning('Failed to load startedBy relationship for maintenance log: ' . $e->getMessage());
+                    }
+                    
                     $data['message'] = $activeLog->message;
                     $data['scheduled_end_at'] = $activeLog->scheduled_end_at?->toDateTimeString();
                     $data['affected_services'] = $activeLog->affected_services ?? [];
@@ -220,11 +277,19 @@ class MaintenanceController extends Controller
         $this->enforceSubscriptionAdmin($request);
 
         try {
-            $logs = MaintenanceLog::with(['startedBy:id,full_name,email', 'endedBy:id,full_name,email'])
-                ->orderBy('started_at', 'desc')
+            // Load relationships separately to handle errors gracefully
+            $logs = MaintenanceLog::orderBy('started_at', 'desc')
                 ->limit(50)
                 ->get()
                 ->map(function ($log) {
+                    // Try to load relationships, but handle errors gracefully
+                    try {
+                        $log->load(['startedBy:id,full_name,email', 'endedBy:id,full_name,email']);
+                    } catch (\Exception $e) {
+                        // If relationship fails (e.g., invalid foreign key data), log and continue
+                        \Log::warning('Failed to load relationships for maintenance log ' . $log->id . ': ' . $e->getMessage());
+                    }
+                    
                     return [
                         'id' => $log->id,
                         'message' => $log->message,

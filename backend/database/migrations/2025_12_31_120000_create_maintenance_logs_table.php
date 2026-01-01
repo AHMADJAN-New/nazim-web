@@ -18,15 +18,16 @@ return new class extends Migration
             $table->timestamp('started_at');
             $table->timestamp('scheduled_end_at')->nullable();
             $table->timestamp('actual_end_at')->nullable();
-            $table->uuid('started_by')->nullable(); // User who initiated maintenance
-            $table->uuid('ended_by')->nullable(); // User who ended maintenance
+            $table->uuid('started_by')->nullable(); // Profile who initiated maintenance
+            $table->uuid('ended_by')->nullable(); // Profile who ended maintenance
             $table->string('status')->default('active'); // active, completed, cancelled
             $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('started_by')->references('id')->on('users')->onDelete('set null');
-            $table->foreign('ended_by')->references('id')->on('users')->onDelete('set null');
+            // CRITICAL: Reference profiles.id, not users.id (full_name is in profiles table)
+            $table->foreign('started_by')->references('id')->on('profiles')->onDelete('set null');
+            $table->foreign('ended_by')->references('id')->on('profiles')->onDelete('set null');
         });
     }
 
