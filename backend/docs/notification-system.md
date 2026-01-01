@@ -54,8 +54,13 @@ All routes are organization-scoped and permission-checked.
 - `POST /api/notifications/{id}/read` — mark single notification read.
 - `POST /api/notifications/read-all` — mark all read for current user/org.
 - `GET /api/notifications/unread-count` — lightweight counter.
+- `GET /api/notifications/preferences` — get user's notification preferences.
+- `PUT /api/notifications/preferences/{type}` — update preference for specific event type.
 
-Permissions: `notifications.read` for list/count, `notifications.update` for read actions.
+Permissions:
+- `notifications.read` for list/count
+- `notifications.update` for read actions
+- `notifications.manage_preferences` for preference management
 
 ## Usage Examples
 

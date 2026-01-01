@@ -20,6 +20,10 @@ return new class extends Migration
             $table->string('entity_id')->index();
             $table->jsonb('payload_json')->nullable();
             $table->timestamps();
+
+            // Foreign keys
+            $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
+            $table->foreign('actor_user_id')->references('id')->on('users')->onDelete('set null');
         });
 
         Schema::create('notifications', function (Blueprint $table) {
@@ -35,6 +39,11 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['organization_id', 'user_id', 'created_at']);
+
+            // Foreign keys
+            $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('event_id')->references('id')->on('notification_events')->onDelete('set null');
         });
 
         Schema::create('notification_deliveries', function (Blueprint $table) {
@@ -49,6 +58,11 @@ return new class extends Migration
             $table->text('error')->nullable();
             $table->timestamp('sent_at')->nullable();
             $table->timestamps();
+
+            // Foreign keys
+            $table->foreign('notification_id')->references('id')->on('notifications')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('event_id')->references('id')->on('notification_events')->onDelete('set null');
         });
 
         Schema::create('notification_preferences', function (Blueprint $table) {
@@ -62,6 +76,10 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['organization_id', 'user_id', 'type'], 'notification_preferences_unique_per_type');
+
+            // Foreign keys
+            $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

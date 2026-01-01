@@ -3,16 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notification;
+use App\Models\NotificationPreference;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class NotificationController extends Controller
 {
     private function getProfile(Request $request)
     {
         $user = $request->user();
-        return DB::table('profiles')->where('id', $user->id)->first();
+        return $user->profile ?? DB::table('profiles')->where('id', $user->id)->first();
     }
 
     private function ensurePermission($user, string $permission)
@@ -137,5 +139,66 @@ class NotificationController extends Controller
             ->update(['read_at' => now()]);
 
         return response()->json(['success' => true]);
+    }
+
+    public function getPreferences(Request $request)
+    {
+        $user = $request->user();
+        $profile = $this->getProfile($request);
+
+        if (!$profile?->organization_id) {
+            return response()->json(['error' => 'User must belong to an organization'], 403);
+        }
+
+        if (!$this->ensurePermission($user, 'notifications.manage_preferences')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'required_permission' => 'notifications.manage_preferences',
+            ], 403);
+        }
+
+        $preferences = NotificationPreference::where('organization_id', $profile->organization_id)
+            ->where('user_id', $user->id)
+            ->get();
+
+        return response()->json($preferences);
+    }
+
+    public function updatePreference(Request $request, string $type)
+    {
+        $user = $request->user();
+        $profile = $this->getProfile($request);
+
+        if (!$profile?->organization_id) {
+            return response()->json(['error' => 'User must belong to an organization'], 403);
+        }
+
+        if (!$this->ensurePermission($user, 'notifications.manage_preferences')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'required_permission' => 'notifications.manage_preferences',
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'in_app_enabled' => 'sometimes|boolean',
+            'email_enabled' => 'sometimes|boolean',
+            'frequency' => 'sometimes|string|in:instant,daily_digest',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+
+        $preference = NotificationPreference::updateOrCreate(
+            [
+                'organization_id' => $profile->organization_id,
+                'user_id' => $user->id,
+                'type' => $type,
+            ],
+            $validator->validated()
+        );
+
+        return response()->json($preference);
     }
 }

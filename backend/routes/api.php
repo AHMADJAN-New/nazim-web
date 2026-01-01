@@ -160,6 +160,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+    Route::get('/notifications/preferences', [NotificationController::class, 'getPreferences']);
+    Route::put('/notifications/preferences/{type}', [NotificationController::class, 'updatePreference']);
 
     // Organizations (protected - all operations require authentication)
     Route::get('/organizations', [OrganizationController::class, 'index']);
