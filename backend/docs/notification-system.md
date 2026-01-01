@@ -26,6 +26,7 @@ Registered event keys (snake/kebab free) are aligned with the product brief:
 - **Attendance:** `attendance.sync_failed` (critical), `attendance.anomaly`
 - **DMS / Letters:** `doc.assigned`, `doc.approved`, `doc.returned`
 - **System:** `system.backup_failed` (critical), `system.license_expiring`
+- **Security:** `security.password_changed` (critical), `security.new_device_login` (critical)
 
 Email eligibility and severity levels are centralized in `config/notifications.php`.
 
@@ -65,7 +66,7 @@ Permissions:
 ## Usage Examples
 
 ```php
-// In any domain service or listener
+// Example 1: Document assignment notification
 $notificationService->notify(
     'doc.assigned',
     $incomingDocument,   // must expose organization_id
@@ -74,6 +75,32 @@ $notificationService->notify(
         'title' => 'New document assigned',
         'body' => 'Please review the import letter today.',
         'url' => "/dms/incoming/{$incomingDocument->id}",
+    ]
+);
+
+// Example 2: Security alert - password changed
+$notificationService->notify(
+    'security.password_changed',
+    $user,               // the User whose password changed
+    $user,               // actor is the user themselves
+    [
+        'title' => 'Password Changed',
+        'body' => 'Your password was successfully changed. If you did not make this change, please contact support immediately.',
+        'url' => '/settings/security',
+    ]
+);
+
+// Example 3: Security alert - new device login
+$notificationService->notify(
+    'security.new_device_login',
+    $user,               // the User who logged in
+    $user,               // actor
+    [
+        'title' => 'New Device Login Detected',
+        'body' => "Login from {$deviceInfo['name']} at {$loginTime}. If this wasn't you, please secure your account.",
+        'url' => '/settings/security',
+        'device_info' => $deviceInfo,
+        'ip_address' => $ipAddress,
     ]
 );
 ```

@@ -95,6 +95,23 @@ class NotificationRuleRegistry
         // System
         $this->register('system.backup_failed', fn (Model $entity) => $this->organizationAdmins($entity->organization_id ?? ''));
         $this->register('system.license_expiring', fn (Model $entity) => $this->organizationAdmins($entity->organization_id ?? ''));
+
+        // Security - notify the affected user only
+        $this->register('security.password_changed', function (Model $entity) {
+            // Entity should be the User model whose password changed
+            if ($entity instanceof User) {
+                return collect([$entity]);
+            }
+            return collect();
+        });
+
+        $this->register('security.new_device_login', function (Model $entity) {
+            // Entity should be the User model who logged in from new device
+            if ($entity instanceof User) {
+                return collect([$entity]);
+            }
+            return collect();
+        });
     }
 
     private function usersWithPermission(Model $entity, string $permission): Collection

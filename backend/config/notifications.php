@@ -15,6 +15,8 @@ return [
         'attendance.sync_failed',
         'system.backup_failed',
         'system.license_expiring',
+        'security.password_changed',
+        'security.new_device_login',
     ],
 
     'digest_event_types' => [
@@ -28,5 +30,7 @@ return [
         'system.license_expiring' => 'warning',
         'doc.returned' => 'warning',
         'invoice.overdue' => 'warning',
+        'security.password_changed' => 'critical',
+        'security.new_device_login' => 'critical',
     ],
 ];
