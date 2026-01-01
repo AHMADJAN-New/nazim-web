@@ -13,6 +13,7 @@ import DiscountCodesManagement from './pages/admin/DiscountCodesManagement';
 import RenewalReviewPage from './pages/admin/RenewalReviewPage';
 import PlatformSettings from './pages/admin/PlatformSettings';
 import { PlatformPermissionGroupsManagement } from './pages/PlatformPermissionGroupsManagement';
+import HelpCenterManagement from './pages/admin/HelpCenterManagement';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlatformAdminPermissions } from './hooks/usePlatformAdminPermissions';
 import { LoadingSpinner } from '@/components/ui/loading';
@@ -161,6 +162,7 @@ export function PlatformAdminApp() {
 
               {/* ✅ This is the page you said doesn't render */}
               <Route path="settings" element={<PlatformSettings />} />
+              <Route path="help-center" element={<HelpCenterManagement />} />
 
               {/* Fallback inside platform */}
               <Route path="*" element={<Navigate to="dashboard" replace />} />

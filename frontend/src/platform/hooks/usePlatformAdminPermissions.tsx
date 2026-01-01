@@ -10,15 +10,9 @@ import { useAuth } from '@/hooks/useAuth';
 export const usePlatformAdminPermissions = () => {
   const { user } = useAuth();
 
-  const isOnPlatformRoute =
-    typeof window !== 'undefined' && window.location.pathname.startsWith('/platform');
-
-  const isPlatformAdminSession =
-    typeof window !== 'undefined' &&
-    localStorage.getItem('is_platform_admin_session') === 'true';
-
-  // We only fetch if user exists AND we are truly in platform context.
-  const shouldFetch = !!user && (isOnPlatformRoute || isPlatformAdminSession);
+  // CRITICAL: Remove route-prefix gating - permission checks should be auth-driven, not URL-driven
+  // If user is logged in, fetch permissions. Backend will return 403 if they don't have access.
+  const shouldFetch = !!user;
 
   return useQuery<string[], Error>({
     queryKey: ['platform-admin-permissions', user?.id ?? 'guest'],

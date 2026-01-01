@@ -4819,6 +4819,27 @@ export interface TranslationKeys {
         note: string;
       };
     };
+  };
+  helpCenter: {
+    title: string;
+    subtitle: string;
+      searchPlaceholder: string;
+      allCategories: string;
+      clearFilters: string;
+      featuredArticles: string;
+      popularArticles: string;
+      articles: string;
+      allArticles: string;
+      articlesFound: string;
+      noArticlesFound: string;
+      noArticlesDescription: string;
+      contextualHelp: string;
+      articleFound: string;
+      noArticleFound: string;
+      errorLoading: string;
+      viewFullArticle: string;
+      browseHelpCenter: string;
+    };
     footer: {
       tagline: string;
       product: string;

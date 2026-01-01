@@ -176,7 +176,8 @@ import {
   OrganizationSubscriptionDetail,
   RenewalReviewPage,
   DiscountCodesManagement,
-  PlatformSettings
+  PlatformSettings,
+  HelpCenterManagement
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -324,6 +325,11 @@ const App = () => (
                               <PlatformSettings />
                             </Suspense>
                           } />
+                          <Route path="/help-center" element={
+                            <Suspense fallback={<PageSkeleton />}>
+                              <HelpCenterManagement />
+                            </Suspense>
+                          } />
                           <Route path="/" element={<Navigate to="/platform/dashboard" replace />} />
                         </Routes>
                       </PlatformAdminLayout>
@@ -364,6 +370,21 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/help-center/s/:categorySlug" element={
+                      <PermissionRoute permission="help_center.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <HelpCenter />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/help-center/s/:categorySlug/:articleSlug" element={
+                      <PermissionRoute permission="help_center.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <HelpCenterArticle />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Keep ID-based route for admin/backoffice usage */}
                     <Route path="/help-center/article/:id" element={
                       <PermissionRoute permission="help_center.read">
                         <Suspense fallback={<PageSkeleton />}>

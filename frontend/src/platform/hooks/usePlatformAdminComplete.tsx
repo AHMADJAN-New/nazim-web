@@ -13,6 +13,8 @@ import type * as OrganizationApi from '@/types/api/organization';
 // Re-export from usePlatformAdmin
 export * from './usePlatformAdmin';
 
+import type * as HelpCenterApi from '@/types/api/helpCenter';
+
 /**
  * Get organization subscription details (platform admin)
  */
@@ -688,6 +690,138 @@ export const usePlatformRemovePermissionGroupFromUser = () => {
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.permissionGroupRemoveFailed') || 'Failed to remove permission group');
+    },
+  });
+};
+
+/**
+ * Create help center category (platform admin)
+ */
+export const usePlatformCreateHelpCenterCategory = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (data: HelpCenterApi.HelpCenterCategoryInsert) => {
+      const response = await platformApi.helpCenter.categories.create(data);
+      return (response as { data: HelpCenterApi.HelpCenterCategory })?.data || response as HelpCenterApi.HelpCenterCategory;
+    },
+    onSuccess: () => {
+      showToast.success(t('toast.categoryCreated') || 'Category created successfully');
+      void queryClient.invalidateQueries({ queryKey: ['platform-help-center-categories'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.categoryCreateFailed') || 'Failed to create category');
+    },
+  });
+};
+
+/**
+ * Update help center category (platform admin)
+ */
+export const usePlatformUpdateHelpCenterCategory = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: string } & HelpCenterApi.HelpCenterCategoryUpdate) => {
+      const response = await platformApi.helpCenter.categories.update(id, data);
+      return (response as { data: HelpCenterApi.HelpCenterCategory })?.data || response as HelpCenterApi.HelpCenterCategory;
+    },
+    onSuccess: () => {
+      showToast.success(t('toast.categoryUpdated') || 'Category updated successfully');
+      void queryClient.invalidateQueries({ queryKey: ['platform-help-center-categories'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.categoryUpdateFailed') || 'Failed to update category');
+    },
+  });
+};
+
+/**
+ * Delete help center category (platform admin)
+ */
+export const usePlatformDeleteHelpCenterCategory = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await platformApi.helpCenter.categories.delete(id);
+    },
+    onSuccess: async () => {
+      showToast.success(t('toast.categoryDeleted') || 'Category deleted successfully');
+      await queryClient.invalidateQueries({ queryKey: ['platform-help-center-categories'] });
+      await queryClient.refetchQueries({ queryKey: ['platform-help-center-categories'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.categoryDeleteFailed') || 'Failed to delete category');
+    },
+  });
+};
+
+/**
+ * Create help center article (platform admin)
+ */
+export const usePlatformCreateHelpCenterArticle = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (data: HelpCenterApi.HelpCenterArticleInsert) => {
+      const response = await platformApi.helpCenter.articles.create(data);
+      return (response as { data: HelpCenterApi.HelpCenterArticle })?.data || response as HelpCenterApi.HelpCenterArticle;
+    },
+    onSuccess: () => {
+      showToast.success(t('toast.articleCreated') || 'Article created successfully');
+      void queryClient.invalidateQueries({ queryKey: ['platform-help-center-articles'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.articleCreateFailed') || 'Failed to create article');
+    },
+  });
+};
+
+/**
+ * Update help center article (platform admin)
+ */
+export const usePlatformUpdateHelpCenterArticle = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: string } & HelpCenterApi.HelpCenterArticleUpdate) => {
+      const response = await platformApi.helpCenter.articles.update(id, data);
+      return (response as { data: HelpCenterApi.HelpCenterArticle })?.data || response as HelpCenterApi.HelpCenterArticle;
+    },
+    onSuccess: () => {
+      showToast.success(t('toast.articleUpdated') || 'Article updated successfully');
+      void queryClient.invalidateQueries({ queryKey: ['platform-help-center-articles'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.articleUpdateFailed') || 'Failed to update article');
+    },
+  });
+};
+
+/**
+ * Delete help center article (platform admin)
+ */
+export const usePlatformDeleteHelpCenterArticle = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await platformApi.helpCenter.articles.delete(id);
+    },
+    onSuccess: async () => {
+      showToast.success(t('toast.articleDeleted') || 'Article deleted successfully');
+      await queryClient.invalidateQueries({ queryKey: ['platform-help-center-articles'] });
+      await queryClient.refetchQueries({ queryKey: ['platform-help-center-articles'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.articleDeleteFailed') || 'Failed to delete article');
     },
   });
 };

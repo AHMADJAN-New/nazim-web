@@ -143,6 +143,8 @@ class PermissionSeeder extends Seeder
             'event_checkins' => ['read', 'create', 'update', 'delete'],
             // Subscription Administration (super-admin only)
             'subscription' => ['admin', 'read'],
+            // Help Center permissions
+            'help_center' => ['read', 'create', 'update', 'delete', 'read_staff'],
         ];
     }
 

@@ -16,6 +16,7 @@ import {
   Clock,
   RefreshCw,
   Ticket,
+  HelpCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -105,6 +106,12 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       href: '/platform/settings', 
       icon: Settings,
       description: 'Platform settings'
+    },
+    { 
+      name: 'Help Center', 
+      href: '/platform/help-center', 
+      icon: HelpCircle,
+      description: 'Manage help center articles and categories'
     },
   ];
 

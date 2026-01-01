@@ -19,3 +19,10 @@ Schedule::command('subscription:create-snapshots')
     ->monthly()
     ->appendOutputTo(storage_path('logs/subscription-snapshots.log'))
     ->description('Create monthly usage snapshots for all organizations');
+
+// Schedule help center analytics pruning
+Schedule::command('help-center:prune-analytics')
+    ->daily()
+    ->at('02:00')
+    ->appendOutputTo(storage_path('logs/help-center-analytics-pruning.log'))
+    ->description('Prune old help center analytics data (views and votes)');

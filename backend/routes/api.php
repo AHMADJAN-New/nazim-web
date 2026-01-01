@@ -221,9 +221,11 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
 
     // Help Center (organization-scoped, not school-scoped)
     Route::prefix('help-center')->group(function () {
+        // Fixed routes first (to prevent slug conflicts)
         // Categories
         Route::get('/categories', [HelpCenterCategoryController::class, 'index']);
-        Route::get('/categories/{id}', [HelpCenterCategoryController::class, 'show']);
+        Route::get('/categories/slug/{slug}', [HelpCenterCategoryController::class, 'showBySlug']);
+        Route::get('/categories/{id}', [HelpCenterCategoryController::class, 'show']); // Keep for admin CRUD
         Route::middleware(['subscription:write'])->group(function () {
             Route::post('/categories', [HelpCenterCategoryController::class, 'store']);
             Route::put('/categories/{id}', [HelpCenterCategoryController::class, 'update']);
@@ -234,13 +236,23 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::get('/articles', [HelpCenterArticleController::class, 'index']);
         Route::get('/articles/featured', [HelpCenterArticleController::class, 'featured']);
         Route::get('/articles/popular', [HelpCenterArticleController::class, 'popular']);
-        Route::get('/articles/{id}', [HelpCenterArticleController::class, 'show']);
+        Route::get('/articles/context', [HelpCenterArticleController::class, 'getByContext']); // Contextual help
+        Route::get('/articles/{id}', [HelpCenterArticleController::class, 'show']); // Keep for admin CRUD - redirects to slug if accessed
         Route::post('/articles/{id}/helpful', [HelpCenterArticleController::class, 'markHelpful']);
         Route::post('/articles/{id}/not-helpful', [HelpCenterArticleController::class, 'markNotHelpful']);
         Route::middleware(['subscription:write'])->group(function () {
             Route::post('/articles', [HelpCenterArticleController::class, 'store']);
             Route::put('/articles/{id}', [HelpCenterArticleController::class, 'update']);
             Route::delete('/articles/{id}', [HelpCenterArticleController::class, 'destroy']);
+            Route::post('/articles/{id}/publish', [HelpCenterArticleController::class, 'publish']);
+            Route::post('/articles/{id}/unpublish', [HelpCenterArticleController::class, 'unpublish']);
+            Route::post('/articles/{id}/archive', [HelpCenterArticleController::class, 'archive']);
+        });
+
+        // Slug-based public routes (under /s prefix to avoid conflicts)
+        Route::prefix('s')->group(function () {
+            Route::get('/{categorySlug}', [HelpCenterArticleController::class, 'showCategoryBySlug']);
+            Route::get('/{categorySlug}/{articleSlug}', [HelpCenterArticleController::class, 'showBySlug']);
         });
     });
 
@@ -1310,6 +1322,21 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::get('/contact-messages/{id}', [ContactMessageController::class, 'show']);
     Route::put('/contact-messages/{id}', [ContactMessageController::class, 'update']);
     Route::delete('/contact-messages/{id}', [ContactMessageController::class, 'destroy']);
+    
+    // Help Center management (platform admin - no organization filter)
+    Route::prefix('help-center')->group(function () {
+        // Categories CRUD
+        Route::get('/categories', [HelpCenterCategoryController::class, 'platformIndex']);
+        Route::post('/categories', [HelpCenterCategoryController::class, 'platformStore']);
+        Route::put('/categories/{id}', [HelpCenterCategoryController::class, 'platformUpdate']);
+        Route::delete('/categories/{id}', [HelpCenterCategoryController::class, 'platformDestroy']);
+        
+        // Articles CRUD
+        Route::get('/articles', [HelpCenterArticleController::class, 'platformIndex']);
+        Route::post('/articles', [HelpCenterArticleController::class, 'platformStore']);
+        Route::put('/articles/{id}', [HelpCenterArticleController::class, 'platformUpdate']);
+        Route::delete('/articles/{id}', [HelpCenterArticleController::class, 'platformDestroy']);
+    });
 });
 
 // Legacy admin subscription routes (kept for backward compatibility, but will be deprecated)

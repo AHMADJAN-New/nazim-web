@@ -52,7 +52,8 @@ import {
   KeyRound,
   Printer,
   Tag,
-  Phone
+  Phone,
+  HelpCircle
 } from "lucide-react";
 
 import {
@@ -172,6 +173,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const { data: currentOrg } = useCurrentOrganization();
   const { data: permissions, isLoading: permissionsLoading } = useUserPermissions();
   const hasSettingsPermission = useHasPermissionAndFeature('settings.read');
+  const hasHelpCenterPermission = useHasPermissionAndFeature('help_center.read');
   const hasBuildingsPermission = useHasPermissionAndFeature('buildings.read');
   const hasRoomsPermission = useHasPermissionAndFeature('rooms.read');
   const hasHostelPermission = useHasPermissionAndFeature('hostel.read');
@@ -1186,6 +1188,15 @@ export const SmartSidebar = memo(function SmartSidebar() {
           },
         ],
       },
+      ...(hasHelpCenterPermission ? [{
+        titleKey: "helpCenter",
+        url: "/help-center",
+        icon: HelpCircle,
+        badge: null,
+        priority: 10.5,
+        category: 'admin',
+        iconColor: categoryColors.admin,
+      }] : []),
       {
         titleKey: "academicSettings",
         icon: GraduationCap,

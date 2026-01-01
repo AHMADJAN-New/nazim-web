@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, School, Shield } from "lucide-react";
+import { ContextualHelpButton } from "@/components/help/ContextualHelpButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -427,6 +428,13 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
           >
             {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
+
+          {/* Contextual Help */}
+          <ContextualHelpButton
+            contextKey={undefined} // Will use current route automatically
+            variant="ghost"
+            size="sm"
+          />
 
           {/* Notifications */}
           <Button

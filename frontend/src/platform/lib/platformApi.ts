@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/api/client';
 import type * as SubscriptionApi from '@/types/api/subscription';
 import type * as OrganizationApi from '@/types/api/organization';
+import type * as HelpCenterApi from '@/types/api/helpCenter';
 
 /**
  * Platform Admin API Client
@@ -292,6 +293,69 @@ export const platformApi = {
     },
     delete: async (id: string) => {
       return apiClient.delete(`/platform/discount-codes/${id}`);
+    },
+  },
+
+  // Help Center (Platform Admin - no organization scoping)
+  helpCenter: {
+    categories: {
+      list: async (params?: {
+        is_active?: boolean;
+        parent_id?: string | null;
+      }) => {
+        return apiClient.get<{ data: HelpCenterApi.HelpCenterCategory[] } | HelpCenterApi.HelpCenterCategory[]>('/platform/help-center/categories', params);
+      },
+      get: async (id: string) => {
+        return apiClient.get<{ data: HelpCenterApi.HelpCenterCategory }>(`/platform/help-center/categories/${id}`);
+      },
+      create: async (data: HelpCenterApi.HelpCenterCategoryInsert) => {
+        return apiClient.post<{ data: HelpCenterApi.HelpCenterCategory }>('/platform/help-center/categories', data);
+      },
+      update: async (id: string, data: HelpCenterApi.HelpCenterCategoryUpdate) => {
+        return apiClient.put<{ data: HelpCenterApi.HelpCenterCategory }>(`/platform/help-center/categories/${id}`, data);
+      },
+      delete: async (id: string) => {
+        return apiClient.delete(`/platform/help-center/categories/${id}`);
+      },
+    },
+    articles: {
+      list: async (params?: {
+        category_id?: string;
+        status?: 'draft' | 'published' | 'archived';
+        visibility?: 'public' | 'org_users' | 'staff_only';
+        is_featured?: boolean;
+        is_pinned?: boolean;
+        tag?: string;
+        search?: string;
+        order_by?: 'recent' | 'views' | 'relevance';
+        order_dir?: 'asc' | 'desc';
+        page?: number;
+        per_page?: number;
+        limit?: number;
+      }) => {
+        return apiClient.get<{ data: HelpCenterApi.HelpCenterArticle[] } | HelpCenterApi.HelpCenterArticle[]>('/platform/help-center/articles', params);
+      },
+      get: async (id: string) => {
+        return apiClient.get<{ data: HelpCenterApi.HelpCenterArticle }>(`/platform/help-center/articles/${id}`);
+      },
+      create: async (data: HelpCenterApi.HelpCenterArticleInsert) => {
+        return apiClient.post<{ data: HelpCenterApi.HelpCenterArticle }>('/platform/help-center/articles', data);
+      },
+      update: async (id: string, data: HelpCenterApi.HelpCenterArticleUpdate) => {
+        return apiClient.put<{ data: HelpCenterApi.HelpCenterArticle }>(`/platform/help-center/articles/${id}`, data);
+      },
+      delete: async (id: string) => {
+        return apiClient.delete(`/platform/help-center/articles/${id}`);
+      },
+      publish: async (id: string) => {
+        return apiClient.post(`/platform/help-center/articles/${id}/publish`);
+      },
+      unpublish: async (id: string) => {
+        return apiClient.post(`/platform/help-center/articles/${id}/unpublish`);
+      },
+      archive: async (id: string) => {
+        return apiClient.post(`/platform/help-center/articles/${id}/archive`);
+      },
     },
   },
 
