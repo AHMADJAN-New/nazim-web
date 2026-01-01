@@ -17,6 +17,11 @@ import { PlatformAdminRoute } from "@/components/PlatformAdminRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
+import AboutUs from "./pages/AboutUs";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import HelpCenter from "./pages/HelpCenter";
+import HelpCenterArticle from "./pages/HelpCenterArticle";
 import TimetableGeneration from "./pages/TimetableGeneration";
 import { PlatformAdminLogin } from "./platform/pages/PlatformAdminLogin";
 import { PlatformAdminDashboard } from "./platform/pages/PlatformAdminDashboard";
@@ -219,6 +224,9 @@ const App = () => (
               <ErrorBoundary>
                 <Routes>
                   <Route path="/" element={<Index />} />
+                  <Route path="/about" element={<AboutUs />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
                   
@@ -345,6 +353,21 @@ const App = () => (
                       <PermissionRoute permission="notifications.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <NotificationsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Help Center */}
+                    <Route path="/help-center" element={
+                      <PermissionRoute permission="help_center.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <HelpCenter />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/help-center/article/:id" element={
+                      <PermissionRoute permission="help_center.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <HelpCenterArticle />
                         </Suspense>
                       </PermissionRoute>
                     } />
