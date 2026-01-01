@@ -232,6 +232,7 @@ const App = () => (
                   <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
+                </Routes>
                 <MaintenanceModeHandler>
                   <Routes>
                     <Route path="/" element={<Index />} />
@@ -1441,10 +1442,10 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
-                  </Route>
 
                   {/* Catch-all route */}
                   <Route path="*" element={<NotFound />} />
+                  </Route>
                   </Routes>
                 </MaintenanceModeHandler>
               </ErrorBoundary>

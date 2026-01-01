@@ -479,7 +479,7 @@ export const platformApi = {
   },
 
   // Generic request method for custom endpoints
-  request: async <T = any>(endpoint: string, options?: { method?: string; body?: string | object; params?: Record<string, string> }) => {
+  request: async function<T = any>(endpoint: string, options?: { method?: string; body?: string | object; params?: Record<string, string> }) {
     const method = options?.method || 'GET';
     const params = options?.params;
     
@@ -495,6 +495,7 @@ export const platformApi = {
       return apiClient.delete<T>(endpoint);
     }
     throw new Error(`Unsupported method: ${method}`);
+  },
   // Backup & Restore
   backups: {
     list: async () => {

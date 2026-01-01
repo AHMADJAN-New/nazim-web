@@ -113,6 +113,8 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       href: '/platform/help-center', 
       icon: HelpCircle,
       description: 'Manage help center articles and categories'
+    },
+    { 
       name: 'Maintenance History', 
       href: '/platform/maintenance-history', 
       icon: History,

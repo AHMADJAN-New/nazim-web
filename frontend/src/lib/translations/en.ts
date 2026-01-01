@@ -676,12 +676,10 @@ export const en: TranslationKeys = {
     overrideCapacity: 'Override default capacity',
     overrideCapacityAll: 'Override default capacity for all sections',
     sectionsInputHint: 'Enter section names separated by commas. Existing sections will be skipped.',
-    none: 'None',
     statusLabel: 'Status:',
     update: 'Update',
     create: 'Create',
     unauthorized: 'Unauthorized',
-    to: 'to',
     remove: 'Remove',
     graduationDate: 'Graduation Date',
     approve: 'Approve',
@@ -1109,7 +1107,6 @@ export const en: TranslationKeys = {
     reportsSubtitle: 'Build daily, status, or date-range reports for student leaves',
     totalRequests: 'Total Requests',
     reportFilters: 'Report Filters',
-    filterDescription: 'Filter by status, student, class, or a date range to generate focused reports.',
     showFilters: 'Show Filters',
     hideFilters: 'Hide Filters',
     allStatuses: 'All statuses',
@@ -2325,7 +2322,6 @@ export const en: TranslationKeys = {
     inactive: 'Inactive',
     viewDetails: 'View Details',
     edit: 'Edit',
-    delete: 'Delete',
     noSchoolsFound: 'No schools found matching your search',
     noSchoolsMessage: 'No schools found. Add your first school.',
     editSchool: 'Edit School',
@@ -2488,7 +2484,6 @@ export const en: TranslationKeys = {
     noOrganizationsMessage: 'No organizations found. Add your first organization.',
     viewDetails: 'View Details',
     edit: 'Edit',
-    delete: 'Delete',
     editOrganization: 'Edit Organization',
     addNewOrganization: 'Add New Organization',
     updateOrganizationInfo: 'Update organization information',
@@ -2497,7 +2492,6 @@ export const en: TranslationKeys = {
     enterOrganizationName: 'Enter organization name',
     slugPlaceholder: 'e.g., my-organization',
     slugHint: 'URL-friendly identifier (lowercase, hyphens only)',
-    cancel: 'Cancel',
     update: 'Update',
     create: 'Create',
     organizationDetails: 'Organization Details',
@@ -2629,9 +2623,7 @@ export const en: TranslationKeys = {
     delete: 'Delete',
     loadingReportTemplates: 'Loading report templates...',
     unknown: 'Unknown',
-    active: 'Active',
-    cancel: 'Cancel',
-    delete: 'Delete'
+    active: 'Active'
   },
   // Profile Management
   profileManagement: {
@@ -2887,8 +2879,6 @@ export const en: TranslationKeys = {
     residencyTypeUpdateFailed: 'Failed to update residency type',
     residencyTypeDeleteFailed: 'Failed to delete residency type',
     // Users
-    userCreated: 'User created successfully',
-    userUpdated: 'User updated successfully',
     userDeleted: 'User deleted successfully',
     userCreateFailed: 'Failed to create user',
     userUpdateFailed: 'Failed to update user',
@@ -4502,6 +4492,7 @@ export const en: TranslationKeys = {
       title: 'Contact Us',
       content: 'If you have any questions about these Terms of Service, please contact us at support@nazimapp.com or through our contact form.',
     },
+  },
   // Maintenance Mode
   maintenance: {
     title: 'System Under Maintenance',

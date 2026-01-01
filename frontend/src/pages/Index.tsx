@@ -1,4 +1,4 @@
-Claude/fix notification system w0 z hqClaude/fix notification system w0 z hqClaude/fix notification system w0 z hqClaude/fix notification system w0 z hq﻿import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -68,10 +68,8 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLandingStats } from "@/hooks/useLandingStats";
 import { usePlatformAdminPermissions } from "@/platform/hooks/usePlatformAdminPermissions";
-import { useSubscriptionPlans } from "@/hooks/useSubscription";
 // Contact form will be handled by Laravel API endpoint
 import { useSubscriptionPlans, type SubscriptionPlan } from "@/hooks/useSubscription";
-import { apiClient } from "@/lib/api/client";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -348,58 +346,6 @@ const Index = () => {
           color: popular ? "border-primary ring-2 ring-primary/20" : "border-gray-200",
         };
       });
-  }, [subscriptionPlans, t]);
-
-    // Filter out trial plans (backend already filters for active and non-custom)
-    // Sort by sortOrder if available, otherwise by name
-    const filteredPlans = subscriptionPlans
-      .filter(plan => plan.slug !== 'trial')
-      .sort((a, b) => {
-        if (a.sortOrder !== undefined && b.sortOrder !== undefined) {
-          return a.sortOrder - b.sortOrder;
-        }
-        return a.name.localeCompare(b.name);
-      });
-
-    return filteredPlans.map((plan, index) => {
-      // Format price (use AFN by default, show yearly)
-      const price = plan.priceYearlyAfn > 0 
-        ? new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'AFN',
-            maximumFractionDigits: 0,
-          }).format(plan.priceYearlyAfn)
-        : 'Free';
-
-      // Get feature names from plan features array
-      const featureNames = plan.features
-        .map(featureKey => featureNameMap[featureKey] || featureKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()))
-        .slice(0, 8); // Limit to 8 features for display
-
-      // Mark middle plan as popular (or plan with slug 'pro' or 'professional')
-      const isPopular = plan.slug === 'pro' || plan.slug === 'professional' || 
-        (filteredPlans.length === 3 && index === 1);
-
-      return {
-        id: plan.id,
-        slug: plan.slug,
-        name: plan.name,
-        price,
-        period: plan.priceYearlyAfn > 0 ? '/year' : '',
-        description: plan.description || `${plan.name} plan for your institution`,
-        features: featureNames.length > 0 
-          ? featureNames 
-          : [
-              plan.limits.students ? `Up to ${plan.limits.students} students` : 'Unlimited students',
-              plan.limits.staff ? `Up to ${plan.limits.staff} staff members` : 'Unlimited staff',
-              plan.maxSchools > 1 ? `Up to ${plan.maxSchools} schools` : 'Single school',
-              ...(plan.features.length > 0 ? [] : ['All core features'])
-            ],
-        featureKeys: plan.features || [], // Store feature keys for comparison
-        popular: isPopular,
-        color: isPopular ? "border-primary ring-2 ring-primary/20" : "border-gray-200"
-      };
-    });
   }, [subscriptionPlans, t]);
 
   // Create feature comparison data
@@ -828,12 +774,8 @@ const Index = () => {
             <p className="text-muted-foreground mb-4">
               {t('landing.sections.pricing.allPlansNote') || 'All plans include 30-day free trial • No setup fees • Cancel anytime'}
             </p>
-            <Button variant="link" className="text-primary">
-              {t('landing.sections.pricing.customPlanLink') || 'Need a custom plan? Contact our sales team →'}
-              All plans include 30-day free trial - No setup fees - Cancel anytime
-            </p>
             <Button variant="link" className="text-primary" asChild>
-              <a href="#plan-request">Need a custom plan? Contact our sales team</a>
+              <a href="#plan-request">{t('landing.sections.pricing.customPlanLink') || 'Need a custom plan? Contact our sales team →'}</a>
             </Button>
           </div>
 
@@ -1364,10 +1306,8 @@ const Index = () => {
                     />
                   </div>
 
-                  <Button type="submit" size="lg" className="w-full">
-                    {t('landing.sections.contact.sendMessageButton') || 'Send Message'}
                   <Button type="submit" size="lg" className="w-full" disabled={isContactSubmitting}>
-                    {isContactSubmitting ? "Sending..." : "Send Message"}
+                    {isContactSubmitting ? (t('landing.sections.contact.sending') || "Sending...") : (t('landing.sections.contact.sendMessageButton') || 'Send Message')}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </form>
