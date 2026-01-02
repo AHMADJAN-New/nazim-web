@@ -1,0 +1,323 @@
+# Translation Coverage Report
+
+Generated: 2026-01-02T14:48:33.282Z
+
+## Summary
+
+- EN keys: **5554**
+- Used keys (code scan): **4170**
+- Used keys missing in EN (likely typos/dynamic): **216**
+
+## Missing (from EN)
+
+- Missing in Pashto (ps): **235**
+- Missing in Farsi (fa): **235**
+- Missing in Arabic (ar): **235**
+
+## Missing USED keys (highest priority)
+
+- Missing USED in ps: **56**
+- Missing USED in fa: **56**
+- Missing USED in ar: **56**
+
+## Top 20 namespaces with missing USED keys (union across ps/fa/ar)
+
+- helpCenter: 25
+- attendance: 13
+- events: 7
+- reports: 6
+- exams: 5
+
+## Top 20 files by missing USED keys (ps+fa+ar summed)
+
+- frontend/src/pages/dashboard/AttendanceDashboard.tsx: 39
+- frontend/src/pages/HelpCenter.tsx: 33
+- frontend/src/pages/HelpCenterArticle.tsx: 33
+- frontend/src/platform/pages/admin/HelpCenterManagement.tsx: 24
+- frontend/src/hooks/useEventUsers.tsx: 18
+- frontend/src/components/reports/ReportProgressDialog.tsx: 18
+- frontend/src/pages/ExamTimetablePage.tsx: 6
+- frontend/src/pages/Exams.tsx: 6
+- frontend/src/pages/ExamAttendancePage.tsx: 3
+- frontend/src/pages/events/EventUsersPage.tsx: 3
+
+## Missing in Pashto (ps) — Highest Priority (first 100 keys)
+
+- attendance.absent
+- attendance.attendanceRate
+- attendance.closed
+- attendance.latestAttendanceSessions
+- attendance.noSessions
+- attendance.open
+- attendance.present
+- attendance.recentSessions
+- attendance.records
+- attendance.students
+- attendance.today
+- attendance.total
+- attendance.totalSessions
+- events.users.fillAllFields
+- events.users.userCreated
+- events.users.userCreateFailed
+- events.users.userDeleted
+- events.users.userDeleteFailed
+- events.users.userUpdated
+- events.users.userUpdateFailed
+- exams.locked
+- exams.markAttendance
+- exams.students
+- exams.time
+- exams.timeSlot
+- helpCenter.allArticles
+- helpCenter.allCategories
+- helpCenter.articleNotFound
+- helpCenter.articleNotFoundDescription
+- helpCenter.articles
+- helpCenter.articlesFound
+- helpCenter.backToHelpCenter
+- helpCenter.clearFilters
+- helpCenter.errorLoadingArticles
+- helpCenter.errorLoadingCategories
+- helpCenter.featuredArticles
+- helpCenter.linkCopied
+- helpCenter.no
+- helpCenter.noArticlesDescription
+- helpCenter.noArticlesFound
+- helpCenter.popularArticles
+- helpCenter.relatedArticles
+- helpCenter.searchPlaceholder
+- helpCenter.share
+- helpCenter.subtitle
+- helpCenter.thankYou
+- helpCenter.title.helpCenterManagement
+- helpCenter.views
+- helpCenter.wasThisHelpful
+- helpCenter.yes
+- reports.failed
+- reports.generated
+- reports.generating
+- reports.generatingReport
+- reports.pleaseWait
+- reports.reportGeneration
+
+## Missing in Farsi (fa) — Highest Priority (first 100 keys)
+
+- attendance.absent
+- attendance.attendanceRate
+- attendance.closed
+- attendance.latestAttendanceSessions
+- attendance.noSessions
+- attendance.open
+- attendance.present
+- attendance.recentSessions
+- attendance.records
+- attendance.students
+- attendance.today
+- attendance.total
+- attendance.totalSessions
+- events.users.fillAllFields
+- events.users.userCreated
+- events.users.userCreateFailed
+- events.users.userDeleted
+- events.users.userDeleteFailed
+- events.users.userUpdated
+- events.users.userUpdateFailed
+- exams.locked
+- exams.markAttendance
+- exams.students
+- exams.time
+- exams.timeSlot
+- helpCenter.allArticles
+- helpCenter.allCategories
+- helpCenter.articleNotFound
+- helpCenter.articleNotFoundDescription
+- helpCenter.articles
+- helpCenter.articlesFound
+- helpCenter.backToHelpCenter
+- helpCenter.clearFilters
+- helpCenter.errorLoadingArticles
+- helpCenter.errorLoadingCategories
+- helpCenter.featuredArticles
+- helpCenter.linkCopied
+- helpCenter.no
+- helpCenter.noArticlesDescription
+- helpCenter.noArticlesFound
+- helpCenter.popularArticles
+- helpCenter.relatedArticles
+- helpCenter.searchPlaceholder
+- helpCenter.share
+- helpCenter.subtitle
+- helpCenter.thankYou
+- helpCenter.title.helpCenterManagement
+- helpCenter.views
+- helpCenter.wasThisHelpful
+- helpCenter.yes
+- reports.failed
+- reports.generated
+- reports.generating
+- reports.generatingReport
+- reports.pleaseWait
+- reports.reportGeneration
+
+## Missing in Arabic (ar) — Highest Priority (first 100 keys)
+
+- attendance.absent
+- attendance.attendanceRate
+- attendance.closed
+- attendance.latestAttendanceSessions
+- attendance.noSessions
+- attendance.open
+- attendance.present
+- attendance.recentSessions
+- attendance.records
+- attendance.students
+- attendance.today
+- attendance.total
+- attendance.totalSessions
+- events.users.fillAllFields
+- events.users.userCreated
+- events.users.userCreateFailed
+- events.users.userDeleted
+- events.users.userDeleteFailed
+- events.users.userUpdated
+- events.users.userUpdateFailed
+- exams.locked
+- exams.markAttendance
+- exams.students
+- exams.time
+- exams.timeSlot
+- helpCenter.allArticles
+- helpCenter.allCategories
+- helpCenter.articleNotFound
+- helpCenter.articleNotFoundDescription
+- helpCenter.articles
+- helpCenter.articlesFound
+- helpCenter.backToHelpCenter
+- helpCenter.clearFilters
+- helpCenter.errorLoadingArticles
+- helpCenter.errorLoadingCategories
+- helpCenter.featuredArticles
+- helpCenter.linkCopied
+- helpCenter.no
+- helpCenter.noArticlesDescription
+- helpCenter.noArticlesFound
+- helpCenter.popularArticles
+- helpCenter.relatedArticles
+- helpCenter.searchPlaceholder
+- helpCenter.share
+- helpCenter.subtitle
+- helpCenter.thankYou
+- helpCenter.title.helpCenterManagement
+- helpCenter.views
+- helpCenter.wasThisHelpful
+- helpCenter.yes
+- reports.failed
+- reports.generated
+- reports.generating
+- reports.generatingReport
+- reports.pleaseWait
+- reports.reportGeneration
+
+## Used keys missing in EN (likely typos/dynamic) — first 100
+
+- ...
+- classes.class
+- classes.classes
+- classes.noClasses
+- classes.selectClass
+- classes.selectClassFirst
+- dms.issueLetter.downloadPdf
+- exams.reports
+- exams.status
+- finance.accountCode
+- finance.accountCurrencyHint
+- finance.accountInformation
+- finance.accountName
+- finance.accounts.account
+- finance.accountType
+- finance.addCurrency
+- finance.addCurrencyDescription
+- finance.addExchangeRate
+- finance.addExchangeRateDescription
+- finance.addNew
+- finance.allCurrencies
+- finance.allExchangeRates
+- finance.assets
+- finance.assetsBreakdown
+- finance.assetsBreakdownDescription
+- finance.assetsByAccount
+- finance.assetsByCurrency
+- finance.baseCurrency
+- finance.budgetAmount
+- finance.budgetAmountPlaceholder
+- finance.cashBalance
+- finance.cashOnly
+- finance.categoryCode
+- finance.categoryInformation
+- finance.converted
+- finance.convertedValue
+- finance.currenciesDescription
+- finance.currenciesFound
+- finance.currency
+- finance.currencyCode
+- finance.currencyCodeHint
+- finance.currencyInformation
+- finance.currencyNamePlaceholder
+- finance.currencySymbol
+- finance.decimalPlaces
+- finance.deleteCurrencyWarning
+- finance.deleteDocument
+- finance.deleteDocumentConfirmation
+- finance.deleteExchangeRateWarning
+- finance.documentDate
+- finance.documentDescription
+- finance.documentDescriptionPlaceholder
+- finance.documentDetails
+- finance.documents
+- finance.documentTitle
+- finance.documentTitlePlaceholder
+- finance.documentType
+- finance.documentTypes
+- finance.donorInformation
+- finance.donorType
+- finance.editCurrency
+- finance.editCurrencyDescription
+- finance.editExchangeRate
+- finance.editExchangeRateDescription
+- finance.effectiveDate
+- finance.endDate
+- finance.entryDetails
+- finance.entryInformation
+- finance.exchangeRate
+- finance.exchangeRateHint
+- finance.exchangeRatesDescription
+- finance.file
+- finance.fileName
+- finance.fileSize
+- finance.financeDocuments
+- finance.fromCurrency
+- finance.includeAssetsAndBooks
+- finance.incomeCategories.category
+- finance.incomeVsExpenseTrend
+- finance.last30Days
+- finance.last7Days
+- finance.last90Days
+- finance.latestTransaction
+- finance.libraryBooks
+- finance.libraryBooksBreakdown
+- finance.libraryBooksBreakdownDescription
+- finance.libraryBooksByAccount
+- finance.libraryBooksByCurrency
+- finance.manageFinanceDocuments
+- finance.maxFileSize
+- finance.noCashbookData
+- finance.noCurrencies
+- finance.noDocuments
+- finance.noExchangeRates
+- finance.originalValue
+- finance.previewLoadError
+- finance.previewNotAvailable
+- finance.previewNotSupported
+- finance.projectBalance
+- finance.projectInformation
+

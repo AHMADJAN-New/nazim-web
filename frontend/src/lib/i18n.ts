@@ -18,6 +18,38 @@ export const translations = { en, ps, fa, ar };
 // RTL languages
 export const RTL_LANGUAGES: Language[] = ['ar', 'ps', 'fa'];
 
+/**
+ * STRICT missing-key mode (DEV/TEST only)
+ *
+ * - Enabled when:
+ *   - `VITE_I18N_STRICT=true`, OR
+ *   - Vite `DEV` / `MODE === 'test'`
+ * - Behavior when a key is missing in both the current language AND English:
+ *   - Strict mode: return `[MISSING: some.key]` and warn once per key (deduped)
+ *   - Production: preserve existing behavior (humanize last segment)
+ */
+const warnedMissingKeys = new Set<string>();
+
+function isStrictMissingKeyMode(): boolean {
+  try {
+    const strictFlag = import.meta.env?.VITE_I18N_STRICT;
+    if (strictFlag === 'true') return true;
+
+    // Default strictness in non-production environments.
+    if (import.meta.env?.DEV) return true;
+    if (import.meta.env?.MODE === 'test') return true;
+  } catch {
+    // ignore
+  }
+  return false;
+}
+
+function humanizeKeyLastSegment(key: string): string {
+  const keys = key.split('.');
+  const lastKey = keys[keys.length - 1] || key;
+  return lastKey.charAt(0).toUpperCase() + lastKey.slice(1).replace(/([A-Z])/g, ' $1').trim();
+}
+
 // Get translation function
 export function t(key: string, lang: Language = 'en', params?: Record<string, string | number>): string {
   // Always default to English if language is not available
@@ -50,9 +82,17 @@ export function t(key: string, lang: Language = 'en', params?: Record<string, st
 
   // If still not found, return a readable version of the key
   if (typeof value !== 'string') {
-    // Return last part of key as fallback (e.g., "nav.dashboard" -> "Dashboard")
-    const lastKey = keys[keys.length - 1];
-    return lastKey.charAt(0).toUpperCase() + lastKey.slice(1).replace(/([A-Z])/g, ' $1').trim();
+    if (isStrictMissingKeyMode()) {
+      if (!warnedMissingKeys.has(key)) {
+        warnedMissingKeys.add(key);
+        // eslint-disable-next-line no-console
+        console.warn(`[i18n] Missing translation key: ${key}`);
+      }
+      return `[MISSING: ${key}]`;
+    }
+
+    // Production / non-strict fallback: humanize last segment (e.g., "nav.dashboard" -> "Dashboard")
+    return humanizeKeyLastSegment(key);
   }
 
   // Replace parameters
