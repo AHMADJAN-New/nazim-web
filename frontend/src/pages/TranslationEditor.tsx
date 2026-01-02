@@ -8,18 +8,27 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from '@/components/ui/pagination';
 import { flattenTranslations, nestTranslations, syncMissingKeys, type TranslationRow } from '@/lib/translations/utils';
 import { exportTranslationsToExcel, importTranslationsFromExcel, exportTranslationsToCSV } from '@/lib/translations/importExport';
 import { translationsApi } from '@/lib/api/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { cn } from '@/lib/utils';
+
+// Page size options for translations table
+const TRANSLATION_PAGE_SIZE_OPTIONS = [100, 150, 200, 500] as const;
+const DEFAULT_PAGE_SIZE = 100;
 
 export default function TranslationEditor() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [translations, setTranslations] = useState<TranslationRow[]>([]);
   const [originalTranslations, setOriginalTranslations] = useState<TranslationRow[]>([]);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [editingCell, setEditingCell] = useState<{ row: number; col: string } | null>(null);
   const [editValue, setEditValue] = useState('');
   const [showImportDialog, setShowImportDialog] = useState(false);
@@ -56,6 +65,23 @@ export default function TranslationEditor() {
     );
   }, [translations, search]);
 
+  // Paginate filtered translations
+  const paginatedTranslations = useMemo(() => {
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return filteredTranslations.slice(startIndex, endIndex);
+  }, [filteredTranslations, page, pageSize]);
+
+  // Calculate pagination metadata
+  const totalPages = Math.ceil(filteredTranslations.length / pageSize);
+  const from = filteredTranslations.length > 0 ? (page - 1) * pageSize + 1 : 0;
+  const to = Math.min(page * pageSize, filteredTranslations.length);
+
+  // Reset to first page when search changes or page size changes
+  useEffect(() => {
+    setPage(1);
+  }, [search, pageSize]);
+
   // Check for changes
   useEffect(() => {
     const changed = JSON.stringify(translations) !== JSON.stringify(originalTranslations);
@@ -64,8 +90,10 @@ export default function TranslationEditor() {
 
   // Handle cell edit
   const handleCellClick = (rowIndex: number, col: string) => {
-    const row = filteredTranslations[rowIndex];
-    setEditingCell({ row: rowIndex, col });
+    // rowIndex is relative to paginated data, convert to absolute index in filteredTranslations
+    const absoluteIndex = (page - 1) * pageSize + rowIndex;
+    const row = filteredTranslations[absoluteIndex];
+    setEditingCell({ row: absoluteIndex, col });
     setEditValue(row[col as keyof TranslationRow] as string);
     
     // Focus input after state update
@@ -386,62 +414,214 @@ export default function TranslationEditor() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredTranslations.map((row, rowIndex) => (
-                      <TableRow key={row.key} className="hover:bg-muted/30">
-                        <TableCell className="font-mono text-sm bg-muted/30 sticky left-0 z-0">
-                          {row.key}
-                        </TableCell>
-                        {(['en', 'ps', 'fa', 'ar'] as const).map((lang) => (
-                          <TableCell
-                            key={lang}
-                            className="cursor-pointer hover:bg-muted/50 min-w-[200px] p-0"
-                            onClick={() => handleCellClick(rowIndex, lang)}
-                          >
-                            {editingCell?.row === rowIndex && editingCell?.col === lang ? (
-                              <div className="p-2">
-                                <Textarea
-                                  ref={editInputRef}
-                                  value={editValue}
-                                  onChange={(e) => setEditValue(e.target.value)}
-                                  onBlur={handleCellSave}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                                      e.preventDefault();
-                                      handleCellSave();
-                                    }
-                                    if (e.key === 'Escape') {
-                                      e.preventDefault();
-                                      handleCellCancel();
-                                    }
-                                  }}
-                                  className="min-h-[80px] resize-none"
-                                  autoFocus
-                                />
-                                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                                  <span>Press Ctrl+Enter to save, Esc to cancel</span>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="py-2 px-3 min-h-[40px] whitespace-pre-wrap break-words">
-                                {row[lang] || <span className="text-muted-foreground italic">Empty</span>}
-                              </div>
-                            )}
+                    paginatedTranslations.map((row, rowIndex) => {
+                      // Calculate absolute index for editing cell comparison
+                      const absoluteIndex = (page - 1) * pageSize + rowIndex;
+                      return (
+                        <TableRow key={row.key} className="hover:bg-muted/30">
+                          <TableCell className="font-mono text-sm bg-muted/30 sticky left-0 z-0">
+                            {row.key}
                           </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
+                          {(['en', 'ps', 'fa', 'ar'] as const).map((lang) => (
+                            <TableCell
+                              key={lang}
+                              className="cursor-pointer hover:bg-muted/50 min-w-[200px] p-0"
+                              onClick={() => handleCellClick(rowIndex, lang)}
+                            >
+                              {editingCell?.row === absoluteIndex && editingCell?.col === lang ? (
+                                <div className="p-2">
+                                  <Textarea
+                                    ref={editInputRef}
+                                    value={editValue}
+                                    onChange={(e) => setEditValue(e.target.value)}
+                                    onBlur={handleCellSave}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                        e.preventDefault();
+                                        handleCellSave();
+                                      }
+                                      if (e.key === 'Escape') {
+                                        e.preventDefault();
+                                        handleCellCancel();
+                                      }
+                                    }}
+                                    className="min-h-[80px] resize-none"
+                                    autoFocus
+                                  />
+                                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                                    <span>Press Ctrl+Enter to save, Esc to cancel</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="py-2 px-3 min-h-[40px] whitespace-pre-wrap break-words">
+                                  {row[lang] || <span className="text-muted-foreground italic">Empty</span>}
+                                </div>
+                              )}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
             </div>
           </div>
 
-          <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-            <div>
-              Showing {filteredTranslations.length} of {translations.length} translations
+          {/* Pagination Controls */}
+          <div className={cn('mt-4 space-y-4', isRTL && 'rtl')}>
+            {/* Total count and page size selector */}
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                {filteredTranslations.length > 0 ? (
+                  <>
+                    {t('pagination.showing') || 'Showing'} {from} {t('pagination.to') || 'to'} {to} {t('pagination.of') || 'of'}{' '}
+                    {filteredTranslations.length} {t('pagination.entries') || 'entries'}
+                    {search && (
+                      <span className="ml-2">
+                        ({t('pagination.filtered') || 'filtered'} {t('pagination.from') || 'from'} {translations.length} {t('pagination.total') || 'total'})
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>{t('pagination.noEntries') || 'No entries'}</>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {t('pagination.rowsPerPage') || 'Rows per page'}:
+                </span>
+                <Select
+                  value={pageSize.toString()}
+                  onValueChange={(value) => {
+                    setPageSize(Number(value));
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-[80px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TRANSLATION_PAGE_SIZE_OPTIONS.map((size) => (
+                      <SelectItem key={size} value={size.toString()}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
+            {/* Pagination buttons */}
+            {totalPages > 1 && (
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (page > 1) {
+                          setPage(page - 1);
+                        }
+                      }}
+                      className={cn(
+                        page <= 1 && 'pointer-events-none opacity-50',
+                        'cursor-pointer'
+                      )}
+                      aria-disabled={page <= 1}
+                      href="#"
+                    />
+                  </PaginationItem>
+
+                  {(() => {
+                    const pages: (number | 'ellipsis')[] = [];
+                    const maxVisible = 7;
+
+                    if (totalPages <= maxVisible) {
+                      for (let i = 1; i <= totalPages; i++) {
+                        pages.push(i);
+                      }
+                    } else {
+                      pages.push(1);
+
+                      let start = Math.max(2, page - 1);
+                      let end = Math.min(totalPages - 1, page + 1);
+
+                      if (page <= 3) {
+                        start = 2;
+                        end = 4;
+                      }
+
+                      if (page >= totalPages - 2) {
+                        start = totalPages - 3;
+                        end = totalPages - 1;
+                      }
+
+                      if (start > 2) {
+                        pages.push('ellipsis');
+                      }
+
+                      for (let i = start; i <= end; i++) {
+                        pages.push(i);
+                      }
+
+                      if (end < totalPages - 1) {
+                        pages.push('ellipsis');
+                      }
+
+                      pages.push(totalPages);
+                    }
+
+                    return pages.map((pageNum, index) => {
+                      if (pageNum === 'ellipsis') {
+                        return (
+                          <PaginationItem key={`ellipsis-${index}`}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        );
+                      }
+
+                      return (
+                        <PaginationItem key={pageNum}>
+                          <PaginationLink
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setPage(pageNum);
+                            }}
+                            isActive={pageNum === page}
+                            className="cursor-pointer"
+                            href="#"
+                          >
+                            {pageNum}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    });
+                  })()}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (page < totalPages) {
+                          setPage(page + 1);
+                        }
+                      }}
+                      className={cn(
+                        page >= totalPages && 'pointer-events-none opacity-50',
+                        'cursor-pointer'
+                      )}
+                      aria-disabled={page >= totalPages}
+                      href="#"
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+
+            {/* Unsaved changes warning */}
             {hasChanges && (
-              <div className="text-amber-600 dark:text-amber-400">
+              <div className="text-sm text-amber-600 dark:text-amber-400">
                 ⚠️ You have unsaved changes. Export or copy JSON to save your work.
               </div>
             )}
