@@ -10,6 +10,8 @@ export interface NotificationItem {
   event?: {
     id: string;
     type: string;
+    entity_type?: string | null;
+    entity_id?: string | null;
   } | null;
   read_at: string | null;
   created_at: string;

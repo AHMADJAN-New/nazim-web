@@ -28,6 +28,7 @@ import {
 } from '@/hooks/useCertificateTemplates';
 import { certificateTemplatesApi } from '@/lib/api/client';
 import { format } from 'date-fns';
+import { useLanguage } from '@/hooks/useLanguage';
 
 // Import pdfmake for Arabic support - handle both default and named exports
 import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
@@ -309,6 +310,7 @@ export function CertificatePdfGenerator({
   isOpen,
   onClose,
 }: CertificatePdfGeneratorProps) {
+  const { t } = useLanguage();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -2236,7 +2238,7 @@ export function CertificatePdfGenerator({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Award className="h-5 w-5" />
-            Generate Certificate
+            {t('shortTermCourses.generateCertificate')}
           </DialogTitle>
         </DialogHeader>
 
@@ -2246,22 +2248,22 @@ export function CertificatePdfGenerator({
             <CardContent className="pt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-muted-foreground">Student</Label>
+                  <Label className="text-muted-foreground">{t('shortTermCourses.student')}</Label>
                   <p className="font-medium">{studentName}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Course</Label>
+                  <Label className="text-muted-foreground">{t('shortTermCourses.course')}</Label>
                   <p className="font-medium">{courseName}</p>
                 </div>
                 {certificateData?.student.certificate_number && (
                   <div>
-                    <Label className="text-muted-foreground">Certificate Number</Label>
+                    <Label className="text-muted-foreground">{t('certificateTemplates.certificateNumber')}</Label>
                     <p className="font-medium">{certificateData.student.certificate_number}</p>
                   </div>
                 )}
                 {certificateData?.student.certificate_issued_at && (
                   <div>
-                    <Label className="text-muted-foreground">Issued At</Label>
+                    <Label className="text-muted-foreground">{t('shortTermCourses.completionDate')}</Label>
                     <p className="font-medium">
                       {formatDate(certificateData.student.certificate_issued_at)}
                     </p>
@@ -2273,10 +2275,10 @@ export function CertificatePdfGenerator({
 
           {/* Template Selection */}
           <div className="space-y-2">
-            <Label>Select Template</Label>
+            <Label>{t('certificateTemplates.selectTemplate')}</Label>
             <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
               <SelectTrigger>
-                <SelectValue placeholder="Choose a certificate template..." />
+                <SelectValue placeholder={t('certificateTemplates.selectTemplatePlaceholder')} />
               </SelectTrigger>
               <SelectContent>
                 {templates.map((template) => (
@@ -2284,7 +2286,7 @@ export function CertificatePdfGenerator({
                     <div className="flex items-center gap-2">
                       {template.name}
                       {template.is_default && (
-                        <Badge variant="secondary" className="text-xs">Default</Badge>
+                        <Badge variant="secondary" className="text-xs">{t('certificateTemplates.defaultTemplate')}</Badge>
                       )}
                     </div>
                   </SelectItem>
@@ -2293,7 +2295,7 @@ export function CertificatePdfGenerator({
             </Select>
             {templates.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                No active templates found. Please create a template first.
+                {t('certificateTemplates.noTemplatesFound')}
               </p>
             )}
           </div>
@@ -2311,7 +2313,7 @@ export function CertificatePdfGenerator({
                   </div>
                   {selectedTemplate.background_image_path && (
                     <Badge variant="outline">
-                      Has Background Image
+                      {t('certificateTemplates.hasBackgroundImage')}
                     </Badge>
                   )}
                 </div>
@@ -2325,7 +2327,7 @@ export function CertificatePdfGenerator({
               <iframe
                 src={previewUrl}
                 className="w-full h-96"
-                title="Certificate Preview"
+                title={t('certificateTemplates.preview')}
               />
             </div>
           )}
@@ -2333,7 +2335,7 @@ export function CertificatePdfGenerator({
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={handleClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             variant="outline"
@@ -2345,7 +2347,7 @@ export function CertificatePdfGenerator({
             ) : (
               <Eye className="h-4 w-4 mr-2" />
             )}
-            Preview
+            {t('certificateTemplates.preview')}
           </Button>
           <Button
             variant="outline"
@@ -2357,7 +2359,7 @@ export function CertificatePdfGenerator({
             ) : (
               <ImageIcon className="h-4 w-4 mr-2" />
             )}
-            Download Image
+            {t('common.download')} Image
           </Button>
           <Button
             variant="outline"
@@ -2435,7 +2437,7 @@ export function CertificatePdfGenerator({
             ) : (
               <Printer className="h-4 w-4 mr-2" />
             )}
-            Print
+            {t('common.print')}
           </Button>
           <Button
             onClick={() => handleGeneratePdf(true)}
@@ -2446,7 +2448,7 @@ export function CertificatePdfGenerator({
             ) : (
               <Download className="h-4 w-4 mr-2" />
             )}
-            Download PDF
+            {t('common.download')} PDF
           </Button>
         </DialogFooter>
       </DialogContent>

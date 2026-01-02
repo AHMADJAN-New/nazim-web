@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Activity, ClipboardList, History, QrCode, Save, ScanLine, CheckCircle2, XCircle, Clock, AlertCircle, Heart, Calendar, X } from 'lucide-react';
 import { useAttendanceRoster, useAttendanceScanFeed, useAttendanceSession, useAttendanceSessions, useCreateAttendanceSession, useMarkAttendance, useScanAttendance, useCloseAttendanceSession } from '@/hooks/useAttendance';
@@ -30,6 +31,7 @@ interface RosterStudent {
 
 export default function Attendance() {
   const { t } = useLanguage();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [sessionDate, setSessionDate] = useState<string>('');
   const [sessionMethod, setSessionMethod] = useState<'manual' | 'barcode'>('manual');
@@ -71,6 +73,20 @@ export default function Attendance() {
 
   const { sessions, pagination, page, pageSize, setPage, setPageSize, isLoading: sessionsLoading } = useAttendanceSessions({}, true);
   const { session } = useAttendanceSession(selectedSessionId || undefined);
+  
+  // Check for session query param and auto-select session
+  useEffect(() => {
+    const sessionId = searchParams.get('session');
+    if (sessionId && sessions.length > 0) {
+      const foundSession = sessions.find(s => s.id === sessionId);
+      if (foundSession) {
+        setSelectedSessionId(sessionId);
+        // Clean up URL
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, sessions, setSearchParams]);
+  
   // Get class IDs from session - use classes array if available, otherwise fall back to classId
   const sessionClassIds = useMemo(() => {
     if (!session) return [];

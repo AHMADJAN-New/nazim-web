@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { dmsApi } from "@/lib/api/client";
 import type { IncomingDocument } from "@/types/dms";
 import type { PaginatedResponse } from "@/types/pagination";
@@ -463,6 +464,7 @@ export default function IncomingDocuments() {
   const { t } = useLanguage();
   const { profile } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState({
     subject: "",
     sender_org: "",
@@ -537,6 +539,20 @@ export default function IncomingDocuments() {
     if (!data || Array.isArray(data)) return null;
     return data.meta || null;
   }, [data]);
+
+  // Check for view query param and auto-open dialog
+  useEffect(() => {
+    const viewDocId = searchParams.get('view');
+    if (viewDocId && documents.length > 0) {
+      const doc = documents.find(d => d.id === viewDocId);
+      if (doc) {
+        setViewDoc(doc);
+        setIsViewDialogOpen(true);
+        // Clean up URL
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, documents, setSearchParams]);
 
   const createMutation = useMutation({
     mutationFn: (payload: any) => dmsApi.incoming.create(payload),

@@ -2,7 +2,8 @@
  * Finance Accounts Page - Manage cash locations
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,6 +64,7 @@ import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
 
 export default function FinanceAccounts() {
     const { t } = useLanguage();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { data: accounts, isLoading } = useFinanceAccounts();
     const { data: currencies } = useCurrencies({ isActive: true });
     const createAccount = useCreateFinanceAccount();
@@ -133,6 +135,20 @@ export default function FinanceAccounts() {
         setSelectedAccount(account);
         setSidePanelOpen(true);
     };
+
+    // Check for view query param and auto-open side panel
+    useEffect(() => {
+        const viewAccountId = searchParams.get('view');
+        if (viewAccountId && accounts && accounts.length > 0) {
+            const account = accounts.find(a => a.id === viewAccountId);
+            if (account) {
+                setSelectedAccount(account);
+                setSidePanelOpen(true);
+                // Clean up URL
+                setSearchParams({}, { replace: true });
+            }
+        }
+    }, [searchParams, accounts, setSearchParams]);
 
     if (isLoading) {
         return (

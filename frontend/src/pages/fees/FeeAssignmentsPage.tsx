@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -59,6 +60,7 @@ import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 export default function FeeAssignmentsPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: academicYears = [], isLoading: academicYearsLoading } = useAcademicYears();
   const { data: currentAcademicYear, isLoading: currentAcademicYearLoading } = useCurrentAcademicYear();
 
@@ -134,6 +136,20 @@ export default function FeeAssignmentsPage() {
     },
     true
   );
+
+  // Check for view query param and auto-open side panel
+  useEffect(() => {
+    const viewAssignmentId = searchParams.get('view');
+    if (viewAssignmentId && assignments.length > 0) {
+      const assignment = assignments.find(a => a.id === viewAssignmentId);
+      if (assignment) {
+        setViewingAssignment(assignment);
+        setSidePanelOpen(true);
+        // Clean up URL
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, assignments, setSearchParams]);
   const createMutation = useBulkAssignFeeAssignments();
   const updateMutation = useUpdateFeeAssignment();
   const deleteMutation = useDeleteFeeAssignment();

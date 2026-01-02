@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useExam, useExamTimes, useTimeslotStudents, useMarkExamAttendance, useExamAttendanceSummary, useExams, useScanExamAttendance, useExamAttendanceScanFeed, useLatestExamFromCurrentYear } from '@/hooks/useExams';
 import { useExamClasses } from '@/hooks/useExams';
@@ -70,6 +70,7 @@ interface AttendanceEntry {
 export default function ExamAttendancePage() {
   const { examId: examIdFromParams } = useParams<{ examId?: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t, isRTL } = useLanguage();
   const { data: profile } = useProfile();
   const organizationId = profile?.organization_id;
@@ -128,6 +129,18 @@ export default function ExamAttendancePage() {
   const { data: examTimes = [], isLoading: timesLoading } = useExamTimes(examId);
   const { data: timeslotData, isLoading: studentsLoading, refetch: refetchStudents } = useTimeslotStudents(examId, selectedTimeId);
   const { data: attendanceSummary } = useExamAttendanceSummary(examId);
+  
+  // Check for session query param - for ExamAttendanceSession entities
+  // Note: ExamAttendanceSession might map to a specific time slot, but this page uses timeId
+  // For now, we'll just ensure the page loads with the examId if available
+  useEffect(() => {
+    const sessionId = searchParams.get('session');
+    if (sessionId) {
+      // If we have a session ID, we could potentially extract examId and timeId from it
+      // For now, just clean up the URL since the examId is already set from params
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   
   // Mutations
   const markAttendance = useMarkExamAttendance();

@@ -591,7 +591,12 @@ export const en: TranslationKeys = {
     templateNameRequired: 'Template name is required',
     templateUpdated: 'Template updated successfully',
     title: 'Certificate Templates',
-    updateTemplate: 'Update Template'
+    updateTemplate: 'Update Template',
+    selectTemplate: 'Select Template',
+    selectTemplatePlaceholder: 'Choose a certificate template...',
+    hasBackgroundImage: 'Has Background Image',
+    noTemplatesFound: 'No active templates found. Please create a template first.',
+    certificateNumber: 'Certificate Number'
   },
   common: {
     actions: 'Actions',

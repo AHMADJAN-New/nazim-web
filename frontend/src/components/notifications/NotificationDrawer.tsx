@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useNotifications, useNotificationActions } from "@/hooks/useNotifications";
+import { useNotificationHandler } from "@/hooks/useNotificationHandler";
 import { formatDateTime } from "@/lib/utils";
 import type { NotificationItem } from "@/types/notification";
 
@@ -25,6 +26,7 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
   const navigate = useNavigate();
   const { data, isFetching } = useNotifications({ limit: 10, page: 1, enabled: open });
   const { markRead, markAllRead } = useNotificationActions();
+  const { handleNotification, StudentDialog } = useNotificationHandler();
 
   const notifications = data?.notifications ?? [];
   const unreadCount = useMemo(
@@ -32,19 +34,36 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
     [notifications]
   );
 
-  const handleOpenNotification = (notification: NotificationItem) => {
+  const handleOpenNotification = async (notification: NotificationItem) => {
     if (!notification.read_at) {
       markRead.mutate(notification.id);
     }
-    if (notification.url) {
+    await handleNotification(notification);
+    // Don't auto-close drawer - let user close it after viewing
+  };
+
+  const handleNotificationClick = async (notification: NotificationItem) => {
+    // If notification has entity info, use handler; otherwise fallback to URL
+    if (hasEntityInfo(notification)) {
+      await handleOpenNotification(notification);
+    } else if (notification.url) {
+      // Fallback: navigate to URL if no entity info
+      if (!notification.read_at) {
+        markRead.mutate(notification.id);
+      }
       navigate(notification.url);
       onOpenChange(false);
     }
   };
 
+  const hasEntityInfo = (notification: NotificationItem): boolean => {
+    return !!(notification.event?.entity_type && notification.event?.entity_id);
+  };
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[420px] p-0">
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="right" className="w-[420px] p-0">
         <SheetHeader className="px-6 py-4 border-b">
           <div className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
@@ -91,10 +110,11 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
             {notifications.map((notification, index) => (
               <div
                 key={notification.id}
-                className={`rounded-lg border ${notification.read_at ? 'bg-background' : 'bg-muted'} p-3 transition hover:border-primary/40`}
+                className={`rounded-lg border ${notification.read_at ? 'bg-background' : 'bg-muted'} p-3 transition hover:border-primary/40 cursor-pointer`}
+                onClick={() => handleNotificationClick(notification)}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div>
+                  <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className="font-medium leading-tight">{notification.title}</p>
                       <Badge variant={levelVariant(notification.level)} className="text-[11px]">
@@ -113,13 +133,18 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
                       {formatDateTime(notification.created_at)}
                     </p>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleOpenNotification(notification)}
-                  >
-                    View
-                  </Button>
+                  {hasEntityInfo(notification) && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenNotification(notification);
+                      }}
+                    >
+                      View
+                    </Button>
+                  )}
                 </div>
                 {index < notifications.length - 1 && <Separator className="mt-3" />}
               </div>
@@ -128,5 +153,7 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
         </ScrollArea>
       </SheetContent>
     </Sheet>
+    {StudentDialog}
+    </>
   );
 }

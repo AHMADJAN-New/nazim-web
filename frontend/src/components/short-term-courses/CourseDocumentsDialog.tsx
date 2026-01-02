@@ -52,6 +52,7 @@ import {
   useDownloadCourseDocument,
   CourseDocument,
 } from '@/hooks/useCourseDocuments';
+import { useLanguage } from '@/hooks/useLanguage';
 interface CourseDocumentsDialogProps {
   courseId: string;
   courseName: string;
@@ -61,15 +62,7 @@ interface CourseDocumentsDialogProps {
   onClose: () => void;
 }
 
-const DOCUMENT_TYPES = [
-  { value: 'syllabus', label: 'Syllabus' },
-  { value: 'material', label: 'Course Material' },
-  { value: 'assignment', label: 'Assignment' },
-  { value: 'certificate', label: 'Certificate' },
-  { value: 'attendance', label: 'Attendance Record' },
-  { value: 'grade', label: 'Grade Report' },
-  { value: 'other', label: 'Other' },
-];
+// Document types will be defined inside component to use translations
 
 export function CourseDocumentsDialog({
   courseId,
@@ -79,6 +72,7 @@ export function CourseDocumentsDialog({
   isOpen,
   onClose,
 }: CourseDocumentsDialogProps) {
+  const { t } = useLanguage();
   const [isUploadMode, setIsUploadMode] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
@@ -89,6 +83,17 @@ export function CourseDocumentsDialog({
   const [documentType, setDocumentType] = useState('material');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Document types with translations
+  const DOCUMENT_TYPES = [
+    { value: 'syllabus', label: t('shortTermCourses.documentTypes.syllabus') },
+    { value: 'material', label: t('shortTermCourses.documentTypes.material') },
+    { value: 'assignment', label: t('shortTermCourses.documentTypes.assignment') },
+    { value: 'certificate', label: t('shortTermCourses.documentTypes.certificate') },
+    { value: 'attendance', label: t('shortTermCourses.documentTypes.attendance') },
+    { value: 'grade', label: t('shortTermCourses.documentTypes.grade') },
+    { value: 'other', label: t('shortTermCourses.documentTypes.other') },
+  ];
 
   const { data: documents = [], isLoading } = useCourseDocuments({
     courseId,
@@ -164,7 +169,7 @@ export function CourseDocumentsDialog({
         <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>
-              Documents - {courseName}
+              {t('shortTermCourses.courseDocuments')} - {courseName}
               {courseStudentName && ` (${courseStudentName})`}
             </DialogTitle>
           </DialogHeader>
@@ -173,19 +178,19 @@ export function CourseDocumentsDialog({
             {isUploadMode ? (
               /* Upload Form */
               <div className="space-y-4 p-4 border rounded-lg">
-                <h3 className="font-medium">Upload New Document</h3>
+                <h3 className="font-medium">{t('shortTermCourses.uploadDocument')}</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Title *</Label>
+                    <Label>{t('shortTermCourses.documentTitle')} *</Label>
                     <Input
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Document title..."
+                      placeholder={t('shortTermCourses.documentTitle')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Document Type</Label>
+                    <Label>{t('shortTermCourses.documentType')}</Label>
                     <Select value={documentType} onValueChange={setDocumentType}>
                       <SelectTrigger>
                         <SelectValue />
@@ -202,17 +207,17 @@ export function CourseDocumentsDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>{t('shortTermCourses.documentDescription')}</Label>
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Optional description..."
+                    placeholder={t('common.optional')}
                     rows={2}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>File *</Label>
+                  <Label>{t('common.upload')} *</Label>
                   <Input
                     ref={fileInputRef}
                     type="file"
@@ -220,7 +225,7 @@ export function CourseDocumentsDialog({
                   />
                   {selectedFile && (
                     <p className="text-sm text-muted-foreground">
-                      Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
+                      {t('common.selected')} {selectedFile.name} ({formatFileSize(selectedFile.size)})
                     </p>
                   )}
                 </div>
@@ -233,7 +238,7 @@ export function CourseDocumentsDialog({
                       setIsUploadMode(false);
                     }}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     onClick={handleUpload}
@@ -242,12 +247,12 @@ export function CourseDocumentsDialog({
                     {createDocument.isPending ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Uploading...
+                        {t('common.uploading')}
                       </>
                     ) : (
                       <>
                         <Upload className="h-4 w-4 mr-2" />
-                        Upload
+                        {t('common.upload')}
                       </>
                     )}
                   </Button>
@@ -259,7 +264,7 @@ export function CourseDocumentsDialog({
                 <div className="flex justify-end mb-4">
                   <Button onClick={() => setIsUploadMode(true)}>
                     <Upload className="h-4 w-4 mr-2" />
-                    Upload Document
+                    {t('shortTermCourses.uploadDocument')}
                   </Button>
                 </div>
 
@@ -271,17 +276,17 @@ export function CourseDocumentsDialog({
                   ) : documents.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
                       <FileText className="h-8 w-8 mb-2" />
-                      <p>No documents yet</p>
+                      <p>{t('shortTermCourses.noDocuments')}</p>
                     </div>
                   ) : (
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Title</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Size</TableHead>
-                          <TableHead>Uploaded</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableHead>{t('shortTermCourses.documentTitle')}</TableHead>
+                          <TableHead>{t('shortTermCourses.documentType')}</TableHead>
+                          <TableHead>{t('shortTermCourses.size')}</TableHead>
+                          <TableHead>{t('shortTermCourses.uploaded')}</TableHead>
+                          <TableHead className="text-right">{t('common.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -350,14 +355,14 @@ export function CourseDocumentsDialog({
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Document</AlertDialogTitle>
+            <AlertDialogTitle>{t('shortTermCourses.deleteDocument')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this document? This action cannot be undone.
+              {t('shortTermCourses.deleteDocumentConfirm')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

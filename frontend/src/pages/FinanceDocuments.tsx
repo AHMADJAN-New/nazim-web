@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { formatDate } from '@/lib/utils';
 import { useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
@@ -107,6 +107,20 @@ export default function FinanceDocuments() {
   const filteredDocuments = useMemo(() => {
     return documents;
   }, [documents]);
+
+  // Check for view query param and auto-open preview dialog
+  useEffect(() => {
+    const viewDocId = searchParams.get('view');
+    if (viewDocId && documents.length > 0) {
+      const doc = documents.find(d => d.id === viewDocId);
+      if (doc) {
+        setPreviewDocument(doc);
+        setIsPreviewOpen(true);
+        // Clean up URL
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, documents, setSearchParams]);
 
   // Stats
   const stats = useMemo(() => {

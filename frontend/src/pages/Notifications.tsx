@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Bell, CheckCircle, Loader2 } from "lucide-react";
 import { useNotifications, useNotificationActions, useNotificationCount } from "@/hooks/useNotifications";
+import { useNotificationHandler } from "@/hooks/useNotificationHandler";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ export default function NotificationsPage() {
   const { data, isLoading, isFetching } = useNotifications({ limit: PER_PAGE, page });
   const { data: unreadCount } = useNotificationCount();
   const { markRead, markAllRead } = useNotificationActions();
+  const { handleNotification, StudentDialog } = useNotificationHandler();
 
   const notifications = data?.notifications ?? [];
   const totalPages = data?.meta?.last_page ?? 1;
@@ -47,6 +49,30 @@ export default function NotificationsPage() {
     if (!notification.read_at) {
       markRead.mutate(notification.id);
     }
+  };
+
+  const handleOpenNotification = async (notification: NotificationItem) => {
+    if (!notification.read_at) {
+      markRead.mutate(notification.id);
+    }
+    await handleNotification(notification);
+  };
+
+  const handleNotificationClick = async (notification: NotificationItem) => {
+    // If notification has entity info, use handler; otherwise fallback to URL
+    if (hasEntityInfo(notification)) {
+      await handleOpenNotification(notification);
+    } else if (notification.url) {
+      // Fallback: navigate to URL if no entity info
+      if (!notification.read_at) {
+        markRead.mutate(notification.id);
+      }
+      window.location.href = notification.url;
+    }
+  };
+
+  const hasEntityInfo = (notification: NotificationItem): boolean => {
+    return !!(notification.event?.entity_type && notification.event?.entity_id);
   };
 
   return (
@@ -108,8 +134,11 @@ export default function NotificationsPage() {
 
               {notifications.map((notification, index) => (
                 <div key={notification.id} className="space-y-2">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
+                  <div 
+                    className="flex items-start justify-between gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <div className="space-y-1 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium">{notification.title}</p>
                         <Badge variant={levelVariant(notification.level)} className="text-[11px]">
@@ -130,7 +159,7 @@ export default function NotificationsPage() {
                         {formatDateTime(notification.created_at)}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       {!notification.read_at && (
                         <Button
                           size="sm"
@@ -141,15 +170,29 @@ export default function NotificationsPage() {
                           Mark read
                         </Button>
                       )}
-                      {notification.url && (
+                      {hasEntityInfo(notification) ? (
                         <Button
                           size="sm"
                           variant="secondary"
-                          asChild
+                          onClick={() => handleOpenNotification(notification)}
                         >
-                          <a href={notification.url}>Open</a>
+                          View
                         </Button>
-                      )}
+                      ) : notification.url ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!notification.read_at) {
+                              markRead.mutate(notification.id);
+                            }
+                            window.location.href = notification.url!;
+                          }}
+                        >
+                          Open
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
                   {index < notifications.length - 1 && <Separator />}
@@ -200,6 +243,7 @@ export default function NotificationsPage() {
           )}
         </CardContent>
       </Card>
+      {StudentDialog}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, Fragment } from 'react';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useExams, useCreateExam, useUpdateExam, useDeleteExam, useUpdateExamStatus, useExamClasses, useExamSummaryReport } from '@/hooks/useExams';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
@@ -183,6 +183,7 @@ function ExpandedRowContent({ exam }: ExpandedRowContentProps) {
 export function Exams() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: profile } = useProfile();
   const organizationId = profile?.organization_id;
 
@@ -237,6 +238,20 @@ export function Exams() {
   const hasViewReports = useHasPermission('exams.view_reports');
   const hasManageAttendance = useHasPermission('exams.manage_attendance');
   const hasViewAttendanceReports = useHasPermission('exams.view_attendance_reports');
+
+  // Check for view query param and auto-expand exam row
+  useEffect(() => {
+    const viewExamId = searchParams.get('view');
+    if (viewExamId && exams && exams.length > 0) {
+      const exam = exams.find(e => e.id === viewExamId);
+      if (exam) {
+        // Expand the row to show exam details
+        setExpandedRows(prev => new Set(prev).add(exam.id));
+        // Clean up URL
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, exams, setSearchParams]);
 
   // Filter exams
   const filteredExams = useMemo(() => {

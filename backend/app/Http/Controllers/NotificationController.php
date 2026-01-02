@@ -51,7 +51,9 @@ class NotificationController extends Controller
         $perPage = max(1, min($perPage, 50));
         $page = (int) $request->input('page', 1);
 
-        $query = Notification::with('event')
+        $query = Notification::with(['event' => function ($query) {
+            $query->select('id', 'type', 'entity_type', 'entity_id', 'payload_json');
+        }])
             ->forUser($user->id)
             ->forOrganization($profile->organization_id)
             ->orderBy('created_at', 'desc');
@@ -61,10 +63,46 @@ class NotificationController extends Controller
         }
 
         if ($request->has('page')) {
-            return $query->paginate($perPage, ['*'], 'page', $page);
+            $paginated = $query->paginate($perPage, ['*'], 'page', $page);
+            
+            // Transform paginated results to include entity info
+            $paginated->getCollection()->transform(function ($notification) {
+                return $this->transformNotification($notification);
+            });
+            
+            return $paginated;
         }
 
-        return $query->limit($perPage)->get();
+        $notifications = $query->limit($perPage)->get();
+        
+        // Transform results to include entity info
+        return $notifications->map(function ($notification) {
+            return $this->transformNotification($notification);
+        });
+    }
+
+    /**
+     * Transform notification to include entity info in response
+     */
+    private function transformNotification($notification)
+    {
+        return [
+            'id' => $notification->id,
+            'title' => $notification->title,
+            'body' => $notification->body,
+            'url' => $notification->url,
+            'level' => $notification->level,
+            'event_id' => $notification->event_id,
+            'event' => $notification->event ? [
+                'id' => $notification->event->id,
+                'type' => $notification->event->type,
+                'entity_type' => $notification->event->entity_type,
+                'entity_id' => $notification->event->entity_id,
+            ] : null,
+            'read_at' => $notification->read_at?->toISOString(),
+            'created_at' => $notification->created_at->toISOString(),
+            'updated_at' => $notification->updated_at->toISOString(),
+        ];
     }
 
     public function unreadCount(Request $request)

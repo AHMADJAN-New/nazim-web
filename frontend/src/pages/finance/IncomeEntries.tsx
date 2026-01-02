@@ -3,6 +3,7 @@
  */
 
 import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,6 +63,7 @@ import type { PaymentMethod } from '@/types/domain/finance';
 
 export default function IncomeEntries() {
     const { t } = useLanguage();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { data: entries, isLoading } = useIncomeEntries();
     const { data: accounts } = useFinanceAccounts();
     const { data: categories } = useIncomeCategories();
@@ -165,6 +167,20 @@ export default function IncomeEntries() {
             return matchesSearch && matchesCategory && matchesAccount && matchesDateFrom && matchesDateTo;
         });
     }, [entries, searchTerm, filterCategory, filterAccount, dateFrom, dateTo]);
+
+    // Check for view query param and auto-open side panel
+    useEffect(() => {
+        const viewEntryId = searchParams.get('view');
+        if (viewEntryId && entries && entries.length > 0) {
+            const entry = entries.find(e => e.id === viewEntryId);
+            if (entry) {
+                setViewingEntry(entry);
+                setSidePanelOpen(true);
+                // Clean up URL
+                setSearchParams({}, { replace: true });
+            }
+        }
+    }, [searchParams, entries, setSearchParams]);
 
     const clearFilters = () => {
         setSearchTerm('');

@@ -2416,6 +2416,11 @@ export interface TranslationKeys {
     deleteConfirm: string;
     setAsDefault: string;
     defaultTemplate: string;
+    selectTemplate: string;
+    selectTemplatePlaceholder: string;
+    hasBackgroundImage: string;
+    noTemplatesFound: string;
+    certificateNumber: string;
   };
 
   // ID Cards

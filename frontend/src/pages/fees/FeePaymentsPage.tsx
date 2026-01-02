@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -38,6 +38,7 @@ import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 export default function FeePaymentsPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: profile } = useProfile();
   const [filterAcademicYear, setFilterAcademicYear] = useState<string | undefined>(undefined);
   const [filterClassAy, setFilterClassAy] = useState<string | undefined>(undefined);
