@@ -18,11 +18,13 @@ import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useGraduationBatches, useCreateGraduationBatch, useUpdateGraduationBatch, useDeleteGraduationBatch, useGenerateGraduationStudents, useApproveGraduationBatch } from '@/hooks/useGraduation';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
-import { useClasses } from '@/hooks/useClasses';
+import { useClasses, useClassAcademicYears } from '@/hooks/useClasses';
 import { useExams } from '@/hooks/useExams';
 import { useSchools } from '@/hooks/useSchools';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
+import { examClassesApi } from '@/lib/api/client';
 import { graduationBatchSchema, type GraduationBatchFormData } from '@/lib/validations/graduation';
 import { ExamWeightsEditor } from '@/components/graduation/ExamWeightsEditor';
 import { AttendanceSettings } from '@/components/graduation/AttendanceSettings';
@@ -92,7 +94,112 @@ export default function GraduationBatchesPage() {
   const { data: academicYears = [] } = useAcademicYears();
   const { data: currentAcademicYear } = useCurrentAcademicYear();
   const { data: classes = [] } = useClasses();
-  const { data: exams = [] } = useExams();
+  const { data: allExams = [] } = useExams();
+  
+  // Initialize form early so we can use form.watch() later
+  const form = useForm<GraduationBatchFormData>({
+    resolver: zodResolver(graduationBatchSchema),
+    defaultValues: {
+      graduation_type: 'final_year',
+      school_id: schoolId || '',
+      academic_year_id: '',
+      class_id: '',
+      from_class_id: '',
+      to_class_id: '',
+      exam_ids: [],
+      exam_weights: {},
+      graduation_date: '',
+      min_attendance_percentage: 75.0,
+      require_attendance: true,
+      exclude_approved_leaves: true,
+    },
+  });
+  
+  // Get class academic year for filtering exams by class
+  const selectedAcademicYearId = form.watch('academic_year_id');
+  const selectedClassId = form.watch('class_id') || form.watch('from_class_id');
+  const { data: classAcademicYears = [] } = useClassAcademicYears(
+    selectedAcademicYearId || undefined,
+    profile?.organization_id
+  );
+  
+  // Find the class_academic_year_id for the selected class and academic year
+  const selectedClassAcademicYearId = useMemo(() => {
+    if (!selectedClassId || !selectedAcademicYearId) return null;
+    const classAcademicYear = classAcademicYears.find(
+      (cay) => cay.classId === selectedClassId && cay.academicYearId === selectedAcademicYearId
+    );
+    return classAcademicYear?.id || null;
+  }, [classAcademicYears, selectedClassId, selectedAcademicYearId]);
+  
+  // Fetch exam classes to filter exams by class
+  const { data: allExamClasses = [] } = useQuery({
+    queryKey: ['exam-classes-for-filtering', selectedClassAcademicYearId, profile?.organization_id],
+    queryFn: async () => {
+      if (!selectedClassAcademicYearId || !profile?.organization_id) return [];
+      try {
+        // Fetch all exam classes - API returns snake_case format
+        const examClasses = await examClassesApi.list();
+        // Filter by class_academic_year_id (API returns snake_case)
+        const filtered = (examClasses as any[]).filter(
+          (ec: any) => ec.class_academic_year_id === selectedClassAcademicYearId
+        );
+        
+        if (import.meta.env.DEV) {
+          console.log('[GraduationBatchesPage] Filtered exam classes:', {
+            total: examClasses.length,
+            filtered: filtered.length,
+            classAcademicYearId: selectedClassAcademicYearId,
+          });
+        }
+        
+        return filtered;
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[GraduationBatchesPage] Error fetching exam classes:', error);
+        }
+        return [];
+      }
+    },
+    enabled: !!selectedClassAcademicYearId && !!profile?.organization_id,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+  
+  // Filter exams by academic year AND class (BOTH filters must be applied)
+  const exams = useMemo(() => {
+    let filtered = allExams;
+    
+    // Step 1: Filter by academic year (required - always apply if selected)
+    if (selectedAcademicYearId) {
+      filtered = filtered.filter((exam) => exam.academicYearId === selectedAcademicYearId);
+    }
+    
+    // Step 2: Filter by class (if class is selected) - MUST filter by BOTH academic year AND class
+    if (selectedClassAcademicYearId) {
+      if (allExamClasses.length > 0) {
+        // API returns snake_case format: exam_id
+        const examIdsWithClass = new Set(
+          allExamClasses.map((ec: any) => ec.exam_id).filter(Boolean)
+        );
+        filtered = filtered.filter((exam) => examIdsWithClass.has(exam.id));
+        
+        if (import.meta.env.DEV) {
+          console.log('[GraduationBatchesPage] Filtered exams:', {
+            totalExams: allExams.length,
+            afterAcademicYear: filtered.length,
+            examIdsWithClass: Array.from(examIdsWithClass),
+            selectedClassAcademicYearId,
+          });
+        }
+      } else {
+        // If class is selected but no exam classes found, return empty array
+        filtered = [];
+      }
+    }
+    
+    return filtered;
+  }, [allExams, selectedAcademicYearId, selectedClassAcademicYearId, allExamClasses]);
   
   // Auto-select school if there's only one, or use profile's default_school_id
   useEffect(() => {
@@ -124,25 +231,6 @@ export default function GraduationBatchesPage() {
   const deleteBatch = useDeleteGraduationBatch();
   const generateStudents = useGenerateGraduationStudents();
   const approveBatch = useApproveGraduationBatch();
-
-  // Unified form with React Hook Form
-  const form = useForm<GraduationBatchFormData>({
-    resolver: zodResolver(graduationBatchSchema),
-    defaultValues: {
-      graduation_type: 'final_year',
-      school_id: schoolId || '',
-      academic_year_id: '',
-      class_id: '',
-      from_class_id: '',
-      to_class_id: '',
-      exam_ids: [],
-      exam_weights: {},
-      graduation_date: '',
-      min_attendance_percentage: 75.0,
-      require_attendance: true,
-      exclude_approved_leaves: true,
-    },
-  });
 
   // Watch form values for conditional rendering
   const graduationType = form.watch('graduation_type');
@@ -365,11 +453,62 @@ export default function GraduationBatchesPage() {
 
   const handleCreate = async (data: GraduationBatchFormData) => {
     try {
+      // Validate required UUID fields are not empty
+      if (!data.academic_year_id || data.academic_year_id.trim() === '') {
+        form.setError('academic_year_id', { 
+          type: 'required', 
+          message: t('forms.required') || 'Academic year is required' 
+        });
+        return;
+      }
+      
+      // Validate class selection based on graduation type
+      if (data.graduation_type === 'final_year') {
+        if (!data.class_id || data.class_id.trim() === '') {
+          form.setError('class_id', { 
+            type: 'required', 
+            message: t('forms.required') || 'Class is required' 
+          });
+          return;
+        }
+      } else if (data.graduation_type === 'promotion' || data.graduation_type === 'transfer') {
+        if (!data.from_class_id || data.from_class_id.trim() === '') {
+          form.setError('from_class_id', { 
+            type: 'required', 
+            message: t('forms.required') || 'From class is required' 
+          });
+          return;
+        }
+        if (!data.to_class_id || data.to_class_id.trim() === '') {
+          form.setError('to_class_id', { 
+            type: 'required', 
+            message: t('forms.required') || 'To class is required' 
+          });
+          return;
+        }
+      }
+      
+      if (!data.school_id || data.school_id.trim() === '') {
+        form.setError('school_id', { 
+          type: 'required', 
+          message: t('forms.required') || 'School is required' 
+        });
+        return;
+      }
+      
+      // Validate exam selection
+      if (!data.exam_ids || data.exam_ids.length === 0) {
+        form.setError('exam_ids', { 
+          type: 'required', 
+          message: t('forms.required') || 'At least one exam is required' 
+        });
+        return;
+      }
+
       // Prepare payload for API
       const payload: any = {
-        school_id: data.school_id,
-        academic_year_id: data.academic_year_id,
-        class_id: data.class_id,
+        school_id: data.school_id.trim(),
+        academic_year_id: data.academic_year_id.trim(),
         exam_ids: data.exam_ids,
         graduation_date: data.graduation_date,
         graduation_type: data.graduation_type,
@@ -378,13 +517,18 @@ export default function GraduationBatchesPage() {
         exclude_approved_leaves: data.exclude_approved_leaves ?? true,
       };
 
-      // Add from/to class IDs for promotion and transfer
-      if (data.graduation_type === 'promotion' || data.graduation_type === 'transfer') {
-        payload.from_class_id = data.from_class_id;
-        payload.to_class_id = data.to_class_id;
+      // Add class IDs based on graduation type
+      if (data.graduation_type === 'final_year') {
+        payload.class_id = data.class_id.trim();
+      } else if (data.graduation_type === 'promotion' || data.graduation_type === 'transfer') {
+        payload.from_class_id = data.from_class_id.trim();
+        payload.to_class_id = data.to_class_id.trim();
         // For transfer, use from_class_id as the main class_id
         if (data.graduation_type === 'transfer') {
-          payload.class_id = data.from_class_id;
+          payload.class_id = data.from_class_id.trim();
+        } else {
+          // For promotion, use class_id from form (or from_class_id as fallback)
+          payload.class_id = data.class_id?.trim() || data.from_class_id.trim();
         }
       }
 
@@ -616,7 +760,7 @@ export default function GraduationBatchesPage() {
               <form className="space-y-4" onSubmit={form.handleSubmit(handleCreate)}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Graduation Type */}
-                  <div className="md:col-span-2">
+                  <div>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="graduation_type">{t('common.type') || 'Graduation Type'}</Label>
                       <TooltipProvider>
@@ -639,50 +783,270 @@ export default function GraduationBatchesPage() {
                         </Tooltip>
                       </TooltipProvider>
                     </div>
-                    <Select
-                      value={graduationType}
-                      onValueChange={(val) => {
-                        form.setValue('graduation_type', val as 'final_year' | 'promotion' | 'transfer');
-                        // Reset from/to class when changing type
-                        if (val === 'final_year') {
-                          form.setValue('from_class_id', '');
-                          form.setValue('to_class_id', '');
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('common.type')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="final_year">
-                          {t('graduation.types.finalYear') || 'Final Year Graduation'}
-                        </SelectItem>
-                        <SelectItem value="promotion">
-                          {t('graduation.types.promotion') || 'Promotion'}
-                        </SelectItem>
-                        <SelectItem value="transfer">
-                          {t('graduation.types.transfer') || 'Transfer'}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      control={form.control}
+                      name="graduation_type"
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={(val) => {
+                            field.onChange(val);
+                            // Reset from/to class when changing type
+                            if (val === 'final_year') {
+                              form.setValue('from_class_id', '');
+                              form.setValue('to_class_id', '');
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('common.type')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="final_year">
+                              {t('graduation.types.finalYear') || 'Final Year Graduation'}
+                            </SelectItem>
+                            <SelectItem value="promotion">
+                              {t('graduation.types.promotion') || 'Promotion'}
+                            </SelectItem>
+                            <SelectItem value="transfer">
+                              {t('graduation.types.transfer') || 'Transfer'}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                     {form.formState.errors.graduation_type && (
                       <p className="text-sm text-destructive mt-1">
                         {form.formState.errors.graduation_type.message}
                       </p>
                     )}
                   </div>
-                  {examIds.length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {examIds.length} {examIds.length === 1 ? 'exam' : 'exams'} selected
-                    </p>
+
+                  {/* Academic Year */}
+                  <div>
+                    <Label>{t('fees.academicYear')}</Label>
+                    <Controller
+                      control={form.control}
+                      name="academic_year_id"
+                      render={({ field }) => (
+                        <Select 
+                          value={field.value || ''} 
+                          onValueChange={(val) => {
+                            field.onChange(val || '');
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('fees.academicYear')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {academicYears.map((ay) => (
+                              <SelectItem key={ay.id} value={ay.id}>
+                                {ay.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {form.formState.errors.academic_year_id && (
+                      <p className="text-sm text-destructive mt-1">
+                        {form.formState.errors.academic_year_id.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Conditional class fields based on graduation type */}
+                  {graduationType === 'final_year' ? (
+                    <div>
+                      <Label>{t('fees.class')}</Label>
+                      <Controller
+                        control={form.control}
+                        name="class_id"
+                        render={({ field }) => (
+                          <Select 
+                            value={field.value || ''} 
+                            onValueChange={(val) => {
+                              field.onChange(val || '');
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={t('common.selectClass')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {classes.map((cls) => (
+                                <SelectItem key={cls.id} value={cls.id}>
+                                  {cls.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      {form.formState.errors.class_id && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.class_id.message}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <Label>{t('graduation.fromClass') || 'From Class'}</Label>
+                        <Controller
+                          control={form.control}
+                          name="from_class_id"
+                          render={({ field }) => (
+                            <Select 
+                              value={field.value || undefined} 
+                              onValueChange={(val) => {
+                                field.onChange(val || '');
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={t('graduation.selectFromClass') || 'Select From Class'} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {classes.map((cls) => (
+                                  <SelectItem key={cls.id} value={cls.id}>
+                                    {cls.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                        {form.formState.errors.from_class_id && (
+                          <p className="text-sm text-destructive mt-1">
+                            {form.formState.errors.from_class_id.message}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Label>{t('graduation.toClass') || 'To Class'}</Label>
+                        <Controller
+                          control={form.control}
+                          name="to_class_id"
+                          render={({ field }) => (
+                            <Select 
+                              value={field.value || undefined} 
+                              onValueChange={(val) => {
+                                field.onChange(val || '');
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={t('graduation.selectToClass') || 'Select To Class'} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {classes.filter((cls) => cls.id !== form.watch('from_class_id')).map((cls) => (
+                                  <SelectItem key={cls.id} value={cls.id}>
+                                    {cls.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                        {form.formState.errors.to_class_id && (
+                          <p className="text-sm text-destructive mt-1">
+                            {form.formState.errors.to_class_id.message}
+                          </p>
+                        )}
+                      </div>
+                    </>
                   )}
-                  
+
+                  {/* Exams */}
+                  <div className="md:col-span-2">
+                    <Label>{t('nav.exams')}</Label>
+                    <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
+                      {exams.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">{t('common.noData') || 'No exams available'}</p>
+                      ) : (
+                        exams.map((exam) => (
+                          <div key={exam.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`exam-${exam.id}`}
+                              checked={examIds.includes(exam.id)}
+                              onCheckedChange={(checked) => {
+                                const currentIds = form.watch('exam_ids') || [];
+                                if (checked) {
+                                  form.setValue('exam_ids', [...currentIds, exam.id]);
+                                } else {
+                                  form.setValue('exam_ids', currentIds.filter((id) => id !== exam.id));
+                                  // Remove weight when exam is deselected
+                                  const currentWeights = form.watch('exam_weights') || {};
+                                  const newWeights = { ...currentWeights };
+                                  delete newWeights[exam.id];
+                                  form.setValue('exam_weights', newWeights);
+                                }
+                              }}
+                            />
+                            <label
+                              htmlFor={`exam-${exam.id}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {exam.name}
+                            </label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    {examIds.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {examIds.length} {examIds.length === 1 ? 'exam' : 'exams'} selected
+                      </p>
+                    )}
+                    {form.formState.errors.exam_ids && (
+                      <p className="text-sm text-destructive mt-1">
+                        {form.formState.errors.exam_ids.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Exam Weights - Show when 2+ exams selected */}
+                  {examIds.length > 1 && (
+                    <div className="md:col-span-2">
+                      <ExamWeightsEditor
+                        examIds={examIds}
+                        weights={examWeights}
+                        onChange={(newWeights) => form.setValue('exam_weights', newWeights)}
+                        exams={exams}
+                      />
+                      {form.formState.errors.exam_weights && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.exam_weights.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Attendance Settings */}
+                  <div className="md:col-span-2">
+                    <Label>{t('graduation.attendance.title') || 'Attendance Requirements'}</Label>
+                    <AttendanceSettings
+                      minAttendancePercentage={minAttendancePercentage}
+                      requireAttendance={requireAttendance}
+                      excludeApprovedLeaves={excludeApprovedLeaves}
+                      onChange={(settings) => {
+                        form.setValue('min_attendance_percentage', settings.min_attendance_percentage);
+                        form.setValue('require_attendance', settings.require_attendance);
+                        form.setValue('exclude_approved_leaves', settings.exclude_approved_leaves);
+                      }}
+                    />
+                  </div>
+
                   {/* Graduation Date */}
                   <div className="md:col-span-2">
                     <Label>{t('common.graduationDate') ?? 'Graduation Date'}</Label>
-                    <CalendarDatePicker 
-                      date={form.watch('graduation_date') ? new Date(form.watch('graduation_date')) : undefined} 
-                      onDateChange={(date) => form.setValue('graduation_date', date ? date.toISOString().split("T")[0] : '')} 
+                    <Controller
+                      control={form.control}
+                      name="graduation_date"
+                      render={({ field }) => (
+                        <CalendarDatePicker
+                          date={field.value ? new Date(field.value) : undefined}
+                          onDateChange={(date) => field.onChange(date ? date.toISOString().split("T")[0] : '')}
+                        />
+                      )}
                     />
                     {form.formState.errors.graduation_date && (
                       <p className="text-sm text-destructive mt-1">
@@ -691,15 +1055,15 @@ export default function GraduationBatchesPage() {
                     )}
                   </div>
                 </div>
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
-                  {t('common.cancel')}
-                </Button>
-                <Button type="submit" disabled={createBatch.isPending}>
-                  {t('common.save')}
-                </Button>
-              </div>
-            </form>
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
+                    {t('common.cancel')}
+                  </Button>
+                  <Button type="submit" disabled={createBatch.isPending}>
+                    {createBatch.isPending ? t('common.processing') : t('common.save')}
+                  </Button>
+                </div>
+              </form>
           </DialogContent>
         </Dialog>
       </div>

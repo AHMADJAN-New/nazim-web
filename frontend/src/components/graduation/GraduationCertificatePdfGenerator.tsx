@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -18,10 +18,9 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Download, Award, Eye, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Download, Award, Eye, Image as ImageIcon, Printer } from 'lucide-react';
 import { useCertificateTemplatesV2 } from '@/hooks/useGraduation';
-import { certificateTemplatesV2Api, issuedCertificatesApi, apiClient } from '@/lib/api/client';
-import { format } from 'date-fns';
+import { issuedCertificatesApi, apiClient } from '@/lib/api/client';
 
 // Import pdfmake for Arabic support - handle both default and named exports
 import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
@@ -74,7 +73,7 @@ try {
       }
     }
   }
-  
+
   // Merge fonts into VFS if vfs exists
   if ((pdfMake as any).vfs) {
     try {
@@ -115,19 +114,19 @@ try {
       italic: ['roboto', 'italic'],
       bolditalic: ['roboto', 'bold', 'italic'],
     };
-    
+
     const pattern = patterns[variant];
     const key = vfsKeys.find(k => {
       const lower = k.toLowerCase();
       return pattern.every(p => lower.includes(p));
     });
-    
+
     if (key && vfs[key]) return key;
-    
+
     // Fallback: try to find any Roboto font
     const anyRoboto = vfsKeys.find(k => k.toLowerCase().includes('roboto'));
     if (anyRoboto) return anyRoboto;
-    
+
     // Last resort: use default names (pdfmake-arabic should have these)
     return variant === 'regular' ? 'Roboto-Regular.ttf' :
            variant === 'bold' ? 'Roboto-Medium.ttf' :
@@ -163,112 +162,6 @@ try {
   }
 } catch (error) {
   console.error('[GraduationCertificatePdfGenerator] Failed to initialize pdfmake fonts:', error);
-}
-
-// Load custom fonts for Pashto/Arabic support
-let fontsLoaded = false;
-let fontsLoading: Promise<void> | null = null;
-
-async function loadCustomFonts() {
-  if (fontsLoaded) return;
-  if (fontsLoading) return fontsLoading;
-  
-  fontsLoading = (async () => {
-    try {
-      const regularTtfModule = await import('@/fonts/ttf/Bahij Nassim-Regular.ttf?url');
-      const boldTtfModule = await import('@/fonts/ttf/Bahij Nassim-Bold.ttf?url');
-      
-      const regularTtfUrl = regularTtfModule.default;
-      const boldTtfUrl = boldTtfModule.default;
-      
-      const [regularResponse, boldResponse] = await Promise.all([
-        fetch(regularTtfUrl).catch(() => null),
-        fetch(boldTtfUrl).catch(() => null),
-      ]);
-      
-      if (!regularResponse || !regularResponse.ok || !boldResponse || !boldResponse.ok) {
-        if (import.meta.env.DEV) {
-          console.warn('[GraduationCertificatePdfGenerator] TTF font files not found. Pashto/Arabic text will use Roboto font.');
-        }
-        fontsLoaded = false;
-        return;
-      }
-      
-      const [regularBlob, boldBlob] = await Promise.all([
-        regularResponse.blob(),
-        boldResponse.blob(),
-      ]);
-      
-      const regularArrayBuffer = await regularBlob.arrayBuffer();
-      const boldArrayBuffer = await boldBlob.arrayBuffer();
-      
-      const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
-        const bytes = new Uint8Array(buffer);
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        return btoa(binary);
-      };
-      
-      const regularBase64Data = arrayBufferToBase64(regularArrayBuffer);
-      const boldBase64Data = arrayBufferToBase64(boldArrayBuffer);
-      
-      // Add fonts to VFS (Virtual File System) - required for pdfmake
-      // Get the actual pdfMake instance (might be from window)
-      const pdfMakeInstance = getPdfMakeInstance() || pdfMake;
-      
-      if (!pdfMakeInstance) {
-        throw new Error('pdfMake instance not available');
-      }
-      
-      // Try to add fonts to VFS
-      try {
-        if (!(pdfMakeInstance as any).vfs) {
-          (pdfMakeInstance as any).vfs = {};
-        }
-        (pdfMakeInstance as any).vfs['BahijNassim-Regular.ttf'] = regularBase64Data;
-        (pdfMakeInstance as any).vfs['BahijNassim-Bold.ttf'] = boldBase64Data;
-      } catch (e) {
-        // VFS might be frozen, skip custom fonts
-        if (import.meta.env.DEV) {
-          console.warn('[GraduationCertificatePdfGenerator] Could not add fonts to VFS, using Roboto only');
-        }
-        fontsLoaded = false;
-        return;
-      }
-      
-      // Register fonts with pdfmake (reference VFS paths)
-      try {
-        if (!(pdfMakeInstance as any).fonts) {
-          (pdfMakeInstance as any).fonts = {};
-        }
-        (pdfMakeInstance as any).fonts['BahijNassim'] = {
-          normal: 'BahijNassim-Regular.ttf',
-          bold: 'BahijNassim-Bold.ttf',
-        };
-      } catch (e) {
-        // Fonts might be frozen, skip custom fonts
-        if (import.meta.env.DEV) {
-          console.warn('[GraduationCertificatePdfGenerator] Could not register fonts, using Roboto only');
-        }
-        fontsLoaded = false;
-        return;
-      }
-      
-      fontsLoaded = true;
-      if (import.meta.env.DEV) {
-        console.log('[GraduationCertificatePdfGenerator] Custom fonts loaded successfully');
-      }
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('[GraduationCertificatePdfGenerator] Failed to load custom fonts:', error);
-      }
-      fontsLoaded = false;
-    }
-  })();
-  
-  return fontsLoading;
 }
 
 interface GraduationCertificateTemplate {
@@ -352,18 +245,449 @@ export function GraduationCertificatePdfGenerator({
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId) as GraduationCertificateTemplate | undefined;
 
+  // Cache canvas font loading so we don't re-load per render
+  let canvasFontsLoaded = false;
+  let canvasFontsLoading: Promise<void> | null = null;
+
+  const normalizeCanvasFontFamily = (fontFamily: string): string => {
+    const trimmed = String(fontFamily || '').trim();
+    if (!trimmed) return trimmed;
+    // Map template values to actual canvas font-face family names
+    if (trimmed === 'BahijNassim' || trimmed === 'Bahij Nassim') return 'Bahij Nassim';
+    return trimmed;
+  };
+
+  const ensureCanvasFontsLoaded = async (): Promise<void> => {
+    if (canvasFontsLoaded) return;
+    if (canvasFontsLoading) return canvasFontsLoading;
+
+    canvasFontsLoading = (async () => {
+      try {
+        // Load both Regular + Bold WOFFs for proper weight matching in Canvas.
+        const [regularWoffModule, boldWoffModule] = await Promise.all([
+          import('@/fonts/Bahij Nassim-Regular.woff?url'),
+          import('@/fonts/Bahij Nassim-Bold.woff?url'),
+        ]);
+
+        const regularWoffUrl = regularWoffModule.default;
+        const boldWoffUrl = boldWoffModule.default;
+
+        const regularFace = new FontFace('Bahij Nassim', `url(${regularWoffUrl})`, {
+          weight: '400',
+          style: 'normal',
+        });
+        const boldFace = new FontFace('Bahij Nassim', `url(${boldWoffUrl})`, {
+          weight: '700',
+          style: 'normal',
+        });
+
+        // Load + register
+        await Promise.all([regularFace.load(), boldFace.load()]);
+        document.fonts.add(regularFace);
+        document.fonts.add(boldFace);
+
+        // Ensure font set is ready before drawing
+        if (document.fonts && document.fonts.ready) {
+          await document.fonts.ready;
+        }
+
+        canvasFontsLoaded = true;
+        if (import.meta.env.DEV) {
+          console.log('[GraduationCertificatePdfGenerator] Canvas fonts loaded: Bahij Nassim (400/700)');
+        }
+      } catch (e) {
+        // Not fatal: browser will fall back to installed fonts
+        canvasFontsLoaded = false;
+        if (import.meta.env.DEV) {
+          console.warn('[GraduationCertificatePdfGenerator] Failed to load canvas fonts, using fallbacks');
+        }
+      }
+    })();
+
+    return canvasFontsLoading;
+  };
+
+  /**
+   * Render certificate to a high-res canvas and return a dataURL.
+   *
+   * IMPORTANT:
+   * - Layout designer & preview are Canvas-based (browser text shaping + RTL).
+   * - pdfmake text positioning/RTL shaping can differ and cause drift.
+   * - For "exactly like preview" PDFs, we embed the rendered canvas image into the PDF.
+   */
+  const renderCertificateToDataUrl = async (
+    data: GraduationCertificateData,
+    template: GraduationCertificateTemplate,
+    backgroundImageBase64: string | null,
+    options?: { scale?: number; mimeType?: 'image/jpeg' | 'image/png'; quality?: number }
+  ): Promise<string> => {
+    const scale = options?.scale ?? 2; // 2x for better PDF clarity
+    const mimeType = options?.mimeType ?? 'image/jpeg';
+    const quality = options?.quality ?? 0.95;
+
+    if (!data) {
+      throw new Error('Certificate data is missing');
+    }
+
+    // Ensure our custom fonts are loaded before we render (important for RTL)
+    await ensureCanvasFontsLoaded();
+
+    // Base A4 landscape dimensions in pixels (at 96 DPI)
+    const baseWidth = 1123; // 297mm at 96 DPI
+    const baseHeight = 794; // 210mm at 96 DPI
+
+    const previewMaxWidth = 800;
+    let fontScale = 1;
+
+    // Create high-res canvas (scale for quality)
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(baseWidth * scale);
+    canvas.height = Math.round(baseHeight * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Failed to get canvas context');
+
+    // Scale the context for high-resolution rendering
+    ctx.scale(scale, scale);
+
+    // Fill white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, baseWidth, baseHeight);
+
+    // Draw background image (cover full canvas)
+    if (backgroundImageBase64) {
+      const bgImg = new Image();
+      await new Promise((resolve, reject) => {
+        bgImg.onload = () => {
+          if (bgImg.width > 0) {
+            fontScale = bgImg.width > previewMaxWidth ? previewMaxWidth / bgImg.width : 1;
+          }
+          ctx.drawImage(bgImg, 0, 0, baseWidth, baseHeight);
+          resolve(null);
+        };
+        bgImg.onerror = reject;
+        bgImg.src = backgroundImageBase64;
+      });
+    }
+
+    // Get layout config
+    const layout = template.layout_config || {};
+    const isRtl = layout.rtl !== false; // Default RTL
+
+    // Default font family for canvas
+    const requestedGlobalFont = layout.fontFamily ? normalizeCanvasFontFamily(layout.fontFamily) : '';
+    const defaultFontFamily = isRtl
+      ? `"${normalizeCanvasFontFamily('Bahij Nassim')}", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif`
+      : (requestedGlobalFont || 'Arial');
+
+    const textColor = layout.textColor || '#000000';
+    const baseFontSize = layout.fontSize || 24;
+
+    const getFieldFont = (fieldId: string, defaultMultiplier: number) => {
+      const fieldFont = layout.fieldFonts?.[fieldId];
+      const rawFontSize = fieldFont?.fontSize !== undefined
+          ? fieldFont.fontSize
+          : baseFontSize * defaultMultiplier;
+
+      // Apply legacy preview scaling so exports match the editor display
+      const fieldFontSize = rawFontSize * fontScale;
+
+      const rawFamily = fieldFont?.fontFamily ? normalizeCanvasFontFamily(fieldFont.fontFamily) : '';
+      const fieldFontFamily = rawFamily || defaultFontFamily;
+      return { fontSize: fieldFontSize, fontFamily: fieldFontFamily };
+    };
+
+    const prepareCanvasText = (text: string): string => {
+      if (!text) return '';
+      return String(text).trim().normalize('NFC');
+    };
+
+    const getPixelPosition = (
+      position?: { x: number; y: number },
+      defaultX?: number,
+      defaultY?: number
+    ) => {
+      const x = position ? (position.x / 100) * baseWidth : defaultX;
+      const y = position ? (position.y / 100) * baseHeight : defaultY;
+      if (x === undefined || y === undefined) return null;
+      return { x, y };
+    };
+
+    // Helper function to draw text with exact font size (not affected by context scaling)
+    const drawText = (
+      text: string,
+      x: number,
+      y: number,
+      fontSize: number,
+      fontFamily: string,
+      align: CanvasTextAlign = 'center'
+    ) => {
+      ctx.save();
+      // Reset transform to identity (no scaling) for font rendering
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      // Scale coordinates manually for high-res rendering
+      const scaledX = x * scale;
+      const scaledY = y * scale;
+      // Set font size directly (use exact size from config, no division needed)
+      ctx.font = `bold ${fontSize}px ${fontFamily}`;
+      ctx.fillStyle = textColor;
+      ctx.textAlign = align;
+      ctx.textBaseline = 'middle';
+      ctx.direction = isRtl ? 'rtl' : 'ltr';
+      ctx.fillText(prepareCanvasText(text), scaledX, scaledY);
+      ctx.restore();
+    };
+
+    // Match designer (center)
+    ctx.textBaseline = 'middle';
+    ctx.direction = isRtl ? 'rtl' : 'ltr';
+
+    // Header
+    if (layout.enabledFields?.includes('header')) {
+      const pos = getPixelPosition(layout.headerPosition, baseWidth / 2, 100);
+      if (pos) {
+        const fieldFont = getFieldFont('header', 1.5);
+        const headerText = layout.headerText || 'Graduation Certificate';
+        drawText(headerText, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
+      }
+    }
+
+    // Student name
+    if (layout.enabledFields?.includes('studentName') && data.student) {
+      const pos = getPixelPosition(layout.studentNamePosition, baseWidth / 2, 300);
+      if (pos) {
+        const fieldFont = getFieldFont('studentName', 1.17);
+        drawText(data.student.full_name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
+      }
+    }
+
+    // Father name
+    if (layout.enabledFields?.includes('fatherName') && data.student?.father_name) {
+      const pos = getPixelPosition(layout.fatherNamePosition, baseWidth / 2, 360);
+      if (pos) {
+        const fieldFont = getFieldFont('fatherName', 1.0);
+        drawText(data.student.father_name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
+      }
+    }
+
+    // Grandfather name
+    if (layout.enabledFields?.includes('grandfatherName') && data.student?.grandfather_name) {
+      const pos = getPixelPosition(layout.grandfatherNamePosition, baseWidth / 2, 380);
+      if (pos) {
+        const fieldFont = getFieldFont('grandfatherName', 1.0);
+        drawText(data.student.grandfather_name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
+      }
+    }
+
+    // Mother name
+    if (layout.enabledFields?.includes('motherName') && data.student?.mother_name) {
+      const pos = getPixelPosition(layout.motherNamePosition, baseWidth / 2, 400);
+      if (pos) {
+        const fieldFont = getFieldFont('motherName', 1.0);
+        drawText(data.student.mother_name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
+      }
+    }
+
+    // Class name
+    if (layout.enabledFields?.includes('className') && data.class) {
+      const pos = getPixelPosition(layout.classNamePosition, baseWidth / 2, 480);
+      if (pos) {
+        const fieldFont = getFieldFont('className', 1.0);
+        const classNameText = layout.classNameText
+          ? `${layout.classNameText} ${data.class.name}`
+          : data.class.name;
+        drawText(classNameText, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
+      }
+    }
+
+    // School name
+    if (layout.enabledFields?.includes('schoolName') && data.school) {
+      const pos = getPixelPosition(layout.schoolNamePosition, baseWidth / 2, 500);
+      if (pos) {
+        const fieldFont = getFieldFont('schoolName', 1.0);
+        drawText(data.school.school_name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
+      }
+    }
+
+    // Academic year
+    if (layout.enabledFields?.includes('academicYear') && data.academicYear) {
+      const pos = getPixelPosition(layout.academicYearPosition, baseWidth / 2, 520);
+      if (pos) {
+        const fieldFont = getFieldFont('academicYear', 0.8);
+        drawText(data.academicYear.name, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
+      }
+    }
+
+    // Graduation date
+    if (layout.enabledFields?.includes('graduationDate') && data.batch?.graduation_date) {
+      const pos = getPixelPosition(layout.graduationDatePosition, baseWidth - 100, baseHeight - 100);
+      if (pos) {
+        const fieldFont = getFieldFont('graduationDate', 0.5);
+        const dateLabel = layout.graduationDateText || 'Date:';
+        const formattedDate = formatDate(data.batch.graduation_date);
+        const dateText = `${dateLabel} ${formattedDate}`;
+        drawText(dateText, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
+      }
+    }
+
+    // Certificate number
+    if (layout.enabledFields?.includes('certificateNumber')) {
+      const pos = getPixelPosition(layout.certificateNumberPosition, 100, baseHeight - 100);
+      if (pos) {
+        const fieldFont = getFieldFont('certificateNumber', 0.5);
+        const certPrefix =
+          layout.certificateNumberPrefix !== undefined ? layout.certificateNumberPrefix : 'Certificate No:';
+        const certText = certPrefix
+          ? `${certPrefix} ${data.certificate.certificate_no || 'N/A'}`
+          : data.certificate.certificate_no || 'N/A';
+        drawText(certText, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, isRtl ? 'right' : 'left');
+      }
+    }
+
+    // Position
+    if (layout.enabledFields?.includes('position') && data.position) {
+      const pos = getPixelPosition(layout.positionPosition, baseWidth - 100, baseHeight - 120);
+      if (pos) {
+        const fieldFont = getFieldFont('position', 0.8);
+        drawText(`Position: ${data.position}`, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, isRtl ? 'left' : 'right');
+      }
+    }
+
+    // Province
+    if (layout.enabledFields?.includes('province') && data.student?.curr_province) {
+      const pos = getPixelPosition(layout.provincePosition, baseWidth / 2, 520);
+      if (pos) {
+        const fieldFont = getFieldFont('province', 0.8);
+        drawText(`Province: ${data.student.curr_province}`, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
+      }
+    }
+
+    // District
+    if (layout.enabledFields?.includes('district') && data.student?.curr_district) {
+      const pos = getPixelPosition(layout.districtPosition, baseWidth / 2, 540);
+      if (pos) {
+        const fieldFont = getFieldFont('district', 0.8);
+        drawText(`District: ${data.student.curr_district}`, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
+      }
+    }
+
+    // Village
+    if (layout.enabledFields?.includes('village') && data.student?.curr_village) {
+      const pos = getPixelPosition(layout.villagePosition, baseWidth / 2, 560);
+      if (pos) {
+        const fieldFont = getFieldFont('village', 0.8);
+        drawText(`Village: ${data.student.curr_village}`, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
+      }
+    }
+
+    // Nationality
+    if (layout.enabledFields?.includes('nationality') && data.student?.nationality) {
+      const pos = getPixelPosition(layout.nationalityPosition, baseWidth / 2, 580);
+      if (pos) {
+        const fieldFont = getFieldFont('nationality', 0.8);
+        drawText(`Nationality: ${data.student.nationality}`, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
+      }
+    }
+
+    // Guardian Name
+    if (layout.enabledFields?.includes('guardianName') && data.student?.guardian_name) {
+      const pos = getPixelPosition(layout.guardianNamePosition, baseWidth / 2, 600);
+      if (pos) {
+        const fieldFont = getFieldFont('guardianName', 0.8);
+        drawText(`Guardian: ${data.student.guardian_name}`, pos.x, pos.y, fieldFont.fontSize * scale, fieldFont.fontFamily, 'center');
+      }
+    }
+
+    // Student Photo
+    if (layout.enabledFields?.includes('studentPhoto') && data.student?.id) {
+      const photoPos = layout.studentPhotoPosition;
+      const pos = getPixelPosition(photoPos, 150, baseHeight / 2);
+      if (pos) {
+        try {
+          const photoBase64 = await convertImageToBase64(`/api/students/${data.student.id}/picture`);
+          if (photoBase64) {
+            const photoImg = new Image();
+            await new Promise((resolve, reject) => {
+              photoImg.onload = () => resolve(null);
+              photoImg.onerror = reject;
+              photoImg.src = photoBase64;
+            });
+
+            // Use saved width/height from config, or default 6% width x 10% height (passport size)
+            const photoWidthPercent = photoPos?.width ?? 6;
+            const photoHeightPercent = photoPos?.height ?? 10;
+            const photoWidth = (photoWidthPercent / 100) * baseWidth;
+            const photoHeight = (photoHeightPercent / 100) * baseHeight;
+
+            // Positions in the layout designer are CENTER-based, so draw image centered.
+            const drawX = pos.x - photoWidth / 2;
+            const drawY = pos.y - photoHeight / 2;
+            ctx.drawImage(photoImg, drawX, drawY, photoWidth, photoHeight);
+          }
+        } catch (e) {
+          if (import.meta.env.DEV) {
+            console.warn('[GraduationCertificatePdfGenerator] Failed to render student photo:', e);
+          }
+        }
+      }
+    }
+
+    // QR Code
+    if (layout.enabledFields?.includes('qrCode')) {
+      const qrPos = layout.qrCodePosition;
+      const pos = getPixelPosition(qrPos, baseWidth - 150, baseHeight / 2);
+      if (pos) {
+        // Use default 12% x 12% if width/height not specified
+        // QR codes should always be square - use the smaller dimension to prevent stretching
+        const qrWidth = qrPos?.width ? (qrPos.width / 100) * baseWidth : (12 / 100) * baseWidth;
+        const qrHeight = qrPos?.height ? (qrPos.height / 100) * baseHeight : (12 / 100) * baseHeight;
+        const qrSizePx = Math.round(Math.min(qrWidth, qrHeight));
+
+        // Determine QR code value based on config
+        const source = layout.qrCodeValueSource || 'verification_url';
+        const qrValue =
+          source === 'student_id'
+            ? data.student?.id || ''
+            : source === 'certificate_number'
+              ? data.certificate.certificate_no
+              : data.verification_url;
+
+        try {
+          const qrDataUrl = await generateQrCodeDataUrl(qrValue, qrSizePx);
+          const qrImg = new Image();
+          await new Promise((resolve, reject) => {
+            qrImg.onload = () => resolve(null);
+            qrImg.onerror = reject;
+            qrImg.src = qrDataUrl;
+          });
+
+          // Center-based draw - Use square size for QR code to prevent stretching
+          const drawX = pos.x - qrSizePx / 2;
+          const drawY = pos.y - qrSizePx / 2;
+          ctx.drawImage(qrImg, drawX, drawY, qrSizePx, qrSizePx);
+        } catch (e) {
+          if (import.meta.env.DEV) {
+            console.warn('[GraduationCertificatePdfGenerator] Failed to render QR code:', e);
+          }
+        }
+      }
+    }
+
+    if (mimeType === 'image/png') {
+      return canvas.toDataURL('image/png');
+    }
+    return canvas.toDataURL('image/jpeg', quality);
+  };
+
   // Load certificate data when dialog opens
   useEffect(() => {
     if (isOpen && certificateId) {
       setIsLoadingData(true);
-      // Pass school_id as query parameter (backend will auto-select from certificate if not provided)
       issuedCertificatesApi.getCertificateData(certificateId, schoolId || undefined)
         .then((data) => {
           setCertificateData(data as GraduationCertificateData);
         })
         .catch((error) => {
           console.error('[GraduationCertificatePdfGenerator] Failed to load certificate data:', error);
-          // If error is about school selection, it will be handled by the backend
         })
         .finally(() => {
           setIsLoadingData(false);
@@ -374,19 +698,16 @@ export function GraduationCertificatePdfGenerator({
   // Auto-select template based on school_id when dialog opens or templates/schoolId changes
   useEffect(() => {
     if (isOpen && templates.length > 0 && schoolId) {
-      // Find template assigned to this school
       const schoolTemplate = templates.find((t) => t.school_id === schoolId);
       if (schoolTemplate && schoolTemplate.id !== selectedTemplateId) {
         setSelectedTemplateId(schoolTemplate.id);
       } else if (!schoolTemplate && selectedTemplateId === '') {
-        // If no school-specific template, try to use first active template
         const activeTemplate = templates.find((t) => t.is_active);
         if (activeTemplate) {
           setSelectedTemplateId(activeTemplate.id);
         }
       }
     } else if (isOpen && templates.length > 0 && !schoolId && selectedTemplateId === '') {
-      // If no schoolId provided, use first active template
       const activeTemplate = templates.find((t) => t.is_active);
       if (activeTemplate) {
         setSelectedTemplateId(activeTemplate.id);
@@ -408,86 +729,156 @@ export function GraduationCertificatePdfGenerator({
         const urlObj = new URL(url);
         endpoint = urlObj.pathname;
       }
-      
+
       if (endpoint.startsWith('/api')) {
         endpoint = endpoint.replace('/api', '');
       }
-      
-      if (import.meta.env.DEV) {
-        console.log('[GraduationCertificatePdfGenerator] Fetching background image from endpoint:', endpoint);
+
+      // For student pictures, fetch directly with authentication
+      if (endpoint.includes('/students/') && endpoint.includes('/picture')) {
+        const token = apiClient.getToken();
+        const fullUrl = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+        const response = await fetch(`/api${fullUrl}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'image/*',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          return null;
+        }
+
+        const blob = await response.blob();
+        if (!blob.type.startsWith('image/')) {
+          return null;
+        }
+
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const result = reader.result as string;
+            if (result && result.match(/^data:image\/(png|jpeg|jpg|gif|webp);base64,/)) {
+              resolve(result);
+            } else {
+              reject(new Error('Invalid image data URL'));
+            }
+          };
+          reader.onerror = () => reject(new Error('Failed to read image'));
+          reader.readAsDataURL(blob);
+        });
+      } else {
+        // For background images, use API client's requestFile method
+        const { blob } = await apiClient.requestFile(endpoint, { method: 'GET' });
+
+        if (!blob.type.startsWith('image/')) {
+          return null;
+        }
+
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const result = reader.result as string;
+            if (result && result.match(/^data:image\/(png|jpeg|jpg|gif|webp);base64,/)) {
+              resolve(result);
+            } else {
+              reject(new Error('Invalid image data URL'));
+            }
+          };
+          reader.onerror = () => reject(new Error('Failed to read image'));
+          reader.readAsDataURL(blob);
+        });
       }
-
-      // Use apiClient.requestFile directly since certificateTemplatesV2Api doesn't have getBackgroundImage
-      const { blob } = await apiClient.requestFile(endpoint, { method: 'GET' });
-
-      if (!blob.type.startsWith('image/')) {
-        console.warn('[GraduationCertificatePdfGenerator] Invalid image type:', blob.type);
-        return null;
-      }
-
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          if (result && result.match(/^data:image\/(png|jpeg|jpg|gif|webp);base64,/)) {
-            resolve(result);
-          } else {
-            reject(new Error('Invalid image data URL'));
-          }
-        };
-        reader.onerror = () => reject(new Error('Failed to read image'));
-        reader.readAsDataURL(blob);
-      });
     } catch (error) {
       console.error('[GraduationCertificatePdfGenerator] Error converting image to base64:', error);
       return null;
     }
   };
 
+  // Helper to convert data URL to Blob (for downloading images)
+  const dataURLtoBlob = async (dataUrl: string): Promise<Blob> => {
+    const arr = dataUrl.split(',');
+    if (arr.length !== 2) {
+      throw new Error('Invalid data URL format');
+    }
+
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+
+    return new Blob([u8arr], { type: mimeType });
+  };
+
+  // QR Code generation (data URL). Uses an external QR service for simplicity.
+  const generateQrCodeDataUrl = async (value: string, sizePx: number): Promise<string> => {
+    const safeValue = String(value ?? '').trim();
+    if (!safeValue) {
+      throw new Error('QR value is empty');
+    }
+    const size = Math.max(64, Math.min(600, Math.round(sizePx)));
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(safeValue)}`;
+    const response = await fetch(qrUrl);
+    if (!response.ok) {
+      throw new Error('Failed to generate QR code');
+    }
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
   const handleGeneratePdf = async (download: boolean = true) => {
-    if (!selectedTemplateId || !certificateData) return;
+    if (!selectedTemplateId || !certificateData || !selectedTemplate) return;
 
     setIsGenerating(true);
-    
+
     let backgroundImageBase64: string | null = null;
-    
+
     try {
       // Convert background image URL to base64 if available
       const backgroundUrl = certificateData.background_url;
-      
+
       if (backgroundUrl) {
         if (import.meta.env.DEV) {
           console.log('[GraduationCertificatePdfGenerator] Loading background image from:', backgroundUrl);
         }
         backgroundImageBase64 = await convertImageToBase64(backgroundUrl);
-        if (backgroundImageBase64) {
-          if (import.meta.env.DEV) {
-            console.log('[GraduationCertificatePdfGenerator] Background image loaded successfully');
-          }
-        } else {
-          console.warn('[GraduationCertificatePdfGenerator] Failed to load background image');
-        }
-      } else {
-        if (import.meta.env.DEV) {
-          console.log('[GraduationCertificatePdfGenerator] No background URL available');
-        }
       }
 
-      // Try to load custom fonts for Pashto/Arabic support
-      try {
-        await Promise.race([
-          loadCustomFonts(),
-          new Promise(resolve => setTimeout(resolve, 3000)), // Max 3 second wait
-        ]);
-      } catch (error) {
-        if (import.meta.env.DEV) {
-          console.warn('[GraduationCertificatePdfGenerator] Font loading timed out or failed, using Roboto');
-        }
-        fontsLoaded = false;
-      }
+      // Build a PDF from the same Canvas render used for image preview.
+      // This makes PDF match layout preview EXACTLY and fixes RTL ordering/shaping issues.
+      const certificateImageDataUrl = await renderCertificateToDataUrl(
+        certificateData,
+        selectedTemplate,
+        backgroundImageBase64,
+        { scale: 2, mimeType: 'image/jpeg', quality: 0.95 }
+      );
 
-      // Build PDF document definition with base64 image
-      const docDefinition = await buildPdfDocument(certificateData, selectedTemplate!, backgroundImageBase64);
+      const docDefinition = {
+        pageSize: 'A4',
+        pageOrientation: 'landscape' as const,
+        pageMargins: [0, 0, 0, 0],
+        content: [
+          {
+            image: certificateImageDataUrl,
+            width: 842, // A4 landscape width in points (approx)
+            height: 595, // A4 landscape height in points (approx)
+            absolutePosition: { x: 0, y: 0 },
+          },
+        ],
+      };
 
       // Get the actual pdfMake instance
       const pdfMakeInstance = getPdfMakeInstance() || pdfMake;
@@ -502,7 +893,7 @@ export function GraduationCertificatePdfGenerator({
         );
       } else {
         // Preview
-        pdfMakeInstance.createPdf(docDefinition).getBlob((blob) => {
+        pdfMakeInstance.createPdf(docDefinition).getBlob((blob: Blob) => {
           const url = URL.createObjectURL(blob);
           setPreviewUrl(url);
         }, (error: Error) => {
@@ -512,520 +903,97 @@ export function GraduationCertificatePdfGenerator({
       }
     } catch (error) {
       console.error('[GraduationCertificatePdfGenerator] Failed to generate PDF:', error);
-      
-      // If it's a font error, try again with Roboto only
-      if (error instanceof Error && (error.message.includes('font') || error.message.includes('Font'))) {
-        console.warn('[GraduationCertificatePdfGenerator] Font error - retrying with Roboto only');
-        
-        try {
-          fontsLoaded = false;
-          
-          if (!backgroundImageBase64) {
-            const backgroundUrl = certificateData.background_url;
-            if (backgroundUrl) {
-              backgroundImageBase64 = await convertImageToBase64(backgroundUrl);
-            }
-          }
-          
-          const docDefinition = await buildPdfDocument(certificateData, selectedTemplate!, backgroundImageBase64);
-          
-          // Get the actual pdfMake instance
-          const pdfMakeInstance = getPdfMakeInstance() || pdfMake;
-          if (!pdfMakeInstance || typeof pdfMakeInstance.createPdf !== 'function') {
-            throw new Error('pdfMake.createPdf is not available in retry.');
-          }
-          
-          if (download) {
-            pdfMakeInstance.createPdf(docDefinition).download(
-              `certificate-${certificateData.certificate.certificate_no || certificateId}.pdf`
-            );
-          } else {
-            pdfMakeInstance.createPdf(docDefinition).getBlob((blob) => {
-              const url = URL.createObjectURL(blob);
-              setPreviewUrl(url);
-            }, (error: Error) => {
-              console.error('[GraduationCertificatePdfGenerator] PDF generation error:', error);
-              throw error;
-            });
-          }
-        } catch (retryError) {
-          console.error('[GraduationCertificatePdfGenerator] Retry also failed:', retryError);
-          throw retryError;
-        }
-      } else {
-        throw error;
-      }
+      throw error;
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const buildPdfDocument = async (
-    data: GraduationCertificateData,
-    template: GraduationCertificateTemplate,
-    backgroundImageBase64: string | null = null
-  ) => {
-    if (!data) return { content: [] };
+  const handleDownloadImage = async () => {
+    if (!selectedTemplateId || !certificateData || !selectedTemplate) return;
 
-    const layout = template.layout_config || {};
-    const isRtl = layout.rtl !== false; // Default to RTL for Pashto/Arabic
-    
-    const normalizeText = (text: string): string => {
-      if (!text) return '';
-      return String(text).trim().normalize('NFC');
-    };
+    setIsGenerating(true);
+    try {
+      // Convert background image URL to base64 if available
+      let backgroundImageBase64: string | null = null;
+      const backgroundUrl = certificateData.background_url;
 
-    // Get the actual pdfMake instance for font checks
-    const pdfMakeInstance = getPdfMakeInstance() || pdfMake;
-    
-    let defaultFontFamily = 'Roboto';
-    if (isRtl && fontsLoaded && (pdfMakeInstance as any).fonts?.['BahijNassim']) {
-      defaultFontFamily = 'BahijNassim';
-    } else if (layout.fontFamily && ((pdfMakeInstance as any).fonts?.[layout.fontFamily] || (pdfMakeInstance as any).fonts?.['Arial'])) {
-      defaultFontFamily = layout.fontFamily;
+      if (backgroundUrl) {
+        backgroundImageBase64 = await convertImageToBase64(backgroundUrl);
+      }
+
+      // Generate and download image using the SAME renderer as PDF (ensures perfect match)
+      const dataUrl = await renderCertificateToDataUrl(
+        certificateData,
+        selectedTemplate,
+        backgroundImageBase64,
+        { scale: 1, mimeType: 'image/jpeg', quality: 0.95 }
+      );
+
+      // Convert data URI directly to blob (can't fetch data URIs due to CSP)
+      const blob = await dataURLtoBlob(dataUrl);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `certificate-${certificateData.certificate.certificate_no || certificateId}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to generate image:', error);
+    } finally {
+      setIsGenerating(false);
     }
-    
-    const baseFontSize = layout.fontSize || 24;
-    
-    const getFieldFont = (fieldId: string, defaultMultiplier: number) => {
-      const fieldFont = layout.fieldFonts?.[fieldId];
-      const fieldFontSize = fieldFont?.fontSize !== undefined 
-        ? fieldFont.fontSize 
-        : baseFontSize * defaultMultiplier;
-      
-      let fieldFontFamily = defaultFontFamily;
-      if (fieldFont?.fontFamily) {
-        const requestedFont = fieldFont.fontFamily;
-        if ((pdfMakeInstance as any).fonts?.[requestedFont]) {
-          fieldFontFamily = requestedFont;
-        } else if (requestedFont === 'Bahij Nassim' && (pdfMakeInstance as any).fonts?.['BahijNassim']) {
-          fieldFontFamily = 'BahijNassim';
-        } else if ((pdfMakeInstance as any).fonts?.['Roboto']) {
-          fieldFontFamily = 'Roboto';
-        }
+  };
+
+  const handlePrint = async () => {
+    if (!selectedTemplateId || !certificateData || !selectedTemplate) return;
+
+    setIsGenerating(true);
+    try {
+      // Convert background image URL to base64 if available
+      let backgroundImageBase64: string | null = null;
+      const backgroundUrl = certificateData.background_url;
+
+      if (backgroundUrl) {
+        backgroundImageBase64 = await convertImageToBase64(backgroundUrl);
       }
-      
-      return { fontSize: fieldFontSize, fontFamily: fieldFontFamily };
-    };
 
-    const content: any[] = [];
+      // Generate image for printing
+      const dataUrl = await renderCertificateToDataUrl(
+        certificateData,
+        selectedTemplate,
+        backgroundImageBase64,
+        { scale: 2, mimeType: 'image/jpeg', quality: 0.95 }
+      );
 
-    const pageWidth = 842;
-    const pageHeight = 595;
-
-    // Add background image
-    if (backgroundImageBase64) {
-      content.push({
-        image: backgroundImageBase64,
-        width: pageWidth,
-        height: pageHeight,
-        absolutePosition: { x: 0, y: 0 },
-        zIndex: 0,
-      });
+      // Open print dialog with the image
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Print Certificate</title>
+            <style>
+              @page { size: A4 landscape; margin: 0; }
+              body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+              img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+            </style>
+          </head>
+          <body>
+            <img src="${dataUrl}" alt="Certificate" onload="window.print(); window.close();" />
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
+    } catch (error) {
+      console.error('Failed to print certificate:', error);
+    } finally {
+      setIsGenerating(false);
     }
-
-    const getPosition = (position?: { x: number; y: number }, defaultX?: number, defaultY?: number, fontSize?: number) => {
-      if (position) {
-        const x = (position.x / 100) * pageWidth;
-        const lineHeight = fontSize ? fontSize * 1.2 : 0;
-        const y = (position.y / 100) * pageHeight - (lineHeight / 2);
-        return { x, y };
-      }
-      if (defaultX !== undefined && defaultY !== undefined) {
-        const lineHeight = fontSize ? fontSize * 1.2 : 0;
-        return { x: defaultX, y: defaultY - (lineHeight / 2) };
-      }
-      return null;
-    };
-
-    // Header
-    if (layout.enabledFields?.includes('header')) {
-      const fieldFont = getFieldFont('header', 1.5);
-      const headerPos = getPosition(layout.headerPosition, pageWidth / 2, 120, fieldFont.fontSize);
-      if (headerPos) {
-        const headerText = layout.headerText || 'Graduation Certificate';
-        content.push({
-          text: normalizeText(headerText),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: layout.textColor || '#1a365d',
-          absolutePosition: headerPos,
-          alignment: 'center',
-        });
-      }
-    }
-
-    // Student name
-    if (layout.enabledFields?.includes('studentName') && data.student) {
-      const fieldFont = getFieldFont('studentName', 1.17);
-      const studentNamePos = getPosition(layout.studentNamePosition, pageWidth / 2, 300, fieldFont.fontSize);
-      if (studentNamePos) {
-        content.push({
-          text: normalizeText(data.student.full_name),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: layout.textColor || '#2d3748',
-          absolutePosition: studentNamePos,
-          alignment: 'center',
-        });
-      }
-    }
-
-    // Father name
-    if (layout.enabledFields?.includes('fatherName') && data.student?.father_name) {
-      const fieldFont = getFieldFont('fatherName', 1.0);
-      const fatherNamePos = getPosition(layout.fatherNamePosition, pageWidth / 2, 360, fieldFont.fontSize);
-      if (fatherNamePos) {
-        content.push({
-          text: normalizeText(data.student.father_name),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: '#4a5568',
-          absolutePosition: fatherNamePos,
-          alignment: 'center',
-        });
-      }
-    }
-
-    // Grandfather name
-    if (layout.enabledFields?.includes('grandfatherName') && data.student?.grandfather_name) {
-      const fieldFont = getFieldFont('grandfatherName', 0.9);
-      const grandfatherNamePos = getPosition(layout.grandfatherNamePosition, pageWidth / 2, 380, fieldFont.fontSize);
-      if (grandfatherNamePos) {
-        content.push({
-          text: normalizeText(data.student.grandfather_name),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: '#4a5568',
-          absolutePosition: grandfatherNamePos,
-          alignment: 'center',
-        });
-      }
-    }
-
-    // Mother name
-    if (layout.enabledFields?.includes('motherName') && data.student?.mother_name) {
-      const fieldFont = getFieldFont('motherName', 0.9);
-      const motherNamePos = getPosition(layout.motherNamePosition, pageWidth / 2, 400, fieldFont.fontSize);
-      if (motherNamePos) {
-        content.push({
-          text: normalizeText(data.student.mother_name),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: '#4a5568',
-          absolutePosition: motherNamePos,
-          alignment: 'center',
-        });
-      }
-    }
-
-    // Class name
-    if (layout.enabledFields?.includes('className') && data.class) {
-      const fieldFont = getFieldFont('className', 1.0);
-      const classNamePos = getPosition(layout.classNamePosition, pageWidth / 2, 480, fieldFont.fontSize);
-      if (classNamePos) {
-        const classNameText = layout.classNameText 
-          ? `${layout.classNameText} ${data.class.name}`
-          : data.class.name;
-        content.push({
-          text: normalizeText(classNameText),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: layout.textColor || '#1a365d',
-          absolutePosition: classNamePos,
-          alignment: 'center',
-        });
-      }
-    }
-
-    // School name
-    if (layout.enabledFields?.includes('schoolName') && data.school) {
-      const fieldFont = getFieldFont('schoolName', 0.83);
-      const schoolNamePos = getPosition(layout.schoolNamePosition, pageWidth / 2, 500, fieldFont.fontSize);
-      if (schoolNamePos) {
-        content.push({
-          text: normalizeText(data.school.school_name),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: layout.textColor || '#1a365d',
-          absolutePosition: schoolNamePos,
-          alignment: 'center',
-        });
-      }
-    }
-
-    // Academic year
-    if (layout.enabledFields?.includes('academicYear') && data.academicYear) {
-      const fieldFont = getFieldFont('academicYear', 0.75);
-      const academicYearPos = getPosition(layout.academicYearPosition, pageWidth / 2, 520, fieldFont.fontSize);
-      if (academicYearPos) {
-        content.push({
-          text: normalizeText(data.academicYear.name),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: layout.textColor || '#1a365d',
-          absolutePosition: academicYearPos,
-          alignment: 'center',
-        });
-      }
-    }
-
-    // Graduation date
-    if (layout.enabledFields?.includes('graduationDate') && data.batch?.graduation_date) {
-      const fieldFont = getFieldFont('graduationDate', 0.58);
-      const graduationDatePos = getPosition(layout.graduationDatePosition, pageWidth / 2, 540, fieldFont.fontSize);
-      if (graduationDatePos) {
-        const dateLabel = layout.graduationDateText || 'Date:';
-        const formattedDate = formatDate(data.batch.graduation_date);
-        const dateText = `${dateLabel} ${formattedDate}`;
-        content.push({
-          text: normalizeText(dateText),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: '#4a5568',
-          absolutePosition: graduationDatePos,
-          alignment: isRtl ? 'left' : 'right',
-        });
-      }
-    }
-
-    // Certificate number
-    if (layout.enabledFields?.includes('certificateNumber')) {
-      const fieldFont = getFieldFont('certificateNumber', 0.5);
-      const certNumberPos = getPosition(layout.certificateNumberPosition, 100, pageHeight - 100, fieldFont.fontSize);
-      if (certNumberPos) {
-        const certText = `Certificate No: ${data.certificate.certificate_no || 'N/A'}`;
-        content.push({
-          text: normalizeText(certText),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: '#4a5568',
-          absolutePosition: certNumberPos,
-          alignment: isRtl ? 'right' : 'left',
-        });
-      }
-    }
-
-    // Position
-    if (layout.enabledFields?.includes('position') && data.position) {
-      const fieldFont = getFieldFont('position', 0.58);
-      const positionPos = getPosition(layout.positionPosition, pageWidth - 100, pageHeight - 120, fieldFont.fontSize);
-      if (positionPos) {
-        content.push({
-          text: normalizeText(`Position: ${data.position}`),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: '#4a5568',
-          absolutePosition: positionPos,
-          alignment: isRtl ? 'left' : 'right',
-        });
-      }
-    }
-
-    // Province
-    if (layout.enabledFields?.includes('province') && data.student?.curr_province) {
-      const fieldFont = getFieldFont('province', 0.8);
-      const provincePos = getPosition(layout.provincePosition, pageWidth / 2, 520, fieldFont.fontSize);
-      if (provincePos) {
-        content.push({
-          text: normalizeText(`Province: ${data.student.curr_province}`),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: '#4a5568',
-          absolutePosition: provincePos,
-          alignment: 'center',
-        });
-      }
-    }
-
-    // District
-    if (layout.enabledFields?.includes('district') && data.student?.curr_district) {
-      const fieldFont = getFieldFont('district', 0.8);
-      const districtPos = getPosition(layout.districtPosition, pageWidth / 2, 540, fieldFont.fontSize);
-      if (districtPos) {
-        content.push({
-          text: normalizeText(`District: ${data.student.curr_district}`),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: '#4a5568',
-          absolutePosition: districtPos,
-          alignment: 'center',
-        });
-      }
-    }
-
-    // Village
-    if (layout.enabledFields?.includes('village') && data.student?.curr_village) {
-      const fieldFont = getFieldFont('village', 0.8);
-      const villagePos = getPosition(layout.villagePosition, pageWidth / 2, 560, fieldFont.fontSize);
-      if (villagePos) {
-        content.push({
-          text: normalizeText(`Village: ${data.student.curr_village}`),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: '#4a5568',
-          absolutePosition: villagePos,
-          alignment: 'center',
-        });
-      }
-    }
-
-    // Nationality
-    if (layout.enabledFields?.includes('nationality') && data.student?.nationality) {
-      const fieldFont = getFieldFont('nationality', 0.8);
-      const nationalityPos = getPosition(layout.nationalityPosition, pageWidth / 2, 580, fieldFont.fontSize);
-      if (nationalityPos) {
-        content.push({
-          text: normalizeText(`Nationality: ${data.student.nationality}`),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: '#4a5568',
-          absolutePosition: nationalityPos,
-          alignment: 'center',
-        });
-      }
-    }
-
-    // Guardian Name
-    if (layout.enabledFields?.includes('guardianName') && data.student?.guardian_name) {
-      const fieldFont = getFieldFont('guardianName', 0.8);
-      const guardianNamePos = getPosition(layout.guardianNamePosition, pageWidth / 2, 600, fieldFont.fontSize);
-      if (guardianNamePos) {
-        content.push({
-          text: normalizeText(`Guardian: ${data.student.guardian_name}`),
-          fontSize: fieldFont.fontSize,
-          font: fieldFont.fontFamily,
-          bold: true,
-          color: '#4a5568',
-          absolutePosition: guardianNamePos,
-          alignment: 'center',
-        });
-      }
-    }
-
-    // Student Photo
-    if (layout.enabledFields?.includes('studentPhoto') && data.student?.picture_path) {
-      const photoPos = layout.studentPhotoPosition;
-      if (photoPos) {
-        try {
-          const photoBase64 = await convertImageToBase64(`/api/students/${data.student.id}/picture`);
-          if (photoBase64) {
-            const photoWidth = photoPos.width ? (photoPos.width / 100) * pageWidth : 100;
-            const photoHeight = photoPos.height ? (photoPos.height / 100) * pageHeight : 100;
-            const photoX = (photoPos.x / 100) * pageWidth;
-            const photoY = (photoPos.y / 100) * pageHeight;
-            
-            content.push({
-              image: photoBase64,
-              width: photoWidth,
-              height: photoHeight,
-              absolutePosition: { x: photoX, y: photoY },
-            });
-          }
-        } catch (error) {
-          console.warn('[GraduationCertificatePdfGenerator] Failed to load student photo:', error);
-        }
-      }
-    }
-
-    // QR Code
-    if (layout.enabledFields?.includes('qrCode') && data.qr_code) {
-      const qrPos = layout.qrCodePosition;
-      if (qrPos) {
-        try {
-          const qrWidth = qrPos.width ? (qrPos.width / 100) * pageWidth : 120;
-          const qrHeight = qrPos.height ? (qrPos.height / 100) * pageHeight : 120;
-          const qrX = (qrPos.x / 100) * pageWidth;
-          const qrY = (qrPos.y / 100) * pageHeight;
-          
-          content.push({
-            image: data.qr_code,
-            width: qrWidth,
-            height: qrHeight,
-            absolutePosition: { x: qrX, y: qrY },
-          });
-        } catch (error) {
-          console.warn('[GraduationCertificatePdfGenerator] Failed to load QR code:', error);
-        }
-      }
-    }
-
-    // Signature lines
-    content.push({
-      columns: [
-        {
-          stack: [
-            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 1 }] },
-            { text: 'Director Signature', style: 'signatureLabel', margin: [0, 5, 0, 0] },
-          ],
-          width: 'auto',
-        },
-        { text: '', width: '*' },
-        {
-          stack: [
-            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 1 }] },
-            { text: 'Official Seal', style: 'signatureLabel', margin: [0, 5, 0, 0] },
-          ],
-          width: 'auto',
-        },
-      ],
-      margin: [50, 60, 50, 0],
-    });
-
-    return {
-      pageSize: 'A4',
-      pageOrientation: 'landscape' as const,
-      pageMargins: [0, 0, 0, 0],
-      ...(isRtl && { direction: 'rtl' }),
-      content,
-      styles: {
-        header: {
-          fontSize: 36,
-          bold: true,
-          color: layout.textColor || '#1a365d',
-        },
-        subtext: {
-          fontSize: 16,
-          color: '#4a5568',
-        },
-        studentName: {
-          fontSize: 28,
-          bold: true,
-          color: layout.textColor || '#2d3748',
-        },
-        details: {
-          fontSize: 14,
-          color: '#718096',
-        },
-        footer: {
-          fontSize: 12,
-          color: '#4a5568',
-        },
-        signatureLabel: {
-          fontSize: 10,
-          color: '#718096',
-          alignment: 'center',
-        },
-      },
-      defaultStyle: {
-        font: defaultFontFamily,
-      },
-    };
   };
 
   const handleClose = () => {
@@ -1136,7 +1104,7 @@ export function GraduationCertificatePdfGenerator({
           )}
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 flex-wrap">
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
@@ -1151,6 +1119,30 @@ export function GraduationCertificatePdfGenerator({
               <Eye className="h-4 w-4 mr-2" />
             )}
             Preview
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleDownloadImage}
+            disabled={!selectedTemplateId || isGenerating || isLoadingData}
+          >
+            {isGenerating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <ImageIcon className="h-4 w-4 mr-2" />
+            )}
+            Image
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handlePrint}
+            disabled={!selectedTemplateId || isGenerating || isLoadingData}
+          >
+            {isGenerating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Printer className="h-4 w-4 mr-2" />
+            )}
+            Print
           </Button>
           <Button
             onClick={() => handleGeneratePdf(true)}
@@ -1168,4 +1160,3 @@ export function GraduationCertificatePdfGenerator({
     </Dialog>
   );
 }
-
