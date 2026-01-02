@@ -209,8 +209,8 @@ export default function EventUsersPage() {
       const data = response as {
         all_permissions: string[];
       };
-      // Filter to only events.read
-      const userEventPermissions = (data.all_permissions || []).filter(p => p === 'events.read');
+      const allowedPermissions = new Set(eventPermissions.map((perm) => perm.name));
+      const userEventPermissions = (data.all_permissions || []).filter((perm) => allowedPermissions.has(perm));
       setEditFormData(prev => ({
         ...prev,
         permissions: userEventPermissions,

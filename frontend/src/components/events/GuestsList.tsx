@@ -729,34 +729,22 @@ function GuestPhotoAvatar({ guestId, guestName }: { guestId: string; guestName: 
     const fetchPhoto = async () => {
       try {
         const { apiClient } = await import('@/lib/api/client');
-        const token = apiClient.getToken();
-        const url = `/api/guests/${guestId}/photo`;
-        
-        const response = await fetch(url, {
+        const { blob } = await apiClient.requestFile(`/guests/${guestId}/photo`, {
           method: 'GET',
-          headers: {
-            'Accept': 'image/*',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-          },
-          credentials: 'include',
+          headers: { Accept: 'image/*' },
         });
-        
-        if (response.ok) {
-          const blob = await response.blob();
-          const blobUrl = URL.createObjectURL(blob);
-          currentBlobUrl = blobUrl;
-          setPhotoUrl(blobUrl);
-        } else if (response.status === 404) {
-          setPhotoUrl(null);
-        }
-      } catch (error) {
-        if (import.meta.env.DEV) {
+        const blobUrl = URL.createObjectURL(blob);
+        currentBlobUrl = blobUrl;
+        setPhotoUrl(blobUrl);
+      } catch (error: any) {
+        const status = error?.status;
+        if (status !== 404 && import.meta.env.DEV) {
           console.error('Error fetching guest photo:', error);
         }
         setPhotoUrl(null);
       }
     };
-    
+
     fetchPhoto();
     
     return () => {

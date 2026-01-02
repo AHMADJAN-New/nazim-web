@@ -4765,6 +4765,38 @@ export function PlatformAdminRoute({ children }: PlatformAdminRouteProps) {
 }
 ```
 
+#### Platform Admin Route Registration (React Router v6)
+
+**CRITICAL: Define platform routes as nested `<Route path="/platform">` with an `<Outlet />`. Do NOT place a `<Routes>` inside a `<Route>` element.**
+
+✅ Correct pattern (in `frontend/src/App.tsx`):
+```tsx
+<Route path="/platform" element={
+  <PlatformAdminRoute>
+    <PlatformAdminLayout>
+      <Outlet />
+    </PlatformAdminLayout>
+  </PlatformAdminRoute>
+}>
+  <Route index element={<Navigate to="dashboard" replace />} />
+  <Route path="dashboard" element={<PlatformAdminDashboard />} />
+  <Route path="maintenance-history" element={<MaintenanceHistory />} />
+</Route>
+```
+
+❌ Wrong pattern (causes empty routes / no matches):
+```tsx
+<Route path="/platform/*" element={
+  <PlatformAdminRoute>
+    <PlatformAdminLayout>
+      <Routes>
+        <Route path="/maintenance-history" element={<MaintenanceHistory />} />
+      </Routes>
+    </PlatformAdminLayout>
+  </PlatformAdminRoute>
+} />
+```
+
 #### Platform Admin Hooks Pattern
 
 **CRITICAL: Platform admin hooks do NOT require organization_id.**
@@ -4993,6 +5025,7 @@ Before creating or modifying platform admin features, verify:
 - Require `organization_id` in platform admin queries
 - Use `EnsureOrganizationAccess` middleware for platform routes
 - Use `ProtectedRoute` component for platform routes
+- Nest `<Routes>` inside a `<Route>` element for platform routes (breaks route matching)
 
 ✅ **DO:**
 - Use global `subscription.admin` permission (organization_id = NULL)
@@ -5002,5 +5035,6 @@ Before creating or modifying platform admin features, verify:
 - Use `platform.admin` middleware for platform routes
 - Use `PlatformAdminRoute` component for platform routes
 - Access ALL organizations (no filtering)
+- Register platform routes as nested routes under `/platform` with `<Outlet />`
 
 Remember: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your code. Always use translations for user-facing text, and ensure RTL support is properly implemented. The backend is now Laravel, so follow Laravel conventions and best practices.

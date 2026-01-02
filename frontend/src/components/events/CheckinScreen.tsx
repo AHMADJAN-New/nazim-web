@@ -213,25 +213,17 @@ export function CheckinScreen({ eventId, onBack }: CheckinScreenProps) {
         if (response.guest.id) {
           try {
             const { apiClient } = await import('@/lib/api/client');
-            const token = apiClient.getToken();
-            const url = `/api/guests/${response.guest.id}/photo`;
-
-            const photoResponse = await fetch(url, {
+            const { blob } = await apiClient.requestFile(`/guests/${response.guest.id}/photo`, {
               method: 'GET',
-              headers: {
-                Accept: 'image/*',
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-              },
-              credentials: 'include',
+              headers: { Accept: 'image/*' },
             });
-
-            if (photoResponse.ok) {
-              const blob = await photoResponse.blob();
-              const blobUrl = URL.createObjectURL(blob);
-              setPreviewGuestPhotoUrl(blobUrl);
+            const blobUrl = URL.createObjectURL(blob);
+            setPreviewGuestPhotoUrl(blobUrl);
+          } catch (error: any) {
+            const status = error?.status;
+            if (status !== 404 && import.meta.env.DEV) {
+              console.error('Error fetching guest photo:', error);
             }
-          } catch (error) {
-            if (import.meta.env.DEV) console.error('Error fetching guest photo:', error);
           }
         }
       } else {

@@ -72,6 +72,13 @@ import { usePlatformAdminPermissions } from "@/platform/hooks/usePlatformAdminPe
 import { useSubscriptionPlans, type SubscriptionPlan } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
 
+// Languages configuration with flags and native names
+const languages = [
+  { code: 'en' as const, flag: '🇬🇧', nativeName: 'English' },
+  { code: 'ps' as const, flag: '🇦🇫', nativeName: 'پښتو' },
+  { code: 'fa' as const, flag: '🇮🇷', nativeName: 'فارسی' },
+  { code: 'ar' as const, flag: '🇸🇦', nativeName: 'العربية' },
+];
 
 const Index = () => {
   const { t, language, setLanguage } = useLanguage();
@@ -589,7 +596,6 @@ const Index = () => {
           <div className="max-w-4xl mx-auto text-center">
             <Badge variant="secondary" className="mb-6">
               {t('landing.hero.badge') || '🚀 Trusted by 500+ Schools Worldwide'}
-              Trusted by 500+ Schools Worldwide
             </Badge>
 
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
@@ -1328,19 +1334,22 @@ const Index = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="secondary" className="text-lg px-8 py-6" asChild>
-              <Link to="/auth">
+            <Button size="lg" className="text-lg px-8 py-6 bg-white text-primary hover:bg-primary-foreground/10 border-2 border-white font-semibold shadow-lg" asChild>
+              <Link to="/auth" className="flex items-center">
                 {t('landing.sections.cta.startFreeTrial') || 'Start Your Free Trial'}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
-              {t('landing.sections.cta.scheduleDemo') || 'Schedule Demo'}
+            <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-2 border-primary-foreground/30 text-primary-foreground bg-primary-foreground/10 hover:bg-primary-foreground hover:text-primary font-semibold shadow-lg backdrop-blur-sm" asChild>
+              <Link to="/auth" className="flex items-center">
+                {t('landing.sections.cta.scheduleDemo') || 'Schedule Demo'}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
             </Button>
           </div>
 
-Claude/fix notification system w0 z hqClaude/fix notification system w0 z hqClaude/fix notification system w0 z hq          <div className="mt-Claude/fix notification system w0 z hqClaude/fix notification system w0 z hqClaude/fix notification system w0 z hq8 text-primary-foreground/60">
-            <p>30-day free trial - Claude/fix notification system w0 z hq credit card required - Setup assistance included</p>
+          <div className="mt-8 text-primary-foreground/60">
+            <p>30-day free trial - No credit card required - Setup assistance included</p>
           </div>
         </div>
       </section>

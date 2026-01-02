@@ -77,7 +77,6 @@ import { cn } from '@/lib/utils';
 import { platformApi } from '@/platform/lib/platformApi';
 import { TestimonialsManagement } from '@/platform/components/TestimonialsManagement';
 import { ContactMessagesManagement } from '@/platform/components/ContactMessagesManagement';
-import { MaintenanceHistoryContent } from './MaintenanceHistory';
 
 // Validation schema for platform user (password optional for updates)
 const platformUserSchema = z.object({
@@ -541,10 +540,6 @@ export default function PlatformSettings() {
           <TabsTrigger value="restore">
             <RotateCcw className="mr-2 h-4 w-4" />
             Restore
-          </TabsTrigger>
-          <TabsTrigger value="maintenance-history">
-            <History className="mr-2 h-4 w-4" />
-            Maintenance History
           </TabsTrigger>
         </TabsList>
 
@@ -1050,9 +1045,6 @@ export default function PlatformSettings() {
         </TabsContent>
 
         {/* Maintenance History Tab */}
-        <TabsContent value="maintenance-history" className="space-y-6">
-          <MaintenanceHistoryContent />
-        </TabsContent>
       </Tabs>
 
       {/* Create/Edit Platform User Dialog */}

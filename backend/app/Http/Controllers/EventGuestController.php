@@ -617,11 +617,35 @@ class EventGuestController extends Controller
             ], 422);
         }
 
+        $filePathname = $file->getPathname();
+        if (!$file->isValid() || empty($filePathname) || !is_readable($filePathname)) {
+            Log::warning("Invalid or unreadable upload", [
+                'guest_id' => $guestId,
+                'is_valid' => $file->isValid(),
+                'pathname' => $filePathname,
+                'error_code' => $file->getError(),
+                'error_message' => $file->getErrorMessage(),
+            ]);
+            return response()->json(['error' => 'Invalid file upload. Please try again.'], 422);
+        }
+
+        $mimeType = null;
+        try {
+            $mimeType = $file->getMimeType();
+        } catch (\Exception $e) {
+            $mimeType = $file->getClientMimeType();
+            Log::warning("Failed to detect MIME type from file", [
+                'guest_id' => $guestId,
+                'error' => $e->getMessage(),
+                'client_mime' => $mimeType,
+            ]);
+        }
+
         Log::info("File received for upload", [
             'guest_id' => $guestId,
             'file_name' => $file->getClientOriginalName(),
             'file_size' => $file->getSize(),
-            'mime_type' => $file->getMimeType(),
+            'mime_type' => $mimeType,
             'extension' => $file->getClientOriginalExtension(),
             'is_valid' => $file->isValid(),
             'error_code' => $file->getError(),
@@ -631,7 +655,7 @@ class EventGuestController extends Controller
         // Check if it's actually an image by reading the file
         $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
         $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
-        $mimeType = $file->getMimeType();
+        $mimeType = $mimeType ?? $file->getClientMimeType();
         $extension = strtolower($file->getClientOriginalExtension());
         
         // Check MIME type and extension

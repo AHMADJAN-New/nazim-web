@@ -140,6 +140,7 @@ class User extends Authenticatable
         // For organization-scoped permissions, use manual query
         // Get permissions via roles (bypasses model_has_permissions)
         // Flow: model_has_roles -> role_has_permissions -> permissions
+        // Allow both organization-specific and global permissions (organization_id = NULL)
         $hasPermission = DB::table('permissions')
             ->join('role_has_permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
             ->join('model_has_roles', function ($join) {
@@ -148,8 +149,16 @@ class User extends Authenticatable
                      ->where('model_has_roles.model_type', '=', 'App\\Models\\User');
             })
             ->where('model_has_roles.organization_id', $teamId)
-            ->where('role_has_permissions.organization_id', $teamId)
-            ->where('permissions.organization_id', $teamId)
+            ->where(function ($query) use ($teamId) {
+                // Allow both organization-specific and global role permissions
+                $query->where('role_has_permissions.organization_id', $teamId)
+                      ->orWhereNull('role_has_permissions.organization_id');
+            })
+            ->where(function ($query) use ($teamId) {
+                // Allow both organization-specific and global permissions
+                $query->where('permissions.organization_id', $teamId)
+                      ->orWhereNull('permissions.organization_id');
+            })
             ->where('permissions.name', $permissionName)
             ->where('permissions.guard_name', $guardName)
             ->exists();
@@ -161,12 +170,18 @@ class User extends Authenticatable
             $modelHasPermissionsTable = $tableNames['model_has_permissions'] ?? 'model_has_permissions';
             $modelMorphKey = $columnNames['model_morph_key'] ?? 'model_id';
 
+            // Check direct user permissions (model_has_permissions)
+            // Allow both organization-specific and global permissions (organization_id = NULL)
             $hasPermission = DB::table($modelHasPermissionsTable)
                 ->join('permissions', $modelHasPermissionsTable . '.permission_id', '=', 'permissions.id')
                 ->where($modelMorphKey, $this->id)
                 ->where($modelHasPermissionsTable . '.model_type', 'App\\Models\\User')
                 ->where($modelHasPermissionsTable . '.organization_id', $teamId)
-                ->where('permissions.organization_id', $teamId)
+                ->where(function ($query) use ($teamId) {
+                    // Allow both organization-specific and global permissions
+                    $query->where('permissions.organization_id', $teamId)
+                          ->orWhereNull('permissions.organization_id');
+                })
                 ->where('permissions.name', $permissionName)
                 ->where('permissions.guard_name', $guardName)
                 ->exists();

@@ -49,7 +49,8 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    host: true, // Allow access from network
+    host: true, // Allow access from network (0.0.0.0)
+    strictPort: false, // Allow port fallback if 5173 is taken
     // Only use HTTPS if certificate files exist (for dev server with camera API on mobile)
     ...(function() {
       const keyPath = path.resolve(__dirname, 'certs/key.pem');
@@ -71,12 +72,18 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         ws: true, // Enable WebSocket proxying
+        timeout: 30000, // 30 second timeout for mobile connections
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, res) => {
             console.log('proxy error', err);
           });
         },
       },
+    },
+    // Increase HMR timeout for mobile connections
+    hmr: {
+      clientPort: 5173,
+      timeout: 20000, // 20 seconds for mobile
     },
   },
 })

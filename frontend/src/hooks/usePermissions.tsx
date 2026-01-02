@@ -590,6 +590,7 @@ function getFeatureKeysForPermission(permissionName: string): string[] {
  * CRITICAL: Always calls useFeatures() unconditionally to follow Rules of Hooks
  */
 export const useHasPermissionAndFeature = (permissionName: string): boolean | undefined => {
+  const { profile } = useAuth();
   const hasPermission = useHasPermission(permissionName);
   const featureKeys = getFeatureKeysForPermission(permissionName);
   
@@ -605,6 +606,10 @@ export const useHasPermissionAndFeature = (permissionName: string): boolean | un
   // If permissions are loading, return undefined
   if (hasPermission === undefined) {
     return undefined;
+  }
+
+  if (profile?.is_event_user) {
+    return hasPermission;
   }
   
   // If features query has an error (e.g., 402 Payment Required), treat as feature not available
@@ -696,6 +701,10 @@ export const useHasAnyPermissionAndFeature = (permissionNames: string[]): boolea
   }
 
   const permissionsSet = new Set(userPermissions);
+
+  if (profile?.is_event_user) {
+    return permissionNames.some((permissionName) => permissionsSet.has(permissionName));
+  }
 
   // First pass: any permission without a feature requirement grants access.
   for (const permissionName of permissionNames) {

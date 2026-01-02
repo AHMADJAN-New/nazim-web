@@ -1,7 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
+import { Navigate } from 'react-router-dom';
 import { useLanguage } from '@/hooks/useLanguage';
 import { platformApi } from '@/platform/lib/platformApi';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
+import { RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
 import {
   Card,
   CardContent,
@@ -40,27 +45,31 @@ interface MaintenanceHistoryItem {
   } | null;
 }
 
-export function MaintenanceHistoryContent() {
+interface MaintenanceHistoryContentProps {
+  maintenanceHistory: MaintenanceHistoryItem[] | undefined;
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => void;
+  isFetching: boolean;
+}
+
+export function MaintenanceHistoryContent({
+  maintenanceHistory,
+  isLoading,
+  error,
+  refetch,
+  isFetching,
+}: MaintenanceHistoryContentProps) {
   const { t } = useLanguage();
 
-  // Fetch maintenance history directly
-  const { data: maintenanceHistory, isLoading, error } = useQuery<MaintenanceHistoryItem[]>({
-    queryKey: ['maintenance-history'],
-    queryFn: async () => {
-      try {
-        const response = await platformApi.maintenance.history();
-        // API returns { success: boolean, data: [...] }
-        return response.data || [];
-      } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error('[MaintenanceHistory] Error fetching maintenance history:', error);
-        }
-        throw error; // Re-throw to let React Query handle it
-      }
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
-  });
+  // Manual refetch handler
+  const handleManualRefetch = async () => {
+    try {
+      await refetch();
+    } catch (err) {
+      // Errors are handled by React Query.
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -94,10 +103,23 @@ export function MaintenanceHistoryContent() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Maintenance Events</CardTitle>
-          <CardDescription>
-            Complete history of all maintenance mode activations and deactivations
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Maintenance Events</CardTitle>
+              <CardDescription>
+                Complete history of all maintenance mode activations and deactivations
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleManualRefetch}
+              disabled={isFetching}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+              {isFetching ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -210,6 +232,44 @@ export function MaintenanceHistoryContent() {
 
 // Keep default export for backward compatibility (if route still exists)
 export default function MaintenanceHistory() {
+  const { data: permissions, isLoading: permissionsLoading } = usePlatformAdminPermissions();
+
+  // Access control - check for platform admin permission (GLOBAL, not organization-scoped)
+  const hasPlatformAdmin = Array.isArray(permissions) && permissions.includes('subscription.admin');
+
+  const canFetch = !permissionsLoading && hasPlatformAdmin;
+
+  const {
+    data: maintenanceHistory,
+    isLoading,
+    error,
+    refetch,
+    isFetching,
+  } = useQuery<MaintenanceHistoryItem[]>({
+    queryKey: ['platform-maintenance-history'],
+    queryFn: async () => {
+      const response = await platformApi.maintenance.history();
+      // API returns { success: boolean, data: [...] }
+      return response.data || [];
+    },
+    enabled: canFetch,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Wait for permissions to load
+  if (permissionsLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!hasPlatformAdmin) {
+    return <Navigate to="/platform/dashboard" replace />;
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div>
@@ -221,7 +281,13 @@ export default function MaintenanceHistory() {
           View all maintenance mode events and their details
         </p>
       </div>
-      <MaintenanceHistoryContent />
+      <MaintenanceHistoryContent
+        maintenanceHistory={maintenanceHistory}
+        isLoading={isLoading}
+        error={error}
+        refetch={refetch}
+        isFetching={isFetching}
+      />
     </div>
   );
 }

@@ -9,6 +9,7 @@ use App\Models\HelpCenterArticleVote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class HelpCenterArticleController extends Controller
 {
@@ -42,6 +43,27 @@ class HelpCenterArticleController extends Controller
             'organization_id' => $organizationId,
             'has_staff_permission' => $hasStaffPermission,
         ];
+    }
+
+    /**
+     * Load relations safely (avoid invalid UUID relation lookups)
+     */
+    private function loadSafeArticleRelations(HelpCenterArticle $article): void
+    {
+        $relations = ['category'];
+
+        if ($article->author_id && Str::isUuid($article->author_id)) {
+            $relations[] = 'author';
+        }
+        if ($article->created_by && Str::isUuid($article->created_by)) {
+            $relations[] = 'creator';
+        }
+        if ($article->updated_by && Str::isUuid($article->updated_by)) {
+            $relations[] = 'updater';
+        }
+
+        $article->load($relations);
+        $article->setAttribute('related_articles', $article->relatedArticles());
     }
 
     /**
@@ -252,7 +274,7 @@ class HelpCenterArticleController extends Controller
             $query = HelpCenterArticle::whereNull('deleted_at')
                 ->where('slug', $articleSlug)
                 ->where('category_id', $category->id)
-                ->with(['category', 'author', 'creator', 'updater', 'relatedArticles']);
+                ->with(['category', 'author', 'creator', 'updater']);
 
             // Apply organization scope
             if ($organizationId) {
@@ -280,6 +302,8 @@ class HelpCenterArticleController extends Controller
             $userId = $profile->id ?? null;
             $article->incrementViewCount($userId, $sessionId);
             $article->refresh();
+
+            $this->loadSafeArticleRelations($article);
 
             return response()->json($article);
         } catch (\Exception $e) {
@@ -384,7 +408,7 @@ class HelpCenterArticleController extends Controller
             }
 
             $query = HelpCenterArticle::whereNull('deleted_at')
-                ->with(['category', 'author', 'creator', 'updater', 'relatedArticles']);
+                ->with(['category', 'author', 'creator', 'updater']);
 
             // Apply organization scope
             if ($organizationId) {
@@ -433,6 +457,8 @@ class HelpCenterArticleController extends Controller
             $userId = $profile->id ?? null;
             $article->incrementViewCount($userId, $sessionId);
             $article->refresh();
+
+            $this->loadSafeArticleRelations($article);
 
             return response()->json($article);
         } catch (\Exception $e) {
@@ -546,7 +572,7 @@ class HelpCenterArticleController extends Controller
                 'related_article_ids' => $validated['related_article_ids'] ?? [],
             ]);
 
-            $article->load(['category', 'author', 'creator', 'updater']);
+            $this->loadSafeArticleRelations($article);
 
             return response()->json($article, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -658,7 +684,7 @@ class HelpCenterArticleController extends Controller
             $validated['updated_by'] = $profile->id;
 
             $article->update($validated);
-            $article->load(['category', 'author', 'creator', 'updater', 'relatedArticles']);
+            $this->loadSafeArticleRelations($article);
 
             return response()->json($article);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -760,7 +786,7 @@ class HelpCenterArticleController extends Controller
 
             $article->publish();
             $article->update(['updated_by' => $profile->id]);
-            $article->load(['category', 'author', 'creator', 'updater']);
+            $this->loadSafeArticleRelations($article);
 
             return response()->json($article);
         } catch (\Exception $e) {
@@ -809,7 +835,7 @@ class HelpCenterArticleController extends Controller
 
             $article->unpublish();
             $article->update(['updated_by' => $profile->id]);
-            $article->load(['category', 'author', 'creator', 'updater']);
+            $this->loadSafeArticleRelations($article);
 
             return response()->json($article);
         } catch (\Exception $e) {
@@ -858,7 +884,7 @@ class HelpCenterArticleController extends Controller
 
             $article->archive();
             $article->update(['updated_by' => $profile->id]);
-            $article->load(['category', 'author', 'creator', 'updater']);
+            $this->loadSafeArticleRelations($article);
 
             return response()->json($article);
         } catch (\Exception $e) {
@@ -1159,7 +1185,7 @@ class HelpCenterArticleController extends Controller
                 'article' => null,
                 'match_type' => 'none',
                 'message' => 'No contextual help article found',
-            ], 404);
+            ]);
         } catch (\Exception $e) {
             Log::error('HelpCenterArticleController::getByContext error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
@@ -1352,17 +1378,13 @@ class HelpCenterArticleController extends Controller
                 'meta_description' => $validated['meta_description'] ?? null,
                 'tags' => $validated['tags'] ?? [],
                 'order' => $validated['order'] ?? 0,
+                'related_article_ids' => $validated['related_article_ids'] ?? [],
                 'author_id' => $user->id,
                 'created_by' => $user->id,
                 'published_at' => $publishedAt,
             ]);
 
-            // Attach related articles if provided
-            if (!empty($validated['related_article_ids'])) {
-                $article->relatedArticles()->sync($validated['related_article_ids']);
-            }
-
-            $article->load(['category', 'author', 'relatedArticles']);
+            $this->loadSafeArticleRelations($article);
 
             return response()->json($article, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -1444,12 +1466,7 @@ class HelpCenterArticleController extends Controller
             // Update article
             $article->update($validated);
 
-            // Update related articles if provided
-            if (isset($validated['related_article_ids'])) {
-                $article->relatedArticles()->sync($validated['related_article_ids']);
-            }
-
-            $article->load(['category', 'author', 'relatedArticles']);
+            $this->loadSafeArticleRelations($article);
 
             return response()->json($article);
         } catch (\Illuminate\Validation\ValidationException $e) {

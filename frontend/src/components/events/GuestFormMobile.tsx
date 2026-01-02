@@ -51,6 +51,86 @@ async function generateQRCodeImage(data: string, size: number = 200): Promise<st
   }
 }
 
+async function convertHeicToJpeg(file: File): Promise<File> {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    const imageLoaded = new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('Unable to decode HEIC image'));
+    });
+    img.src = objectUrl;
+    await imageLoaded;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Canvas context is not available');
+    }
+    ctx.drawImage(img, 0, 0);
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', 0.9)
+    );
+    if (!blob) {
+      throw new Error('Failed to convert HEIC image');
+    }
+
+    const newName = file.name.replace(/\.(heic|heif)$/i, '.jpg');
+    return new File([blob], newName, { type: 'image/jpeg' });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+async function compressImageFile(
+  file: File,
+  options: { maxDimension: number; quality: number; outputType: 'image/jpeg' | 'image/webp' }
+): Promise<File> {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    const imageLoaded = new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('Unable to decode image'));
+    });
+    img.src = objectUrl;
+    await imageLoaded;
+
+    const maxSide = Math.max(img.width, img.height);
+    const scale = maxSide > options.maxDimension ? options.maxDimension / maxSide : 1;
+    const targetWidth = Math.max(1, Math.round(img.width * scale));
+    const targetHeight = Math.max(1, Math.round(img.height * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return file;
+    }
+
+    ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, options.outputType, options.quality)
+    );
+    if (!blob) {
+      return file;
+    }
+
+    const baseName = file.name.replace(/\.[^/.]+$/, '');
+    const extension = options.outputType === 'image/webp' ? 'webp' : 'jpg';
+    return new File([blob], `${baseName}.${extension}`, { type: options.outputType });
+  } catch {
+    return file;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 interface GuestFormMobileProps {
   eventId: string;
   guest?: EventGuest;
@@ -93,44 +173,32 @@ export function GuestFormMobile({ eventId, guest, onBack, quickMode = false }: G
   // Fetch guest photo if editing and guest has photo_path
   useEffect(() => {
     if (isEditing && guest?.id) {
+      let currentBlobUrl: string | null = null;
+
       // Fetch photo via API endpoint
       const fetchPhoto = async () => {
         try {
           const { apiClient } = await import('@/lib/api/client');
-          const token = apiClient.getToken();
-          const url = `/api/guests/${guest.id}/photo`;
-          
-          const response = await fetch(url, {
+          const { blob } = await apiClient.requestFile(`/guests/${guest.id}/photo`, {
             method: 'GET',
-            headers: {
-              'Accept': 'image/*',
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-            },
-            credentials: 'include',
+            headers: { Accept: 'image/*' },
           });
-          
-          if (response.ok) {
-            const blob = await response.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            setPhotoPreview(blobUrl);
-          } else if (response.status !== 404) {
-            if (import.meta.env.DEV) {
-              console.error('Failed to fetch guest photo:', response.status);
-            }
-          }
-        } catch (error) {
-          if (import.meta.env.DEV) {
+          const blobUrl = URL.createObjectURL(blob);
+          currentBlobUrl = blobUrl;
+          setPhotoPreview(blobUrl);
+        } catch (error: any) {
+          const status = error?.status;
+          if (status !== 404 && import.meta.env.DEV) {
             console.error('Error fetching guest photo:', error);
           }
         }
       };
-      
+
       fetchPhoto();
-      
-      // Cleanup blob URL on unmount
+
       return () => {
-        if (photoPreview && photoPreview.startsWith('blob:')) {
-          URL.revokeObjectURL(photoPreview);
+        if (currentBlobUrl) {
+          URL.revokeObjectURL(currentBlobUrl);
         }
       };
     }
@@ -346,33 +414,58 @@ export function GuestFormMobile({ eventId, guest, onBack, quickMode = false }: G
     }
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       // Validate file type for Android Chrome compatibility
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      const validExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+      const validExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
       
       if (!validTypes.includes(file.type) && !(fileExtension && validExtensions.includes(fileExtension))) {
         if (import.meta.env.DEV) {
           console.error('Invalid file type:', file.type, fileExtension);
         }
-        showToast.error('Please select a valid image file (JPG, PNG, or WEBP)');
+        showToast.error('Please select a valid image file (JPG, PNG, WEBP, or HEIC)');
         // Reset input
         e.target.value = '';
         return;
       }
       
-      // Validate file size (5MB max)
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      if (file.size > maxSize) {
-        showToast.error('Image size must be less than 5MB');
+      let normalizedFile = file;
+      const isHeic =
+        file.type === 'image/heic' ||
+        file.type === 'image/heif' ||
+        fileExtension === 'heic' ||
+        fileExtension === 'heif';
+
+      if (isHeic) {
+        try {
+          normalizedFile = await convertHeicToJpeg(file);
+        } catch (error) {
+          if (import.meta.env.DEV) {
+            console.error('Failed to convert HEIC image:', error);
+          }
+          showToast.error('Unable to process this photo. Please try a JPG or PNG image.');
+          e.target.value = '';
+          return;
+        }
+      }
+
+      const compressedFile = await compressImageFile(normalizedFile, {
+        maxDimension: 1280,
+        quality: 0.8,
+        outputType: 'image/jpeg',
+      });
+
+      const maxUploadBytes = 1.8 * 1024 * 1024; // ~1.8MB to stay under server 2MB limit
+      if (compressedFile.size > maxUploadBytes) {
+        showToast.error('Image is too large. Please choose a smaller photo.');
         e.target.value = '';
         return;
       }
-      
-      setPhotoFile(file);
+
+      setPhotoFile(compressedFile);
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
@@ -389,7 +482,7 @@ export function GuestFormMobile({ eventId, guest, onBack, quickMode = false }: G
         showToast.error('Error reading image file. Please try again.');
         e.target.value = '';
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressedFile);
     }
   };
 
@@ -695,45 +788,25 @@ function GuestPhotoAvatar({ guestId, guestName, size = 'default' }: { guestId: s
     const fetchPhoto = async () => {
       try {
         const { apiClient } = await import('@/lib/api/client');
-        const token = apiClient.getToken();
-        const url = `/api/guests/${guestId}/photo`;
-        
-        const response = await fetch(url, {
+        const { blob } = await apiClient.requestFile(`/guests/${guestId}/photo`, {
           method: 'GET',
-          headers: {
-            'Accept': 'image/*',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-          },
-          credentials: 'include',
+          headers: { Accept: 'image/*' },
         });
-        
-        if (response.ok) {
-          const blob = await response.blob();
-          const blobUrl = URL.createObjectURL(blob);
-          currentBlobUrl = blobUrl;
-          setPhotoUrl(blobUrl);
-        } else if (response.status === 404) {
-          // No photo - this is expected, don't show error
+        const blobUrl = URL.createObjectURL(blob);
+        currentBlobUrl = blobUrl;
+        setPhotoUrl(blobUrl);
+      } catch (error: any) {
+        const status = error?.status;
+        if (status === 404) {
           setPhotoUrl(null);
-          setIsLoading(false);
-        } else {
-          // Other error - log but don't show to user
-          if (import.meta.env.DEV) {
-            console.warn('Failed to fetch guest photo:', response.status, response.statusText);
-          }
-          setPhotoUrl(null);
-          setIsLoading(false);
+        } else if (import.meta.env.DEV) {
+          console.warn('Failed to fetch guest photo:', error);
         }
-      } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error('Error fetching guest photo:', error);
-        }
-        setPhotoUrl(null);
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     fetchPhoto();
     
     return () => {

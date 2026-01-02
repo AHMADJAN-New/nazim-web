@@ -83,6 +83,7 @@ abstract class Controller
     {
         // Get permissions via roles (bypasses model_has_permissions)
         // Flow: model_has_roles -> role_has_permissions -> permissions
+        // CRITICAL: Check both organization-scoped AND global permissions
         $hasPermission = DB::table('permissions')
             ->join('role_has_permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
             ->join('model_has_roles', function ($join) use ($user) {
@@ -91,13 +92,20 @@ abstract class Controller
                      ->where('model_has_roles.model_type', '=', 'App\\Models\\User');
             })
             ->where('model_has_roles.organization_id', $organizationId)
-            ->where('role_has_permissions.organization_id', $organizationId)
-            ->where('permissions.organization_id', $organizationId)
+            ->where(function($q) use ($organizationId) {
+                $q->where('role_has_permissions.organization_id', $organizationId)
+                  ->orWhereNull('role_has_permissions.organization_id'); // Allow global roles
+            })
+            ->where(function($q) use ($organizationId) {
+                $q->where('permissions.organization_id', $organizationId)
+                  ->orWhereNull('permissions.organization_id'); // Allow global permissions
+            })
             ->where('permissions.name', $permissionName)
             ->where('permissions.guard_name', 'web')
             ->exists();
 
         // Also check direct user permissions (model_has_permissions)
+        // CRITICAL: Check both organization-scoped AND global permissions
         if (!$hasPermission) {
             $tableNames = config('permission.table_names');
             $columnNames = config('permission.column_names');
@@ -109,7 +117,10 @@ abstract class Controller
                 ->where($modelMorphKey, $user->id)
                 ->where($modelHasPermissionsTable . '.model_type', 'App\\Models\\User')
                 ->where($modelHasPermissionsTable . '.organization_id', $organizationId)
-                ->where('permissions.organization_id', $organizationId)
+                ->where(function($q) use ($organizationId) {
+                    $q->where('permissions.organization_id', $organizationId)
+                      ->orWhereNull('permissions.organization_id'); // Allow global permissions
+                })
                 ->where('permissions.name', $permissionName)
                 ->where('permissions.guard_name', 'web')
                 ->exists();

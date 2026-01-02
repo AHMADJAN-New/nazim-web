@@ -17,6 +17,7 @@ export const useSchools = (organizationId?: string) => {
   const { user, profile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
   const { data: subscriptionStatus } = useSubscriptionStatus();
+  const isEventUser = profile?.is_event_user === true;
 
   // CRITICAL: Disable query if subscription is suspended/expired/blocked
   // This prevents 402 errors from repeated requests
@@ -30,7 +31,7 @@ export const useSchools = (organizationId?: string) => {
   return useQuery<School[]>({
     queryKey: ['schools', organizationId || profile?.organization_id, profile?.default_school_id ?? null, orgIds.join(',')],
     queryFn: async () => {
-      if (!user || !profile || orgsLoading) return [];
+      if (!user || !profile || orgsLoading || isEventUser) return [];
 
       // Fetch schools from Laravel API
       const apiSchools = await schoolsApi.list({
@@ -45,7 +46,7 @@ export const useSchools = (organizationId?: string) => {
         a.schoolName.localeCompare(b.schoolName)
       );
     },
-    enabled: !!user && !!profile && !isSubscriptionBlocked, // Disable when subscription is blocked
+    enabled: !!user && !!profile && !isSubscriptionBlocked && !isEventUser, // Disable when subscription is blocked or event user
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,

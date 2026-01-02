@@ -88,6 +88,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // For development or initial HTML load, bypass service worker to prevent blocking
+  // Check if this is a dev server by looking at the hostname
+  const isDevServer = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname.includes('192.168');
+  
+  if (isDevServer && request.destination === 'document') {
+    // Let the network handle it directly in dev mode to prevent blocking
+    return;
+  }
+
   event.respondWith(handleRequest(request));
 });
 
@@ -95,9 +104,24 @@ async function handleRequest(request) {
   const url = new URL(request.url);
   
   try {
-    // API requests - Network First with offline fallback
+    // API requests - Network First with offline fallback (longer timeout for mobile)
     if (url.pathname.startsWith('/api/')) {
-      return await networkFirstStrategy(request, API_CACHE_NAME);
+      return await networkFirstStrategy(request, API_CACHE_NAME, 15000); // 15 seconds for API calls
+    }
+    
+    // Critical JS/CSS files - Network First (don't block initial load)
+    if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+      // For main entry files, use network first to prevent blocking
+      if (url.pathname.includes('main') || url.pathname.includes('index') || url.pathname.includes('entry')) {
+        return await networkFirstStrategy(request, CACHE_NAME, 10000);
+      }
+      // Other assets can use cache first
+      return await cacheFirstStrategy(request, CACHE_NAME);
+    }
+    
+    // Fonts - Cache First
+    if (url.pathname.endsWith('.woff') || url.pathname.endsWith('.woff2')) {
+      return await cacheFirstStrategy(request, CACHE_NAME);
     }
     
     // Images - Cache First
@@ -105,15 +129,7 @@ async function handleRequest(request) {
       return await cacheFirstStrategy(request, IMAGE_CACHE_NAME);
     }
     
-    // Static assets - Cache First
-    if (url.pathname.endsWith('.js') || 
-        url.pathname.endsWith('.css') || 
-        url.pathname.endsWith('.woff') || 
-        url.pathname.endsWith('.woff2')) {
-      return await cacheFirstStrategy(request, CACHE_NAME);
-    }
-    
-    // HTML pages - Network First
+    // HTML pages - Network First with longer timeout for mobile
     if (request.destination === 'document' || url.pathname === '/') {
       return await networkFirstWithOfflinePage(request);
     }
@@ -123,6 +139,12 @@ async function handleRequest(request) {
     
   } catch (error) {
     console.error('[ServiceWorker] Request failed:', error);
+    // For mobile, try to return cached version even if network fails
+    const cache = await caches.open(CACHE_NAME);
+    const cachedResponse = await cache.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
     return await getOfflineResponse(request);
   }
 }
@@ -149,11 +171,11 @@ async function cacheFirstStrategy(request, cacheName) {
 }
 
 // Network First Strategy
-async function networkFirstStrategy(request, cacheName, timeout = 3000) {
+async function networkFirstStrategy(request, cacheName, timeout = 10000) {
   const cache = await caches.open(cacheName);
   
   try {
-    // Try network with timeout
+    // Try network with longer timeout for mobile connections (10 seconds)
     const networkResponse = await Promise.race([
       fetch(request),
       new Promise((_, reject) => 
@@ -177,14 +199,29 @@ async function networkFirstStrategy(request, cacheName, timeout = 3000) {
       return cachedResponse;
     }
     
-    throw error;
+    // For mobile, don't throw error immediately - try to fetch without timeout
+    try {
+      const fallbackResponse = await fetch(request);
+      if (fallbackResponse.status === 200) {
+        cache.put(request, fallbackResponse.clone());
+      }
+      return fallbackResponse;
+    } catch (fallbackError) {
+      throw error;
+    }
   }
 }
 
 // Network First with Offline Page for HTML requests
 async function networkFirstWithOfflinePage(request) {
   try {
-    const networkResponse = await fetch(request);
+    // Use longer timeout for HTML requests on mobile (20 seconds)
+    const networkResponse = await Promise.race([
+      fetch(request),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Network timeout')), 20000)
+      )
+    ]);
     
     // Cache successful responses
     if (networkResponse.status === 200) {
@@ -195,11 +232,23 @@ async function networkFirstWithOfflinePage(request) {
     return networkResponse;
     
   } catch (error) {
+    console.log('[ServiceWorker] HTML fetch failed, trying cache:', request.url);
     const cache = await caches.open(CACHE_NAME);
     const cachedResponse = await cache.match(request);
     
     if (cachedResponse) {
       return cachedResponse;
+    }
+    
+    // For mobile, try one more time without timeout before showing offline page
+    try {
+      const retryResponse = await fetch(request);
+      if (retryResponse.status === 200) {
+        cache.put(request, retryResponse.clone());
+        return retryResponse;
+      }
+    } catch (retryError) {
+      console.log('[ServiceWorker] Retry also failed:', request.url);
     }
     
     // Return offline page

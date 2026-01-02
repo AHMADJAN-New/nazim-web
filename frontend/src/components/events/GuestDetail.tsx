@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -52,6 +53,7 @@ export function GuestDetail({ eventId, guestId, onBack }: GuestDetailProps) {
   const queryClient = useQueryClient();
   const hasCheckinPermission = useHasPermission('event_checkins.create');
   const [guestPhotoUrl, setGuestPhotoUrl] = useState<string | null>(null);
+  const [isPhotoOpen, setIsPhotoOpen] = useState(false);
 
   const { data: guest, isLoading } = useQuery({
     queryKey: ['event-guest', eventId, guestId],
@@ -70,34 +72,22 @@ export function GuestDetail({ eventId, guestId, onBack }: GuestDetailProps) {
     const fetchPhoto = async () => {
       try {
         const { apiClient } = await import('@/lib/api/client');
-        const token = apiClient.getToken();
-        const url = `/api/guests/${guest.id}/photo`;
-        
-        const response = await fetch(url, {
+        const { blob } = await apiClient.requestFile(`/guests/${guest.id}/photo`, {
           method: 'GET',
-          headers: {
-            'Accept': 'image/*',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-          },
-          credentials: 'include',
+          headers: { Accept: 'image/*' },
         });
-        
-        if (response.ok) {
-          const blob = await response.blob();
-          const blobUrl = URL.createObjectURL(blob);
-          currentBlobUrl = blobUrl;
-          setGuestPhotoUrl(blobUrl);
-        } else if (response.status === 404) {
-          setGuestPhotoUrl(null);
-        }
-      } catch (error) {
-        if (import.meta.env.DEV) {
+        const blobUrl = URL.createObjectURL(blob);
+        currentBlobUrl = blobUrl;
+        setGuestPhotoUrl(blobUrl);
+      } catch (error: any) {
+        const status = error?.status;
+        if (status !== 404 && import.meta.env.DEV) {
           console.error('Error fetching guest photo:', error);
         }
         setGuestPhotoUrl(null);
       }
     };
-    
+
     fetchPhoto();
     
     return () => {
@@ -536,10 +526,17 @@ export function GuestDetail({ eventId, guestId, onBack }: GuestDetailProps) {
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col items-center text-center mb-6">
-            <Avatar className="h-24 w-24 mb-4">
-              <AvatarImage src={guestPhotoUrl || undefined} alt={guest.full_name} />
-              <AvatarFallback className="text-2xl">{getInitials(guest.full_name)}</AvatarFallback>
-            </Avatar>
+            <button
+              type="button"
+              onClick={() => guestPhotoUrl && setIsPhotoOpen(true)}
+              className="mb-4"
+              aria-label="View guest photo"
+            >
+              <Avatar className={`h-24 w-24 ${guestPhotoUrl ? 'cursor-zoom-in' : ''}`}>
+                <AvatarImage src={guestPhotoUrl || undefined} alt={guest.full_name} />
+                <AvatarFallback className="text-2xl">{getInitials(guest.full_name)}</AvatarFallback>
+              </Avatar>
+            </button>
             <h2 className="text-xl font-semibold">{guest.full_name}</h2>
             <p className="text-muted-foreground">{GUEST_TYPE_LABELS[guest.guest_type]}</p>
             <Badge className={`${STATUS_COLORS[guest.status]} mt-2`}>
@@ -611,6 +608,19 @@ export function GuestDetail({ eventId, guestId, onBack }: GuestDetailProps) {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={isPhotoOpen} onOpenChange={setIsPhotoOpen}>
+        <DialogContent className="max-w-[90vw] sm:max-w-3xl">
+          <DialogTitle className="sr-only">Guest photo</DialogTitle>
+          {guestPhotoUrl && (
+            <img
+              src={guestPhotoUrl}
+              alt={guest.full_name}
+              className="max-h-[80vh] w-full object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* QR Code */}
       <Card>

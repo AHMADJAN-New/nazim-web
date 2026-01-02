@@ -191,6 +191,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 27: Seeding notification samples...');
         $this->call(NotificationSeeder::class);
 
+        // Step 28: Seed help center categories for all organizations
+        $this->command->info('Step 28: Seeding help center categories...');
+        $this->call(HelpCenterCategorySeeder::class);
+
         $this->command->info('');
         $this->command->info('✅ Database seeding completed successfully!');
         $this->command->info('');
