@@ -1,11 +1,21 @@
 // Nazim School Management System - Language Hook
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Language, t, isRTL, getDirection, getFontClass } from '@/lib/i18n';
+import type { TranslationKey } from '@/lib/translations/keys.generated';
 
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: string, params?: Record<string, string | number>) => string;
+  /**
+   * Type-safe translation function (accepts only known keys from EN).
+   * Generated union: `frontend/src/lib/translations/keys.generated.ts`
+   */
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string;
+  /**
+   * Escape hatch for dynamic/legacy keys that are not yet in EN.
+   * Prefer adding the missing keys to EN and regenerating keys.
+   */
+  tUnsafe: (key: string, params?: Record<string, string | number>) => string;
   isRTL: boolean;
   direction: 'ltr' | 'rtl';
   fontClass: string;
@@ -35,7 +45,11 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
   };
 
   // Translation function bound to current language
-  const translate = (key: string, params?: Record<string, string | number>) => {
+  const translate = (key: TranslationKey, params?: Record<string, string | number>) => {
+    return t(key, language, params);
+  };
+
+  const translateUnsafe = (key: string, params?: Record<string, string | number>) => {
     return t(key, language, params);
   };
 
@@ -68,6 +82,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     language,
     setLanguage,
     t: translate,
+    tUnsafe: translateUnsafe,
     isRTL: isRTL(language),
     direction: getDirection(language),
     fontClass: getFontClass(language),

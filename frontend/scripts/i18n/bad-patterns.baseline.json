@@ -1,0 +1,757 @@
+{
+  "generatedAt": "2026-01-02T14:19:54.912Z",
+  "totals": {
+    "tFallback": 4809,
+    "toastHardcoded": 47
+  },
+  "byFile": {
+    "frontend/src/platform/pages/PlatformAdminLogin.tsx": {
+      "tFallback": 0,
+      "toastHardcoded": 1
+    },
+    "frontend/src/platform/pages/PlatformPermissionGroupsManagement.tsx": {
+      "tFallback": 0,
+      "toastHardcoded": 2
+    },
+    "frontend/src/platform/pages/admin/DiscountCodesManagement.tsx": {
+      "tFallback": 0,
+      "toastHardcoded": 1
+    },
+    "frontend/src/platform/pages/admin/HelpCenterManagement.tsx": {
+      "tFallback": 8,
+      "toastHardcoded": 0
+    },
+    "frontend/src/platform/pages/admin/PlansManagement.tsx": {
+      "tFallback": 0,
+      "toastHardcoded": 2
+    },
+    "frontend/src/platform/pages/admin/PlatformSettings.tsx": {
+      "tFallback": 0,
+      "toastHardcoded": 11
+    },
+    "frontend/src/platform/hooks/usePlatformAdmin.tsx": {
+      "tFallback": 0,
+      "toastHardcoded": 2
+    },
+    "frontend/src/platform/hooks/usePlatformAdminComplete.tsx": {
+      "tFallback": 39,
+      "toastHardcoded": 0
+    },
+    "frontend/src/platform/components/ContactMessagesManagement.tsx": {
+      "tFallback": 0,
+      "toastHardcoded": 2
+    },
+    "frontend/src/platform/components/TestimonialsManagement.tsx": {
+      "tFallback": 0,
+      "toastHardcoded": 3
+    },
+    "frontend/src/pages/AboutUs.tsx": {
+      "tFallback": 49,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/Attendance.tsx": {
+      "tFallback": 22,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/AttendanceReports.tsx": {
+      "tFallback": 44,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/AttendanceTotalsReports.tsx": {
+      "tFallback": 87,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/AuthPage.tsx": {
+      "tFallback": 6,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ClassSubjectMarkSheet.tsx": {
+      "tFallback": 41,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ConsolidatedMarkSheet.tsx": {
+      "tFallback": 42,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/CourseCertificates.tsx": {
+      "tFallback": 7,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/CourseDashboard.tsx": {
+      "tFallback": 9,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/CourseDocuments.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/CourseStudentReports.tsx": {
+      "tFallback": 14,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/CourseStudents.tsx": {
+      "tFallback": 2,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/Dashboard.tsx": {
+      "tFallback": 32,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ExamAttendancePage.tsx": {
+      "tFallback": 53,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ExamClassesSubjectsPage.tsx": {
+      "tFallback": 59,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ExamEnrollment.tsx": {
+      "tFallback": 54,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ExamMarks.tsx": {
+      "tFallback": 16,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ExamNumberReportsPage.tsx": {
+      "tFallback": 63,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ExamPaperPreview.tsx": {
+      "tFallback": 31,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ExamPaperPrintTracking.tsx": {
+      "tFallback": 56,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ExamPaperTemplateEdit.tsx": {
+      "tFallback": 0,
+      "toastHardcoded": 3
+    },
+    "frontend/src/pages/ExamPaperTemplates.tsx": {
+      "tFallback": 99,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ExamReportsPage.tsx": {
+      "tFallback": 46,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ExamRollNumbersPage.tsx": {
+      "tFallback": 53,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ExamSecretNumbersPage.tsx": {
+      "tFallback": 66,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ExamStudentEnrollment.tsx": {
+      "tFallback": 56,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ExamTimetablePage.tsx": {
+      "tFallback": 90,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/Exams.tsx": {
+      "tFallback": 92,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/FinanceDocuments.tsx": {
+      "tFallback": 4,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/GradesManagement.tsx": {
+      "tFallback": 4,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/HelpCenter.tsx": {
+      "tFallback": 12,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/HelpCenterArticle.tsx": {
+      "tFallback": 13,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/HostelReports.tsx": {
+      "tFallback": 50,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/IdCardAssignment.tsx": {
+      "tFallback": 132,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/IdCardExport.tsx": {
+      "tFallback": 62,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/IdCardTemplates.tsx": {
+      "tFallback": 37,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/Index.tsx": {
+      "tFallback": 101,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/LeaveManagement.tsx": {
+      "tFallback": 2,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/LeaveReports.tsx": {
+      "tFallback": 16,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/Library.tsx": {
+      "tFallback": 7,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/LibraryBooks.tsx": {
+      "tFallback": 5,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/LibraryCategories.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/LibraryDashboard.tsx": {
+      "tFallback": 32,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/MaintenancePage.tsx": {
+      "tFallback": 16,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/NotFound.tsx": {
+      "tFallback": 4,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/PhoneBook.tsx": {
+      "tFallback": 65,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/PrivacyPolicy.tsx": {
+      "tFallback": 55,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/QuestionBank.tsx": {
+      "tFallback": 111,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/ResetPasswordPage.tsx": {
+      "tFallback": 22,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/StaffList.tsx": {
+      "tFallback": 8,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/StaffReport.tsx": {
+      "tFallback": 38,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/StudentAdmissions.tsx": {
+      "tFallback": 99,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/StudentAdmissionsReport.tsx": {
+      "tFallback": 98,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/StudentExamReport.tsx": {
+      "tFallback": 36,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/StudentReport.tsx": {
+      "tFallback": 89,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/Students.tsx": {
+      "tFallback": 69,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/StudentsImport.tsx": {
+      "tFallback": 2,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/TermsOfService.tsx": {
+      "tFallback": 58,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/TimetableGeneration.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/subscription/admin/DiscountCodesManagement.tsx": {
+      "tFallback": 0,
+      "toastHardcoded": 1
+    },
+    "frontend/src/pages/settings/ExamTypesPage.tsx": {
+      "tFallback": 52,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/graduation/GraduationBatchDetailPage.tsx": {
+      "tFallback": 25,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/graduation/GraduationBatchesPage.tsx": {
+      "tFallback": 94,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/graduation/GraduationCertificateTemplates.tsx": {
+      "tFallback": 5,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/graduation/GraduationDashboard.tsx": {
+      "tFallback": 34,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/graduation/IssuedCertificatesPage.tsx": {
+      "tFallback": 14,
+      "toastHardcoded": 2
+    },
+    "frontend/src/pages/finance/Currencies.tsx": {
+      "tFallback": 34,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/finance/Donors.tsx": {
+      "tFallback": 49,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/finance/ExchangeRates.tsx": {
+      "tFallback": 36,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/finance/ExpenseCategories.tsx": {
+      "tFallback": 40,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/finance/ExpenseEntries.tsx": {
+      "tFallback": 105,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/finance/FinanceAccounts.tsx": {
+      "tFallback": 78,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/finance/FinanceDashboard.tsx": {
+      "tFallback": 43,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/finance/FinanceProjects.tsx": {
+      "tFallback": 39,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/finance/FinanceReports.tsx": {
+      "tFallback": 92,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/finance/FinanceSettings.tsx": {
+      "tFallback": 7,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/finance/IncomeCategories.tsx": {
+      "tFallback": 46,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/finance/IncomeEntries.tsx": {
+      "tFallback": 98,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/fees/FeeAssignmentsPage.tsx": {
+      "tFallback": 34,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/fees/FeeDashboard.tsx": {
+      "tFallback": 47,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/fees/FeeExceptionsPage.tsx": {
+      "tFallback": 32,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/fees/FeePaymentsPage.tsx": {
+      "tFallback": 10,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/fees/FeeReportsPage.tsx": {
+      "tFallback": 89,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/fees/FeeStructuresPage.tsx": {
+      "tFallback": 2,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/events/EventUsersPage.tsx": {
+      "tFallback": 2,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/dms/ArchiveSearch.tsx": {
+      "tFallback": 2,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/dms/DepartmentsPage.tsx": {
+      "tFallback": 18,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/dms/DmsReports.tsx": {
+      "tFallback": 3,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/dms/IncomingDocuments.tsx": {
+      "tFallback": 11,
+      "toastHardcoded": 1
+    },
+    "frontend/src/pages/dms/IssueLetter.tsx": {
+      "tFallback": 27,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/dms/LetterheadsPage.tsx": {
+      "tFallback": 6,
+      "toastHardcoded": 1
+    },
+    "frontend/src/pages/dms/OutgoingDocuments.tsx": {
+      "tFallback": 16,
+      "toastHardcoded": 1
+    },
+    "frontend/src/pages/dms/TemplatesPage.tsx": {
+      "tFallback": 7,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/dashboard/AttendanceDashboard.tsx": {
+      "tFallback": 17,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/dashboard/LeaveRequestsDashboard.tsx": {
+      "tFallback": 17,
+      "toastHardcoded": 0
+    },
+    "frontend/src/pages/assets/AssetsDashboard.tsx": {
+      "tFallback": 28,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useAcademicYears.tsx": {
+      "tFallback": 2,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useCurrencies.tsx": {
+      "tFallback": 13,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useEventUsers.tsx": {
+      "tFallback": 6,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useExamNumbers.tsx": {
+      "tFallback": 12,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useExamPaperTemplateFiles.tsx": {
+      "tFallback": 8,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useExamPapers.tsx": {
+      "tFallback": 20,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useExamTypes.tsx": {
+      "tFallback": 6,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useExams.tsx": {
+      "tFallback": 49,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useFees.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useFinance.tsx": {
+      "tFallback": 24,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useGrades.tsx": {
+      "tFallback": 6,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useGraduation.tsx": {
+      "tFallback": 2,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useHelpCenter.tsx": {
+      "tFallback": 12,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useIdCardTemplates.tsx": {
+      "tFallback": 8,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useLetterTypes.tsx": {
+      "tFallback": 6,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useQuestions.tsx": {
+      "tFallback": 10,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useSubscription.tsx": {
+      "tFallback": 4,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useSubscriptionAdmin.tsx": {
+      "tFallback": 13,
+      "toastHardcoded": 3
+    },
+    "frontend/src/hooks/useSubscriptionErrorHandler.tsx": {
+      "tFallback": 6,
+      "toastHardcoded": 0
+    },
+    "frontend/src/hooks/useWatermarks.tsx": {
+      "tFallback": 6,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/ui/calendar-date-picker.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/timetable/ClassTimetableTable.tsx": {
+      "tFallback": 2,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/timetable/LoadTimetableDialog.tsx": {
+      "tFallback": 8,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/timetable/SaveTimetableDialog.tsx": {
+      "tFallback": 8,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/timetable/TeacherPreferencesDialog.tsx": {
+      "tFallback": 7,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/timetable/TeacherTimetableTable.tsx": {
+      "tFallback": 2,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/timetable/TimetableGenerator.tsx": {
+      "tFallback": 56,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/subscription/FeatureGuard.tsx": {
+      "tFallback": 5,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/subscription/SubscriptionStatusBanner.tsx": {
+      "tFallback": 18,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/subscription/UsageLimitWarning.tsx": {
+      "tFallback": 9,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/students/StudentDisciplineRecordsDialog.tsx": {
+      "tFallback": 38,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/students/StudentDocumentsDialog.tsx": {
+      "tFallback": 37,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/students/StudentEducationalHistoryDialog.tsx": {
+      "tFallback": 35,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/students/StudentFormDialog.tsx": {
+      "tFallback": 104,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/students/StudentFormSections.tsx": {
+      "tFallback": 5,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/students/StudentPictureUpload.tsx": {
+      "tFallback": 5,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/students/StudentProfilePrint.tsx": {
+      "tFallback": 63,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/students/StudentProfileView.tsx": {
+      "tFallback": 85,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/short-term-courses/CertificatePdfGenerator.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/short-term-courses/CourseStudentPictureUpload.tsx": {
+      "tFallback": 3,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/settings/AcademicYearsManagement.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/settings/BuildingsManagement.tsx": {
+      "tFallback": 2,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/settings/ClassesManagement.tsx": {
+      "tFallback": 2,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/settings/ExamReports.tsx": {
+      "tFallback": 3,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/settings/ReportTemplatesManagement.tsx": {
+      "tFallback": 33,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/settings/ResidencyTypesManagement.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/settings/RoomsManagement.tsx": {
+      "tFallback": 2,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/settings/ScheduleSlotsManagement.tsx": {
+      "tFallback": 8,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/settings/SchoolsManagement.tsx": {
+      "tFallback": 3,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/settings/StaffTypesManagement.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/settings/SubjectsManagement.tsx": {
+      "tFallback": 5,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/settings/TeacherSubjectAssignments.tsx": {
+      "tFallback": 4,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/settings/WatermarkManagement.tsx": {
+      "tFallback": 56,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/reports/MultiSectionReportExportButtons.tsx": {
+      "tFallback": 13,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/reports/ReportExportButtons.tsx": {
+      "tFallback": 10,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/reports/ReportProgressDialog.tsx": {
+      "tFallback": 9,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/navigation/SmartSidebar.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/layout/AppHeader.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/layout/AppSidebar.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/id-cards/IdCardGenerator.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/id-cards/IdCardLayoutEditor.tsx": {
+      "tFallback": 74,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/id-cards/StudentIdCardPreview.tsx": {
+      "tFallback": 22,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/help/ContextualHelpButton.tsx": {
+      "tFallback": 13,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/graduation/AttendanceSettings.tsx": {
+      "tFallback": 4,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/graduation/ExamWeightsEditor.tsx": {
+      "tFallback": 4,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/finance/FinanceDocumentPreviewDialog.tsx": {
+      "tFallback": 5,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/finance/FinanceDocumentsDialog.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/fees/FeeExceptionForm.tsx": {
+      "tFallback": 17,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/fees/FeePaymentForm.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/fees/FeeStructureForm.tsx": {
+      "tFallback": 3,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/examPapers/PaperGenerator.tsx": {
+      "tFallback": 0,
+      "toastHardcoded": 3
+    },
+    "frontend/src/components/examPapers/PaperPreview.tsx": {
+      "tFallback": 6,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/events/GuestDetail.tsx": {
+      "tFallback": 0,
+      "toastHardcoded": 2
+    },
+    "frontend/src/components/events/GuestFormMobile.tsx": {
+      "tFallback": 0,
+      "toastHardcoded": 1
+    },
+    "frontend/src/components/events/GuestsList.tsx": {
+      "tFallback": 0,
+      "toastHardcoded": 3
+    },
+    "frontend/src/components/dms/ImageFileUploader.tsx": {
+      "tFallback": 4,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/dms/IssuedLettersTable.tsx": {
+      "tFallback": 17,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/dms/LetterDetailsPanel.tsx": {
+      "tFallback": 20,
+      "toastHardcoded": 2
+    },
+    "frontend/src/components/data-table/data-table-pagination.tsx": {
+      "tFallback": 8,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/assets/AssetMaintenanceTab.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    },
+    "frontend/src/components/admin/UserManagement.tsx": {
+      "tFallback": 1,
+      "toastHardcoded": 0
+    }
+  }
+}
