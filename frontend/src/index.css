@@ -320,6 +320,21 @@
     background: var(--gradient-card);
   }
 
+  /* Force form grids to single column on small screens */
+  @media (max-width: 640px) {
+    form .grid.grid-cols-2,
+    form .grid.grid-cols-3,
+    form .grid.grid-cols-4,
+    form .grid.grid-cols-5 {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+
+    form .flex-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+
   /* Shadow utilities */
   .shadow-custom-sm {
     box-shadow: var(--shadow-sm);

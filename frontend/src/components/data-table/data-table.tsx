@@ -1,5 +1,5 @@
 import { Table as TableBase, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import type { Table } from '@tanstack/react-table';
 import { cn } from '@/lib/utils';
 import { ReactNode } from 'react';
@@ -18,8 +18,8 @@ export function DataTable<TData>({ table, actionBar, children, className, onRowC
       {children}
       <div className="border rounded-lg">
         {actionBar}
-        <ScrollArea>
-          <TableBase>
+        <ScrollArea className="w-full">
+          <TableBase className="min-w-[640px]">
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -56,6 +56,7 @@ export function DataTable<TData>({ table, actionBar, children, className, onRowC
               )}
             </TableBody>
           </TableBase>
+          <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </div>
     </div>

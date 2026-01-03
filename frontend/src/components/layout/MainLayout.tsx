@@ -16,7 +16,7 @@ export function MainLayout({
   breadcrumbItems = [] 
 }: MainLayoutProps) {
   return (
-    <div className="p-6">
+    <div className="w-full min-w-0 max-w-7xl mx-auto px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
       {children}
       <Toaster />
     </div>
