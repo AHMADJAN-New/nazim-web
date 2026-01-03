@@ -326,7 +326,7 @@ export function RoomsManagement() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6 overflow-x-hidden">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -337,7 +337,7 @@ export function RoomsManagement() {
               </CardTitle>
               <CardDescription>{t('settings.rooms.title')}</CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
               <ReportExportButtons
                 data={filteredRooms}
                 columns={[
@@ -360,7 +360,7 @@ export function RoomsManagement() {
                 errorExcel={t('settings.rooms.exportErrorExcel')}
               />
               {hasCreatePermission && (
-                <Button onClick={() => handleOpenDialog()}>
+                <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   {t('settings.rooms.addRoom')}
                 </Button>

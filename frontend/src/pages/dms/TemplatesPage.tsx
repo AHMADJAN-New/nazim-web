@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
@@ -22,11 +22,13 @@ import {
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
 import { showToast } from "@/lib/toast";
 import { useLanguage } from "@/hooks/useLanguage";
-import { FileText, Search, Plus, Eye, Edit, Trash2, MoreHorizontal, Copy, Play } from "lucide-react";
+import { FileText, Plus, Eye, Edit, Trash2, MoreHorizontal, Copy, Play } from "lucide-react";
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 import { TemplateForm } from "@/components/dms/TemplateForm";
 import { TemplatePreview } from "@/components/dms/TemplatePreview";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { FilterPanel } from "@/components/layout/FilterPanel";
 
 const letterTypeOptions = [
   { value: "application", label: "Application" },
@@ -213,113 +215,99 @@ export default function TemplatesPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <FileText className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Letter Templates</h1>
-            <p className="text-muted-foreground">Manage letter templates and their configurations</p>
+      <PageHeader
+        title="Letter Templates"
+        description="Manage letter templates and their configurations"
+        icon={<FileText className="h-5 w-5" />}
+        primaryAction={{
+          label: "Create Template",
+          onClick: () => setIsCreateDialogOpen(true),
+          icon: <Plus className="h-4 w-4" />,
+        }}
+      />
+
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Template</DialogTitle>
+            <DialogDescription>
+              Create a new letter template with variables and letterhead.
+            </DialogDescription>
+          </DialogHeader>
+          <TemplateForm
+            onSubmit={(data) => createMutation.mutate(data)}
+            onCancel={() => setIsCreateDialogOpen(false)}
+            isLoading={createMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <FilterPanel title={t("common.filters")}>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-2">
+            <Label>Search</Label>
+            <Input
+              placeholder="Search by name..."
+              value={filters.search}
+              onChange={(e) => setFilters((s) => ({ ...s, search: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Category</Label>
+            <Select
+              value={filters.category || "all"}
+              onValueChange={(value) => setFilters((s) => ({ ...s, category: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="student">Student</SelectItem>
+                <SelectItem value="staff">Staff</SelectItem>
+                <SelectItem value="applicant">Applicant</SelectItem>
+                <SelectItem value="general">General</SelectItem>
+                <SelectItem value="announcement">Announcement</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Letter Type</Label>
+            <Select
+              value={filters.letter_type || "all"}
+              onValueChange={(value) => setFilters((s) => ({ ...s, letter_type: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {letterTypeOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Status</Label>
+            <Select
+              value={filters.active || "all"}
+              onValueChange={(value) => setFilters((s) => ({ ...s, active: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="true">Active</SelectItem>
+                <SelectItem value="false">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Template
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create Template</DialogTitle>
-              <DialogDescription>
-                Create a new letter template with variables and letterhead.
-              </DialogDescription>
-            </DialogHeader>
-            <TemplateForm
-              onSubmit={(data) => createMutation.mutate(data)}
-              onCancel={() => setIsCreateDialogOpen(false)}
-              isLoading={createMutation.isPending}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Filters Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Search & Filter
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
-              <Label>Search</Label>
-              <Input
-                placeholder="Search by name..."
-                value={filters.search}
-                onChange={(e) => setFilters((s) => ({ ...s, search: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Category</Label>
-              <Select
-                value={filters.category || "all"}
-                onValueChange={(value) => setFilters((s) => ({ ...s, category: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="student">Student</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                  <SelectItem value="applicant">Applicant</SelectItem>
-                  <SelectItem value="general">General</SelectItem>
-                  <SelectItem value="announcement">Announcement</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Letter Type</Label>
-              <Select
-                value={filters.letter_type || "all"}
-                onValueChange={(value) => setFilters((s) => ({ ...s, letter_type: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {letterTypeOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={filters.active || "all"}
-                onValueChange={(value) => setFilters((s) => ({ ...s, active: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="true">Active</SelectItem>
-                  <SelectItem value="false">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      </FilterPanel>
 
       {/* Templates Table */}
       <Card>

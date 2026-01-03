@@ -154,3 +154,4 @@ class FixNotificationPermissions extends Command
     }
 }
 
+

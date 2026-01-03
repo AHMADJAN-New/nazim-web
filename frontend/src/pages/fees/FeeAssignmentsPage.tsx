@@ -13,7 +13,9 @@ import {
 import { feeAssignmentSchema, type FeeAssignmentFormData } from '@/lib/validations/fees';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import {
   Form,
   FormControl,
@@ -33,7 +35,7 @@ import { useClassAcademicYears } from '@/hooks/useClasses';
 import { showToast } from '@/lib/toast';
 import { useNavigate } from 'react-router-dom';
 import type { ZodIssue } from 'zod';
-import { Pencil, Trash2, Users, GraduationCap } from 'lucide-react';
+import { Pencil, Trash2, Users, GraduationCap, Plus } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,7 +46,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
+import { formatDate, formatCurrency } from '@/lib/utils';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import {
   Sheet,
@@ -437,9 +439,19 @@ export default function FeeAssignmentsPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t('fees.assignments')}</h1>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title={t('fees.assignments')}
+        icon={<GraduationCap className="h-5 w-5" />}
+        primaryAction={{
+          label: t('fees.addAssignment'),
+          onClick: () => {
+            setEditingAssignment(null);
+            form.reset();
+            setOpen(true);
+          },
+          icon: <Plus className="h-4 w-4" />,
+        }}
+        rightSlot={
           <ReportExportButtons
             data={assignments}
             columns={[
@@ -479,51 +491,51 @@ export default function FeeAssignmentsPage() {
             templateType="fee_assignments"
             disabled={isLoading || assignments.length === 0}
           />
-          <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>{t('fees.addAssignment')}</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>{editingAssignment ? t('fees.editAssignment') : t('fees.addAssignment')}</DialogTitle>
-              <DialogDescription className="sr-only">
-                {editingAssignment ? t('fees.editAssignment') : t('fees.addAssignment')}
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit, handleError)} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="academic_year_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('fees.academicYear')}</FormLabel>
-                        <FormControl>
-                          <Select
-                            value={field.value || ''}
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              form.setValue('class_academic_year_id', '');
-                            }}
-                            disabled={!!editingAssignment}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder={t('fees.selectAcademicYear')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {academicYears.map((ay) => (
-                                <SelectItem key={ay.id} value={ay.id}>
-                                  {ay.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+        }
+      />
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{editingAssignment ? t('fees.editAssignment') : t('fees.addAssignment')}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {editingAssignment ? t('fees.editAssignment') : t('fees.addAssignment')}
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit, handleError)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="academic_year_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('fees.academicYear')}</FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value || ''}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            form.setValue('class_academic_year_id', '');
+                          }}
+                          disabled={!!editingAssignment}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('fees.selectAcademicYear')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {academicYears.map((ay) => (
+                              <SelectItem key={ay.id} value={ay.id}>
+                                {ay.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                   <FormField
                     control={form.control}
@@ -655,11 +667,8 @@ export default function FeeAssignmentsPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('fees.filters')}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <FilterPanel title={t('fees.filters')}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <span className="text-sm font-medium">{t('fees.academicYear')}</span>
             <Select
@@ -706,8 +715,8 @@ export default function FeeAssignmentsPage() {
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </FilterPanel>
 
       <Tabs defaultValue="classes" className="space-y-4">
         <TabsList className="grid w-full grid-cols-2">

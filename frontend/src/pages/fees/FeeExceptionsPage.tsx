@@ -1,7 +1,9 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { FeeExceptionForm } from '@/components/fees/FeeExceptionForm';
 import {
@@ -22,8 +24,8 @@ import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import type { Student } from '@/types/domain/student';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
-import { Eye, Pencil, Trash2, Plus } from 'lucide-react';
+import { formatDate, formatCurrency } from '@/lib/utils';
+import { Eye, Pencil, Trash2, Plus, Shield } from 'lucide-react';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import {
   AlertDialog,
@@ -280,9 +282,15 @@ export default function FeeExceptionsPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t('fees.exceptions')}</h1>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title={t('fees.exceptions')}
+        icon={<Shield className="h-5 w-5" />}
+        primaryAction={{
+          label: t('fees.addException'),
+          onClick: handleOpenDialog,
+          icon: <Plus className="h-4 w-4" />,
+        }}
+        rightSlot={
           <ReportExportButtons
             data={exceptions}
             columns={[
@@ -334,72 +342,64 @@ export default function FeeExceptionsPage() {
             templateType="fee_exceptions"
             disabled={isLoading || exceptions.length === 0}
           />
-          <Dialog open={open} onOpenChange={(isOpen) => {
-          if (!isOpen) {
-            handleCloseDialog();
-          } else {
-            handleOpenDialog();
-          }
-        }}>
-          <DialogTrigger asChild>
-            <Button onClick={handleOpenDialog} className="gap-2">
-              <Plus className="h-4 w-4" />
-              {t('fees.addException')}
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingException ? t('fees.editException') : t('fees.addException')}</DialogTitle>
-              <DialogDescription className="sr-only">
-                {editingException ? t('fees.editException') : t('fees.addException')}
-              </DialogDescription>
-            </DialogHeader>
-            {assignmentOptions.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground">
-                <p>{t('fees.noAssignmentsAvailable') || 'No fee assignments available. Please create fee assignments first.'}</p>
-                <p className="text-sm mt-2">{t('fees.selectAcademicYearAndClass') || 'Make sure you have selected an academic year and class with fee assignments.'}</p>
-              </div>
-            ) : (
-              <FeeExceptionForm
-                defaultValues={editingException ? {
-                  fee_assignment_id: editingException.feeAssignmentId,
-                  student_id: editingException.studentId,
-                  exception_type: editingException.exceptionType,
-                  exception_amount: editingException.exceptionAmount,
-                  exception_reason: editingException.exceptionReason,
-                  approved_by_user_id: editingException.approvedByUserId,
-                  approved_at: editingException.approvedAt ? editingException.approvedAt.toISOString().slice(0, 10) : '',
-                  valid_from: editingException.validFrom ? editingException.validFrom.toISOString().slice(0, 10) : '',
-                  valid_to: editingException.validTo ? editingException.validTo.toISOString().slice(0, 10) : '',
-                  is_active: editingException.isActive,
-                  notes: editingException.notes ?? '',
-                  organization_id: editingException.organizationId,
-                } : {
-                  approved_by_user_id: profile?.id ?? '',
-                  approved_at: new Date().toISOString().slice(0, 10),
-                  valid_from: new Date().toISOString().slice(0, 10),
-                  is_active: true,
-                  organization_id: profile?.organization_id ?? '',
-                }}
-                assignments={assignmentOptions}
-                classAcademicYears={classAcademicYears}
-                academicYears={academicYears}
-                currentAcademicYearId={currentAcademicYear?.id}
-                onSubmit={handleSubmit}
-                isSubmitting={createException.isPending || updateException.isPending}
-                onCancel={handleCloseDialog}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
-        </div>
-      </div>
+        }
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('fees.filters')}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Dialog open={open} onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          handleCloseDialog();
+        } else {
+          handleOpenDialog();
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingException ? t('fees.editException') : t('fees.addException')}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {editingException ? t('fees.editException') : t('fees.addException')}
+            </DialogDescription>
+          </DialogHeader>
+          {assignmentOptions.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">
+              <p>{t('fees.noAssignmentsAvailable') || 'No fee assignments available. Please create fee assignments first.'}</p>
+              <p className="text-sm mt-2">{t('fees.selectAcademicYearAndClass') || 'Make sure you have selected an academic year and class with fee assignments.'}</p>
+            </div>
+          ) : (
+            <FeeExceptionForm
+              defaultValues={editingException ? {
+                fee_assignment_id: editingException.feeAssignmentId,
+                student_id: editingException.studentId,
+                exception_type: editingException.exceptionType,
+                exception_amount: editingException.exceptionAmount,
+                exception_reason: editingException.exceptionReason,
+                approved_by_user_id: editingException.approvedByUserId,
+                approved_at: editingException.approvedAt ? editingException.approvedAt.toISOString().slice(0, 10) : '',
+                valid_from: editingException.validFrom ? editingException.validFrom.toISOString().slice(0, 10) : '',
+                valid_to: editingException.validTo ? editingException.validTo.toISOString().slice(0, 10) : '',
+                is_active: editingException.isActive,
+                notes: editingException.notes ?? '',
+                organization_id: editingException.organizationId,
+              } : {
+                approved_by_user_id: profile?.id ?? '',
+                approved_at: new Date().toISOString().slice(0, 10),
+                valid_from: new Date().toISOString().slice(0, 10),
+                is_active: true,
+                organization_id: profile?.organization_id ?? '',
+              }}
+              assignments={assignmentOptions}
+              classAcademicYears={classAcademicYears}
+              academicYears={academicYears}
+              currentAcademicYearId={currentAcademicYear?.id}
+              onSubmit={handleSubmit}
+              isSubmitting={createException.isPending || updateException.isPending}
+              onCancel={handleCloseDialog}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <FilterPanel title={t('fees.filters')}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <span className="text-sm font-medium">{t('fees.academicYear')}</span>
             <Select
@@ -440,8 +440,8 @@ export default function FeeExceptionsPage() {
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </FilterPanel>
 
       <Card>
         <CardHeader>

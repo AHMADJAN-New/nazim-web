@@ -104,7 +104,7 @@ export default function AssetsDashboard() {
     const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
 
     return (
-        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
             {/* Header with Date Range */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>

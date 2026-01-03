@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import {
     Select,
     SelectContent,
@@ -41,7 +43,6 @@ import {
     FolderKanban,
     Users,
     Wallet,
-    Download,
     Calendar,
     DollarSign,
 } from 'lucide-react';
@@ -92,17 +93,19 @@ export default function FinanceReports() {
     const { data: accountBalances, isLoading: accountLoading } = useAccountBalancesReport();
 
     const DateRangePicker = () => (
-        <div className="flex items-center gap-4 mb-6 p-4 bg-muted rounded-lg">
-            <Calendar className="h-5 w-5 text-muted-foreground" />
-            <div className="flex items-center gap-2">
-                <Label htmlFor="startDate">{t('common.from') || 'From'}</Label>
-                <CalendarDatePicker date={dateRange.startDate ? new Date(dateRange.startDate) : undefined} onDateChange={(date) => setDateRange(date ? date.toISOString().split("T")[0] : "")} />
+        <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+            <div className="flex flex-col gap-4 md:flex-row md:items-end">
+                <div className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                    <Label htmlFor="startDate">{t('common.from') || 'From'}</Label>
+                    <CalendarDatePicker date={dateRange.startDate ? new Date(dateRange.startDate) : undefined} onDateChange={(date) => setDateRange(date ? date.toISOString().split("T")[0] : "")} />
+                </div>
+                <div className="flex items-center gap-2">
+                    <Label htmlFor="endDate">{t('common.to') || 'To'}</Label>
+                    <CalendarDatePicker date={dateRange.endDate ? new Date(dateRange.endDate) : undefined} onDateChange={(date) => setDateRange(date ? date.toISOString().split("T")[0] : "")} />
+                </div>
             </div>
-            <div className="flex items-center gap-2">
-                <Label htmlFor="endDate">{t('common.to') || 'To'}</Label>
-                <CalendarDatePicker date={dateRange.endDate ? new Date(dateRange.endDate) : undefined} onDateChange={(date) => setDateRange(date ? date.toISOString().split("T")[0] : "")} />
-            </div>
-        </div>
+        </FilterPanel>
     );
 
     // Daily Cashbook Tab
@@ -1268,15 +1271,11 @@ export default function FinanceReports() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold">
-                    {t('finance.reports') || 'Finance Reports'}
-                </h1>
-                <p className="text-muted-foreground">
-                    {t('finance.reportsDescription') || 'Generate and view financial reports'}
-                </p>
-            </div>
+            <PageHeader
+                title={t('finance.reports') || 'Finance Reports'}
+                description={t('finance.reportsDescription') || 'Generate and view financial reports'}
+                icon={<FileText className="h-5 w-5" />}
+            />
 
             {/* Tabs */}
             <Tabs defaultValue="cashbook" className="space-y-4">

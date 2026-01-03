@@ -14,6 +14,7 @@ import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYea
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
     Banknote,
     TrendingUp,
@@ -169,37 +170,38 @@ export default function FeeDashboard() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
-                        {t('fees.dashboard') || 'Fee Dashboard'}
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        {t('fees.dashboardDescription') || 'Overview of fee collection and management'}
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <Select
-                        value={filterAcademicYear || ''}
-                        onValueChange={setFilterAcademicYear}
-                    >
-                        <SelectTrigger className="w-[200px]">
-                            <SelectValue placeholder={t('fees.selectAcademicYear')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {academicYears.map((ay) => (
-                                <SelectItem key={ay.id} value={ay.id}>
-                                    {ay.name} {ay.isCurrent && `(${t('academic.academicYears.current')})`}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <Button variant="outline" size="icon">
-                        <Download className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
+            <PageHeader
+                title={t('fees.dashboard') || 'Fee Dashboard'}
+                description={t('fees.dashboardDescription') || 'Overview of fee collection and management'}
+                icon={<Banknote className="h-5 w-5" />}
+                rightSlot={
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+                        <Select
+                            value={filterAcademicYear || ''}
+                            onValueChange={setFilterAcademicYear}
+                        >
+                            <SelectTrigger className="w-full sm:w-[200px]">
+                                <SelectValue placeholder={t('fees.selectAcademicYear')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {academicYears.map((ay) => (
+                                    <SelectItem key={ay.id} value={ay.id}>
+                                        {ay.name} {ay.isCurrent && `(${t('academic.academicYears.current')})`}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="self-start sm:self-auto"
+                            aria-label={t('common.download') || 'Download'}
+                        >
+                            <Download className="h-4 w-4" />
+                        </Button>
+                    </div>
+                }
+            />
 
             {/* Summary Cards Row */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">

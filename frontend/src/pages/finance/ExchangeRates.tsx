@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
     Dialog,
     DialogContent,
@@ -18,7 +19,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import {
     Table,
@@ -133,7 +133,7 @@ export default function ExchangeRates() {
             }}
             className="space-y-4"
         >
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="fromCurrencyId">{t('finance.fromCurrency') || 'From Currency'} *</Label>
                     <Select
@@ -171,7 +171,7 @@ export default function ExchangeRates() {
                     </Select>
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="rate">{t('finance.exchangeRate') || 'Exchange Rate'} *</Label>
                     <Input
@@ -224,34 +224,28 @@ export default function ExchangeRates() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl font-bold">
-                        {t('finance.exchangeRates') || 'Exchange Rates'}
-                    </h1>
-                    <p className="text-muted-foreground">
-                        {t('finance.exchangeRatesDescription') || 'Manage currency exchange rates for conversion'}
-                    </p>
-                </div>
-                <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            {t('finance.addExchangeRate') || 'Add Exchange Rate'}
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{t('finance.addExchangeRate') || 'Add Exchange Rate'}</DialogTitle>
-                            <DialogDescription>
-                                {t('finance.addExchangeRateDescription') || 'Create a new exchange rate'}
-                            </DialogDescription>
-                        </DialogHeader>
-                        {renderRateForm(handleCreate, createRate.isPending)}
-                    </DialogContent>
-                </Dialog>
-            </div>
+            <PageHeader
+                title={t('finance.exchangeRates') || 'Exchange Rates'}
+                description={t('finance.exchangeRatesDescription') || 'Manage currency exchange rates for conversion'}
+                icon={<ArrowRightLeft className="h-5 w-5" />}
+                primaryAction={{
+                    label: t('finance.addExchangeRate') || 'Add Exchange Rate',
+                    onClick: () => setIsCreateOpen(true),
+                    icon: <Plus className="h-4 w-4" />,
+                }}
+            />
+
+            <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('finance.addExchangeRate') || 'Add Exchange Rate'}</DialogTitle>
+                        <DialogDescription>
+                            {t('finance.addExchangeRateDescription') || 'Create a new exchange rate'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {renderRateForm(handleCreate, createRate.isPending)}
+                </DialogContent>
+            </Dialog>
 
             {/* Exchange Rates Table */}
             <Card>
@@ -402,4 +396,5 @@ export default function ExchangeRates() {
         </div>
     );
 }
+
 

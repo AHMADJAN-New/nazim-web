@@ -12,6 +12,8 @@ import { showToast } from "@/lib/toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Building, Plus, Edit2, Trash2, FileText, Users, Search } from "lucide-react";
 import { ReportExportButtons } from "@/components/reports/ReportExportButtons";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { FilterPanel } from "@/components/layout/FilterPanel";
 import {
   Dialog,
   DialogContent,
@@ -186,19 +188,16 @@ export default function DepartmentsPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Building className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Departments & Routing</h1>
-            <p className="text-muted-foreground">Manage departments and document routing</p>
-          </div>
-        </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t('common.add') || 'Add Department'}
-        </Button>
-      </div>
+      <PageHeader
+        title="Departments & Routing"
+        description="Manage departments and document routing"
+        icon={<Building className="h-5 w-5" />}
+        primaryAction={{
+          label: t('common.add') || 'Add Department',
+          onClick: () => setIsCreateDialogOpen(true),
+          icon: <Plus className="h-4 w-4" />,
+        }}
+      />
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -236,43 +235,42 @@ export default function DepartmentsPage() {
         </Card>
       </div>
 
+      <FilterPanel title={t('common.filters')}>
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t('common.search') || 'Search departments...'}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          <ReportExportButtons
+            data={departmentsExportData}
+            columns={[
+              { key: 'name', label: 'Department Name' },
+              { key: 'documents_count', label: 'Documents' },
+              { key: 'created_at', label: 'Created' },
+            ]}
+            reportKey="dms_departments"
+            title="DMS Departments Report"
+            transformData={(data) => data}
+            buildFiltersSummary={buildFiltersSummary}
+            templateType="dms"
+            disabled={departmentsExportData.length === 0}
+            errorNoData={t('common.noDataToExport') || 'No data to export'}
+          />
+        </div>
+      </FilterPanel>
+
       {/* Departments Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Departments</CardTitle>
-              <CardDescription>
-                Manage your organization's departments and view document assignments
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative w-64">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={t('common.search') || 'Search departments...'}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-              <ReportExportButtons
-                data={departmentsExportData}
-                columns={[
-                  { key: 'name', label: 'Department Name' },
-                  { key: 'documents_count', label: 'Documents' },
-                  { key: 'created_at', label: 'Created' },
-                ]}
-                reportKey="dms_departments"
-                title="DMS Departments Report"
-                transformData={(data) => data}
-                buildFiltersSummary={buildFiltersSummary}
-                templateType="dms"
-                disabled={departmentsExportData.length === 0}
-                errorNoData={t('common.noDataToExport') || 'No data to export'}
-              />
-            </div>
-          </div>
+          <CardTitle>Departments</CardTitle>
+          <CardDescription>
+            Manage your organization's departments and view document assignments
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (

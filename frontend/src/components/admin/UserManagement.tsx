@@ -307,13 +307,13 @@ export function UserManagement() {
                 Manage user accounts, roles, and permissions
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleExport}>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+              <Button variant="outline" onClick={handleExport} className="w-full sm:w-auto">
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV
               </Button>
               {hasCreatePermission && (
-                <Button onClick={() => handleOpenDialog()}>
+                <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Create User
                 </Button>

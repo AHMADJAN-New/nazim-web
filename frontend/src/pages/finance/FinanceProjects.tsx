@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
     Select,
     SelectContent,
@@ -24,7 +25,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import {
     AlertDialog,
@@ -153,7 +153,7 @@ export default function FinanceProjects() {
                     placeholder={t('finance.projectDescriptionPlaceholder') || 'Description of this project...'}
                 />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="startDate">{t('common.startDate') || 'Start Date'}</Label>
                     <CalendarDatePicker date={formData.startDate || '' ? new Date(formData.startDate || '') : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
@@ -163,7 +163,7 @@ export default function FinanceProjects() {
                     <CalendarDatePicker date={formData.endDate || '' ? new Date(formData.endDate || '') : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="currencyId">{t('finance.currency') || 'Currency'}</Label>
                     <Select
@@ -219,17 +219,16 @@ export default function FinanceProjects() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl font-bold">
-                        {t('finance.projects') || 'Projects & Funds'}
-                    </h1>
-                    <p className="text-muted-foreground">
-                        {t('finance.projectsDescription') || 'Manage your projects and track funds'}
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
+            <PageHeader
+                title={t('finance.projects') || 'Projects & Funds'}
+                description={t('finance.projectsDescription') || 'Manage your projects and track funds'}
+                icon={<FolderKanban className="h-5 w-5" />}
+                primaryAction={{
+                    label: t('finance.addProject') || 'Add Project',
+                    onClick: () => setIsCreateOpen(true),
+                    icon: <Plus className="h-4 w-4" />,
+                }}
+                rightSlot={
                     <ReportExportButtons
                         data={projects || []}
                         columns={[
@@ -261,25 +260,20 @@ export default function FinanceProjects() {
                         templateType="finance_projects"
                         disabled={isLoading || !projects || projects.length === 0}
                     />
-                    <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            {t('finance.addProject') || 'Add Project'}
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{t('finance.addProject') || 'Add Project'}</DialogTitle>
-                            <DialogDescription>
-                                {t('finance.addProjectDescription') || 'Create a new project or fund'}
-                            </DialogDescription>
-                        </DialogHeader>
-                        {renderProjectForm(handleCreate, createProject.isPending)}
-                    </DialogContent>
-                    </Dialog>
-                </div>
-            </div>
+                }
+            />
+
+            <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('finance.addProject') || 'Add Project'}</DialogTitle>
+                        <DialogDescription>
+                            {t('finance.addProjectDescription') || 'Create a new project or fund'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {renderProjectForm(handleCreate, createProject.isPending)}
+                </DialogContent>
+            </Dialog>
 
             {/* Projects Grid */}
             {projects && projects.length > 0 ? (
@@ -435,3 +429,4 @@ export default function FinanceProjects() {
         </div>
     );
 }
+

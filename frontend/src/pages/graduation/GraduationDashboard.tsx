@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { Plus, FileText, Award, Printer, ArrowRight, Calendar, Users, CheckCircle2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import { useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useSchools } from '@/hooks/useSchools';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useAuth } from '@/hooks/useAuth';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 
 // Status Badge Component
 const StatusBadge = ({ status }: { status: string }) => {
@@ -113,10 +115,10 @@ export default function GraduationDashboard() {
   if (schoolsLoading || batchesLoading) {
     return (
       <div className="space-y-6 max-w-6xl mx-auto">
-        <div>
-          <p className="text-sm text-muted-foreground">{t('nav.graduationCertificates')}</p>
-          <h1 className="text-2xl font-semibold">{t('graduation.dashboard.title') || 'Graduation Dashboard'}</h1>
-        </div>
+        <PageHeader
+          title={t('graduation.dashboard.title') || 'Graduation Dashboard'}
+          icon={<Award className="h-5 w-5" />}
+        />
         <p className="p-4">{t('common.loading')}</p>
       </div>
     );
@@ -127,33 +129,30 @@ export default function GraduationDashboard() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Header */}
-      <div>
-        <p className="text-sm text-muted-foreground">{t('nav.graduationCertificates')}</p>
-        <h1 className="text-2xl font-semibold">{t('graduation.dashboard.title') || 'Graduation Dashboard'}</h1>
-      </div>
+      <PageHeader
+        title={t('graduation.dashboard.title') || 'Graduation Dashboard'}
+        icon={<Award className="h-5 w-5" />}
+      />
 
       {/* School Selector - Show if multiple schools or no school selected */}
       {schools.length > 1 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <Label>{t('common.schoolManagement') || 'School'}</Label>
-              <Select value={schoolId || ''} onValueChange={(val) => setSchoolId(val || undefined)}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('common.selectSchool') || 'Select School'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {schools.map((school) => (
-                    <SelectItem key={school.id} value={school.id}>
-                      {school.schoolName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        <FilterPanel title={t('common.schoolManagement') || 'School'}>
+          <div className="space-y-2">
+            <Label>{t('common.schoolManagement') || 'School'}</Label>
+            <Select value={schoolId || ''} onValueChange={(val) => setSchoolId(val || undefined)}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('common.selectSchool') || 'Select School'} />
+              </SelectTrigger>
+              <SelectContent>
+                {schools.map((school) => (
+                  <SelectItem key={school.id} value={school.id}>
+                    {school.schoolName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </FilterPanel>
       )}
 
       {/* Error Notice */}

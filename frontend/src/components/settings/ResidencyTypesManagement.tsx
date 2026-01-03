@@ -198,7 +198,7 @@ export function ResidencyTypesManagement() {
                 {t('academic.residencyTypes.title')}
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
               <ReportExportButtons
                 data={filteredResidencyTypes}
                 columns={[
@@ -224,7 +224,7 @@ export function ResidencyTypesManagement() {
                 disabled={filteredResidencyTypes.length === 0}
               />
               {hasCreatePermission && (
-                <Button onClick={() => handleOpenDialog()}>
+                <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   {t('academic.residencyTypes.addResidencyType')}
                 </Button>

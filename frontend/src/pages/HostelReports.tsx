@@ -362,31 +362,36 @@ export function HostelReports() {
 
       {/* Tabs for different report sections */}
       <Tabs defaultValue="building-utilization" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="building-utilization" className="flex items-center gap-2">
+        <TabsList className="flex w-full gap-1 h-auto flex-shrink-0 overflow-x-auto pb-1">
+          <TabsTrigger value="building-utilization" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
             <Building2 className="h-4 w-4" />
-            Building Utilization
+            <span className="hidden sm:inline">Building Utilization</span>
+            <span className="sm:hidden">Buildings</span>
           </TabsTrigger>
-          <TabsTrigger value="warden-coverage" className="flex items-center gap-2">
+          <TabsTrigger value="warden-coverage" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
             <ShieldCheck className="h-4 w-4" />
-            Warden Coverage
+            <span className="hidden sm:inline">Warden Coverage</span>
+            <span className="sm:hidden">Wardens</span>
           </TabsTrigger>
-          <TabsTrigger value="room-buildings" className="flex items-center gap-2">
+          <TabsTrigger value="room-buildings" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
             <MapPin className="h-4 w-4" />
-            Room & Buildings
+            <span className="hidden sm:inline">Room & Buildings</span>
+            <span className="sm:hidden">Rooms</span>
           </TabsTrigger>
-          <TabsTrigger value="assigned-boarders" className="flex items-center gap-2">
+          <TabsTrigger value="assigned-boarders" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
             <UserCheck className="h-4 w-4" />
-            Assigned Boarders
+            <span className="hidden sm:inline">Assigned Boarders</span>
+            <span className="sm:hidden">Assigned</span>
             {allAssignedBoarders.length > 0 && (
               <Badge variant="secondary" className="ml-1">
                 {allAssignedBoarders.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="unassigned-boarders" className="flex items-center gap-2">
+          <TabsTrigger value="unassigned-boarders" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
             <Users className="h-4 w-4" />
-            Unassigned
+            <span className="hidden sm:inline">Unassigned</span>
+            <span className="sm:hidden">Unassigned</span>
             {totals.unassignedBoarders > 0 && (
               <Badge variant="destructive" className="ml-1">
                 {totals.unassignedBoarders}

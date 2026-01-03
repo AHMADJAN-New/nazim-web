@@ -54,6 +54,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSchools } from '@/hooks/useSchools';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useAuth } from '@/hooks/useAuth';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 interface GraduationCertificateTemplate {
   id: string;
@@ -241,13 +242,15 @@ export default function GraduationCertificateTemplates() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t('certificateTemplates.title') || 'Graduation Certificate Templates'}</h1>
-        <Button onClick={() => handleOpenDialog()}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t('certificateTemplates.createTemplate') || 'Create Template'}
-        </Button>
-      </div>
+      <PageHeader
+        title={t('certificateTemplates.title') || 'Graduation Certificate Templates'}
+        icon={<FileText className="h-5 w-5" />}
+        primaryAction={{
+          label: t('certificateTemplates.createTemplate') || 'Create Template',
+          onClick: () => handleOpenDialog(),
+          icon: <Plus className="h-4 w-4" />,
+        }}
+      />
 
       <Card>
         <CardHeader>
@@ -364,7 +367,7 @@ export default function GraduationCertificateTemplates() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Template Name *</Label>
                 <Input
@@ -420,7 +423,7 @@ export default function GraduationCertificateTemplates() {
 
             <div className="border rounded-lg p-4 space-y-4">
               <h4 className="font-medium">Layout Settings</h4>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Font Size</Label>
                   <Input

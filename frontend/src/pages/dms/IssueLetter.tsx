@@ -780,7 +780,7 @@ export default function IssueLetter() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <Tabs defaultValue="issue" className="space-y-6">
         <TabsList>
           <TabsTrigger value="issue">

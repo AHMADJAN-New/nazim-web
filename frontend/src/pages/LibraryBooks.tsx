@@ -50,6 +50,8 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate, formatDateTime, cn } from '@/lib/utils';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -424,21 +426,20 @@ export default function LibraryBooks() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <BookOpen className="h-8 w-8" />
-                    <div>
-                        <h1 className="text-2xl font-semibold">{t('library.books')}</h1>
-                        <p className="text-sm text-muted-foreground">{t('library.subtitle')}</p>
-                    </div>
-                </div>
-                {hasCreatePermission && (
-                    <Button onClick={() => handleOpenDialog()}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        {t('library.addBook')}
-                    </Button>
-                )}
-            </div>
+            <PageHeader
+                title={t('library.books')}
+                description={t('library.subtitle')}
+                icon={<BookOpen className="h-5 w-5" />}
+                primaryAction={
+                    hasCreatePermission
+                        ? {
+                            label: t('library.addBook'),
+                            onClick: () => handleOpenDialog(),
+                            icon: <Plus className="h-4 w-4" />,
+                        }
+                        : undefined
+                }
+            />
 
             <Card>
                 <CardHeader>
@@ -449,53 +450,55 @@ export default function LibraryBooks() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        <div className="flex flex-col md:flex-row gap-4 items-end">
-                            <div className="relative flex-1 max-w-md w-full">
-                                <Label htmlFor="search" className="mb-2 block">Search</Label>
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        id="search"
-                                        placeholder={t('library.searchBookPlaceholder')}
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-10"
-                                    />
+                        <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+                            <div className="flex flex-col md:flex-row gap-4 items-end">
+                                <div className="relative flex-1 max-w-md w-full">
+                                    <Label htmlFor="search" className="mb-2 block">Search</Label>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            id="search"
+                                            placeholder={t('library.searchBookPlaceholder')}
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="pl-10"
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="flex-1 w-full">
-                                <Label htmlFor="category-filter" className="mb-2 block">Category</Label>
-                                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                                    <SelectTrigger id="category-filter" className="w-full">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">{t('library.allCategories')}</SelectItem>
-                                        {Array.isArray(categories) && categories.map((cat) => (
-                                            <SelectItem key={cat.id} value={cat.id}>
-                                                {cat.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            {hasActiveFilters && (
-                                <div className="w-full md:w-auto">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                            setCategoryFilter('all');
-                                            setSearchQuery('');
-                                        }}
-                                        className="w-full md:w-auto"
-                                    >
-                                        <X className="h-4 w-4 mr-2" />
-                                        Reset
-                                    </Button>
+                                <div className="flex-1 w-full">
+                                    <Label htmlFor="category-filter" className="mb-2 block">Category</Label>
+                                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                                        <SelectTrigger id="category-filter" className="w-full">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">{t('library.allCategories')}</SelectItem>
+                                            {Array.isArray(categories) && categories.map((cat) => (
+                                                <SelectItem key={cat.id} value={cat.id}>
+                                                    {cat.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
-                            )}
-                        </div>
+                                {hasActiveFilters && (
+                                    <div className="w-full md:w-auto">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                setCategoryFilter('all');
+                                                setSearchQuery('');
+                                            }}
+                                            className="w-full md:w-auto"
+                                        >
+                                            <X className="h-4 w-4 mr-2" />
+                                            Reset
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        </FilterPanel>
 
                         <DataTable 
                             table={table} 

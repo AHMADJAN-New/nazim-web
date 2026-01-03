@@ -30,6 +30,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
     ChartContainer,
     ChartTooltip,
@@ -186,27 +187,29 @@ export default function LibraryDashboard() {
         : 0;
 
     return (
-        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
-                        {t('library.dashboard') || 'Library Dashboard'}
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        {t('library.dashboardDescription') || 'Overview of your library\'s books, loans, and statistics'}
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <Button variant="outline" onClick={() => navigate('/library/reports')}>
-                        <BarChart3 className="h-4 w-4 mr-2" />
-                        {t('library.viewReports') || 'View Reports'}
-                    </Button>
-                    <Button variant="outline" size="icon">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+            <PageHeader
+                title={t('library.dashboard') || 'Library Dashboard'}
+                description={t('library.dashboardDescription') || 'Overview of your library\'s books, loans, and statistics'}
+                icon={<BookOpen className="h-5 w-5" />}
+                secondaryActions={[
+                    {
+                        label: t('library.viewReports') || 'View Reports',
+                        onClick: () => navigate('/library/reports'),
+                        icon: <BarChart3 className="h-4 w-4" />,
+                        variant: "outline",
+                    },
+                ]}
+                rightSlot={
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label={t('common.download') || 'Download'}
+                    >
                         <Download className="h-4 w-4" />
                     </Button>
-                </div>
-            </div>
+                }
+            />
 
             {/* Main Stats Cards Row */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">

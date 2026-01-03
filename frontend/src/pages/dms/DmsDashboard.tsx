@@ -4,6 +4,8 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { dmsApi } from "@/lib/api/client";
 import type { DmsDashboardStats } from "@/types/dms";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { FileText } from "lucide-react";
 
 const StatCard = ({ title, value, description }: { title: string; value: number; description?: string }) => (
   <Card>
@@ -28,12 +30,11 @@ export default function DmsDashboard() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Document System Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Quick glance across incoming, outgoing, and pending routed documents.</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Document System Dashboard"
+        description="Quick glance across incoming, outgoing, and pending routed documents."
+        icon={<FileText className="h-5 w-5" />}
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Incoming this week" value={stats?.incoming.week ?? 0} description="Week" />

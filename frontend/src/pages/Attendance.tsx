@@ -311,7 +311,7 @@ export default function Attendance() {
   };
 
   return (
-    <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4">
+    <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4 overflow-x-hidden">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
         <CardHeader className="pb-3">

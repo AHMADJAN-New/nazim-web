@@ -34,6 +34,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Combobox } from '@/components/ui/combobox';
 import { useLanguage } from '@/hooks/useLanguage';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -442,21 +444,20 @@ export default function LibraryDistribution() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <BookCheck className="h-8 w-8" />
-                    <div>
-                        <h1 className="text-2xl font-semibold">Library Distribution</h1>
-                        <p className="text-sm text-muted-foreground">Manage book loans and returns</p>
-                    </div>
-                </div>
-                {hasCreatePermission && (
-                    <Button onClick={handleOpenLoanDialog}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Assign Book
-                    </Button>
-                )}
-            </div>
+            <PageHeader
+                title="Library Distribution"
+                description="Manage book loans and returns"
+                icon={<BookCheck className="h-5 w-5" />}
+                primaryAction={
+                    hasCreatePermission
+                        ? {
+                            label: 'Assign Book',
+                            onClick: handleOpenLoanDialog,
+                            icon: <Plus className="h-4 w-4" />,
+                        }
+                        : undefined
+                }
+            />
 
             <Card>
                 <CardHeader>
@@ -467,65 +468,67 @@ export default function LibraryDistribution() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        <div className="flex flex-col md:flex-row gap-4 items-end">
-                            <div className="relative flex-1 max-w-md w-full">
-                                <Label htmlFor="search" className="mb-2 block">Search</Label>
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        id="search"
-                                        placeholder="Search by book title or copy code..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-10"
-                                    />
+                        <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+                            <div className="flex flex-col md:flex-row gap-4 items-end">
+                                <div className="relative flex-1 max-w-md w-full">
+                                    <Label htmlFor="search" className="mb-2 block">Search</Label>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            id="search"
+                                            placeholder="Search by book title or copy code..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="pl-10"
+                                        />
+                                    </div>
                                 </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="category-filter">Category</Label>
+                                        <Combobox
+                                            options={categoryOptions}
+                                            value={categoryFilter}
+                                            onValueChange={setCategoryFilter}
+                                            placeholder="All Categories"
+                                            searchPlaceholder="Search categories..."
+                                            emptyText="No categories found."
+                                            className="w-full"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="borrower-filter">Borrower</Label>
+                                        <Select value={borrowerFilter} onValueChange={setBorrowerFilter}>
+                                            <SelectTrigger id="borrower-filter" className="w-full">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Borrowers</SelectItem>
+                                                <SelectItem value="student">Students Only</SelectItem>
+                                                <SelectItem value="staff">Staff Only</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                {hasActiveFilters && (
+                                    <div className="w-full md:w-auto">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                setBorrowerFilter('all');
+                                                setCategoryFilter('');
+                                                setSearchQuery('');
+                                            }}
+                                            className="w-full md:w-auto"
+                                        >
+                                            <X className="h-4 w-4 mr-2" />
+                                            Reset
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
-                                <div className="space-y-2">
-                                    <Label htmlFor="category-filter">Category</Label>
-                                    <Combobox
-                                        options={categoryOptions}
-                                        value={categoryFilter}
-                                        onValueChange={setCategoryFilter}
-                                        placeholder="All Categories"
-                                        searchPlaceholder="Search categories..."
-                                        emptyText="No categories found."
-                                        className="w-full"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="borrower-filter">Borrower</Label>
-                                    <Select value={borrowerFilter} onValueChange={setBorrowerFilter}>
-                                        <SelectTrigger id="borrower-filter" className="w-full">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Borrowers</SelectItem>
-                                            <SelectItem value="student">Students Only</SelectItem>
-                                            <SelectItem value="staff">Staff Only</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            {hasActiveFilters && (
-                                <div className="w-full md:w-auto">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                            setBorrowerFilter('all');
-                                            setCategoryFilter('');
-                                            setSearchQuery('');
-                                        }}
-                                        className="w-full md:w-auto"
-                                    >
-                                        <X className="h-4 w-4 mr-2" />
-                                        Reset
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
+                        </FilterPanel>
 
                         <div className="rounded-md border">
                             <Table>

@@ -360,27 +360,31 @@ export default function AssetReportsTab() {
 
       {/* Reports Tabs */}
       <Tabs defaultValue="status-breakdown" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="status-breakdown" className="flex items-center gap-2">
+        <TabsList className="flex w-full gap-1 h-auto flex-shrink-0 overflow-x-auto pb-1">
+          <TabsTrigger value="status-breakdown" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
             <BarChart3 className="h-4 w-4" />
-            Status Breakdown
+            <span className="hidden sm:inline">Status Breakdown</span>
+            <span className="sm:hidden">Status</span>
           </TabsTrigger>
-          <TabsTrigger value="category-breakdown" className="flex items-center gap-2">
+          <TabsTrigger value="category-breakdown" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
             <TrendingUp className="h-4 w-4" />
-            Category Breakdown
+            <span className="hidden sm:inline">Category Breakdown</span>
+            <span className="sm:hidden">Category</span>
           </TabsTrigger>
-          <TabsTrigger value="needs-maintenance" className="flex items-center gap-2">
+          <TabsTrigger value="needs-maintenance" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
             <AlertTriangle className="h-4 w-4" />
-            Needs Maintenance
+            <span className="hidden sm:inline">Needs Maintenance</span>
+            <span className="sm:hidden">Maintenance</span>
             {calculatedStats.needsMaintenance > 0 && (
               <Badge variant="destructive" className="ml-1">
                 {calculatedStats.needsMaintenance}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="value-analysis" className="flex items-center gap-2">
+          <TabsTrigger value="value-analysis" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
             <DollarSign className="h-4 w-4" />
-            Value Analysis
+            <span className="hidden sm:inline">Value Analysis</span>
+            <span className="sm:hidden">Value</span>
           </TabsTrigger>
         </TabsList>
 

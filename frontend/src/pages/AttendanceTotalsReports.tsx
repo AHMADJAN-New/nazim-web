@@ -1,5 +1,4 @@
 import { useMemo, useState, useEffect } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
 import {
     Activity,
     AlertTriangle,
@@ -7,7 +6,6 @@ import {
     Calendar,
     CheckCircle2,
     FileText,
-    Filter,
     Heart,
     RefreshCw,
     XCircle,
@@ -32,12 +30,15 @@ import type { AttendanceTotalsReportFilters } from '@/types/domain/attendanceTot
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Combobox } from '@/components/ui/combobox';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import {
   Dialog,
   DialogContent,
@@ -118,7 +119,6 @@ export default function AttendanceTotalsReports() {
         dateFrom: undefined,
         dateTo: undefined,
     });
-    const [showFilters, setShowFilters] = useState(false);
     const [sessionType, setSessionType] = useState<'class' | 'room'>('class');
     const [dateRangePreset, setDateRangePreset] = useState<'1week' | '1month' | '4months' | 'custom'>('1month');
 
@@ -188,10 +188,6 @@ export default function AttendanceTotalsReports() {
             dateTo: undefined,
         });
     };
-
-    const activeFilterCount = useMemo(() => {
-        return Object.values(filters).filter((value) => !!value && value !== profile?.organization_id).length;
-    }, [filters, profile?.organization_id]);
 
     const handleGenerateReport = async (variant: 'totals' | 'class_wise' | 'room_wise') => {
         if (!report) {
@@ -281,93 +277,89 @@ export default function AttendanceTotalsReports() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 max-w-7xl space-y-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div className="space-y-1">
-                    <h1 className="text-3xl font-bold leading-tight">
-                        {t('attendanceTotalsReport.title') || 'Attendance Totals Report'}
-                    </h1>
-                    <p className="text-muted-foreground">
-                        {t('attendanceTotalsReport.subtitle') || 'Analyze attendance performance across classes, rooms, and schools.'}
-                    </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" onClick={() => {
-                        setReportType('pdf');
-                        handleGenerateReport('totals');
-                    }} disabled={isLoading || !report || isGenerating}>
-                        {isGenerating && reportType === 'pdf' ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <Download className="mr-2 h-4 w-4" />
-                        )}
-                        PDF Totals
-                    </Button>
-                    <Button variant="outline" onClick={() => {
-                        setReportType('excel');
-                        handleGenerateReport('totals');
-                    }} disabled={isLoading || !report || isGenerating}>
-                        {isGenerating && reportType === 'excel' ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <Download className="mr-2 h-4 w-4" />
-                        )}
-                        Excel Totals
-                    </Button>
-                    <Button variant="outline" onClick={() => {
-                        setReportType('pdf');
-                        handleGenerateReport('class_wise');
-                    }} disabled={isLoading || !report || isGenerating}>
-                        {isGenerating && reportType === 'pdf' ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <Download className="mr-2 h-4 w-4" />
-                        )}
-                        PDF Class-wise
-                    </Button>
-                    <Button variant="outline" onClick={() => {
-                        setReportType('excel');
-                        handleGenerateReport('class_wise');
-                    }} disabled={isLoading || !report || isGenerating}>
-                        {isGenerating && reportType === 'excel' ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <Download className="mr-2 h-4 w-4" />
-                        )}
-                        Excel Class-wise
-                    </Button>
-                    <Button variant="outline" onClick={() => {
-                        setReportType('pdf');
-                        handleGenerateReport('room_wise');
-                    }} disabled={isLoading || !report || isGenerating}>
-                        {isGenerating && reportType === 'pdf' ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <Download className="mr-2 h-4 w-4" />
-                        )}
-                        PDF Room-wise
-                    </Button>
-                    <Button variant="outline" onClick={() => {
-                        setReportType('excel');
-                        handleGenerateReport('room_wise');
-                    }} disabled={isLoading || !report || isGenerating}>
-                        {isGenerating && reportType === 'excel' ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <Download className="mr-2 h-4 w-4" />
-                        )}
-                        Excel Room-wise
-                    </Button>
-                    <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        {t('common.refresh') || 'Refresh'}
-                    </Button>
-                    <Button variant="outline" onClick={() => setShowFilters((prev) => !prev)}>
-                        <Filter className="mr-2 h-4 w-4" />
-                        {t('attendanceTotalsReport.filters') || 'Filters'}
-                        {activeFilterCount > 0 && <Badge className="ml-2" variant="secondary">{activeFilterCount}</Badge>}
-                    </Button>
-                </div>
-            </div>
+            <PageHeader
+                title={t('attendanceTotalsReport.title') || 'Attendance Totals Report'}
+                description={t('attendanceTotalsReport.subtitle') || 'Analyze attendance performance across classes, rooms, and schools.'}
+                icon={<Activity className="h-5 w-5" />}
+                secondaryActions={[
+                    {
+                        label: t('common.refresh') || 'Refresh',
+                        onClick: () => refetch(),
+                        icon: <RefreshCw className="h-4 w-4" />,
+                        variant: 'outline',
+                    },
+                ]}
+                rightSlot={
+                    <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm" onClick={() => {
+                            setReportType('pdf');
+                            handleGenerateReport('totals');
+                        }} disabled={isLoading || !report || isGenerating}>
+                            {isGenerating && reportType === 'pdf' ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="mr-2 h-4 w-4" />
+                            )}
+                            PDF Totals
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => {
+                            setReportType('excel');
+                            handleGenerateReport('totals');
+                        }} disabled={isLoading || !report || isGenerating}>
+                            {isGenerating && reportType === 'excel' ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="mr-2 h-4 w-4" />
+                            )}
+                            Excel Totals
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => {
+                            setReportType('pdf');
+                            handleGenerateReport('class_wise');
+                        }} disabled={isLoading || !report || isGenerating}>
+                            {isGenerating && reportType === 'pdf' ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="mr-2 h-4 w-4" />
+                            )}
+                            PDF Class-wise
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => {
+                            setReportType('excel');
+                            handleGenerateReport('class_wise');
+                        }} disabled={isLoading || !report || isGenerating}>
+                            {isGenerating && reportType === 'excel' ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="mr-2 h-4 w-4" />
+                            )}
+                            Excel Class-wise
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => {
+                            setReportType('pdf');
+                            handleGenerateReport('room_wise');
+                        }} disabled={isLoading || !report || isGenerating}>
+                            {isGenerating && reportType === 'pdf' ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="mr-2 h-4 w-4" />
+                            )}
+                            PDF Room-wise
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => {
+                            setReportType('excel');
+                            handleGenerateReport('room_wise');
+                        }} disabled={isLoading || !report || isGenerating}>
+                            {isGenerating && reportType === 'excel' ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="mr-2 h-4 w-4" />
+                            )}
+                            Excel Room-wise
+                        </Button>
+                    </div>
+                }
+            />
 
             {hasInvalidRange && (
                 <Alert variant="destructive">
@@ -379,108 +371,100 @@ export default function AttendanceTotalsReports() {
                 </Alert>
             )}
 
-            {showFilters && (
-                <Card>
-                    <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>{t('attendanceTotalsReport.filtersTitle') || 'Report filters'}</CardTitle>
-                                <CardDescription>
-                                    {t('attendanceTotalsReport.filtersDescription') || 'Choose a date range and optional class or school constraints.'}
-                                </CardDescription>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button variant="ghost" size="sm" onClick={handleResetFilters}>
-                                    {t('attendanceTotalsReport.reset') || 'Reset'}
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={() => setShowFilters(false)}>
-                                    ×
-                                </Button>
-                            </div>
+            <FilterPanel
+                title={t('attendanceTotalsReport.filtersTitle') || 'Report filters'}
+                footer={
+                    <div className="flex justify-end">
+                        <Button variant="ghost" size="sm" onClick={handleResetFilters}>
+                            {t('attendanceTotalsReport.reset') || 'Reset'}
+                        </Button>
+                    </div>
+                }
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                        {t('attendanceTotalsReport.filtersDescription') || 'Choose a date range and optional class or school constraints.'}
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <div className="space-y-2">
+                            <Label>{t('attendanceTotalsReport.school') || 'School'}</Label>
+                            <Combobox
+                                options={(schools || []).map((school) => ({ label: school.schoolName, value: school.id }))}
+                                value={filters.schoolId || ''}
+                                onValueChange={(value) => handleFilterChange('schoolId', value || undefined)}
+                                placeholder={t('attendanceTotalsReport.allSchools') || 'All schools'}
+                            />
                         </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid gap-4 md:grid-cols-3">
-                            <div className="space-y-2">
-                                <Label>{t('attendanceTotalsReport.school') || 'School'}</Label>
-                                <Combobox
-                                    options={(schools || []).map((school) => ({ label: school.schoolName, value: school.id }))}
-                                    value={filters.schoolId || ''}
-                                    onValueChange={(value) => handleFilterChange('schoolId', value || undefined)}
-                                    placeholder={t('attendanceTotalsReport.allSchools') || 'All schools'}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>{t('attendanceTotalsReport.class') || 'Class / Room'}</Label>
-                                <Combobox
-                                    options={(classes || []).map((classItem) => ({ label: classItem.name, value: classItem.id }))}
-                                    value={filters.classId || ''}
-                                    onValueChange={(value) => handleFilterChange('classId', value || undefined)}
-                                    placeholder={t('attendanceTotalsReport.allClasses') || 'All classes'}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>{t('attendanceTotalsReport.academicYear') || 'Academic year'}</Label>
-                                <Select
-                                    value={filters.academicYearId || 'all'}
-                                    onValueChange={(value) => handleFilterChange('academicYearId', value)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder={t('attendanceTotalsReport.allYears') || 'All years'} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">{t('attendanceTotalsReport.allYears') || 'All years'}</SelectItem>
-                                        {(academicYears || []).map((year) => (
-                                            <SelectItem key={year.id} value={year.id}>
-                                                {year.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>{t('attendanceTotalsReport.status') || 'Status'}</Label>
-                                <Select value={filters.status || 'all'} onValueChange={(value) => handleFilterChange('status', value)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder={t('common.all') || 'All'} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
-                                        {Object.entries(attendanceStatusMeta).map(([key, meta]) => (
-                                            <SelectItem key={key} value={key}>
-                                                {meta.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>{t('attendanceTotalsReport.dateRange') || 'Date Range'}</Label>
-                                <Tabs value={dateRangePreset} onValueChange={(value) => handleDateRangePreset(value as typeof dateRangePreset)}>
-                                    <TabsList className="grid w-full grid-cols-4">
-                                        <TabsTrigger value="1week">1 Week</TabsTrigger>
-                                        <TabsTrigger value="1month">1 Month</TabsTrigger>
-                                        <TabsTrigger value="4months">4 Months</TabsTrigger>
-                                        <TabsTrigger value="custom">Custom</TabsTrigger>
-                                    </TabsList>
-                                </Tabs>
-                            </div>
-                            {dateRangePreset === 'custom' && (
-                                <>
-                                    <div className="space-y-2">
-                                        <Label>{t('attendanceTotalsReport.fromDate') || 'From date'}</Label>
-                                        <CalendarDatePicker date={filters.dateFrom || '' ? new Date(filters.dateFrom || '') : undefined} onDateChange={(date) => handleFilterChange("dateFrom", date ? date.toISOString().split("T")[0] : "")} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>{t('attendanceTotalsReport.toDate') || 'To date'}</Label>
-                                        <CalendarDatePicker date={filters.dateTo || '' ? new Date(filters.dateTo || '') : undefined} onDateChange={(date) => handleFilterChange("dateTo", date ? date.toISOString().split("T")[0] : "")} />
-                                    </div>
-                                </>
-                            )}
+                        <div className="space-y-2">
+                            <Label>{t('attendanceTotalsReport.class') || 'Class / Room'}</Label>
+                            <Combobox
+                                options={(classes || []).map((classItem) => ({ label: classItem.name, value: classItem.id }))}
+                                value={filters.classId || ''}
+                                onValueChange={(value) => handleFilterChange('classId', value || undefined)}
+                                placeholder={t('attendanceTotalsReport.allClasses') || 'All classes'}
+                            />
                         </div>
-                    </CardContent>
-                </Card>
-            )}
+                        <div className="space-y-2">
+                            <Label>{t('attendanceTotalsReport.academicYear') || 'Academic year'}</Label>
+                            <Select
+                                value={filters.academicYearId || 'all'}
+                                onValueChange={(value) => handleFilterChange('academicYearId', value)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder={t('attendanceTotalsReport.allYears') || 'All years'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">{t('attendanceTotalsReport.allYears') || 'All years'}</SelectItem>
+                                    {(academicYears || []).map((year) => (
+                                        <SelectItem key={year.id} value={year.id}>
+                                            {year.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>{t('attendanceTotalsReport.status') || 'Status'}</Label>
+                            <Select value={filters.status || 'all'} onValueChange={(value) => handleFilterChange('status', value)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={t('common.all') || 'All'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                                    {Object.entries(attendanceStatusMeta).map(([key, meta]) => (
+                                        <SelectItem key={key} value={key}>
+                                            {meta.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>{t('attendanceTotalsReport.dateRange') || 'Date Range'}</Label>
+                            <Tabs value={dateRangePreset} onValueChange={(value) => handleDateRangePreset(value as typeof dateRangePreset)}>
+                                <TabsList className="grid w-full grid-cols-4">
+                                    <TabsTrigger value="1week">1 Week</TabsTrigger>
+                                    <TabsTrigger value="1month">1 Month</TabsTrigger>
+                                    <TabsTrigger value="4months">4 Months</TabsTrigger>
+                                    <TabsTrigger value="custom">Custom</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                        </div>
+                        {dateRangePreset === 'custom' && (
+                            <>
+                                <div className="space-y-2">
+                                    <Label>{t('attendanceTotalsReport.fromDate') || 'From date'}</Label>
+                                    <CalendarDatePicker date={filters.dateFrom || '' ? new Date(filters.dateFrom || '') : undefined} onDateChange={(date) => handleFilterChange("dateFrom", date ? date.toISOString().split("T")[0] : "")} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>{t('attendanceTotalsReport.toDate') || 'To date'}</Label>
+                                    <CalendarDatePicker date={filters.dateTo || '' ? new Date(filters.dateTo || '') : undefined} onDateChange={(date) => handleFilterChange("dateTo", date ? date.toISOString().split("T")[0] : "")} />
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </FilterPanel>
 
             {isLoading && (
                 <div className="flex items-center justify-center py-16">
@@ -786,4 +770,5 @@ export default function AttendanceTotalsReports() {
         </div>
     );
 }
+
 

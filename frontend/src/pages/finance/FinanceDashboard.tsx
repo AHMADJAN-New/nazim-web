@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { useFinanceDashboard } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
     Wallet,
     TrendingUp,
@@ -127,28 +128,29 @@ export default function FinanceDashboard() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            {/* Header with Date Range */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
-                        {t('finance.dashboard') || 'Finance Dashboard'}
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        {t('finance.dashboardDescription') || 'Overview of your organization\'s finances'}
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-lg border bg-background">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">
-                            {formatDate(startDate)} - {formatDate(endDate)}
-                        </span>
+            <PageHeader
+                title={t('finance.dashboard') || 'Finance Dashboard'}
+                description={t('finance.dashboardDescription') || 'Overview of your organization\'s finances'}
+                icon={<Wallet className="h-5 w-5" />}
+                rightSlot={
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-lg border bg-background w-full sm:w-auto">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">
+                                {formatDate(startDate)} - {formatDate(endDate)}
+                            </span>
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="self-start sm:self-auto"
+                            aria-label={t('common.download') || 'Download'}
+                        >
+                            <Download className="h-4 w-4" />
+                        </Button>
                     </div>
-                    <Button variant="outline" size="icon">
-                        <Download className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
+                }
+            />
 
             {/* Summary Cards Row */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">

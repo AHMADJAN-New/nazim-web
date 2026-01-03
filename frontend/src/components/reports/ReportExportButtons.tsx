@@ -233,16 +233,18 @@ export function ReportExportButtons<T extends Record<string, any>>({
 
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {!showPdfOnly && (
           <Button
             variant={buttonVariant}
             size={buttonSize}
             onClick={handleExportExcel}
             disabled={isDisabled}
+            className="flex-shrink-0"
           >
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            {t('common.exportExcel') || 'Export Excel'}
+            <FileSpreadsheet className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('common.exportExcel') || 'Export Excel'}</span>
+            <span className="sm:hidden">Excel</span>
           </Button>
         )}
         {!showExcelOnly && (
@@ -251,9 +253,11 @@ export function ReportExportButtons<T extends Record<string, any>>({
             size={buttonSize}
             onClick={handleExportPdf}
             disabled={isDisabled}
+            className="flex-shrink-0"
           >
-            <FileDown className="h-4 w-4 mr-2" />
-            {t('common.exportPdf') || 'Export PDF'}
+            <FileDown className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('common.exportPdf') || 'Export PDF'}</span>
+            <span className="sm:hidden">PDF</span>
           </Button>
         )}
       </div>

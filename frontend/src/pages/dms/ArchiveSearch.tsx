@@ -22,6 +22,8 @@ import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { ReportExportButtons } from "@/components/reports/ReportExportButtons";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { FilterPanel } from "@/components/layout/FilterPanel";
 
 const statusOptions = [
   { label: "All Statuses", value: "all" },
@@ -334,14 +336,11 @@ export default function ArchiveSearch() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-      {/* Page Header */}
-      <div className="flex items-center gap-3">
-        <Archive className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-bold">Archive & Search</h1>
-          <p className="text-muted-foreground">Search and browse all incoming and outgoing documents</p>
-        </div>
-      </div>
+      <PageHeader
+        title={t('dms.archiveSearch') || 'Archive & Search'}
+        description={t('dms.archiveSearchDescription') || 'Search and browse all incoming and outgoing documents'}
+        icon={<Archive className="h-5 w-5" />}
+      />
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -377,108 +376,13 @@ export default function ArchiveSearch() {
         </Card>
       </div>
 
-      {/* Search & Filters Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Search & Filter
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Search Query */}
-          <div className="space-y-2">
-            <Label>Search</Label>
-            <Input
-              placeholder="Search by document number, subject, sender, description, external doc number..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleApplyFilters();
-                }
-              }}
-            />
-          </div>
-
-          {/* Filters Grid */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={filters.status}
-                onValueChange={(value) => setFilters((s) => ({ ...s, status: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Security Level</Label>
-              <Select
-                value={filters.security_level_key}
-                onValueChange={(value) => setFilters((s) => ({ ...s, security_level_key: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Levels</SelectItem>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="public">Public</SelectItem>
-                  <SelectItem value="internal">Internal</SelectItem>
-                  <SelectItem value="confidential">Confidential</SelectItem>
-                  <SelectItem value="secret">Secret</SelectItem>
-                  <SelectItem value="top_secret">Top Secret</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Academic Year</Label>
-              <Select
-                value={filters.academic_year_id || "all"}
-                onValueChange={(value) => setFilters((s) => ({ ...s, academic_year_id: value === "all" ? "" : value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All years" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All years</SelectItem>
-                  {academicYears?.map((year) => (
-                    <SelectItem key={year.id} value={year.id}>
-                      {year.name} {year.isCurrent ? "(Current)" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>From Date</Label>
-              <CalendarDatePicker date={filters.from_date ? new Date(filters.from_date) : undefined} onDateChange={(date) => setFilters(date ? date.toISOString().split("T")[0] : "")} />
-            </div>
-
-            <div className="space-y-2">
-              <Label>To Date</Label>
-              <CalendarDatePicker date={filters.to_date ? new Date(filters.to_date) : undefined} onDateChange={(date) => setFilters(date ? date.toISOString().split("T")[0] : "")} />
-            </div>
-          </div>
-
-          {/* Action Buttons */}
+      <FilterPanel
+        title={t('common.filters') || 'Search & Filter'}
+        footer={
           <div className="flex gap-2">
             <Button onClick={handleApplyFilters}>
               <Search className="h-4 w-4 mr-2" />
-              Apply Filters
+              {t('common.applyFilters') || 'Apply Filters'}
             </Button>
             <Button
               variant="outline"
@@ -502,11 +406,101 @@ export default function ArchiveSearch() {
               }}
             >
               <X className="h-4 w-4 mr-2" />
-              Clear All
+              {t('common.clearAll') || 'Clear All'}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        }
+      >
+        <div className="space-y-4">
+          {/* Search Query */}
+          <div className="space-y-2">
+            <Label>{t('common.search') || 'Search'}</Label>
+            <Input
+              placeholder={t('dms.searchPlaceholder') || 'Search by document number, subject, sender, description, external doc number...'}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleApplyFilters();
+                }
+              }}
+            />
+          </div>
+
+          {/* Filters Grid */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <div className="space-y-2">
+              <Label>{t('common.status') || 'Status'}</Label>
+              <Select
+                value={filters.status}
+                onValueChange={(value) => setFilters((s) => ({ ...s, status: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t('dms.securityLevel') || 'Security Level'}</Label>
+              <Select
+                value={filters.security_level_key}
+                onValueChange={(value) => setFilters((s) => ({ ...s, security_level_key: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.allLevels') || 'All Levels'}</SelectItem>
+                  <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
+                  <SelectItem value="public">Public</SelectItem>
+                  <SelectItem value="internal">Internal</SelectItem>
+                  <SelectItem value="confidential">Confidential</SelectItem>
+                  <SelectItem value="secret">Secret</SelectItem>
+                  <SelectItem value="top_secret">Top Secret</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t('academic.academicYears.academicYear') || 'Academic Year'}</Label>
+              <Select
+                value={filters.academic_year_id || "all"}
+                onValueChange={(value) => setFilters((s) => ({ ...s, academic_year_id: value === "all" ? "" : value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('common.allYears') || 'All years'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.allYears') || 'All years'}</SelectItem>
+                  {academicYears?.map((year) => (
+                    <SelectItem key={year.id} value={year.id}>
+                      {year.name} {year.isCurrent ? "(Current)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t('common.fromDate') || 'From Date'}</Label>
+              <CalendarDatePicker date={filters.from_date ? new Date(filters.from_date) : undefined} onDateChange={(date) => setFilters((s) => ({ ...s, from_date: date ? date.toISOString().split("T")[0] : "" }))} />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t('common.toDate') || 'To Date'}</Label>
+              <CalendarDatePicker date={filters.to_date ? new Date(filters.to_date) : undefined} onDateChange={(date) => setFilters((s) => ({ ...s, to_date: date ? date.toISOString().split("T")[0] : "" }))} />
+            </div>
+          </div>
+        </div>
+      </FilterPanel>
 
       {/* Results with Tabs */}
       {isLoading ? (

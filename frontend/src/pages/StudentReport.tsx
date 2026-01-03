@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Eye, Search, Filter, X, User } from 'lucide-react';
+import { Eye, Search, X, User } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
@@ -41,6 +41,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { showToast } from '@/lib/toast';
 import { format } from 'date-fns';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 
 const statusBadgeVariant = (status?: string) => {
   switch (status) {
@@ -430,15 +432,11 @@ const StudentReport = () => {
 
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between min-w-0">
-        <div className="space-y-1 min-w-0">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight">{t('studentReport.title') || 'Student Registration Report'}</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            {t('studentReport.subtitle') || 'View and export student registration data with detailed information'}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <PageHeader
+        title={t('studentReport.title') || 'Student Registration Report'}
+        description={t('studentReport.subtitle') || 'View and export student registration data with detailed information'}
+        icon={<User className="h-5 w-5" />}
+        rightSlot={
           <ReportExportButtons
             data={filteredStudents}
             columns={[
@@ -479,84 +477,78 @@ const StudentReport = () => {
             errorPdf={t('studentReport.exportFailed') || 'Failed to generate PDF report'}
             errorExcel={t('studentReport.exportFailed') || 'Failed to generate Excel report'}
           />
-        </div>
-      </div>
+        }
+      />
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('studentReport.filters') || 'Filters'}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
-            <div className="relative min-w-0">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder={t('studentReport.searchPlaceholder') || 'Search by name, admission number...'}
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setPage(1);
-                }}
-                className="pl-10 w-full"
-              />
-            </div>
-            <Select
-              value={schoolFilter}
-              onValueChange={(value) => {
-                setSchoolFilter(value as typeof schoolFilter);
+      <FilterPanel title={t('studentReport.filters') || 'Filters'}>
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+          <div className="relative min-w-0">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder={t('studentReport.searchPlaceholder') || 'Search by name, admission number...'}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
                 setPage(1);
               }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('studentReport.allSchools') || 'All Schools'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('studentReport.allSchools') || 'All Schools'}</SelectItem>
-                {schools?.map((school) => (
-                  <SelectItem key={school.id} value={school.id}>
-                    {school.schoolName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={statusFilter}
-              onValueChange={(value) => {
-                setStatusFilter(value as typeof statusFilter);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('studentReport.allStatus') || 'All Status'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('studentReport.allStatus') || 'All Status'}</SelectItem>
-                <SelectItem value="applied">{t('studentReport.applied') || 'Applied'}</SelectItem>
-                <SelectItem value="admitted">{t('studentReport.admitted') || 'Admitted'}</SelectItem>
-                <SelectItem value="active">{t('studentReport.active') || 'Active'}</SelectItem>
-                <SelectItem value="withdrawn">{t('studentReport.withdrawn') || 'Withdrawn'}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={genderFilter}
-              onValueChange={(value) => {
-                setGenderFilter(value as typeof genderFilter);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('studentReport.allGenders') || 'All Genders'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('studentReport.allGenders') || 'All Genders'}</SelectItem>
-                <SelectItem value="male">{t('studentReport.male') || 'Male'}</SelectItem>
-                <SelectItem value="female">{t('studentReport.female') || 'Female'}</SelectItem>
-              </SelectContent>
-            </Select>
+              className="pl-10 w-full"
+            />
           </div>
-        </CardContent>
-      </Card>
+          <Select
+            value={schoolFilter}
+            onValueChange={(value) => {
+              setSchoolFilter(value as typeof schoolFilter);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('studentReport.allSchools') || 'All Schools'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('studentReport.allSchools') || 'All Schools'}</SelectItem>
+              {schools?.map((school) => (
+                <SelectItem key={school.id} value={school.id}>
+                  {school.schoolName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value as typeof statusFilter);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('studentReport.allStatus') || 'All Status'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('studentReport.allStatus') || 'All Status'}</SelectItem>
+              <SelectItem value="applied">{t('studentReport.applied') || 'Applied'}</SelectItem>
+              <SelectItem value="admitted">{t('studentReport.admitted') || 'Admitted'}</SelectItem>
+              <SelectItem value="active">{t('studentReport.active') || 'Active'}</SelectItem>
+              <SelectItem value="withdrawn">{t('studentReport.withdrawn') || 'Withdrawn'}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={genderFilter}
+            onValueChange={(value) => {
+              setGenderFilter(value as typeof genderFilter);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('studentReport.allGenders') || 'All Genders'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('studentReport.allGenders') || 'All Genders'}</SelectItem>
+              <SelectItem value="male">{t('studentReport.male') || 'Male'}</SelectItem>
+              <SelectItem value="female">{t('studentReport.female') || 'Female'}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </FilterPanel>
 
       {/* Table */}
       <Card>

@@ -22,6 +22,7 @@ import { GraduationCertificateLayoutEditor } from '@/components/certificates/Gra
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Layout, Pencil, Trash2, Image } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -122,6 +123,10 @@ export default function CertificateTemplatesPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
+      <PageHeader
+        title={t('certificates.templates') ?? 'Certificate Templates'}
+        icon={<Layout className="h-5 w-5" />}
+      />
       <Card>
         <CardHeader>
           <CardTitle>{t('certificates.templates') ?? 'Certificate Templates'}</CardTitle>
