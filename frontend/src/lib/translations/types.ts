@@ -6311,6 +6311,7 @@ export interface TranslationKeys {
     };
     nav: {
       features: string;
+      finance: string;
       pricing: string;
       reviews: string;
       contact: string;

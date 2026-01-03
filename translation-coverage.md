@@ -1,76 +1,62 @@
 # Translation Coverage Report
 
-Generated: 2026-01-03T19:33:29.499Z
+Generated: 2026-01-03T21:15:27.578Z
 
 ## Summary
 
-- EN keys: **5257**
+- EN keys: **5519**
 - Used keys (code scan): **4178**
-- Used keys missing in EN (likely typos/dynamic): **523**
+- Used keys missing in EN (likely typos/dynamic): **261**
 
 ## Missing (from EN)
 
-- Missing in Pashto (ps): **910**
-- Missing in Farsi (fa): **236**
-- Missing in Arabic (ar): **238**
+- Missing in Pashto (ps): **328**
+- Missing in Farsi (fa): **221**
+- Missing in Arabic (ar): **248**
 
 ## Missing USED keys (highest priority)
 
-- Missing USED in ps: **549**
-- Missing USED in fa: **56**
-- Missing USED in ar: **60**
+- Missing USED in ps: **315**
+- Missing USED in fa: **137**
+- Missing USED in ar: **70**
 
 ## Top 20 namespaces with missing USED keys (union across ps/fa/ar)
 
 - exams: 239
-- toast: 218
+- leave: 137
 - examReports: 31
+- dms: 25
+- helpCenter: 25
 - watermarks: 14
 - attendance: 13
-- academic: 13
-- helpCenter: 12
-- grades: 11
 - events: 7
 - reports: 6
-- idCards: 3
 
 ## Top 20 files by missing USED keys (ps+fa+ar summed)
 
+- frontend/src/pages/LeaveManagement.tsx: 84
+- frontend/src/pages/LeaveReports.tsx: 59
 - frontend/src/pages/ExamSecretNumbersPage.tsx: 47
-- frontend/src/pages/ExamTimetablePage.tsx: 47
-- frontend/src/hooks/useExams.tsx: 46
 - frontend/src/pages/ExamRollNumbersPage.tsx: 39
-- frontend/src/pages/dashboard/AttendanceDashboard.tsx: 39
-- frontend/src/pages/ExamAttendancePage.tsx: 37
-- frontend/src/pages/HelpCenter.tsx: 36
+- frontend/src/pages/ExamAttendancePage.tsx: 36
+- frontend/src/pages/ExamTimetablePage.tsx: 36
 - frontend/src/pages/ExamNumberReportsPage.tsx: 35
-- frontend/src/pages/Exams.tsx: 35
-- frontend/src/pages/ExamClassesSubjectsPage.tsx: 34
-- frontend/src/platform/hooks/usePlatformAdminComplete.tsx: 29
-- frontend/src/components/settings/StaffTypesManagement.tsx: 25
+- frontend/src/pages/Exams.tsx: 26
+- frontend/src/pages/dashboard/AttendanceDashboard.tsx: 26
+- frontend/src/pages/ExamClassesSubjectsPage.tsx: 25
 - frontend/src/pages/ClassSubjectMarkSheet.tsx: 21
+- frontend/src/components/dms/FieldPlaceholderSelector.tsx: 21
 - frontend/src/pages/ExamReportsPage.tsx: 20
-- frontend/src/hooks/useEventUsers.tsx: 18
-- frontend/src/hooks/useExamPapers.tsx: 18
-- frontend/src/components/reports/ReportProgressDialog.tsx: 18
-- frontend/src/platform/pages/admin/HelpCenterManagement.tsx: 15
 - frontend/src/pages/ConsolidatedMarkSheet.tsx: 15
-- frontend/src/hooks/useFinance.tsx: 15
+- frontend/src/components/settings/WatermarkManagement.tsx: 14
+- frontend/src/pages/dashboard/LeaveRequestsDashboard.tsx: 12
+- frontend/src/hooks/useEventUsers.tsx: 12
+- frontend/src/pages/HelpCenter.tsx: 11
+- frontend/src/pages/HelpCenterArticle.tsx: 11
+- frontend/src/platform/pages/admin/HelpCenterManagement.tsx: 8
 
 ## Missing in Pashto (ps) — Highest Priority (first 100 keys)
 
-- academic.staffTypes.description
-- academic.staffTypes.displayOrder
-- academic.staffTypes.editStaffType
-- academic.staffTypes.inactive
-- academic.staffTypes.isActive
-- academic.staffTypes.management
-- academic.staffTypes.name
-- academic.staffTypes.noStaffTypesFound
-- academic.staffTypes.noStaffTypesMessage
-- academic.staffTypes.searchPlaceholder
-- academic.staffTypes.title
-- academic.staffTypes.updateStaffType
 - attendance.absent
 - attendance.attendanceRate
 - attendance.closed
@@ -84,6 +70,31 @@ Generated: 2026-01-03T19:33:29.499Z
 - attendance.today
 - attendance.total
 - attendance.totalSessions
+- dms.deleteDocumentWarning
+- dms.fields.academic_info
+- dms.fields.application_info
+- dms.fields.available_fields
+- dms.fields.basic_info
+- dms.fields.common_fields
+- dms.fields.contact_info
+- dms.fields.custom_fields
+- dms.fields.datetime_info
+- dms.fields.document_info
+- dms.fields.education_info
+- dms.fields.employment_info
+- dms.fields.guardian_info
+- dms.fields.insert_field
+- dms.fields.insert_field_help
+- dms.fields.insert_field_placeholder
+- dms.fields.inserted
+- dms.fields.no_fields_found
+- dms.fields.organization_info
+- dms.fields.recipient_info
+- dms.fields.search_fields
+- dms.fields.select_field
+- dms.issueLetter.downloadImage
+- dms.issueLetter.letterDetails.downloadImage
+- dms.uploadFiles
 - events.users.fillAllFields
 - events.users.userCreated
 - events.users.userCreateFailed
@@ -146,78 +157,109 @@ Generated: 2026-01-03T19:33:29.499Z
 - exams.attendance.recordScan
 - exams.attendance.scanFeed
 - exams.attendance.scanning
-- exams.attendance.scanRollNumber
-- exams.attendance.searchScans
-- exams.attendance.seatNumber
-- exams.attendance.selectedSlots
-- exams.attendance.selectTimeslot
-- exams.attendance.selectTimeslotPrompt
-- exams.attendance.selectTimeSlots
-- exams.attendance.status
-- exams.attendance.time
-- exams.attendance.timeSlot
-- exams.attendance.title
-- exams.attendance.unlock
-- exams.attendance.unlockAttendance
 
 ## Missing in Farsi (fa) — Highest Priority (first 100 keys)
 
-- academic.staffTypes.deleteConfirm
-- academic.staffTypes.description
-- academic.staffTypes.displayOrder
-- academic.staffTypes.editStaffType
-- academic.staffTypes.inactive
-- academic.staffTypes.isActive
-- academic.staffTypes.management
-- academic.staffTypes.name
-- academic.staffTypes.noStaffTypesFound
-- academic.staffTypes.noStaffTypesMessage
-- academic.staffTypes.searchPlaceholder
-- academic.staffTypes.title
-- academic.staffTypes.updateStaffType
-- attendance.absent
-- attendance.attendanceRate
-- attendance.closed
-- attendance.latestAttendanceSessions
-- attendance.noSessions
-- attendance.open
-- attendance.present
-- attendance.recentSessions
-- attendance.records
-- attendance.students
-- attendance.today
-- attendance.total
-- attendance.totalSessions
-- events.users.fillAllFields
-- events.users.userCreated
-- events.users.userCreateFailed
-- events.users.userDeleted
-- events.users.userDeleteFailed
-- events.users.userUpdated
-- events.users.userUpdateFailed
-- exams.locked
-- exams.markAttendance
-- exams.students
-- exams.time
-- exams.timeSlot
-- helpCenter.allArticles
-- helpCenter.allCategories
-- helpCenter.articles
-- helpCenter.articlesFound
-- helpCenter.clearFilters
-- helpCenter.featuredArticles
-- helpCenter.noArticlesDescription
-- helpCenter.noArticlesFound
-- helpCenter.popularArticles
-- helpCenter.searchPlaceholder
-- helpCenter.subtitle
-- helpCenter.title
-- reports.failed
-- reports.generated
-- reports.generating
-- reports.generatingReport
-- reports.pleaseWait
-- reports.reportGeneration
+- leave.allLeaveRequests
+- leave.allLeaves
+- leave.allRequests
+- leave.allStatus
+- leave.allStatuses
+- leave.anyClass
+- leave.anySchool
+- leave.anyStudent
+- leave.approvalNote
+- leave.approvalNotePlaceholder
+- leave.approvalRate
+- leave.approved
+- leave.approvedDescription
+- leave.approvedRequests
+- leave.approvedThisYear
+- leave.awaitingApproval
+- leave.cancelled
+- leave.class
+- leave.clearForm
+- leave.code
+- leave.completeListing
+- leave.createRequest
+- leave.createRequestDescription
+- leave.creating
+- leave.currentMonth
+- leave.dailyBreakdown
+- leave.dailyBreakdownDescription
+- leave.dailyBreakdownTitle
+- leave.dates
+- leave.datesLabel
+- leave.endDate
+- leave.endTime
+- leave.entries
+- leave.export
+- leave.familyEmergency
+- leave.familyEvent
+- leave.fastSearchScan
+- leave.filterDescription
+- leave.from
+- leave.fullDay
+- leave.generating
+- leave.generatingReport
+- leave.gettingOutside
+- leave.history
+- leave.latestLeaveRequests
+- leave.leaveDuration
+- leave.leaveGovernance
+- leave.leaveHistory
+- leave.leaveRequest
+- leave.leaves
+- leave.leaveType
+- leave.loading
+- leave.loadingAcademicYear
+- leave.loadingHistory
+- leave.loadingLeaveRequests
+- leave.medicalAppointment
+- leave.month
+- leave.monthlyVolume
+- leave.newRequest
+- leave.next
+- leave.noApprovedRequests
+- leave.noClassesFound
+- leave.noDailyRecords
+- leave.noHistoryYet
+- leave.noLeaveHistoryFound
+- leave.noLeaveRequestsYet
+- leave.noPendingRequests
+- leave.noRejectedRequests
+- leave.noRequests
+- leave.noRequestsMatchFilters
+- leave.noRequestsToExport
+- leave.noStudentsInClass
+- leave.oneDay
+- leave.oneMonth
+- leave.oneWeek
+- leave.pageOf
+- leave.pageSize
+- leave.partialDay
+- leave.pending
+- leave.pendingRequests
+- leave.personal
+- leave.prev
+- leave.qrReadySlips
+- leave.reason
+- leave.reasonPlaceholder
+- leave.recentRequests
+- leave.rejected
+- leave.rejectedDescription
+- leave.rejectedRequests
+- leave.religious
+- leave.reportExported
+- leave.reportFailed
+- leave.reportFilters
+- leave.reportGenerationFailed
+- leave.reportInProgress
+- leave.reportReady
+- leave.reportsSubtitle
+- leave.reportStatus
+- leave.reportsTitle
+- leave.requests
 
 ## Missing in Arabic (ar) — Highest Priority (first 100 keys)
 
@@ -248,19 +290,29 @@ Generated: 2026-01-03T19:33:29.499Z
 - exams.timeSlot
 - helpCenter.allArticles
 - helpCenter.allCategories
+- helpCenter.articleNotFound
+- helpCenter.articleNotFoundDescription
 - helpCenter.articles
 - helpCenter.articlesFound
+- helpCenter.backToHelpCenter
 - helpCenter.clearFilters
+- helpCenter.errorLoadingArticles
+- helpCenter.errorLoadingCategories
 - helpCenter.featuredArticles
+- helpCenter.linkCopied
+- helpCenter.no
 - helpCenter.noArticlesDescription
 - helpCenter.noArticlesFound
 - helpCenter.popularArticles
+- helpCenter.relatedArticles
 - helpCenter.searchPlaceholder
+- helpCenter.share
 - helpCenter.subtitle
-- helpCenter.title
-- idCards.description
-- idCards.status
-- idCards.title
+- helpCenter.thankYou
+- helpCenter.title.helpCenterManagement
+- helpCenter.views
+- helpCenter.wasThisHelpful
+- helpCenter.yes
 - reports.failed
 - reports.generated
 - reports.generating
@@ -306,35 +358,11 @@ Generated: 2026-01-03T19:33:29.499Z
 - dms.addDocument
 - dms.archiveSearch
 - dms.archiveSearchDescription
-- dms.deleteDocumentWarning
 - dms.department
-- dms.fields.academic_info
-- dms.fields.application_info
-- dms.fields.available_fields
-- dms.fields.basic_info
-- dms.fields.common_fields
-- dms.fields.contact_info
-- dms.fields.custom_fields
-- dms.fields.datetime_info
-- dms.fields.document_info
-- dms.fields.education_info
-- dms.fields.employment_info
-- dms.fields.guardian_info
-- dms.fields.insert_field
-- dms.fields.insert_field_help
-- dms.fields.insert_field_placeholder
-- dms.fields.inserted
-- dms.fields.no_fields_found
-- dms.fields.organization_info
-- dms.fields.recipient_info
-- dms.fields.search_fields
-- dms.fields.select_field
 - dms.fileType
 - dms.incomingDocuments
 - dms.incomingDocumentsDescription
-- dms.issueLetter.downloadImage
 - dms.issueLetter.downloadPdf
-- dms.issueLetter.letterDetails.downloadImage
 - dms.letterheads
 - dms.letterheadsDescription
 - dms.letterType
@@ -348,7 +376,6 @@ Generated: 2026-01-03T19:33:29.499Z
 - dms.securityLevel
 - dms.senderOrganization
 - dms.subject
-- dms.uploadFiles
 - dms.uploadLetterhead
 - exams.lock
 - exams.reports
@@ -384,4 +411,29 @@ Generated: 2026-01-03T19:33:29.499Z
 - finance.currenciesDescription
 - finance.currenciesFound
 - finance.currency
+- finance.currencyCode
+- finance.currencyCodeHint
+- finance.currencyInformation
+- finance.currencyNamePlaceholder
+- finance.currencySymbol
+- finance.decimalPlaces
+- finance.deleteCurrencyWarning
+- finance.deleteDocument
+- finance.deleteDocumentConfirmation
+- finance.deleteExchangeRateWarning
+- finance.documentDate
+- finance.documentDescription
+- finance.documentDescriptionPlaceholder
+- finance.documentDetails
+- finance.documents
+- finance.documentTitle
+- finance.documentTitlePlaceholder
+- finance.documentType
+- finance.documentTypes
+- finance.donorInformation
+- finance.donorType
+- finance.editCurrency
+- finance.editCurrencyDescription
+- finance.editExchangeRate
+- finance.editExchangeRateDescription
 

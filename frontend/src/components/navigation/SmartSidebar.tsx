@@ -972,7 +972,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasDmsOutgoingPermission ? [{
             title: "Issue Letter",
-            titleKey: "dms.issueLetter",
+            titleKey: "dms.issueLetterNav",
             url: "/dms/issue-letter",
             icon: MessageSquare,
           }] : []),
