@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LanguageProvider } from '@/hooks/useLanguage';
@@ -15,6 +15,7 @@ import PlatformSettings from './pages/admin/PlatformSettings';
 import { PlatformPermissionGroupsManagement } from './pages/PlatformPermissionGroupsManagement';
 import HelpCenterManagement from './pages/admin/HelpCenterManagement';
 import MaintenanceHistory from './pages/admin/MaintenanceHistory';
+import { TranslationsManagement } from '@/components/LazyComponents';
 import { PageSkeleton } from '@/components/ui/loading';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlatformAdminPermissions } from './hooks/usePlatformAdminPermissions';
@@ -168,6 +169,12 @@ export function PlatformAdminApp() {
               <Route path="pending" element={<SubscriptionAdminDashboard />} />
               <Route path="admins" element={<PlatformAdminDashboard />} />
               <Route path="permission-groups" element={<PlatformPermissionGroupsManagement />} />
+              {/* CRITICAL: More specific routes must come before less specific ones */}
+              <Route path="settings/translations" element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <TranslationsManagement />
+                </Suspense>
+              } />
               <Route path="settings" element={<PlatformSettings />} />
               <Route path="help-center" element={<HelpCenterManagement />} />
               <Route path="maintenance-history" element={<MaintenanceHistory />} />

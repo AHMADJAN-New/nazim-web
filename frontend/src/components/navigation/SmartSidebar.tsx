@@ -1179,13 +1179,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/admin/users",
             icon: Users,
           }] : []),
-          // Translations Editor - no permission required
-          {
-            title: "Translations",
-            titleKey: "translations",
-            url: "/settings/translations",
-            icon: Languages,
-          },
         ],
       },
       ...(hasHelpCenterPermission ? [{

@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Download, Upload, Save, Search, X, FileText, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Download, Upload, Save, Search, X, FileText, RefreshCw, CheckCircle2, Languages, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,17 +14,22 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { flattenTranslations, nestTranslations, syncMissingKeys, type TranslationRow } from '@/lib/translations/utils';
 import { exportTranslationsToExcel, importTranslationsFromExcel, exportTranslationsToCSV } from '@/lib/translations/importExport';
 import { translationsApi } from '@/lib/api/client';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { cn } from '@/lib/utils';
+import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
+import { useQuery } from '@tanstack/react-query';
 
 // Page size options for translations table
 const TRANSLATION_PAGE_SIZE_OPTIONS = [100, 150, 200, 500] as const;
 const DEFAULT_PAGE_SIZE = 100;
 
-export default function TranslationEditor() {
+export default function TranslationsManagement() {
   const { t, isRTL } = useLanguage();
+  const { data: permissions, isLoading: permissionsLoading } = usePlatformAdminPermissions();
+  const hasAdminPermission = Array.isArray(permissions) && permissions.includes('subscription.admin');
+
   const [translations, setTranslations] = useState<TranslationRow[]>([]);
   const [originalTranslations, setOriginalTranslations] = useState<TranslationRow[]>([]);
   const [search, setSearch] = useState('');
@@ -37,8 +43,8 @@ export default function TranslationEditor() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [changedKeys, setChangedKeys] = useState<Set<string>>(new Set());
-  const [changedKeysFromDb, setChangedKeysFromDb] = useState<Set<string>>(new Set()); // Keys from database (persistent)
-  const [builtKeysFromDb, setBuiltKeysFromDb] = useState<Set<string>>(new Set()); // Keys that are built/published
+  const [changedKeysFromDb, setChangedKeysFromDb] = useState<Set<string>>(new Set());
+  const [builtKeysFromDb, setBuiltKeysFromDb] = useState<Set<string>>(new Set());
   const [changedFiles, setChangedFiles] = useState<Array<{
     file_name: string;
     language: string;
@@ -58,6 +64,8 @@ export default function TranslationEditor() {
     status: string;
   }>>([]);
   const [totalKeysChanged, setTotalKeysChanged] = useState(0);
+  const [showPublishedDialog, setShowPublishedDialog] = useState(false);
+  const [expandedPublishedKeys, setExpandedPublishedKeys] = useState<Set<string>>(new Set());
   const editInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Load translations on mount
@@ -68,19 +76,22 @@ export default function TranslationEditor() {
         setTranslations(flattened);
         setOriginalTranslations(flattened);
         
-        // After translations are loaded, fetch changed files and mark changed keys
         await fetchChangedFiles();
         
         setIsLoading(false);
       } catch (error) {
-        console.error('Error loading translations:', error);
-        toast.error('Failed to load translations');
+        if (import.meta.env.DEV) {
+          console.error('Error loading translations:', error);
+        }
+        showToast.error('Failed to load translations');
         setIsLoading(false);
       }
     };
     
-    loadTranslations();
-  }, []);
+    if (!permissionsLoading && hasAdminPermission) {
+      loadTranslations();
+    }
+  }, [permissionsLoading, hasAdminPermission]);
 
   const fetchChangedFiles = async () => {
     try {
@@ -89,12 +100,9 @@ export default function TranslationEditor() {
       setBuiltFiles((response as any).built_files || []);
       setTotalKeysChanged(response.total_keys_changed || 0);
       
-      // Mark all changed keys from database as "changed" in the UI
-      // These keys are changed in the database (pending build), so they should always show as green
       const dbKeys = new Set<string>();
       const builtKeys = new Set<string>();
       
-      // Collect pending keys
       const pendingFiles = response.changed_files || response.pending_files || [];
       if (pendingFiles.length > 0) {
         pendingFiles.forEach((file: any) => {
@@ -106,7 +114,6 @@ export default function TranslationEditor() {
         });
       }
       
-      // Collect built keys (these should NOT show as green)
       const builtFilesList = (response as any).built_files || [];
       if (builtFilesList.length > 0) {
         builtFilesList.forEach((file: any) => {
@@ -118,27 +125,30 @@ export default function TranslationEditor() {
         });
       }
       
-      // Store database keys separately (these persist across saves)
       setChangedKeysFromDb(dbKeys);
       setBuiltKeysFromDb(builtKeys);
       
-      // Always include database keys (pending) - they represent saved changes that haven't been built yet
-      // Exclude built keys - they're already published
-      // Merge with existing changedKeys (from current session) to preserve unsaved changes
+      // Merge changed keys: include pending keys, exclude built keys that are not in pending
       setChangedKeys((prev) => {
-        const merged = new Set(dbKeys); // Start with pending database keys
+        const merged = new Set(dbKeys); // Start with pending keys from DB
         prev.forEach((key) => {
-          // Only add if not built
-          if (!builtKeys.has(key)) {
+          // Only add if it's not built (or if it was built but is now pending again)
+          if (!builtKeys.has(key) || dbKeys.has(key)) {
             merged.add(key);
           }
         });
-        // Remove any built keys
-        builtKeys.forEach((key) => merged.delete(key));
+        // Remove keys that are built and not in pending
+        builtKeys.forEach((key) => {
+          if (!dbKeys.has(key)) {
+            merged.delete(key);
+          }
+        });
         return merged;
       });
     } catch (error) {
-      console.error('Failed to fetch changed files:', error);
+      if (import.meta.env.DEV) {
+        console.error('Failed to fetch changed files:', error);
+      }
     }
   };
 
@@ -162,38 +172,31 @@ export default function TranslationEditor() {
     return filteredTranslations.slice(startIndex, endIndex);
   }, [filteredTranslations, page, pageSize]);
 
-  // Calculate pagination metadata
   const totalPages = Math.ceil(filteredTranslations.length / pageSize);
   const from = filteredTranslations.length > 0 ? (page - 1) * pageSize + 1 : 0;
   const to = Math.min(page * pageSize, filteredTranslations.length);
 
-  // Reset to first page when search changes or page size changes
   useEffect(() => {
     setPage(1);
   }, [search, pageSize]);
 
-  // Check for changes
   useEffect(() => {
     const changed = JSON.stringify(translations) !== JSON.stringify(originalTranslations);
     setHasChanges(changed);
   }, [translations, originalTranslations]);
 
-  // Handle cell edit
   const handleCellClick = (rowIndex: number, col: string) => {
-    // rowIndex is relative to paginated data, convert to absolute index in filteredTranslations
     const absoluteIndex = (page - 1) * pageSize + rowIndex;
     const row = filteredTranslations[absoluteIndex];
     setEditingCell({ row: absoluteIndex, col });
     setEditValue(row[col as keyof TranslationRow] as string);
     
-    // Focus input after state update
     setTimeout(() => {
       editInputRef.current?.focus();
       editInputRef.current?.select();
     }, 0);
   };
 
-  // Save cell edit
   const handleCellSave = () => {
     if (!editingCell) return;
     
@@ -206,35 +209,45 @@ export default function TranslationEditor() {
       const newValue = editValue.trim();
       const oldValue = (originalRow?.[editingCell.col as keyof TranslationRow] as string || '').trim();
       
-      // Update the translation first
       newTranslations[originalIndex] = {
         ...newTranslations[originalIndex],
         [editingCell.col]: newValue,
       };
       
-      // Track if this key changed - check after update
-      // Note: Don't remove keys that are in the database (changedKeysFromDb) - they should always stay marked
       const newChangedKeys = new Set(changedKeys);
       const isInDatabase = changedKeysFromDb.has(row.key);
+      const isPublished = builtKeysFromDb.has(row.key);
       
+      // If a published key is edited, it should go back to pending
       if (newValue !== oldValue) {
-        // Value changed - mark as changed
         newChangedKeys.add(row.key);
+        // If it was published, remove it from builtKeysFromDb (it's now pending again)
+        if (isPublished) {
+          setBuiltKeysFromDb(prev => {
+            const updated = new Set(prev);
+            updated.delete(row.key);
+            return updated;
+          });
+        }
       } else {
-        // Value matches original - check if all values match original (after update)
         const allMatch = ['en', 'ps', 'fa', 'ar'].every(lang => {
           const currentValue = (newTranslations[originalIndex][lang as keyof TranslationRow] as string || '').trim();
           const origValue = (originalRow?.[lang as keyof TranslationRow] as string || '').trim();
           return currentValue === origValue;
         });
-        if (allMatch && !isInDatabase) {
-          // All values match original AND not in database - remove from changed keys
+        if (allMatch && !isInDatabase && !isPublished) {
           newChangedKeys.delete(row.key);
         } else if (!allMatch) {
-          // Some other language has changes - keep in changed keys
           newChangedKeys.add(row.key);
+          // If it was published and now changed, remove from builtKeysFromDb
+          if (isPublished) {
+            setBuiltKeysFromDb(prev => {
+              const updated = new Set(prev);
+              updated.delete(row.key);
+              return updated;
+            });
+          }
         }
-        // If isInDatabase is true, keep the key even if all values match (it's saved but not built yet)
       }
       
       setTranslations(newTranslations);
@@ -245,42 +258,41 @@ export default function TranslationEditor() {
     setEditValue('');
   };
 
-  // Cancel cell edit
   const handleCellCancel = () => {
     setEditingCell(null);
     setEditValue('');
   };
 
-  // Export to Excel
   const handleExportExcel = () => {
     try {
       exportTranslationsToExcel();
-      toast.success('Translations exported to Excel');
+      showToast.success('Translations exported to Excel');
     } catch (error) {
-      toast.error('Failed to export translations');
-      console.error(error);
+      showToast.error('Failed to export translations');
+      if (import.meta.env.DEV) {
+        console.error(error);
+      }
     }
   };
 
-  // Export to CSV
   const handleExportCSV = () => {
     try {
       exportTranslationsToCSV();
-      toast.success('Translations exported to CSV');
+      showToast.success('Translations exported to CSV');
     } catch (error) {
-      toast.error('Failed to export translations');
-      console.error(error);
+      showToast.error('Failed to export translations');
+      if (import.meta.env.DEV) {
+        console.error(error);
+      }
     }
   };
 
-  // Import from Excel
   const handleImportExcel = async () => {
     if (!importFile) return;
     
     try {
       const imported = await importTranslationsFromExcel(importFile);
       
-      // Merge with existing translations (keep existing keys, update with imported values)
       const existingKeys = new Set(translations.map(t => t.key));
       const importedMap = new Map(imported.map(t => [t.key, t]));
       
@@ -298,19 +310,16 @@ export default function TranslationEditor() {
         return t;
       });
       
-      // Add any new keys from imported file
       for (const importedRow of imported) {
         if (!existingKeys.has(importedRow.key)) {
           merged.push(importedRow);
         }
       }
       
-      // Update changedKeys to track imported changes
       const newChangedKeys = new Set<string>();
       merged.forEach(row => {
         const originalRow = originalTranslations.find(t => t.key === row.key);
         if (originalRow) {
-          // Check if any language differs from original
           const hasChanges = ['en', 'ps', 'fa', 'ar'].some(lang => {
             const currentValue = row[lang as keyof TranslationRow] as string || '';
             const origValue = originalRow[lang as keyof TranslationRow] as string || '';
@@ -320,7 +329,6 @@ export default function TranslationEditor() {
             newChangedKeys.add(row.key);
           }
         } else {
-          // New key, mark as changed
           newChangedKeys.add(row.key);
         }
       });
@@ -329,51 +337,50 @@ export default function TranslationEditor() {
       setChangedKeys(newChangedKeys);
       setShowImportDialog(false);
       setImportFile(null);
-      toast.success('Translations imported successfully');
+      showToast.success('Translations imported successfully');
     } catch (error) {
-      toast.error('Failed to import translations. Please check the file format.');
-      console.error(error);
+      showToast.error('Failed to import translations. Please check the file format.');
+      if (import.meta.env.DEV) {
+        console.error(error);
+      }
     }
   };
 
-  // Reset changes
   const handleReset = () => {
     setTranslations([...originalTranslations]);
     setChangedKeys(new Set());
     setHasChanges(false);
-    toast.info('Changes reset');
+    showToast.info('Changes reset');
   };
 
-  // Mark files as published (built)
   const handleMarkAsPublished = async (fileNames?: string[], markAll: boolean = false) => {
     try {
       setIsSaving(true);
       await translationsApi.markAsBuilt(fileNames, markAll);
-      toast.success(markAll ? 'All files marked as published' : `${fileNames?.length || 0} file(s) marked as published`);
-      await fetchChangedFiles(); // Refresh the list
+      showToast.success(markAll ? 'All files marked as published' : `${fileNames?.length || 0} file(s) marked as published`);
+      await fetchChangedFiles();
     } catch (error: any) {
       const errorMessage = error?.response?.data?.error || error?.message || 'Failed to mark files as published';
-      toast.error(errorMessage);
-      console.error('Failed to mark files as published:', error);
+      showToast.error(errorMessage);
+      if (import.meta.env.DEV) {
+        console.error('Failed to mark files as published:', error);
+      }
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Copy translations as JSON for manual file update
   const handleCopyJSON = () => {
     const nested = nestTranslations(translations);
     const jsonString = JSON.stringify(nested, null, 2);
     
-    // Copy to clipboard
     navigator.clipboard.writeText(jsonString).then(() => {
-      toast.success('Translations copied to clipboard as JSON. You can paste this into the translation files.');
+      showToast.success('Translations copied to clipboard as JSON');
     }).catch(() => {
-      toast.error('Failed to copy to clipboard');
+      showToast.error('Failed to copy to clipboard');
     });
   };
 
-  // Download as JSON file
   const handleDownloadJSON = () => {
     const nested = nestTranslations(translations);
     const jsonString = JSON.stringify(nested, null, 2);
@@ -386,19 +393,17 @@ export default function TranslationEditor() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success('Translations downloaded as JSON');
+    showToast.success('Translations downloaded as JSON');
   };
 
-  // Save translations to files via API (incremental - only changed keys)
   const handleSave = async () => {
     if (!hasChanges || changedKeys.size === 0) {
-      toast.info('No changes to save');
+      showToast.info('No changes to save');
       return;
     }
 
     setIsSaving(true);
     try {
-      // Build array of only changed translations
       const changes: Array<{ key: string; lang: string; value: string }> = [];
       
       for (const key of changedKeys) {
@@ -406,7 +411,6 @@ export default function TranslationEditor() {
         const originalRow = originalTranslations.find(t => t.key === key);
         
         if (currentRow && originalRow) {
-          // Check each language for changes
           for (const lang of ['en', 'ps', 'fa', 'ar'] as const) {
             const currentValue = currentRow[lang] || '';
             const originalValue = originalRow[lang] || '';
@@ -423,43 +427,37 @@ export default function TranslationEditor() {
       }
       
       if (changes.length === 0) {
-        toast.info('No changes to save');
+        showToast.info('No changes to save');
         setIsSaving(false);
         return;
       }
       
-      // Send only changes to backend
       await translationsApi.saveChanges(changes);
 
-      // Update original translations to reflect saved state
       setOriginalTranslations([...translations]);
       
-      // Refresh changed files list first (this will repopulate changedKeys from database)
       await fetchChangedFiles();
       
-      // Note: Don't clear changedKeys here - fetchChangedFiles will repopulate them
-      // with keys from the database, so saved keys will still show as "changed" 
-      // until they're built
       setHasChanges(false);
       
-      toast.success(`Saved ${changes.length} translation change(s) successfully`);
+      showToast.success(`Saved ${changes.length} translation change(s) successfully`);
     } catch (error: any) {
       const errorMessage = error?.response?.data?.error || error?.message || 'Failed to save translations';
-      toast.error(errorMessage);
-      console.error('Failed to save translations:', error);
+      showToast.error(errorMessage);
+      if (import.meta.env.DEV) {
+        console.error('Failed to save translations:', error);
+      }
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Sync missing keys - add missing translation keys to all languages
   const handleSyncMissingKeys = () => {
     try {
       const synced = syncMissingKeys();
       const missingCount = synced.length - translations.length;
       
       if (missingCount > 0) {
-        // New keys added - mark them as changed
         const newChangedKeys = new Set(changedKeys);
         synced.forEach(row => {
           const existing = translations.find(t => t.key === row.key);
@@ -470,9 +468,8 @@ export default function TranslationEditor() {
         setTranslations(synced);
         setOriginalTranslations(synced);
         setChangedKeys(newChangedKeys);
-        toast.success(`Added ${missingCount} missing translation key(s). English text used as placeholder.`);
+        showToast.success(`Added ${missingCount} missing translation key(s). English text used as placeholder.`);
       } else {
-        // Check if any existing keys have missing translations
         let filledCount = 0;
         const newChangedKeys = new Set(changedKeys);
         const updated = translations.map(row => {
@@ -506,37 +503,99 @@ export default function TranslationEditor() {
         if (filledCount > 0) {
           setTranslations(updated);
           setChangedKeys(newChangedKeys);
-          toast.success(`Filled ${filledCount} missing translation(s) with English text.`);
+          showToast.success(`Filled ${filledCount} missing translation(s) with English text.`);
         } else {
-          toast.info('All translation keys are already synced!');
+          showToast.info('All translation keys are already synced!');
         }
       }
     } catch (error) {
-      toast.error('Failed to sync missing keys');
-      console.error('Error syncing missing keys:', error);
+      showToast.error('Failed to sync missing keys');
+      if (import.meta.env.DEV) {
+        console.error('Error syncing missing keys:', error);
+      }
     }
   };
 
+  if (permissionsLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!hasAdminPermission) {
+    return <Navigate to="/platform/dashboard" replace />;
+  }
+
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <LoadingSpinner />
+      <div className="flex h-[50vh] items-center justify-center">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6 max-w-[1800px]">
+    <div className="space-y-6 min-w-0 w-full">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Translations Management</h1>
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">
+            Manage application translations for all supported languages
+          </p>
+        </div>
+      </div>
+
+      {/* Status Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Keys</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{translations.length}</div>
+            <p className="text-xs text-muted-foreground">Translation keys</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Changes</CardTitle>
+            <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200">
+              {changedFiles.length}
+            </Badge>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalKeysChanged}</div>
+            <p className="text-xs text-muted-foreground">Keys pending build</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Published</CardTitle>
+            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-200">
+              {builtFiles.length}
+            </Badge>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{builtFiles.reduce((sum, f) => sum + f.keys_changed, 0)}</div>
+            <p className="text-xs text-muted-foreground">Keys published</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content Card */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="min-w-0 flex-1">
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-6 w-6" />
+                <Languages className="h-5 w-5" />
                 Translation Editor
               </CardTitle>
               <CardDescription>
-                Edit translations in an Excel-like interface. Click any cell to edit. Changes are saved locally until you export.
+                Edit translations in an Excel-like interface. Click any cell to edit.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -564,7 +623,7 @@ export default function TranslationEditor() {
                 variant="outline" 
                 size="sm" 
                 onClick={handleSyncMissingKeys}
-                title="Add missing translation keys to all language files (uses English as placeholder)"
+                title="Add missing translation keys to all language files"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Sync Missing Keys
@@ -582,11 +641,8 @@ export default function TranslationEditor() {
                     disabled={isSaving}
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {isSaving ? 'Saving...' : `Save Changes (${changedKeys.size} keys)`}
+                    {isSaving ? 'Saving...' : `Save (${changedKeys.size})`}
                   </Button>
-                  <Badge variant="destructive" className="ml-2">
-                    {changedKeys.size} Unsaved Change{changedKeys.size !== 1 ? 's' : ''}
-                  </Badge>
                 </>
               )}
             </div>
@@ -601,21 +657,21 @@ export default function TranslationEditor() {
                 <h3 className="font-semibold text-sm">Pending Build</h3>
                 <div className="flex items-center gap-2">
                   {changedFiles.length > 0 && (
-                    <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200">
-                      {changedFiles.length} file(s) pending
-                    </Badge>
-                  )}
-                  {changedFiles.length > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleMarkAsPublished(undefined, true)}
-                      disabled={isSaving}
-                      className="h-7 text-xs"
-                    >
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      Mark All as Published
-                    </Button>
+                    <>
+                      <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200">
+                        {changedFiles.length} file(s) pending
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleMarkAsPublished(undefined, true)}
+                        disabled={isSaving}
+                        className="h-7 text-xs"
+                      >
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Mark All as Published
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
@@ -624,9 +680,9 @@ export default function TranslationEditor() {
                 <p className="text-sm text-muted-foreground">No files pending build</p>
               ) : (
                 <div className="space-y-2">
-                  {changedFiles.map((file) => (
+                  {changedFiles.map((file, index) => (
                     <div 
-                      key={file.file_name} 
+                      key={`pending-${file.file_name}-${file.language}-${index}`} 
                       className="flex items-center justify-between p-2 bg-background rounded border border-green-200 dark:border-green-800"
                     >
                       <div className="flex items-center gap-2">
@@ -657,9 +713,6 @@ export default function TranslationEditor() {
                     <p className="text-xs text-muted-foreground">
                       Total: {totalKeysChanged} translation key(s) changed across {changedFiles.length} file(s)
                     </p>
-                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                      ⚠️ These changes will be included in the next daily build
-                    </p>
                   </div>
                 </div>
               )}
@@ -670,15 +723,26 @@ export default function TranslationEditor() {
               <div className="p-4 bg-muted/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-sm">Published Files</h3>
-                  <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-200">
-                    {builtFiles.length} file(s) published
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-200">
+                      {builtFiles.length} file(s) published
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPublishedDialog(true)}
+                      className="h-7 text-xs"
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      View Published Keys
+                    </Button>
+                  </div>
                 </div>
                 
                 <div className="space-y-2">
-                  {builtFiles.map((file) => (
+                  {builtFiles.map((file, index) => (
                     <div 
-                      key={file.file_name} 
+                      key={`built-${file.file_name}-${file.language}-${index}`} 
                       className="flex items-center justify-between p-2 bg-background rounded border border-blue-200 dark:border-blue-800"
                     >
                       <div className="flex items-center gap-2">
@@ -711,8 +775,9 @@ export default function TranslationEditor() {
           </div>
 
           <div className="border rounded-lg overflow-hidden">
-            <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
-              <Table>
+            <div className="overflow-x-auto overflow-y-auto max-h-[70vh]">
+              <div className="min-w-[800px]">
+                <Table>
                 <TableHeader className="sticky top-0 bg-background z-10 border-b">
                   <TableRow>
                     <TableHead className="w-[300px] font-semibold bg-muted/50">Translation Key</TableHead>
@@ -731,7 +796,6 @@ export default function TranslationEditor() {
                     </TableRow>
                   ) : (
                     paginatedTranslations.map((row, rowIndex) => {
-                      // Calculate absolute index for editing cell comparison
                       const absoluteIndex = (page - 1) * pageSize + rowIndex;
                       const isChanged = changedKeys.has(row.key);
                       const isPublished = builtKeysFromDb.has(row.key);
@@ -782,39 +846,47 @@ export default function TranslationEditor() {
                                       value={editValue}
                                       onChange={(e) => {
                                         setEditValue(e.target.value);
-                                        // Update changedKeys in real-time as user types
                                         const originalRow = originalTranslations.find(t => t.key === row.key);
                                         const currentRow = translations.find(t => t.key === row.key);
                                         const newValue = e.target.value.trim();
                                         const oldValue = (originalRow?.[lang as keyof TranslationRow] as string || '').trim();
                                         const isInDatabase = changedKeysFromDb.has(row.key);
+                                        const isPublished = builtKeysFromDb.has(row.key);
                                         
                                         const newChangedKeys = new Set(changedKeys);
                                         
-                                        // Check if the edited value differs from original
                                         if (newValue !== oldValue) {
-                                          // Value changed - mark as changed
                                           newChangedKeys.add(row.key);
+                                          // If it was published, remove it from builtKeysFromDb (it's now pending again)
+                                          if (isPublished) {
+                                            setBuiltKeysFromDb(prev => {
+                                              const updated = new Set(prev);
+                                              updated.delete(row.key);
+                                              return updated;
+                                            });
+                                          }
                                         } else {
-                                          // Value matches original - check if all other values also match
                                           const allMatch = ['en', 'ps', 'fa', 'ar'].every(l => {
                                             const origVal = (originalRow?.[l as keyof TranslationRow] as string || '').trim();
-                                            // For the language being edited, use the new value (which matches original)
                                             if (l === lang) {
-                                              return true; // Already checked above
+                                              return true;
                                             }
-                                            // For other languages, check current value
                                             const currentVal = (currentRow?.[l as keyof TranslationRow] as string || '').trim();
                                             return currentVal === origVal;
                                           });
-                                          if (allMatch && !isInDatabase) {
-                                            // All values match original AND not in database - remove from changed keys
+                                          if (allMatch && !isInDatabase && !isPublished) {
                                             newChangedKeys.delete(row.key);
                                           } else if (!allMatch) {
-                                            // Some other language has changes - keep in changed keys
                                             newChangedKeys.add(row.key);
+                                            // If it was published and now changed, remove from builtKeysFromDb
+                                            if (isPublished) {
+                                              setBuiltKeysFromDb(prev => {
+                                                const updated = new Set(prev);
+                                                updated.delete(row.key);
+                                                return updated;
+                                              });
+                                            }
                                           }
-                                          // If isInDatabase is true, keep the key even if all values match (it's saved but not built yet)
                                         }
                                         setChangedKeys(newChangedKeys);
                                       }}
@@ -850,32 +922,29 @@ export default function TranslationEditor() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </div>
           </div>
 
           {/* Pagination Controls */}
           <div className={cn('mt-4 space-y-4', isRTL && 'rtl')}>
-            {/* Total count and page size selector */}
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
                 {filteredTranslations.length > 0 ? (
                   <>
-                    {t('pagination.showing') || 'Showing'} {from} {t('pagination.to') || 'to'} {to} {t('pagination.of') || 'of'}{' '}
-                    {filteredTranslations.length} {t('pagination.entries') || 'entries'}
+                    Showing {from} to {to} of {filteredTranslations.length} entries
                     {search && (
                       <span className="ml-2">
-                        ({t('pagination.filtered') || 'filtered'} {t('pagination.from') || 'from'} {translations.length} {t('pagination.total') || 'total'})
+                        (filtered from {translations.length} total)
                       </span>
                     )}
                   </>
                 ) : (
-                  <>{t('pagination.noEntries') || 'No entries'}</>
+                  <>No entries</>
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  {t('pagination.rowsPerPage') || 'Rows per page'}:
-                </span>
+                <span className="text-sm text-muted-foreground">Rows per page:</span>
                 <Select
                   value={pageSize.toString()}
                   onValueChange={(value) => {
@@ -897,7 +966,6 @@ export default function TranslationEditor() {
               </div>
             </div>
 
-            {/* Pagination buttons */}
             {totalPages > 1 && (
               <Pagination>
                 <PaginationContent>
@@ -1004,15 +1072,231 @@ export default function TranslationEditor() {
               </Pagination>
             )}
 
-            {/* Unsaved changes warning */}
             {hasChanges && (
               <div className="text-sm text-amber-600 dark:text-amber-400">
-                ⚠️ You have unsaved changes. Export or copy JSON to save your work.
+                ⚠️ You have unsaved changes
               </div>
             )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Published Keys Dialog */}
+      <Dialog open={showPublishedDialog} onOpenChange={setShowPublishedDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-blue-600" />
+              Published Translation Keys
+            </DialogTitle>
+            <DialogDescription>
+              These translation keys have been published and are included in the build. Editing them will move them back to pending.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {builtFiles.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No published files</p>
+            ) : (
+              builtFiles.map((file, fileIndex) => (
+                <Card key={`published-file-${fileIndex}`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        {file.file_name}
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {file.keys_changed} key(s)
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          Published: {new Date(file.built_at).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                    {file.changed_keys && file.changed_keys.length > 0 && (
+                      <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setExpandedPublishedKeys(prev => {
+                              const updated = new Set(prev);
+                              // Add all keys for this file
+                              file.changed_keys.forEach((key, keyIndex) => {
+                                const keyId = `${file.file_name}-${key}-${keyIndex}`;
+                                updated.add(keyId);
+                              });
+                              return updated;
+                            });
+                          }}
+                          className="h-7 text-xs"
+                        >
+                          <ChevronsDownUp className="h-3 w-3 mr-1" />
+                          Expand All
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setExpandedPublishedKeys(prev => {
+                              const updated = new Set(prev);
+                              // Remove all keys for this file
+                              file.changed_keys.forEach((key, keyIndex) => {
+                                const keyId = `${file.file_name}-${key}-${keyIndex}`;
+                                updated.delete(keyId);
+                              });
+                              return updated;
+                            });
+                          }}
+                          className="h-7 text-xs"
+                        >
+                          <ChevronsUpDown className="h-3 w-3 mr-1" />
+                          Collapse All
+                        </Button>
+                      </div>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    {file.changed_keys && file.changed_keys.length > 0 ? (
+                      <div className="space-y-2">
+                        {file.changed_keys.map((key, keyIndex) => {
+                          const keyId = `${file.file_name}-${key}-${keyIndex}`;
+                          const isExpanded = expandedPublishedKeys.has(keyId);
+                          const translationRow = translations.find(t => t.key === key);
+                          const originalRow = originalTranslations.find(t => t.key === key);
+                          
+                          // Determine which languages have changes
+                          const changedLanguages = ['en', 'ps', 'fa', 'ar'].filter(lang => {
+                            const currentValue = (translationRow?.[lang as keyof TranslationRow] as string || '').trim();
+                            const origValue = (originalRow?.[lang as keyof TranslationRow] as string || '').trim();
+                            return currentValue !== origValue;
+                          });
+                          
+                          return (
+                            <div
+                              key={keyId}
+                              className="border rounded-lg overflow-hidden"
+                            >
+                              <button
+                                onClick={() => {
+                                  setExpandedPublishedKeys(prev => {
+                                    const updated = new Set(prev);
+                                    if (updated.has(keyId)) {
+                                      updated.delete(keyId);
+                                    } else {
+                                      updated.add(keyId);
+                                    }
+                                    return updated;
+                                  });
+                                }}
+                                className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors text-left"
+                              >
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  {isExpanded ? (
+                                    <ChevronDown className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                                  )}
+                                  <span className="font-mono text-xs break-all">{key}</span>
+                                  {changedLanguages.length > 0 && (
+                                    <Badge variant="outline" className="text-xs flex-shrink-0">
+                                      {changedLanguages.length} language(s)
+                                    </Badge>
+                                  )}
+                                </div>
+                              </button>
+                              {isExpanded && translationRow && (
+                                <div className="border-t bg-muted/30 p-3 space-y-3">
+                                  {/* English (reference) */}
+                                  <div>
+                                    <div className="text-xs font-semibold text-muted-foreground mb-1">English (en)</div>
+                                    <div className="text-sm p-2 bg-background rounded border">
+                                      {translationRow.en || <span className="text-muted-foreground italic">Empty</span>}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* File's language (the language this file represents) */}
+                                  {file.language && file.language !== 'en' && (
+                                    <div>
+                                      <div className="text-xs font-semibold text-muted-foreground mb-1">
+                                        {file.language === 'ps' ? 'Pashto (ps)' : 
+                                         file.language === 'fa' ? 'Farsi (fa)' : 
+                                         file.language === 'ar' ? 'Arabic (ar)' : 
+                                         `${file.language.toUpperCase()} (${file.language})`}
+                                      </div>
+                                      <div className="p-2 bg-background rounded border space-y-1">
+                                        <div className="text-xs text-muted-foreground">Current value:</div>
+                                        <div className="text-sm">
+                                          {(translationRow[file.language as keyof TranslationRow] as string || '').trim() || 
+                                           <span className="text-muted-foreground italic">Empty</span>}
+                                        </div>
+                                        {originalRow && (originalRow[file.language as keyof TranslationRow] as string || '').trim() && (
+                                          <>
+                                            <div className="text-xs text-muted-foreground mt-2">Original value:</div>
+                                            <div className="text-sm line-through text-muted-foreground">
+                                              {(originalRow[file.language as keyof TranslationRow] as string || '').trim()}
+                                            </div>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Other changed languages (if any) */}
+                                  {changedLanguages.filter(lang => lang !== file.language && lang !== 'en').length > 0 && (
+                                    <div className="space-y-2">
+                                      <div className="text-xs font-semibold text-muted-foreground">Other Changed Languages</div>
+                                      {changedLanguages.filter(lang => lang !== file.language && lang !== 'en').map(lang => {
+                                        const currentValue = (translationRow[lang as keyof TranslationRow] as string || '').trim();
+                                        const origValue = (originalRow?.[lang as keyof TranslationRow] as string || '').trim();
+                                        const langLabels: Record<string, string> = {
+                                          'ps': 'Pashto (ps)',
+                                          'fa': 'Farsi (fa)',
+                                          'ar': 'Arabic (ar)',
+                                        };
+                                        
+                                        return (
+                                          <div key={lang}>
+                                            <div className="text-xs font-semibold text-muted-foreground mb-1">
+                                              {langLabels[lang] || lang}
+                                            </div>
+                                            <div className="p-2 bg-background rounded border space-y-1">
+                                              <div className="text-xs text-muted-foreground">New value:</div>
+                                              <div className="text-sm">{currentValue || <span className="text-muted-foreground italic">Empty</span>}</div>
+                                              {origValue && (
+                                                <>
+                                                  <div className="text-xs text-muted-foreground mt-2">Original value:</div>
+                                                  <div className="text-sm line-through text-muted-foreground">{origValue}</div>
+                                                </>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No keys listed</p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPublishedDialog(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Import Dialog */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
@@ -1021,7 +1305,6 @@ export default function TranslationEditor() {
             <DialogTitle>Import Translations from Excel</DialogTitle>
             <DialogDescription>
               Select an Excel file (.xlsx) exported from this editor. The file must have columns: key, en, ps, fa, ar.
-              Imported translations will be merged with existing ones.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

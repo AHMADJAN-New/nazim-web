@@ -21,11 +21,7 @@ class TranslationController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // No permission check - translations are accessible to all authenticated users
-        // This allows translators to work without needing special permissions
-
         $translationsPath = base_path('../frontend/src/lib/translations');
-        
         $languages = ['en', 'ps', 'fa', 'ar'];
         $translations = [];
 
@@ -34,35 +30,25 @@ class TranslationController extends Controller
             
             if (!File::exists($filePath)) {
                 Log::warning("Translation file not found: {$filePath}");
+                $translations[$lang] = [];
                 continue;
             }
 
+            try {
             $content = File::get($filePath);
-            
-            // Extract the translation object from the TypeScript file
-            // Pattern: export const en: TranslationKeys = { ... };
-            if (preg_match('/export const ' . $lang . ': TranslationKeys = ({.*?});/s', $content, $matches)) {
-                $jsonString = $matches[1];
-                
-                // Convert TypeScript object to JSON
-                // Remove trailing commas
-                $jsonString = preg_replace('/,\s*}/', '}', $jsonString);
-                $jsonString = preg_replace('/,\s*]/', ']', $jsonString);
-                
-                // Replace single quotes with double quotes
-                $jsonString = str_replace("'", '"', $jsonString);
-                
-                // Replace unquoted keys with quoted keys
-                $jsonString = preg_replace('/(\w+):/', '"$1":', $jsonString);
-                
-                try {
-                    $translations[$lang] = json_decode($jsonString, true);
+                // Normalize file content: remove BOM and normalize line endings
+                $content = $this->normalizeFileContent($content);
+                $obj = $this->extractTsObjectFromFile($content, $lang); // "{ ... }"
+                $json = $this->tsObjectToJson($obj);
+
+                $decoded = json_decode($json, true);
+                if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+                    throw new \Exception("JSON decode failed: " . json_last_error_msg());
+                }
+
+                $translations[$lang] = $decoded;
                 } catch (\Exception $e) {
                     Log::error("Failed to parse translation file {$lang}.ts: " . $e->getMessage());
-                    $translations[$lang] = [];
-                }
-            } else {
-                Log::warning("Could not extract translation object from {$lang}.ts");
                 $translations[$lang] = [];
             }
         }
@@ -81,8 +67,6 @@ class TranslationController extends Controller
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
-
-        // No permission check - translations are accessible to all authenticated users
 
         $request->validate([
             'translations' => 'required|array',
@@ -111,12 +95,8 @@ class TranslationController extends Controller
             }
 
             try {
-                // Convert array to TypeScript object format
                 $tsContent = $this->arrayToTypeScript($translations[$lang], $lang);
-                
-                // Write to file
                 File::put($filePath, $tsContent);
-                
                 Log::info("Translation file updated: {$lang}.ts by user {$user->id}");
             } catch (\Exception $e) {
                 Log::error("Failed to save translation file {$lang}.ts: " . $e->getMessage());
@@ -144,13 +124,11 @@ class TranslationController extends Controller
     {
         try {
             $user = $request->user();
-            
             if (!$user) {
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
             
             $profile = DB::table('profiles')->where('id', $user->id)->first();
-
             if (!$profile) {
                 return response()->json(['error' => 'Profile not found'], 404);
             }
@@ -164,17 +142,16 @@ class TranslationController extends Controller
 
             $changes = $request->input('changes');
             $translationsPath = base_path('../frontend/src/lib/translations');
+
             $errors = [];
             $updatedFiles = [];
-            $fileChanges = []; // Track changes per file
+            $fileChanges = [];
 
             // Group changes by language
             $changesByLang = [];
             foreach ($changes as $change) {
                 $lang = $change['lang'];
-                if (!isset($changesByLang[$lang])) {
-                    $changesByLang[$lang] = [];
-                }
+                $changesByLang[$lang] ??= [];
                 $changesByLang[$lang][$change['key']] = $change['value'];
             }
 
@@ -188,29 +165,26 @@ class TranslationController extends Controller
                 }
 
                 try {
-                    // Read existing file content
                     if (!is_readable($filePath)) {
                         throw new \Exception("Translation file is not readable: {$filePath}");
                     }
                     
                     $fileContent = File::get($filePath);
-                    
                     if ($fileContent === false) {
                         throw new \Exception("Failed to read translation file: {$filePath}");
                     }
                     
-                    // Update only changed keys
+                    // Normalize file content: remove BOM and normalize line endings
+                    $fileContent = $this->normalizeFileContent($fileContent);
+                    
                     $updatedContent = $this->updateTranslationFile($fileContent, $langChanges, $lang);
                     
-                    // Check if directory is writable
                     $dir = dirname($filePath);
                     if (!is_writable($dir)) {
                         throw new \Exception("Translation directory is not writable: {$dir}");
                     }
                     
-                    // Write updated content
                     $result = File::put($filePath, $updatedContent);
-                    
                     if ($result === false) {
                         throw new \Exception("Failed to write translation file: {$filePath}");
                     }
@@ -235,12 +209,11 @@ class TranslationController extends Controller
                 }
             }
 
-            // Track changes in database (only if files were successfully updated)
+            // Track changes (best-effort)
             foreach ($fileChanges as $lang => $changeData) {
                 try {
-                    $this->trackFileChange($changeData, $user->id);
+                    $this->trackFileChange($changeData, (string) $user->id);
                 } catch (\Exception $e) {
-                    // Log but don't fail the request if tracking fails
                     Log::warning("Failed to track file change for {$changeData['file_name']}: " . $e->getMessage());
                 }
             }
@@ -278,29 +251,81 @@ class TranslationController extends Controller
 
     /**
      * Track file changes in database
+     * Merges new changes with existing changes instead of replacing them
+     * If a published key is edited again, it moves back to pending
      */
     private function trackFileChange(array $changeData, string $userId): void
     {
-        DB::table('translation_changes')->updateOrInsert(
-            [
+        // Check if record exists (pending or built)
+        $existingPending = DB::table('translation_changes')
+            ->where('file_name', $changeData['file_name'])
+            ->where('status', 'pending')
+            ->first();
+        
+        $existingBuilt = DB::table('translation_changes')
+            ->where('file_name', $changeData['file_name'])
+            ->where('status', 'built')
+            ->first();
+        
+        if ($existingPending) {
+            // Merge existing pending keys with new keys (don't replace)
+            $existingKeys = json_decode($existingPending->changed_keys, true) ?? [];
+            $newKeys = $changeData['changed_keys'] ?? [];
+            
+            // Merge arrays and remove duplicates
+            $mergedKeys = array_unique(array_merge($existingKeys, $newKeys));
+            
+            // Update existing pending record with merged keys
+            DB::table('translation_changes')
+                ->where('id', $existingPending->id)
+                ->update([
+                    'language' => $changeData['language'],
+                    'keys_changed' => count($mergedKeys), // Total unique keys changed
+                    'changed_keys' => json_encode(array_values($mergedKeys)), // Re-index array
+                    'last_modified_at' => now(),
+                    'modified_by' => $userId,
+                    'status' => 'pending',
+                    'updated_at' => now(),
+                ]);
+        } elseif ($existingBuilt) {
+            // If file was built but is being edited again, merge keys and move back to pending
+            $existingKeys = json_decode($existingBuilt->changed_keys, true) ?? [];
+            $newKeys = $changeData['changed_keys'] ?? [];
+            
+            // Merge arrays and remove duplicates
+            $mergedKeys = array_unique(array_merge($existingKeys, $newKeys));
+            
+            // Update built record to pending status (re-edited published keys go back to pending)
+            DB::table('translation_changes')
+                ->where('id', $existingBuilt->id)
+                ->update([
+                    'language' => $changeData['language'],
+                    'keys_changed' => count($mergedKeys), // Total unique keys changed
+                    'changed_keys' => json_encode(array_values($mergedKeys)), // Re-index array
+                    'last_modified_at' => now(),
+                    'modified_by' => $userId,
+                    'status' => 'pending', // Move back to pending
+                    'built_at' => null, // Clear built timestamp
+                    'updated_at' => now(),
+                ]);
+        } else {
+            // Insert new record
+            DB::table('translation_changes')->insert([
                 'file_name' => $changeData['file_name'],
-                'status' => 'pending'
-            ],
-            [
                 'language' => $changeData['language'],
                 'keys_changed' => $changeData['keys_changed'],
                 'changed_keys' => json_encode($changeData['changed_keys']),
                 'last_modified_at' => now(),
                 'modified_by' => $userId,
                 'status' => 'pending',
+                'created_at' => now(),
                 'updated_at' => now(),
-                'created_at' => DB::raw('COALESCE(created_at, NOW())'),
-            ]
-        );
+            ]);
+        }
     }
 
     /**
-     * Get list of changed files
+     * Get list of changed files (both pending and built)
      */
     public function getChangedFiles(Request $request)
     {
@@ -311,8 +336,8 @@ class TranslationController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $changedFiles = DB::table('translation_changes')
-            ->where('status', 'pending')
+        // Get all files (pending and built)
+        $allFiles = DB::table('translation_changes')
             ->orderBy('last_modified_at', 'desc')
             ->get()
             ->map(function ($file) {
@@ -322,14 +347,23 @@ class TranslationController extends Controller
                     'keys_changed' => $file->keys_changed,
                     'changed_keys' => json_decode($file->changed_keys, true) ?? [],
                     'last_modified_at' => $file->last_modified_at,
+                    'built_at' => $file->built_at,
+                    'status' => $file->status, // 'pending' or 'built'
                     'modified_by' => $file->modified_by,
                 ];
             });
 
+        // Separate pending and built files
+        $pendingFiles = $allFiles->where('status', 'pending')->values();
+        $builtFiles = $allFiles->where('status', 'built')->values();
+
         return response()->json([
-            'changed_files' => $changedFiles,
-            'total_files' => $changedFiles->count(),
-            'total_keys_changed' => $changedFiles->sum('keys_changed'),
+            'changed_files' => $pendingFiles->toArray(), // Keep for backward compatibility
+            'pending_files' => $pendingFiles->toArray(),
+            'built_files' => $builtFiles->toArray(),
+            'total_files' => $pendingFiles->count(),
+            'total_keys_changed' => $pendingFiles->sum('keys_changed'),
+            'total_built_files' => $builtFiles->count(),
         ]);
     }
 
@@ -355,7 +389,7 @@ class TranslationController extends Controller
 
         if ($request->input('mark_all')) {
             // Mark all pending files as built
-        } else if ($request->has('file_names')) {
+        } elseif ($request->has('file_names')) {
             $query->whereIn('file_name', $request->input('file_names'));
         } else {
             return response()->json(['error' => 'Either file_names or mark_all must be provided'], 400);
@@ -378,167 +412,777 @@ class TranslationController extends Controller
      */
     private function updateTranslationFile(string $fileContent, array $changes, string $lang): string
     {
-        try {
-            // Validate file content
             if (empty(trim($fileContent))) {
                 throw new \Exception("Translation file {$lang}.ts is empty or invalid.");
             }
             
-            // Parse the existing file to extract the translation object
-            // Use a more robust approach: find the opening brace and match balanced braces
+        $objectContent = $this->extractTsObjectFromFile($fileContent, $lang); // "{...}"
+        $jsonString = $this->tsObjectToJson($objectContent);
+
+        $translations = json_decode($jsonString, true);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($translations)) {
+            $errorMsg = json_last_error_msg();
+            $errorCode = json_last_error();
+            
+            // Find the error position
+            $errorPos = -1;
+            $lastValidPos = -1;
+            $len = strlen($jsonString);
+            
+            // Binary search for error position
+            $low = 0;
+            $high = $len;
+            while ($low < $high) {
+                $mid = intval(($low + $high) / 2);
+                $testJson = substr($jsonString, 0, $mid);
+                
+                // Try to make it valid by closing structures
+                $openBraces = substr_count($testJson, '{') - substr_count($testJson, '}');
+                $openBrackets = substr_count($testJson, '[') - substr_count($testJson, ']');
+                $testJson .= str_repeat('}', max(0, $openBraces));
+                $testJson .= str_repeat(']', max(0, $openBrackets));
+                
+                json_decode($testJson);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $lastValidPos = $mid;
+                    $low = $mid + 1;
+                } else {
+                    $high = $mid;
+                    $errorPos = $mid;
+                }
+            }
+            
+            // Get context around error
+            $errorContext = '';
+            $errorChar = '';
+            if ($errorPos >= 0 && $errorPos < $len) {
+                $start = max(0, $errorPos - 100);
+                $end = min($len, $errorPos + 100);
+                $errorContext = substr($jsonString, $start, $end - $start);
+                $errorChar = $jsonString[$errorPos];
+            }
+            
+            Log::error("JSON decode error in {$lang}.ts", [
+                'error' => $errorMsg,
+                'error_code' => $errorCode,
+                'error_pos' => $errorPos,
+                'last_valid_pos' => $lastValidPos,
+                'error_char' => $errorChar,
+                'error_char_code' => $errorPos >= 0 ? ord($errorChar) : null,
+                'error_context' => $errorContext,
+                'json_preview' => substr($jsonString, 0, 1200),
+                'json_length' => strlen($jsonString),
+            ]);
+            throw new \Exception("Failed to parse translation object for {$lang}.ts: {$errorMsg} at position {$errorPos}");
+        }
+
+        foreach ($changes as $keyPath => $value) {
+            $this->setNestedValue($translations, $keyPath, $value);
+        }
+
+        $lines = [];
+        $lines[] = "import type { TranslationKeys } from './types';";
+        $lines[] = '';
+        $lines[] = "export const {$lang}: TranslationKeys = {";
+        $this->formatObject($translations, $lines, '  ', 1);
+        $lines[] = '};';
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Extract "{ ... }" from: export const <lang>: TranslationKeys = { ... };
+     */
+    private function extractTsObjectFromFile(string $fileContent, string $lang): string
+    {
             $pattern = '/export\s+const\s+' . preg_quote($lang, '/') . '\s*:\s*TranslationKeys\s*=\s*{/s';
             if (!preg_match($pattern, $fileContent, $matches, PREG_OFFSET_CAPTURE)) {
-                $filePreview = substr($fileContent, 0, 200);
-                Log::error("Could not find translation object declaration for {$lang}.ts", [
-                    'pattern' => $pattern,
-                    'file_preview' => $filePreview,
-                    'file_length' => strlen($fileContent)
-                ]);
                 throw new \Exception("Could not find translation object declaration for {$lang}.ts");
             }
 
-            $startPos = $matches[0][1] + strlen($matches[0][0]) - 1; // Position of opening brace
-            $braceCount = 1; // Start at 1 since we're already at the opening brace
-            $endPos = $startPos;
-            $contentLength = strlen($fileContent);
+        $startBracePos = $matches[0][1] + strlen($matches[0][0]) - 1;
+
+        $braceCount = 1;
+        $endBracePos = null;
+
+        $len = strlen($fileContent);
             $inString = false;
-            $stringChar = null; // Track if we're in single or double quote string
+        $stringChar = null;
             $escaped = false;
 
-            // Find the matching closing brace, accounting for strings
-            for ($i = $startPos + 1; $i < $contentLength; $i++) {
-                $char = $fileContent[$i];
-                $prevChar = $i > 0 ? $fileContent[$i - 1] : '';
-                
-                // Handle escape sequences
+        for ($i = $startBracePos + 1; $i < $len; $i++) {
+            $ch = $fileContent[$i];
+
                 if ($escaped) {
                     $escaped = false;
                     continue;
                 }
                 
-                if ($char === '\\') {
+            if ($ch === '\\') {
                     $escaped = true;
                     continue;
                 }
                 
-                // Track string boundaries
-                if (($char === "'" || $char === '"') && !$escaped) {
+            if ($ch === "'" || $ch === '"') {
                     if (!$inString) {
                         $inString = true;
-                        $stringChar = $char;
-                    } elseif ($char === $stringChar) {
+                    $stringChar = $ch;
+                } elseif ($ch === $stringChar) {
                         $inString = false;
                         $stringChar = null;
                     }
                     continue;
                 }
                 
-                // Only count braces when not inside a string
                 if (!$inString) {
-                    if ($char === '{') {
+                if ($ch === '{') {
                         $braceCount++;
-                    } elseif ($char === '}') {
+                } elseif ($ch === '}') {
                         $braceCount--;
                         if ($braceCount === 0) {
-                            $endPos = $i;
+                        $endBracePos = $i;
                             break;
                         }
                     }
                 }
             }
 
-            if ($braceCount !== 0) {
-                throw new \Exception("Unbalanced braces in translation file {$lang}.ts (brace count: {$braceCount})");
-            }
-
-            // Extract the object content (without the outer braces)
-            $objectContent = substr($fileContent, $startPos + 1, $endPos - $startPos - 1);
-            
-            if (empty(trim($objectContent))) {
-                throw new \Exception("Translation object content is empty for {$lang}.ts");
-            }
-            
-            // Convert to array for easier manipulation
-            $jsonString = $this->tsObjectToJson($objectContent);
-            
-            if (empty(trim($jsonString))) {
-                throw new \Exception("Failed to convert TypeScript object to JSON for {$lang}.ts (result is empty)");
-            }
-            
-            $translations = json_decode($jsonString, true);
-            
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                $errorMsg = json_last_error_msg();
-                $jsonPreview = substr($jsonString, 0, 500);
-                Log::error("JSON decode error in {$lang}.ts", [
-                    'error' => $errorMsg,
-                    'json_preview' => $jsonPreview,
-                    'json_length' => strlen($jsonString)
-                ]);
-                throw new \Exception("Failed to parse translation object for {$lang}.ts: {$errorMsg}");
-            }
-
-            // Update only changed keys
-            foreach ($changes as $keyPath => $value) {
-                $this->setNestedValue($translations, $keyPath, $value);
-            }
-
-            // Rebuild the file with updated translations
-            $lines = [];
-            $lines[] = "import type { TranslationKeys } from './types';";
-            $lines[] = '';
-            $lines[] = "export const {$lang}: TranslationKeys = {";
-            
-            $this->formatObject($translations, $lines, '  ', 1);
-            
-            $lines[] = '};';
-            
-            return implode("\n", $lines);
-        } catch (\Exception $e) {
-            Log::error("Error in updateTranslationFile for {$lang}.ts: " . $e->getMessage(), [
-                'exception' => get_class($e),
-                'trace' => $e->getTraceAsString(),
-                'file_content_preview' => substr($fileContent, 0, 500)
-            ]);
-            throw $e; // Re-throw to be caught by storeChanges
+        if ($endBracePos === null) {
+            throw new \Exception("Unbalanced braces in translation file {$lang}.ts");
         }
+
+        return substr($fileContent, $startBracePos, $endBracePos - $startBracePos + 1);
     }
 
     /**
-     * Convert TypeScript object to JSON string
-     * This is a simplified parser - for production, consider using a proper TS parser
+     * Robust JSON5-like (TS object) -> JSON converter.
+     * Handles:
+     * - Single-line and multi-line comments
+     * - unquoted object keys
+     * - single-quoted strings
+     * - trailing commas
+     *
+     * IMPORTANT: This is a tokenizer, not regex hacks.
      */
     private function tsObjectToJson(string $tsObject): string
     {
-        $json = $tsObject;
+        $s = $tsObject;
+        $n = strlen($s);
+
+        $out = [];
+        $outLen = 0;
+
+        $i = 0;
+
+        $inString = false;
+        $quote = null;      // ' or "
+        $escaped = false;
+
+        $inLineComment = false;
+        $inBlockComment = false;
+
+        // When true, we are in an object and expecting a key next (after '{' or ',')
+        $expectKey = false;
         
-        // Remove single-line comments (// ...)
-        $json = preg_replace('/\/\/.*$/m', '', $json);
+        // When true, we are expecting a value (after ':')
+        $expectValue = false;
+
+        // Stack to know if we're inside object/array
+        $stack = []; // values: '{' or '['
+
+        while ($i < $n) {
+            $ch = $s[$i];
+            $next = ($i + 1 < $n) ? $s[$i + 1] : '';
+
+            // Handle comments (only when NOT inside string)
+            if (!$inString) {
+                if ($inLineComment) {
+                    if ($ch === "\n") {
+                        $inLineComment = false;
+                        $out[] = "\n";
+                        $outLen++;
+                    }
+                    $i++;
+                    continue;
+                }
+
+                if ($inBlockComment) {
+                    if ($ch === '*' && $next === '/') {
+                        $inBlockComment = false;
+                        $i += 2;
+                        continue;
+                    }
+                    $i++;
+                    continue;
+                }
+
+                // Start comment?
+                if ($ch === '/' && $next === '/') {
+                    $inLineComment = true;
+                    $i += 2;
+                    continue;
+                }
+                if ($ch === '/' && $next === '*') {
+                    $inBlockComment = true;
+                    $i += 2;
+                    continue;
+                }
+            }
+
+            // String handling
+            if ($inString) {
+                if ($escaped) {
+                    // JSON strings are double-quoted, so an escaped single-quote should be unescaped.
+                    if ($ch === "'") {
+                        $out[] = "'";
+                        $outLen++;
+                    } else {
+                        $out[] = '\\' . $ch;
+                        $outLen += 2;
+                    }
+                    $escaped = false;
+                    $i++;
+                    continue;
+                }
+
+                if ($ch === '\\') {
+                    $escaped = true;
+                    $i++;
+                    continue;
+                }
+
+                // End of string?
+                if ($ch === $quote) {
+                    $out[] = '"'; // always close with double quote for JSON
+                    $outLen++;
+                    $inString = false;
+                    $quote = null;
+                    $i++;
+                    continue;
+                }
+
+                // If original quote was single-quote, we must escape any raw double quotes
+                if ($quote === "'" && $ch === '"') {
+                    $out[] = '\\"';
+                    $outLen += 2;
+                    $i++;
+                    continue;
+                }
+
+                // Normal char - but check for control characters that need escaping
+                $charCode = ord($ch);
+                
+                // #region agent log - Log first char in string around error position
+                if ($i >= 540 && $i <= 550 && !$escaped) {
+                    $logPath = base_path('../.cursor/debug.log');
+                    file_put_contents($logPath, json_encode([
+                        'location' => 'TranslationController.php:tsObjectToJson',
+                        'message' => 'Processing char in string at position ' . $i,
+                        'timestamp' => round(microtime(true) * 1000),
+                        'sessionId' => 'debug-session',
+                        'hypothesisId' => 'P',
+                        'data' => [
+                            'pos' => $i,
+                            'char' => $ch,
+                            'char_code' => $charCode,
+                            'is_control' => $charCode < 0x20,
+                            'expectKey' => $expectKey,
+                            'expectValue' => $expectValue,
+                            'inString' => $inString,
+                            'quote' => $quote,
+                            'escaped' => $escaped,
+                            'context_before' => substr($s, max(0, $i - 10), 20),
+                            'context_after' => substr($s, $i, 20),
+                        ]
+                    ]) . "\n", FILE_APPEND);
+                }
+                // #endregion
+                
+                if ($charCode < 0x20) {
+                    // Control character - must be escaped in JSON
+                    // Use standard JSON escape sequences where possible
+                    $escaped = match ($charCode) {
+                        0x08 => '\\b',  // backspace
+                        0x09 => '\\t',  // tab
+                        0x0A => '\\n',  // newline
+                        0x0C => '\\f',  // form feed
+                        0x0D => '\\r',  // carriage return
+                        default => '\\u' . str_pad(dechex($charCode), 4, '0', STR_PAD_LEFT), // \uXXXX
+                    };
+                    $out[] = $escaped;
+                    $outLen += strlen($escaped);
+                } else {
+                    $out[] = $ch;
+                    $outLen++;
+                }
+                $i++;
+                continue;
+            }
+
+            // Not in string: whitespace is copied, but also helps key detection
+            if ($ch === "'" || $ch === '"') {
+                // Start string: always emit a JSON double-quote
+                $inString = true;
+                $quote = $ch;
+                $escaped = false;
+                $expectValue = false; // we're processing a string value
+                
+                // If we were expecting a key, we're now processing a quoted key
+                // Clear expectKey - after the string ends, we'll encounter ':' which will set expectValue
+                if ($expectKey) {
+                    $expectKey = false;
+                }
+
+                // #region agent log - Log string start
+                if ($i >= 540 && $i <= 550) {
+                    $logPath = base_path('../.cursor/debug.log');
+                    file_put_contents($logPath, json_encode([
+                        'location' => 'TranslationController.php:tsObjectToJson',
+                        'message' => 'String start at position ' . $i,
+                        'timestamp' => round(microtime(true) * 1000),
+                        'sessionId' => 'debug-session',
+                        'hypothesisId' => 'P',
+                        'data' => [
+                            'pos' => $i,
+                            'char' => $ch,
+                            'char_code' => ord($ch),
+                            'expectKey' => $expectKey,
+                            'expectValue' => $expectValue,
+                            'inString' => $inString,
+                            'quote' => $quote,
+                            'context_before' => substr($s, max(0, $i - 10), 20),
+                            'context_after' => substr($s, $i, 20),
+                        ]
+                    ]) . "\n", FILE_APPEND);
+                }
+                // #endregion
+
+                $out[] = '"';
+                $outLen++;
+                $i++;
+                continue;
+            }
+
+            // Manage structure stack
+            if ($ch === '{') {
+                $stack[] = '{';
+                $expectKey = true;
+                $expectValue = false; // we're starting an object, not expecting a simple value
+                $out[] = '{';
+                $outLen++;
+                $i++;
+                continue;
+            }
+            if ($ch === '[') {
+                $stack[] = '[';
+                $expectKey = false;
+                $expectValue = false; // we're starting an array, not expecting a simple value
+                $out[] = '[';
+                $outLen++;
+                $i++;
+                continue;
+            }
+            if ($ch === '}' || $ch === ']') {
+                // Remove trailing comma before closing
+                // If last non-space output ends with ',' remove it
+                for ($k = count($out) - 1; $k >= 0; $k--) {
+                    $t = $out[$k];
+                    if (trim($t) === '') {
+                        continue;
+                    }
+                    if ($t === ',') {
+                        array_splice($out, $k, 1);
+                    }
+                    break;
+                }
+
+                if (!empty($stack)) {
+                    array_pop($stack);
+                }
+                // After closing, we are not expecting a key (depends on parent, will be set by ',' logic)
+                $expectKey = false;
+                $expectValue = false; // we've finished processing the value
+
+                $out[] = $ch;
+                $outLen++;
+                $i++;
+                continue;
+            }
+
+            if ($ch === ',') {
+                // Comma means: in object => next token might be key; in array => value
+                $out[] = ',';
+                $outLen++;
+                $i++;
+
+                // Determine expectKey based on current container
+                $top = end($stack);
+                $expectKey = ($top === '{');
+                $expectValue = false; // we've finished processing the previous value
+                continue;
+            }
+
+            if ($ch === ':') {
+                $out[] = ':';
+                $outLen++;
+                $i++;
+                $expectKey = false; // now expecting value
+                $expectValue = true; // we're expecting a value after the colon
+                continue;
+            }
+
+            // If we're in an object and expecting a key, and next non-space is identifier -> quote it
+            if ($expectKey) {
+                // Skip whitespace (but still output it)
+                if ($ch === ' ' || $ch === "\t" || $ch === "\n" || $ch === "\r") {
+                    $out[] = $ch;
+                    $outLen++;
+                    $i++;
+                    continue;
+                }
+
+                // Identifier key?
+                if ($this->isIdentifierStart($ch)) {
+                    $start = $i;
+                    $i++;
+
+                    while ($i < $n && $this->isIdentifierPart($s[$i])) {
+                        $i++;
+                    }
+
+                    $key = substr($s, $start, $i - $start);
+
+                    // Skip whitespace between key and colon (but keep it)
+                    $j = $i;
+                    while ($j < $n && ($s[$j] === ' ' || $s[$j] === "\t" || $s[$j] === "\n" || $s[$j] === "\r")) {
+                        $j++;
+                    }
+
+                    // Only treat as key if next non-space is ':'
+                    if ($j < $n && $s[$j] === ':') {
+                        $out[] = '"' . $key . '"';
+                        $outLen += (strlen($key) + 2);
+                        // Keep whitespace between key and colon
+                        while ($i < $j) {
+                            $out[] = $s[$i];
+                            $outLen++;
+                            $i++;
+                        }
+                        // colon will be handled by loop normally
+                        continue;
+                    }
+
+                    // Not actually a key (weird), output raw
+                    $out[] = $key;
+                    $outLen += strlen($key);
+                    continue;
+                }
+            }
+
+            // If we're expecting a value (not a key), check for unquoted identifiers
+            if ($expectValue && !$inString) {
+                // Skip whitespace (but still output it)
+                if ($ch === ' ' || $ch === "\t" || $ch === "\n" || $ch === "\r") {
+                    $out[] = $ch;
+                    $outLen++;
+                    $i++;
+                    continue;
+                }
+
+                // Check if this is an unquoted identifier value (not a JSON keyword)
+                if ($this->isIdentifierStart($ch)) {
+                    $start = $i;
+                    $i++;
+
+                    while ($i < $n && $this->isIdentifierPart($s[$i])) {
+                        $i++;
+                    }
+
+                    $value = substr($s, $start, $i - $start);
+                    
+                    // Check if it's a JSON keyword - if not, quote it
+                    if (!in_array($value, ['null', 'true', 'false'])) {
+                        // Check if next non-whitespace is a valid value terminator
+                        $j = $i;
+                        while ($j < $n && ($s[$j] === ' ' || $s[$j] === "\t" || $s[$j] === "\n" || $s[$j] === "\r")) {
+                            $j++;
+                        }
+                        
+                        // If next char is comma, closing brace/bracket, or end of input, quote the value
+                        if ($j >= $n || $s[$j] === ',' || $s[$j] === '}' || $s[$j] === ']') {
+                            $out[] = '"' . $value . '"';
+                            $outLen += (strlen($value) + 2);
+                            // Keep whitespace between value and terminator
+                            while ($i < $j) {
+                                $out[] = $s[$i];
+                                $outLen++;
+                                $i++;
+                            }
+                            $expectValue = false; // we've processed the value
+                            continue;
+                        }
+                    }
+                    
+                    // It's a JSON keyword or not a standalone value, output as-is
+                    $out[] = $value;
+                    $outLen += strlen($value);
+                    $expectValue = false; // we've processed the value (even if it's a keyword)
+                    continue;
+                }
+                
+                // If we hit a '{' or '[', we're starting a nested structure, not a simple value
+                if ($ch === '{' || $ch === '[') {
+                    $expectValue = false;
+                }
+            }
+
+            // Default: copy character, but filter out control characters outside strings
+            // JSON allows whitespace control chars (0x09, 0x0A, 0x0D) but not others
+            $charCode = ord($ch);
+            if ($charCode < 0x20) {
+                // Control character outside string - only allow whitespace control chars
+                if ($charCode === 0x09 || $charCode === 0x0A || $charCode === 0x0D) {
+                    // Tab, newline, carriage return - allowed in JSON as whitespace
+                    // Copy as-is (JSON allows these as whitespace between tokens)
+                    $out[] = $ch;
+                    $outLen++;
+                }
+                // Other control characters are silently skipped (not valid in JSON)
+            } else {
+                // Regular character - copy as-is
+                $out[] = $ch;
+                $outLen++;
+            }
+            $i++;
+        }
+
+        $json = implode('', $out);
+
+        // Final safety: remove any trailing commas before } or ]
+        $json = preg_replace('/,\s*([}\]])/', '$1', $json);
         
-        // Remove multi-line comments (/* ... */)
-        $json = preg_replace('/\/\*.*?\*\//s', '', $json);
+        // Validate structure balance (braces and brackets)
+        $openBraces = substr_count($json, '{') - substr_count($json, '}');
+        $openBrackets = substr_count($json, '[') - substr_count($json, ']');
         
-        // Remove trailing commas before closing braces/brackets
-        $json = preg_replace('/,\s*}/', '}', $json);
-        $json = preg_replace('/,\s*]/', ']', $json);
+        if ($openBraces !== 0 || $openBrackets !== 0) {
+            // Structure is unbalanced - try to fix by closing structures
+            if ($openBraces > 0) {
+                $json .= str_repeat('}', $openBraces);
+            }
+            if ($openBrackets > 0) {
+                $json .= str_repeat(']', $openBrackets);
+            }
+        }
         
-        // Handle string conversion: single quotes to double quotes
-        // First, protect escaped single quotes
-        $json = str_replace("\\'", '__ESCAPED_SINGLE_QUOTE__', $json);
-        // Protect escaped double quotes that might already exist
-        $json = str_replace('\\"', '__ESCAPED_DOUBLE_QUOTE__', $json);
-        // Replace unescaped single quotes with double quotes
-        $json = str_replace("'", '"', $json);
-        // Restore escaped quotes
-        $json = str_replace('__ESCAPED_SINGLE_QUOTE__', '\\"', $json);
-        $json = str_replace('__ESCAPED_DOUBLE_QUOTE__', '\\"', $json);
+        // Additional safety: remove any remaining control characters (except allowed whitespace)
+        // This handles edge cases where control chars might have slipped through
+        // Only remove if JSON is invalid (to avoid breaking valid JSON)
+        $testDecode = json_decode($json);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            // JSON is invalid, try cleaning control characters
+            $cleanedJson = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $json);
+            $testCleaned = json_decode($cleanedJson);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $json = $cleanedJson;
+            }
+            // If cleaning didn't help, keep original for better error reporting
+        }
+
+        // #region agent log - Test chunk at position 537 (before newline)
+        $logPath = base_path('../.cursor/debug.log');
+        // Test chunk up to position 537 (comma, before newline)
+        $testChunk537 = substr($json, 0, 537);
+        $openBraces537 = substr_count($testChunk537, '{') - substr_count($testChunk537, '}');
+        $openBrackets537 = substr_count($testChunk537, '[') - substr_count($testChunk537, ']');
+        $testChunk537Closed = $testChunk537 . str_repeat('}', max(0, $openBraces537)) . str_repeat(']', max(0, $openBrackets537));
+        json_decode($testChunk537Closed);
+        $chunk537Valid = json_last_error() === JSON_ERROR_NONE;
+        $chunk537Error = json_last_error() !== JSON_ERROR_NONE ? json_last_error_msg() : null;
         
-        // Replace unquoted keys with quoted keys
-        // Match identifier-like keys (word characters, can include $ and _) followed by colon
-        // But avoid matching if already quoted or if it's part of a string value
-        $json = preg_replace('/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)(\s*:)/', '$1"$2"$3', $json);
+        // Test chunk up to position 538 (includes newline)
+        $testChunk538 = substr($json, 0, 538);
+        $openBraces538 = substr_count($testChunk538, '{') - substr_count($testChunk538, '}');
+        $openBrackets538 = substr_count($testChunk538, '[') - substr_count($testChunk538, ']');
+        $testChunk538Closed = $testChunk538 . str_repeat('}', max(0, $openBraces538)) . str_repeat(']', max(0, $openBrackets538));
+        json_decode($testChunk538Closed);
+        $chunk538Valid = json_last_error() === JSON_ERROR_NONE;
+        $chunk538Error = json_last_error() !== JSON_ERROR_NONE ? json_last_error_msg() : null;
+        
+        // Capture JSON around positions 537-538
+        $jsonAround537 = substr($json, max(0, 530), 20);
+        $jsonHexAround537 = '';
+        for ($j = max(0, 530); $j < min(strlen($json), 545); $j++) {
+            $jsonHexAround537 .= sprintf('%02X ', ord($json[$j]));
+        }
+        
+        file_put_contents($logPath, json_encode([
+            'location' => 'TranslationController.php:tsObjectToJson',
+            'message' => 'Chunk validity test at positions 537-538',
+            'timestamp' => round(microtime(true) * 1000),
+            'sessionId' => 'debug-session',
+            'hypothesisId' => 'Q',
+            'data' => [
+                'chunk_537_valid' => $chunk537Valid,
+                'chunk_537_error' => $chunk537Error,
+                'chunk_537_closed' => substr($testChunk537Closed, max(0, strlen($testChunk537Closed) - 50)),
+                'chunk_538_valid' => $chunk538Valid,
+                'chunk_538_error' => $chunk538Error,
+                'chunk_538_closed' => substr($testChunk538Closed, max(0, strlen($testChunk538Closed) - 50)),
+                'json_around_537' => $jsonAround537,
+                'json_hex_around_537' => trim($jsonHexAround537),
+                'json_length' => strlen($json),
+            ]
+        ]) . "\n", FILE_APPEND);
+        // #endregion
+
+        // #region agent log - Test JSON validity and find error position
+        $logPath = base_path('../.cursor/debug.log');
+        json_decode($json);
+        $isValid = json_last_error() === JSON_ERROR_NONE;
+        $errorMsg = json_last_error() !== JSON_ERROR_NONE ? json_last_error_msg() : null;
+        $errorCode = json_last_error();
+        
+        // Find error position using binary search
+        $errorPos = -1;
+        $lastValidPos = -1;
+        if (!$isValid) {
+            $len = strlen($json);
+            $low = 0;
+            $high = $len;
+            
+            // First, find the last valid position
+            while ($low < $high) {
+                $mid = intval(($low + $high) / 2);
+                $testJson = substr($json, 0, $mid);
+                
+                // Try to make it valid by closing structures
+                $openBraces = substr_count($testJson, '{') - substr_count($testJson, '}');
+                $openBrackets = substr_count($testJson, '[') - substr_count($testJson, ']');
+                $testJson .= str_repeat('}', max(0, $openBraces));
+                $testJson .= str_repeat(']', max(0, $openBrackets));
+                
+                json_decode($testJson);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $lastValidPos = $mid;
+                    $low = $mid + 1;
+                } else {
+                    $high = $mid;
+                    $errorPos = $mid;
+                }
+            }
+            
+            // Now test progressively from lastValidPos to find actual error
+            if ($lastValidPos >= 0) {
+                for ($testPos = $lastValidPos + 1; $testPos < min($len, $lastValidPos + 1000); $testPos++) {
+                    $testJson = substr($json, 0, $testPos);
+                    // Remove trailing comma if present
+                    $testJson = preg_replace('/,\s*$/', '', $testJson);
+                    // Close structures
+                    $openBraces = substr_count($testJson, '{') - substr_count($testJson, '}');
+                    $openBrackets = substr_count($testJson, '[') - substr_count($testJson, ']');
+                    $testJson .= str_repeat('}', max(0, $openBraces));
+                    $testJson .= str_repeat(']', max(0, $openBrackets));
+                    json_decode($testJson);
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        $errorPos = $testPos;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Get context around error
+        $errorContext = '';
+        $errorChar = '';
+        $beforeError = '';
+        $afterError = '';
+        $charCodes = [];
+        if ($errorPos >= 0 && $errorPos < strlen($json)) {
+            $start = max(0, $errorPos - 100);
+            $end = min(strlen($json), $errorPos + 100);
+            $errorContext = substr($json, $start, $end - $start);
+            $errorChar = $json[$errorPos];
+            $beforeError = substr($json, max(0, $errorPos - 200), 200);
+            $afterError = substr($json, $errorPos, 200);
+            
+            // Get character codes around error (20 chars before and after)
+            $codeStart = max(0, $errorPos - 20);
+            $codeEnd = min(strlen($json), $errorPos + 20);
+            for ($i = $codeStart; $i < $codeEnd; $i++) {
+                $charCodes[] = [
+                    'pos' => $i,
+                    'char' => $json[$i],
+                    'code' => ord($json[$i]),
+                    'is_error' => $i === $errorPos
+                ];
+            }
+        }
+        
+        // Test if JSON up to error position is valid when properly closed
+        $chunkValid = false;
+        $chunkError = null;
+        if ($errorPos >= 0) {
+            $chunk = substr($json, 0, $errorPos);
+            // Remove trailing comma if present
+            $chunk = preg_replace('/,\s*$/', '', $chunk);
+            // Close structures
+            $openBraces = substr_count($chunk, '{') - substr_count($chunk, '}');
+            $openBrackets = substr_count($chunk, '[') - substr_count($chunk, ']');
+            $chunk .= str_repeat('}', max(0, $openBraces));
+            $chunk .= str_repeat(']', max(0, $openBrackets));
+            json_decode($chunk);
+            $chunkValid = json_last_error() === JSON_ERROR_NONE;
+            $chunkError = json_last_error() !== JSON_ERROR_NONE ? json_last_error_msg() : null;
+        }
+        
+        file_put_contents($logPath, json_encode([
+            'location' => 'TranslationController.php:tsObjectToJson',
+            'message' => 'JSON output validity test',
+            'timestamp' => round(microtime(true) * 1000),
+            'sessionId' => 'debug-session',
+            'hypothesisId' => 'N',
+            'data' => [
+                'json_length' => strlen($json),
+                'is_valid' => $isValid,
+                'error_msg' => $errorMsg,
+                'error_code' => $errorCode,
+                'error_pos' => $errorPos,
+                'last_valid_pos' => $lastValidPos,
+                'error_char' => $errorChar,
+                'error_char_code' => $errorPos >= 0 ? ord($errorChar) : null,
+                'error_context' => $errorContext,
+                'before_error' => $beforeError,
+                'after_error' => $afterError,
+                'char_codes_around_error' => array_slice($charCodes, 0, 40),
+                'chunk_valid' => $chunkValid,
+                'chunk_error' => $chunkError,
+                'json_first_1000' => substr($json, 0, 1000),
+                'json_last_500' => strlen($json) > 500 ? substr($json, -500) : $json,
+            ]
+        ]) . "\n", FILE_APPEND);
+        // #endregion
         
         return $json;
+    }
+
+    private function isIdentifierStart(string $ch): bool
+    {
+        $o = ord($ch);
+        return ($o >= 65 && $o <= 90)   // A-Z
+            || ($o >= 97 && $o <= 122)  // a-z
+            || $ch === '_'
+            || $ch === '$';
+    }
+
+    private function isIdentifierPart(string $ch): bool
+    {
+        $o = ord($ch);
+        return ($o >= 65 && $o <= 90)
+            || ($o >= 97 && $o <= 122)
+            || ($o >= 48 && $o <= 57)   // 0-9
+            || $ch === '_'
+            || $ch === '$';
     }
 
     /**
@@ -569,9 +1213,7 @@ class TranslationController extends Controller
         $lines[] = "import type { TranslationKeys } from './types';";
         $lines[] = '';
         $lines[] = "export const {$lang}: TranslationKeys = {";
-        
         $this->formatObject($data, $lines, $indent, 1);
-        
         $lines[] = '};';
         
         return implode("\n", $lines);
@@ -592,21 +1234,16 @@ class TranslationController extends Controller
             $isLast = ($index === $lastIndex);
             
             if (is_array($value) && $this->isAssociativeArray($value)) {
-                // Nested object
                 $lines[] = "{$currentIndent}{$key}: {";
                 $this->formatObject($value, $lines, $indent, $level + 1);
                 $lines[] = "{$currentIndent}}" . ($isLast ? '' : ',');
             } else {
-                // Primitive value
                 $formattedValue = $this->formatValue($value);
                 $lines[] = "{$currentIndent}{$key}: {$formattedValue}" . ($isLast ? '' : ',');
             }
         }
     }
 
-    /**
-     * Check if array is associative
-     */
     private function isAssociativeArray(array $array): bool
     {
         if (empty($array)) {
@@ -616,15 +1253,31 @@ class TranslationController extends Controller
     }
 
     /**
-     * Format value for TypeScript
+     * Normalize file content: remove BOM, normalize line endings
+     * Note: We don't remove control characters here - let the JSON converter handle them
+     * to avoid breaking valid content
      */
+    private function normalizeFileContent(string $content): string
+    {
+        // Remove UTF-8 BOM if present
+        if (substr($content, 0, 3) === "\xEF\xBB\xBF") {
+            $content = substr($content, 3);
+        }
+        
+        // Normalize line endings to \n (Unix style)
+        $content = str_replace(["\r\n", "\r"], "\n", $content);
+        
+        // Don't remove control characters here - the JSON converter will handle them properly
+        // This avoids accidentally removing characters that might be part of valid content
+        
+        return $content;
+    }
+
     private function formatValue($value): string
     {
         if (is_string($value)) {
-            // Escape backslashes first, then single quotes
             $escaped = str_replace('\\', '\\\\', $value);
             $escaped = str_replace("'", "\\'", $escaped);
-            // Also escape newlines and other special characters
             $escaped = str_replace(["\n", "\r", "\t"], ['\\n', '\\r', '\\t'], $escaped);
             return "'{$escaped}'";
         } elseif (is_bool($value)) {
@@ -634,20 +1287,16 @@ class TranslationController extends Controller
         } elseif (is_numeric($value)) {
             return (string) $value;
         } elseif (is_array($value)) {
-            // Array literal (for numeric arrays)
             if (!$this->isAssociativeArray($value)) {
                 $items = array_map([$this, 'formatValue'], $value);
                 return '[' . implode(', ', $items) . ']';
-            } else {
-                // Should not happen in our case, but handle it
+            }
                 return '{}';
             }
-        } else {
+
             $str = (string) $value;
             $escaped = str_replace('\\', '\\\\', $str);
             $escaped = str_replace("'", "\\'", $escaped);
             return "'{$escaped}'";
-        }
     }
 }
-

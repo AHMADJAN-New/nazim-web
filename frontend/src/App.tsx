@@ -124,7 +124,6 @@ import {
   AssetAssignments,
   AssetReports,
   AssetCategories,
-  TranslationEditor,
   DmsDashboard,
   IncomingDocuments,
   OutgoingDocuments,
@@ -179,6 +178,7 @@ import {
   RenewalReviewPage,
   DiscountCodesManagement,
   PlatformSettings,
+  TranslationsManagement,
   HelpCenterManagement,
   MaintenanceHistory
 } from "@/components/LazyComponents";
@@ -331,6 +331,12 @@ const App = () => (
                     <Route path="discount-codes" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <DiscountCodesManagement />
+                      </Suspense>
+                    } />
+                    {/* CRITICAL: More specific routes must come before less specific ones */}
+                    <Route path="settings/translations" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <TranslationsManagement />
                       </Suspense>
                     } />
                     <Route path="settings" element={
@@ -840,11 +846,6 @@ const App = () => (
                           <GradesManagement />
                         </Suspense>
                       </PermissionRoute>
-                    } />
-                    <Route path="/settings/translations" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <TranslationEditor />
-                      </Suspense>
                     } />
                     <Route path="/staff" element={
                       <PermissionRoute permission="staff.read">

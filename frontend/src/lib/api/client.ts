@@ -2854,9 +2854,31 @@ export const translationsApi = {
         changed_keys: string[];
         last_modified_at: string;
         modified_by: number | null;
+        status?: string;
+        built_at?: string;
+      }>;
+      pending_files?: Array<{
+        file_name: string;
+        language: string;
+        keys_changed: number;
+        changed_keys: string[];
+        last_modified_at: string;
+        modified_by: number | null;
+        status?: string;
+      }>;
+      built_files?: Array<{
+        file_name: string;
+        language: string;
+        keys_changed: number;
+        changed_keys: string[];
+        last_modified_at: string;
+        built_at: string;
+        status: string;
+        modified_by: number | null;
       }>;
       total_files: number;
       total_keys_changed: number;
+      total_built_files?: number;
     }>('/translations/changed-files'),
 
   markAsBuilt: async (fileNames?: string[], markAll?: boolean) =>

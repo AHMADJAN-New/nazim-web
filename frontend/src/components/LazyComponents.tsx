@@ -156,6 +156,7 @@ export const OrganizationSubscriptionDetail = lazy(() => import('@/platform/page
 export const PlatformSettings = lazy(() => import('@/platform/pages/admin/PlatformSettings').then(module => ({ default: module.default })));
 export const HelpCenterManagement = lazy(() => import('@/platform/pages/admin/HelpCenterManagement').then(module => ({ default: module.default })));
 export const MaintenanceHistory = lazy(() => import('@/platform/pages/admin/MaintenanceHistory').then(module => ({ default: module.default })));
+export const TranslationsManagement = lazy(() => import('@/platform/pages/admin/TranslationsManagement').then(module => ({ default: module.default })));
 export const RenewalReviewPage = lazy(() => import('@/pages/subscription/admin/RenewalReviewPage').then(module => ({ default: module.default })));
 export const DiscountCodesManagement = lazy(() => import('@/pages/subscription/admin/DiscountCodesManagement').then(module => ({ default: module.default })));
 
