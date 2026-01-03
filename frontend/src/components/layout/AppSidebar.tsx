@@ -1,8 +1,4 @@
-import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
 import { type LucideIcon } from "lucide-react";
-import { useLanguage } from "@/hooks/useLanguage";
-import type { UserRole } from "@/types/auth";
 import {
   Users,
   GraduationCap,
@@ -28,7 +24,12 @@ import {
   ChevronRight,
   Bell
 } from "lucide-react";
+import { useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -41,9 +42,10 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useLanguage } from "@/hooks/useLanguage";
+import type { UserRole } from "@/types/auth";
+
+
 
 interface NavigationChild {
   title: string;

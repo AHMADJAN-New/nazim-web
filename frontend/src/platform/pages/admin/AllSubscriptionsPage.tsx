@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { LoadingSpinner } from '@/components/ui/loading';
 import {
   Table,
   TableBody,
@@ -22,12 +23,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { usePlatformSubscriptions } from '@/platform/hooks/usePlatformAdmin';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
-import { LoadingSpinner } from '@/components/ui/loading';
 import { OrganizationDetailsDialog } from '@/platform/components/OrganizationDetailsDialog';
 import { OrganizationSubscriptionDialog } from '@/platform/components/OrganizationSubscriptionDialog';
+import { usePlatformSubscriptions } from '@/platform/hooks/usePlatformAdmin';
 
 function StatusBadge({ status }: { status: string }) {
   const statusConfig: Record<

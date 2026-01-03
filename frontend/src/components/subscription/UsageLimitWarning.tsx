@@ -1,11 +1,12 @@
+import { AlertTriangle, Ban, Sparkles, ChevronRight } from 'lucide-react';
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, Ban, Sparkles, ChevronRight } from 'lucide-react';
+
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { useResourceUsage, useSubscriptionStatus } from '@/hooks/useSubscription';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useResourceUsage, useSubscriptionStatus } from '@/hooks/useSubscription';
 import { cn } from '@/lib/utils';
 
 interface UsageLimitWarningProps {

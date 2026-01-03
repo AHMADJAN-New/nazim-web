@@ -1,9 +1,10 @@
-import { ReactNode } from 'react';
-import { useHasAnyPermissionAndFeature } from '@/hooks/usePermissions';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { Card, CardContent } from '@/components/ui/card';
 import { Shield } from 'lucide-react';
+import { ReactNode } from 'react';
+
+import { Card, CardContent } from '@/components/ui/card';
+import { LoadingSpinner } from '@/components/ui/loading';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useHasAnyPermissionAndFeature } from '@/hooks/usePermissions';
 
 interface AnyPermissionRouteProps {
   permissions: string[];

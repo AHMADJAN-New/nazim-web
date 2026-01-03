@@ -1,7 +1,8 @@
 import type { Table } from '@tanstack/react-table';
+import { ArrowDown, ArrowUp, X } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowDown, ArrowUp, X } from 'lucide-react';
 
 interface DataTableSortListProps<TData> {
   table: Table<TData>;

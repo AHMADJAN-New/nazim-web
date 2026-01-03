@@ -1,22 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ClipboardList, X } from 'lucide-react';
-import { useAttendanceSession, useAttendanceSessions, useCreateAttendanceSession, useCloseAttendanceSession } from '@/hooks/useAttendance';
-import type { AttendanceSessionInsert } from '@/types/domain/attendance';
-import { useClasses } from '@/hooks/useClasses';
-import { useSchools } from '@/hooks/useSchools';
-import { useLanguage } from '@/hooks/useLanguage';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { useAttendanceSession, useAttendanceSessions, useCreateAttendanceSession, useCloseAttendanceSession } from '@/hooks/useAttendance';
+import { useClasses } from '@/hooks/useClasses';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useSchools } from '@/hooks/useSchools';
 import { showToast } from '@/lib/toast';
-import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import type { AttendanceSessionInsert } from '@/types/domain/attendance';
 
 
 export default function Attendance() {

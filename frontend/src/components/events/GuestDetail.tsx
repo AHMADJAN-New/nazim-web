@@ -1,7 +1,4 @@
-import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { formatDate, formatDateTime } from '@/lib/utils';
 import {
   ArrowLeft,
   Pencil,
@@ -15,12 +12,16 @@ import {
   Printer,
   UserCheck,
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import {
   Table,
   TableBody,
@@ -29,12 +30,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { showToast } from '@/lib/toast';
+import { useHasPermission } from '@/hooks/usePermissions';
 import { eventGuestsApi, eventCheckinApi, eventsApi, schoolsApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import type { EventGuest, GuestStatus, EventCheckin } from '@/types/events';
 import { GUEST_TYPE_LABELS, GUEST_STATUS_LABELS } from '@/types/events';
-import { QRCodeSVG } from 'qrcode.react';
-import { useHasPermission } from '@/hooks/usePermissions';
 
 interface GuestDetailProps {
   eventId: string;

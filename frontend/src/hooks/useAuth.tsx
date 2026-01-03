@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+
 import { authApi, apiClient } from '@/lib/api/client';
 
 // Profile type matching database structure

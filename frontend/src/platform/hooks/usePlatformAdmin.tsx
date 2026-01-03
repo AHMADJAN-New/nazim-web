@@ -1,11 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { platformApi } from '../lib/platformApi';
+
 import { showToast } from '@/lib/toast';
-import type * as SubscriptionApi from '@/types/api/subscription';
-import type * as OrganizationApi from '@/types/api/organization';
-import type { SubscriptionDashboardStats, SubscriptionPlan } from '@/types/domain/subscription';
-import type { Organization } from '@/types/domain/organization';
 import { mapOrganizationApiToDomain } from '@/mappers/organizationMapper';
+import type * as OrganizationApi from '@/types/api/organization';
+import type * as SubscriptionApi from '@/types/api/subscription';
+import type { Organization } from '@/types/domain/organization';
+import type { SubscriptionDashboardStats, SubscriptionPlan } from '@/types/domain/subscription';
 
 /**
  * Map API SubscriptionPlan to domain SubscriptionPlan

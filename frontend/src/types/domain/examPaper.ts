@@ -1,6 +1,6 @@
-import type { Subject } from './subject';
 import type { Exam, ExamSubject } from './exam';
 import type { Question, QuestionOption, ClassAcademicYearInfo, UserInfo } from './question';
+import type { Subject } from './subject';
 
 // Supported languages
 export type ExamPaperLanguage = 'en' | 'ps' | 'fa' | 'ar';

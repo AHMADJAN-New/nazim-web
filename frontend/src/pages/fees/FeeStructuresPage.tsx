@@ -1,27 +1,15 @@
+import { format } from 'date-fns';
+import { MoreHorizontal, Pencil, Trash, Eye, FileText, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
+
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { FeeStructureForm } from '@/components/fees/FeeStructureForm';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Separator } from '@/components/ui/separator';
-import { DataTablePagination } from '@/components/data-table/data-table-pagination';
-import { FeeStructureForm } from '@/components/fees/FeeStructureForm';
-import {
-  useCreateFeeStructure,
-  useDeleteFeeStructure,
-  useFeeStructures,
-  useUpdateFeeStructure,
-} from '@/hooks/useFees';
-import { useClasses, useClassAcademicYears } from '@/hooks/useClasses';
-import { useAcademicYears } from '@/hooks/useAcademicYears';
-import { useLanguage } from '@/hooks/useLanguage';
-import type { FeeStructureFormData } from '@/lib/validations/fees';
-import type { FeeStructure } from '@/types/domain/fees';
-import { showToast } from '@/lib/toast';
-import { format } from 'date-fns';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,9 +18,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Trash, Eye, FileText, Plus } from 'lucide-react';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useClasses, useClassAcademicYears } from '@/hooks/useClasses';
+import {
+  useCreateFeeStructure,
+  useDeleteFeeStructure,
+  useFeeStructures,
+  useUpdateFeeStructure,
+} from '@/hooks/useFees';
+import { useLanguage } from '@/hooks/useLanguage';
+import { showToast } from '@/lib/toast';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import type { FeeStructureFormData } from '@/lib/validations/fees';
+import type { FeeStructure } from '@/types/domain/fees';
 
 export default function FeeStructuresPage() {
   const { t } = useLanguage();
@@ -159,9 +160,9 @@ export default function FeeStructuresPage() {
     };
 
     if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
+       
       console.debug('[FeeStructures] submit values', values);
-      // eslint-disable-next-line no-console
+       
       console.debug('[FeeStructures] payload', payload);
     }
 
@@ -170,7 +171,7 @@ export default function FeeStructuresPage() {
       setOpen(false);
     } catch (error) {
       if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
+         
         console.error('[FeeStructures] submit failed', error);
       }
       showToast.error(
@@ -210,7 +211,7 @@ export default function FeeStructuresPage() {
       setEditingStructure(null);
     } catch (error) {
       if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
+         
         console.error('[FeeStructures] update failed', error);
       }
       showToast.error((error as Error)?.message || t('toast.feeStructureUpdateFailed'));
@@ -222,7 +223,7 @@ export default function FeeStructuresPage() {
       await deleteMutation.mutateAsync(id);
     } catch (error) {
       if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
+         
         console.error('[FeeStructures] delete failed', error);
       }
       showToast.error((error as Error)?.message || t('toast.feeStructureDeleteFailed'));

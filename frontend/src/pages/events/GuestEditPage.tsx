@@ -1,7 +1,8 @@
-import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { eventGuestsApi } from '@/lib/api/client';
+import { useParams, useNavigate } from 'react-router-dom';
+
 import { GuestFormMobile } from '@/components/events';
+import { eventGuestsApi } from '@/lib/api/client';
 
 export default function GuestEditPage() {
   const { eventId, guestId } = useParams<{ eventId: string; guestId: string }>();

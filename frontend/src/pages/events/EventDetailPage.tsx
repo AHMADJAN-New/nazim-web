@@ -1,6 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { formatDate, formatDateTime } from '@/lib/utils';
 import {
   ArrowLeft,
   Calendar,
@@ -16,16 +14,19 @@ import {
   Ban,
   Shield,
 } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+
+import { GuestsList } from '@/components/events';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useHasPermission } from '@/hooks/usePermissions';
 import { eventsApi } from '@/lib/api/client';
-import { GuestsList } from '@/components/events';
+import { showToast } from '@/lib/toast';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { EVENT_STATUS_LABELS } from '@/types/events';
 import type { EventStatus } from '@/types/events';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { showToast } from '@/lib/toast';
 
 const STATUS_COLORS: Record<EventStatus, string> = {
   draft: 'bg-gray-100 text-gray-800',

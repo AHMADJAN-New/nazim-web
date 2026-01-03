@@ -1,5 +1,5 @@
-import type { Grade } from '@/types/domain/grade';
 import type { Language } from '@/lib/i18n';
+import type { Grade } from '@/types/domain/grade';
 
 /**
  * Find the grade that matches a given percentage

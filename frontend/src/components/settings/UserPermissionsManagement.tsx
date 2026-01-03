@@ -1,4 +1,29 @@
+import { Search, Shield, User, X, Building2, Plus } from 'lucide-react';
 import { useState, useMemo } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useCurrentOrganization } from '@/hooks/useOrganizations';
 import { 
   usePermissions,
   useUserPermissionsForUser,
@@ -12,27 +37,7 @@ import {
   type Role
 } from '@/hooks/usePermissions';
 import { useProfile, useProfiles } from '@/hooks/useProfiles';
-import { useCurrentOrganization } from '@/hooks/useOrganizations';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -40,10 +45,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Shield, User, X, Building2, Plus } from 'lucide-react';
 import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
 

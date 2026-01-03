@@ -1,32 +1,9 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus, Search, Shield, Edit, Trash2, X } from 'lucide-react';
 import { useState, useMemo } from 'react';
-import {
-  useRoles,
-  useCreateRole,
-  useUpdateRole,
-  useDeleteRole,
-  type Role,
-} from '@/hooks/usePermissions';
-import { useProfile } from '@/hooks/useProfiles';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,12 +14,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Shield, Edit, Trash2, X } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import {
+  useRoles,
+  useCreateRole,
+  useUpdateRole,
+  useDeleteRole,
+  type Role,
+} from '@/hooks/usePermissions';
+import { useProfile } from '@/hooks/useProfiles';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
 

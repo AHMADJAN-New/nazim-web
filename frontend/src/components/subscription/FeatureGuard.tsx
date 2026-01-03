@@ -1,10 +1,11 @@
+import { Lock, Sparkles, ChevronRight } from 'lucide-react';
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Lock, Sparkles, ChevronRight } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
 import { Button } from '@/components/ui/button';
-import { useHasFeature, useFeatures } from '@/hooks/useSubscription';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useHasFeature, useFeatures } from '@/hooks/useSubscription';
 import { cn } from '@/lib/utils';
 
 interface FeatureGuardProps {

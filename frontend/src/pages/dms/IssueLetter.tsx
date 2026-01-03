@@ -1,33 +1,36 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { formatDate } from '@/lib/utils';
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { dmsApi } from "@/lib/api/client";
-import type { LetterTemplate, TemplateVariable, OutgoingDocument } from "@/types/dms";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle, Download, Image as ImageIcon, Loader2, Printer, RefreshCw, Upload } from "lucide-react";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DocumentNumberBadge } from "@/components/dms/DocumentNumberBadge";
+import { SecurityBadge } from "@/components/dms/SecurityBadge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
+import { useClassAcademicYears } from "@/hooks/useClasses";
 import { useLanguage } from "@/hooks/useLanguage";
 import { showToast } from "@/lib/toast";
-import { SecurityBadge } from "@/components/dms/SecurityBadge";
-import { DocumentNumberBadge } from "@/components/dms/DocumentNumberBadge";
-import { AlertCircle, Download, Image as ImageIcon, Loader2, Printer, RefreshCw, Upload } from "lucide-react";
+
+
 import { Combobox } from "@/components/ui/combobox";
-import { useAcademicYears } from "@/hooks/useAcademicYears";
-import { useClassAcademicYears } from "@/hooks/useClasses";
 import { useStudentAdmissions } from "@/hooks/useStudentAdmissions";
 import { useStaff } from "@/hooks/useStaff";
-import { useAuth } from "@/hooks/useAuth";
 import { IssuedLettersTable } from "@/components/dms/IssuedLettersTable";
 import { LetterDetailsPanel } from "@/components/dms/LetterDetailsPanel";
 import { ImageFileUploader } from "@/components/dms/ImageFileUploader";
 import { CalendarDatePicker } from "@/components/ui/calendar-date-picker";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAcademicYears } from "@/hooks/useAcademicYears";
+import { dmsApi } from "@/lib/api/client";
+import { formatDate } from '@/lib/utils';
 import { renderLetterToDataUrl } from "@/services/dms/LetterCanvasRenderer";
 import { generateLetterPdf } from "@/services/dms/LetterPdfGenerator";
+import type { LetterTemplate, TemplateVariable, OutgoingDocument } from "@/types/dms";
 
 type IssuePayload = {
   subject: string;

@@ -1,13 +1,14 @@
+import { Bell, CheckCheck, Inbox, Loader2 } from "lucide-react";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, CheckCheck, Inbox, Loader2 } from "lucide-react";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useNotifications, useNotificationActions } from "@/hooks/useNotifications";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useNotificationHandler } from "@/hooks/useNotificationHandler";
+import { useNotifications, useNotificationActions } from "@/hooks/useNotifications";
 import { formatDateTime } from "@/lib/utils";
 import type { NotificationItem } from "@/types/notification";
 

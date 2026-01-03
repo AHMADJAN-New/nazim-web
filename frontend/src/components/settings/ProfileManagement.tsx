@@ -1,8 +1,18 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Pencil, User, Shield } from 'lucide-react';
 import { useState } from 'react';
-import { useProfile, useProfiles, useUpdateProfile } from '@/hooks/useProfiles';
-import { useOrganizations } from '@/hooks/useOrganizations';
-import { useHasPermission, useRoles } from '@/hooks/usePermissions';
+import { useForm, Controller } from 'react-hook-form';
+import * as z from 'zod';
+
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -20,20 +30,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Pencil, User, Shield } from 'lucide-react';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useOrganizations } from '@/hooks/useOrganizations';
+import { useHasPermission, useRoles } from '@/hooks/usePermissions';
+import { useProfile, useProfiles, useUpdateProfile } from '@/hooks/useProfiles';
 
 // Schema will be created inside component to use translations
 

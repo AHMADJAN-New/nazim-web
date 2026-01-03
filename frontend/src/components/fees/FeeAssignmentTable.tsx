@@ -1,7 +1,8 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { FeeAssignment } from '@/types/domain/fees';
-import { useLanguage } from '@/hooks/useLanguage';
 import { format } from 'date-fns';
+
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useLanguage } from '@/hooks/useLanguage';
+import type { FeeAssignment } from '@/types/domain/fees';
 
 interface FeeAssignmentTableProps {
   assignments: FeeAssignment[];

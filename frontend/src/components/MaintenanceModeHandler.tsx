@@ -1,7 +1,8 @@
+import { useQuery } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+
 import { useAuth } from '@/hooks/useAuth';
-import { useQuery } from '@tanstack/react-query';
 import { maintenanceApi } from '@/lib/api/client';
 import MaintenancePage from '@/pages/MaintenancePage';
 

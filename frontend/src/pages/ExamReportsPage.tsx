@@ -1,5 +1,21 @@
+import {
+  ArrowLeft, BarChart3, Users, CheckCircle, XCircle,
+  GraduationCap, Search, FileText, BookOpen, AlertCircle
+} from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   useExam,
   useExams,
@@ -11,25 +27,10 @@ import {
   useMarksProgress,
   useLatestExamFromCurrentYear,
 } from '@/hooks/useExams';
-import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
-import { useProfile } from '@/hooks/useProfiles';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  ArrowLeft, BarChart3, Users, CheckCircle, XCircle,
-  GraduationCap, Search, FileText, BookOpen, AlertCircle
-} from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { useProfile } from '@/hooks/useProfiles';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 
 export function ExamReportsPage() {
   const { t, isRTL } = useLanguage();

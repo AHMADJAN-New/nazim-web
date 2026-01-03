@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { useAuth } from './useAuth';
 import { useProfile } from './useProfiles';
-import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import { showToast } from '@/lib/toast';
+
 import { timetablesApi, teacherTimetablePreferencesApi } from '@/lib/api/client';
-import type * as TimetableApi from '@/types/api/timetable';
-import type { Timetable, TimetableEntry, TeacherPreference } from '@/types/domain/timetable';
+import { showToast } from '@/lib/toast';
 import {
 	mapTimetableApiToDomain,
 	mapTimetableDomainToInsert,
@@ -15,6 +15,8 @@ import {
 	mapTeacherPreferenceApiToDomain,
 	mapTeacherPreferenceDomainToInsert,
 } from '@/mappers/timetableMapper';
+import type * as TimetableApi from '@/types/api/timetable';
+import type { Timetable, TimetableEntry, TeacherPreference } from '@/types/domain/timetable';
 
 // Re-export domain types and DayName for convenience
 export type { Timetable, TimetableEntry, TeacherPreference } from '@/types/domain/timetable';
@@ -255,7 +257,7 @@ export const useUpsertTeacherPreference = () => {
 		}) => {
 			if (!user || !profile) throw new Error('User not authenticated');
 
-			let organizationId = params.organizationId ?? profile.organization_id ?? null;
+			const organizationId = params.organizationId ?? profile.organization_id ?? null;
 			if (organizationId && !orgIds.includes(organizationId)) {
 				throw new Error('Cannot update preferences for a non-accessible organization');
 			}

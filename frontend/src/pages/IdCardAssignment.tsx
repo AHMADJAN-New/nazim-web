@@ -1,11 +1,41 @@
+import {
+  Filter,
+  Search,
+  CheckSquare,
+  Square,
+  Eye,
+  Printer,
+  DollarSign,
+  Download,
+  Trash2,
+  Edit,
+  X,
+} from 'lucide-react';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { useLanguage } from '@/hooks/useLanguage';
-import { useAuth } from '@/hooks/useAuth';
+
+import { StudentIdCardPreview } from '@/components/id-cards/StudentIdCardPreview';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/hooks/useLanguage';
 import { useClasses, useClassAcademicYears } from '@/hooks/useClasses';
 import { useIdCardTemplates } from '@/hooks/useIdCardTemplates';
-import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { useSchools } from '@/hooks/useSchools';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { useFinanceAccounts, useIncomeCategories } from '@/hooks/useFinance';
 import {
   useStudentIdCards,
@@ -18,12 +48,8 @@ import {
   type StudentIdCardFilters,
   type AssignIdCardRequest,
 } from '@/hooks/useStudentIdCards';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
@@ -48,36 +74,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import {
-  Filter,
-  Search,
-  CheckSquare,
-  Square,
-  Eye,
-  Printer,
-  DollarSign,
-  Download,
-  Trash2,
-  Edit,
-  X,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { showToast } from '@/lib/toast';
-import { StudentIdCardPreview } from '@/components/id-cards/StudentIdCardPreview';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
 
 export default function IdCardAssignment() {

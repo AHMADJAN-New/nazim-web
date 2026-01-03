@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+ 
 /**
  * Generates a flat union type for translation keys WITHOUT recursive TS types.
  *

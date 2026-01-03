@@ -1,18 +1,19 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Calculator, CreditCard, CheckCircle2 } from 'lucide-react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { z } from 'zod';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LoadingSpinner } from '@/components/ui/loading';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/hooks/useLanguage';
 import { 
   useSubscriptionPlans, 
@@ -21,7 +22,6 @@ import {
   useCreateRenewalRequest,
   type SubscriptionPlan,
 } from '@/hooks/useSubscription';
-import { LoadingSpinner } from '@/components/ui/loading';
 
 const renewalSchema = z.object({
   currency: z.enum(['AFN', 'USD']),

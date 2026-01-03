@@ -1,25 +1,6 @@
+import { Upload, X, FileText, Image as ImageIcon, Download, Trash2, Camera, User, Mail, Phone, MapPin, Calendar, GraduationCap, Briefcase, FileCheck } from 'lucide-react';
 import { useState } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { useStaffMember, useStaffDocuments, useUploadStaffPicture, useUploadStaffDocument, useDeleteStaffDocument } from '@/hooks/useStaff';
-import type { Staff } from '@/types/domain/staff';
-import { useProfile } from '@/hooks/useProfiles';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +11,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Upload, X, FileText, Image as ImageIcon, Download, Trash2, Camera, User, Mail, Phone, MapPin, Calendar, GraduationCap, Briefcase, FileCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { useProfile } from '@/hooks/useProfiles';
+import { useStaffMember, useStaffDocuments, useUploadStaffPicture, useUploadStaffDocument, useDeleteStaffDocument } from '@/hooks/useStaff';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import type { Staff } from '@/types/domain/staff';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 

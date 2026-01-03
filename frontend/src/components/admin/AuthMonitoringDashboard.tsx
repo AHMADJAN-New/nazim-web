@@ -1,9 +1,3 @@
-import React, { useState, useEffect } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
 import { 
   AlertTriangle, 
   CheckCircle, 
@@ -15,6 +9,14 @@ import {
   TrendingUp,
   Activity
 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDate, formatDateTime } from '@/lib/utils';
+
 
 interface AuthEvent {
   id: string;

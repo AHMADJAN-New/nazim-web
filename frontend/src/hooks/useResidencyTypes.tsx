@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { showToast } from '@/lib/toast';
-import { useAuth } from './useAuth';
+
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
+
 import { residencyTypesApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
 
 // TypeScript interfaces for Residency Type
 export interface ResidencyType {
@@ -69,7 +71,7 @@ export const useCreateResidencyType = () => {
       }
 
       // Get organization_id - use provided or user's org
-      let organizationId = residencyTypeData.organization_id ?? profile.organization_id ?? null;
+      const organizationId = residencyTypeData.organization_id ?? profile.organization_id ?? null;
       if (organizationId && !orgIds.includes(organizationId)) {
         throw new Error('Cannot create residency type for different organization');
       }

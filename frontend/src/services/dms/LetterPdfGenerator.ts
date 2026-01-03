@@ -1,7 +1,9 @@
-import type { LetterTemplate } from '@/types/dms';
+import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
+
 import { renderLetterToDataUrl } from './LetterCanvasRenderer';
 
-import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
+import type { LetterTemplate } from '@/types/dms';
+
 let pdfMake: any = (pdfMakeModule as any).default || pdfMakeModule;
 
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';

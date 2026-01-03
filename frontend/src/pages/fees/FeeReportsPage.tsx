@@ -2,27 +2,6 @@
  * Fee Reports Page - Dashboard for fee collection tracking
  */
 
-import { useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { useFeeReportDashboard, useStudentFees, useFeeDefaulters, useFeeAssignments, useFeePayments, useFeeStructures, useFeeExceptions } from '@/hooks/useFees';
-import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
-import { useClassAcademicYears } from '@/hooks/useClasses';
-import { useLanguage } from '@/hooks/useLanguage';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { formatCurrency, formatDate } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterPanel } from '@/components/layout/FilterPanel';
 import {
   Banknote,
   TrendingUp,
@@ -42,15 +21,38 @@ import {
   User,
   GraduationCap,
 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
+
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
-import { PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
-import { useEffect } from 'react';
+import { Input } from '@/components/ui/input';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useFeeReportDashboard, useStudentFees, useFeeDefaulters, useFeeAssignments, useFeePayments, useFeeStructures, useFeeExceptions } from '@/hooks/useFees';
+import { useClassAcademicYears } from '@/hooks/useClasses';
+import { useLanguage } from '@/hooks/useLanguage';
+import { formatCurrency, formatDate } from '@/lib/utils';
+
 
 const COLORS = ['#22c55e', '#eab308', '#f97316', '#ef4444', '#6b7280'];
 const STATUS_COLORS: Record<string, string> = {

@@ -1,7 +1,8 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Bold, Italic, Underline, List, ListOrdered, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 
 export interface RichTextEditorHandle {
   focus: () => void;

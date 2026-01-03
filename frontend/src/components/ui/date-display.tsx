@@ -5,8 +5,8 @@
  */
 
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 import { formatDate, formatDateTime, formatShortDate } from '@/lib/calendarAdapter';
+import { cn } from '@/lib/utils';
 
 interface DateDisplayProps {
   date: Date | string;

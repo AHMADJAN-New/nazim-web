@@ -1,18 +1,23 @@
-import { useMemo, useState } from 'react';
 import { BarChart3, RefreshCw, UserCheck, Building2, AlertTriangle } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSchoolContext } from '@/contexts/SchoolContext';
+import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
-import { useSchools } from '@/hooks/useSchools';
-import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useResidencyTypes } from '@/hooks/useResidencyTypes';
+import { useSchools } from '@/hooks/useSchools';
 import { useStudentAdmissionReport } from '@/hooks/useStudentAdmissionReport';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
-import { useSchoolContext } from '@/contexts/SchoolContext';
 import type { AdmissionStatus } from '@/types/domain/studentAdmission';
 import type { StudentAdmission } from '@/types/domain/studentAdmission';
 import type { StudentAdmissionReportFilters } from '@/types/domain/studentAdmissionReport';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,11 +27,7 @@ import { LoadingSpinner } from '@/components/ui/loading';
 import { Combobox } from '@/components/ui/combobox';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Link } from 'react-router-dom';
-import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterPanel } from '@/components/layout/FilterPanel';
 
 const statusOrder: AdmissionStatus[] = ['active', 'admitted', 'pending', 'inactive', 'suspended', 'withdrawn', 'graduated'];
 

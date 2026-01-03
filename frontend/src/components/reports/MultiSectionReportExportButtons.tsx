@@ -1,15 +1,16 @@
+import { FileDown, FileSpreadsheet, Printer } from 'lucide-react';
 import { useMemo, useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+
 import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
+import { Button } from '@/components/ui/button';
+import { useSchoolContext } from '@/contexts/SchoolContext';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
-import { useSchool } from '@/hooks/useSchools';
 import { useReportTemplates } from '@/hooks/useReportTemplates';
-import { useSchoolContext } from '@/contexts/SchoolContext';
+import { useSchool } from '@/hooks/useSchools';
 import { useServerReport } from '@/hooks/useServerReport';
-import { showToast } from '@/lib/toast';
-import { FileDown, FileSpreadsheet, Printer } from 'lucide-react';
 import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
+import { showToast } from '@/lib/toast';
 
 export interface MultiSectionReportSection {
   /** Per-section title (e.g., "Class 10A - A") */

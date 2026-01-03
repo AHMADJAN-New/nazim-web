@@ -1,4 +1,10 @@
+import { Loader2, Download, Image as ImageIcon, FileDown, CreditCard } from 'lucide-react';
 import React, { useState, useEffect, useMemo } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -7,7 +13,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -16,14 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Download, Image as ImageIcon, FileDown, CreditCard } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
-import { showToast } from '@/lib/toast';
-import { useStudents } from '@/hooks/useStudents';
 import { useIdCardTemplates } from '@/hooks/useIdCardTemplates';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useStudents } from '@/hooks/useStudents';
+import { showToast } from '@/lib/toast';
 import type { Student } from '@/types/domain/student';
 
 // QR Code generation - using external API (matches certificate system pattern)

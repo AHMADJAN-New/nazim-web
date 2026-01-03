@@ -1,12 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { showToast } from '@/lib/toast';
-import { useAuth } from './useAuth';
+
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { useAuth } from './useAuth';
 import { useHasPermission } from './usePermissions';
+
 import { usersApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
+import { mapUserProfileApiToDomain, mapCreateUserDataDomainToApi, mapUpdateUserDataDomainToApi } from '@/mappers/userMapper';
 import type * as UserApi from '@/types/api/user';
 import type { UserProfile, CreateUserData, UpdateUserData } from '@/types/domain/user';
-import { mapUserProfileApiToDomain, mapCreateUserDataDomainToApi, mapUpdateUserDataDomainToApi } from '@/mappers/userMapper';
 
 // Re-export domain types for convenience
 export type { UserProfile, CreateUserData, UpdateUserData } from '@/types/domain/user';

@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { phoneBookApi } from '@/lib/api/client';
+
 import { useAuth } from './useAuth';
 import { useProfile } from './useProfiles';
+
+import { phoneBookApi } from '@/lib/api/client';
 import type { PhoneBookEntry } from '@/types/domain/phoneBook';
 import type { PaginationMeta } from '@/types/pagination';
 

@@ -3,18 +3,12 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { currenciesApi, exchangeRatesApi } from '@/lib/api/client';
+
 import { useAuth } from './useAuth';
-import { showToast } from '@/lib/toast';
 import { useLanguage } from './useLanguage';
-import type * as CurrencyApi from '@/types/api/currency';
-import type {
-    Currency,
-    CurrencyFormData,
-    ExchangeRate,
-    ExchangeRateFormData,
-    CurrencyConversion,
-} from '@/types/domain/currency';
+
+import { currenciesApi, exchangeRatesApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
 import {
     mapCurrencyApiToDomain,
     mapCurrencyDomainToInsert,
@@ -23,6 +17,14 @@ import {
     mapExchangeRateDomainToInsert,
     mapExchangeRateDomainToUpdate,
 } from '@/mappers/currencyMapper';
+import type * as CurrencyApi from '@/types/api/currency';
+import type {
+    Currency,
+    CurrencyFormData,
+    ExchangeRate,
+    ExchangeRateFormData,
+    CurrencyConversion,
+} from '@/types/domain/currency';
 
 // Re-export domain types
 export type {

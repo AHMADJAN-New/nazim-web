@@ -1,13 +1,30 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ColumnDef } from '@tanstack/react-table';
+import { Plus, Pencil, Trash2, Search, BookOpen, Copy, X, GraduationCap } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import * as z from 'zod';
+
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useClassAcademicYears, useClasses } from '@/hooks/useClasses';
 import { useSubjects, useClassSubjects, useSubjectHistory, useCreateSubject, useUpdateSubject, useDeleteSubject, useAssignSubjectToClass, useUpdateClassSubject, useRemoveSubjectFromClass, useBulkAssignSubjects, useCopySubjectsBetweenYears, useClassSubjectTemplates, useAssignSubjectToClassTemplate, useRemoveSubjectFromClassTemplate, useBulkAssignSubjectsToClassTemplate } from '@/hooks/useSubjects';
 import type { Subject } from '@/types/domain/subject';
-import { useClassAcademicYears, useClasses } from '@/hooks/useClasses';
-import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useRooms } from '@/hooks/useRooms';
 import { useUsers } from '@/hooks/useUsers';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,9 +37,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useDataTable } from '@/hooks/use-data-table';
-import { ColumnDef } from '@tanstack/react-table';
 import {
     Dialog,
     DialogContent,
@@ -31,29 +46,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Pencil, Trash2, Search, BookOpen, Copy, X, GraduationCap } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
-import * as z from 'zod';
+
 
 const subjectSchema = z.object({
     name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),

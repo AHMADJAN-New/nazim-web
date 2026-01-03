@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+ 
 /**
  * Nazim Web - Prevent new translation debt (incremental).
  *

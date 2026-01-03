@@ -1,5 +1,3 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { 
   ClipboardList, 
@@ -18,24 +16,28 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import { useAttendanceRoster, useAttendanceScanFeed, useAttendanceSession, useMarkAttendance, useScanAttendance } from '@/hooks/useAttendance';
-import type { AttendanceRecordInsert } from '@/types/domain/attendance';
-import { useLanguage } from '@/hooks/useLanguage';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { showToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import { useAttendanceSessions } from '@/hooks/useAttendance';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { useAttendanceRoster, useAttendanceScanFeed, useAttendanceSession, useMarkAttendance, useScanAttendance } from '@/hooks/useAttendance';
+import { useLanguage } from '@/hooks/useLanguage';
+import { showToast } from '@/lib/toast';
+import type { AttendanceRecordInsert } from '@/types/domain/attendance';
+
 
 interface RosterStudent {
   id: string;

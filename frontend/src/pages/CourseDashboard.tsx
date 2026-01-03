@@ -1,29 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
+
 import { formatDate, formatDateTime } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
 import { useShortTermCourses, useCourseStats } from '@/hooks/useShortTermCourses';
-import { useCourseStudents } from '@/hooks/useCourseStudents';
-import { useCourseAttendanceReport } from '@/hooks/useCourseAttendance';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import {
   BookOpen,
   Users,
@@ -49,9 +27,32 @@ if (typeof window !== 'undefined') {
 
 // Use regular pdfmake vfs_fonts instead of pdfmake-arabic's (which has issues)
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/hooks/useLanguage';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useAuth } from '@/hooks/useAuth';
+import { useCourseAttendanceReport } from '@/hooks/useCourseAttendance';
+import { useCourseStudents } from '@/hooks/useCourseStudents';
 
 // Set up fonts for Arabic/Pashto support
 try {

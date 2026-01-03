@@ -1,12 +1,15 @@
-import { createRoot } from 'react-dom/client'
 import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+
 import App from './App.tsx'
+
 import './index.css'
 // DISABLED: Console replacer causes infinite logging loop
 // import './lib/console-replacer' // Initialize logging system
-import { LanguageProvider } from '@/hooks/useLanguage';
-import { DatePreferenceProvider } from '@/hooks/useDatePreference';
 import { RootBootstrap } from './RootBootstrap';
+
+import { DatePreferenceProvider } from '@/hooks/useDatePreference';
+import { LanguageProvider } from '@/hooks/useLanguage';
 
 // Unregister any existing service workers (PWA removed for performance)
 // Guard against sandboxed/invalid documents (e.g., PDF/object viewers) that throw InvalidStateError

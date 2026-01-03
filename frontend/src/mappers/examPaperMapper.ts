@@ -1,3 +1,7 @@
+import { mapExamApiToDomain, mapExamSubjectApiToDomain } from './examMapper';
+import { mapQuestionApiToDomain, mapQuestionOptionApiToDomain } from './questionMapper';
+import { mapSubjectApiToDomain } from './subjectMapper';
+
 import type * as ExamPaperApi from '@/types/api/examPaper';
 import type {
   ExamPaperTemplate,
@@ -12,9 +16,6 @@ import type {
   ExamPaperItemReorder,
 } from '@/types/domain/examPaper';
 import type { ClassAcademicYearInfo, UserInfo, QuestionOption } from '@/types/domain/question';
-import { mapSubjectApiToDomain } from './subjectMapper';
-import { mapExamApiToDomain, mapExamSubjectApiToDomain } from './examMapper';
-import { mapQuestionApiToDomain, mapQuestionOptionApiToDomain } from './questionMapper';
 
 /**
  * Map API school info to Domain SchoolInfo

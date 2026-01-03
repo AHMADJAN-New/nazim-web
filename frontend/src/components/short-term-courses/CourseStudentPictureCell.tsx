@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
 import { UserRound } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
 import type { CourseStudent } from '@/types/domain/courseStudent';
 
 interface CourseStudentPictureCellProps {

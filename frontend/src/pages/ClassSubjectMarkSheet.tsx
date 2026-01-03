@@ -1,14 +1,5 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useExams, useExamClasses, useExamSubjects, useLatestExamFromCurrentYear } from '@/hooks/useExams';
-import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
-import { useGrades } from '@/hooks/useGrades';
-import { examsApi } from '@/lib/api/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,13 +9,23 @@ import { DataTable } from '@/components/data-table/data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { ColumnDef } from '@tanstack/react-table';
 import { FileDown, Printer, Search, Award, TrendingUp, TrendingDown, Trophy, UserRound } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { useProfile } from '@/hooks/useProfiles';
 import { useSchoolContext } from '@/contexts/SchoolContext';
 import { calculateGrade } from '@/lib/utils/gradeCalculator';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { MultiSectionReportExportButtons, type MultiSectionReportSection } from '@/components/reports/MultiSectionReportExportButtons';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useExams, useExamClasses, useExamSubjects, useLatestExamFromCurrentYear } from '@/hooks/useExams';
+import { useGrades } from '@/hooks/useGrades';
+import { useProfile } from '@/hooks/useProfiles';
 import { useServerReport } from '@/hooks/useServerReport';
+import { examsApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 
 // Report data type

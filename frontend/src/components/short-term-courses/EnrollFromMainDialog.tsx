@@ -1,4 +1,10 @@
+import { Search, UserPlus } from 'lucide-react';
 import { useState, useMemo, memo, useEffect } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -9,17 +15,12 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useStudents } from '@/hooks/useStudents';
 import { useEnrollFromMain } from '@/hooks/useCourseStudents';
+import { useStudents } from '@/hooks/useStudents';
 import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
-import { Search, UserPlus } from 'lucide-react';
-import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 interface EnrollFromMainDialogProps {
   open: boolean;

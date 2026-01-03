@@ -1,12 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { useAuth } from './useAuth';
+import { useSubscriptionStatus } from './useSubscription';
+
 import { organizationsApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
-import { useAuth } from './useAuth';
-import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import { useSubscriptionStatus } from './useSubscription';
+import { mapOrganizationApiToDomain, mapOrganizationDomainToInsert, mapOrganizationDomainToUpdate } from '@/mappers/organizationMapper';
 import type * as OrganizationApi from '@/types/api/organization';
 import type { Organization } from '@/types/domain/organization';
-import { mapOrganizationApiToDomain, mapOrganizationDomainToInsert, mapOrganizationDomainToUpdate } from '@/mappers/organizationMapper';
 
 // Re-export domain types for convenience
 export type { Organization } from '@/types/domain/organization';

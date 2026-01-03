@@ -1,16 +1,7 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Phone, Search, Download, FileText, Users, UserCheck, Building2, Gift, UserCircle } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
-import { usePhoneBook } from '@/hooks/usePhoneBook';
-import { usePagination } from '@/hooks/usePagination';
-import { useDataTable } from '@/hooks/use-data-table';
-import { useHasPermission } from '@/hooks/usePermissions';
 import { ColumnDef } from '@tanstack/react-table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Phone, Search, Download, FileText, Users, UserCheck, Building2, Gift, UserCircle } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
@@ -18,6 +9,16 @@ import { LoadingSpinner } from '@/components/ui/loading';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { useSchoolContext } from '@/contexts/SchoolContext';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useDataTable } from '@/hooks/use-data-table';
+import { useLanguage } from '@/hooks/useLanguage';
+import { usePagination } from '@/hooks/usePagination';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { usePhoneBook } from '@/hooks/usePhoneBook';
 import type { PhoneBookEntry } from '@/types/domain/phoneBook';
 
 type PhoneBookCategory = 'all' | 'students' | 'staff' | 'donors' | 'guests' | 'others';
@@ -224,7 +225,7 @@ export function PhoneBook() {
         const address = row.original.address;
         if (!address) return <span className="text-muted-foreground">-</span>;
         return (
-          <div className={isRTL ? 'text-right' : 'text-left'} className="max-w-[200px] truncate">
+          <div className={`${isRTL ? 'text-right' : 'text-left'} max-w-[200px] truncate`}>
             {address}
           </div>
         );

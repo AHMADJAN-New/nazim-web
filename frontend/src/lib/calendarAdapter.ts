@@ -5,8 +5,9 @@
  */
 
 import { format as dateFnsFormat } from 'date-fns';
-import { calendarState } from './calendarState';
+
 import { convertToCalendar, padNumber } from './calendarConverter';
+import { calendarState } from './calendarState';
 import { MONTH_NAMES, SHORT_MONTH_NAMES } from './datePreferences';
 import type { Language } from './i18n';
 

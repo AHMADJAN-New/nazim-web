@@ -1,11 +1,14 @@
-import { useState, useMemo, useEffect } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useResetUserPassword, type UserProfile, type CreateUserData, type UpdateUserData } from '@/hooks/useUsers';
-import { useSchools } from '@/hooks/useSchools';
-import { useHasPermission, useRoles } from '@/hooks/usePermissions';
-import { useStaff } from '@/hooks/useStaff';
-import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useProfiles';
+import { Plus, Pencil, Trash2, Search, UserCog, Download, KeyRound } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,16 +29,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -45,13 +38,22 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Pencil, Trash2, Search, UserCog, Download, KeyRound } from 'lucide-react';
+
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useState, useMemo, useEffect } from 'react';
 import * as z from 'zod';
+
 import { Checkbox } from '@/components/ui/checkbox';
-import { showToast } from '@/lib/toast';
+import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useHasPermission, useRoles } from '@/hooks/usePermissions';
+import { useProfile } from '@/hooks/useProfiles';
+import { useSchools } from '@/hooks/useSchools';
+import { useStaff } from '@/hooks/useStaff';
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useResetUserPassword, type UserProfile, type CreateUserData, type UpdateUserData } from '@/hooks/useUsers';
+import { showToast } from '@/lib/toast';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 const userSchema = z.object({
   full_name: z.string().min(1, 'Full name is required').max(255, 'Full name must be 255 characters or less'),

@@ -1,4 +1,5 @@
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+
 import { GuestFormMobile } from '@/components/events';
 
 export default function GuestAddPage() {

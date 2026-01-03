@@ -1,12 +1,14 @@
-import { SmartSidebar } from "@/components/navigation/SmartSidebar";
-import { AppHeader } from "./AppHeader";
-import { Outlet, useLocation } from "react-router-dom";
 import { useMemo, useState, useCallback } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+
+import { AppHeader } from "./AppHeader";
+
+import { SmartSidebar } from "@/components/navigation/SmartSidebar";
+import { SubscriptionStatusBanner } from "@/components/subscription/SubscriptionStatusBanner";
+import { LoadingSpinner } from "@/components/ui/loading";
+import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useUserPermissions } from "@/hooks/usePermissions";
-import { useAuth } from "@/hooks/useAuth";
-import { LoadingSpinner } from "@/components/ui/loading";
-import { SubscriptionStatusBanner } from "@/components/subscription/SubscriptionStatusBanner";
 import { useSubscriptionErrorHandler } from "@/hooks/useSubscriptionErrorHandler";
 
 export function PersistentLayout() {

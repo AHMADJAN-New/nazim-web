@@ -1,3 +1,30 @@
+import { Building2, Users, Mail, Phone, Search, Shield, Settings } from 'lucide-react';
+import { useState, useMemo } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { LoadingSpinner } from '@/components/ui/loading';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useLanguage } from '@/hooks/useLanguage';
+import { formatDate } from '@/lib/utils';
 import { 
   usePlatformOrganizationAdmins,
   usePlatformOrganizationPermissions,
@@ -8,32 +35,6 @@ import {
   usePlatformAssignPermissionGroupToUser,
   usePlatformRemovePermissionGroupFromUser,
 } from '@/platform/hooks/usePlatformAdminComplete';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Building2, Users, Mail, Phone, Search, Shield, Settings } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
-import { formatDate } from '@/lib/utils';
-import { useState, useMemo } from 'react';
 
 export function OrganizationAdminsManagement() {
   const { t } = useLanguage();

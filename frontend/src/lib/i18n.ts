@@ -7,10 +7,10 @@ export type Language = 'en' | 'ps' | 'fa' | 'ar';
 export type { TranslationKeys } from './translations/types';
 
 // Import translations from separate files
-import { en } from './translations/en';
-import { ps } from './translations/ps';
-import { fa } from './translations/fa';
 import { ar } from './translations/ar';
+import { en } from './translations/en';
+import { fa } from './translations/fa';
+import { ps } from './translations/ps';
 
 // Translation dictionary
 export const translations = { en, ps, fa, ar };
@@ -85,7 +85,7 @@ export function t(key: string, lang: Language = 'en', params?: Record<string, st
     if (isStrictMissingKeyMode()) {
       if (!warnedMissingKeys.has(key)) {
         warnedMissingKeys.add(key);
-        // eslint-disable-next-line no-console
+         
         console.warn(`[i18n] Missing translation key: ${key}`);
       }
       return `[MISSING: ${key}]`;

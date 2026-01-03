@@ -2,14 +2,6 @@
  * Finance Dashboard - Modern Overview of finance data
  */
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { useFinanceDashboard } from '@/hooks/useFinance';
-import { useLanguage } from '@/hooks/useLanguage';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { PageHeader } from '@/components/layout/PageHeader';
 import {
     Wallet,
     TrendingUp,
@@ -34,8 +26,14 @@ import {
     Minus,
     Plus,
 } from 'lucide-react';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
+
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import {
     ChartContainer,
     ChartTooltip,
@@ -44,9 +42,16 @@ import {
     ChartLegendContent,
     type ChartConfig,
 } from '@/components/ui/chart';
-import { PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
-import { useMemo, useState } from 'react';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
+import { useFinanceDashboard } from '@/hooks/useFinance';
+import { useLanguage } from '@/hooks/useLanguage';
+import { formatCurrency, formatDate } from '@/lib/utils';
+
+
+
+
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300'];
 

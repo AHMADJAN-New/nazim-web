@@ -1,4 +1,3 @@
-import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
@@ -12,20 +11,12 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Collapsible,
   CollapsibleContent,
@@ -38,11 +29,22 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { showToast } from '@/lib/toast';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { eventTypesApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
 import type { EventType, EventTypeField, EventTypeFieldGroup, FieldType, FieldOption } from '@/types/events';
 import { FIELD_TYPE_LABELS } from '@/types/events';
-import { v4 as uuidv4 } from 'uuid';
+
 
 interface FormDesignerProps {
   eventTypeId: string;

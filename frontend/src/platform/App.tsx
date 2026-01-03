@@ -1,25 +1,28 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { LanguageProvider } from '@/hooks/useLanguage';
-import { Toaster } from '@/components/ui/sonner';
-import { PlatformAdminLogin } from './pages/PlatformAdminLogin';
-import { PlatformAdminDashboard } from './pages/PlatformAdminDashboard';
+
+
 import { PlatformAdminLayout } from './components/PlatformAdminLayout';
+import { usePlatformAdminPermissions } from './hooks/usePlatformAdminPermissions';
+import DiscountCodesManagement from './pages/admin/DiscountCodesManagement';
+import HelpCenterManagement from './pages/admin/HelpCenterManagement';
+import MaintenanceHistory from './pages/admin/MaintenanceHistory';
 import OrganizationSubscriptionDetail from './pages/admin/OrganizationSubscriptionDetail';
 import SubscriptionAdminDashboard from './pages/admin/SubscriptionAdminDashboard';
 import PlansManagement from './pages/admin/PlansManagement';
-import DiscountCodesManagement from './pages/admin/DiscountCodesManagement';
 import RenewalReviewPage from './pages/admin/RenewalReviewPage';
 import PlatformSettings from './pages/admin/PlatformSettings';
+import { PlatformAdminDashboard } from './pages/PlatformAdminDashboard';
+import { PlatformAdminLogin } from './pages/PlatformAdminLogin';
 import { PlatformPermissionGroupsManagement } from './pages/PlatformPermissionGroupsManagement';
-import HelpCenterManagement from './pages/admin/HelpCenterManagement';
-import MaintenanceHistory from './pages/admin/MaintenanceHistory';
+
 import { TranslationsManagement } from '@/components/LazyComponents';
 import { PageSkeleton } from '@/components/ui/loading';
-import { useAuth } from '@/hooks/useAuth';
-import { usePlatformAdminPermissions } from './hooks/usePlatformAdminPermissions';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { Toaster } from '@/components/ui/sonner';
+import { useAuth } from '@/hooks/useAuth';
+import { LanguageProvider } from '@/hooks/useLanguage';
 
 const queryClient = new QueryClient({
   defaultOptions: {

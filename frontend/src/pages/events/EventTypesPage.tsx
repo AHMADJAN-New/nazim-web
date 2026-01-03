@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+
 import { EventTypesList, FormDesigner } from '@/components/events';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function EventTypesPage() {
   const { profile } = useAuth();

@@ -2,14 +2,51 @@
  * Finance Reports Page - Various financial reports
  */
 
+import {
+    FileText,
+    TrendingUp,
+    TrendingDown,
+    FolderKanban,
+    Users,
+    Wallet,
+    Calendar,
+    DollarSign,
+} from 'lucide-react';
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    AreaChart,
+    Area,
+} from 'recharts';
+
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+    ChartLegend,
+    ChartLegendContent,
+    type ChartConfig,
+} from '@/components/ui/chart';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterPanel } from '@/components/layout/FilterPanel';
+import { LoadingSpinner } from '@/components/ui/loading';
 import {
     Select,
     SelectContent,
@@ -17,6 +54,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
     TableBody,
@@ -35,44 +73,8 @@ import {
     useExpenseEntries,
 } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
-import { LoadingSpinner } from '@/components/ui/loading';
-import {
-    FileText,
-    TrendingUp,
-    TrendingDown,
-    FolderKanban,
-    Users,
-    Wallet,
-    Calendar,
-    DollarSign,
-} from 'lucide-react';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
-import {
-    ChartContainer,
-    ChartTooltip,
-    ChartTooltipContent,
-    ChartLegend,
-    ChartLegendContent,
-    type ChartConfig,
-} from '@/components/ui/chart';
-import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    Legend,
-    ResponsiveContainer,
-    PieChart,
-    Pie,
-    Cell,
-    AreaChart,
-    Area,
-} from 'recharts';
+
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300'];
 

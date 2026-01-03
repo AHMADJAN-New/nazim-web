@@ -1,16 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Camera, UserPlus, Check, Plus } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { useState, useEffect, useCallback } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Select,
   SelectContent,
@@ -18,17 +23,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { showToast } from '@/lib/toast';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { eventsApi, eventGuestsApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
 import { createGuestSchema, quickAddGuestSchema, type CreateGuestFormData, type QuickAddGuestFormData } from '@/lib/validations/events';
 import type { EventGuest, GuestType, EventTypeField, EventTypeFieldGroup } from '@/types/events';
 import { GUEST_TYPE_LABELS } from '@/types/events';
-import { QRCodeSVG } from 'qrcode.react';
+
 
 // QR Code generation fallback for browser compatibility
 async function generateQRCodeImage(data: string, size: number = 200): Promise<string> {

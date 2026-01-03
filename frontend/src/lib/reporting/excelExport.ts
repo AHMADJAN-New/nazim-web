@@ -1,6 +1,8 @@
 // src/lib/reporting/excelExport.ts
 import * as XLSX from 'xlsx';
+
 import type { ReportDefinition } from './types';
+
 import type { School } from '@/hooks/useSchools';
 
 type AnyRow = Record<string, any>;

@@ -1,16 +1,35 @@
-import React, { useState } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
 import {
-  useCertificateTemplates,
-  useCreateCertificateTemplate,
-  useUpdateCertificateTemplate,
-  useDeleteCertificateTemplate,
-  useSetDefaultCertificateTemplate,
-  CertificateTemplate,
-  CertificateLayoutConfig,
-  getCertificateBackgroundUrl,
-} from '@/hooks/useCertificateTemplates';
+  Plus,
+  Pencil,
+  Trash2,
+  Star,
+  Image,
+  FileText,
+  Layout,
+} from 'lucide-react';
+import React, { useState } from 'react';
+
+import { CertificateLayoutEditor } from '@/components/certificates/CertificateLayoutEditor';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,38 +42,20 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Star,
-  Image,
-  FileText,
-  Layout,
-} from 'lucide-react';
-import { CertificateLayoutEditor } from '@/components/certificates/CertificateLayoutEditor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useShortTermCourses } from '@/hooks/useShortTermCourses';
+import {
+  useCertificateTemplates,
+  useCreateCertificateTemplate,
+  useUpdateCertificateTemplate,
+  useDeleteCertificateTemplate,
+  useSetDefaultCertificateTemplate,
+  CertificateTemplate,
+  CertificateLayoutConfig,
+  getCertificateBackgroundUrl,
+} from '@/hooks/useCertificateTemplates';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useShortTermCourses } from '@/hooks/useShortTermCourses';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 // Available font families for certificate templates
 // These fonts are supported by pdfmake for certificate generation

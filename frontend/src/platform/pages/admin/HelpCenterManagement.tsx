@@ -1,13 +1,18 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  Search,
+  BookOpen,
+  FileText,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  HelpCircle,
+  RefreshCw,
+} from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLanguage } from '@/hooks/useLanguage';
-import { platformApi } from '@/platform/lib/platformApi';
-import type * as HelpCenterApi from '@/types/api/helpCenter';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
@@ -35,8 +40,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -45,19 +53,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import {
-  Search,
-  BookOpen,
-  FileText,
-  Plus,
-  Eye,
-  Edit,
-  Trash2,
-  HelpCircle,
-  RefreshCw,
-} from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { useLanguage } from '@/hooks/useLanguage';
+import { showToast } from '@/lib/toast';
 import { formatDate } from '@/lib/utils';
-import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
 import {
   usePlatformCreateHelpCenterCategory,
   usePlatformUpdateHelpCenterCategory,
@@ -66,7 +65,9 @@ import {
   usePlatformUpdateHelpCenterArticle,
   usePlatformDeleteHelpCenterArticle,
 } from '@/platform/hooks/usePlatformAdminComplete';
-import { showToast } from '@/lib/toast';
+import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
+import { platformApi } from '@/platform/lib/platformApi';
+import type * as HelpCenterApi from '@/types/api/helpCenter';
 
 // Category form data interface
 interface CategoryFormData {

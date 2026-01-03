@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useProfiles';
+
 import { LoadingSpinner } from '@/components/ui/loading';
+import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useProfile } from '@/hooks/useProfiles';
 import { useSubscriptionStatus } from '@/hooks/useSubscription';
 
 interface ProtectedRouteProps {

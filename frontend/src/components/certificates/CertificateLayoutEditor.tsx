@@ -1,17 +1,18 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { GripVertical, Save, RotateCcw, Eye } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { CertificateLayoutConfig } from '@/hooks/useCertificateTemplates';
-import type { CourseStudent } from '@/types/domain/courseStudent';
-import { certificateTemplatesApi } from '@/lib/api/client';
-import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import { useCourseStudents } from '@/hooks/useCourseStudents';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useShortTermCourses } from '@/hooks/useShortTermCourses';
+import { certificateTemplatesApi } from '@/lib/api/client';
+import type { CourseStudent } from '@/types/domain/courseStudent';
 
 interface FieldConfig {
   id: string;

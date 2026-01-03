@@ -1,9 +1,29 @@
+import {
+  Download,
+  FileArchive,
+  FileText,
+  CheckSquare,
+  Square,
+  Filter,
+  Search,
+  TrendingUp,
+  Printer,
+  DollarSign,
+} from 'lucide-react';
 import React, { useState, useMemo, useEffect } from 'react';
-import { useLanguage } from '@/hooks/useLanguage';
-import { useAuth } from '@/hooks/useAuth';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useAuth } from '@/hooks/useAuth';
 import { useClasses, useClassAcademicYears } from '@/hooks/useClasses';
 import { useIdCardTemplates } from '@/hooks/useIdCardTemplates';
+import { useLanguage } from '@/hooks/useLanguage';
 import { useSchools } from '@/hooks/useSchools';
 import {
   useStudentIdCards,
@@ -12,13 +32,6 @@ import {
   type StudentIdCardFilters,
   type ExportIdCardRequest,
 } from '@/hooks/useStudentIdCards';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -36,18 +49,6 @@ import {
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import {
-  Download,
-  FileArchive,
-  FileText,
-  CheckSquare,
-  Square,
-  Filter,
-  Search,
-  TrendingUp,
-  Printer,
-  DollarSign,
-} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'idCardExportSettings';

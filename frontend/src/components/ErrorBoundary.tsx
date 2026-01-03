@@ -1,10 +1,11 @@
+import { AlertTriangle, RefreshCw, Home, Bug } from "lucide-react";
 import React, { Component, ErrorInfo, ReactNode } from "react";
-import { logger } from "@/lib/logger";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, RefreshCw, Home, Bug } from "lucide-react";
-import { toast } from "sonner";
 import { t, Language } from '@/lib/i18n';
+import { logger } from "@/lib/logger";
 
 const getLanguage = (): Language => {
   const saved = localStorage.getItem('nazim-language');

@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { useAuth } from './useAuth';
+
 import { notificationsApi } from '@/services/notifications';
 import type { NotificationItem } from '@/types/notification';
 import type { PaginationMeta } from '@/types/pagination';
-import { useAuth } from './useAuth';
 
 export interface NotificationQueryResult {
   notifications: NotificationItem[];

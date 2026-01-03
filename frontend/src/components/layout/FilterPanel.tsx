@@ -1,7 +1,8 @@
-import { useEffect, useState, type ReactNode } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react"
-import { Card } from "@/components/ui/card"
+import { useEffect, useState, type ReactNode } from "react"
+
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"

@@ -1,23 +1,24 @@
+import { X, RefreshCw, CheckCircle2, FileText, Users, TrendingUp, XCircle, ArrowLeft, Hash, Info, GraduationCap } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+
+import { BatchWorkflowStepper } from '@/components/graduation/BatchWorkflowStepper';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useGraduationBatch, useGenerateGraduationStudents, useApproveGraduationBatch, useIssueGraduationCertificates, useCertificateTemplatesV2 } from '@/hooks/useGraduation';
-import { useBulkDeactivateAdmissionsByStudentIds } from '@/hooks/useStudentAdmissions';
 import { useLanguage } from '@/hooks/useLanguage';
-import { X, RefreshCw, CheckCircle2, FileText, Users, TrendingUp, XCircle, ArrowLeft, Hash, Info, GraduationCap } from 'lucide-react';
-import { BatchWorkflowStepper } from '@/components/graduation/BatchWorkflowStepper';
+import { useBulkDeactivateAdmissionsByStudentIds } from '@/hooks/useStudentAdmissions';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function GraduationBatchDetailPage() {
   const { id } = useParams<{ id: string }>();

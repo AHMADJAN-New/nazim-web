@@ -1,11 +1,12 @@
 // src/lib/reporting/index.ts
-import type { ReportDefinition } from './types';
-import type { School } from '@/hooks/useSchools';
-import type { ReportTemplate } from '@/hooks/useReportTemplates';
-
 import { resolveReportBranding } from './branding';
-import { exportReportToPdf } from './pdfExport';
 import { exportReportToExcel } from './excelExport';
+import { exportReportToPdf } from './pdfExport';
+import type { ReportDefinition } from './types';
+
+import type { ReportTemplate } from '@/hooks/useReportTemplates';
+import type { School } from '@/hooks/useSchools';
+
 
 type AnyRow = Record<string, any>;
 

@@ -1,7 +1,7 @@
 import type { AcademicYear } from './academicYear';
 import type { ClassAcademicYear } from './class';
-import type { Subject, ClassSubject } from './subject';
 import type { StudentAdmission } from './student';
+import type { Subject, ClassSubject } from './subject';
 
 // Exam status values
 export type ExamStatus = 'draft' | 'scheduled' | 'in_progress' | 'completed' | 'archived';

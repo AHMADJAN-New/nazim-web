@@ -1,34 +1,36 @@
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Plus, Trash2, GripVertical, Eye, Download, MoreHorizontal, FileText } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import { useExamPaperTemplate, useAddExamPaperItem, useUpdateExamPaperItem, useRemoveExamPaperItem, useReorderExamPaperItems } from '@/hooks/useExamPapers';
-import { useQuestions } from '@/hooks/useQuestions';
-import { useAcademicYears } from '@/hooks/useAcademicYears';
-import { useAuth } from '@/hooks/useAuth';
+
+import { PaperPreview } from '@/components/examPapers/PaperPreview';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useExamPaperTemplate, useAddExamPaperItem, useUpdateExamPaperItem, useRemoveExamPaperItem, useReorderExamPaperItems } from '@/hooks/useExamPapers';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useQuestions } from '@/hooks/useQuestions';
+import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, Plus, Trash2, GripVertical, Eye, Download, MoreHorizontal, FileText } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
-import { showToast } from '@/lib/toast';
-import { PaperPreview } from '@/components/examPapers/PaperPreview';
-import { PaperGenerator } from '@/components/examPapers/PaperGenerator';
 import { examPaperTemplatesApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
+import { PaperGenerator } from '@/components/examPapers/PaperGenerator';
 import { mapExamPaperItemDomainToInsert } from '@/mappers/examPaperMapper';
 import { Input as NumberInput } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+
 
 interface SortableItemProps {
   item: any;

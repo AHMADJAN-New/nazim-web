@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+
 import { CheckinScreen } from '@/components/events';
 
 export default function CheckinPage() {

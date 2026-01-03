@@ -1,5 +1,6 @@
 // Nazim School Management System - Language Hook
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
 import { Language, t, isRTL, getDirection, getFontClass } from '@/lib/i18n';
 import type { TranslationKey } from '@/lib/translations/keys.generated';
 

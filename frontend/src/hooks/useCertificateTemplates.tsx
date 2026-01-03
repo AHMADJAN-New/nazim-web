@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { showToast } from '@/lib/toast';
+
 import { useAuth } from './useAuth';
+
 import { certificateTemplatesApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
 
 export interface CertificateLayoutConfig {
   // Field positions (x, y as percentages 0-100)

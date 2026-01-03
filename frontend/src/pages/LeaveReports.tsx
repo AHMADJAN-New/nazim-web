@@ -1,16 +1,7 @@
-import { useMemo, useState } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
 import { format } from 'date-fns';
 import { BarChart3, CalendarRange, Download, Filter, Loader2, RefreshCcw, CheckCircle2, Clock, XCircle, AlertCircle, FileText, Calendar, TrendingUp } from 'lucide-react';
-import { useLeaveRequests } from '@/hooks/useLeaveRequests';
-import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
-import type { Student } from '@/types/domain/student';
-import { useClasses } from '@/hooks/useClasses';
-import { useSchools } from '@/hooks/useSchools';
-import { useProfile } from '@/hooks/useProfiles';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { useMemo, useState } from 'react';
+
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -25,6 +16,8 @@ import { leaveRequestsApi, apiClient } from '@/lib/api/client';
 import type { LeaveRequest } from '@/types/domain/leave';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -32,7 +25,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import { useClasses } from '@/hooks/useClasses';
+import { useLeaveRequests } from '@/hooks/useLeaveRequests';
+import { useProfile } from '@/hooks/useProfiles';
+import { useSchools } from '@/hooks/useSchools';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import type { Student } from '@/types/domain/student';
 
 export default function LeaveReports() {
   const { t, isRTL, language } = useLanguage();

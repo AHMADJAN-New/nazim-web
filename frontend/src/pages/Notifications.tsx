@@ -1,12 +1,9 @@
-import { useMemo, useState } from "react";
 import { Bell, CheckCircle, Loader2 } from "lucide-react";
-import { useNotifications, useNotificationActions, useNotificationCount } from "@/hooks/useNotifications";
-import { useNotificationHandler } from "@/hooks/useNotificationHandler";
-import { useLanguage } from "@/hooks/useLanguage";
+import { useMemo, useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import {
   Pagination,
   PaginationContent,
@@ -15,6 +12,10 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { Separator } from "@/components/ui/separator";
+import { useLanguage } from "@/hooks/useLanguage";
+import { useNotificationHandler } from "@/hooks/useNotificationHandler";
+import { useNotifications, useNotificationActions, useNotificationCount } from "@/hooks/useNotifications";
 import { formatDateTime } from "@/lib/utils";
 import type { NotificationItem } from "@/types/notification";
 

@@ -1,26 +1,6 @@
-import { useState, useMemo } from 'react';
-import { useExamTypes, useCreateExamType, useUpdateExamType, useDeleteExamType } from '@/hooks/useExamTypes';
-import type { ExamType } from '@/types/domain/examType';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { useLanguage } from '@/hooks/useLanguage';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Pencil, Trash2, Search } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,12 +11,37 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+
+
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
 import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useState, useMemo } from 'react';
 import * as z from 'zod';
+
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { useExamTypes, useCreateExamType, useUpdateExamType, useDeleteExamType } from '@/hooks/useExamTypes';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
 import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
+import type { ExamType } from '@/types/domain/examType';
 
 const examTypeSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),

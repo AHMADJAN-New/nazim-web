@@ -1,7 +1,22 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import React, { useEffect, useState, memo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { studentSchema, type StudentFormData } from '@/lib/validations';
+
+import { StudentAutocompleteInput } from './StudentAutocompleteInput';
+import { StudentDisciplineRecordsDialog } from './StudentDisciplineRecordsDialog';
+import { StudentDocumentsDialog } from './StudentDocumentsDialog';
+import { StudentEducationalHistoryDialog } from './StudentEducationalHistoryDialog';
+import {
+    PersonalInformationSection,
+    AdmissionInformationSection,
+    AddressInformationSection,
+    GuardianInformationSection,
+    OtherInformationSection,
+} from './StudentFormSections';
+import { StudentPictureUpload } from './StudentPictureUpload';
+
+import { UsageLimitWarning, useCanCreate } from '@/components/subscription';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -14,29 +29,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import {
-    PersonalInformationSection,
-    AdmissionInformationSection,
-    AddressInformationSection,
-    GuardianInformationSection,
-    OtherInformationSection,
-} from './StudentFormSections';
-import { useStudentAutocomplete } from '@/hooks/useStudentAutocomplete';
-import { StudentAutocompleteInput } from './StudentAutocompleteInput';
-import { StudentPictureUpload } from './StudentPictureUpload';
-import { useStudentDuplicateCheck } from '@/hooks/useStudentDuplicateCheck';
-import { useSchools } from '@/hooks/useSchools';
+
+
 import { useProfile } from '@/hooks/useProfiles';
+import { useSchools } from '@/hooks/useSchools';
+import { useStudentAutocomplete } from '@/hooks/useStudentAutocomplete';
+
+
+import { useStudentDuplicateCheck } from '@/hooks/useStudentDuplicateCheck';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
 import { useLanguage } from '@/hooks/useLanguage';
+import { studentSchema, type StudentFormData } from '@/lib/validations';
 import type { Student } from '@/types/domain/student';
-import { StudentDocumentsDialog } from './StudentDocumentsDialog';
-import { StudentEducationalHistoryDialog } from './StudentEducationalHistoryDialog';
-import { StudentDisciplineRecordsDialog } from './StudentDisciplineRecordsDialog';
-import { UsageLimitWarning, useCanCreate } from '@/components/subscription';
 
 export interface StudentFormDialogProps {
     open: boolean;

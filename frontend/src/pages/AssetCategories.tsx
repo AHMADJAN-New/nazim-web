@@ -1,10 +1,35 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus, Pencil, Trash2, Search, Package } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { useAssetCategories, useCreateAssetCategory, useUpdateAssetCategory, useDeleteAssetCategory } from '@/hooks/useAssetCategories';
 import type { AssetCategory } from '@/hooks/useAssetCategories';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -16,33 +41,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Search, Package } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 const categorySchema = z.object({
     name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),

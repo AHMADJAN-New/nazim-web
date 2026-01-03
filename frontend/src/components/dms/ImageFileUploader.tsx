@@ -1,14 +1,15 @@
-import { useState, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { dmsApi } from "@/lib/api/client";
+import { Upload, X, Image as ImageIcon, File, Loader2 } from "lucide-react";
+import { useState, useRef } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { compressImage, formatFileSize, isImageFile, getImagePreview, type CompressionOptions } from "@/lib/imageCompression";
-import { Upload, X, Image as ImageIcon, File, Loader2 } from "lucide-react";
-import { showToast } from "@/lib/toast";
 import { useLanguage } from "@/hooks/useLanguage";
+import { dmsApi } from "@/lib/api/client";
+import { compressImage, formatFileSize, isImageFile, getImagePreview, type CompressionOptions } from "@/lib/imageCompression";
+import { showToast } from "@/lib/toast";
 
 interface ImageFileUploaderProps {
   ownerType: "incoming" | "outgoing";

@@ -1,5 +1,5 @@
-import { useAuth } from '@/hooks/useAuth';
 import { EventsList } from '@/components/events';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function EventsPage() {
   const { profile } = useAuth();

@@ -1,19 +1,20 @@
-import { useMemo, useState } from 'react';
-import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
-import { BarChart3, TrendingUp, DollarSign, AlertTriangle, Calendar } from 'lucide-react';
-import { useAssets, useAssetStats } from '@/hooks/useAssets';
-import { useAssetCategories } from '@/hooks/useAssetCategories';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { isBefore, isAfter } from 'date-fns';
-import { useLanguage } from '@/hooks/useLanguage';
-import type { Asset } from '@/types/domain/asset';
+import { BarChart3, TrendingUp, DollarSign, AlertTriangle, Calendar } from 'lucide-react';
+import { useMemo, useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAssetCategories } from '@/hooks/useAssetCategories';
 import type { AssetCategory } from '@/hooks/useAssetCategories';
+import { useAssets, useAssetStats } from '@/hooks/useAssets';
+import { useLanguage } from '@/hooks/useLanguage';
+import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
 import type * as AssetApi from '@/types/api/asset';
+import type { Asset } from '@/types/domain/asset';
 
 export default function AssetReportsTab() {
   const { t } = useLanguage();

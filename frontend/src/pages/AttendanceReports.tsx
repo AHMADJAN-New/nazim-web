@@ -1,16 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
+import { format } from 'date-fns';
 import { Download, X, CheckCircle2, XCircle, Clock, AlertCircle, Heart, Calendar, FileText, Loader2 } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
-import { useDatePreference } from '@/hooks/useDatePreference';
-import { useProfile } from '@/hooks/useProfiles';
-import { useSchools } from '@/hooks/useSchools';
-import { useClasses } from '@/hooks/useClasses';
-import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
-import type { Student } from '@/types/domain/student';
-import { attendanceSessionsApi, apiClient } from '@/lib/api/client';
-import { Button } from '@/components/ui/button';
+import { useMemo, useState } from 'react';
+
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -18,6 +16,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useClasses } from '@/hooks/useClasses';
+import { useDatePreference } from '@/hooks/useDatePreference';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useProfile } from '@/hooks/useProfiles';
+import { useSchools } from '@/hooks/useSchools';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import { attendanceSessionsApi, apiClient } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
+import type { Student } from '@/types/domain/student';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -27,18 +34,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useDataTable } from '@/hooks/use-data-table';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { showToast } from '@/lib/toast';
-import { format } from 'date-fns';
-import { useQuery } from '@tanstack/react-query';
 import type { AttendanceRecord } from '@/types/domain/attendance';
 import { mapAttendanceRecordApiToDomain } from '@/mappers/attendanceMapper';
 import type * as AttendanceApi from '@/types/api/attendance';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterPanel } from '@/components/layout/FilterPanel';
 import {
   Dialog,
   DialogContent,

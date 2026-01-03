@@ -1,11 +1,6 @@
-import { useState, useMemo } from 'react';
-import { useClasses, useClassAcademicYears, useClassHistory, useCreateClass, useUpdateClass, useDeleteClass, useAssignClassToYear, useUpdateClassYearInstance, useRemoveClassFromYear, useCopyClassesBetweenYears, useBulkAssignClassSections } from '@/hooks/useClasses';
-import type { Class, ClassAcademicYear } from '@/types/domain/class';
-import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
-import { useProfile } from '@/hooks/useProfiles';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { useSchools } from '@/hooks/useSchools';
-import { useRooms } from '@/hooks/useRooms';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ColumnDef } from '@tanstack/react-table';
+
 import { useUsers } from '@/hooks/useUsers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +17,6 @@ import {
 } from '@/components/ui/table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useDataTable } from '@/hooks/use-data-table';
-import { ColumnDef } from '@tanstack/react-table';
 import {
     Dialog,
     DialogContent,
@@ -46,14 +40,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
+
 import { Plus, Pencil, Trash2, Search, GraduationCap, Users, Copy, History, Calendar } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
+import { useState, useMemo } from 'react';
+
+
 import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
+import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useClasses, useClassAcademicYears, useClassHistory, useCreateClass, useUpdateClass, useDeleteClass, useAssignClassToYear, useUpdateClassYearInstance, useRemoveClassFromYear, useCopyClassesBetweenYears, useBulkAssignClassSections } from '@/hooks/useClasses';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { useProfile } from '@/hooks/useProfiles';
+import { useRooms } from '@/hooks/useRooms';
+import { useSchools } from '@/hooks/useSchools';
+import type { Class, ClassAcademicYear } from '@/types/domain/class';
 
 const classSchema = z.object({
     name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),

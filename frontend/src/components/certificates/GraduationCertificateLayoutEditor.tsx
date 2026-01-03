@@ -1,16 +1,17 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GripVertical, Save, RotateCcw } from 'lucide-react';
-import type { CertificateLayoutConfig } from '@/hooks/useCertificateTemplates';
-import { certificateTemplatesApi, apiClient } from '@/lib/api/client';
-import { useGraduationBatches } from '@/hooks/useGraduation';
-import { useSchools } from '@/hooks/useSchools';
-import { useLanguage } from '@/hooks/useLanguage';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import type { CertificateLayoutConfig } from '@/hooks/useCertificateTemplates';
+import { useGraduationBatches } from '@/hooks/useGraduation';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useSchools } from '@/hooks/useSchools';
+import { certificateTemplatesApi, apiClient } from '@/lib/api/client';
 
 interface FieldConfig {
   id: string;

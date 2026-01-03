@@ -1,8 +1,10 @@
-import { TimetableGenerator } from '@/components/timetable/TimetableGenerator';
-import { PermissionGuard } from '@/components/PermissionGuard';
-import { useLanguage } from '@/hooks/useLanguage';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { Calendar } from 'lucide-react';
+
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PermissionGuard } from '@/components/PermissionGuard';
+import { TimetableGenerator } from '@/components/timetable/TimetableGenerator';
+import { useLanguage } from '@/hooks/useLanguage';
+
 
 export default function TimetableGeneration() {
 	const { t } = useLanguage();

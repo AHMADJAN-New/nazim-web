@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -14,16 +12,9 @@ import {
   XCircle,
   Key,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,9 +25,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -44,14 +45,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { useEventUsers, useCreateEventUser, useUpdateEventUser, useDeleteEventUser } from '@/hooks/useEventUsers';
-import { eventsApi, permissionsApi } from '@/lib/api/client';
+import { useLanguage } from '@/hooks/useLanguage';
 import { usePermissions, useUserPermissionsForUser } from '@/hooks/usePermissions';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { formatDateTime } from '@/lib/utils';
+import { eventsApi, permissionsApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
-import { useLanguage } from '@/hooks/useLanguage';
+import { formatDateTime } from '@/lib/utils';
 import type { CreateEventUserRequest, UpdateEventUserRequest, EventUser } from '@/types/events';
 
 export default function EventUsersPage() {

@@ -2,30 +2,11 @@
  * Finance Projects Page - Manage projects and funds
  */
 
+import { Plus, Pencil, Trash2, FolderKanban, TrendingUp, TrendingDown, DollarSign, Calendar } from 'lucide-react';
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
+
 import { PageHeader } from '@/components/layout/PageHeader';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -37,6 +18,31 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { useCurrencies } from '@/hooks/useCurrencies';
 import {
     useFinanceProjects,
     useCreateFinanceProject,
@@ -45,13 +51,8 @@ import {
     type FinanceProject,
     type FinanceProjectFormData,
 } from '@/hooks/useFinance';
-import { useCurrencies } from '@/hooks/useCurrencies';
 import { useLanguage } from '@/hooks/useLanguage';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { Plus, Pencil, Trash2, FolderKanban, TrendingUp, TrendingDown, DollarSign, Calendar } from 'lucide-react';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 export default function FinanceProjects() {
     const { t } = useLanguage();

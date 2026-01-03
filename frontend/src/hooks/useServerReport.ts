@@ -2,6 +2,7 @@
 // Hook for server-side report generation with progress tracking
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+
 import { apiClient } from '@/lib/api/client';
 import type {
   ServerReportOptions,

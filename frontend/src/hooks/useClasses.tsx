@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { showToast } from '@/lib/toast';
+import { useEffect } from 'react';
+
 import { useAuth } from './useAuth';
+import { usePagination } from './usePagination';
+
 import { classesApi } from '@/lib/api/client';
-import type * as ClassApi from '@/types/api/class';
-import type { Class, ClassAcademicYear } from '@/types/domain/class';
+import { showToast } from '@/lib/toast';
 import {
     mapClassApiToDomain,
     mapClassDomainToInsert,
@@ -12,9 +14,11 @@ import {
     mapClassAcademicYearDomainToInsert,
     mapClassAcademicYearDomainToUpdate,
 } from '@/mappers/classMapper';
+import type * as ClassApi from '@/types/api/class';
+import type { Class, ClassAcademicYear } from '@/types/domain/class';
 import type { PaginatedResponse } from '@/types/pagination';
-import { usePagination } from './usePagination';
-import { useEffect } from 'react';
+
+
 
 // Re-export domain types for convenience
 export type { Class, ClassAcademicYear } from '@/types/domain/class';

@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { showToast } from '@/lib/toast';
+
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
 import { usePagination } from './usePagination';
+
 import {
   feeAssignmentsApi,
   feeExceptionsApi,
@@ -12,9 +13,7 @@ import {
   feeStructuresApi,
   studentAdmissionsApi,
 } from '@/lib/api/client';
-import type * as FeeApi from '@/types/api/fees';
-import type { FeeAssignment, FeeException, FeePayment, FeeStructure } from '@/types/domain/fees';
-import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
+import { showToast } from '@/lib/toast';
 import {
   mapFeeAssignmentApiToDomain,
   mapFeeAssignmentDomainToInsert,
@@ -29,7 +28,10 @@ import {
   mapFeeStructureDomainToInsert,
   mapFeeStructureDomainToUpdate,
 } from '@/mappers/feeMapper';
+import type * as FeeApi from '@/types/api/fees';
 import type * as StudentAdmissionApi from '@/types/api/studentAdmission';
+import type { FeeAssignment, FeeException, FeePayment, FeeStructure } from '@/types/domain/fees';
+import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
 
 const FIVE_MINUTES = 5 * 60 * 1000;
 
@@ -550,7 +552,7 @@ export const useBulkAssignFeeAssignments = () => {
     onError: (error: any) => {
       const message = getErrorMessage(error);
       if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
+         
         console.error('[useBulkAssignFeeAssignments] failed', error);
       }
       showToast.error(message);

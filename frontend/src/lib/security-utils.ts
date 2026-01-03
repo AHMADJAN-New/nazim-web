@@ -1,4 +1,5 @@
 import DOMPurify from 'isomorphic-dompurify';
+
 import { logger } from './logger';
 
 // Input sanitization

@@ -1,21 +1,41 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { useSearchParams } from 'react-router-dom';
+import { format } from 'date-fns';
 import {
-  useCourseAttendanceSessions,
-  useCourseAttendanceSession,
-  useCreateCourseAttendanceSession,
-  useDeleteCourseAttendanceSession,
-  useCourseRoster,
-  useMarkCourseAttendanceRecords,
-  useScanCourseAttendance,
-  useCourseAttendanceScans,
-  useCloseCourseAttendanceSession,
-  CourseAttendanceSession,
-  CourseRosterStudent,
-} from '@/hooks/useCourseAttendance';
-import { useShortTermCourses } from '@/hooks/useShortTermCourses';
+  Plus,
+  Calendar,
+  Users,
+  QrCode,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Trash2,
+  Lock,
+  AlertCircle,
+  Heart,
+} from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -33,42 +53,23 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Plus,
-  Calendar,
-  Users,
-  QrCode,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Trash2,
-  Lock,
-  AlertCircle,
-  Heart,
-} from 'lucide-react';
-import { format } from 'date-fns';
+  useCourseAttendanceSessions,
+  useCourseAttendanceSession,
+  useCreateCourseAttendanceSession,
+  useDeleteCourseAttendanceSession,
+  useCourseRoster,
+  useMarkCourseAttendanceRecords,
+  useScanCourseAttendance,
+  useCourseAttendanceScans,
+  useCloseCourseAttendanceSession,
+  CourseAttendanceSession,
+  CourseRosterStudent,
+} from '@/hooks/useCourseAttendance';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useShortTermCourses } from '@/hooks/useShortTermCourses';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused' | 'sick' | 'leave';
 

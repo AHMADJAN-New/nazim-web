@@ -2,19 +2,6 @@
  * Fee Dashboard - Modern Overview of fee collection and management
  */
 
-import { useMemo, useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useFeeReportDashboard } from '@/hooks/useFees';
-import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
-import { useClassAcademicYears } from '@/hooks/useClasses';
-import { useLanguage } from '@/hooks/useLanguage';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { PageHeader } from '@/components/layout/PageHeader';
 import {
     Banknote,
     TrendingUp,
@@ -39,15 +26,30 @@ import {
     ArrowDownRight,
     NotebookPen,
 } from 'lucide-react';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
+
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import {
     ChartContainer,
     ChartTooltip,
     ChartTooltipContent,
     type ChartConfig,
 } from '@/components/ui/chart';
-import { PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useClassAcademicYears } from '@/hooks/useClasses';
+import { useFeeReportDashboard } from '@/hooks/useFees';
+import { useLanguage } from '@/hooks/useLanguage';
+import { formatCurrency, formatDate } from '@/lib/utils';
+
 
 const COLORS = ['#22c55e', '#eab308', '#f97316', '#ef4444', '#6b7280'];
 const STATUS_COLORS: Record<string, string> = {

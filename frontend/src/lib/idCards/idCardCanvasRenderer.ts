@@ -1,5 +1,3 @@
-import type { Student } from '@/types/domain/student';
-import type { IdCardTemplate, IdCardLayoutConfig } from '@/types/domain/idCardTemplate';
 import {
   DEFAULT_ID_CARD_PADDING_PX,
   DEFAULT_PRINT_HEIGHT_PX,
@@ -11,6 +9,9 @@ import {
   getDefaultScreenRenderSize,
   isIdCardRenderDebugEnabled,
 } from './idCardRenderMetrics';
+
+import type { IdCardTemplate, IdCardLayoutConfig } from '@/types/domain/idCardTemplate';
+import type { Student } from '@/types/domain/student';
 
 // CR80 dimensions: 85.6mm × 53.98mm
 // At 300 DPI: 1011px × 637px

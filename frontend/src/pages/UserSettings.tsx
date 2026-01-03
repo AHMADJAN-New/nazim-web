@@ -1,17 +1,18 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Settings, Eye, EyeOff, Lock, Calendar, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+
+import { DatePreferenceSettings } from '@/components/settings/DatePreferenceSettings';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Eye, EyeOff, Lock, Calendar, Shield } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
-import { passwordChangeSchema, type PasswordChangeFormData } from '@/lib/validations/passwordChange';
 import { authApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
-import { DatePreferenceSettings } from '@/components/settings/DatePreferenceSettings';
+import { passwordChangeSchema, type PasswordChangeFormData } from '@/lib/validations/passwordChange';
 
 export default function UserSettings() {
   const { t } = useLanguage();

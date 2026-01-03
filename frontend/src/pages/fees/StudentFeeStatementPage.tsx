@@ -1,11 +1,12 @@
+import { FileText } from 'lucide-react';
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
+
 import { FeeStatement } from '@/components/fees/FeeStatement';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Card, CardContent } from '@/components/ui/card';
 import { useFeeAssignments, useFeePayments, useFeeStructures } from '@/hooks/useFees';
 import { useLanguage } from '@/hooks/useLanguage';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FileText } from 'lucide-react';
 
 export default function StudentFeeStatementPage() {
   const { id } = useParams();

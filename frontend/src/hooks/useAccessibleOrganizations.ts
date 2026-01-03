@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { organizationsApi } from '@/lib/api/client';
+
 import { useAuth } from './useAuth';
+
+import { organizationsApi } from '@/lib/api/client';
 
 export const useAccessibleOrganizations = (options?: { enabled?: boolean }) => {
   const { user, profile, loading } = useAuth();

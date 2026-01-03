@@ -1,9 +1,10 @@
 import { Boxes, Wrench } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import AssetListTab from '@/components/assets/AssetListTab';
 import AssetMaintenanceTab from '@/components/assets/AssetMaintenanceTab';
-import { useLanguage } from '@/hooks/useLanguage';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const Assets = () => {
   const { t } = useLanguage();

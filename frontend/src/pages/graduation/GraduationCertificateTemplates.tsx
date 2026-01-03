@@ -1,4 +1,38 @@
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Image,
+  FileText,
+  Layout,
+} from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+
+import { GraduationCertificateLayoutEditor } from '@/components/certificates/GraduationCertificateLayoutEditor';
+import { PageHeader } from '@/components/layout/PageHeader';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { CertificateLayoutConfig } from '@/hooks/useCertificateTemplates';
 import {
   useCertificateTemplatesV2,
   useCreateCertificateTemplateV2,
@@ -6,10 +40,7 @@ import {
   useDeleteCertificateTemplateV2,
   getGraduationCertificateBackgroundUrl,
 } from '@/hooks/useGraduation';
-import { CertificateLayoutConfig } from '@/hooks/useCertificateTemplates';
 import { formatDate } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -21,40 +52,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Image,
-  FileText,
-  Layout,
-} from 'lucide-react';
-import { GraduationCertificateLayoutEditor } from '@/components/certificates/GraduationCertificateLayoutEditor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSchools } from '@/hooks/useSchools';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useAuth } from '@/hooks/useAuth';
-import { PageHeader } from '@/components/layout/PageHeader';
 
 interface GraduationCertificateTemplate {
   id: string;

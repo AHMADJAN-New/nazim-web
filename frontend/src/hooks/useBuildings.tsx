@@ -1,13 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { showToast } from '@/lib/toast';
+import { useEffect } from 'react';
+
 import { useAuth } from './useAuth';
+import { usePagination } from './usePagination';
+
 import { buildingsApi, schoolsApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
+import { mapBuildingApiToDomain, mapBuildingDomainToInsert, mapBuildingDomainToUpdate } from '@/mappers/buildingMapper';
 import type * as BuildingApi from '@/types/api/building';
 import type { Building } from '@/types/domain/building';
-import { mapBuildingApiToDomain, mapBuildingDomainToInsert, mapBuildingDomainToUpdate } from '@/mappers/buildingMapper';
 import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
-import { usePagination } from './usePagination';
-import { useEffect } from 'react';
+
+
 
 // Re-export domain types for convenience
 export type { Building } from '@/types/domain/building';

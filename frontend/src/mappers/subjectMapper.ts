@@ -1,8 +1,9 @@
 // Subject Mapper - Converts between API (snake_case) and Domain (camelCase) models
 
+import { mapClassApiToDomain } from './classMapper';
+
 import type * as SubjectApi from '@/types/api/subject';
 import type { Subject, ClassSubjectTemplate, ClassSubject } from '@/types/domain/subject';
-import { mapClassApiToDomain } from './classMapper';
 
 /**
  * Convert API Subject model to Domain Subject model

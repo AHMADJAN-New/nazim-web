@@ -1,23 +1,24 @@
+import { Loader2, Download, Eye, Printer, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, Download, Eye, Printer, ChevronDown } from 'lucide-react';
+import { useIdCardTemplate } from '@/hooks/useIdCardTemplates';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useStudentIdCard } from '@/hooks/useStudentIdCards';
-import { useIdCardTemplate } from '@/hooks/useIdCardTemplates';
-import { showToast } from '@/lib/toast';
 import { renderIdCardToCanvas, renderIdCardToDataUrl } from '@/lib/idCards/idCardCanvasRenderer';
 import { exportIdCardToPdf } from '@/lib/idCards/idCardPdfExporter';
 import { DEFAULT_ID_CARD_PADDING_PX, getDefaultPrintRenderSize, getDefaultScreenRenderSize } from '@/lib/idCards/idCardRenderMetrics';
-import type { StudentIdCard } from '@/types/domain/studentIdCard';
+import { showToast } from '@/lib/toast';
 import type { IdCardTemplate } from '@/types/domain/idCardTemplate';
 import type { Student } from '@/types/domain/student';
+import type { StudentIdCard } from '@/types/domain/studentIdCard';
 
 interface StudentIdCardPreviewProps {
   card: StudentIdCard | null;

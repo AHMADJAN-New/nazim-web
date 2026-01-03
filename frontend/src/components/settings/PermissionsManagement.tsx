@@ -1,4 +1,31 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus, Search, Shield, Edit, Save, X, Trash2, Building2, Users } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { useCurrentOrganization } from '@/hooks/useOrganizations';
 import {
   usePermissions,
   useRolePermissions,
@@ -15,38 +42,12 @@ import {
   type Role
 } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
-import { useCurrentOrganization } from '@/hooks/useOrganizations';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Shield, Edit, Save, X, Trash2, Building2, Users } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading';
 
 const roleSchema = z.object({

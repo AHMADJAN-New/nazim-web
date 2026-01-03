@@ -1,12 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { showToast } from '@/lib/toast';
-import { useProfile } from './useProfiles';
+
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
+import { useProfile } from './useProfiles';
+
 import { watermarksApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
+import { mapWatermarkApiToDomain, mapWatermarkDomainToInsert, mapWatermarkDomainToUpdate } from '@/mappers/watermarkMapper';
 import type * as WatermarkApi from '@/types/api/watermark';
 import type { Watermark, CreateWatermarkData, UpdateWatermarkData } from '@/types/domain/watermark';
-import { mapWatermarkApiToDomain, mapWatermarkDomainToInsert, mapWatermarkDomainToUpdate } from '@/mappers/watermarkMapper';
 
 // Re-export domain types for convenience
 export type { Watermark, CreateWatermarkData, UpdateWatermarkData } from '@/types/domain/watermark';

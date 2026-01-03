@@ -3,15 +3,16 @@
  * Allows users to select their preferred calendar type
  */
 
+import { Calendar } from 'lucide-react';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DateDisplay, DateTimeDisplay } from '@/components/ui/date-display';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar } from 'lucide-react';
 import { useDatePreference } from '@/hooks/useDatePreference';
 import { useLanguage } from '@/hooks/useLanguage';
 import type { CalendarType } from '@/lib/datePreferences';
 import { CALENDAR_TYPES } from '@/lib/datePreferences';
-import { DateDisplay, DateTimeDisplay } from '@/components/ui/date-display';
 
 export function DatePreferenceSettings() {
   const { calendar, setCalendar } = useDatePreference();

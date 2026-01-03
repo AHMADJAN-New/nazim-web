@@ -10,6 +10,7 @@ import {
 import { useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 
+import { OrganizationPermissionManagement } from '@/components/settings/OrganizationPermissionManagement';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,8 +37,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import {
   usePlatformOrganizationSubscription,
   usePlatformActivateSubscription,
@@ -46,9 +49,6 @@ import {
   usePlatformToggleFeature,
 } from '@/platform/hooks/usePlatformAdminComplete';
 import type * as SubscriptionApi from '@/types/api/subscription';
-import { cn } from '@/lib/utils';
-import { formatDate } from '@/lib/utils';
-import { OrganizationPermissionManagement } from '@/components/settings/OrganizationPermissionManagement';
 
 export default function OrganizationSubscriptionDetail() {
   const { organizationId } = useParams<{ organizationId: string }>();

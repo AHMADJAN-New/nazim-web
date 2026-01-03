@@ -1,13 +1,15 @@
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, School, Shield } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, School, Shield } from "lucide-react";
+
 import { ContextualHelpButton } from "@/components/help/ContextualHelpButton";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { NotificationDrawer } from "@/components/notifications/NotificationDrawer";
 import { GlobalSearchCommand } from "@/components/search/GlobalSearchCommand";
 import { InlineSearchDropdown } from "@/components/search/InlineSearchDropdown";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -24,15 +26,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAuth } from "@/hooks/useAuth";
-import { useNotificationCount } from "@/hooks/useNotifications";
-import { useLanguage } from "@/hooks/useLanguage";
-import { useSchools } from "@/hooks/useSchools";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useSchoolContext } from "@/contexts/SchoolContext";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
+import { useNotificationCount } from "@/hooks/useNotifications";
+import { useSchools } from "@/hooks/useSchools";
 import { authApi, apiClient } from "@/lib/api/client";
 import { showToast } from "@/lib/toast";
-import { NotificationDrawer } from "@/components/notifications/NotificationDrawer";
 
 interface UserProfile {
   full_name: string;

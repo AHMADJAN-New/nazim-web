@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
+import { FileText } from "lucide-react";
+
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { dmsApi } from "@/lib/api/client";
 import type { DmsDashboardStats } from "@/types/dms";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { FileText } from "lucide-react";
+
 
 const StatCard = ({ title, value, description }: { title: string; value: number; description?: string }) => (
   <Card>

@@ -1,24 +1,25 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { dmsApi } from "@/lib/api/client";
-import type { OutgoingDocument } from "@/types/dms";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Download, File, Image as ImageIcon, Loader2, FileText, X, Printer } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { DocumentNumberBadge } from "@/components/dms/DocumentNumberBadge";
 import { SecurityBadge } from "@/components/dms/SecurityBadge";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLanguage } from "@/hooks/useLanguage";
+import { dmsApi } from "@/lib/api/client";
 import { showToast } from "@/lib/toast";
 import { formatDate } from "@/lib/utils";
-import { Download, File, Image as ImageIcon, Loader2, FileText, X, Printer } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { renderLetterToDataUrl } from "@/services/dms/LetterCanvasRenderer";
 import { generateLetterPdf } from "@/services/dms/LetterPdfGenerator";
+import type { OutgoingDocument } from "@/types/dms";
 
 function dataUrlToBlob(dataUrl: string): Blob {
   const [header, data] = dataUrl.split(',');

@@ -1,12 +1,13 @@
-import { useState } from 'react';
-import { examPaperTemplatesApi } from '@/lib/api/client';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Card, CardContent } from '@/components/ui/card';
 import { Download, FileDown, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/hooks/useLanguage';
+import { examPaperTemplatesApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 
 interface PaperGeneratorProps {

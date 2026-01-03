@@ -1,19 +1,18 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GripVertical, Save, RotateCcw, Eye } from 'lucide-react';
-import type { IdCardLayoutConfig } from '@/types/domain/idCardTemplate';
-import { idCardTemplatesApi } from '@/lib/api/client';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useStudents } from '@/hooks/useStudents';
-import type { Student } from '@/types/domain/student';
-import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { idCardTemplatesApi } from '@/lib/api/client';
 import { formatDate } from '@/lib/calendarAdapter';
 import {
   CARD_ASPECT_RATIO,
@@ -23,6 +22,8 @@ import {
   createIdCardRenderMetrics,
   isIdCardRenderDebugEnabled,
 } from '@/lib/idCards/idCardRenderMetrics';
+import type { IdCardLayoutConfig } from '@/types/domain/idCardTemplate';
+import type { Student } from '@/types/domain/student';
 
 // Available fonts for ID card templates
 const AVAILABLE_FONTS = [

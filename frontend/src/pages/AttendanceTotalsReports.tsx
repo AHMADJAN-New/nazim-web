@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { format, subDays, subMonths } from 'date-fns';
 import {
     Activity,
     AlertTriangle,
@@ -15,7 +15,24 @@ import {
     Download,
     Loader2,
 } from 'lucide-react';
-import { format, subDays, subMonths } from 'date-fns';
+import { useMemo, useState, useEffect } from 'react';
+
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Combobox } from '@/components/ui/combobox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useDatePreference } from '@/hooks/useDatePreference';
@@ -27,25 +44,9 @@ import { useAttendanceTotalsReport } from '@/hooks/useAttendanceTotalsReport';
 import { attendanceSessionsApi, apiClient } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 import type { AttendanceTotalsReportFilters } from '@/types/domain/attendanceTotalsReport';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { Combobox } from '@/components/ui/combobox';
-import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterPanel } from '@/components/layout/FilterPanel';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 
 const attendanceStatusMeta = {

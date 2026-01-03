@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/api/client';
-import type * as SubscriptionApi from '@/types/api/subscription';
-import type * as OrganizationApi from '@/types/api/organization';
 import type * as HelpCenterApi from '@/types/api/helpCenter';
+import type * as OrganizationApi from '@/types/api/organization';
+import type * as SubscriptionApi from '@/types/api/subscription';
 
 /**
  * Platform Admin API Client

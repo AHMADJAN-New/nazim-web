@@ -1,8 +1,20 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus, Pencil, Trash2, Search, FileText, ChevronDown, ChevronUp, Eye } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useReportTemplates, useCreateReportTemplate, useUpdateReportTemplate, useDeleteReportTemplate, type ReportTemplate, type CreateReportTemplateData } from '@/hooks/useReportTemplates';
-import { useSchools } from '@/hooks/useSchools';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { useWatermarks } from '@/hooks/useWatermarks';
+import { useForm, Controller } from 'react-hook-form';
+import * as z from 'zod';
+
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,25 +42,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Pencil, Trash2, Search, FileText, ChevronDown, ChevronUp, Eye } from 'lucide-react';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { useReportTemplates, useCreateReportTemplate, useUpdateReportTemplate, useDeleteReportTemplate, type ReportTemplate, type CreateReportTemplateData } from '@/hooks/useReportTemplates';
+import { useSchools } from '@/hooks/useSchools';
+import { useWatermarks } from '@/hooks/useWatermarks';
 
 const reportTemplateSchema = z.object({
     template_name: z.string().min(1, 'Template name is required').max(255, 'Template name must be 255 characters or less'),

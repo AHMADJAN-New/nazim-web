@@ -1,42 +1,3 @@
-import { useState, useMemo } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { useSearchParams } from 'react-router-dom';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { DataTablePagination } from '@/components/data-table/data-table-pagination';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterPanel } from '@/components/layout/FilterPanel';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-  useCourseDocuments,
-  useDeleteCourseDocument,
-  useDownloadCourseDocument,
-  CourseDocument,
-} from '@/hooks/useCourseDocuments';
-import { useShortTermCourses } from '@/hooks/useShortTermCourses';
-import { CourseDocumentsDialog } from '@/components/short-term-courses/CourseDocumentsDialog';
 import {
   FileText,
   FileImage,
@@ -49,13 +10,53 @@ import {
   RefreshCw,
   BookOpen,
 } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
+import { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { CourseDocumentsDialog } from '@/components/short-term-courses/CourseDocumentsDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  useCourseDocuments,
+  useDeleteCourseDocument,
+  useDownloadCourseDocument,
+  CourseDocument,
+} from '@/hooks/useCourseDocuments';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useShortTermCourses } from '@/hooks/useShortTermCourses';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 const DOCUMENT_TYPES = [
   { value: 'syllabus', label: 'Syllabus' },

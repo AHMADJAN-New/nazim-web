@@ -1,10 +1,11 @@
-import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, UserPlus, QrCode } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useParams, useNavigate } from 'react-router-dom';
+
 import { GuestsList } from '@/components/events';
-import { eventsApi } from '@/lib/api/client';
+import { Button } from '@/components/ui/button';
 import { useHasPermission } from '@/hooks/usePermissions';
+import { eventsApi } from '@/lib/api/client';
 
 export default function GuestsPage() {
   const { eventId } = useParams<{ eventId: string }>();

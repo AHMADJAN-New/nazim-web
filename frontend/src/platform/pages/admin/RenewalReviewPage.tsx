@@ -10,11 +10,12 @@ import {
   AlertTriangle,
   Info,
 } from 'lucide-react';
-import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import {
   Card,
   CardContent,
@@ -30,9 +31,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -40,15 +40,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { Textarea } from '@/components/ui/textarea';
 import { useHasPermission } from '@/hooks/usePermissions';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import {
   usePlatformRenewalRequest,
   usePlatformApproveRenewal,
   usePlatformRejectRenewal,
 } from '@/platform/hooks/usePlatformAdminComplete';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { cn } from '@/lib/utils';
 
 export default function RenewalReviewPage() {
   const { renewalId } = useParams<{ renewalId: string }>();

@@ -1,5 +1,5 @@
-import { DayName } from '@/lib/timetableSolver';
 import { useLanguage } from '@/hooks/useLanguage';
+import { DayName } from '@/lib/timetableSolver';
 
 export interface TeacherTimetableCell {
 	className: string;

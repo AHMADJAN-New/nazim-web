@@ -1,26 +1,4 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useQuery } from "@tanstack/react-query";
 import {
   GraduationCap,
   Users,
@@ -58,19 +36,42 @@ import {
   X,
   HelpCircle
 } from "lucide-react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useLandingStats } from "@/hooks/useLandingStats";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useAllFeatures } from "@/hooks/useSubscription";
-import { useQuery } from "@tanstack/react-query";
+import { useSubscriptionPlans, type SubscriptionPlan } from "@/hooks/useSubscription";
 import { apiClient } from "@/lib/api/client";
-import React, { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { useLandingStats } from "@/hooks/useLandingStats";
 import { usePlatformAdminPermissions } from "@/platform/hooks/usePlatformAdminPermissions";
 // Contact form will be handled by Laravel API endpoint
-import { useSubscriptionPlans, type SubscriptionPlan } from "@/hooks/useSubscription";
-import { useToast } from "@/hooks/use-toast";
 
 // Languages configuration with flags and native names
 const languages = [

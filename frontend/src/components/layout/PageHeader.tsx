@@ -1,6 +1,7 @@
+import { Plus } from "lucide-react"
 import type { ReactNode } from "react"
 import { Link } from "react-router-dom"
-import { Plus } from "lucide-react"
+
 import {
   Breadcrumb,
   BreadcrumbItem,

@@ -1,10 +1,12 @@
-import type { Student } from '@/types/domain/student';
-import type { IdCardTemplate } from '@/types/domain/idCardTemplate';
+import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
+
 import { renderIdCardToDataUrl } from './idCardCanvasRenderer';
 import { DEFAULT_ID_CARD_PADDING_PX, getDefaultPrintRenderSize, getDefaultScreenRenderSize } from './idCardRenderMetrics';
 
+import type { IdCardTemplate } from '@/types/domain/idCardTemplate';
+import type { Student } from '@/types/domain/student';
+
 // Import pdfmake for Arabic support - handle both default and named exports
-import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
 let pdfMake: any = (pdfMakeModule as any).default || pdfMakeModule;
 
 // Helper to get the actual pdfMake instance

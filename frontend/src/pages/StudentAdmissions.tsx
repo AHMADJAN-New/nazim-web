@@ -1,14 +1,24 @@
-import { useMemo, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { ColumnDef } from '@tanstack/react-table';
 import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search, UserRound, DollarSign, X, AlertTriangle } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { useForm, Controller, FormProvider } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import * as z from 'zod';
+
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudents } from '@/hooks/useStudents';
-import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useResidencyTypes } from '@/hooks/useResidencyTypes';
 import { useRooms } from '@/hooks/useRooms';
@@ -25,15 +35,11 @@ import {
 } from '@/hooks/useStudentAdmissions';
 import { useResourceUsage, useUsage } from '@/hooks/useSubscription';
 import { showToast } from '@/lib/toast';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -44,15 +50,10 @@ import {
 } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useDataTable } from '@/hooks/use-data-table';
-import { ColumnDef } from '@tanstack/react-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterPanel } from '@/components/layout/FilterPanel';
 
 // Helper to convert empty strings to null for UUID fields
 const uuidOrNull = z.preprocess(

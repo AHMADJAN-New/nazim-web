@@ -1,4 +1,8 @@
+import { Download, X, FileText, FileImage, File } from 'lucide-react';
 import { useState, useEffect } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -6,17 +10,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { Download, X, FileText, FileImage, File } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
-import { formatDate } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 import type { FinanceDocument } from '@/hooks/useFinanceDocuments';
 import { useDownloadFinanceDocument } from '@/hooks/useFinanceDocuments';
+import { useLanguage } from '@/hooks/useLanguage';
 import { apiClient } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
+import { formatDate } from '@/lib/utils';
 
 const formatFileSize = (bytes: number | null): string => {
   if (!bytes) return 'N/A';

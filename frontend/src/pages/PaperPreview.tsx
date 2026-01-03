@@ -1,12 +1,13 @@
+import { Printer, Download, RefreshCw, ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { examPaperTemplatesApi } from '@/lib/api/client';
+
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Printer, Download, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/hooks/useLanguage';
+import { examPaperTemplatesApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 
 export default function PaperPreview() {

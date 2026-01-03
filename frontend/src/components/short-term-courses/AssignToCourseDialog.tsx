@@ -1,5 +1,12 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Search, Loader2 } from 'lucide-react';
 import { useState, useMemo, memo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { toast } from 'sonner';
+
+import { Button } from '@/components/ui/button';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -11,19 +18,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { useCourseStudents } from '@/hooks/useCourseStudents';
+import { useLanguage } from '@/hooks/useLanguage';
 import { useShortTermCourses } from '@/hooks/useShortTermCourses';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { courseStudentsApi } from '@/lib/api/client';
 import { mapCourseStudentApiToDomain } from '@/mappers/courseStudentMapper';
 import type * as Api from '@/types/api/courseStudent';
 import type { CourseStudent } from '@/types/domain/courseStudent';
-import { Search, Loader2 } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
+
+
 
 interface AssignToCourseDialogProps {
   open: boolean;

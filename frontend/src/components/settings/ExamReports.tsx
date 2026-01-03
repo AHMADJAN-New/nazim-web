@@ -1,18 +1,19 @@
+import { Users, BookOpen, Layers, Award, CalendarClock, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useProfile } from '@/hooks/useProfiles';
-import { useExams, useExamReport, useLatestExamFromCurrentYear, useMarksProgress } from '@/hooks/useExams';
-import { useLanguage } from '@/hooks/useLanguage';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, BookOpen, Layers, Award, CalendarClock, ArrowLeft, CheckCircle } from 'lucide-react';
+import { useExams, useExamReport, useLatestExamFromCurrentYear, useMarksProgress } from '@/hooks/useExams';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useProfile } from '@/hooks/useProfiles';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 export function ExamReports() {
   const { t, isRTL } = useLanguage();

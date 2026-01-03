@@ -1,12 +1,14 @@
+import { Shield, Eye, EyeOff } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useLanguage } from '@/hooks/useLanguage';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
-import { Shield, Eye, EyeOff } from 'lucide-react';
+import { useLanguage } from '@/hooks/useLanguage';
+
 
 export default function ResetPasswordPage() {
   const { t } = useLanguage();

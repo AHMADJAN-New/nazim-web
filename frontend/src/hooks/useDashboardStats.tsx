@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { staffApi, studentsApi, classesApi, roomsApi, buildingsApi, hostelApi } from '@/lib/api/client';
-import { useProfile } from './useProfiles';
+
 import { useAuth } from './useAuth';
+import { useProfile } from './useProfiles';
+
+import { staffApi, studentsApi, classesApi, roomsApi, buildingsApi, hostelApi } from '@/lib/api/client';
 
 export interface DashboardStats {
   totalStudents: number;

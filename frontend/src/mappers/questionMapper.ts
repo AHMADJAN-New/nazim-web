@@ -1,3 +1,5 @@
+import { mapSubjectApiToDomain } from './subjectMapper';
+
 import type * as QuestionApi from '@/types/api/question';
 import type {
   Question,
@@ -7,7 +9,6 @@ import type {
   ClassAcademicYearInfo,
   UserInfo,
 } from '@/types/domain/question';
-import { mapSubjectApiToDomain } from './subjectMapper';
 
 /**
  * Map API QuestionOption to Domain QuestionOption

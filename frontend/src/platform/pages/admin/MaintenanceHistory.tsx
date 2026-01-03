@@ -1,12 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { Navigate } from 'react-router-dom';
-import { useLanguage } from '@/hooks/useLanguage';
-import { platformApi } from '@/platform/lib/platformApi';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
 import { RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Clock, AlertTriangle, CheckCircle, XCircle, History } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
 
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -14,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { LoadingSpinner } from '@/components/ui/loading';
 import {
   Table,
   TableBody,
@@ -22,9 +21,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+import { useLanguage } from '@/hooks/useLanguage';
 import { formatDateTime } from '@/lib/utils';
-import { Clock, AlertTriangle, CheckCircle, XCircle, History } from 'lucide-react';
+import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
+import { platformApi } from '@/platform/lib/platformApi';
+
 
 interface MaintenanceHistoryItem {
   id: string;

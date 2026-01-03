@@ -2,6 +2,7 @@
 import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
 const pdfMake = (pdfMakeModule as any).default || pdfMakeModule;
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+
 import type { 
   Student,
   StudentEducationalHistory,

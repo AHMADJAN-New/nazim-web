@@ -1,11 +1,12 @@
+import { Shield } from 'lucide-react';
 import { ReactNode } from 'react';
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useUserPermissions } from '@/hooks/usePermissions';
 import { useFeatures } from '@/hooks/useSubscription';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield } from 'lucide-react';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { useLanguage } from '@/hooks/useLanguage';
 
 interface HostelPermissionGuardProps {
   children: ReactNode;

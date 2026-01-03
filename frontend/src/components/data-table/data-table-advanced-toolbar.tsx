@@ -1,5 +1,6 @@
-import { ReactNode } from 'react';
 import type { Table } from '@tanstack/react-table';
+import { ReactNode } from 'react';
+
 import { Separator } from '@/components/ui/separator';
 
 interface DataTableAdvancedToolbarProps<TData> {

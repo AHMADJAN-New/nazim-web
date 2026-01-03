@@ -1,15 +1,8 @@
-import { useState, useEffect } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { BookOpen, Plus, Pencil, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useForm, FormProvider } from 'react-hook-form';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +13,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { LoadingSpinner } from '@/components/ui/loading';
 import {
   Table,
   TableBody,
@@ -28,12 +34,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/hooks/useLanguage';
-import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import {
   useStudentEducationalHistory,
   useCreateStudentEducationalHistory,
@@ -43,9 +45,8 @@ import {
   StudentEducationalHistoryInsert,
   Student,
 } from '@/hooks/useStudents';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { educationalHistorySchema, type EducationalHistoryFormData } from '@/lib/validations';
-import { BookOpen, Plus, Pencil, Trash2 } from 'lucide-react';
-import { LoadingSpinner } from '@/components/ui/loading';
 
 interface StudentEducationalHistoryDialogProps {
   open: boolean;

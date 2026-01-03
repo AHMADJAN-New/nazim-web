@@ -321,7 +321,7 @@ export const useFeatures = () => {
       };
     }
     // CRITICAL: Only depend on queryClient to keep dependency array size constant
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [queryClient]);
 
   return useQuery<FeatureInfo[]>({

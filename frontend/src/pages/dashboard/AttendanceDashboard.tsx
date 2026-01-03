@@ -2,16 +2,18 @@
  * Attendance Dashboard - Overview of attendance data
  */
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Activity, Calendar, CheckCircle2, XCircle, Clock, TrendingUp } from 'lucide-react';
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingSpinner } from '@/components/ui/loading';
 import { useAttendanceSessions } from '@/hooks/useAttendance';
 import { useLanguage } from '@/hooks/useLanguage';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { Activity, Calendar, CheckCircle2, XCircle, Clock, TrendingUp } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
-import { useMemo } from 'react';
+
 
 export default function AttendanceDashboard() {
   const { t } = useLanguage();

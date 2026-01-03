@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { optionalStringLength, requiredStringLength, uuidSchema, optionalUuidSchema, dateStringSchema } from './common';
 
 export const feeStructureSchema = z.object({

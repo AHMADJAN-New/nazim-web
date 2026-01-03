@@ -1,28 +1,29 @@
-import { useState, useEffect, useMemo } from 'react';
-import { formatDate } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
-import type { Student } from '@/types/domain/student';
-import { useExams, useExamStudents, useLatestExamFromCurrentYear, useExamClasses } from '@/hooks/useExams';
+import { FileDown, Printer, Award, Calendar, User, TrendingUp, BookOpen, Trophy, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+
+import { PageHeader } from '@/components/layout/PageHeader';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useExams, useExamStudents, useLatestExamFromCurrentYear, useExamClasses } from '@/hooks/useExams';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import { formatDate } from '@/lib/utils';
+import { calculateGrade } from '@/lib/utils/gradeCalculator';
+import type { Student } from '@/types/domain/student';
 import { useGrades } from '@/hooks/useGrades';
 import { examsApi } from '@/lib/api/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
-import { FileDown, Printer, Award, Calendar, User, TrendingUp, BookOpen, Trophy, AlertCircle } from 'lucide-react';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useProfile } from '@/hooks/useProfiles';
-import { calculateGrade } from '@/lib/utils/gradeCalculator';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 
 // Report data type matching API response
@@ -804,7 +805,6 @@ export default function StudentExamReport() {
               )}
             </div>
           )}
-        </div>
       </FilterPanel>
 
       {/* Report Cards Display */}

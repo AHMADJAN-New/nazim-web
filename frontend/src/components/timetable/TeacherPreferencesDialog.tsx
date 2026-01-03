@@ -1,16 +1,17 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useUpsertTeacherPreference, useTeacherPreferences } from '@/hooks/useTimetables';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useProfile } from '@/hooks/useProfiles';
 import { useScheduleSlots } from '@/hooks/useScheduleSlots';
 import { useStaff } from '@/hooks/useStaff';
-import { useProfile } from '@/hooks/useProfiles';
-import { useLanguage } from '@/hooks/useLanguage';
+import { useUpsertTeacherPreference, useTeacherPreferences } from '@/hooks/useTimetables';
 import { teacherPreferenceSchema, type TeacherPreferenceFormData } from '@/lib/validations';
 
 interface TeacherPreferencesDialogProps {

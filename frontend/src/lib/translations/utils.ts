@@ -1,8 +1,8 @@
-import type { TranslationKeys } from './types';
-import { en } from './en';
-import { ps } from './ps';
-import { fa } from './fa';
 import { ar } from './ar';
+import { en } from './en';
+import { fa } from './fa';
+import { ps } from './ps';
+import type { TranslationKeys } from './types';
 
 export type TranslationRow = {
   key: string;

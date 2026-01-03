@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { hostelApi } from '@/lib/api/client';
+
 import { useAuth } from './useAuth';
 import { useProfile } from './useProfiles';
-import type { HostelOverview } from '@/types/domain/hostel';
+
+import { hostelApi } from '@/lib/api/client';
 import { mapHostelOverviewApiToDomain } from '@/mappers/hostelMapper';
+import type { HostelOverview } from '@/types/domain/hostel';
 
 export const useHostelOverview = (organizationId?: string) => {
   const { user, profile: authProfile, profileLoading } = useAuth();

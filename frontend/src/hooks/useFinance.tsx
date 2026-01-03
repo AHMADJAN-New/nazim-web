@@ -4,6 +4,10 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
+
+import { useAuth } from './useAuth';
+import { useLanguage } from './useLanguage';
+
 import {
     financeAccountsApi,
     incomeCategoriesApi,
@@ -14,9 +18,29 @@ import {
     expenseEntriesApi,
     financeReportsApi,
 } from '@/lib/api/client';
-import { useAuth } from './useAuth';
 import { showToast } from '@/lib/toast';
-import { useLanguage } from './useLanguage';
+import {
+    mapFinanceAccountApiToDomain,
+    mapFinanceAccountFormToInsert,
+    mapIncomeCategoryApiToDomain,
+    mapIncomeCategoryFormToInsert,
+    mapExpenseCategoryApiToDomain,
+    mapExpenseCategoryFormToInsert,
+    mapFinanceProjectApiToDomain,
+    mapFinanceProjectFormToInsert,
+    mapDonorApiToDomain,
+    mapDonorFormToInsert,
+    mapIncomeEntryApiToDomain,
+    mapIncomeEntryFormToInsert,
+    mapExpenseEntryApiToDomain,
+    mapExpenseEntryFormToInsert,
+    mapFinanceDashboardApiToDomain,
+    mapDailyCashbookApiToDomain,
+    mapIncomeVsExpenseReportApiToDomain,
+    mapProjectSummaryReportApiToDomain,
+    mapDonorSummaryReportApiToDomain,
+    mapAccountBalancesReportApiToDomain,
+} from '@/mappers/financeMapper';
 import type * as FinanceApi from '@/types/api/finance';
 import type {
     FinanceAccount,
@@ -40,28 +64,6 @@ import type {
     DonorSummaryReport,
     AccountBalancesReport,
 } from '@/types/domain/finance';
-import {
-    mapFinanceAccountApiToDomain,
-    mapFinanceAccountFormToInsert,
-    mapIncomeCategoryApiToDomain,
-    mapIncomeCategoryFormToInsert,
-    mapExpenseCategoryApiToDomain,
-    mapExpenseCategoryFormToInsert,
-    mapFinanceProjectApiToDomain,
-    mapFinanceProjectFormToInsert,
-    mapDonorApiToDomain,
-    mapDonorFormToInsert,
-    mapIncomeEntryApiToDomain,
-    mapIncomeEntryFormToInsert,
-    mapExpenseEntryApiToDomain,
-    mapExpenseEntryFormToInsert,
-    mapFinanceDashboardApiToDomain,
-    mapDailyCashbookApiToDomain,
-    mapIncomeVsExpenseReportApiToDomain,
-    mapProjectSummaryReportApiToDomain,
-    mapDonorSummaryReportApiToDomain,
-    mapAccountBalancesReportApiToDomain,
-} from '@/mappers/financeMapper';
 
 // Re-export domain types
 export type {

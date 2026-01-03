@@ -1,8 +1,10 @@
-import React from 'react';
-import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { formatDateForInput } from '@/lib/dateUtils';
+import React from 'react';
+import { useForm, Controller } from 'react-hook-form';
+
+import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import {
   Dialog,
   DialogContent,
@@ -10,10 +12,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import {
   Select,
   SelectContent,
@@ -21,12 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { showToast } from '@/lib/toast';
+import { useHasPermission } from '@/hooks/usePermissions';
 import { eventsApi, eventTypesApi, schoolsApi } from '@/lib/api/client';
+import { formatDateForInput } from '@/lib/dateUtils';
+import { showToast } from '@/lib/toast';
 import { createEventSchema, type CreateEventFormData } from '@/lib/validations/events';
 import type { Event, EventStatus } from '@/types/events';
 import { EVENT_STATUS_LABELS } from '@/types/events';
-import { useHasPermission } from '@/hooks/usePermissions';
 
 interface EventFormDialogProps {
   open: boolean;

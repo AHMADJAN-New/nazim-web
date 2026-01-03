@@ -1,6 +1,6 @@
+import { useAuth } from '@/hooks/useAuth';
 import { useUserPermissions } from '@/hooks/usePermissions';
 import { eventsApi } from '@/lib/api/client';
-import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Get the redirect path after login based on user permissions and event user status

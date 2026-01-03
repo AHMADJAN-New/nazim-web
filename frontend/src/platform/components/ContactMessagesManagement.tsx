@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Mail,
@@ -20,7 +19,18 @@ import {
   FileText,
   XCircle,
 } from 'lucide-react';
+import { useState } from 'react';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,19 +48,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { LoadingSpinner } from '@/components/ui/loading';
 import {
   Select,
   SelectContent,
@@ -67,11 +67,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { platformApi } from '@/platform/lib/platformApi';
+import { Textarea } from '@/components/ui/textarea';
 import { showToast } from '@/lib/toast';
-import { LoadingSpinner } from '@/components/ui/loading';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { platformApi } from '@/platform/lib/platformApi';
 
 interface ContactMessage {
   id: string;

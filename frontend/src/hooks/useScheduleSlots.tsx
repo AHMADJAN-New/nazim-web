@@ -1,11 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { showToast } from '@/lib/toast';
+
 import { useAuth } from './useAuth';
 import { useProfile } from './useProfiles';
+
 import { scheduleSlotsApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
+import { mapScheduleSlotApiToDomain, mapScheduleSlotDomainToInsert, mapScheduleSlotDomainToUpdate } from '@/mappers/scheduleSlotMapper';
 import type * as ScheduleSlotApi from '@/types/api/scheduleSlot';
 import type { ScheduleSlot } from '@/types/domain/scheduleSlot';
-import { mapScheduleSlotApiToDomain, mapScheduleSlotDomainToInsert, mapScheduleSlotDomainToUpdate } from '@/mappers/scheduleSlotMapper';
 
 // Re-export domain types and DayOfWeek for convenience
 export type { ScheduleSlot, DayOfWeek } from '@/types/domain/scheduleSlot';

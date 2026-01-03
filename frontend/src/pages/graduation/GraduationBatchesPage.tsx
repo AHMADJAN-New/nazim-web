@@ -1,9 +1,16 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { Link, useNavigate } from 'react-router-dom';
-import { Search, ArrowUpDown, Edit, Trash2, Eye, Calendar, Users, GraduationCap, FileText, X, LayoutGrid, Table as TableIcon, RefreshCw, CheckCircle2, HelpCircle } from 'lucide-react';
-import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
+import { Search, ArrowUpDown, Edit, Trash2, Eye, Calendar, Users, GraduationCap, FileText, X, LayoutGrid, Table as TableIcon, RefreshCw, CheckCircle2, HelpCircle } from 'lucide-react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { Link, useNavigate } from 'react-router-dom';
+
+import { AttendanceSettings } from '@/components/graduation/AttendanceSettings';
+import { BatchWorkflowStepper } from '@/components/graduation/BatchWorkflowStepper';
+import { ExamWeightsEditor } from '@/components/graduation/ExamWeightsEditor';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -11,30 +18,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useGraduationBatches, useCreateGraduationBatch, useUpdateGraduationBatch, useDeleteGraduationBatch, useGenerateGraduationStudents, useApproveGraduationBatch } from '@/hooks/useGraduation';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useClasses, useClassAcademicYears } from '@/hooks/useClasses';
+import { useGraduationBatches, useCreateGraduationBatch, useUpdateGraduationBatch, useDeleteGraduationBatch, useGenerateGraduationStudents, useApproveGraduationBatch } from '@/hooks/useGraduation';
 import { useExams } from '@/hooks/useExams';
-import { useSchools } from '@/hooks/useSchools';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useSchools } from '@/hooks/useSchools';
 import { useAuth } from '@/hooks/useAuth';
-import { useQuery } from '@tanstack/react-query';
+
+
 import { examClassesApi } from '@/lib/api/client';
-import { graduationBatchSchema, type GraduationBatchFormData } from '@/lib/validations/graduation';
-import { ExamWeightsEditor } from '@/components/graduation/ExamWeightsEditor';
-import { AttendanceSettings } from '@/components/graduation/AttendanceSettings';
-import { BatchWorkflowStepper } from '@/components/graduation/BatchWorkflowStepper';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import { graduationBatchSchema, type GraduationBatchFormData } from '@/lib/validations/graduation';
 
 // Status Badge Component
 const StatusBadge = ({ status }: { status: string }) => {

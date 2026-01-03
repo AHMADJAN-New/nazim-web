@@ -1,35 +1,15 @@
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Star,
+  Image,
+  FileText,
+  Layout,
+} from 'lucide-react';
 import React, { useState } from 'react';
-import {
-  useIdCardTemplates,
-  useCreateIdCardTemplate,
-  useUpdateIdCardTemplate,
-  useDeleteIdCardTemplate,
-  useSetDefaultIdCardTemplate,
-  IdCardTemplate,
-  IdCardLayoutConfig,
-  getIdCardBackgroundUrl,
-} from '@/hooks/useIdCardTemplates';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+
+import { IdCardLayoutEditor } from '@/components/id-cards/IdCardLayoutEditor';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,20 +20,41 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Plus,
-  Pencil,
-  Trash2,
-  Star,
-  Image,
-  FileText,
-  Layout,
-} from 'lucide-react';
-import { IdCardLayoutEditor } from '@/components/id-cards/IdCardLayoutEditor';
-import { formatDate } from '@/lib/utils';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  useIdCardTemplates,
+  useCreateIdCardTemplate,
+  useUpdateIdCardTemplate,
+  useDeleteIdCardTemplate,
+  useSetDefaultIdCardTemplate,
+  IdCardTemplate,
+  IdCardLayoutConfig,
+  getIdCardBackgroundUrl,
+} from '@/hooks/useIdCardTemplates';
 import { useLanguage } from '@/hooks/useLanguage';
+import { formatDate } from '@/lib/utils';
 
 export default function IdCardTemplates() {
   const { t } = useLanguage();

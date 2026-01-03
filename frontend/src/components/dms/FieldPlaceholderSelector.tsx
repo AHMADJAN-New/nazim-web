@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { dmsApi } from '@/lib/api/client';
-import type { TemplateField } from '@/types/dms';
+import { Search, Copy, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -11,11 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/hooks/useLanguage';
-import { Search, Copy, CheckCircle2 } from 'lucide-react';
+import { dmsApi } from '@/lib/api/client';
+import type { TemplateField } from '@/types/dms';
+
 
 interface FieldPlaceholderSelectorProps {
   recipientType: string;

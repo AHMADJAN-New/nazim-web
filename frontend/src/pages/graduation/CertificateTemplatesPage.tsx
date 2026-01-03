@@ -1,27 +1,7 @@
-import { useState } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  useCertificateTemplatesV2, 
-  useCreateCertificateTemplateV2,
-  useUpdateCertificateTemplateV2,
-  useDeleteCertificateTemplateV2,
-  getGraduationCertificateBackgroundUrl,
-} from '@/hooks/useGraduation';
-import { CertificateLayoutConfig } from '@/hooks/useCertificateTemplates';
-import { useLanguage } from '@/hooks/useLanguage';
-import { useSchools } from '@/hooks/useSchools';
-import { GraduationCertificateLayoutEditor } from '@/components/certificates/GraduationCertificateLayoutEditor';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import { Layout, Pencil, Trash2, Image } from 'lucide-react';
+import { useState } from 'react';
+
+import { GraduationCertificateLayoutEditor } from '@/components/certificates/GraduationCertificateLayoutEditor';
 import { PageHeader } from '@/components/layout/PageHeader';
 import {
   AlertDialog,
@@ -33,6 +13,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import { CertificateLayoutConfig } from '@/hooks/useCertificateTemplates';
+import { 
+  useCertificateTemplatesV2, 
+  useCreateCertificateTemplateV2,
+  useUpdateCertificateTemplateV2,
+  useDeleteCertificateTemplateV2,
+  getGraduationCertificateBackgroundUrl,
+} from '@/hooks/useGraduation';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useSchools } from '@/hooks/useSchools';
+import { formatDate, formatDateTime } from '@/lib/utils';
 interface GraduationCertificateTemplate {
   id: string;
   organization_id: string;

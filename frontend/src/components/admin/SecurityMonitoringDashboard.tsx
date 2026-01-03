@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Shield, Users, Clock, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDate, formatDateTime } from '@/lib/utils';
 interface SecurityAlert {
   id: string;
   event_type: string;

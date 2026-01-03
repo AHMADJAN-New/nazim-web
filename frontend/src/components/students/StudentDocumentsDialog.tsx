@@ -1,15 +1,9 @@
-import { useState } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { FileText, Upload, Trash2, Download, Eye, Plus, X } from 'lucide-react';
+import { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { toast } from 'sonner';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +14,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { LoadingSpinner } from '@/components/ui/loading';
 import {
   Table,
   TableBody,
@@ -28,11 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/hooks/useLanguage';
 import {
   useStudentDocuments,
@@ -41,11 +44,11 @@ import {
   StudentDocument,
   Student,
 } from '@/hooks/useStudents';
-import { documentUploadSchema, type DocumentUploadFormData } from '@/lib/validations';
-import { FileText, Upload, Trash2, Download, Eye, Plus, X } from 'lucide-react';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { toast } from 'sonner';
 import { apiClient } from '@/lib/api/client';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import { documentUploadSchema, type DocumentUploadFormData } from '@/lib/validations';
+
+
 
 interface StudentDocumentsDialogProps {
   open: boolean;

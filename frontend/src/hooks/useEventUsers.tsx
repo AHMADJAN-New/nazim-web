@@ -1,7 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useLanguage } from './useLanguage';
+
 import { eventUsersApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
-import { useLanguage } from './useLanguage';
 import type { EventUser, CreateEventUserRequest, UpdateEventUserRequest } from '@/types/events';
 
 // Re-export types for convenience

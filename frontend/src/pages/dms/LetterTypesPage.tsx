@@ -1,15 +1,21 @@
-import { useState, useMemo, useEffect } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLetterTypes, useCreateLetterType, useUpdateLetterType, useDeleteLetterType } from "@/hooks/useLetterTypes";
-import type { LetterTypeEntity } from "@/types/dms";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Search, Plus, Eye, Edit, Trash2, MoreHorizontal } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { z } from "zod";
+
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { showToast } from "@/lib/toast";
+import type { LetterTypeEntity } from "@/types/dms";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,13 +26,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { showToast } from "@/lib/toast";
 import { useLanguage } from "@/hooks/useLanguage";
-import { Search, Plus, Eye, Edit, Trash2, MoreHorizontal } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useLetterTypes, useCreateLetterType, useUpdateLetterType, useDeleteLetterType } from "@/hooks/useLetterTypes";
+
 
 const letterTypeFormSchema = z.object({
   key: z.string().min(1, "Key is required").max(50, "Key must be 50 characters or less").regex(/^[a-z0-9_]+$/, "Key must contain only lowercase letters, numbers, and underscores"),

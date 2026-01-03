@@ -1,31 +1,34 @@
+import { format } from 'date-fns';
+import { MoreHorizontal, Eye, FileText, CreditCard, Plus } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { FeePaymentForm } from '@/components/fees/FeePaymentForm';
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterPanel } from '@/components/layout/FilterPanel';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { DataTablePagination } from '@/components/data-table/data-table-pagination';
-import { FeePaymentForm } from '@/components/fees/FeePaymentForm';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useCreateFeePayment, useFeeAssignments, useFeePayments, useFeeStructures, useFeeExceptions } from '@/hooks/useFees';
 import { useFinanceAccounts } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
-import type { Student } from '@/types/domain/student';
-import { useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useProfile } from '@/hooks/useProfiles';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { showToast } from '@/lib/toast';
 import type { FeePaymentFormData } from '@/lib/validations/fees';
+import type { Student } from '@/types/domain/student';
 import type { FeePayment } from '@/types/domain/fees';
-import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
-import { useAcademicYears } from '@/hooks/useAcademicYears';
-import { useClassAcademicYears } from '@/hooks/useClasses';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,8 +37,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Eye, FileText, CreditCard, Plus } from 'lucide-react';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 export default function FeePaymentsPage() {
   const { t } = useLanguage();

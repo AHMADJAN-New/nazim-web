@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { showToast } from '@/lib/toast';
-import { useAuth } from './useAuth';
+import { useEffect } from 'react';
+
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { useAuth } from './useAuth';
+import { usePagination } from './usePagination';
+
 import { academicYearsApi, subjectsApi, classSubjectsApi, classSubjectTemplatesApi, classAcademicYearsApi } from '@/lib/api/client';
-import type * as SubjectApi from '@/types/api/subject';
-import type { Subject, ClassSubject, ClassSubjectTemplate } from '@/types/domain/subject';
+import { showToast } from '@/lib/toast';
 import { 
     mapSubjectApiToDomain, 
     mapSubjectDomainToInsert, 
@@ -16,9 +18,11 @@ import {
     mapClassSubjectTemplateDomainToInsert,
     mapClassSubjectTemplateDomainToUpdate,
 } from '@/mappers/subjectMapper';
+import type * as SubjectApi from '@/types/api/subject';
+import type { Subject, ClassSubject, ClassSubjectTemplate } from '@/types/domain/subject';
 import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
-import { usePagination } from './usePagination';
-import { useEffect } from 'react';
+
+
 
 // Re-export domain types for convenience
 export type { Subject, ClassSubject, ClassSubjectTemplate } from '@/types/domain/subject';

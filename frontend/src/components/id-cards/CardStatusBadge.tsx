@@ -1,6 +1,7 @@
+import { CheckCircle2, XCircle, Clock, CreditCard } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/hooks/useLanguage';
-import { CheckCircle2, XCircle, Clock, CreditCard } from 'lucide-react';
 
 interface CardStatusBadgeProps {
   isAssigned?: boolean;

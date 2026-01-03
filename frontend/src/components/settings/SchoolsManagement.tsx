@@ -1,8 +1,21 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus, Pencil, Trash2, Search, School as SchoolIcon, Shield, Eye, Droplet } from 'lucide-react';
 import { useState } from 'react';
-import { useSchools, useCreateSchool, useUpdateSchool, useDeleteSchool, type School } from '@/hooks/useSchools';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { useHasFeature } from '@/hooks/useSubscription';
+import { useForm, Controller } from 'react-hook-form';
+import * as z from 'zod';
+
 import { WatermarkManagement } from './WatermarkManagement';
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,25 +42,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Pencil, Trash2, Search, School as SchoolIcon, Shield, Eye, Droplet } from 'lucide-react';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { useSchools, useCreateSchool, useUpdateSchool, useDeleteSchool, type School } from '@/hooks/useSchools';
+import { useHasFeature } from '@/hooks/useSubscription';
 
 const schoolSchema = z.object({
   school_name: z.string().min(1, 'School name is required').max(255, 'School name must be 255 characters or less'),

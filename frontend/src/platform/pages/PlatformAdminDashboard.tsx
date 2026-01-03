@@ -23,6 +23,11 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+
+import { usePlatformDashboard, usePlatformPendingPayments, usePlatformPendingRenewals, usePlatformSubscriptions, usePlatformOrganizations, usePlatformOrganizationAdmins } from '../hooks/usePlatformAdmin';
+
+import { OrganizationAdminsManagement } from '@/components/settings/OrganizationAdminsManagement';
+import { OrganizationsManagement } from '@/components/settings/OrganizationsManagement';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,7 +37,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LoadingSpinner } from '@/components/ui/loading';
 import {
   Table,
   TableBody,
@@ -41,13 +46,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { usePlatformDashboard, usePlatformPendingPayments, usePlatformPendingRenewals, usePlatformSubscriptions, usePlatformOrganizations, usePlatformOrganizationAdmins } from '../hooks/usePlatformAdmin';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { OrganizationsManagement } from '@/components/settings/OrganizationsManagement';
-import { OrganizationAdminsManagement } from '@/components/settings/OrganizationAdminsManagement';
 import { OrganizationDetailsDialog } from '@/platform/components/OrganizationDetailsDialog';
 import { OrganizationSubscriptionDialog } from '@/platform/components/OrganizationSubscriptionDialog';
 

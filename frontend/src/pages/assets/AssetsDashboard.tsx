@@ -2,12 +2,6 @@
  * Assets Dashboard - Modern Overview of assets data
  */
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { useAssetsDashboard } from '@/hooks/useAssets';
-import { useLanguage } from '@/hooks/useLanguage';
-import { LoadingSpinner } from '@/components/ui/loading';
 import {
     Package,
     TrendingUp,
@@ -25,8 +19,13 @@ import {
     Building2,
     ArrowRight,
 } from 'lucide-react';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import {
     ChartContainer,
     ChartTooltip,
@@ -35,8 +34,11 @@ import {
     ChartLegendContent,
     type ChartConfig,
 } from '@/components/ui/chart';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { useMemo } from 'react';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { useAssetsDashboard } from '@/hooks/useAssets';
+import { useLanguage } from '@/hooks/useLanguage';
+import { formatCurrency, formatDate } from '@/lib/utils';
+
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300'];
 

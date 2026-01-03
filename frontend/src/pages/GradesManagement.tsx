@@ -1,27 +1,7 @@
-import { useState } from 'react';
-import { useGrades, useCreateGrade, useUpdateGrade, useDeleteGrade } from '@/hooks/useGrades';
-import { useHasPermission } from '@/hooks/usePermissions';
-import type { GradeFormData } from '@/types/domain/grade';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Trash2, Plus, Pencil, CheckCircle, XCircle } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useLanguage } from '@/hooks/useLanguage';
-import { Switch } from '@/components/ui/switch';
+import { useState } from 'react';
+
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
-import { useProfile } from '@/hooks/useProfiles';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +12,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import type { GradeFormData } from '@/types/domain/grade';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/hooks/useLanguage';
+import { Switch } from '@/components/ui/switch';
+import { useGrades, useCreateGrade, useUpdateGrade, useDeleteGrade } from '@/hooks/useGrades';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { useProfile } from '@/hooks/useProfiles';
 
 interface GradeDialogProps {
   open: boolean;

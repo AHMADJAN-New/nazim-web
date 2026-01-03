@@ -1,48 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { useSearchParams } from 'react-router-dom';
 import { useReactTable, getCoreRowModel, type PaginationState } from '@tanstack/react-table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { DataTablePagination } from '@/components/data-table/data-table-pagination';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-  useCourseStudents,
-  useDeleteCourseStudent,
-  useMarkCompleted,
-  useMarkDropped,
-  useIssueCertificate,
-  useCopyToMain,
-} from '@/hooks/useCourseStudents';
-import { useShortTermCourses } from '@/hooks/useShortTermCourses';
-import { CourseStudentFormDialog } from '@/components/short-term-courses/CourseStudentFormDialog';
-import { EnrollFromMainDialog } from '@/components/short-term-courses/EnrollFromMainDialog';
-import { CourseStudentDetailsPanel } from '@/components/short-term-courses/CourseStudentDetailsPanel';
-import { AssignToCourseDialog } from '@/components/short-term-courses/AssignToCourseDialog';
-import type { CourseStudent } from '@/types/domain/courseStudent';
-import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
 import {
   AlertTriangle,
   GraduationCap,
@@ -61,8 +17,53 @@ import {
   Eye,
   ArrowRight,
 } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
+import { useMemo, useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { AssignToCourseDialog } from '@/components/short-term-courses/AssignToCourseDialog';
+import { CourseStudentDetailsPanel } from '@/components/short-term-courses/CourseStudentDetailsPanel';
+import { CourseStudentFormDialog } from '@/components/short-term-courses/CourseStudentFormDialog';
 import { CourseStudentPictureCell } from '@/components/short-term-courses/CourseStudentPictureCell';
+import { EnrollFromMainDialog } from '@/components/short-term-courses/EnrollFromMainDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { LoadingSpinner } from '@/components/ui/loading';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  useCourseStudents,
+  useDeleteCourseStudent,
+  useMarkCompleted,
+  useMarkDropped,
+  useIssueCertificate,
+  useCopyToMain,
+} from '@/hooks/useCourseStudents';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useShortTermCourses } from '@/hooks/useShortTermCourses';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import type { CourseStudent } from '@/types/domain/courseStudent';
+import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
 
 const statusBadge: Record<string, string> = {
   enrolled: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200',
@@ -228,6 +229,7 @@ const StudentRow = ({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </TableCell>
     </TableRow>
   );

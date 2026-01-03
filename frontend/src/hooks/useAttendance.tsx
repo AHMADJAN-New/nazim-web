@@ -1,9 +1,18 @@
-import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { showToast } from '@/lib/toast';
+import { useEffect } from 'react';
+
 import { useAuth } from './useAuth';
-import { attendanceSessionsApi } from '@/lib/api/client';
 import { useLanguage } from './useLanguage';
+import { usePagination } from './usePagination';
+
+import { attendanceSessionsApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
+import {
+  mapAttendanceRecordApiToDomain,
+  mapAttendanceSessionApiToDomain,
+  mapAttendanceSessionDomainToInsert,
+  mapAttendanceSessionDomainToUpdate,
+} from '@/mappers/attendanceMapper';
 import type * as AttendanceApi from '@/types/api/attendance';
 import type {
   AttendanceRecord,
@@ -12,14 +21,8 @@ import type {
   AttendanceSessionInsert,
   AttendanceSessionUpdate,
 } from '@/types/domain/attendance';
-import {
-  mapAttendanceRecordApiToDomain,
-  mapAttendanceSessionApiToDomain,
-  mapAttendanceSessionDomainToInsert,
-  mapAttendanceSessionDomainToUpdate,
-} from '@/mappers/attendanceMapper';
 import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
-import { usePagination } from './usePagination';
+
 
 export type AttendanceFilters = {
   classId?: string;
@@ -196,7 +199,7 @@ export const useMarkAttendance = (sessionId?: string) => {
       const chunkSize = 200;
       for (let i = 0; i < records.length; i += chunkSize) {
         const batch = records.slice(i, i + chunkSize);
-        // eslint-disable-next-line no-await-in-loop
+         
         await attendanceSessionsApi.markRecords(sessionId, { records: toPayload(batch) });
       }
     },

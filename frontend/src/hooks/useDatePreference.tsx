@@ -3,13 +3,14 @@
  * Manages user's preferred calendar type (Gregorian, Hijri Shamsi, Hijri Qamari)
  */
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { format } from 'date-fns';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+import { convertToCalendar, padNumber, convertNumerals, type ConvertedDate } from '@/lib/calendarConverter';
+import { calendarState } from '@/lib/calendarState';
 import type { CalendarType, DatePreference } from '@/lib/datePreferences';
 import { CALENDAR_TYPES, DEFAULT_DATE_FORMATS, DATE_PREFERENCE_KEY, MONTH_NAMES, SHORT_MONTH_NAMES } from '@/lib/datePreferences';
-import { convertToCalendar, padNumber, convertNumerals, type ConvertedDate } from '@/lib/calendarConverter';
 import type { Language } from '@/lib/i18n';
-import { calendarState } from '@/lib/calendarState';
 
 interface DateFormatterOptions {
   includeTime?: boolean;

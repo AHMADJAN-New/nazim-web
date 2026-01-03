@@ -1,5 +1,16 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus, Pencil, Trash2, Search, MoreHorizontal, Copy, Eye, FileText, FileCode, Download } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
+
+import { TemplateFileManager } from '@/components/examPapers/TemplateFileManager';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useClassAcademicYears } from '@/hooks/useClasses';
 import {
   useExamPaperTemplates,
   useCreateExamPaperTemplate,
@@ -12,32 +23,22 @@ import type { ExamPaperTemplate, ExamPaperLanguage } from '@/hooks/useExamPapers
 import { useSubjects, useClassSubjects } from '@/hooks/useSubjects';
 import { useSchools } from '@/hooks/useSchools';
 import { useExams } from '@/hooks/useExams';
-import { useClassAcademicYears } from '@/hooks/useClasses';
-import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Pencil, Trash2, Search, MoreHorizontal, Copy, Eye, FileText, FileCode, Download } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { examPaperTemplateSchema, type ExamPaperTemplateFormData } from '@/lib/validations/examPaperTemplate';
-import { TemplateFileManager } from '@/components/examPapers/TemplateFileManager';
 import { PaperPreview } from '@/components/examPapers/PaperPreview';
 import { PaperGenerator } from '@/components/examPapers/PaperGenerator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

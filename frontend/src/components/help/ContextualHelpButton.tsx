@@ -1,6 +1,11 @@
-import { useState, useEffect } from 'react';
 import { HelpCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { useNavigate } from 'react-router-dom';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/ui/loading';
 import {
   Sheet,
   SheetContent,
@@ -9,13 +14,9 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useContextualHelp } from '@/hooks/useContextualHelp';
-import { useNavigate } from 'react-router-dom';
-import { LoadingSpinner } from '@/components/ui/loading';
-import ReactMarkdown from 'react-markdown';
-import { Badge } from '@/components/ui/badge';
-import { formatDate } from '@/lib/utils';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
+import { formatDate } from '@/lib/utils';
 
 interface ContextualHelpButtonProps {
   contextKey?: string;

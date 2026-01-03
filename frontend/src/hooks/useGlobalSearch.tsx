@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { useAuth } from './useAuth';
+
 import { apiClient } from '@/lib/api/client';
 
 export interface SearchResult {

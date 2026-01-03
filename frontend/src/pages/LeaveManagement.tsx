@@ -1,22 +1,14 @@
-import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, addDays, addWeeks } from 'date-fns';
 import { Calendar, CheckCircle2, Download, Eye, FileText, Loader2, Printer, Shield, UserRound, Zap, Search, Scan } from 'lucide-react';
-import { useLeaveRequests, useCreateLeaveRequest, useApproveLeaveRequest, useRejectLeaveRequest } from '@/hooks/useLeaveRequests';
-import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
-import type { Student } from '@/types/domain/student';
-import { useClassAcademicYears } from '@/hooks/useClasses';
-import { useCurrentAcademicYear } from '@/hooks/useAcademicYears';
-import { useProfile } from '@/hooks/useProfiles';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,16 +17,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useClassAcademicYears } from '@/hooks/useClasses';
+import { useLeaveRequests, useCreateLeaveRequest, useApproveLeaveRequest, useRejectLeaveRequest } from '@/hooks/useLeaveRequests';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import type { Student } from '@/types/domain/student';
+import { useProfile } from '@/hooks/useProfiles';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { showToast } from '@/lib/toast';
 import { leaveRequestsApi, studentAdmissionsApi } from '@/lib/api/client';
 import type { LeaveRequest, LeaveRequestInsert } from '@/types/domain/leave';
 import { mapLeaveRequestApiToDomain } from '@/mappers/leaveMapper';
 import { useLanguage } from '@/hooks/useLanguage';
-import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
-import { PageHeader } from '@/components/layout/PageHeader';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-800 border-amber-200',

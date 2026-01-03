@@ -1,8 +1,10 @@
 import JSZip from 'jszip';
-import type { Student } from '@/types/domain/student';
-import type { IdCardTemplate } from '@/types/domain/idCardTemplate';
+
 import { renderIdCardToCanvas } from './idCardCanvasRenderer';
 import { DEFAULT_ID_CARD_PADDING_PX, getDefaultPrintRenderSize, getDefaultScreenRenderSize } from './idCardRenderMetrics';
+
+import type { IdCardTemplate } from '@/types/domain/idCardTemplate';
+import type { Student } from '@/types/domain/student';
 
 /**
  * Convert data URL to Blob (for ZIP export)

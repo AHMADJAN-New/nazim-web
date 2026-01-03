@@ -1,4 +1,3 @@
-import { useState, useEffect, useMemo } from 'react';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -10,6 +9,8 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import { useState, useEffect, useMemo } from 'react';
+
 import type { PaginationMeta } from '@/types/pagination';
 
 export type UseDataTableProps<TData> = {

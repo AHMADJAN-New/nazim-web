@@ -1,3 +1,5 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   UserPlus,
   Users,
@@ -20,11 +22,20 @@ import {
   History,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Navigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { Navigate, Link } from 'react-router-dom';
 import * as z from 'zod';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,18 +53,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LoadingSpinner } from '@/components/ui/loading';
 import {
   Table,
   TableBody,
@@ -67,16 +69,14 @@ import { Tabs,
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-import { platformApi } from '@/platform/lib/platformApi';
-import { TestimonialsManagement } from '@/platform/components/TestimonialsManagement';
 import { ContactMessagesManagement } from '@/platform/components/ContactMessagesManagement';
+import { TestimonialsManagement } from '@/platform/components/TestimonialsManagement';
+import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
+import { platformApi } from '@/platform/lib/platformApi';
 
 // Validation schema for platform user (password optional for updates)
 const platformUserSchema = z.object({

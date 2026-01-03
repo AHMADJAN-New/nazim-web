@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { studentsApi } from '@/lib/api/client';
+
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfiles';
+import { studentsApi } from '@/lib/api/client';
 
 export interface StudentAutocompleteData {
     names: string[];

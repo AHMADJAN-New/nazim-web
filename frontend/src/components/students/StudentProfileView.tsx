@@ -1,21 +1,3 @@
-import React, { useMemo, useState, useEffect, memo } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { useSchools } from '@/hooks/useSchools';
-import { useProfile } from '@/hooks/useProfiles';
-import { useLanguage } from '@/hooks/useLanguage';
-import { useHasPermission } from '@/hooks/usePermissions';
-import {
-  useStudentDocuments,
-  useStudentEducationalHistory,
-  useStudentDisciplineRecords,
-} from '@/hooks/useStudents';
-import type { Student } from '@/types/domain/student';
-import { StudentProfilePrint } from './StudentProfilePrint';
-import { generateStudentProfilePdf } from '@/lib/studentProfilePdf';
 import { 
   User, 
   Calendar, 
@@ -35,7 +17,27 @@ import {
   Download,
   CheckCircle
 } from 'lucide-react';
+import React, { useMemo, useState, useEffect, memo } from 'react';
+
+import { StudentProfilePrint } from './StudentProfilePrint';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { useProfile } from '@/hooks/useProfiles';
+import { useSchools } from '@/hooks/useSchools';
+import {
+  useStudentDocuments,
+  useStudentEducationalHistory,
+  useStudentDisciplineRecords,
+} from '@/hooks/useStudents';
+import { generateStudentProfilePdf } from '@/lib/studentProfilePdf';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import type { Student } from '@/types/domain/student';
 
 interface StudentProfileViewProps {
   open: boolean;

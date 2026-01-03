@@ -1,7 +1,8 @@
 import type { Table } from '@tanstack/react-table';
+import { X } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
 
 interface DataTableFilterListProps<TData> {
   table: Table<TData>;

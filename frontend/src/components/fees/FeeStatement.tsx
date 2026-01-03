@@ -1,8 +1,9 @@
+import { format } from 'date-fns';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { FeeAssignment, FeePayment } from '@/types/domain/fees';
 import { useLanguage } from '@/hooks/useLanguage';
-import { format } from 'date-fns';
+import type { FeeAssignment, FeePayment } from '@/types/domain/fees';
 
 interface FeeStatementProps {
   assignments: FeeAssignment[];

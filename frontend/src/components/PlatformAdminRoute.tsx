@@ -1,7 +1,8 @@
 import { Navigate } from 'react-router-dom';
+
+import { LoadingSpinner } from '@/components/ui/loading';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
-import { LoadingSpinner } from '@/components/ui/loading';
 
 interface PlatformAdminRouteProps {
   children: React.ReactNode;

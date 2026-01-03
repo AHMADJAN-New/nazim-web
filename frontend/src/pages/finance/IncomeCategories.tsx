@@ -2,30 +2,11 @@
  * Income Categories Page - Manage income category types
  */
 
+import { Plus, Pencil, Trash2, Tag } from 'lucide-react';
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
+
 import { PageHeader } from '@/components/layout/PageHeader';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -37,6 +18,29 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { Switch } from '@/components/ui/switch';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 import {
     useIncomeCategories,
     useCreateIncomeCategory,
@@ -46,9 +50,6 @@ import {
     type IncomeCategoryFormData,
 } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { Plus, Pencil, Trash2, Tag } from 'lucide-react';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 export default function IncomeCategories() {
     const { t } = useLanguage();

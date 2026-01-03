@@ -1,10 +1,11 @@
-import { ReactNode } from 'react';
-import { useHasPermissionAndFeature, useHasPermission } from '@/hooks/usePermissions';
-import { useUserPermissions } from '@/hooks/usePermissions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield } from 'lucide-react';
+import { ReactNode } from 'react';
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useUserPermissions } from '@/hooks/usePermissions';
+import { useHasPermissionAndFeature, useHasPermission } from '@/hooks/usePermissions';
 
 interface PermissionGuardProps {
   permission: string;

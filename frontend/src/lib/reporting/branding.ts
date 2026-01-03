@@ -1,7 +1,8 @@
 // src/lib/reporting/branding.ts
+import type { ResolvedReportBranding } from './types';
+
 import type { ReportTemplate } from '@/hooks/useReportTemplates';
 import type { School } from '@/hooks/useSchools';
-import type { ResolvedReportBranding } from './types';
 
 function uint8ToDataUrl(
   uint8?: Uint8Array | null,

@@ -1,11 +1,28 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus, Pencil, Trash2, Search, Clock } from 'lucide-react';
 import { useState, useMemo } from 'react';
-import { useScheduleSlots, useCreateScheduleSlot, useUpdateScheduleSlot, useDeleteScheduleSlot, type ScheduleSlot } from '@/hooks/useScheduleSlots';
-import { useProfile } from '@/hooks/useProfiles';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { useAcademicYears } from '@/hooks/useAcademicYears';
-import { useSchools } from '@/hooks/useSchools';
+import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'sonner';
+
+import { PageHeader } from '@/components/layout/PageHeader';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { useProfile } from '@/hooks/useProfiles';
+import { useScheduleSlots, useCreateScheduleSlot, useUpdateScheduleSlot, useDeleteScheduleSlot, type ScheduleSlot } from '@/hooks/useScheduleSlots';
+import { useSchools } from '@/hooks/useSchools';
+
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,27 +42,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Pencil, Trash2, Search, Clock } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
+
 import * as z from 'zod';
 
 const scheduleSlotSchema = z.object({

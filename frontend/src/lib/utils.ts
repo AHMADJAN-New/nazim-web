@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+
 import { formatDate as adapterFormatDate, formatDateTime as adapterFormatDateTime } from './calendarAdapter';
 
 export function cn(...inputs: ClassValue[]) {

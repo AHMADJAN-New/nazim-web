@@ -1,17 +1,9 @@
-import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Pencil, Trash2, Settings2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { useState } from 'react';
+
+import { EventTypeFormDialog } from './EventTypeFormDialog';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,10 +14,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { showToast } from '@/lib/toast';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { eventTypesApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
 import type { EventType } from '@/types/events';
-import { EventTypeFormDialog } from './EventTypeFormDialog';
+
 
 interface EventTypesListProps {
   schoolId?: string;

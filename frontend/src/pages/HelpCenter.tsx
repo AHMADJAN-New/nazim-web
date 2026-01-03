@@ -1,16 +1,3 @@
-import { useState, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useLanguage } from '@/hooks/useLanguage';
-import {
-  useHelpCenterCategories,
-  useHelpCenterArticles,
-  useFeaturedArticles,
-  usePopularArticles,
-} from '@/hooks/useHelpCenter';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Search,
   BookOpen,
@@ -27,8 +14,22 @@ import {
   Filter,
   X,
 } from 'lucide-react';
-import { LoadingSpinner } from '@/components/ui/loading';
+import { useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { LoadingSpinner } from '@/components/ui/loading';
+import {
+  useHelpCenterCategories,
+  useHelpCenterArticles,
+  useFeaturedArticles,
+  usePopularArticles,
+} from '@/hooks/useHelpCenter';
+import { useLanguage } from '@/hooks/useLanguage';
 import { cn } from '@/lib/utils';
 
 export default function HelpCenter() {

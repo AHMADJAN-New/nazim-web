@@ -1,17 +1,25 @@
-import { useMemo, useState, useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FileText, Upload, Search, Plus, X, Eye, File, Download, Image as ImageIcon, Maximize2, X as XIcon, Edit, Trash2, MoreHorizontal } from "lucide-react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
+
+import { DocumentNumberBadge } from "@/components/dms/DocumentNumberBadge";
+import { ImageFileUploader } from "@/components/dms/ImageFileUploader";
+import { RichTextEditor } from "@/components/dms/RichTextEditor";
+import { SecurityBadge } from "@/components/dms/SecurityBadge";
+import { FilterPanel } from "@/components/layout/FilterPanel";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { dmsApi } from "@/lib/api/client";
 import type { IncomingDocument } from "@/types/dms";
 import type { PaginatedResponse } from "@/types/pagination";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,19 +33,12 @@ import { showToast } from "@/lib/toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademicYears, useCurrentAcademicYear } from "@/hooks/useAcademicYears";
-import { DocumentNumberBadge } from "@/components/dms/DocumentNumberBadge";
-import { SecurityBadge } from "@/components/dms/SecurityBadge";
-import { ImageFileUploader } from "@/components/dms/ImageFileUploader";
-import { FileText, Upload, Search, Plus, X, Eye, File, Download, Image as ImageIcon, Maximize2, X as XIcon, Edit, Trash2, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RichTextEditor } from "@/components/dms/RichTextEditor";
 import { formatDate, formatDateForInput, getShortDescription } from "@/lib/dateUtils";
 import { Separator } from "@/components/ui/separator";
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
-import { PageHeader } from "@/components/layout/PageHeader";
-import { FilterPanel } from "@/components/layout/FilterPanel";
 
 const statusOptions = [
   { label: "Pending", value: "pending" },

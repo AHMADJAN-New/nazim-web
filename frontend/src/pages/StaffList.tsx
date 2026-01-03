@@ -1,13 +1,3 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useStaff, useDeleteStaff, useStaffStats, useCreateStaff, useUpdateStaff, useStaffTypes } from '@/hooks/useStaff';
-import type { Staff } from '@/types/domain/staff';
-import { useProfile } from '@/hooks/useProfiles';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { useOrganizations } from '@/hooks/useOrganizations';
-import { useSchools } from '@/hooks/useSchools';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -46,13 +36,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Pencil, Trash2, Eye, Users, Filter, X, ChevronRight, ChevronLeft, User, MapPin, GraduationCap, Briefcase, FileText, CheckCircle2 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+
 import { useLanguage } from '@/hooks/useLanguage';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { StaffProfile } from '@/components/staff/StaffProfile';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useOrganizations } from '@/hooks/useOrganizations';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { useProfile } from '@/hooks/useProfiles';
+import { useSchools } from '@/hooks/useSchools';
+import { useStaff, useDeleteStaff, useStaffStats, useCreateStaff, useUpdateStaff, useStaffTypes } from '@/hooks/useStaff';
+import type { Staff } from '@/types/domain/staff';
 
 const staffSchema = z.object({
     employee_id: z.string().min(1, 'Employee ID is required').max(50, 'Employee ID must be 50 characters or less'),

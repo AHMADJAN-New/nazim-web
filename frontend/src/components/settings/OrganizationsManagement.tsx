@@ -1,9 +1,28 @@
-import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { Plus, Pencil, Trash2, Search, Building2, Eye, Users, Building, DoorOpen, Calendar, Settings as SettingsIcon, GraduationCap, BookOpen, UserCheck, Mail, Phone, Globe, MapPin, FileText, User, CheckCircle, Package } from 'lucide-react';
+import { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useOrganizations, useCreateOrganization, useUpdateOrganization, useDeleteOrganization } from '@/hooks/useOrganizations';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { organizationsApi } from '@/lib/api/client';
 import { useAdminOrganizations } from '@/hooks/useSubscriptionAdmin';
+import { organizationSchema, type OrganizationFormData } from '@/lib/validations/organization';
 import { 
   usePlatformOrganizations, 
   usePlatformCreateOrganization, 
@@ -12,8 +31,8 @@ import {
 } from '@/platform/hooks/usePlatformAdminComplete';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
-import { useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -46,26 +65,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
-import { Plus, Pencil, Trash2, Search, Building2, Eye, Users, Building, DoorOpen, Calendar, Settings as SettingsIcon, GraduationCap, BookOpen, UserCheck, Mail, Phone, Globe, MapPin, FileText, User, CheckCircle, Package } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { organizationSchema, type OrganizationFormData } from '@/lib/validations/organization';
 import { useLanguage } from '@/hooks/useLanguage';
 
 export function OrganizationsManagement() {

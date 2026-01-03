@@ -1,38 +1,42 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { ColumnDef } from '@tanstack/react-table';
+import { Plus, Pencil, Trash2, Search, MoreHorizontal, Copy, CheckCircle, XCircle, Eye, X } from 'lucide-react';
 import React, { useState, useMemo, useEffect } from 'react';
+
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useQuestions, useCreateQuestion, useUpdateQuestion, useDeleteQuestion, useDuplicateQuestion, useBulkUpdateQuestions, QUESTION_TYPES, QUESTION_DIFFICULTIES } from '@/hooks/useQuestions';
 import type { Question, QuestionType, QuestionDifficulty, QuestionOption, QuestionFilters } from '@/hooks/useQuestions';
 import { useClassSubjects } from '@/hooks/useSubjects';
 import { useSchools } from '@/hooks/useSchools';
-import { useClassAcademicYears } from '@/hooks/useClasses';
-import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useProfile } from '@/hooks/useProfiles';
 import { classSubjectsApi } from '@/lib/api/client';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Pencil, Trash2, Search, MoreHorizontal, Copy, CheckCircle, XCircle, Eye, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+
+
 import { cn } from '@/lib/utils';
 import { questionSchema, type QuestionFormData } from '@/lib/validations/questionBank';
 import { useDataTable } from '@/hooks/use-data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
-import type { ColumnDef } from '@tanstack/react-table';
+
 
 const difficultyConfig: Record<QuestionDifficulty, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
   easy: { label: 'Easy', variant: 'default' },

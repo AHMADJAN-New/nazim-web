@@ -1,6 +1,7 @@
+import { Users, GraduationCap, UserCircle, BookOpen, Calendar, School } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, GraduationCap, UserCircle, BookOpen, Calendar, School } from 'lucide-react';
+
 import {
   Command,
   CommandEmpty,

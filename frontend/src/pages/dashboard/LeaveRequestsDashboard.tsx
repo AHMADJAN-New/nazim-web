@@ -2,16 +2,18 @@
  * Leave Requests Dashboard - Overview of leave requests data
  */
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar, Clock, CheckCircle2, XCircle, AlertCircle, TrendingUp } from 'lucide-react';
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useLeaveRequests } from '@/hooks/useLeaveRequests';
-import { useLanguage } from '@/hooks/useLanguage';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { Calendar, Clock, CheckCircle2, XCircle, AlertCircle, TrendingUp } from 'lucide-react';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useLeaveRequests } from '@/hooks/useLeaveRequests';
 import { formatDate } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
-import { useMemo } from 'react';
+
 
 export default function LeaveRequestsDashboard() {
   const { t } = useLanguage();

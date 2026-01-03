@@ -1,6 +1,9 @@
-import { useLanguage } from '@/hooks/useLanguage';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GraduationCap, Users, Target, Heart, Award, Globe, Languages, ArrowRight, Lock, Shield } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,9 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { GraduationCap, Users, Target, Heart, Award, Globe, Languages, ArrowRight, Lock, Shield } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Badge } from '@/components/ui/badge';
+import { useLanguage } from '@/hooks/useLanguage';
 
 export default function AboutUs() {
   const { t, language, setLanguage } = useLanguage();

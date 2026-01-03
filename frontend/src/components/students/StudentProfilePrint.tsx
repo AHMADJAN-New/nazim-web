@@ -1,7 +1,8 @@
 import React, { useMemo, useEffect } from 'react';
+
+import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import type { Student } from '@/types/domain/student';
-import { useLanguage } from '@/hooks/useLanguage';
 
 interface StudentProfilePrintProps {
   student: Student;

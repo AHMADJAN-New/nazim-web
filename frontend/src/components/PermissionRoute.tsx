@@ -1,8 +1,11 @@
 import { ReactNode } from 'react';
-import { useUserPermissions } from '@/hooks/usePermissions';
-import { useAuth } from '@/hooks/useAuth';
-import { LoadingSpinner } from '@/components/ui/loading';
+
 import { PermissionGuard } from './PermissionGuard';
+
+import { LoadingSpinner } from '@/components/ui/loading';
+import { useAuth } from '@/hooks/useAuth';
+import { useUserPermissions } from '@/hooks/usePermissions';
+
 
 interface PermissionRouteProps {
   permission: string;

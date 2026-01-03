@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { NotificationItem } from '@/types/notification';
+
 import { StudentProfileView } from '@/components/students/StudentProfileView';
 import { studentsApi, studentAdmissionsApi } from '@/lib/api/client';
-import { mapStudentApiToDomain } from '@/mappers/studentMapper';
 import { mapStudentAdmissionApiToDomain } from '@/mappers/studentAdmissionMapper';
+import { mapStudentApiToDomain } from '@/mappers/studentMapper';
 import type { Student } from '@/types/domain/student';
+import type { NotificationItem } from '@/types/notification';
 
 /**
  * Maps entity types to their navigation/view patterns

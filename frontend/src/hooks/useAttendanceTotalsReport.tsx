@@ -1,13 +1,15 @@
-import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { attendanceSessionsApi } from '@/lib/api/client';
+import { useMemo } from 'react';
+
 import { useAuth } from './useAuth';
+
+import { attendanceSessionsApi } from '@/lib/api/client';
+import { mapAttendanceTotalsReportApiToDomain } from '@/mappers/attendanceTotalsReportMapper';
+import type * as AttendanceTotalsReportApi from '@/types/api/attendanceTotalsReport';
 import type {
   AttendanceTotalsReport,
   AttendanceTotalsReportFilters,
 } from '@/types/domain/attendanceTotalsReport';
-import { mapAttendanceTotalsReportApiToDomain } from '@/mappers/attendanceTotalsReportMapper';
-import type * as AttendanceTotalsReportApi from '@/types/api/attendanceTotalsReport';
 
 export const useAttendanceTotalsReport = (
   filters: AttendanceTotalsReportFilters = {},

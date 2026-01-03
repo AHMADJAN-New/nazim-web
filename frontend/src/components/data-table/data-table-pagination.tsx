@@ -1,4 +1,5 @@
 import type { Table } from '@tanstack/react-table';
+
 import {
   Pagination,
   PaginationContent,
@@ -16,9 +17,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useLanguage } from '@/hooks/useLanguage';
+import { cn } from '@/lib/utils';
 import { PAGE_SIZE_OPTIONS } from '@/types/pagination';
 import type { PaginationMeta } from '@/types/pagination';
-import { cn } from '@/lib/utils';
 
 interface DataTablePaginationProps<TData> {
   table: Table<TData>;

@@ -1,3 +1,4 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   AlertTriangle,
   Building2,
@@ -22,29 +23,12 @@ import {
   School,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { Link } from 'react-router-dom';
 import * as z from 'zod';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { OrganizationAdminsManagement } from '@/components/settings/OrganizationAdminsManagement';
+import { OrganizationsManagement } from '@/components/settings/OrganizationsManagement';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,6 +39,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -65,18 +66,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useLanguage } from '@/hooks/useLanguage';
+import { showToast } from '@/lib/toast';
+import { formatDate } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import {
   usePlatformDashboard,
   usePlatformPendingPayments,
   usePlatformPendingRenewals,
   usePlatformSubscriptions,
 } from '@/platform/hooks/usePlatformAdminComplete';
-import { useLanguage } from '@/hooks/useLanguage';
-import { formatDate } from '@/lib/utils';
-import { cn } from '@/lib/utils';
-import { showToast } from '@/lib/toast';
-import { OrganizationsManagement } from '@/components/settings/OrganizationsManagement';
-import { OrganizationAdminsManagement } from '@/components/settings/OrganizationAdminsManagement';
 
 export default function SubscriptionAdminDashboard() {
   const { t } = useLanguage();

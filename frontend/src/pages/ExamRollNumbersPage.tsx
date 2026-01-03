@@ -1,33 +1,10 @@
+import {
+  ArrowLeft, Wand2, Save, Search, AlertCircle, CheckCircle, Hash,
+  RefreshCw, Edit2, X
+} from 'lucide-react';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useExam, useExamClasses, useExams, useLatestExamFromCurrentYear } from '@/hooks/useExams';
-import {
-  useExamStudentsWithNumbers,
-  useRollNumberStartFrom,
-  usePreviewRollNumberAssignment,
-  useConfirmRollNumberAssignment,
-  useUpdateRollNumber,
-} from '@/hooks/useExamNumbers';
-import { useProfile } from '@/hooks/useProfiles';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,10 +15,34 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
-  ArrowLeft, Wand2, Save, Search, AlertCircle, CheckCircle, Hash,
-  RefreshCw, Edit2, X
-} from 'lucide-react';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  useExamStudentsWithNumbers,
+  useRollNumberStartFrom,
+  usePreviewRollNumberAssignment,
+  useConfirmRollNumberAssignment,
+  useUpdateRollNumber,
+} from '@/hooks/useExamNumbers';
+import { useExam, useExamClasses, useExams, useLatestExamFromCurrentYear } from '@/hooks/useExams';
+import { useProfile } from '@/hooks/useProfiles';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useLanguage } from '@/hooks/useLanguage';
 import type { NumberAssignmentPreviewResponse, NumberAssignmentPreviewItem } from '@/types/domain/exam';
 

@@ -1,6 +1,7 @@
+import { mapStudentAdmissionApiToDomain } from './studentAdmissionMapper';
+
 import type * as StudentAdmissionReportApi from '@/types/api/studentAdmissionReport';
 import type { StudentAdmissionReport } from '@/types/domain/studentAdmissionReport';
-import { mapStudentAdmissionApiToDomain } from './studentAdmissionMapper';
 
 export const mapStudentAdmissionReportApiToDomain = (
   apiReport: StudentAdmissionReportApi.StudentAdmissionReport

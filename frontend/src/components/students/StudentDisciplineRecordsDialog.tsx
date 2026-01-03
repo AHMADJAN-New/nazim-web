@@ -1,15 +1,8 @@
-import { useState, useEffect } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { AlertTriangle, Plus, Pencil, Trash2, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useForm, Controller, FormProvider } from 'react-hook-form';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +13,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -28,20 +41,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/hooks/useLanguage';
-import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import {
   useStudentDisciplineRecords,
   useCreateStudentDisciplineRecord,
@@ -53,8 +54,8 @@ import {
   DisciplineSeverity,
   Student,
 } from '@/hooks/useStudents';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { disciplineRecordSchema, type DisciplineRecordFormData } from '@/lib/validations';
-import { AlertTriangle, Plus, Pencil, Trash2, CheckCircle } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading';
 
 interface StudentDisciplineRecordsDialogProps {

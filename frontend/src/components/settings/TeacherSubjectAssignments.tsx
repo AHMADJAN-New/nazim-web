@@ -1,13 +1,3 @@
-import { useState, useMemo } from 'react';
-import { useTeacherSubjectAssignments, useCreateTeacherSubjectAssignment, useUpdateTeacherSubjectAssignment, useDeleteTeacherSubjectAssignment, type TeacherSubjectAssignment } from '@/hooks/useTeacherSubjectAssignments';
-import { useProfile } from '@/hooks/useProfiles';
-import { useStaff, type Staff } from '@/hooks/useStaff';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { useAcademicYears } from '@/hooks/useAcademicYears';
-import { useSchools } from '@/hooks/useSchools';
-import { useClassAcademicYears } from '@/hooks/useClasses';
-import { useScheduleSlots } from '@/hooks/useScheduleSlots';
-import { useClassSubjectsForMultipleClasses } from '@/hooks/useSubjects';
 import { useOrganizations } from '@/hooks/useOrganizations';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -20,18 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { BookOpen, Clock, Trash2, Plus, Pencil, User, GraduationCap, CheckCircle2, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import {
     Dialog,
     DialogContent,
@@ -52,6 +32,26 @@ import { LoadingSpinner } from '@/components/ui/loading';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useClassAcademicYears } from '@/hooks/useClasses';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { useProfile } from '@/hooks/useProfiles';
+import { useScheduleSlots } from '@/hooks/useScheduleSlots';
+import { useSchools } from '@/hooks/useSchools';
+import { useStaff, type Staff } from '@/hooks/useStaff';
+import { useClassSubjectsForMultipleClasses } from '@/hooks/useSubjects';
+import { useTeacherSubjectAssignments, useCreateTeacherSubjectAssignment, useUpdateTeacherSubjectAssignment, useDeleteTeacherSubjectAssignment, type TeacherSubjectAssignment } from '@/hooks/useTeacherSubjectAssignments';
 
 type Step = 1 | 2;
 
@@ -616,7 +616,7 @@ export function TeacherSubjectAssignments() {
                                 disabled={!filteredAssignments || filteredAssignments.length === 0}
                             />
                         )}
-                    </div>
+                    </FilterPanel>
                 </CardContent>
             </Card>
 

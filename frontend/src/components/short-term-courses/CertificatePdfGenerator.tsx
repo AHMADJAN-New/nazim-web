@@ -1,5 +1,12 @@
+import { format } from 'date-fns';
+import { Loader2, Download, Award, Eye, Image as ImageIcon, Printer } from 'lucide-react';
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
 import React, { useState, useEffect } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -7,7 +14,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -16,9 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Download, Award, Eye, Image as ImageIcon, Printer } from 'lucide-react';
 import {
   useCertificateTemplates,
   useGenerateCertificate,
@@ -26,12 +29,11 @@ import {
   CertificateTemplate,
   type CertificateData,
 } from '@/hooks/useCertificateTemplates';
-import { certificateTemplatesApi } from '@/lib/api/client';
-import { format } from 'date-fns';
 import { useLanguage } from '@/hooks/useLanguage';
+import { certificateTemplatesApi } from '@/lib/api/client';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 // Import pdfmake for Arabic support - handle both default and named exports
-import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
 let pdfMake: any = (pdfMakeModule as any).default || pdfMakeModule;
 
 // Helper to get the actual pdfMake instance
@@ -66,7 +68,6 @@ if (typeof window !== 'undefined') {
 }
 
 // Use regular pdfmake vfs_fonts instead of pdfmake-arabic's (which has issues)
-import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 
 // Set up fonts for Arabic/Pashto support
 try {
@@ -1642,7 +1643,7 @@ export function CertificatePdfGenerator({
       if (!text) return '';
 
       // Normalize to NFC form for proper Unicode handling
-      let normalized = String(text).trim().normalize('NFC');
+      const normalized = String(text).trim().normalize('NFC');
 
       // pdfmake-arabic handles RTL direction automatically, so we don't need to reverse word order
       // Just normalize the Unicode and let pdfmake handle the rendering

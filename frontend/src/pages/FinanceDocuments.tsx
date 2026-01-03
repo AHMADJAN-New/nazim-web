@@ -1,36 +1,3 @@
-import { useState, useMemo, useEffect } from 'react';
-import { formatDate } from '@/lib/utils';
-import { useSearchParams } from 'react-router-dom';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterPanel } from '@/components/layout/FilterPanel';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-  useFinanceDocuments,
-  useDeleteFinanceDocument,
-  useDownloadFinanceDocument,
-  FinanceDocument,
-} from '@/hooks/useFinanceDocuments';
-import { FinanceDocumentsDialog } from '@/components/finance/FinanceDocumentsDialog';
-import { FinanceDocumentPreviewDialog } from '@/components/finance/FinanceDocumentPreviewDialog';
 import {
   FileText,
   FileImage,
@@ -43,7 +10,41 @@ import {
   DollarSign,
   Calendar,
 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+import { FinanceDocumentPreviewDialog } from '@/components/finance/FinanceDocumentPreviewDialog';
+import { FinanceDocumentsDialog } from '@/components/finance/FinanceDocumentsDialog';
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  useFinanceDocuments,
+  useDeleteFinanceDocument,
+  useDownloadFinanceDocument,
+  FinanceDocument,
+} from '@/hooks/useFinanceDocuments';
 import { useLanguage } from '@/hooks/useLanguage';
+import { formatDate } from '@/lib/utils';
 
 const DOCUMENT_TYPES = [
   { value: 'invoice', labelKey: 'finance.documentTypes.invoice' },

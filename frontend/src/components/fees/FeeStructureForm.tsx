@@ -1,7 +1,10 @@
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { feeStructureSchema, type FeeStructureFormData } from '@/lib/validations/fees';
+import { useMemo } from 'react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+
 import { Button } from '@/components/ui/button';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import {
   Form,
   FormControl,
@@ -19,16 +22,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { useLanguage } from '@/hooks/useLanguage';
-import { CalendarFormField } from '@/components/ui/calendar-form-field';
-import { useCurrencies, useExchangeRates } from '@/hooks/useCurrencies';
-import { useMemo } from 'react';
-import { showToast } from '@/lib/toast';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
-import { useClasses, useClassAcademicYears } from '@/hooks/useClasses';
 import { useAuth } from '@/hooks/useAuth';
+import { useClasses, useClassAcademicYears } from '@/hooks/useClasses';
+import { useCurrencies, useExchangeRates } from '@/hooks/useCurrencies';
+import { useLanguage } from '@/hooks/useLanguage';
 import { useSchools } from '@/hooks/useSchools';
-import { useEffect } from 'react';
+import { showToast } from '@/lib/toast';
+import { feeStructureSchema, type FeeStructureFormData } from '@/lib/validations/fees';
 
 interface FeeStructureFormProps {
   defaultValues?: Partial<FeeStructureFormData>;
@@ -93,7 +94,7 @@ export function FeeStructureForm({
 
   const handleError = (errors: unknown) => {
     if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
+       
       console.error('[FeeStructureForm] validation errors', errors);
     }
     const firstError =

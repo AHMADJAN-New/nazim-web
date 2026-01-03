@@ -1,31 +1,9 @@
-import { useMemo, useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterPanel } from '@/components/layout/FilterPanel';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FeeExceptionForm } from '@/components/fees/FeeExceptionForm';
-import {
-  useCreateFeeException,
-  useUpdateFeeException,
-  useDeleteFeeException,
-  useFeeExceptions,
-  useFeeAssignments,
-  useFeeStructures,
-} from '@/hooks/useFees';
-import { useLanguage } from '@/hooks/useLanguage';
-import { useAuth } from '@/hooks/useAuth';
-import type { FeeExceptionFormData } from '@/lib/validations/fees';
-import { useAcademicYears } from '@/hooks/useAcademicYears';
-import { useCurrentAcademicYear } from '@/hooks/useAcademicYears';
-import { useClassAcademicYears } from '@/hooks/useClasses';
-import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
-import type { Student } from '@/types/domain/student';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { formatDate, formatCurrency } from '@/lib/utils';
 import { Eye, Pencil, Trash2, Plus, Shield } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+
+import { FeeExceptionForm } from '@/components/fees/FeeExceptionForm';
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import {
   AlertDialog,
@@ -37,6 +15,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Sheet,
   SheetContent,
@@ -44,7 +27,25 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  useCreateFeeException,
+  useUpdateFeeException,
+  useDeleteFeeException,
+  useFeeExceptions,
+  useFeeAssignments,
+  useFeeStructures,
+} from '@/hooks/useFees';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import { formatDate, formatCurrency } from '@/lib/utils';
+import type { FeeExceptionFormData } from '@/lib/validations/fees';
+import { useClassAcademicYears } from '@/hooks/useClasses';
 import type { FeeException } from '@/types/domain/fees';
+import type { Student } from '@/types/domain/student';
 
 export default function FeeExceptionsPage() {
   const { t } = useLanguage();

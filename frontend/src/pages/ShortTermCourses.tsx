@@ -1,50 +1,4 @@
-import { useMemo, useState } from 'react';
-import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
 import { useReactTable, getCoreRowModel, type PaginationState } from '@tanstack/react-table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { DataTablePagination } from '@/components/data-table/data-table-pagination';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
-import {
-  useShortTermCourses,
-  useDeleteShortTermCourse,
-  useCloseCourse,
-  useReopenCourse,
-} from '@/hooks/useShortTermCourses';
-import { useCourseStudents } from '@/hooks/useCourseStudents';
-import type { CourseStudent } from '@/types/domain/courseStudent';
-import { ShortTermCourseFormDialog } from '@/components/short-term-courses/ShortTermCourseFormDialog';
-import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
-import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import {
   CalendarRange,
   Filter,
@@ -59,7 +13,54 @@ import {
   Unlock,
   Eye,
 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { ShortTermCourseFormDialog } from '@/components/short-term-courses/ShortTermCourseFormDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useCourseStudents } from '@/hooks/useCourseStudents';
 import { useLanguage } from '@/hooks/useLanguage';
+import {
+  useShortTermCourses,
+  useDeleteShortTermCourse,
+  useCloseCourse,
+  useReopenCourse,
+} from '@/hooks/useShortTermCourses';
+import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
+import type { CourseStudent } from '@/types/domain/courseStudent';
+import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
 
 const statusTone: Record<string, string> = {
   draft: 'bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-200',
@@ -151,6 +152,7 @@ const CourseRow = ({ course, onEdit, onDelete, onClose, onReopen, onViewStudents
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </TableCell>
     </TableRow>
   );

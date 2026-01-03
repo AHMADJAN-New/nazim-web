@@ -1,15 +1,16 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useProfile } from '@/hooks/useProfiles';
 import { useCreateTimetable } from '@/hooks/useTimetables';
 import type { DayName } from '@/lib/timetableSolver';
-import { useProfile } from '@/hooks/useProfiles';
-import { useLanguage } from '@/hooks/useLanguage';
-import { toast } from 'sonner';
 import { saveTimetableSchema, type SaveTimetableFormData } from '@/lib/validations';
 
 export interface SaveEntryInput {

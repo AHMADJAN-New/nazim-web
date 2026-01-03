@@ -3,17 +3,20 @@
  * Contains: Currencies, Income Categories, Expense Categories, Exchange Rates
  */
 
+import { Coins, Tag, Tags, ArrowRightLeft, Settings } from 'lucide-react';
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+import Currencies from './Currencies';
+import ExchangeRates from './ExchangeRates';
+import ExpenseCategories from './ExpenseCategories';
+import IncomeCategories from './IncomeCategories';
+
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { Coins, Tag, Tags, ArrowRightLeft, Settings } from 'lucide-react';
-import Currencies from './Currencies';
-import IncomeCategories from './IncomeCategories';
-import ExpenseCategories from './ExpenseCategories';
-import ExchangeRates from './ExchangeRates';
+
 
 export default function FinanceSettings() {
     const { t } = useLanguage();

@@ -1,16 +1,17 @@
+import { ArrowLeft, Printer, Eye, EyeOff, FileText, CheckCircle } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { useExamPaperPreviewStudent, useExamPaperPreviewTeacher, useExamPaperTemplate } from '@/hooks/useExamPapers';
-import type { ExamPaperPreview as ExamPaperPreviewType, ExamPaperPreviewSection, ExamPaperPreviewQuestion } from '@/hooks/useExamPapers';
-import { useHasPermission } from '@/hooks/usePermissions';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Printer, Eye, EyeOff, FileText, CheckCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { ExamPaperPreview as ExamPaperPreviewType, ExamPaperPreviewSection, ExamPaperPreviewQuestion } from '@/hooks/useExamPapers';
+import { useExamPaperPreviewStudent, useExamPaperPreviewTeacher, useExamPaperTemplate } from '@/hooks/useExamPapers';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useHasPermission } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 
 const difficultyColors: Record<string, string> = {

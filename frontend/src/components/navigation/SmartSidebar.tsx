@@ -1,14 +1,5 @@
-import { useState, useEffect, useMemo, useCallback, memo } from "react";
-import { NavLink, useLocation } from "react-router-dom";
 import { type LucideIcon } from "lucide-react";
 import * as LucideIcons from "lucide-react";
-import { useLanguage } from "@/hooks/useLanguage";
-import { useUserRole } from "@/hooks/useUserRole";
-import { useAuth } from "@/hooks/useAuth";
-import { useProfile } from "@/hooks/useProfiles";
-import { useCurrentOrganization } from "@/hooks/useOrganizations";
-import { useHasPermissionAndFeature, useUserPermissions } from "@/hooks/usePermissions";
-import type { UserRole } from "@/types/auth";
 import {
   Users,
   GraduationCap,
@@ -55,7 +46,19 @@ import {
   Phone,
   HelpCircle
 } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -67,16 +70,13 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
+import { useCurrentOrganization } from "@/hooks/useOrganizations";
+import { useHasPermissionAndFeature, useUserPermissions } from "@/hooks/usePermissions";
+import { useProfile } from "@/hooks/useProfiles";
+import { useUserRole } from "@/hooks/useUserRole";
+import type { UserRole } from "@/types/auth";
 
 interface NavigationChild {
   title: string;

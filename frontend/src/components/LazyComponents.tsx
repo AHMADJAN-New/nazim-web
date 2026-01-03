@@ -1,4 +1,5 @@
 import React, { Suspense, lazy } from 'react';
+
 import { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';
 
 // Lazy load core pages for better code splitting

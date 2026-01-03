@@ -1,20 +1,22 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
+
+import { User, Pencil, Save, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useProfile } from '@/hooks/useProfiles';
-import { useAuth } from '@/hooks/useAuth';
-import { authApi } from '@/lib/api/client';
-import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+
+import * as z from 'zod';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { User, Pencil, Save, X } from 'lucide-react';
-import { toast } from 'sonner';
-import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
-import * as z from 'zod';
+import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useProfile } from '@/hooks/useProfiles';
+import { authApi } from '@/lib/api/client';
 
 const profileSchema = z.object({
   full_name: z.string().min(1, 'Full name is required').max(255, 'Full name must be 255 characters or less'),

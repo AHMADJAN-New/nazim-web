@@ -1,7 +1,8 @@
 import { useEffect, type ReactNode } from 'react';
-import { initializeSecurity } from './lib/security-core';
-import { initializePerformanceMonitoring } from './lib/performance';
+
 import { initializeAccessibility } from './lib/accessibility';
+import { initializePerformanceMonitoring } from './lib/performance';
+import { initializeSecurity } from './lib/security-core';
 
 export function RootBootstrap({ children }: { children: ReactNode }) {
   useEffect(() => {

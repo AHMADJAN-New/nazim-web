@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useTimetables, useTimetable } from '@/hooks/useTimetables';
-import { useProfile } from '@/hooks/useProfiles';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useProfile } from '@/hooks/useProfiles';
+import { useTimetables, useTimetable } from '@/hooks/useTimetables';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 interface LoadTimetableDialogProps {
 	open: boolean;

@@ -1,10 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { studentSchema, type StudentFormData } from '@/lib/validations';
+import { ColumnDef } from '@tanstack/react-table';
 import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search, MoreHorizontal, DollarSign } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/hooks/useLanguage';
+import { studentSchema, type StudentFormData } from '@/lib/validations';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import {
@@ -18,17 +25,13 @@ import {
 } from '@/hooks/useStudents';
 import type { Student } from '@/types/domain/student';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useDataTable } from '@/hooks/use-data-table';
-import { ColumnDef } from '@tanstack/react-table';
 import {
   Dialog,
   DialogContent,
@@ -37,7 +40,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,7 +56,6 @@ import { StudentDocumentsDialog } from '@/components/students/StudentDocumentsDi
 import { StudentEducationalHistoryDialog } from '@/components/students/StudentEducationalHistoryDialog';
 import { StudentDisciplineRecordsDialog } from '@/components/students/StudentDisciplineRecordsDialog';
 import { generateStudentProfilePdf } from '@/lib/studentProfilePdf';
-import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 

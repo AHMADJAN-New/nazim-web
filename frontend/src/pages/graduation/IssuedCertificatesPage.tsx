@@ -1,28 +1,3 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { issuedCertificatesApi } from '@/lib/api/client';
-import { useIssuedCertificates, useRevokeCertificate } from '@/hooks/useGraduation';
-import { useSchools } from '@/hooks/useSchools';
-import { useLanguage } from '@/hooks/useLanguage';
-import { useAuth } from '@/hooks/useAuth';
-import { GraduationCertificatePdfGenerator } from '@/components/graduation/GraduationCertificatePdfGenerator';
 import { 
   Eye, 
   MoreHorizontal, 
@@ -40,11 +15,37 @@ import {
   XCircle,
   CheckCircle2,
 } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+
+import { GraduationCertificatePdfGenerator } from '@/components/graduation/GraduationCertificatePdfGenerator';
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/hooks/useAuth';
+import { useIssuedCertificates, useRevokeCertificate } from '@/hooks/useGraduation';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useSchools } from '@/hooks/useSchools';
+import { issuedCertificatesApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterPanel } from '@/components/layout/FilterPanel';
 
 export default function IssuedCertificatesPage() {
   const { t } = useLanguage();
@@ -125,7 +126,7 @@ export default function IssuedCertificatesPage() {
     const certSchoolId = certificate?.school_id;
     
     // Determine which school_id to use (priority: certificate's school > filter > default > auto)
-    let schoolIdToUse = certSchoolId 
+    const schoolIdToUse = certSchoolId 
       || schoolId // Use selected school from filter
       || profile?.default_school_id
       || (schools.length === 1 ? schools[0].id : '');

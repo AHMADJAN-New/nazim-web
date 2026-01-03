@@ -1,8 +1,20 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus, Pencil, Trash2, Search, BookOpen } from 'lucide-react';
 import { useState, useMemo } from 'react';
-import { useLibraryCategories, useCreateLibraryCategory, useUpdateLibraryCategory, useDeleteLibraryCategory } from '@/hooks/useLibraryCategories';
-import type { LibraryCategory } from '@/types/domain/library';
-import { useProfile } from '@/hooks/useProfiles';
-import { useHasPermission } from '@/hooks/usePermissions';
+
+import { useForm } from 'react-hook-form';
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { PageHeader } from '@/components/layout/PageHeader';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,26 +36,17 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Search, BookOpen } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterPanel } from '@/components/layout/FilterPanel';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+
 import * as z from 'zod';
+
 import { LoadingSpinner } from '@/components/ui/loading';
+import { useLibraryCategories, useCreateLibraryCategory, useUpdateLibraryCategory, useDeleteLibraryCategory } from '@/hooks/useLibraryCategories';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { useProfile } from '@/hooks/useProfiles';
+import type { LibraryCategory } from '@/types/domain/library';
 
 const categorySchema = (t: (key: string) => string) => z.object({
     name: z.string().min(1, t('library.categoryNameRequired')).max(100, t('library.categoryNameMaxLength')),

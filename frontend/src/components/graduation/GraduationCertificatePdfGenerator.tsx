@@ -1,5 +1,10 @@
+import { Loader2, Download, Award, Eye, Image as ImageIcon, Printer } from 'lucide-react';
+import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
 import React, { useState, useEffect } from 'react';
-import { formatDate } from '@/lib/utils';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -7,7 +12,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -16,14 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Download, Award, Eye, Image as ImageIcon, Printer } from 'lucide-react';
 import { useCertificateTemplatesV2 } from '@/hooks/useGraduation';
 import { issuedCertificatesApi, apiClient } from '@/lib/api/client';
+import { formatDate } from '@/lib/utils';
 
 // Import pdfmake for Arabic support - handle both default and named exports
-import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
 let pdfMake: any = (pdfMakeModule as any).default || pdfMakeModule;
 
 // Helper to get the actual pdfMake instance

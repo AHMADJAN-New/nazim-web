@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { showToast } from '@/lib/toast';
-import { useAuth } from './useAuth';
+import { useEffect } from 'react';
+
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { useAuth } from './useAuth';
+import { usePagination } from './usePagination';
+
 import { staffApi, staffTypesApi, staffDocumentsApi } from '@/lib/api/client';
-import type * as StaffApi from '@/types/api/staff';
-import type { Staff, StaffType, StaffDocument, StaffStats } from '@/types/domain/staff';
+import { showToast } from '@/lib/toast';
 import {
   mapStaffApiToDomain,
   mapStaffDomainToInsert,
@@ -14,9 +16,11 @@ import {
   mapStaffTypeDomainToUpdate,
   mapStaffDocumentApiToDomain,
 } from '@/mappers/staffMapper';
+import type * as StaffApi from '@/types/api/staff';
+import type { Staff, StaffType, StaffDocument, StaffStats } from '@/types/domain/staff';
 import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
-import { usePagination } from './usePagination';
-import { useEffect } from 'react';
+
+
 
 // Re-export domain types for convenience
 export type { Staff, StaffType, StaffDocument, StaffStats, StaffStatus } from '@/types/domain/staff';

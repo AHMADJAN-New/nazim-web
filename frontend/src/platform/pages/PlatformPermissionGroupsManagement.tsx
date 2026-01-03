@@ -1,27 +1,7 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
-import {
-  usePlatformPermissionGroups,
-  usePlatformCreatePermissionGroup,
-  usePlatformUpdatePermissionGroup,
-  usePlatformDeletePermissionGroup,
-} from '@/platform/hooks/usePlatformAdminComplete';
-import { platformApi } from '@/platform/lib/platformApi';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { LoadingSpinner } from '@/components/ui/loading';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Shield, Plus, Edit, Trash2, Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +12,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -40,10 +36,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Shield, Plus, Edit, Trash2, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
+import {
+  usePlatformPermissionGroups,
+  usePlatformCreatePermissionGroup,
+  usePlatformUpdatePermissionGroup,
+  usePlatformDeletePermissionGroup,
+} from '@/platform/hooks/usePlatformAdminComplete';
+import { platformApi } from '@/platform/lib/platformApi';
 
 export function PlatformPermissionGroupsManagement() {
   const { t } = useLanguage();

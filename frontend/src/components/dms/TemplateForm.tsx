@@ -1,24 +1,28 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
+import { Loader2, Eye, EyeOff, MapPin, RefreshCw } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useForm, Controller } from "react-hook-form";
+
+import { FieldPlaceholderSelector } from "./FieldPlaceholderSelector";
+import { RichTextEditor, type RichTextEditorHandle } from "./RichTextEditor";
+import { TemplatePositionEditor } from "./TemplatePositionEditor";
+
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { letterTemplateSchema, type LetterTemplateFormData } from "@/lib/validations/dms";
-import { dmsApi } from "@/lib/api/client";
-import { FieldPlaceholderSelector } from "./FieldPlaceholderSelector";
-import { TemplatePositionEditor } from "./TemplatePositionEditor";
-import type { LetterTemplate, Letterhead, LetterTypeEntity, FieldPosition } from "@/types/dms";
-import { Loader2, Eye, EyeOff, MapPin, RefreshCw } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { useLetterTypes } from "@/hooks/useLetterTypes";
-import { RichTextEditor, type RichTextEditorHandle } from "./RichTextEditor";
+import { dmsApi } from "@/lib/api/client";
 import { sanitize } from "@/lib/security-utils";
+import { letterTemplateSchema, type LetterTemplateFormData } from "@/lib/validations/dms";
+import type { LetterTemplate, Letterhead, LetterTypeEntity, FieldPosition } from "@/types/dms";
+
+
 
 interface TemplateFormProps {
   template?: LetterTemplate | null;

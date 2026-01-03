@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Table,
   TableBody,
@@ -42,9 +43,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { showToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import {
   usePlatformPlans,
@@ -53,7 +54,6 @@ import {
 } from '@/platform/hooks/usePlatformAdmin';
 import { usePlatformFeatureDefinitions } from '@/platform/hooks/usePlatformAdminComplete';
 import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
-import { showToast } from '@/lib/toast';
 
 interface PlanFormData {
   name: string;

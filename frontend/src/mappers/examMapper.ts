@@ -1,3 +1,5 @@
+import { mapExamTypeApiToDomain } from './examTypeMapper';
+
 import type * as ExamApi from '@/types/api/exam';
 import type {
   Exam, ExamClass, ExamSubject, ExamReport, ExamReportClass, ExamReportSubject,
@@ -9,7 +11,6 @@ import type {
   TimeslotAttendanceSummary
 } from '@/types/domain/exam';
 
-import { mapExamTypeApiToDomain } from './examTypeMapper';
 
 export const mapExamApiToDomain = (exam: ExamApi.Exam): Exam => ({
   id: exam.id,

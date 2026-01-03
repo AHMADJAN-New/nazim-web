@@ -5,6 +5,7 @@ const pdfMake = (pdfMakeModule as any).default || pdfMakeModule;
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 
 import type { ReportDefinition, ResolvedReportBranding, PageSize } from './types';
+
 import type { School } from '@/hooks/useSchools';
 
 // Initialize vfs fonts

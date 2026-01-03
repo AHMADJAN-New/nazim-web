@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { showToast } from '@/lib/toast';
+
 import { useAuth } from './useAuth';
+
 import { courseStudentDisciplineRecordsApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
 
 export interface DisciplineRecord {
   id: string;

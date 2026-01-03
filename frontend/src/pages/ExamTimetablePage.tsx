@@ -1,40 +1,11 @@
-import { useState, useMemo, useEffect } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  useExam, useExamClasses, useExamSubjects, useExamTimes,
-  useCreateExamTime, useUpdateExamTime, useDeleteExamTime, useToggleExamTimeLock,
-  useExams, useLatestExamFromCurrentYear
-} from '@/hooks/useExams';
-import { useRooms } from '@/hooks/useRooms';
-import { useStaff } from '@/hooks/useStaff';
-import { useProfile } from '@/hooks/useProfiles';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ArrowLeft, Plus, Trash2, Clock, Calendar as CalendarIcon, Lock, Unlock,
   Pencil, MapPin, User
 } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
-import { showToast } from '@/lib/toast';
+import { useState, useMemo, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
-import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +16,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  useExam, useExamClasses, useExamSubjects, useExamTimes,
+  useCreateExamTime, useUpdateExamTime, useDeleteExamTime, useToggleExamTimeLock,
+  useExams, useLatestExamFromCurrentYear
+} from '@/hooks/useExams';
+import { useRooms } from '@/hooks/useRooms';
+import { useStaff } from '@/hooks/useStaff';
+import { useProfile } from '@/hooks/useProfiles';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/hooks/useLanguage';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { showToast } from '@/lib/toast';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import type { ExamTime, ExamClass, ExamSubject } from '@/types/domain/exam';
 
 export function ExamTimetablePage() {

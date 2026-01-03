@@ -1,11 +1,12 @@
+import { Building2, Users, Shield, School, CheckCircle2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { organizationsApi } from '@/lib/api/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { Building2, Users, Shield, School, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
+import { organizationsApi } from '@/lib/api/client';
 
 interface PreviewData {
   organization: {

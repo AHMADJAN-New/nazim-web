@@ -3,7 +3,7 @@ import type { TranslationKeys } from './types';
 export const ps: TranslationKeys = {
   aboutUs: {
     cta: {
-      button: 'jh',
+      button: 'sad',
       text: null
     },
     mission: {

@@ -1,9 +1,4 @@
-import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '@/hooks/useLanguage';
-import { useAuth } from '@/hooks/useAuth';
-import { maintenanceApi } from '@/lib/api/client';
 import { 
   Wrench, 
   Clock, 
@@ -16,12 +11,18 @@ import {
   Shield,
   Activity
 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { formatDate, formatDateTime } from '@/lib/calendarAdapter';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { Progress } from '@/components/ui/progress';
+import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/hooks/useLanguage';
+import { maintenanceApi } from '@/lib/api/client';
+import { formatDate, formatDateTime } from '@/lib/calendarAdapter';
 import { cn } from '@/lib/utils';
 
 interface MaintenancePageProps {

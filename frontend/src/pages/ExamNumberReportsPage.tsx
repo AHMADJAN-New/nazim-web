@@ -1,22 +1,14 @@
+import {
+  ArrowLeft, Printer, Download, FileText, Hash, KeyRound,
+  Search, List, Tag, AlertCircle, Eye, EyeOff
+} from 'lucide-react';
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useExam, useExamClasses, useExams, useLatestExamFromCurrentYear } from '@/hooks/useExams';
-import { useProfile } from '@/hooks/useProfiles';
-import {
-  useRollNumberReport,
-  useRollSlipsHtml,
-  useSecretLabelsHtml,
-} from '@/hooks/useExamNumbers';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -25,12 +17,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { useProfile } from '@/hooks/useProfiles';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  ArrowLeft, Printer, Download, FileText, Hash, KeyRound,
-  Search, List, Tag, AlertCircle, Eye, EyeOff
-} from 'lucide-react';
+  useRollNumberReport,
+  useRollSlipsHtml,
+  useSecretLabelsHtml,
+} from '@/hooks/useExamNumbers';
+import { useExam, useExamClasses, useExams, useLatestExamFromCurrentYear } from '@/hooks/useExams';
 import { useLanguage } from '@/hooks/useLanguage';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import type { RollNumberReportStudent } from '@/types/domain/exam';
 
 export function ExamNumberReportsPage() {

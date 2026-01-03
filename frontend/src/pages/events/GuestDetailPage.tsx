@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+
 import { GuestDetail } from '@/components/events';
 
 export default function GuestDetailPage() {

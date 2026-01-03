@@ -1,8 +1,9 @@
+import { Home, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useLanguage } from '@/hooks/useLanguage';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Home, ArrowLeft } from 'lucide-react';
+import { useLanguage } from '@/hooks/useLanguage';
 
 export default function NotFound() {
   const { t, isRTL } = useLanguage();

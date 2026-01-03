@@ -1,6 +1,6 @@
 import { apiClient } from "@/lib/api/client";
-import type { PaginatedResponse } from "@/types/pagination";
 import type { NotificationItem } from "@/types/notification";
+import type { PaginatedResponse } from "@/types/pagination";
 
 export interface NotificationListParams {
   page?: number;

@@ -1,14 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { showToast } from '@/lib/toast';
-import { useProfile } from './useProfiles';
-import { useAuth } from './useAuth';
+
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { useAuth } from './useAuth';
 import { useHasPermission } from './usePermissions';
+import { useProfile } from './useProfiles';
 import { useSubscriptionStatus } from './useSubscription';
+
 import { schoolsApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
+import { mapSchoolApiToDomain, mapSchoolDomainToInsert, mapSchoolDomainToUpdate } from '@/mappers/schoolMapper';
 import type * as SchoolApi from '@/types/api/school';
 import type { School } from '@/types/domain/school';
-import { mapSchoolApiToDomain, mapSchoolDomainToInsert, mapSchoolDomainToUpdate } from '@/mappers/schoolMapper';
 
 // Re-export domain types for convenience
 export type { School } from '@/types/domain/school';

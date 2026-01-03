@@ -1,6 +1,12 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, memo, useState as useReactState } from 'react';
 import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
+
+import { CourseStudentPictureUpload } from './CourseStudentPictureUpload';
+
+import { Button } from '@/components/ui/button';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import {
   Dialog,
   DialogContent,
@@ -9,22 +15,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Form } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarFormField } from '@/components/ui/calendar-form-field';
-import { Form } from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/hooks/useAuth';
+import { useCourseStudentPictureUpload } from '@/hooks/useCourseStudentPictureUpload';
 import { useCreateCourseStudent, useUpdateCourseStudent } from '@/hooks/useCourseStudents';
+import { useLanguage } from '@/hooks/useLanguage';
 import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import type { CourseStudent } from '@/types/domain/courseStudent';
-import { useLanguage } from '@/hooks/useLanguage';
-import { useAuth } from '@/hooks/useAuth';
-import { CourseStudentPictureUpload } from './CourseStudentPictureUpload';
-import { useCourseStudentPictureUpload } from '@/hooks/useCourseStudentPictureUpload';
-import { useQueryClient } from '@tanstack/react-query';
+
 
 interface CourseStudentFormDialogProps {
   open: boolean;

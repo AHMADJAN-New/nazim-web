@@ -1,28 +1,3 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
-import {
-  useExams,
-  useExamClasses,
-  useAssignClassToExam,
-  useRemoveClassFromExam,
-  useExamSubjects,
-  useEnrollSubjectToExam,
-  useRemoveExamSubject,
-  useUpdateExamSubject,
-} from '@/hooks/useExams';
-import { useAcademicYears } from '@/hooks/useAcademicYears';
-import { useProfile } from '@/hooks/useProfiles';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { useClassAcademicYears } from '@/hooks/useClasses';
-import { useClassSubjects } from '@/hooks/useSubjects';
-import { Checkbox } from '@/components/ui/checkbox';
-import type { Exam, ExamClass, ExamSubject } from '@/types/domain/exam';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { 
   Trash2, 
   Plus, 
@@ -43,10 +18,38 @@ import {
   LayoutGrid,
   List
 } from 'lucide-react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
+
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { useAcademicYears } from '@/hooks/useAcademicYears';
+import {
+  useExams,
+  useExamClasses,
+  useAssignClassToExam,
+  useRemoveClassFromExam,
+  useExamSubjects,
+  useEnrollSubjectToExam,
+  useRemoveExamSubject,
+  useUpdateExamSubject,
+} from '@/hooks/useExams';
+import { useProfile } from '@/hooks/useProfiles';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { useClassAcademicYears } from '@/hooks/useClasses';
+import { useClassSubjects } from '@/hooks/useSubjects';
+import { formatDate, formatDateTime, cn } from '@/lib/utils';
+import type { Exam, ExamClass, ExamSubject } from '@/types/domain/exam';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
-import { formatDate, formatDateTime, cn } from '@/lib/utils';
-import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Collapsible,
@@ -58,8 +61,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterPanel } from '@/components/layout/FilterPanel';
 
 interface ExamClassCardProps {
   examClass: ExamClass;

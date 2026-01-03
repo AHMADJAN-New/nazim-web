@@ -1,8 +1,10 @@
-import { Table as TableBase, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import type { Table } from '@tanstack/react-table';
-import { cn } from '@/lib/utils';
 import { ReactNode } from 'react';
+
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Table as TableBase, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
+
 
 interface DataTableProps<TData> {
   table: Table<TData>;

@@ -2,8 +2,7 @@
  * Library Dashboard - Modern Overview of library data
  */
 
-import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { format, isBefore } from 'date-fns';
 import { 
     BookOpen, 
     BookCheck, 
@@ -21,23 +20,26 @@ import {
     Eye,
     Package
 } from 'lucide-react';
-import { format, isBefore } from 'date-fns';
-import { useLibraryBooks, useLibraryLoans, useDueSoonLoans } from '@/hooks/useLibrary';
-import { useLibraryCategories } from '@/hooks/useLibraryCategories';
-import { useLanguage } from '@/hooks/useLanguage';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import {
     ChartContainer,
     ChartTooltip,
     ChartTooltipContent,
     type ChartConfig,
 } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { Progress } from '@/components/ui/progress';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useLibraryBooks, useLibraryLoans, useDueSoonLoans } from '@/hooks/useLibrary';
+import { useLibraryCategories } from '@/hooks/useLibraryCategories';
+
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300'];
 

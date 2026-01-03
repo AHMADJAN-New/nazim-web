@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+ 
 /**
  * Nazim Web - Translation Coverage Report
  *
@@ -22,10 +22,10 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-import { en } from '../../src/lib/translations/en';
-import { ps } from '../../src/lib/translations/ps';
-import { fa } from '../../src/lib/translations/fa';
 import { ar } from '../../src/lib/translations/ar';
+import { en } from '../../src/lib/translations/en';
+import { fa } from '../../src/lib/translations/fa';
+import { ps } from '../../src/lib/translations/ps';
 
 type Lang = 'en' | 'ps' | 'fa' | 'ar';
 

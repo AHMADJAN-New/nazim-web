@@ -1,7 +1,16 @@
-import { useMemo, useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Pencil, Trash2, Users, GraduationCap, Plus } from 'lucide-react';
+import { Eye, ExternalLink } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+
+import type { ZodIssue } from 'zod';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/button';
 import {
   useFeeAssignments,
   useBulkAssignFeeAssignments,
@@ -10,12 +19,11 @@ import {
   useDeleteFeeAssignment,
   type FeeAssignment,
 } from '@/hooks/useFees';
+import { useLanguage } from '@/hooks/useLanguage';
+import { showToast } from '@/lib/toast';
 import { feeAssignmentSchema, type FeeAssignmentFormData } from '@/lib/validations/fees';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterPanel } from '@/components/layout/FilterPanel';
 import {
   Form,
   FormControl,
@@ -27,15 +35,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DataTablePagination } from '@/components/data-table/data-table-pagination';
-import { useLanguage } from '@/hooks/useLanguage';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears } from '@/hooks/useClasses';
-import { showToast } from '@/lib/toast';
-import { useNavigate } from 'react-router-dom';
-import type { ZodIssue } from 'zod';
-import { Pencil, Trash2, Users, GraduationCap, Plus } from 'lucide-react';
+
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,7 +59,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { Eye, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
@@ -222,7 +225,7 @@ export default function FeeAssignmentsPage() {
         : undefined);
 
     if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
+       
       console.error('[FeeAssignments] validation errors', errors);
     }
 
@@ -1141,12 +1144,11 @@ export default function FeeAssignmentsPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 text-destructive hover:text-destructive"
                   onClick={() => {
                     setDeletingAssignment(viewingAssignment);
                     setSidePanelOpen(false);
                   }}
-                  className="text-destructive hover:text-destructive"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   {t('common.delete') || 'Delete'}

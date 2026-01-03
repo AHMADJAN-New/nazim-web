@@ -1,7 +1,10 @@
 // src/components/reports/ReportProgressDialog.tsx
 // Dialog component for showing report generation progress
 
+import { CheckCircle2, XCircle, Loader2, Download, FolderOpen, X } from 'lucide-react';
 import React from 'react';
+
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,10 +13,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/hooks/useLanguage';
-import { CheckCircle2, XCircle, Loader2, Download, FolderOpen, X } from 'lucide-react';
 import type { ReportStatus } from '@/lib/reporting/serverReportTypes';
 
 interface ReportProgressDialogProps {

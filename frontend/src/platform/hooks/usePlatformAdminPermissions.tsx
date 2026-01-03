@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api/client';
+
 import { useAuth } from '@/hooks/useAuth';
+import { apiClient } from '@/lib/api/client';
 
 /**
  * Get platform admin permissions (GLOBAL, not organization-scoped)

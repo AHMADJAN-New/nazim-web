@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
+import { OrganizationPermissionManagement } from '@/components/settings/OrganizationPermissionManagement';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LoadingSpinner } from '@/components/ui/loading';
 import {
   Select,
   SelectContent,
@@ -34,21 +36,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
+import { usePlatformPlans, usePlatformOrganization } from '@/platform/hooks/usePlatformAdmin';
 import {
   usePlatformOrganizationSubscription,
   usePlatformActivateSubscription,
   usePlatformSuspendSubscription,
   usePlatformToggleFeature,
 } from '@/platform/hooks/usePlatformAdminComplete';
-import { usePlatformPlans, usePlatformOrganization } from '@/platform/hooks/usePlatformAdmin';
+import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
 import type * as SubscriptionApi from '@/types/api/subscription';
-import { cn } from '@/lib/utils';
-import { formatDate } from '@/lib/utils';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { OrganizationPermissionManagement } from '@/components/settings/OrganizationPermissionManagement';
 
 interface OrganizationSubscriptionDialogProps {
   organizationId: string | null;

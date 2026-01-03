@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { fileSchema } from './fileUpload';
+
 import { requiredStringLength, optionalStringLength } from './common';
+import { fileSchema } from './fileUpload';
 
 /**
  * Document upload validation schema

@@ -1,36 +1,16 @@
-import { useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  useExam, useExamClasses, useExamSubjects,
-  useAssignClassToExam, useRemoveClassFromExam,
-  useEnrollSubjectToExam, useRemoveExamSubject, useUpdateExamSubject
-} from '@/hooks/useExams';
-import { useClassAcademicYears } from '@/hooks/useClasses';
-import { useClassSubjects } from '@/hooks/useSubjects';
-import { useProfile } from '@/hooks/useProfiles';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ArrowLeft, Plus, Trash2, BookOpen, GraduationCap, CheckCircle2, Circle,
   Settings2
 } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
-import { showToast } from '@/lib/toast';
+import { useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,12 +21,33 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { 
+  useExam, useExamClasses, useExamSubjects,
+  useAssignClassToExam, useRemoveClassFromExam,
+  useEnrollSubjectToExam, useRemoveExamSubject, useUpdateExamSubject
+} from '@/hooks/useExams';
+import { useClassSubjects } from '@/hooks/useSubjects';
+import { useProfile } from '@/hooks/useProfiles';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useClassAcademicYears } from '@/hooks/useClasses';
+import { useLanguage } from '@/hooks/useLanguage';
+import { showToast } from '@/lib/toast';
 import type { ExamClass, ExamSubject } from '@/types/domain/exam';
 
 export function ExamClassesSubjectsPage() {

@@ -1,9 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { showToast } from '@/lib/toast';
+
 import { useAuth } from './useAuth';
-import { helpCenterCategoriesApi, helpCenterArticlesApi } from '@/lib/api/client';
-import type * as HelpCenterApi from '@/types/api/helpCenter';
 import { useLanguage } from './useLanguage';
+
+import { helpCenterCategoriesApi, helpCenterArticlesApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
+import type * as HelpCenterApi from '@/types/api/helpCenter';
+
 
 // Re-export types for convenience
 export type { HelpCenterCategory, HelpCenterArticle } from '@/types/api/helpCenter';

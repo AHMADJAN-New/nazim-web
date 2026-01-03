@@ -1,15 +1,3 @@
-import { useMemo } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { useCourseStudents } from '@/hooks/useCourseStudents';
-import { useShortTermCourses } from '@/hooks/useShortTermCourses';
-import type { CourseStudent } from '@/types/domain/courseStudent';
-import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
-import { CourseStudentPictureCell } from './CourseStudentPictureCell';
 import {
   User,
   BookOpen,
@@ -25,6 +13,21 @@ import {
   DollarSign,
   Users,
 } from 'lucide-react';
+import { useMemo } from 'react';
+
+import { CourseStudentPictureCell } from './CourseStudentPictureCell';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useCourseStudents } from '@/hooks/useCourseStudents';
+import { useShortTermCourses } from '@/hooks/useShortTermCourses';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import type { CourseStudent } from '@/types/domain/courseStudent';
+import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
+
 
 interface CourseStudentDetailsPanelProps {
   open: boolean;

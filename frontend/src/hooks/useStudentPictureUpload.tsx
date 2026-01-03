@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { showToast } from '@/lib/toast';
+
 import { apiClient } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
 
 export interface UploadStudentPictureArgs {
     studentId: string;

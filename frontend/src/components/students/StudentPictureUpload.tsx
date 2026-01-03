@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
 
 interface StudentPictureUploadProps {
     studentId?: string;

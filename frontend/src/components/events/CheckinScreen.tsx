@@ -1,7 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { flushSync } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { Html5Qrcode } from 'html5-qrcode';
 import {
   Camera,
   Keyboard,
@@ -16,18 +14,22 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { flushSync } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { eventsApi, eventCheckinApi } from '@/lib/api/client';
+import { cn } from '@/lib/utils';
 import type { CheckinResponse } from '@/types/events';
 import { GUEST_TYPE_LABELS } from '@/types/events';
-import { Html5Qrcode } from 'html5-qrcode';
+
 
 // If you already have a cn helper, use it. Otherwise remove cn usage and keep simple className strings.
-import { cn } from '@/lib/utils';
 
 interface CheckinScreenProps {
   eventId: string;

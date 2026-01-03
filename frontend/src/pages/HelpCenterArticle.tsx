@@ -1,14 +1,3 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useLanguage } from '@/hooks/useLanguage';
-import {
-  useHelpCenterArticle,
-  useMarkArticleHelpful,
-  useMarkArticleNotHelpful,
-  useHelpCenterArticles,
-} from '@/hooks/useHelpCenter';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   ArrowLeft,
   Eye,
@@ -20,11 +9,24 @@ import {
   BookOpen,
   Share2,
 } from 'lucide-react';
-import { LoadingSpinner } from '@/components/ui/loading';
-import ReactMarkdown from 'react-markdown';
-import { formatDate } from '@/lib/utils';
 import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { useParams, useNavigate } from 'react-router-dom';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingSpinner } from '@/components/ui/loading';
+import {
+  useHelpCenterArticle,
+  useMarkArticleHelpful,
+  useMarkArticleNotHelpful,
+  useHelpCenterArticles,
+} from '@/hooks/useHelpCenter';
+import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
+import { formatDate } from '@/lib/utils';
+
 
 export default function HelpCenterArticle() {
   const { id } = useParams<{ id: string }>();

@@ -1,8 +1,11 @@
 import { Building2, Mail, Phone, Globe, MapPin, Users, Calendar, Package } from 'lucide-react';
 import { useState } from 'react';
 
+import { OrganizationSubscriptionDialog } from './OrganizationSubscriptionDialog';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -12,12 +15,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { usePlatformOrganization } from '@/platform/hooks/usePlatformAdmin';
-import { formatDate, formatDateTime } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import { usePlatformOrganization } from '@/platform/hooks/usePlatformAdmin';
 import type { Organization } from '@/types/domain/organization';
-import { OrganizationSubscriptionDialog } from './OrganizationSubscriptionDialog';
 
 interface OrganizationDetailsDialogProps {
   organizationId: string | null;

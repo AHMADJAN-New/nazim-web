@@ -3,8 +3,9 @@ import {
   CreditCard,
   RefreshCw,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Users, Eye } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { LoadingSpinner } from '@/components/ui/loading';
 import {
   Table,
   TableBody,
@@ -23,17 +25,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useLanguage } from '@/hooks/useLanguage';
+import { formatDate } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { OrganizationDetailsDialog } from '@/platform/components/OrganizationDetailsDialog';
+import { OrganizationSubscriptionDialog } from '@/platform/components/OrganizationSubscriptionDialog';
 import {
   usePlatformPendingPayments,
   usePlatformPendingRenewals,
 } from '@/platform/hooks/usePlatformAdmin';
-import { useLanguage } from '@/hooks/useLanguage';
-import { formatDate } from '@/lib/utils';
-import { cn } from '@/lib/utils';
-import { LoadingSpinner } from '@/components/ui/loading';
-import { Users, Eye } from 'lucide-react';
-import { OrganizationDetailsDialog } from '@/platform/components/OrganizationDetailsDialog';
-import { OrganizationSubscriptionDialog } from '@/platform/components/OrganizationSubscriptionDialog';
 
 export default function PendingActionsPage() {
   const { t } = useLanguage();

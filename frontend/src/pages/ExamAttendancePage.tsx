@@ -1,16 +1,30 @@
+import { format } from 'date-fns';
+import { ArrowLeft, Check, X, Clock, AlertCircle, UserCheck, Users, ChevronDown, Save, QrCode, ScanLine, Activity, History, Lock, Unlock } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { useLanguage } from '@/hooks/useLanguage';
-import { useExam, useExamTimes, useTimeslotStudents, useMarkExamAttendance, useExamAttendanceSummary, useExams, useScanExamAttendance, useExamAttendanceScanFeed, useLatestExamFromCurrentYear } from '@/hooks/useExams';
-import { useExamClasses } from '@/hooks/useExams';
-import { useProfile } from '@/hooks/useProfiles';
+
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useExam, useExamTimes, useTimeslotStudents, useMarkExamAttendance, useExamAttendanceSummary, useExams, useScanExamAttendance, useExamAttendanceScanFeed, useLatestExamFromCurrentYear } from '@/hooks/useExams';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useExamClasses } from '@/hooks/useExams';
+import { useProfile } from '@/hooks/useProfiles';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -35,21 +49,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { ArrowLeft, Check, X, Clock, AlertCircle, UserCheck, Users, ChevronDown, Save, QrCode, ScanLine, Activity, History, Lock, Unlock } from 'lucide-react';
-import { format } from 'date-fns';
 import { formatDate, formatDateTime, cn } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import type { ExamAttendanceStatus, TimeslotStudent } from '@/types/domain/exam';
 
 // Status configuration

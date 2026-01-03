@@ -1,18 +1,8 @@
-import { Suspense } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import ErrorBoundary from "@/components/ErrorBoundary";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { PersistentLayout } from "@/components/layout/PersistentLayout";
-import { MaintenanceModeHandler } from "@/components/MaintenanceModeHandler";
-
+import { Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
-import { LanguageProvider } from "@/hooks/useLanguage";
-import { SchoolProvider } from "@/contexts/SchoolContext";
+
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { PlatformAdminRoute } from "@/components/PlatformAdminRoute";
 import Index from "./pages/Index";
@@ -186,7 +176,17 @@ import {
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
 import { AnyPermissionRoute } from "@/components/AnyPermissionRoute";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { HostelPermissionGuard } from "@/components/HostelPermissionGuard";
+import { PersistentLayout } from "@/components/layout/PersistentLayout";
+import { MaintenanceModeHandler } from "@/components/MaintenanceModeHandler";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { SchoolProvider } from "@/contexts/SchoolContext";
+import { AuthProvider } from "@/hooks/useAuth";
+import { LanguageProvider } from "@/hooks/useLanguage";
 
 // Optimized QueryClient with better caching and performance settings
 const queryClient = new QueryClient({
@@ -194,9 +194,9 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 30 * 60 * 1000, // 30 minutes - data doesn't change often
       gcTime: 60 * 60 * 1000, // 1 hour (formerly cacheTime)
-      retry: (failureCount, error: any) => {
+      retry: (failureCount, error: { status?: number } | Error | unknown) => {
         // Don't retry on 4xx errors
-        if (error?.status >= 400 && error?.status < 500) {
+        if (error && typeof error === 'object' && 'status' in error && typeof error.status === 'number' && error.status >= 400 && error.status < 500) {
           return false;
         }
         return failureCount < 3;

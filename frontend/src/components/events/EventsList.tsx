@@ -1,7 +1,4 @@
-import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { formatDate, formatDateTime } from '@/lib/utils';
 import {
   Plus,
   Calendar,
@@ -19,23 +16,12 @@ import {
   Ban,
   Shield,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import { EventFormDialog } from './EventFormDialog';
+
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,13 +32,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { showToast } from '@/lib/toast';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useHasPermission } from '@/hooks/usePermissions';
 import { eventsApi } from '@/lib/api/client';
+import { showToast } from '@/lib/toast';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import type { Event, EventStatus } from '@/types/events';
 import { EVENT_STATUS_LABELS } from '@/types/events';
-import { EventFormDialog } from './EventFormDialog';
-import { useHasPermission } from '@/hooks/usePermissions';
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { useProfile } from '@/hooks/useProfiles';
 
 interface EventsListProps {

@@ -32,14 +32,8 @@ import {
   XCircle,
   TrendingDown
 } from "lucide-react";
-import { formatDate, formatDateTime } from '@/lib/utils';
-
-import { MainLayout } from "@/components/layout/MainLayout";
-import { StatsCard } from "@/components/dashboard/StatsCard";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { useMemo, useEffect, useState, Suspense, lazy } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   PieChart as RechartsPieChart, 
   Pie,
@@ -57,17 +51,23 @@ import {
   AreaChart,
   Legend
 } from "recharts";
+
+import { StatsCard } from "@/components/dashboard/StatsCard";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
-import { useNavigate } from "react-router-dom";
+import { LoadingSpinner } from "@/components/ui/loading";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
 import { useDashboardStats, useStudentsByClass, useWeeklyAttendance, useMonthlyFeeCollection, useUpcomingExams } from "@/hooks/useDashboardStats";
+import { useLanguage } from "@/hooks/useLanguage";
 import { useRecentActivities } from "@/hooks/useRecentActivities";
 import { useUpcomingEvents } from "@/hooks/useUpcomingEvents";
-import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { useLanguage } from "@/hooks/useLanguage";
-import { LoadingSpinner } from "@/components/ui/loading";
-import { useMemo, useEffect, useState, Suspense, lazy } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 // Lazy load dashboard components for performance (only load when tab is opened)
 const FinanceDashboard = lazy(() => import('@/pages/finance/FinanceDashboard').then(m => ({ default: m.default })));

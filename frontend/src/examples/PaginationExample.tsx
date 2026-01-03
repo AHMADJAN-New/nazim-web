@@ -7,19 +7,21 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { usePagination } from '@/hooks/usePagination';
-import { useDataTable } from '@/hooks/use-data-table';
+import { ColumnDef } from '@tanstack/react-table';
+import { useEffect } from 'react';
+
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
+import { useDataTable } from '@/hooks/use-data-table';
+import { useAuth } from '@/hooks/useAuth';
+import { usePagination } from '@/hooks/usePagination';
 import { studentsApi } from '@/lib/api/client';
+import { mapStudentApiToDomain } from '@/mappers/studentMapper';
 import type * as StudentApi from '@/types/api/student';
 import type { Student } from '@/types/domain/student';
-import { mapStudentApiToDomain } from '@/mappers/studentMapper';
 import type { PaginatedResponse } from '@/types/pagination';
-import { useAuth } from '@/hooks/useAuth';
-import { ColumnDef } from '@tanstack/react-table';
-import { useEffect } from 'react';
+
 
 /**
  * Example: Hook with Pagination Support
