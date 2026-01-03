@@ -144,6 +144,11 @@ class TranslationController extends Controller
     {
         try {
             $user = $request->user();
+            
+            if (!$user) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+            
             $profile = DB::table('profiles')->where('id', $user->id)->first();
 
             if (!$profile) {
@@ -163,78 +168,96 @@ class TranslationController extends Controller
             $updatedFiles = [];
             $fileChanges = []; // Track changes per file
 
-        // Group changes by language
-        $changesByLang = [];
-        foreach ($changes as $change) {
-            $lang = $change['lang'];
-            if (!isset($changesByLang[$lang])) {
-                $changesByLang[$lang] = [];
-            }
-            $changesByLang[$lang][$change['key']] = $change['value'];
-        }
-
-        foreach ($changesByLang as $lang => $langChanges) {
-            $filePath = $translationsPath . "/{$lang}.ts";
-            $fileName = "{$lang}.ts";
-            
-            if (!File::exists($filePath)) {
-                $errors[] = "Translation file not found: {$filePath}";
-                continue;
+            // Group changes by language
+            $changesByLang = [];
+            foreach ($changes as $change) {
+                $lang = $change['lang'];
+                if (!isset($changesByLang[$lang])) {
+                    $changesByLang[$lang] = [];
+                }
+                $changesByLang[$lang][$change['key']] = $change['value'];
             }
 
-            try {
-                // Read existing file content
-                $fileContent = File::get($filePath);
+            foreach ($changesByLang as $lang => $langChanges) {
+                $filePath = $translationsPath . "/{$lang}.ts";
+                $fileName = "{$lang}.ts";
                 
-                // Update only changed keys
-                $updatedContent = $this->updateTranslationFile($fileContent, $langChanges, $lang);
-                
-                // Write updated content
-                File::put($filePath, $updatedContent);
-                
-                $updatedFiles[] = $lang;
-                $fileChanges[$lang] = [
-                    'file_name' => $fileName,
-                    'language' => $lang,
-                    'keys_changed' => count($langChanges),
-                    'changed_keys' => array_keys($langChanges),
-                ];
-                
-                Log::info("Translation file updated incrementally: {$fileName} by user {$user->id}", [
-                    'updated_keys' => array_keys($langChanges)
-                ]);
-            } catch (\Exception $e) {
-                Log::error("Failed to save translation file {$fileName}: " . $e->getMessage(), [
-                    'exception' => get_class($e),
-                    'trace' => $e->getTraceAsString()
-                ]);
-                $errors[] = "Failed to save {$fileName}: " . $e->getMessage();
-            }
-        }
+                if (!File::exists($filePath)) {
+                    $errors[] = "Translation file not found: {$filePath}";
+                    continue;
+                }
 
-        // Track changes in database (only if files were successfully updated)
-        foreach ($fileChanges as $lang => $changeData) {
-            try {
-                $this->trackFileChange($changeData, $user->id);
-            } catch (\Exception $e) {
-                // Log but don't fail the request if tracking fails
-                Log::warning("Failed to track file change for {$changeData['file_name']}: " . $e->getMessage());
+                try {
+                    // Read existing file content
+                    if (!is_readable($filePath)) {
+                        throw new \Exception("Translation file is not readable: {$filePath}");
+                    }
+                    
+                    $fileContent = File::get($filePath);
+                    
+                    if ($fileContent === false) {
+                        throw new \Exception("Failed to read translation file: {$filePath}");
+                    }
+                    
+                    // Update only changed keys
+                    $updatedContent = $this->updateTranslationFile($fileContent, $langChanges, $lang);
+                    
+                    // Check if directory is writable
+                    $dir = dirname($filePath);
+                    if (!is_writable($dir)) {
+                        throw new \Exception("Translation directory is not writable: {$dir}");
+                    }
+                    
+                    // Write updated content
+                    $result = File::put($filePath, $updatedContent);
+                    
+                    if ($result === false) {
+                        throw new \Exception("Failed to write translation file: {$filePath}");
+                    }
+                    
+                    $updatedFiles[] = $lang;
+                    $fileChanges[$lang] = [
+                        'file_name' => $fileName,
+                        'language' => $lang,
+                        'keys_changed' => count($langChanges),
+                        'changed_keys' => array_keys($langChanges),
+                    ];
+                    
+                    Log::info("Translation file updated incrementally: {$fileName} by user {$user->id}", [
+                        'updated_keys' => array_keys($langChanges)
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error("Failed to save translation file {$fileName}: " . $e->getMessage(), [
+                        'exception' => get_class($e),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    $errors[] = "Failed to save {$fileName}: " . $e->getMessage();
+                }
             }
-        }
 
-        if (!empty($errors)) {
+            // Track changes in database (only if files were successfully updated)
+            foreach ($fileChanges as $lang => $changeData) {
+                try {
+                    $this->trackFileChange($changeData, $user->id);
+                } catch (\Exception $e) {
+                    // Log but don't fail the request if tracking fails
+                    Log::warning("Failed to track file change for {$changeData['file_name']}: " . $e->getMessage());
+                }
+            }
+
+            if (!empty($errors)) {
+                return response()->json([
+                    'error' => 'Some translations could not be saved',
+                    'details' => $errors
+                ], 422);
+            }
+
             return response()->json([
-                'error' => 'Some translations could not be saved',
-                'details' => $errors
-            ], 422);
-        }
-
-        return response()->json([
-            'message' => 'Translations saved successfully',
-            'updated_files' => $updatedFiles,
-            'updated_keys_count' => count($changes),
-            'file_changes' => $fileChanges
-        ], 200);
+                'message' => 'Translations saved successfully',
+                'updated_files' => $updatedFiles,
+                'updated_keys_count' => count($changes),
+                'file_changes' => $fileChanges
+            ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'error' => 'Validation failed',
@@ -355,63 +378,130 @@ class TranslationController extends Controller
      */
     private function updateTranslationFile(string $fileContent, array $changes, string $lang): string
     {
-        // Parse the existing file to extract the translation object
-        // Use a more robust approach: find the opening brace and match balanced braces
-        $pattern = '/export\s+const\s+' . preg_quote($lang, '/') . '\s*:\s*TranslationKeys\s*=\s*{/s';
-        if (!preg_match($pattern, $fileContent, $matches, PREG_OFFSET_CAPTURE)) {
-            throw new \Exception("Could not find translation object declaration for {$lang}.ts");
-        }
+        try {
+            // Validate file content
+            if (empty(trim($fileContent))) {
+                throw new \Exception("Translation file {$lang}.ts is empty or invalid.");
+            }
+            
+            // Parse the existing file to extract the translation object
+            // Use a more robust approach: find the opening brace and match balanced braces
+            $pattern = '/export\s+const\s+' . preg_quote($lang, '/') . '\s*:\s*TranslationKeys\s*=\s*{/s';
+            if (!preg_match($pattern, $fileContent, $matches, PREG_OFFSET_CAPTURE)) {
+                $filePreview = substr($fileContent, 0, 200);
+                Log::error("Could not find translation object declaration for {$lang}.ts", [
+                    'pattern' => $pattern,
+                    'file_preview' => $filePreview,
+                    'file_length' => strlen($fileContent)
+                ]);
+                throw new \Exception("Could not find translation object declaration for {$lang}.ts");
+            }
 
-        $startPos = $matches[0][1] + strlen($matches[0][0]) - 1; // Position of opening brace
-        $braceCount = 1; // Start at 1 since we're already at the opening brace
-        $endPos = $startPos;
-        $contentLength = strlen($fileContent);
+            $startPos = $matches[0][1] + strlen($matches[0][0]) - 1; // Position of opening brace
+            $braceCount = 1; // Start at 1 since we're already at the opening brace
+            $endPos = $startPos;
+            $contentLength = strlen($fileContent);
+            $inString = false;
+            $stringChar = null; // Track if we're in single or double quote string
+            $escaped = false;
 
-        // Find the matching closing brace
-        for ($i = $startPos + 1; $i < $contentLength; $i++) {
-            $char = $fileContent[$i];
-            if ($char === '{') {
-                $braceCount++;
-            } elseif ($char === '}') {
-                $braceCount--;
-                if ($braceCount === 0) {
-                    $endPos = $i;
-                    break;
+            // Find the matching closing brace, accounting for strings
+            for ($i = $startPos + 1; $i < $contentLength; $i++) {
+                $char = $fileContent[$i];
+                $prevChar = $i > 0 ? $fileContent[$i - 1] : '';
+                
+                // Handle escape sequences
+                if ($escaped) {
+                    $escaped = false;
+                    continue;
+                }
+                
+                if ($char === '\\') {
+                    $escaped = true;
+                    continue;
+                }
+                
+                // Track string boundaries
+                if (($char === "'" || $char === '"') && !$escaped) {
+                    if (!$inString) {
+                        $inString = true;
+                        $stringChar = $char;
+                    } elseif ($char === $stringChar) {
+                        $inString = false;
+                        $stringChar = null;
+                    }
+                    continue;
+                }
+                
+                // Only count braces when not inside a string
+                if (!$inString) {
+                    if ($char === '{') {
+                        $braceCount++;
+                    } elseif ($char === '}') {
+                        $braceCount--;
+                        if ($braceCount === 0) {
+                            $endPos = $i;
+                            break;
+                        }
+                    }
                 }
             }
-        }
 
-        if ($braceCount !== 0) {
-            throw new \Exception("Unbalanced braces in translation file {$lang}.ts");
-        }
+            if ($braceCount !== 0) {
+                throw new \Exception("Unbalanced braces in translation file {$lang}.ts (brace count: {$braceCount})");
+            }
 
-        // Extract the object content (without the outer braces)
-        $objectContent = substr($fileContent, $startPos + 1, $endPos - $startPos - 1);
-        
-        // Convert to array for easier manipulation
-        $jsonString = $this->tsObjectToJson($objectContent);
-        $translations = json_decode($jsonString, true);
-        
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \Exception("Failed to parse translation object for {$lang}.ts: " . json_last_error_msg() . " (JSON: " . substr($jsonString, 0, 200) . "...)");
-        }
+            // Extract the object content (without the outer braces)
+            $objectContent = substr($fileContent, $startPos + 1, $endPos - $startPos - 1);
+            
+            if (empty(trim($objectContent))) {
+                throw new \Exception("Translation object content is empty for {$lang}.ts");
+            }
+            
+            // Convert to array for easier manipulation
+            $jsonString = $this->tsObjectToJson($objectContent);
+            
+            if (empty(trim($jsonString))) {
+                throw new \Exception("Failed to convert TypeScript object to JSON for {$lang}.ts (result is empty)");
+            }
+            
+            $translations = json_decode($jsonString, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $errorMsg = json_last_error_msg();
+                $jsonPreview = substr($jsonString, 0, 500);
+                Log::error("JSON decode error in {$lang}.ts", [
+                    'error' => $errorMsg,
+                    'json_preview' => $jsonPreview,
+                    'json_length' => strlen($jsonString)
+                ]);
+                throw new \Exception("Failed to parse translation object for {$lang}.ts: {$errorMsg}");
+            }
 
-        // Update only changed keys
-        foreach ($changes as $keyPath => $value) {
-            $this->setNestedValue($translations, $keyPath, $value);
-        }
+            // Update only changed keys
+            foreach ($changes as $keyPath => $value) {
+                $this->setNestedValue($translations, $keyPath, $value);
+            }
 
-        // Rebuild the file with updated translations
-        $lines = [];
-        $lines[] = "import type { TranslationKeys } from './types';";
-        $lines[] = '';
-        $lines[] = "export const {$lang}: TranslationKeys = {";
-        
-        $this->formatObject($translations, $lines, '  ', 1);
-        
-        $lines[] = '};';
-        
-        return implode("\n", $lines);
+            // Rebuild the file with updated translations
+            $lines = [];
+            $lines[] = "import type { TranslationKeys } from './types';";
+            $lines[] = '';
+            $lines[] = "export const {$lang}: TranslationKeys = {";
+            
+            $this->formatObject($translations, $lines, '  ', 1);
+            
+            $lines[] = '};';
+            
+            return implode("\n", $lines);
+        } catch (\Exception $e) {
+            Log::error("Error in updateTranslationFile for {$lang}.ts: " . $e->getMessage(), [
+                'exception' => get_class($e),
+                'trace' => $e->getTraceAsString(),
+                'file_content_preview' => substr($fileContent, 0, 500)
+            ]);
+            throw $e; // Re-throw to be caught by storeChanges
+        }
     }
 
     /**
@@ -420,21 +510,33 @@ class TranslationController extends Controller
      */
     private function tsObjectToJson(string $tsObject): string
     {
-        // Remove trailing commas
-        $json = preg_replace('/,\s*}/', '}', $tsObject);
+        $json = $tsObject;
+        
+        // Remove single-line comments (// ...)
+        $json = preg_replace('/\/\/.*$/m', '', $json);
+        
+        // Remove multi-line comments (/* ... */)
+        $json = preg_replace('/\/\*.*?\*\//s', '', $json);
+        
+        // Remove trailing commas before closing braces/brackets
+        $json = preg_replace('/,\s*}/', '}', $json);
         $json = preg_replace('/,\s*]/', ']', $json);
         
-        // Replace single quotes with double quotes, but preserve escaped quotes
-        // First, replace escaped single quotes with a placeholder
-        $json = str_replace("\\'", '__ESCAPED_QUOTE__', $json);
-        // Then replace unescaped single quotes
+        // Handle string conversion: single quotes to double quotes
+        // First, protect escaped single quotes
+        $json = str_replace("\\'", '__ESCAPED_SINGLE_QUOTE__', $json);
+        // Protect escaped double quotes that might already exist
+        $json = str_replace('\\"', '__ESCAPED_DOUBLE_QUOTE__', $json);
+        // Replace unescaped single quotes with double quotes
         $json = str_replace("'", '"', $json);
-        // Restore escaped quotes as escaped double quotes
-        $json = str_replace('__ESCAPED_QUOTE__', '\\"', $json);
+        // Restore escaped quotes
+        $json = str_replace('__ESCAPED_SINGLE_QUOTE__', '\\"', $json);
+        $json = str_replace('__ESCAPED_DOUBLE_QUOTE__', '\\"', $json);
         
-        // Replace unquoted keys with quoted keys (but not already quoted ones)
-        // Match word characters followed by colon, but not if already quoted
-        $json = preg_replace('/(?<!["\w])(\w+)(?=\s*:)/', '"$1"', $json);
+        // Replace unquoted keys with quoted keys
+        // Match identifier-like keys (word characters, can include $ and _) followed by colon
+        // But avoid matching if already quoted or if it's part of a string value
+        $json = preg_replace('/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)(\s*:)/', '$1"$2"$3', $json);
         
         return $json;
     }
