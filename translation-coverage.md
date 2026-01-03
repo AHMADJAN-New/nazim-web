@@ -1,48 +1,76 @@
 # Translation Coverage Report
 
-Generated: 2026-01-02T14:48:33.282Z
+Generated: 2026-01-03T19:33:29.499Z
 
 ## Summary
 
-- EN keys: **5554**
-- Used keys (code scan): **4170**
-- Used keys missing in EN (likely typos/dynamic): **216**
+- EN keys: **5257**
+- Used keys (code scan): **4178**
+- Used keys missing in EN (likely typos/dynamic): **523**
 
 ## Missing (from EN)
 
-- Missing in Pashto (ps): **235**
-- Missing in Farsi (fa): **235**
-- Missing in Arabic (ar): **235**
+- Missing in Pashto (ps): **910**
+- Missing in Farsi (fa): **236**
+- Missing in Arabic (ar): **238**
 
 ## Missing USED keys (highest priority)
 
-- Missing USED in ps: **56**
+- Missing USED in ps: **549**
 - Missing USED in fa: **56**
-- Missing USED in ar: **56**
+- Missing USED in ar: **60**
 
 ## Top 20 namespaces with missing USED keys (union across ps/fa/ar)
 
-- helpCenter: 25
+- exams: 239
+- toast: 218
+- examReports: 31
+- watermarks: 14
 - attendance: 13
+- academic: 13
+- helpCenter: 12
+- grades: 11
 - events: 7
 - reports: 6
-- exams: 5
+- idCards: 3
 
 ## Top 20 files by missing USED keys (ps+fa+ar summed)
 
+- frontend/src/pages/ExamSecretNumbersPage.tsx: 47
+- frontend/src/pages/ExamTimetablePage.tsx: 47
+- frontend/src/hooks/useExams.tsx: 46
+- frontend/src/pages/ExamRollNumbersPage.tsx: 39
 - frontend/src/pages/dashboard/AttendanceDashboard.tsx: 39
-- frontend/src/pages/HelpCenter.tsx: 33
-- frontend/src/pages/HelpCenterArticle.tsx: 33
-- frontend/src/platform/pages/admin/HelpCenterManagement.tsx: 24
+- frontend/src/pages/ExamAttendancePage.tsx: 37
+- frontend/src/pages/HelpCenter.tsx: 36
+- frontend/src/pages/ExamNumberReportsPage.tsx: 35
+- frontend/src/pages/Exams.tsx: 35
+- frontend/src/pages/ExamClassesSubjectsPage.tsx: 34
+- frontend/src/platform/hooks/usePlatformAdminComplete.tsx: 29
+- frontend/src/components/settings/StaffTypesManagement.tsx: 25
+- frontend/src/pages/ClassSubjectMarkSheet.tsx: 21
+- frontend/src/pages/ExamReportsPage.tsx: 20
 - frontend/src/hooks/useEventUsers.tsx: 18
+- frontend/src/hooks/useExamPapers.tsx: 18
 - frontend/src/components/reports/ReportProgressDialog.tsx: 18
-- frontend/src/pages/ExamTimetablePage.tsx: 6
-- frontend/src/pages/Exams.tsx: 6
-- frontend/src/pages/ExamAttendancePage.tsx: 3
-- frontend/src/pages/events/EventUsersPage.tsx: 3
+- frontend/src/platform/pages/admin/HelpCenterManagement.tsx: 15
+- frontend/src/pages/ConsolidatedMarkSheet.tsx: 15
+- frontend/src/hooks/useFinance.tsx: 15
 
 ## Missing in Pashto (ps) — Highest Priority (first 100 keys)
 
+- academic.staffTypes.description
+- academic.staffTypes.displayOrder
+- academic.staffTypes.editStaffType
+- academic.staffTypes.inactive
+- academic.staffTypes.isActive
+- academic.staffTypes.management
+- academic.staffTypes.name
+- academic.staffTypes.noStaffTypesFound
+- academic.staffTypes.noStaffTypesMessage
+- academic.staffTypes.searchPlaceholder
+- academic.staffTypes.title
+- academic.staffTypes.updateStaffType
 - attendance.absent
 - attendance.attendanceRate
 - attendance.closed
@@ -63,45 +91,90 @@ Generated: 2026-01-02T14:48:33.282Z
 - events.users.userDeleteFailed
 - events.users.userUpdated
 - events.users.userUpdateFailed
-- exams.locked
-- exams.markAttendance
-- exams.students
-- exams.time
-- exams.timeSlot
-- helpCenter.allArticles
-- helpCenter.allCategories
-- helpCenter.articleNotFound
-- helpCenter.articleNotFoundDescription
-- helpCenter.articles
-- helpCenter.articlesFound
-- helpCenter.backToHelpCenter
-- helpCenter.clearFilters
-- helpCenter.errorLoadingArticles
-- helpCenter.errorLoadingCategories
-- helpCenter.featuredArticles
-- helpCenter.linkCopied
-- helpCenter.no
-- helpCenter.noArticlesDescription
-- helpCenter.noArticlesFound
-- helpCenter.popularArticles
-- helpCenter.relatedArticles
-- helpCenter.searchPlaceholder
-- helpCenter.share
-- helpCenter.subtitle
-- helpCenter.thankYou
-- helpCenter.title.helpCenterManagement
-- helpCenter.views
-- helpCenter.wasThisHelpful
-- helpCenter.yes
-- reports.failed
-- reports.generated
-- reports.generating
-- reports.generatingReport
-- reports.pleaseWait
-- reports.reportGeneration
+- examReports.academicYear
+- examReports.classAverage
+- examReports.className
+- examReports.classSubjectMarkSheetDescription
+- examReports.consolidatedMarkSheetDescription
+- examReports.consolidatedReport
+- examReports.examName
+- examReports.exportMultipleClasses
+- examReports.exportMultipleClassesDescription
+- examReports.hubDescription
+- examReports.multipleClasses
+- examReports.multipleSubjects
+- examReports.multipleSubjectsDescription
+- examReports.noMarksEntered
+- examReports.obtainedMarks
+- examReports.passingMarks
+- examReports.passPercentage
+- examReports.selectClassPrompt
+- examReports.selectExamPrompt
+- examReports.selectReportType
+- examReports.selectSubjectPrompt
+- examReports.singleClass
+- examReports.singleSubject
+- examReports.studentNotEnrolled
+- examReports.studentsFailed
+- examReports.studentsPassed
+- examReports.studentStatistics
+- examReports.subjectName
+- examReports.subjectNotInClass
+- examReports.subjectReport
+- examReports.useExportButtons
+- exams.addClass
+- exams.addClassDescription
+- exams.addClassesFirst
+- exams.addSubject
+- exams.addSubjectDescription
+- exams.addTimeSlot
+- exams.addTimeSlotDescription
+- exams.allClasses
+- exams.allConfigured
+- exams.allStudentsEnrolled
+- exams.assignedClassesDescription
+- exams.attendance.barcode
+- exams.attendance.confirmUnlock
+- exams.attendance.focusScanner
+- exams.attendance.locked
+- exams.attendance.manual
+- exams.attendance.markAttendance
+- exams.attendance.multiSlotHint
+- exams.attendance.noScansMatch
+- exams.attendance.noScansYet
+- exams.attendance.note
+- exams.attendance.recordScan
+- exams.attendance.scanFeed
+- exams.attendance.scanning
+- exams.attendance.scanRollNumber
+- exams.attendance.searchScans
+- exams.attendance.seatNumber
+- exams.attendance.selectedSlots
+- exams.attendance.selectTimeslot
+- exams.attendance.selectTimeslotPrompt
+- exams.attendance.selectTimeSlots
+- exams.attendance.status
+- exams.attendance.time
+- exams.attendance.timeSlot
+- exams.attendance.title
+- exams.attendance.unlock
+- exams.attendance.unlockAttendance
 
 ## Missing in Farsi (fa) — Highest Priority (first 100 keys)
 
+- academic.staffTypes.deleteConfirm
+- academic.staffTypes.description
+- academic.staffTypes.displayOrder
+- academic.staffTypes.editStaffType
+- academic.staffTypes.inactive
+- academic.staffTypes.isActive
+- academic.staffTypes.management
+- academic.staffTypes.name
+- academic.staffTypes.noStaffTypesFound
+- academic.staffTypes.noStaffTypesMessage
+- academic.staffTypes.searchPlaceholder
+- academic.staffTypes.title
+- academic.staffTypes.updateStaffType
 - attendance.absent
 - attendance.attendanceRate
 - attendance.closed
@@ -129,29 +202,16 @@ Generated: 2026-01-02T14:48:33.282Z
 - exams.timeSlot
 - helpCenter.allArticles
 - helpCenter.allCategories
-- helpCenter.articleNotFound
-- helpCenter.articleNotFoundDescription
 - helpCenter.articles
 - helpCenter.articlesFound
-- helpCenter.backToHelpCenter
 - helpCenter.clearFilters
-- helpCenter.errorLoadingArticles
-- helpCenter.errorLoadingCategories
 - helpCenter.featuredArticles
-- helpCenter.linkCopied
-- helpCenter.no
 - helpCenter.noArticlesDescription
 - helpCenter.noArticlesFound
 - helpCenter.popularArticles
-- helpCenter.relatedArticles
 - helpCenter.searchPlaceholder
-- helpCenter.share
 - helpCenter.subtitle
-- helpCenter.thankYou
-- helpCenter.title.helpCenterManagement
-- helpCenter.views
-- helpCenter.wasThisHelpful
-- helpCenter.yes
+- helpCenter.title
 - reports.failed
 - reports.generated
 - reports.generating
@@ -188,47 +248,112 @@ Generated: 2026-01-02T14:48:33.282Z
 - exams.timeSlot
 - helpCenter.allArticles
 - helpCenter.allCategories
-- helpCenter.articleNotFound
-- helpCenter.articleNotFoundDescription
 - helpCenter.articles
 - helpCenter.articlesFound
-- helpCenter.backToHelpCenter
 - helpCenter.clearFilters
-- helpCenter.errorLoadingArticles
-- helpCenter.errorLoadingCategories
 - helpCenter.featuredArticles
-- helpCenter.linkCopied
-- helpCenter.no
 - helpCenter.noArticlesDescription
 - helpCenter.noArticlesFound
 - helpCenter.popularArticles
-- helpCenter.relatedArticles
 - helpCenter.searchPlaceholder
-- helpCenter.share
 - helpCenter.subtitle
-- helpCenter.thankYou
-- helpCenter.title.helpCenterManagement
-- helpCenter.views
-- helpCenter.wasThisHelpful
-- helpCenter.yes
+- helpCenter.title
+- idCards.description
+- idCards.status
+- idCards.title
 - reports.failed
 - reports.generated
 - reports.generating
 - reports.generatingReport
 - reports.pleaseWait
 - reports.reportGeneration
+- watermarks.reportKey
+- watermarks.reportKeyHint
+- watermarks.rotation
+- watermarks.scale
+- watermarks.sortOrder
+- watermarks.status
+- watermarks.subtitle
+- watermarks.text
+- watermarks.title
+- watermarks.topLeft
+- watermarks.topRight
+- watermarks.type
+- watermarks.update
+- watermarks.updateWatermarkInfo
 
 ## Used keys missing in EN (likely typos/dynamic) — first 100
 
 - ...
+- attendancePage.markAttendance
 - classes.class
 - classes.classes
 - classes.noClasses
 - classes.selectClass
 - classes.selectClassFirst
+- common.allDepartments
+- common.allLevels
+- common.allStatuses
+- common.allTypes
+- common.allYears
+- common.applyFilters
+- common.cardView
+- common.clearAll
+- common.fromDate
+- common.tableView
+- common.toDate
+- common.unassigned
+- dms.addDocument
+- dms.archiveSearch
+- dms.archiveSearchDescription
+- dms.deleteDocumentWarning
+- dms.department
+- dms.fields.academic_info
+- dms.fields.application_info
+- dms.fields.available_fields
+- dms.fields.basic_info
+- dms.fields.common_fields
+- dms.fields.contact_info
+- dms.fields.custom_fields
+- dms.fields.datetime_info
+- dms.fields.document_info
+- dms.fields.education_info
+- dms.fields.employment_info
+- dms.fields.guardian_info
+- dms.fields.insert_field
+- dms.fields.insert_field_help
+- dms.fields.insert_field_placeholder
+- dms.fields.inserted
+- dms.fields.no_fields_found
+- dms.fields.organization_info
+- dms.fields.recipient_info
+- dms.fields.search_fields
+- dms.fields.select_field
+- dms.fileType
+- dms.incomingDocuments
+- dms.incomingDocumentsDescription
+- dms.issueLetter.downloadImage
 - dms.issueLetter.downloadPdf
+- dms.issueLetter.letterDetails.downloadImage
+- dms.letterheads
+- dms.letterheadsDescription
+- dms.letterType
+- dms.outgoingDocuments
+- dms.outgoingDocumentsDescription
+- dms.recipientType
+- dms.searchByName
+- dms.searchBySender
+- dms.searchBySubject
+- dms.searchPlaceholder
+- dms.securityLevel
+- dms.senderOrganization
+- dms.subject
+- dms.uploadFiles
+- dms.uploadLetterhead
+- exams.lock
 - exams.reports
 - exams.status
+- exams.unlock
 - finance.accountCode
 - finance.accountCurrencyHint
 - finance.accountInformation
@@ -259,65 +384,4 @@ Generated: 2026-01-02T14:48:33.282Z
 - finance.currenciesDescription
 - finance.currenciesFound
 - finance.currency
-- finance.currencyCode
-- finance.currencyCodeHint
-- finance.currencyInformation
-- finance.currencyNamePlaceholder
-- finance.currencySymbol
-- finance.decimalPlaces
-- finance.deleteCurrencyWarning
-- finance.deleteDocument
-- finance.deleteDocumentConfirmation
-- finance.deleteExchangeRateWarning
-- finance.documentDate
-- finance.documentDescription
-- finance.documentDescriptionPlaceholder
-- finance.documentDetails
-- finance.documents
-- finance.documentTitle
-- finance.documentTitlePlaceholder
-- finance.documentType
-- finance.documentTypes
-- finance.donorInformation
-- finance.donorType
-- finance.editCurrency
-- finance.editCurrencyDescription
-- finance.editExchangeRate
-- finance.editExchangeRateDescription
-- finance.effectiveDate
-- finance.endDate
-- finance.entryDetails
-- finance.entryInformation
-- finance.exchangeRate
-- finance.exchangeRateHint
-- finance.exchangeRatesDescription
-- finance.file
-- finance.fileName
-- finance.fileSize
-- finance.financeDocuments
-- finance.fromCurrency
-- finance.includeAssetsAndBooks
-- finance.incomeCategories.category
-- finance.incomeVsExpenseTrend
-- finance.last30Days
-- finance.last7Days
-- finance.last90Days
-- finance.latestTransaction
-- finance.libraryBooks
-- finance.libraryBooksBreakdown
-- finance.libraryBooksBreakdownDescription
-- finance.libraryBooksByAccount
-- finance.libraryBooksByCurrency
-- finance.manageFinanceDocuments
-- finance.maxFileSize
-- finance.noCashbookData
-- finance.noCurrencies
-- finance.noDocuments
-- finance.noExchangeRates
-- finance.originalValue
-- finance.previewLoadError
-- finance.previewNotAvailable
-- finance.previewNotSupported
-- finance.projectBalance
-- finance.projectInformation
 
