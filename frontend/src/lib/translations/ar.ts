@@ -229,7 +229,7 @@ export const ar: TranslationKeys = {
       updateSlot: null
     },
     staffTypes: {
-      active: null,
+      active: 'فعال',
       addStaffType: null,
       code: null,
       codeMaxLength: null,
