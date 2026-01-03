@@ -256,13 +256,13 @@ export default function FinanceReports() {
                                 {/* Transactions Table */}
                                 <Card>
                                     <CardHeader>
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-4">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                                 <CardTitle className="flex items-center gap-2">
                                                     <FileText className="h-5 w-5" />
                                                     {t('finance.transactions') || 'Transactions'}
                                                 </CardTitle>
-                                                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400">
+                                                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 w-fit">
                                                     {allEntries.length} {t('finance.transactions') || 'transactions'}
                                                 </Badge>
                                             </div>

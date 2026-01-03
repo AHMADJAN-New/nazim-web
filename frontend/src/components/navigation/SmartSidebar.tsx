@@ -418,6 +418,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: UserCheck,
           }] : []),
           ...(hasAttendanceSessionsPermission ? [{
+            title: "Mark Attendance",
+            titleKey: "markAttendance",
+            url: "/attendance/marking",
+            icon: ClipboardList,
+          }] : []),
+          ...(hasAttendanceSessionsPermission ? [{
             title: "Attendance Reports",
             titleKey: "attendanceReports",
             url: "/attendance/reports",

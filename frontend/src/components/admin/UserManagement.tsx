@@ -283,9 +283,9 @@ export function UserManagement() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="text-center">Loading users...</div>
           </CardContent>
         </Card>
@@ -294,34 +294,79 @@ export function UserManagement() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <UserCog className="h-5 w-5" />
-                User Management
-              </CardTitle>
-              <CardDescription>
-                Manage user accounts, roles, and permissions
-              </CardDescription>
-            </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-              <Button variant="outline" onClick={handleExport} className="w-full sm:w-auto">
-                <Download className="h-4 w-4 mr-2" />
-                Export CSV
-              </Button>
-              {hasCreatePermission && (
-                <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create User
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCog className="h-5 w-5 hidden md:inline-flex" />
+                  User Management
+                </CardTitle>
+                <CardDescription className="hidden md:block">
+                  Manage user accounts, roles, and permissions
+                </CardDescription>
+              </div>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <Button variant="outline" onClick={handleExport} className="flex-shrink-0">
+                  <Download className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Export CSV</span>
                 </Button>
-              )}
+                {hasCreatePermission && (
+                  <Button onClick={() => handleOpenDialog()} className="flex-shrink-0">
+                    <Plus className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Create User</span>
+                    <span className="sm:hidden">Create</span>
+                  </Button>
+                )}
+              </div>
+            </div>
+            {/* Statistics */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{users?.length || 0}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {users?.filter(u => u.isActive).length || 0}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Inactive Users</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {users?.filter(u => !u.isActive).length || 0}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Roles</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {new Set(users?.map(u => u.role)).size || 0}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </CardHeader>
         <CardContent>
+
           {/* Search and Filters */}
           <div className="mb-6 space-y-4">
             <div className="relative">
@@ -367,143 +412,137 @@ export function UserManagement() {
           </div>
 
           {/* Users Table */}
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users && users.length === 0 ? (
+          <div className="rounded-md border overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
-                      No users found
-                    </TableCell>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="hidden sm:table-cell">Email</TableHead>
+                    <TableHead className="hidden md:table-cell">Role</TableHead>
+                    <TableHead className="hidden lg:table-cell">Phone</TableHead>
+                    <TableHead className="hidden lg:table-cell">Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ) : (
-                  users?.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          {user.avatar || user.staff?.pictureUrl ? (
-                            <img
-                              src={user.avatar || user.staff?.pictureUrl || ''}
-                              alt={user.name || user.email}
-                              className="w-8 h-8 rounded-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
-                              {(user.name || user.email || 'U')[0].toUpperCase()}
-                            </div>
-                          )}
-                          <span>{user.name || user.email || 'No name'}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{user.email || 'No email'}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {typeof user.role === 'string' ? user.role.replace('_', ' ') : 'N/A'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{user.phone || '-'}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                          {user.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          {hasUpdatePermission && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleOpenDialog(user)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {hasResetPasswordPermission && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setIsPasswordDialogOpen(true);
-                              }}
-                            >
-                              <KeyRound className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {hasDeletePermission && (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {users && users.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        No users found
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Statistics */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{users?.length || 0}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {users?.filter(u => u.isActive).length || 0}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Inactive Users</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {users?.filter(u => !u.isActive).length || 0}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Roles</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {new Set(users?.map(u => u.role)).size || 0}
-                </div>
-              </CardContent>
-            </Card>
+                  ) : (
+                    users?.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex flex-col sm:hidden gap-1">
+                            <div className="flex items-center gap-2">
+                              {user.avatar || user.staff?.pictureUrl ? (
+                                <img
+                                  src={user.avatar || user.staff?.pictureUrl || ''}
+                                  alt={user.name || user.email}
+                                  className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium flex-shrink-0">
+                                  {(user.name || user.email || 'U')[0].toUpperCase()}
+                                </div>
+                              )}
+                              <span className="truncate">{user.name || user.email || 'No name'}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground truncate">{user.email || 'No email'}</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {typeof user.role === 'string' ? user.role.replace('_', ' ') : 'N/A'}
+                              </Badge>
+                              <Badge variant={user.isActive ? 'default' : 'secondary'} className="text-xs">
+                                {user.isActive ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="hidden sm:flex items-center gap-2">
+                            {user.avatar || user.staff?.pictureUrl ? (
+                              <img
+                                src={user.avatar || user.staff?.pictureUrl || ''}
+                                alt={user.name || user.email}
+                                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium flex-shrink-0">
+                                {(user.name || user.email || 'U')[0].toUpperCase()}
+                              </div>
+                            )}
+                            <span className="truncate">{user.name || user.email || 'No name'}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell truncate">{user.email || 'No email'}</TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <Badge variant="outline">
+                            {typeof user.role === 'string' ? user.role.replace('_', ' ') : 'N/A'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">{user.phone || '-'}</TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                            {user.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {hasUpdatePermission && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenDialog(user)}
+                                className="flex-shrink-0"
+                                aria-label="Edit user"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {hasResetPasswordPermission && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setIsPasswordDialogOpen(true);
+                                }}
+                                className="flex-shrink-0"
+                                aria-label="Reset password"
+                              >
+                                <KeyRound className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {hasDeletePermission && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setIsDeleteDialogOpen(true);
+                                }}
+                                className="flex-shrink-0"
+                                aria-label="Delete user"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -513,12 +552,12 @@ export function UserManagement() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto z-50">
           <DialogHeader>
             <DialogTitle>{isEditMode ? 'Edit User' : 'Create User'}</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="hidden md:block">
               {isEditMode ? 'Update user information' : 'Create a new user account'}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="full_name">Full Name *</Label>
                 <Input
@@ -557,7 +596,7 @@ export function UserManagement() {
                 )}
               </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="role">Role *</Label>
                 <Select
@@ -690,11 +729,11 @@ export function UserManagement() {
                 If checked, user can access all schools. Otherwise, access is restricted to default school.
               </p>
             </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleCloseDialog}>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button type="button" variant="outline" onClick={handleCloseDialog} className="w-full sm:w-auto">
                 Cancel
               </Button>
-              <Button type="submit" disabled={createUser.isPending || updateUser.isPending}>
+              <Button type="submit" disabled={createUser.isPending || updateUser.isPending} className="w-full sm:w-auto">
                 {isEditMode ? 'Update' : 'Create'} User
               </Button>
             </DialogFooter>
@@ -735,7 +774,7 @@ export function UserManagement() {
         }}>
           <DialogHeader>
             <DialogTitle>Reset Password</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="hidden md:block">
               Enter a new password for {selectedUser?.name || selectedUser?.email || 'this user'}
             </DialogDescription>
           </DialogHeader>
@@ -753,16 +792,17 @@ export function UserManagement() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button 
               type="button" 
               variant="outline" 
               onClick={handleClosePasswordDialog}
               disabled={resetPassword.isPending}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button onClick={handleResetPassword} disabled={!newPassword || resetPassword.isPending}>
+            <Button onClick={handleResetPassword} disabled={!newPassword || resetPassword.isPending} className="w-full sm:w-auto">
               {resetPassword.isPending ? 'Resetting...' : 'Reset Password'}
             </Button>
           </DialogFooter>

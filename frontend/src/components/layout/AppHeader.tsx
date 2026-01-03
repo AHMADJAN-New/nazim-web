@@ -264,11 +264,11 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   };
 
   return (
-    <header className="bg-card border-b border-border sticky top-0 z-50">
+    <header className="bg-card border-b border-border sticky top-0 z-50 w-full shadow-sm flex-shrink-0">
       <div className="px-4 py-2 flex flex-wrap items-center gap-3 sm:gap-4">
-        {/* Left Section - Mobile menu trigger + Title/Breadcrumb */}
+        {/* Left Section - Sidebar trigger + Title/Breadcrumb */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          <SidebarTrigger className="md:hidden" />
+          <SidebarTrigger />
           
           <div className="hidden lg:block">
             {showBreadcrumb && breadcrumbItems.length > 0 ? (

@@ -242,7 +242,8 @@ export default function IncomeCategories() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
+                    <div className="overflow-x-auto">
+                        <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>{t('common.name') || 'Name'}</TableHead>
@@ -300,6 +301,7 @@ export default function IncomeCategories() {
                             )}
                         </TableBody>
                     </Table>
+                    </div>
                 </CardContent>
             </Card>
 

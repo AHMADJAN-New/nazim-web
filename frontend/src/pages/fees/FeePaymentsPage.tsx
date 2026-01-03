@@ -230,7 +230,7 @@ export default function FeePaymentsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
         title={t('fees.payments')}
         icon={<CreditCard className="h-5 w-5" />}
@@ -324,7 +324,7 @@ export default function FeePaymentsPage() {
           </DialogHeader>
           
           {/* Academic Year and Class Filters in Dialog */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
             <div>
               <label className="text-sm font-medium mb-2 block">{t('fees.academicYear')}</label>
               <Select
@@ -379,7 +379,7 @@ export default function FeePaymentsPage() {
       </Dialog>
 
       <FilterPanel title={t('fees.filters')}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div>
             <span className="text-sm font-medium">{t('fees.academicYear')}</span>
             <Select
@@ -429,7 +429,8 @@ export default function FeePaymentsPage() {
             <p>{t('common.loading')}</p>
           ) : (
             <>
-              <Table>
+              <div className="overflow-x-auto">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('fees.class')}</TableHead>
@@ -521,6 +522,7 @@ export default function FeePaymentsPage() {
                   })}
                 </TableBody>
               </Table>
+              </div>
               {pagination && (
                 <DataTablePagination
                   table={{

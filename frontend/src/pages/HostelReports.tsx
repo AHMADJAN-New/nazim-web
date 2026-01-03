@@ -14,6 +14,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from '@/components/ui/pagination';
 import type { HostelRoom, HostelOccupant } from '@/types/domain/hostel';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { Label } from '@/components/ui/label';
 
 interface BuildingReportRow {
   buildingId: string;
@@ -283,7 +286,7 @@ export function HostelReports() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -301,20 +304,15 @@ export function HostelReports() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BarChart3 className="h-6 w-6" />
-            {t('hostel.reports.hostelReporting') || 'Hostel reporting'}
-          </h1>
-          <p className="text-muted-foreground">
-            {t('hostel.reports.monitorUtilization') || 'Monitor hostel utilization by building, warden coverage, and unassigned boarders.'}
-          </p>
-        </div>
-      </div>
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <PageHeader
+        title={t('hostel.reports.hostelReporting') || 'Hostel reporting'}
+        description={t('hostel.reports.monitorUtilization') || 'Monitor hostel utilization by building, warden coverage, and unassigned boarders.'}
+        icon={<BarChart3 className="h-5 w-5" />}
+        showDescriptionOnMobile={false}
+      />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Boarders</CardTitle>
@@ -362,38 +360,33 @@ export function HostelReports() {
 
       {/* Tabs for different report sections */}
       <Tabs defaultValue="building-utilization" className="space-y-4">
-        <TabsList className="flex w-full gap-1 h-auto flex-shrink-0 overflow-x-auto pb-1">
-          <TabsTrigger value="building-utilization" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
-            <Building2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Building Utilization</span>
-            <span className="sm:hidden">Buildings</span>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 h-auto p-1">
+          <TabsTrigger value="building-utilization" className="flex items-center gap-1 sm:gap-2">
+            <Building2 className="h-4 w-4 flex-shrink-0" />
+            <span className="text-xs sm:text-sm">Buildings</span>
           </TabsTrigger>
-          <TabsTrigger value="warden-coverage" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
-            <ShieldCheck className="h-4 w-4" />
-            <span className="hidden sm:inline">Warden Coverage</span>
-            <span className="sm:hidden">Wardens</span>
+          <TabsTrigger value="warden-coverage" className="flex items-center gap-1 sm:gap-2">
+            <ShieldCheck className="h-4 w-4 flex-shrink-0" />
+            <span className="text-xs sm:text-sm">Wardens</span>
           </TabsTrigger>
-          <TabsTrigger value="room-buildings" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
-            <MapPin className="h-4 w-4" />
-            <span className="hidden sm:inline">Room & Buildings</span>
-            <span className="sm:hidden">Rooms</span>
+          <TabsTrigger value="room-buildings" className="flex items-center gap-1 sm:gap-2">
+            <MapPin className="h-4 w-4 flex-shrink-0" />
+            <span className="text-xs sm:text-sm">Rooms</span>
           </TabsTrigger>
-          <TabsTrigger value="assigned-boarders" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
-            <UserCheck className="h-4 w-4" />
-            <span className="hidden sm:inline">Assigned Boarders</span>
-            <span className="sm:hidden">Assigned</span>
+          <TabsTrigger value="assigned-boarders" className="flex items-center gap-1 sm:gap-2">
+            <UserCheck className="h-4 w-4 flex-shrink-0" />
+            <span className="text-xs sm:text-sm">Assigned</span>
             {allAssignedBoarders.length > 0 && (
-              <Badge variant="secondary" className="ml-1">
+              <Badge variant="secondary" className="ml-1 text-xs flex-shrink-0">
                 {allAssignedBoarders.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="unassigned-boarders" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Unassigned</span>
-            <span className="sm:hidden">Unassigned</span>
+          <TabsTrigger value="unassigned-boarders" className="flex items-center gap-1 sm:gap-2">
+            <Users className="h-4 w-4 flex-shrink-0" />
+            <span className="text-xs sm:text-sm">Unassigned</span>
             {totals.unassignedBoarders > 0 && (
-              <Badge variant="destructive" className="ml-1">
+              <Badge variant="destructive" className="ml-1 text-xs flex-shrink-0">
                 {totals.unassignedBoarders}
               </Badge>
             )}
@@ -403,13 +396,13 @@ export function HostelReports() {
         {/* Building Utilization Tab */}
         <TabsContent value="building-utilization" className="space-y-4">
           <Card>
-            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>{t('hostel.reports.buildingUtilization') || 'Building utilization'}</CardTitle>
-                <CardDescription>{t('hostel.reports.buildingUtilizationDescription') || 'Rooms, occupancy, and warden coverage by building.'}</CardDescription>
+                <CardDescription className="hidden md:block">{t('hostel.reports.buildingUtilizationDescription') || 'Rooms, occupancy, and warden coverage by building.'}</CardDescription>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">{buildingReports.length} buildings</Badge>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Badge variant="outline" className="hidden sm:inline-flex">{buildingReports.length} buildings</Badge>
                 <ReportExportButtons
                   data={buildingReports}
                   columns={[
@@ -432,58 +425,62 @@ export function HostelReports() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Building</TableHead>
-                      <TableHead>Rooms</TableHead>
-                      <TableHead>Occupied</TableHead>
-                      <TableHead>Boarders</TableHead>
-                      <TableHead>Rooms with wardens</TableHead>
-                      <TableHead>Utilization</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {buildingReports.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground">
-                          No building data available.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      buildingReports.map((row) => {
-                        const utilizationRate = row.totalRooms > 0 ? (row.occupiedRooms / row.totalRooms) * 100 : 0;
-                        return (
-                          <TableRow key={row.buildingId}>
-                            <TableCell className="font-medium">{row.buildingName}</TableCell>
-                            <TableCell>{row.totalRooms}</TableCell>
-                            <TableCell>
-                              <Badge variant={row.occupiedRooms > 0 ? 'default' : 'secondary'}>
-                                {row.occupiedRooms} of {row.totalRooms}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{row.boardersAssigned}</TableCell>
-                            <TableCell>{row.wardensCovering}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 bg-muted rounded-full h-2">
-                                  <div
-                                    className="bg-primary h-2 rounded-full"
-                                    style={{ width: `${utilizationRate}%` }}
-                                  />
-                                </div>
-                                <span className="text-sm text-muted-foreground w-12 text-right">
-                                  {utilizationRate.toFixed(0)}%
-                                </span>
-                              </div>
+              <div className="overflow-x-auto -mx-4 md:mx-0">
+                <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Building</TableHead>
+                          <TableHead>Rooms</TableHead>
+                          <TableHead>Occupied</TableHead>
+                          <TableHead>Boarders</TableHead>
+                          <TableHead>Rooms with wardens</TableHead>
+                          <TableHead>Utilization</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {buildingReports.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center text-muted-foreground">
+                              No building data available.
                             </TableCell>
                           </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
+                        ) : (
+                          buildingReports.map((row) => {
+                            const utilizationRate = row.totalRooms > 0 ? (row.occupiedRooms / row.totalRooms) * 100 : 0;
+                            return (
+                              <TableRow key={row.buildingId}>
+                                <TableCell className="font-medium">{row.buildingName}</TableCell>
+                                <TableCell>{row.totalRooms}</TableCell>
+                                <TableCell>
+                                  <Badge variant={row.occupiedRooms > 0 ? 'default' : 'secondary'}>
+                                    {row.occupiedRooms} of {row.totalRooms}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{row.boardersAssigned}</TableCell>
+                                <TableCell>{row.wardensCovering}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 bg-muted rounded-full h-2">
+                                      <div
+                                        className="bg-primary h-2 rounded-full"
+                                        style={{ width: `${utilizationRate}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-sm text-muted-foreground w-12 text-right">
+                                      {utilizationRate.toFixed(0)}%
+                                    </span>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -492,13 +489,13 @@ export function HostelReports() {
         {/* Warden Coverage Tab */}
         <TabsContent value="warden-coverage" className="space-y-4">
           <Card>
-            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>{t('hostel.reports.wardenCoverage') || 'Warden coverage'}</CardTitle>
-                <CardDescription>{t('hostel.reports.wardenCoverageDescription') || 'Room assignments and student counts per warden.'}</CardDescription>
+                <CardDescription className="hidden md:block">{t('hostel.reports.wardenCoverageDescription') || 'Room assignments and student counts per warden.'}</CardDescription>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">{wardenCoverage.length} wardens</Badge>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Badge variant="outline" className="hidden sm:inline-flex">{wardenCoverage.length} wardens</Badge>
                 <ReportExportButtons
                   data={wardenCoverage}
                   columns={[
@@ -519,41 +516,45 @@ export function HostelReports() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Warden</TableHead>
-                      <TableHead>Buildings</TableHead>
-                      <TableHead>Rooms</TableHead>
-                      <TableHead>Boarders</TableHead>
-                      <TableHead>Coverage</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {wardenCoverage.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
-                          No wardens assigned to rooms yet.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      wardenCoverage.map((warden) => (
-                        <TableRow key={warden.wardenName}>
-                          <TableCell className="font-medium">{warden.wardenName}</TableCell>
-                          <TableCell>{warden.buildings}</TableCell>
-                          <TableCell>{warden.rooms}</TableCell>
-                          <TableCell>{warden.students}</TableCell>
-                          <TableCell>
-                            <Badge variant={warden.students > 0 ? 'default' : 'secondary'}>
-                              {warden.students} students
-                            </Badge>
-                          </TableCell>
+              <div className="overflow-x-auto -mx-4 md:mx-0">
+                <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Warden</TableHead>
+                          <TableHead>Buildings</TableHead>
+                          <TableHead>Rooms</TableHead>
+                          <TableHead>Boarders</TableHead>
+                          <TableHead>Coverage</TableHead>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {wardenCoverage.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center text-muted-foreground">
+                              No wardens assigned to rooms yet.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          wardenCoverage.map((warden) => (
+                            <TableRow key={warden.wardenName}>
+                              <TableCell className="font-medium">{warden.wardenName}</TableCell>
+                              <TableCell>{warden.buildings}</TableCell>
+                              <TableCell>{warden.rooms}</TableCell>
+                              <TableCell>{warden.students}</TableCell>
+                              <TableCell>
+                                <Badge variant={warden.students > 0 ? 'default' : 'secondary'}>
+                                  {warden.students} students
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -579,17 +580,17 @@ export function HostelReports() {
 
                     return (
                       <div key={building.id} className="space-y-3">
-                        <div className="flex items-center justify-between border-b pb-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b pb-2">
                           <div>
-                            <h3 className="font-semibold text-lg flex items-center gap-2">
-                              <Building2 className="h-5 w-5" />
-                              {building.buildingName}
+                            <h3 className="font-semibold text-base sm:text-lg flex items-center gap-2">
+                              <Building2 className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                              <span className="truncate">{building.buildingName}</span>
                             </h3>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                               {buildingRooms.length} rooms • {totalStudentsInBuilding} boarders
                             </p>
                           </div>
-                          <Badge variant="outline">
+                          <Badge variant="outline" className="self-start sm:self-auto">
                             {building.occupiedRooms}/{building.roomCount} occupied
                           </Badge>
                         </div>
@@ -615,16 +616,16 @@ export function HostelReports() {
                               </CardHeader>
                               {room.occupants.length > 0 && (
                                 <CardContent>
-                                  <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                                     {room.occupants.map((occupant) => (
                                       <div
                                         key={occupant.id}
                                         className="flex items-center gap-2 p-2 rounded-md border bg-card"
                                       >
-                                        <Users className="h-4 w-4 text-muted-foreground" />
+                                        <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                         <div className="flex-1 min-w-0">
                                           <p className="text-sm font-medium truncate">{occupant.studentName || 'Student'}</p>
-                                          <p className="text-xs text-muted-foreground">
+                                          <p className="text-xs text-muted-foreground truncate">
                                             {occupant.admissionNumber || '—'}
                                           </p>
                                         </div>
@@ -648,84 +649,104 @@ export function HostelReports() {
         {/* Assigned Boarders Tab */}
         <TabsContent value="assigned-boarders" className="space-y-4">
           <Card>
-            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>{t('hostel.reports.assignedBoarders') || 'Assigned Boarders'}</CardTitle>
-                <CardDescription>{t('hostel.reports.assignedBoardersDescription') || 'All students currently assigned to rooms. Search and filter by building or room.'}</CardDescription>
+                <CardDescription className="hidden md:block">{t('hostel.reports.assignedBoardersDescription') || 'All students currently assigned to rooms. Search and filter by building or room.'}</CardDescription>
               </div>
-              <ReportExportButtons
-                data={filteredAssignedBoarders}
-                columns={[
-                  { key: 'student_name', label: t('hostel.reports.student') || 'Student', align: 'left' },
-                  { key: 'admission_number', label: t('hostel.reports.admissionNumberColumn') || 'Admission #', align: 'left' },
-                  { key: 'building_name', label: t('hostel.reports.buildingColumn') || t('settings.buildings.buildingName') || 'Building', align: 'left' },
-                  { key: 'room_number', label: t('hostel.reports.roomLabel') || t('settings.rooms.roomNumber') || 'Room', align: 'left' },
-                  { key: 'admission_year', label: t('hostel.reports.admissionYearColumn') || 'Admission Year', align: 'left' },
-                ]}
-                reportKey="hostel_assigned_boarders"
-                title={t('hostel.reports.assignedBoardersTitle') || t('hostel.reports.assignedBoarders') || 'Assigned Boarders Report'}
-                transformData={transformAssignedBoarders}
-                buildFiltersSummary={buildAssignedBoardersFiltersSummary}
-                templateType="hostel_assigned_boarders"
-                disabled={isLoading || filteredAssignedBoarders.length === 0}
-                buttonSize="sm"
-                buttonVariant="outline"
-              />
+              <div className="flex-shrink-0">
+                <ReportExportButtons
+                  data={filteredAssignedBoarders}
+                  columns={[
+                    { key: 'student_name', label: t('hostel.reports.student') || 'Student', align: 'left' },
+                    { key: 'admission_number', label: t('hostel.reports.admissionNumberColumn') || 'Admission #', align: 'left' },
+                    { key: 'building_name', label: t('hostel.reports.buildingColumn') || t('settings.buildings.buildingName') || 'Building', align: 'left' },
+                    { key: 'room_number', label: t('hostel.reports.roomLabel') || t('settings.rooms.roomNumber') || 'Room', align: 'left' },
+                    { key: 'admission_year', label: t('hostel.reports.admissionYearColumn') || 'Admission Year', align: 'left' },
+                  ]}
+                  reportKey="hostel_assigned_boarders"
+                  title={t('hostel.reports.assignedBoardersTitle') || t('hostel.reports.assignedBoarders') || 'Assigned Boarders Report'}
+                  transformData={transformAssignedBoarders}
+                  buildFiltersSummary={buildAssignedBoardersFiltersSummary}
+                  templateType="hostel_assigned_boarders"
+                  disabled={isLoading || filteredAssignedBoarders.length === 0}
+                  buttonSize="sm"
+                  buttonVariant="outline"
+                />
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-col gap-4 md:flex-row">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by name, admission number, room, or building..."
-                    value={assignedSearchQuery}
-                    onChange={(e) => setAssignedSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                  {assignedSearchQuery && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
-                      onClick={() => setAssignedSearchQuery('')}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
+              <FilterPanel 
+                title={t('common.filters') || 'Search & Filter'}
+                defaultOpenDesktop={true}
+                defaultOpenMobile={false}
+              >
+                <div className="flex flex-col gap-4 md:flex-row md:items-end">
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="assigned-search">Search</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="assigned-search"
+                        placeholder="Search by name, admission number, room, or building..."
+                        value={assignedSearchQuery}
+                        onChange={(e) => setAssignedSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                      {assignedSearchQuery && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                          onClick={() => setAssignedSearchQuery('')}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="w-full md:w-[200px]">
+                    <Label htmlFor="building-filter">Building</Label>
+                    <Select value={selectedBuilding} onValueChange={(value) => {
+                      setSelectedBuilding(value);
+                      setSelectedRoom('all'); // Reset room when building changes
+                    }}>
+                      <SelectTrigger id="building-filter">
+                        <SelectValue placeholder="All buildings" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All buildings</SelectItem>
+                        {buildingsForFilter.map((building) => (
+                          <SelectItem key={building.id} value={building.id}>
+                            {building.buildingName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-full md:w-[200px]">
+                    <Label htmlFor="room-filter">Room</Label>
+                    <Select value={selectedRoom} onValueChange={setSelectedRoom}>
+                      <SelectTrigger id="room-filter">
+                        <SelectValue placeholder="All rooms" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All rooms</SelectItem>
+                        {roomsForFilter.map((room) => (
+                          <SelectItem key={room.id} value={room.id}>
+                            Room {room.roomNumber}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <Select value={selectedBuilding} onValueChange={(value) => {
-                  setSelectedBuilding(value);
-                  setSelectedRoom('all'); // Reset room when building changes
-                }}>
-                  <SelectTrigger className="w-full md:w-[200px]">
-                    <SelectValue placeholder="All buildings" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All buildings</SelectItem>
-                    {buildingsForFilter.map((building) => (
-                      <SelectItem key={building.id} value={building.id}>
-                        {building.buildingName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={selectedRoom} onValueChange={setSelectedRoom}>
-                  <SelectTrigger className="w-full md:w-[200px]">
-                    <SelectValue placeholder="All rooms" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All rooms</SelectItem>
-                    {roomsForFilter.map((room) => (
-                      <SelectItem key={room.id} value={room.id}>
-                        Room {room.roomNumber}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              </FilterPanel>
 
-              <div className="rounded-md border">
-                <Table>
+              <div className="overflow-x-auto -mx-4 md:mx-0">
+                <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                  <div className="rounded-md border">
+                    <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Student</TableHead>
@@ -758,7 +779,9 @@ export function HostelReports() {
                       ))
                     )}
                   </TableBody>
-                </Table>
+                    </Table>
+                  </div>
+                </div>
               </div>
               {filteredAssignedBoarders.length > 0 && assignedTotalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
@@ -826,52 +849,68 @@ export function HostelReports() {
         {/* Unassigned Boarders Tab */}
         <TabsContent value="unassigned-boarders" className="space-y-4">
           <Card>
-            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>{t('hostel.reports.unassignedBoarders') || 'Unassigned Boarders'}</CardTitle>
-                <CardDescription>{t('hostel.reports.unassignedBoardersDescription') || 'Students marked as boarders who still need a room assignment.'}</CardDescription>
+                <CardDescription className="hidden md:block">{t('hostel.reports.unassignedBoardersDescription') || 'Students marked as boarders who still need a room assignment.'}</CardDescription>
               </div>
-              <ReportExportButtons
-                data={filteredUnassignedBoarders}
-                columns={[
-                  { key: 'student_name', label: t('hostel.reports.student') || 'Student', align: 'left' },
-                  { key: 'admission_number', label: t('hostel.reports.admissionNumberColumn') || 'Admission #', align: 'left' },
-                  { key: 'class_name', label: t('hostel.reports.classColumn') || 'Class', align: 'left' },
-                  { key: 'residency_type', label: t('hostel.reports.residencyTypeColumn') || 'Residency Type', align: 'left' },
-                ]}
-                reportKey="hostel_unassigned_boarders"
-                title={t('hostel.reports.unassignedBoardersTitle') || t('hostel.reports.unassignedBoarders') || 'Unassigned Boarders Report'}
-                transformData={transformUnassignedBoarders}
-                buildFiltersSummary={buildUnassignedBoardersFiltersSummary}
-                templateType="hostel_unassigned_boarders"
-                disabled={isLoading || filteredUnassignedBoarders.length === 0}
-                buttonSize="sm"
-                buttonVariant="outline"
-              />
+              <div className="flex-shrink-0">
+                <ReportExportButtons
+                  data={filteredUnassignedBoarders}
+                  columns={[
+                    { key: 'student_name', label: t('hostel.reports.student') || 'Student', align: 'left' },
+                    { key: 'admission_number', label: t('hostel.reports.admissionNumberColumn') || 'Admission #', align: 'left' },
+                    { key: 'class_name', label: t('hostel.reports.classColumn') || 'Class', align: 'left' },
+                    { key: 'residency_type', label: t('hostel.reports.residencyTypeColumn') || 'Residency Type', align: 'left' },
+                  ]}
+                  reportKey="hostel_unassigned_boarders"
+                  title={t('hostel.reports.unassignedBoardersTitle') || t('hostel.reports.unassignedBoarders') || 'Unassigned Boarders Report'}
+                  transformData={transformUnassignedBoarders}
+                  buildFiltersSummary={buildUnassignedBoardersFiltersSummary}
+                  templateType="hostel_unassigned_boarders"
+                  disabled={isLoading || filteredUnassignedBoarders.length === 0}
+                  buttonSize="sm"
+                  buttonVariant="outline"
+                />
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name, admission number, or class..."
-                  value={unassignedSearchQuery}
-                  onChange={(e) => setUnassignedSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-                {unassignedSearchQuery && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
-                    onClick={() => setUnassignedSearchQuery('')}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
+              <FilterPanel 
+                title={t('common.filters') || 'Search & Filter'}
+                defaultOpenDesktop={true}
+                defaultOpenMobile={false}
+              >
+                <div className="flex flex-col gap-4 md:flex-row md:items-end">
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="unassigned-search">Search</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="unassigned-search"
+                        placeholder="Search by name, admission number, or class..."
+                        value={unassignedSearchQuery}
+                        onChange={(e) => setUnassignedSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                      {unassignedSearchQuery && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                          onClick={() => setUnassignedSearchQuery('')}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </FilterPanel>
 
-              <div className="rounded-md border">
-                <Table>
+              <div className="overflow-x-auto -mx-4 md:mx-0">
+                <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                  <div className="rounded-md border">
+                    <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Student</TableHead>
@@ -902,7 +941,9 @@ export function HostelReports() {
                       ))
                     )}
                   </TableBody>
-                </Table>
+                    </Table>
+                  </div>
+                </div>
               </div>
               {filteredUnassignedBoarders.length > 0 && unassignedTotalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">

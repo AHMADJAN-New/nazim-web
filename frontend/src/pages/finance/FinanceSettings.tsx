@@ -71,31 +71,29 @@ export default function FinanceSettings() {
 
             {/* Settings Tabs */}
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${
-                    [hasCurrenciesPermission, hasIncomeCategoriesPermission, hasExpenseCategoriesPermission, hasExchangeRatesPermission].filter(Boolean).length
-                }, 1fr)` }}>
+                <TabsList className="w-full overflow-x-auto">
                     {hasCurrenciesPermission && (
-                        <TabsTrigger value="currencies" className="flex items-center gap-2">
+                        <TabsTrigger value="currencies" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                             <Coins className="h-4 w-4" />
-                            {t('finance.currencies') || 'Currencies'}
+                            <span>{t('finance.currencies') || 'Currencies'}</span>
                         </TabsTrigger>
                     )}
                     {hasIncomeCategoriesPermission && (
-                        <TabsTrigger value="income-categories" className="flex items-center gap-2">
+                        <TabsTrigger value="income-categories" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                             <Tag className="h-4 w-4" />
-                            {t('finance.incomeCategories') || 'Income Categories'}
+                            <span>{t('finance.incomeCategories') || 'Income Categories'}</span>
                         </TabsTrigger>
                     )}
                     {hasExpenseCategoriesPermission && (
-                        <TabsTrigger value="expense-categories" className="flex items-center gap-2">
+                        <TabsTrigger value="expense-categories" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                             <Tags className="h-4 w-4" />
-                            {t('finance.expenseCategories') || 'Expense Categories'}
+                            <span>{t('finance.expenseCategories') || 'Expense Categories'}</span>
                         </TabsTrigger>
                     )}
                     {hasExchangeRatesPermission && (
-                        <TabsTrigger value="exchange-rates" className="flex items-center gap-2">
+                        <TabsTrigger value="exchange-rates" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                             <ArrowRightLeft className="h-4 w-4" />
-                            {t('finance.exchangeRates') || 'Exchange Rates'}
+                            <span>{t('finance.exchangeRates') || 'Exchange Rates'}</span>
                         </TabsTrigger>
                     )}
                 </TabsList>

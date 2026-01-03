@@ -259,7 +259,8 @@ export default function ExchangeRates() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
+                    <div className="overflow-x-auto">
+                        <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>{t('finance.fromCurrency') || 'From'}</TableHead>
@@ -360,6 +361,7 @@ export default function ExchangeRates() {
                             )}
                         </TableBody>
                     </Table>
+                    </div>
                 </CardContent>
             </Card>
 

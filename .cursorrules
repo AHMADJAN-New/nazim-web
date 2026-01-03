@@ -1651,6 +1651,313 @@ export function ComponentName({ prop1, prop2 }: ComponentProps) {
 - Use consistent spacing and typography
 - Follow accessibility guidelines
 
+## Responsive Design System
+
+**CRITICAL: All components MUST be mobile-first and responsive. Follow these standards for consistent UX across all screen sizes.**
+
+### Page Container Pattern
+
+**CRITICAL: ALL page containers MUST prevent horizontal scrolling.**
+
+```typescript
+// ✅ CORRECT: Container with overflow prevention
+<div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+  {/* Page content */}
+</div>
+
+// ❌ WRONG: Missing overflow-x-hidden (causes horizontal scroll)
+<div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+  {/* Page content */}
+</div>
+```
+
+**Page Container Requirements:**
+- ✅ **ALWAYS** use `overflow-x-hidden` on main page containers
+- ✅ **ALWAYS** use `container mx-auto` for centering
+- ✅ **ALWAYS** use responsive padding: `p-4 md:p-6`
+- ✅ **ALWAYS** use `max-w-7xl` or appropriate max-width
+- ❌ **NEVER** allow horizontal scrolling on page level
+
+### PageHeader Responsive Pattern
+
+**Icons and descriptions MUST be hidden on mobile for compact UX:**
+
+```typescript
+<PageHeader
+  title={t('page.title')}
+  description={t('page.description')}  // Hidden on mobile by default
+  icon={<Icon className="h-5 w-5" />}  // Hidden on mobile by default
+  showDescriptionOnMobile={false}  // Optional: show description on mobile
+/>
+```
+
+**PageHeader Guidelines:**
+- Icons are hidden on mobile (`hidden md:inline-flex`)
+- Descriptions are hidden on mobile by default (`hidden md:block`)
+- Use `showDescriptionOnMobile={true}` only when description is critical
+- Title is always visible with responsive text size
+
+### FilterPanel Responsive Pattern
+
+**FilterPanel is collapsible on mobile, always visible on desktop:**
+
+```typescript
+<FilterPanel
+  title={t('filters.title')}
+  defaultOpenDesktop={true}   // Open on desktop by default
+  defaultOpenMobile={false}  // Closed on mobile by default
+>
+  {/* Filter content */}
+</FilterPanel>
+```
+
+**FilterPanel Behavior:**
+- Mobile: Collapsed by default, shows button to expand
+- Desktop: Expanded by default, shows toggle button
+- Uses `Collapsible` component internally
+- Provides compact mobile experience
+
+### Tabs Responsive Pattern
+
+**Tab labels MUST be hidden on mobile, icons always visible:**
+
+```typescript
+<TabsList className="grid w-full grid-cols-5">
+  <TabsTrigger value="tab1" className="flex items-center gap-2">
+    <Icon className="h-4 w-4" />
+    <span className="hidden sm:inline">{t('tab.label')}</span>
+  </TabsTrigger>
+</TabsList>
+```
+
+**Tabs Guidelines:**
+- Icons are always visible on all screen sizes
+- Labels are hidden on mobile: `hidden sm:inline`
+- Use `grid-cols-{count}` for equal-width tabs
+- Tabs remain functional on mobile with icon-only
+
+### Grid Layout Patterns
+
+**Responsive grid layouts MUST use proper breakpoints:**
+
+```typescript
+// Single column on mobile, multiple on desktop
+<div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
+  <Card>Content</Card>
+</div>
+
+// Two columns on tablet, three on desktop
+<div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+  <Card>Content</Card>
+</div>
+```
+
+**Grid Guidelines:**
+- **Mobile**: Always start with `grid-cols-1`
+- **Tablet**: Use `md:grid-cols-2` or `sm:grid-cols-2`
+- **Desktop**: Use `lg:grid-cols-3` or `xl:grid-cols-4`
+- **Use `lg:` breakpoint** (1024px) instead of `md:` (768px) for multi-column layouts to prevent cramped tablets
+
+### Form Responsive Patterns
+
+**Forms MUST stack vertically on mobile:**
+
+```typescript
+<div className="space-y-4">
+  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+    <Input label="Field 1" />
+    <Input label="Field 2" />
+  </div>
+</div>
+```
+
+**Form Guidelines:**
+- Use `grid-cols-1 md:grid-cols-2` for two-column forms
+- Stack all fields vertically on mobile
+- Use `space-y-4` for vertical spacing
+
+### Flex Direction Patterns
+
+**Flex containers MUST adapt to screen size:**
+
+```typescript
+// Stack on mobile, row on desktop
+<div className="flex flex-col md:flex-row gap-4">
+  <div className="flex-1">Content 1</div>
+  <div className="flex-1">Content 2</div>
+</div>
+```
+
+**Flex Guidelines:**
+- Use `flex-col` for mobile (vertical stacking)
+- Use `md:flex-row` or `lg:flex-row` for desktop (horizontal layout)
+- Always include `gap-4` or appropriate spacing
+
+### Text Responsive Patterns
+
+**Text sizes MUST scale appropriately:**
+
+```typescript
+// Hide text on mobile, show on larger screens
+<span className="hidden sm:inline">{t('label')}</span>
+
+// Responsive text sizes
+<div className="text-xs sm:text-sm">Small text</div>
+<div className="text-2xl sm:text-3xl">Large heading</div>
+```
+
+**Text Guidelines:**
+- `hidden sm:inline` - Hide on mobile, show on small screens+
+- `hidden md:block` - Hide on mobile/tablet, show on desktop
+- `text-xs sm:text-sm` - Smaller on mobile, larger on tablet+
+- Use `truncate` for long text to prevent overflow
+
+### Table Responsive Patterns
+
+**CRITICAL: Tables MUST be wrapped in scrollable container for mobile.**
+
+```typescript
+<Card>
+  <CardContent>
+    <div className="overflow-x-auto">
+      <Table>
+        {/* Table content */}
+      </Table>
+    </div>
+  </CardContent>
+</Card>
+```
+
+**Table Requirements:**
+- ✅ **ALWAYS** wrap tables in `<div className="overflow-x-auto">`
+- ✅ **ALWAYS** ensure tables scroll horizontally on mobile
+- ✅ **ALWAYS** use responsive table layouts
+- ❌ **NEVER** allow tables to break page layout on mobile
+
+### Chart Responsive Patterns
+
+**CRITICAL: Charts MUST be responsive and never cause horizontal scrolling. Use progressive height scaling for mobile-first design.**
+
+```typescript
+<ChartContainer
+  config={chartConfig}
+  className="h-[200px] sm:h-[220px] md:h-[250px] w-full"
+>
+  {/* Chart */}
+</ChartContainer>
+```
+
+**Chart Height Guidelines:**
+- **Mobile (default)**: `h-[200px]` - Compact to prevent scrolling
+- **Small tablets (640px+)**: `sm:h-[220px]` - Slightly larger
+- **Tablets (768px+)**: `md:h-[250px]` - Standard size
+- **Desktop (1024px+)**: `lg:h-[300px]` - Full size (optional)
+
+**Pie/Donut Chart Pattern:**
+
+```typescript
+<ChartContainer
+  config={chartConfig}
+  className="mx-auto aspect-square max-h-[150px] sm:max-h-[180px] md:max-h-[200px] w-full"
+>
+  <PieChart>
+    <Pie
+      innerRadius={40}  // Smaller on mobile
+      outerRadius={60}  // Smaller on mobile
+    />
+  </PieChart>
+</ChartContainer>
+```
+
+**Chart Container Requirements:**
+- ✅ **ALWAYS** use `w-full` for width (never fixed widths)
+- ✅ **ALWAYS** use progressive height scaling: `h-[200px] sm:h-[...] md:h-[...]`
+- ✅ **ALWAYS** ensure charts fit within card boundaries
+- ✅ **ALWAYS** use `overflow-hidden` on parent cards to prevent overflow
+- ❌ **NEVER** use fixed heights that are too large for mobile
+- ❌ **NEVER** use `overflow-visible` on cards containing charts
+
+### Card Responsive Patterns
+
+**CRITICAL: Cards MUST prevent horizontal overflow and use proper overflow handling for decorative elements.**
+
+```typescript
+// ✅ CORRECT: Use overflow-hidden to prevent horizontal scroll
+<Card className="relative overflow-hidden">
+  {/* Decorative circle - reduced negative margin */}
+  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
+  <CardHeader>
+    {/* Content */}
+  </CardHeader>
+</Card>
+```
+
+**Card Overflow Requirements:**
+- ✅ **ALWAYS** use `overflow-hidden` on cards with decorative elements
+- ✅ **ALWAYS** reduce negative margins: `-mr-8 -mt-8` (not `-mr-16 -mt-16`)
+- ✅ **ALWAYS** add `opacity-50` to decorative elements for subtle effect
+- ❌ **NEVER** use `overflow-visible` on cards (causes horizontal scroll)
+
+**Card Grid Guidelines:**
+- **Mobile**: `grid-cols-1` - Single column
+- **Tablet**: `sm:grid-cols-2` or `md:grid-cols-2` - Two columns
+- **Desktop**: `lg:grid-cols-3` or `xl:grid-cols-4` - Multiple columns
+- **Use `lg:` breakpoint** (1024px) instead of `md:` (768px) for multi-column layouts
+
+### Button Responsive Patterns
+
+**CRITICAL: Buttons with icons and labels MUST hide labels on mobile, show icons only.**
+
+```typescript
+<Button
+  variant="outline"
+  size="sm"
+  className="flex-shrink-0"
+  aria-label={t('common.exportExcel') || 'Export Excel'}
+>
+  <FileSpreadsheet className="h-4 w-4" />
+  <span className="hidden sm:inline ml-2">{t('common.exportExcel') || 'Export Excel'}</span>
+</Button>
+```
+
+**Button Guidelines:**
+- ✅ **ALWAYS** show icons on all screen sizes
+- ✅ **ALWAYS** hide labels on mobile: `hidden sm:inline`
+- ✅ **ALWAYS** add `ml-2` margin between icon and label (when label is visible)
+- ✅ **ALWAYS** use `flex-shrink-0` to prevent button compression
+- ✅ **ALWAYS** add `aria-label` for icon-only buttons (accessibility)
+- ❌ **NEVER** show text labels on mobile (use icon-only)
+- ❌ **NEVER** use short labels like "Excel" or "PDF" on mobile (use icon-only instead)
+
+**Export Buttons Pattern with Tooltips:**
+
+```typescript
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+
+<TooltipProvider>
+  <div className="flex items-center gap-1.5 sm:gap-2">
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant="outline" size="sm" className="flex-shrink-0" aria-label={t('common.exportExcel')}>
+          <FileSpreadsheet className="h-4 w-4" />
+          <span className="hidden sm:inline ml-2">{t('common.exportExcel')}</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="sm:hidden">
+        <p>{t('common.exportExcel')}</p>
+      </TooltipContent>
+    </Tooltip>
+  </div>
+</TooltipProvider>
+```
+
+**Export Buttons Guidelines:**
+- ✅ **ALWAYS** use `TooltipProvider` wrapper
+- ✅ **ALWAYS** add tooltips for icon-only buttons on mobile: `className="sm:hidden"` on TooltipContent
+- ✅ **ALWAYS** keep buttons horizontal: `flex items-center gap-1.5 sm:gap-2` (no `flex-wrap`)
+- ✅ **ALWAYS** use smaller gap on mobile: `gap-1.5` (6px) for compact layout
+- ❌ **NEVER** use `flex-wrap` on export button containers (causes vertical stacking)
+
 ## Internationalization (i18n)
 
 ### Language Support

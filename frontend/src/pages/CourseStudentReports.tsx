@@ -219,32 +219,37 @@ const CourseStudentReports = () => {
   const someSelected = selectedStudentIds.size > 0 && selectedStudentIds.size < filtered.length;
 
   return (
-    <div className="container mx-auto max-w-7xl p-4 md:p-6 space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold leading-tight">{t('courses.courseReports')}</h1>
-          <p className="text-muted-foreground">View, filter, and manage course students with bulk operations.</p>
-        </div>
-        <div className="flex gap-2">
-          <ReportExportButtons
-            data={filtered}
-            columns={reportColumns}
-            reportKey="short_term_course_students"
-            title={t('courses.courseReports') || 'Short-term Course Students Report'}
-            transformData={transformCourseStudentData}
-            buildFiltersSummary={buildFiltersSummary}
-            schoolId={profile?.default_school_id}
-            templateType="course_students"
-            disabled={isLoading || filtered.length === 0}
-          />
-          <Button variant="outline" onClick={() => refetch()}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            {t('common.refresh')}
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-2xl">{t('courses.courseReports')}</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1 hidden md:block">
+                View, filter, and manage course students with bulk operations.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <ReportExportButtons
+                data={filtered}
+                columns={reportColumns}
+                reportKey="short_term_course_students"
+                title={t('courses.courseReports') || 'Short-term Course Students Report'}
+                transformData={transformCourseStudentData}
+                buildFiltersSummary={buildFiltersSummary}
+                schoolId={profile?.default_school_id}
+                templateType="course_students"
+                disabled={isLoading || filtered.length === 0}
+              />
+              <Button variant="outline" onClick={() => refetch()} className="w-full sm:w-auto">
+                <RefreshCw className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">{t('common.refresh')}</span>
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Enrolled</CardTitle>
@@ -522,6 +527,8 @@ const CourseStudentReports = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        </CardContent>
+      </Card>
     </div>
   );
 };

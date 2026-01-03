@@ -203,22 +203,28 @@ export default function IdCardTemplates() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t('idCards.title') || 'ID Card Templates'}</h1>
-        <Button onClick={() => handleOpenDialog()}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t('idCards.createTemplate') || 'Create Template'}
-        </Button>
-      </div>
-
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <Card>
         <CardHeader>
-          <CardTitle>{t('idCards.templates') || 'Templates'}</CardTitle>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-2xl">{t('idCards.title') || 'ID Card Templates'}</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1 hidden md:block">
+                {t('idCards.description') || 'Create and manage ID card templates for your organization'}
+              </p>
+            </div>
+            <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto">
+              <Plus className="h-4 w-4" />
+              <span className="ml-2">{t('idCards.createTemplate') || 'Create Template'}</span>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
+
           {isLoading ? (
-            <p className="text-muted-foreground">{t('common.loading')}</p>
+            <div className="flex items-center justify-center py-8">
+              <p className="text-muted-foreground">{t('common.loading')}</p>
+            </div>
           ) : templates.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
@@ -228,7 +234,8 @@ export default function IdCardTemplates() {
               </Button>
             </div>
           ) : (
-            <Table>
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('idCards.templateName') || 'Template Name'}</TableHead>
@@ -282,31 +289,39 @@ export default function IdCardTemplates() {
                     <TableCell>
                       {formatDate(template.createdAt)}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                    <TableCell>
+                      <div className="flex justify-end gap-1.5 sm:gap-2">
                         {!template.isDefault && (
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleSetDefault(template.id)}
+                            className="flex-shrink-0"
+                            aria-label={t('idCards.setAsDefault') || 'Set as Default'}
                           >
                             <Star className="h-4 w-4" />
+                            <span className="hidden sm:inline ml-2">{t('idCards.setAsDefault') || 'Set as Default'}</span>
                           </Button>
                         )}
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => handleOpenLayoutEditor(template)}
-                          title={t('idCards.editLayout') || 'Edit Layout'}
+                          className="flex-shrink-0"
+                          aria-label={t('idCards.editLayout') || 'Edit Layout'}
                         >
                           <Layout className="h-4 w-4" />
+                          <span className="hidden sm:inline ml-2">{t('idCards.editLayout') || 'Edit Layout'}</span>
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => handleOpenDialog(template)}
+                          className="flex-shrink-0"
+                          aria-label={t('common.edit') || 'Edit'}
                         >
                           <Pencil className="h-4 w-4" />
+                          <span className="hidden sm:inline ml-2">{t('common.edit') || 'Edit'}</span>
                         </Button>
                         <Button
                           size="sm"
@@ -315,8 +330,11 @@ export default function IdCardTemplates() {
                             setTemplateToDelete(template.id);
                             setIsDeleteDialogOpen(true);
                           }}
+                          className="flex-shrink-0"
+                          aria-label={t('common.delete') || 'Delete'}
                         >
                           <Trash2 className="h-4 w-4" />
+                          <span className="hidden sm:inline ml-2">{t('common.delete') || 'Delete'}</span>
                         </Button>
                       </div>
                     </TableCell>
@@ -324,13 +342,14 @@ export default function IdCardTemplates() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedTemplate ? (t('idCards.editTemplate') || 'Edit Template') : (t('idCards.createTemplate') || 'Create Template')}
@@ -362,7 +381,7 @@ export default function IdCardTemplates() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('idCards.backgroundFront') || 'Background Image (Front)'}</Label>
                 <Input

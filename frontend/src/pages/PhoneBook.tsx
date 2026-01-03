@@ -17,6 +17,7 @@ import { DataTablePagination } from '@/components/data-table/data-table-paginati
 import { LoadingSpinner } from '@/components/ui/loading';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { useSchoolContext } from '@/contexts/SchoolContext';
+import { PageHeader } from '@/components/layout/PageHeader';
 import type { PhoneBookEntry } from '@/types/domain/phoneBook';
 
 type PhoneBookCategory = 'all' | 'students' | 'staff' | 'donors' | 'guests' | 'others';
@@ -57,7 +58,7 @@ export function PhoneBook() {
   // If no permissions, show message
   if (availableTabs.length === 0) {
     return (
-      <div className="container mx-auto p-4 md:p-6 max-w-7xl">
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <div className="flex items-center justify-center min-h-[400px]">
           <Card>
             <CardContent className="p-6">
@@ -107,14 +108,16 @@ export function PhoneBook() {
           <div className={isRTL ? 'text-right' : 'text-left'}>
             <a
               href={`tel:${phone}`}
-              className="text-primary hover:underline flex items-center gap-2"
+              className="text-primary hover:underline flex items-center gap-2 whitespace-nowrap"
             >
-              <Phone className="h-4 w-4" />
-              {phone}
+              <Phone className="h-4 w-4 flex-shrink-0" />
+              <span className="min-w-[120px]">{phone}</span>
             </a>
           </div>
         );
       },
+      size: 150,
+      minSize: 120,
     },
     {
       accessorKey: 'email',
@@ -289,7 +292,7 @@ export function PhoneBook() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-4 md:p-6 max-w-7xl">
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <div className="flex items-center justify-center min-h-[400px]">
           <LoadingSpinner />
         </div>
@@ -298,33 +301,27 @@ export function PhoneBook() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Phone className="h-8 w-8" />
-          <div>
-            <h1 className="text-2xl font-semibold">{t('phoneBook.title') || 'Phone Book'}</h1>
-            <p className="text-sm text-muted-foreground">
-              {t('phoneBook.subtitle') || 'View and search all phone numbers from students, staff, donors, and guests'}
-            </p>
-          </div>
-        </div>
-        
-        {/* Export Buttons */}
-        <ReportExportButtons
-          data={entries}
-          columns={exportColumns}
-          reportKey="phonebook"
-          title={t('phoneBook.title') || 'Phone Book'}
-          transformData={transformDataForExport}
-          buildFiltersSummary={buildFiltersSummary}
-          schoolId={selectedSchoolId}
-          templateType="phonebook"
-          disabled={entries.length === 0}
-          errorNoData={t('phoneBook.noDataToExport') || 'No data to export'}
-        />
-      </div>
+      <PageHeader
+        title={t('phoneBook.title') || 'Phone Book'}
+        description={t('phoneBook.subtitle') || 'View and search all phone numbers from students, staff, donors, and guests'}
+        icon={<Phone className="h-5 w-5" />}
+        rightSlot={
+          <ReportExportButtons
+            data={entries}
+            columns={exportColumns}
+            reportKey="phonebook"
+            title={t('phoneBook.title') || 'Phone Book'}
+            transformData={transformDataForExport}
+            buildFiltersSummary={buildFiltersSummary}
+            schoolId={selectedSchoolId}
+            templateType="phonebook"
+            disabled={entries.length === 0}
+            errorNoData={t('phoneBook.noDataToExport') || 'No data to export'}
+          />
+        }
+      />
 
       {/* Tabs */}
       <Tabs value={effectiveActiveTab} onValueChange={(value) => {
@@ -332,40 +329,40 @@ export function PhoneBook() {
         setPage(1); // Reset to first page when changing tabs
         setSearch(''); // Clear search when changing tabs
       }} className="w-full">
-        <TabsList className="w-full overflow-x-auto">
+        <TabsList className="flex w-full gap-1 h-auto flex-shrink-0 overflow-x-auto pb-1">
           {availableTabs.includes('all') && (
-            <TabsTrigger value="all" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span>{t('phoneBook.all') || 'All'}</span>
+            <TabsTrigger value="all" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
+              <Users className="h-4 w-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm">{t('phoneBook.all') || 'All'}</span>
               {pagination && effectiveActiveTab === 'all' && (
-                <Badge variant="outline" className="ml-1 bg-primary/10 text-primary border-primary/20 font-semibold">
+                <Badge variant="outline" className="ml-1 bg-primary/10 text-primary border-primary/20 font-semibold text-xs flex-shrink-0">
                   {pagination.total}
                 </Badge>
               )}
             </TabsTrigger>
           )}
           {hasStudentsPermission && (
-            <TabsTrigger value="students" className="flex items-center gap-2">
-              <UserCheck className="h-4 w-4" />
-              <span>{t('phoneBook.students') || 'Students'}</span>
+            <TabsTrigger value="students" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
+              <UserCheck className="h-4 w-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm">{t('phoneBook.students') || 'Students'}</span>
             </TabsTrigger>
           )}
           {hasStaffPermission && (
-            <TabsTrigger value="staff" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              <span>{t('phoneBook.staff') || 'Staff'}</span>
+            <TabsTrigger value="staff" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
+              <Building2 className="h-4 w-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm">{t('phoneBook.staff') || 'Staff'}</span>
             </TabsTrigger>
           )}
           {hasDonorsPermission && (
-            <TabsTrigger value="donors" className="flex items-center gap-2">
-              <Gift className="h-4 w-4" />
-              <span>{t('phoneBook.donors') || 'Donors'}</span>
+            <TabsTrigger value="donors" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
+              <Gift className="h-4 w-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm">{t('phoneBook.donors') || 'Donors'}</span>
             </TabsTrigger>
           )}
           {hasGuestsPermission && (
-            <TabsTrigger value="guests" className="flex items-center gap-2">
-              <UserCircle className="h-4 w-4" />
-              <span>{t('phoneBook.guests') || 'Guests'}</span>
+            <TabsTrigger value="guests" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
+              <UserCircle className="h-4 w-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm">{t('phoneBook.guests') || 'Guests'}</span>
             </TabsTrigger>
           )}
         </TabsList>
@@ -375,7 +372,7 @@ export function PhoneBook() {
           <Card>
             <CardHeader>
               <CardTitle>{t('phoneBook.allEntries') || 'All Phone Book Entries'}</CardTitle>
-              <CardDescription>
+              <CardDescription className="hidden md:block">
                 {t('phoneBook.allEntriesDescription') || 'View all phone numbers from students, staff, donors, and guests'}
               </CardDescription>
             </CardHeader>
@@ -419,7 +416,7 @@ export function PhoneBook() {
           <Card>
             <CardHeader>
               <CardTitle>{t('phoneBook.studentContacts') || 'Student Contacts'}</CardTitle>
-              <CardDescription>
+              <CardDescription className="hidden md:block">
                 {t('phoneBook.studentContactsDescription') || 'Phone numbers from student guardians, emergency contacts, and zamin'}
               </CardDescription>
             </CardHeader>
@@ -463,7 +460,7 @@ export function PhoneBook() {
           <Card>
             <CardHeader>
               <CardTitle>{t('phoneBook.staffContacts') || 'Staff Contacts'}</CardTitle>
-              <CardDescription>
+              <CardDescription className="hidden md:block">
                 {t('phoneBook.staffContactsDescription') || 'Phone numbers from all staff members'}
               </CardDescription>
             </CardHeader>
@@ -507,7 +504,7 @@ export function PhoneBook() {
           <Card>
             <CardHeader>
               <CardTitle>{t('phoneBook.donorContacts') || 'Donor Contacts'}</CardTitle>
-              <CardDescription>
+              <CardDescription className="hidden md:block">
                 {t('phoneBook.donorContactsDescription') || 'Phone numbers from all donors'}
               </CardDescription>
             </CardHeader>
@@ -551,7 +548,7 @@ export function PhoneBook() {
           <Card>
             <CardHeader>
               <CardTitle>{t('phoneBook.guestContacts') || 'Guest Contacts'}</CardTitle>
-              <CardDescription>
+              <CardDescription className="hidden md:block">
                 {t('phoneBook.guestContactsDescription') || 'Phone numbers from event guests'}
               </CardDescription>
             </CardHeader>

@@ -227,7 +227,8 @@ export default function ExpenseCategories() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
+                    <div className="overflow-x-auto">
+                        <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>{t('common.name') || 'Name'}</TableHead>
@@ -277,6 +278,7 @@ export default function ExpenseCategories() {
                             )}
                         </TableBody>
                     </Table>
+                    </div>
                 </CardContent>
             </Card>
 

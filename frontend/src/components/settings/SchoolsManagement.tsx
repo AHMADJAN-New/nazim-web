@@ -386,14 +386,14 @@ export function SchoolsManagement() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <SchoolIcon className="h-5 w-5" />
+              <SchoolIcon className="h-5 w-5 hidden sm:inline-flex" />
               {t('schools.title')}
             </CardTitle>
-            <CardDescription>{t('schools.subtitle')}</CardDescription>
+            <CardDescription className="hidden md:block">{t('schools.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <LoadingSpinner size="lg" text={t('schools.loadingSchools')} />
@@ -404,25 +404,26 @@ export function SchoolsManagement() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <SchoolIcon className="h-5 w-5" />
+                <SchoolIcon className="h-5 w-5 hidden sm:inline-flex" />
                 {t('schools.title')}
               </CardTitle>
-              <CardDescription>{t('schools.subtitle')}</CardDescription>
+              <CardDescription className="hidden md:block">{t('schools.subtitle')}</CardDescription>
             </div>
             {hasCreatePermission && (
               <Button 
                 onClick={() => handleOpenDialog()}
                 disabled={!hasMultiSchoolFeature}
                 title={!hasMultiSchoolFeature ? t('schools.multiSchoolFeatureRequired') || 'Multiple schools feature is required to create additional schools' : undefined}
+                className="w-full sm:w-auto"
               >
-                <Plus className="h-4 w-4 mr-2" />
-                {t('schools.addSchool')}
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">{t('schools.addSchool')}</span>
               </Button>
             )}
           </div>
@@ -442,7 +443,7 @@ export function SchoolsManagement() {
           </div>
 
           {/* Schools Table */}
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -477,7 +478,7 @@ export function SchoolsManagement() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-end gap-1.5 sm:gap-2">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -486,6 +487,8 @@ export function SchoolsManagement() {
                                 setIsDetailsDialogOpen(true);
                               }}
                               title={t('schools.viewDetails')}
+                              className="flex-shrink-0"
+                              aria-label={t('schools.viewDetails')}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -498,7 +501,8 @@ export function SchoolsManagement() {
                                 );
                               }}
                               title={t('watermarks.manage') || 'Manage Watermarks'}
-                              className={selectedSchoolForWatermarks === school.id ? 'bg-muted' : ''}
+                              className={`flex-shrink-0 ${selectedSchoolForWatermarks === school.id ? 'bg-muted' : ''}`}
+                              aria-label={t('watermarks.manage') || 'Manage Watermarks'}
                             >
                               <Droplet className="h-4 w-4" />
                             </Button>
@@ -508,6 +512,8 @@ export function SchoolsManagement() {
                                 size="sm"
                                 onClick={() => handleOpenDialog(school.id)}
                                 title={t('schools.edit')}
+                                className="flex-shrink-0"
+                                aria-label={t('schools.edit')}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -518,6 +524,8 @@ export function SchoolsManagement() {
                                 size="sm"
                                 onClick={() => handleDeleteClick(school.id)}
                                 title={t('schools.delete')}
+                                className="flex-shrink-0"
+                                aria-label={t('schools.delete')}
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
@@ -557,7 +565,7 @@ export function SchoolsManagement() {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="school_name">{t('schools.schoolNameRequired')}</Label>
                   <Input
@@ -570,7 +578,7 @@ export function SchoolsManagement() {
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="school_name_arabic">{t('schools.arabicName')}</Label>
                   <Input
@@ -602,7 +610,7 @@ export function SchoolsManagement() {
                   placeholder={t('schools.enterSchoolAddress')}
                 />
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="school_phone">{t('schools.phone')}</Label>
                   <Input
@@ -632,7 +640,7 @@ export function SchoolsManagement() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="primary_color">{t('schools.primaryColor')}</Label>
                   <div className="flex gap-2">
@@ -781,7 +789,7 @@ export function SchoolsManagement() {
                 />
                 <p className="text-xs text-muted-foreground">{t('schools.reportFontSizeHint')}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="calendar_preference">{t('schools.calendarPreference')}</Label>
                   <Controller
@@ -802,7 +810,7 @@ export function SchoolsManagement() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="primary_logo">{t('schools.primaryLogo')}</Label>
                   <Input
@@ -1098,7 +1106,7 @@ export function SchoolsManagement() {
                 <p className="text-xs text-muted-foreground">{t('schools.headerTextDesc')}</p>
               </div>
               
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="primary_logo_usage">{t('schools.primaryLogoUsage')}</Label>
                   <Controller
@@ -1200,7 +1208,7 @@ export function SchoolsManagement() {
           </DialogHeader>
           {selectedSchoolData && (
             <div className="space-y-6 py-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">{t('schools.schoolName')}</Label>
                   <p className="font-medium">{selectedSchoolData.schoolName}</p>
@@ -1248,7 +1256,7 @@ export function SchoolsManagement() {
                   </Badge>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-muted-foreground">{t('schools.primaryColor')}</Label>
                   <div className="flex items-center gap-2">
@@ -1280,7 +1288,7 @@ export function SchoolsManagement() {
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">{t('schools.fontFamily')}</Label>
                   <p>{selectedSchoolData.fontFamily}</p>
@@ -1294,7 +1302,7 @@ export function SchoolsManagement() {
               {/* Logo Display Section */}
               <div className="space-y-4">
                 <Label className="text-lg font-semibold">{t('schools.logos')}</Label>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Primary Logo */}
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">{t('schools.primaryLogo')}</Label>
@@ -1399,8 +1407,8 @@ export function SchoolsManagement() {
               setIsDetailsDialogOpen(false);
               handleOpenDialog(selectedSchool || undefined);
             }}>
-              <Pencil className="h-4 w-4 mr-2" />
-              {t('schools.editSchoolButton')}
+              <Pencil className="h-4 w-4" />
+              <span className="hidden sm:inline ml-2">{t('schools.editSchoolButton')}</span>
             </Button>
           </DialogFooter>
         </DialogContent>

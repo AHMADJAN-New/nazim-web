@@ -17,6 +17,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
@@ -26,6 +34,7 @@ import type { LeaveRequest, LeaveRequestInsert } from '@/types/domain/leave';
 import { mapLeaveRequestApiToDomain } from '@/mappers/leaveMapper';
 import { useLanguage } from '@/hooks/useLanguage';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-800 border-amber-200',
@@ -448,21 +457,19 @@ export default function LeaveManagement() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className={`flex flex-col md:flex-row md:items-center ${isRTL ? 'md:flex-row-reverse' : ''} md:justify-between gap-3 mb-6`}>
-        <div>
-          <h1 className="text-2xl font-bold">{t('leave.title')}</h1>
-          <p className="text-muted-foreground">
-            {t('leave.subtitle')}
-          </p>
-        </div>
-      </div>
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
+      <PageHeader
+        title={t('leave.title')}
+        description={t('leave.subtitle')}
+        icon={<FileText className="h-5 w-5" />}
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-gradient-to-br from-slate-900 to-slate-800 text-white">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 text-white">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-8 -mt-8 opacity-50 pointer-events-none" />
             <CardHeader>
             <CardTitle className={`flex items-center gap-2 text-white ${isRTL ? 'flex-row-reverse' : ''}`}><Shield className="h-5 w-5" /> {t('leave.leaveGovernance')}</CardTitle>
-            <CardDescription className="text-slate-200">{t('leave.qrReadySlips')}</CardDescription>
+            <CardDescription className="text-slate-200 hidden md:block">{t('leave.qrReadySlips')}</CardDescription>
           </CardHeader>
         </Card>
         <Card>
@@ -482,16 +489,22 @@ export default function LeaveManagement() {
       </div>
 
           <Tabs defaultValue="create" className="space-y-4">
-        <TabsList className="grid grid-cols-2 w-full md:w-auto">
-          <TabsTrigger value="create" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}><FileText className="h-4 w-4" /> {t('leave.newRequest')}</TabsTrigger>
-          <TabsTrigger value="history" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}><Calendar className="h-4 w-4" /> {t('leave.history')}</TabsTrigger>
+        <TabsList className="grid grid-cols-2 w-full">
+          <TabsTrigger value="create" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <FileText className="h-4 w-4" />
+            {t('leave.newRequest')}
+          </TabsTrigger>
+          <TabsTrigger value="history" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <Calendar className="h-4 w-4" />
+            {t('leave.history')}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="create">
           <Card>
             <CardHeader>
               <CardTitle className="text-xl font-semibold">{t('leave.createRequest')}</CardTitle>
-              <CardDescription>{t('leave.createRequestDescription')}</CardDescription>
+              <CardDescription className="hidden md:block">{t('leave.createRequestDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Fast Search Field */}
@@ -524,7 +537,7 @@ export default function LeaveManagement() {
                 </p>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="class-select">{t('attendancePage.class')} <span className="text-destructive">*</span></Label>
                 <Combobox
@@ -573,9 +586,9 @@ export default function LeaveManagement() {
                 </Select>
               </div>
               <div className="space-y-3">
-                <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : ''} justify-between`}>
+                <div className="space-y-2">
                   <Label className="text-base font-medium">{t('leave.leaveDuration')}</Label>
-                  <div className={`flex flex-wrap gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className={`flex flex-wrap gap-1.5 sm:gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     {quickEntryOptions.map(option => (
                       <Button
                         key={option.days}
@@ -583,10 +596,11 @@ export default function LeaveManagement() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleQuickEntry(option.days)}
-                        className={`h-8 text-xs ${isRTL ? 'flex-row-reverse' : ''}`}
+                        className={`h-8 text-xs flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}
                       >
-                        <Zap className={`h-3 w-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />
-                        {option.label}
+                        <span className="sm:hidden font-semibold">{option.days}</span>
+                        <Zap className={`h-3 w-3 ${isRTL ? 'ml-1' : 'mr-1'} hidden sm:inline`} />
+                        <span className="hidden sm:inline">{option.label}</span>
                       </Button>
                     ))}
                   </div>
@@ -617,9 +631,9 @@ export default function LeaveManagement() {
               </div>
               
               <div className="space-y-3">
-                <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : ''} justify-between`}>
+                <div className="space-y-2">
                   <Label htmlFor="reason" className="text-base font-medium">{t('leave.reason')} <span className="text-destructive">*</span></Label>
-                  <div className={`flex flex-wrap gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className={`flex flex-wrap gap-1.5 sm:gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     {quickReasonOptions.map(option => (
                       <Button
                         key={option.label}
@@ -627,9 +641,9 @@ export default function LeaveManagement() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleQuickReason(option.reason)}
-                        className="h-8 text-xs"
+                        className="h-8 text-xs flex-shrink-0"
                       >
-                        {option.label}
+                        <span className="truncate max-w-[120px] sm:max-w-none">{option.label}</span>
                       </Button>
                     ))}
                   </div>
@@ -656,7 +670,7 @@ export default function LeaveManagement() {
                 />
               </div>
               
-              <div className={`flex ${isRTL ? 'justify-start' : 'justify-end'} gap-3 pt-4 border-t ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className={`flex flex-col sm:flex-row ${isRTL ? 'justify-start sm:flex-row-reverse' : 'justify-end'} gap-3 pt-4 border-t`}>
                 <Button 
                   variant="outline" 
                   onClick={() => {
@@ -700,7 +714,7 @@ export default function LeaveManagement() {
           <Card>
             <CardHeader>
               <CardTitle>{t('leave.leaveHistory')}</CardTitle>
-              <CardDescription>{t('leave.filterDescription')}</CardDescription>
+              <CardDescription className="hidden md:block">{t('leave.filterDescription')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className={`flex flex-wrap gap-3 items-end mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -717,7 +731,7 @@ export default function LeaveManagement() {
                   <Input type="number" value={pageSize} onChange={e => setPageSize(Number(e.target.value) || 10)} className="w-28" dir={isRTL ? 'rtl' : 'ltr'} />
                 </div>
               </div>
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -751,11 +765,43 @@ export default function LeaveManagement() {
                         <TableCell>
                           <Badge variant="outline" className={statusColors[request.status] || ''}>{t(`leave.${request.status}`)}</Badge>
                         </TableCell>
-                        <TableCell className={`${isRTL ? 'text-left' : 'text-right'} ${isRTL ? 'space-x-reverse' : ''} space-x-2`}>
-                          <Button size="sm" variant="outline" onClick={() => handleViewHistory(request)} className={isRTL ? 'flex-row-reverse' : ''}><Eye className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('common.view')}</Button>
-                          <Button size="sm" variant="secondary" onClick={() => handlePrint(request)} className={isRTL ? 'flex-row-reverse' : ''}><Printer className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('common.print')}</Button>
-                          <Button size="sm" variant="outline" onClick={() => handleApprove(request)} disabled={request.status === 'approved'} className={isRTL ? 'flex-row-reverse' : ''}><CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('leave.approved')}</Button>
-                          <Button size="sm" variant="ghost" onClick={() => handleReject(request)} disabled={request.status === 'rejected'} className={isRTL ? 'flex-row-reverse' : ''}><Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('leave.rejected')}</Button>
+                        <TableCell className={`${isRTL ? 'text-left' : 'text-right'}`}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Download className="h-4 w-4" />
+                                <span className="sr-only">{t('common.actions')}</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
+                              <DropdownMenuLabel>{t('common.actions')}</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleViewHistory(request)}>
+                                <Eye className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                                {t('common.view')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handlePrint(request)}>
+                                <Printer className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                                {t('common.print')}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => handleApprove(request)} 
+                                disabled={request.status === 'approved'}
+                              >
+                                <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                                {t('leave.approved')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleReject(request)} 
+                                disabled={request.status === 'rejected'}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Download className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                                {t('leave.rejected')}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                       ))

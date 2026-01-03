@@ -43,7 +43,7 @@ import { Plus, Search, Shield, Edit, Trash2, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
 
 const roleSchema = z.object({
@@ -161,9 +161,9 @@ export function RolesManagement() {
 
   if (!hasReadPermission) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="text-center text-muted-foreground">
               {t('roles.noPermission')}
             </div>
@@ -174,23 +174,24 @@ export function RolesManagement() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
+                <Shield className="h-5 w-5 hidden md:inline-flex" />
                 {t('roles.title')}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="hidden md:block">
                 {t('roles.subtitle')}
               </CardDescription>
             </div>
             {hasCreatePermission && (
-              <Button onClick={() => handleOpenDialog()}>
+              <Button onClick={() => handleOpenDialog()} className="flex-shrink-0">
                 <Plus className="h-4 w-4 mr-2" />
-                {t('roles.createRole')}
+                <span className="hidden sm:inline">{t('roles.createRole')}</span>
+                <span className="sm:hidden">{t('roles.create')}</span>
               </Button>
             )}
           </div>
@@ -213,69 +214,86 @@ export function RolesManagement() {
           {rolesLoading ? (
             <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('roles.name')}</TableHead>
-                    <TableHead>{t('roles.description')}</TableHead>
-                    <TableHead>{t('roles.organization')}</TableHead>
-                    <TableHead className="text-right">{t('roles.actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRoles.length === 0 ? (
+            <div className="rounded-md border overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground">
-                        {searchQuery ? t('roles.noRolesFound') : t('roles.noRolesMessage')}
-                      </TableCell>
+                      <TableHead>{t('roles.name')}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t('roles.description')}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('roles.organization')}</TableHead>
+                      <TableHead className="text-right">{t('roles.actions')}</TableHead>
                     </TableRow>
-                  ) : (
-                    filteredRoles.map((role) => (
-                      <TableRow key={role.id}>
-                        <TableCell className="font-medium">
-                          {role.name}
-                        </TableCell>
-                        <TableCell>
-                          {role.description || <span className="text-muted-foreground">{t('roles.noDescription')}</span>}
-                        </TableCell>
-                        <TableCell>
-                          {role.organization_id ? (
-                            <Badge variant="outline">{t('roles.organizationSpecific')}</Badge>
-                          ) : (
-                            <Badge variant="secondary">{t('roles.global')}</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            {hasUpdatePermission && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleOpenDialog(role)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {hasDeletePermission && (
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => {
-                                  setSelectedRole(role);
-                                  setIsDeleteDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRoles.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                          {searchQuery ? t('roles.noRolesFound') : t('roles.noRolesMessage')}
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      filteredRoles.map((role) => (
+                        <TableRow key={role.id}>
+                          <TableCell className="font-medium">
+                            <div className="flex flex-col sm:hidden gap-1">
+                              <span>{role.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {role.description || t('roles.noDescription')}
+                              </span>
+                              {role.organization_id ? (
+                                <Badge variant="outline" className="text-xs w-fit">{t('roles.organizationSpecific')}</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-xs w-fit">{t('roles.global')}</Badge>
+                              )}
+                            </div>
+                            <span className="hidden sm:inline">{role.name}</span>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {role.description || <span className="text-muted-foreground">{t('roles.noDescription')}</span>}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            {role.organization_id ? (
+                              <Badge variant="outline">{t('roles.organizationSpecific')}</Badge>
+                            ) : (
+                              <Badge variant="secondary">{t('roles.global')}</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              {hasUpdatePermission && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleOpenDialog(role)}
+                                  className="flex-shrink-0"
+                                  aria-label={t('roles.editRole')}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {hasDeletePermission && (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => {
+                                    setSelectedRole(role);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                  className="flex-shrink-0"
+                                  aria-label={t('roles.deleteRole')}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           )}
 
@@ -305,10 +323,10 @@ export function RolesManagement() {
 
       {/* Create/Edit Role Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isEditMode ? t('roles.editRole') : t('roles.createRoleDialog')}</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="hidden md:block">
               {isEditMode ? t('roles.updateRoleInfo') : t('roles.createNewRole')}
             </DialogDescription>
           </DialogHeader>
@@ -341,11 +359,11 @@ export function RolesManagement() {
                 <p className="text-sm text-destructive mt-1">{errors.description.message}</p>
               )}
             </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleCloseDialog}>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button type="button" variant="outline" onClick={handleCloseDialog} className="w-full sm:w-auto">
                 {t('roles.cancel')}
               </Button>
-              <Button type="submit" disabled={createRole.isPending || updateRole.isPending}>
+              <Button type="submit" disabled={createRole.isPending || updateRole.isPending} className="w-full sm:w-auto">
                 {isEditMode ? t('roles.update') : t('roles.create')} {t('roles.name')}
               </Button>
             </DialogFooter>

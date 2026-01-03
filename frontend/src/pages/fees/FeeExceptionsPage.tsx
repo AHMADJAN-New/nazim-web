@@ -281,7 +281,7 @@ export default function FeeExceptionsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
         title={t('fees.exceptions')}
         icon={<Shield className="h-5 w-5" />}
@@ -458,7 +458,8 @@ export default function FeeExceptionsPage() {
             <p className="text-muted-foreground text-center py-8">{t('common.noData') || 'No data available'}</p>
           ) : (
             <>
-              <Table>
+              <div className="overflow-x-auto">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('fees.student')}</TableHead>
@@ -530,6 +531,7 @@ export default function FeeExceptionsPage() {
                   })}
                 </TableBody>
               </Table>
+              </div>
             </>
           )}
         </CardContent>

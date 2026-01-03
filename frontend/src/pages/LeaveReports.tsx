@@ -17,13 +17,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useDatePreference } from '@/hooks/useDatePreference';
 import { leaveRequestsApi, apiClient } from '@/lib/api/client';
 import type { LeaveRequest } from '@/types/domain/leave';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
   Dialog,
   DialogContent,
@@ -56,7 +57,6 @@ export default function LeaveReports() {
   const [schoolId, setSchoolId] = useState<string>('');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
-  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const { requests, pagination, page, setPage, pageSize, setPageSize, isLoading } = useLeaveRequests({
     status: statusFilter === 'all' ? undefined : statusFilter,
@@ -217,18 +217,15 @@ export default function LeaveReports() {
   const rejectedRequests = useMemo(() => requests.filter(r => r.status === 'rejected'), [requests]);
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">{t('leave.reportsTitle')}</h1>
-          <p className="text-muted-foreground">
-            {t('leave.reportsSubtitle')}
-          </p>
-        </div>
-      </div>
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <PageHeader
+        title={t('leave.reportsTitle')}
+        description={t('leave.reportsSubtitle')}
+        icon={<FileText className="h-5 w-5" />}
+      />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>{t('leave.totalRequests')}</CardDescription>
@@ -264,27 +261,9 @@ export default function LeaveReports() {
         </Card>
       </div>
 
-      {/* Filters - Collapsible */}
-      <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <Card>
-          <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-accent/50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
-                    {t('leave.reportFilters')}
-                  </CardTitle>
-                  <CardDescription>{t('leave.filterDescription')}</CardDescription>
-                </div>
-                <Button variant="ghost" size="sm">
-                  {filtersOpen ? t('leave.hideFilters') : t('leave.showFilters')}
-                </Button>
-              </div>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent className="grid gap-4 md:grid-cols-3">
+      {/* Filters - Using FilterPanel */}
+      <FilterPanel title={t('leave.reportFilters')} defaultOpenDesktop={true} defaultOpenMobile={false}>
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
               <div className="space-y-2">
                 <Label>{t('leave.status')}</Label>
                 <Select value={statusFilter} onValueChange={val => setStatusFilter(val as any)}>
@@ -342,15 +321,24 @@ export default function LeaveReports() {
                 <Label>{t('leave.rowsPerPage')}</Label>
                 <Input type="number" min={10} max={100} value={pageSize} onChange={e => setPageSize(Number(e.target.value) || 10)} />
               </div>
-              <div className="md:col-span-3 flex flex-wrap gap-2 items-center justify-between">
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => handleQuickRange('today')} className={isRTL ? 'flex-row-reverse' : ''}><CalendarRange className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('leave.today')}</Button>
-                  <Button variant="outline" size="sm" onClick={() => handleQuickRange('month')} className={isRTL ? 'flex-row-reverse' : ''}><Filter className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('leave.thisMonth')}</Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleQuickRange('clear')} className={isRTL ? 'flex-row-reverse' : ''}><RefreshCcw className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('leave.resetFilters')}</Button>
+              <div className="lg:col-span-3 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  <Button variant="outline" size="sm" onClick={() => handleQuickRange('today')} className={`flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <CalendarRange className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                    <span className="hidden sm:inline">{t('leave.today')}</span>
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleQuickRange('month')} className={`flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <Filter className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                    <span className="hidden sm:inline">{t('leave.thisMonth')}</span>
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleQuickRange('clear')} className={`flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <RefreshCcw className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                    <span className="hidden sm:inline">{t('leave.resetFilters')}</span>
+                  </Button>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <Select value={reportType} onValueChange={(v) => setReportType(v as 'pdf' | 'excel')}>
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-28 sm:w-32">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -358,61 +346,59 @@ export default function LeaveReports() {
                       <SelectItem value="excel">Excel</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button variant="secondary" size="sm" onClick={() => handleGenerateReport('all')} disabled={isGenerating} className={isRTL ? 'flex-row-reverse' : ''}>
+                  <Button variant="secondary" size="sm" onClick={() => handleGenerateReport('all')} disabled={isGenerating} className={`flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     {isGenerating ? (
                       <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-1' : 'mr-1'}`} />
                     ) : (
                       <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
                     )}
-                    {t('leave.export') || 'Export'}
+                    <span className="hidden sm:inline">{t('leave.export') || 'Export'}</span>
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
+        </div>
+      </FilterPanel>
 
       {/* Tabs for different views */}
       <Tabs defaultValue="all" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="all" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <TabsList className="w-full overflow-x-auto">
+          <TabsTrigger value="all" className={`flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <FileText className="h-4 w-4" />
             {t('leave.allRequests')}
             {requests.length > 0 && (
-              <Badge variant="secondary" className={isRTL ? 'mr-1' : 'ml-1'}>
+              <Badge variant="secondary" className={`text-xs ${isRTL ? 'mr-1' : 'ml-1'}`}>
                 {requests.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="pending" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <TabsTrigger value="pending" className={`flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <Clock className="h-4 w-4" />
             {t('leave.pending')}
             {pendingRequests.length > 0 && (
-              <Badge variant="secondary" className={isRTL ? 'mr-1' : 'ml-1'}>
+              <Badge variant="secondary" className={`text-xs ${isRTL ? 'mr-1' : 'ml-1'}`}>
                 {pendingRequests.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="approved" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <TabsTrigger value="approved" className={`flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <CheckCircle2 className="h-4 w-4" />
             {t('leave.approved')}
             {approvedRequests.length > 0 && (
-              <Badge variant="secondary" className={isRTL ? 'mr-1' : 'ml-1'}>
+              <Badge variant="secondary" className={`text-xs ${isRTL ? 'mr-1' : 'ml-1'}`}>
                 {approvedRequests.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="rejected" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <TabsTrigger value="rejected" className={`flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <XCircle className="h-4 w-4" />
             {t('leave.rejected')}
             {rejectedRequests.length > 0 && (
-              <Badge variant="secondary" className={isRTL ? 'mr-1' : 'ml-1'}>
+              <Badge variant="secondary" className={`text-xs ${isRTL ? 'mr-1' : 'ml-1'}`}>
                 {rejectedRequests.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="daily" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <TabsTrigger value="daily" className={`flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <Calendar className="h-4 w-4" />
             {t('leave.dailyBreakdown')}
           </TabsTrigger>
@@ -425,13 +411,13 @@ export default function LeaveReports() {
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <CardTitle>{t('leave.allLeaveRequests')}</CardTitle>
-                  <CardDescription>{t('leave.completeListing')}</CardDescription>
+                  <CardDescription className="hidden md:block">{t('leave.completeListing')}</CardDescription>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">{requests.length} {t('leave.entries')}</Badge>
-                  <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2">
+                  <Badge variant="outline" className="text-xs w-fit">{requests.length} {t('leave.entries')}</Badge>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     <Select value={reportType} onValueChange={(v) => setReportType(v as 'pdf' | 'excel')}>
-                      <SelectTrigger className="w-32">
+                      <SelectTrigger className="w-28 sm:w-32">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -439,20 +425,20 @@ export default function LeaveReports() {
                         <SelectItem value="excel">Excel</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button variant="outline" size="sm" onClick={() => handleGenerateReport('all')} disabled={isGenerating} className={isRTL ? 'flex-row-reverse' : ''}>
+                    <Button variant="outline" size="sm" onClick={() => handleGenerateReport('all')} disabled={isGenerating} className={`flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
                       {isGenerating ? (
                         <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-1' : 'mr-1'}`} />
                       ) : (
                         <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
                       )}
-                      {t('leave.export')}
+                      <span className="hidden sm:inline">{t('leave.export')}</span>
                     </Button>
                   </div>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -506,32 +492,34 @@ export default function LeaveReports() {
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <CardTitle>{t('leave.pendingRequests')}</CardTitle>
-                  <CardDescription>{t('leave.awaitingApproval')}</CardDescription>
+                  <CardDescription className="hidden md:block">{t('leave.awaitingApproval')}</CardDescription>
                 </div>
-                <div className="flex gap-2 items-center">
-                  <Badge variant="outline" className="text-xs">{pendingRequests.length} {t('leave.entries')}</Badge>
-                  <Select value={reportType} onValueChange={(v) => setReportType(v as 'pdf' | 'excel')}>
-                    <SelectTrigger className="w-32 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pdf">PDF</SelectItem>
-                      <SelectItem value="excel">Excel</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline" size="sm" onClick={() => handleGenerateReport('pending')} disabled={isGenerating} className={isRTL ? 'flex-row-reverse' : ''}>
-                    {isGenerating ? (
-                      <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-1' : 'mr-1'}`} />
-                    ) : (
-                      <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
-                    )}
-                    {t('leave.export')}
-                  </Button>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <Badge variant="outline" className="text-xs w-fit">{pendingRequests.length} {t('leave.entries')}</Badge>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <Select value={reportType} onValueChange={(v) => setReportType(v as 'pdf' | 'excel')}>
+                      <SelectTrigger className="w-28 sm:w-32 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pdf">PDF</SelectItem>
+                        <SelectItem value="excel">Excel</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" size="sm" onClick={() => handleGenerateReport('pending')} disabled={isGenerating} className={`flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      {isGenerating ? (
+                        <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                      ) : (
+                        <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                      )}
+                      <span className="hidden sm:inline">{t('leave.export')}</span>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -573,32 +561,34 @@ export default function LeaveReports() {
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <CardTitle>{t('leave.approvedRequests')}</CardTitle>
-                  <CardDescription>{t('leave.approvedDescription')}</CardDescription>
+                  <CardDescription className="hidden md:block">{t('leave.approvedDescription')}</CardDescription>
                 </div>
-                <div className="flex gap-2 items-center">
-                  <Badge variant="outline" className="text-xs">{approvedRequests.length} {t('leave.entries')}</Badge>
-                  <Select value={reportType} onValueChange={(v) => setReportType(v as 'pdf' | 'excel')}>
-                    <SelectTrigger className="w-32 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pdf">PDF</SelectItem>
-                      <SelectItem value="excel">Excel</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline" size="sm" onClick={() => handleGenerateReport('approved')} disabled={isGenerating} className={isRTL ? 'flex-row-reverse' : ''}>
-                    {isGenerating ? (
-                      <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-1' : 'mr-1'}`} />
-                    ) : (
-                      <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
-                    )}
-                    {t('leave.export')}
-                  </Button>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <Badge variant="outline" className="text-xs w-fit">{approvedRequests.length} {t('leave.entries')}</Badge>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <Select value={reportType} onValueChange={(v) => setReportType(v as 'pdf' | 'excel')}>
+                      <SelectTrigger className="w-28 sm:w-32 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pdf">PDF</SelectItem>
+                        <SelectItem value="excel">Excel</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" size="sm" onClick={() => handleGenerateReport('approved')} disabled={isGenerating} className={`flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      {isGenerating ? (
+                        <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                      ) : (
+                        <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                      )}
+                      <span className="hidden sm:inline">{t('leave.export')}</span>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -640,32 +630,34 @@ export default function LeaveReports() {
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <CardTitle>{t('leave.rejectedRequests')}</CardTitle>
-                  <CardDescription>{t('leave.rejectedDescription')}</CardDescription>
+                  <CardDescription className="hidden md:block">{t('leave.rejectedDescription')}</CardDescription>
                 </div>
-                <div className="flex gap-2 items-center">
-                  <Badge variant="outline" className="text-xs">{rejectedRequests.length} {t('leave.entries')}</Badge>
-                  <Select value={reportType} onValueChange={(v) => setReportType(v as 'pdf' | 'excel')}>
-                    <SelectTrigger className="w-32 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pdf">PDF</SelectItem>
-                      <SelectItem value="excel">Excel</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline" size="sm" onClick={() => handleGenerateReport('rejected')} disabled={isGenerating} className={isRTL ? 'flex-row-reverse' : ''}>
-                    {isGenerating ? (
-                      <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-1' : 'mr-1'}`} />
-                    ) : (
-                      <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
-                    )}
-                    {t('leave.export')}
-                  </Button>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <Badge variant="outline" className="text-xs w-fit">{rejectedRequests.length} {t('leave.entries')}</Badge>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <Select value={reportType} onValueChange={(v) => setReportType(v as 'pdf' | 'excel')}>
+                      <SelectTrigger className="w-28 sm:w-32 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pdf">PDF</SelectItem>
+                        <SelectItem value="excel">Excel</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" size="sm" onClick={() => handleGenerateReport('rejected')} disabled={isGenerating} className={`flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      {isGenerating ? (
+                        <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                      ) : (
+                        <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                      )}
+                      <span className="hidden sm:inline">{t('leave.export')}</span>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -707,11 +699,11 @@ export default function LeaveReports() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>{t('leave.dailyBreakdownTitle')}</CardTitle>
-                  <CardDescription>{t('leave.dailyBreakdownDescription')}</CardDescription>
+                  <CardDescription className="hidden md:block">{t('leave.dailyBreakdownDescription')}</CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <Select value={reportType} onValueChange={(v) => setReportType(v as 'pdf' | 'excel')}>
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-28 sm:w-32">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -719,13 +711,13 @@ export default function LeaveReports() {
                       <SelectItem value="excel">Excel</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button variant="outline" size="sm" onClick={() => handleGenerateReport('daily')} disabled={isGenerating} className={isRTL ? 'flex-row-reverse' : ''}>
+                  <Button variant="outline" size="sm" onClick={() => handleGenerateReport('daily')} disabled={isGenerating} className={`flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     {isGenerating ? (
                       <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-1' : 'mr-1'}`} />
                     ) : (
                       <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
                     )}
-                    {t('leave.export')}
+                    <span className="hidden sm:inline">{t('leave.export')}</span>
                   </Button>
                 </div>
               </div>

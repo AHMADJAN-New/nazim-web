@@ -230,7 +230,7 @@ export default function FeeStructuresPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
         title={t('fees.structures')}
         icon={<FileText className="h-5 w-5" />}
@@ -293,7 +293,8 @@ export default function FeeStructuresPage() {
             <p>{t('common.loading')}</p>
           ) : (
             <>
-              <Table>
+              <div className="overflow-x-auto">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('fees.name')}</TableHead>
@@ -400,6 +401,7 @@ export default function FeeStructuresPage() {
                   })}
                 </TableBody>
               </Table>
+              </div>
               {pagination && (
                 <DataTablePagination
                   table={{
@@ -471,7 +473,7 @@ export default function FeeStructuresPage() {
                 {/* Basic Information */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">{t('common.basicInformation')}</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">{t('fees.name')}</p>
                       <p className="text-sm font-medium">{viewingStructure.name}</p>

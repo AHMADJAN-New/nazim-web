@@ -251,7 +251,7 @@ export function AcademicYearsManagement() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <Card>
           <CardContent className="p-6">
             <div className="text-center">{t('common.loading')}</div>
@@ -262,24 +262,24 @@ export function AcademicYearsManagement() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+                <Calendar className="h-5 w-5 hidden sm:inline-flex" />
                 {t('academic.academicYears.management')}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="hidden md:block">
                 {t('academic.academicYears.title')}
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               {hasCreatePermission && (
-                <Button onClick={() => handleOpenDialog()}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t('academic.academicYears.addAcademicYear')}
+                <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-2">{t('academic.academicYears.addAcademicYear')}</span>
                 </Button>
               )}
             </div>
@@ -296,9 +296,9 @@ export function AcademicYearsManagement() {
                 className="pl-10"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder={t('common.filterByStatus')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -339,7 +339,7 @@ export function AcademicYearsManagement() {
             </div>
           </div>
 
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -386,7 +386,7 @@ export function AcademicYearsManagement() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {year.isCurrent ? (
+                          {year.isCurrent ? (
                           <Badge variant="default">{t('academic.academicYears.current')}</Badge>
                         ) : (
                           hasUpdatePermission && (
@@ -394,19 +394,24 @@ export function AcademicYearsManagement() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleSetCurrent(year.id)}
+                              className="flex-shrink-0"
+                              title={t('academic.academicYears.setAsCurrent')}
                             >
-                              {t('academic.academicYears.setAsCurrent')}
+                              <Star className="h-4 w-4" />
+                              <span className="hidden sm:inline ml-2">{t('academic.academicYears.setAsCurrent')}</span>
                             </Button>
                           )
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-1.5 sm:gap-2">
                           {hasUpdatePermission && (
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleOpenDialog(year.id)}
+                              className="flex-shrink-0"
+                              aria-label={t('academic.academicYears.editAcademicYear')}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -417,6 +422,8 @@ export function AcademicYearsManagement() {
                               size="sm"
                               onClick={() => handleDeleteClick(year.id)}
                               title="Delete academic year"
+                              className="flex-shrink-0"
+                              aria-label={t('common.delete')}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -463,7 +470,7 @@ export function AcademicYearsManagement() {
                   <p className="text-sm text-destructive">{errors.name.message}</p>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="start_date">
                     {t('academic.academicYears.startDate')} *

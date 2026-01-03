@@ -223,7 +223,7 @@ export default function FeeReportsPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
         title={t('fees.reports') || 'Fee Reports'}
         description={t('fees.reportsDescription') || 'Track fee collection and student payment status'}
@@ -343,7 +343,7 @@ export default function FeeReportsPage() {
       </FilterPanel>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {/* Total Fees */}
         <Card className="relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16" />
@@ -461,7 +461,7 @@ export default function FeeReportsPage() {
       </Card>
 
       {/* Charts Row */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         {/* Status Distribution */}
         <Card>
           <CardHeader>
@@ -605,7 +605,7 @@ export default function FeeReportsPage() {
                 </div>
               ) : studentFeesData && studentFeesData.data.length > 0 ? (
                 <>
-                  <div className="rounded-md border">
+                  <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -777,7 +777,7 @@ export default function FeeReportsPage() {
                 </div>
               ) : dashboard && dashboard.byClass.length > 0 ? (
                 <>
-                  <div className="rounded-md border">
+                  <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>

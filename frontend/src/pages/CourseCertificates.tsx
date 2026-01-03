@@ -129,17 +129,16 @@ export default function CourseCertificates() {
   }, [selectedCourseId, search, courses, t]);
 
   return (
-    <div className="container mx-auto max-w-7xl p-4 md:p-6 space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold leading-tight">{t('courses.courseCertificates')}</h1>
-          <p className="text-muted-foreground">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">{t('courses.courseCertificates')}</CardTitle>
+          <p className="text-sm text-muted-foreground mt-1 hidden md:block">
             View, preview, and download certificates for completed course students.
           </p>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Certificates</CardTitle>
@@ -162,14 +161,16 @@ export default function CourseCertificates() {
             </CardContent>
           </Card>
         ))}
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="space-y-1 pb-3">
           <div className="flex items-start justify-between">
             <div>
               <CardTitle className="text-lg font-semibold">Issued Certificates</CardTitle>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground hidden md:block">
                 Filter by course or search by name, admission number, or certificate number.
               </p>
             </div>
@@ -187,7 +188,7 @@ export default function CourseCertificates() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
             <div className="space-y-2">
               <Label>{t('courses.courseName')}</Label>
               <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>

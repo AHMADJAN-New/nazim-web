@@ -233,7 +233,8 @@ export default function Currencies() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
+                    <div className="overflow-x-auto">
+                        <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>{t('finance.currencyCode') || 'Code'}</TableHead>
@@ -297,6 +298,7 @@ export default function Currencies() {
                             )}
                         </TableBody>
                     </Table>
+                    </div>
                 </CardContent>
             </Card>
 

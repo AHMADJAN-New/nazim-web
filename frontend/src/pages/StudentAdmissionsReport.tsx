@@ -285,7 +285,7 @@ const StudentAdmissionsReport = () => {
           ) : null
         }
       >
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
             <Label>{t('admissions.school') || 'School'}</Label>
             <Combobox
@@ -402,7 +402,7 @@ const StudentAdmissionsReport = () => {
       {!isLoading && !isError && report && (
         <>
           {/* Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <SummaryCard label={t('admissions.totalAdmissions') || 'Total admissions'} value={report.totals.total} icon={BarChart3} tone="primary" />
             <SummaryCard label={t('admissions.active') || 'Active'} value={report.totals.active} icon={BarChart3} tone="success" />
             <SummaryCard label={t('admissions.pending') || 'Pending'} value={report.totals.pending} icon={BarChart3} tone="warning" />
@@ -410,7 +410,7 @@ const StudentAdmissionsReport = () => {
           </div>
 
           {/* Breakdown Tables - Compact Grid */}
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">{t('admissions.statusBreakdown') || 'Status breakdown'}</CardTitle>

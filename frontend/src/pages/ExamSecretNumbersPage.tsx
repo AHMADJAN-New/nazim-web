@@ -232,7 +232,7 @@ export function ExamSecretNumbersPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-64 w-full" />
       </div>
@@ -241,12 +241,13 @@ export function ExamSecretNumbersPage() {
 
   if (!hasReadPermission) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <div className="text-center py-12">
           <p className="text-muted-foreground">{t('common.noPermission') || 'You do not have permission to view secret numbers'}</p>
           <Button variant="link" onClick={() => navigate('/exams')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {t('exams.backToList') || 'Back to Exams'}
+            <ArrowLeft className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('exams.backToList') || 'Back to Exams'}</span>
+            <span className="sm:hidden">Back</span>
           </Button>
         </div>
       </div>
@@ -254,23 +255,25 @@ export function ExamSecretNumbersPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate(`/exams`)}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-semibold flex items-center gap-2">
-            <KeyRound className="h-6 w-6" />
-            {t('exams.secretNumbers.title') || 'Secret Number Assignment'}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {exam ? exam.name + ' • ' : ''}{t('exams.secretNumbers.description') || 'Assign secret numbers for anonymous grading'}
-          </p>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/exams`)} className="flex-shrink-0">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-semibold flex items-center gap-2">
+              <KeyRound className="h-5 w-5 sm:h-6 sm:w-6 hidden md:inline-flex" />
+              {t('exams.secretNumbers.title') || 'Secret Number Assignment'}
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground hidden md:block">
+              {exam ? exam.name + ' • ' : ''}{t('exams.secretNumbers.description') || 'Assign secret numbers for anonymous grading'}
+            </p>
+          </div>
         </div>
         {exam && (
-          <Badge variant={exam.status === 'in_progress' ? 'default' : 'secondary'}>
+          <Badge variant={exam.status === 'in_progress' ? 'default' : 'secondary'} className="flex-shrink-0 self-start sm:self-center">
             {exam.status}
           </Badge>
         )}
@@ -315,7 +318,7 @@ export function ExamSecretNumbersPage() {
         <>
       {/* Summary Cards */}
       {studentsData && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -372,16 +375,17 @@ export function ExamSecretNumbersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2 max-w-md">
+          <div className="flex flex-col sm:flex-row gap-2 max-w-md">
             <Input
               placeholder={t('exams.secretNumbers.enterSecretNumber') || 'Enter secret number...'}
               value={lookupQuery}
               onChange={(e) => setLookupQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
             />
-            <Button onClick={handleLookup} disabled={lookupMutation.isPending || !lookupQuery.trim()}>
-              <Scan className="h-4 w-4 mr-2" />
-              {t('exams.secretNumbers.lookupButton') || 'Lookup'}
+            <Button onClick={handleLookup} disabled={lookupMutation.isPending || !lookupQuery.trim()} className="w-full sm:w-auto">
+              <Scan className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('exams.secretNumbers.lookupButton') || 'Lookup'}</span>
+              <span className="sm:hidden">Search</span>
             </Button>
           </div>
         </CardContent>
@@ -397,7 +401,7 @@ export function ExamSecretNumbersPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Class Filter */}
               <div className="space-y-2">
                 <Label>{t('exams.class') || 'Class'}</Label>
@@ -477,9 +481,10 @@ export function ExamSecretNumbersPage() {
             </div>
 
             <div className="flex justify-end mt-4">
-              <Button onClick={handlePreview} disabled={previewMutation.isPending}>
-                <Wand2 className="h-4 w-4 mr-2" />
-                {t('exams.secretNumbers.previewAssignment') || 'Preview Auto Assignment'}
+              <Button onClick={handlePreview} disabled={previewMutation.isPending} className="w-full sm:w-auto">
+                <Wand2 className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('exams.secretNumbers.previewAssignment') || 'Preview Auto Assignment'}</span>
+                <span className="sm:hidden">Preview</span>
               </Button>
             </div>
           </CardContent>
@@ -489,28 +494,31 @@ export function ExamSecretNumbersPage() {
       {/* Students Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
               <CardTitle className="text-lg">{t('exams.secretNumbers.studentList') || 'Students'}</CardTitle>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowSecretNumbers(!showSecretNumbers)}
+                className="w-full sm:w-auto"
               >
                 {showSecretNumbers ? (
                   <>
-                    <EyeOff className="h-4 w-4 mr-2" />
-                    {t('exams.secretNumbers.hide') || 'Hide Numbers'}
+                    <EyeOff className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">{t('exams.secretNumbers.hide') || 'Hide Numbers'}</span>
+                    <span className="sm:hidden">Hide</span>
                   </>
                 ) : (
                   <>
-                    <Eye className="h-4 w-4 mr-2" />
-                    {t('exams.secretNumbers.show') || 'Show Numbers'}
+                    <Eye className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">{t('exams.secretNumbers.show') || 'Show Numbers'}</span>
+                    <span className="sm:hidden">Show</span>
                   </>
                 )}
               </Button>
             </div>
-            <div className="relative w-64">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t('common.search') || 'Search...'}
@@ -522,14 +530,15 @@ export function ExamSecretNumbersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>{t('exams.secretNumbers.secretNumber') || 'Secret Number'}</TableHead>
-                <TableHead>{t('exams.rollNumbers.rollNumber') || 'Roll Number'}</TableHead>
-                <TableHead>{t('exams.studentCode') || 'Student Code'}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('exams.rollNumbers.rollNumber') || 'Roll Number'}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('exams.studentCode') || 'Student Code'}</TableHead>
                 <TableHead>{t('exams.studentName') || 'Name'}</TableHead>
-                <TableHead>{t('exams.class') || 'Class'}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t('exams.class') || 'Class'}</TableHead>
                 {hasAssignPermission && <TableHead className="w-24">{t('common.actions') || 'Actions'}</TableHead>}
               </TableRow>
             </TableHeader>
@@ -582,12 +591,19 @@ export function ExamSecretNumbersPage() {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="font-mono text-sm">
+                    <TableCell className="hidden sm:table-cell font-mono text-sm">
                       {student.examRollNumber || '-'}
                     </TableCell>
-                    <TableCell className="font-mono text-sm">{student.studentCode || '-'}</TableCell>
-                    <TableCell>{student.fullName}</TableCell>
+                    <TableCell className="hidden md:table-cell font-mono text-sm">{student.studentCode || '-'}</TableCell>
                     <TableCell>
+                      <div className="flex flex-col sm:hidden gap-1">
+                        <span>{student.fullName}</span>
+                        <span className="text-xs text-muted-foreground font-mono">Roll: {student.examRollNumber || '-'} | Code: {student.studentCode || '-'}</span>
+                        <span className="text-xs text-muted-foreground">{student.className}{student.section && ` - ${student.section}`}</span>
+                      </div>
+                      <div className="hidden sm:block">{student.fullName}</div>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       {student.className}
                       {student.section && <span className="text-muted-foreground"> - {student.section}</span>}
                     </TableCell>
@@ -610,6 +626,7 @@ export function ExamSecretNumbersPage() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -618,7 +635,7 @@ export function ExamSecretNumbersPage() {
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('exams.secretNumbers.previewTitle') || 'Secret Number Assignment Preview'}</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="hidden md:block">
               {t('exams.secretNumbers.previewDescription') || 'Review the changes before confirming'}
             </DialogDescription>
           </DialogHeader>
@@ -682,8 +699,8 @@ export function ExamSecretNumbersPage() {
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setShowPreviewDialog(false)} className="w-full sm:w-auto">
               {t('common.cancel') || 'Cancel'}
             </Button>
             <Button
@@ -695,8 +712,9 @@ export function ExamSecretNumbersPage() {
                 }
               }}
               disabled={confirmMutation.isPending || !previewData || previewData.total === 0}
+              className="w-full sm:w-auto"
             >
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="h-4 w-4 sm:mr-2" />
               {t('exams.secretNumbers.confirmAssign') || 'Confirm & Assign'}
             </Button>
           </DialogFooter>
@@ -733,7 +751,7 @@ export function ExamSecretNumbersPage() {
             <div className="space-y-4">
               {lookupResult.found ? (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div className="text-sm text-muted-foreground">{t('exams.studentName') || 'Student Name'}:</div>
                     <div className="font-medium">{lookupResult.student?.fullName}</div>
 
@@ -757,7 +775,7 @@ export function ExamSecretNumbersPage() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowLookupDialog(false)}>
+            <Button variant="outline" onClick={() => setShowLookupDialog(false)} className="w-full sm:w-auto">
               {t('common.close') || 'Close'}
             </Button>
           </DialogFooter>

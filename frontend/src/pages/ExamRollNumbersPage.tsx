@@ -205,7 +205,7 @@ export function ExamRollNumbersPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-64 w-full" />
       </div>
@@ -214,12 +214,13 @@ export function ExamRollNumbersPage() {
 
   if (!hasReadPermission) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <div className="text-center py-12">
           <p className="text-muted-foreground">{t('common.noPermission') || 'You do not have permission to view roll numbers'}</p>
           <Button variant="link" onClick={() => navigate('/exams')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {t('exams.backToList') || 'Back to Exams'}
+            <ArrowLeft className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('exams.backToList') || 'Back to Exams'}</span>
+            <span className="sm:hidden">Back</span>
           </Button>
         </div>
       </div>
@@ -227,23 +228,25 @@ export function ExamRollNumbersPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate(`/exams`)}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-semibold flex items-center gap-2">
-            <Hash className="h-6 w-6" />
-            {t('exams.rollNumbers.title') || 'Roll Number Assignment'}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {exam ? exam.name + ' • ' : ''}{t('exams.rollNumbers.description') || 'Assign roll numbers to enrolled students'}
-          </p>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/exams`)} className="flex-shrink-0">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-semibold flex items-center gap-2">
+              <Hash className="h-5 w-5 sm:h-6 sm:w-6 hidden md:inline-flex" />
+              {t('exams.rollNumbers.title') || 'Roll Number Assignment'}
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground hidden md:block">
+              {exam ? exam.name + ' • ' : ''}{t('exams.rollNumbers.description') || 'Assign roll numbers to enrolled students'}
+            </p>
+          </div>
         </div>
         {exam && (
-          <Badge variant={exam.status === 'in_progress' ? 'default' : 'secondary'}>
+          <Badge variant={exam.status === 'in_progress' ? 'default' : 'secondary'} className="flex-shrink-0 self-start sm:self-center">
             {exam.status}
           </Badge>
         )}
@@ -289,7 +292,7 @@ export function ExamRollNumbersPage() {
 
       {/* Summary Cards */}
       {studentsData && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -347,7 +350,7 @@ export function ExamRollNumbersPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Class Filter */}
               <div className="space-y-2">
                 <Label>{t('exams.class') || 'Class'}</Label>
@@ -427,9 +430,10 @@ export function ExamRollNumbersPage() {
             </div>
 
             <div className="flex justify-end mt-4">
-              <Button onClick={handlePreview} disabled={previewMutation.isPending}>
-                <Wand2 className="h-4 w-4 mr-2" />
-                {t('exams.rollNumbers.previewAssignment') || 'Preview Auto Assignment'}
+              <Button onClick={handlePreview} disabled={previewMutation.isPending} className="w-full sm:w-auto">
+                <Wand2 className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('exams.rollNumbers.previewAssignment') || 'Preview Auto Assignment'}</span>
+                <span className="sm:hidden">Preview</span>
               </Button>
             </div>
           </CardContent>
@@ -439,9 +443,9 @@ export function ExamRollNumbersPage() {
       {/* Students Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <CardTitle className="text-lg">{t('exams.rollNumbers.studentList') || 'Students'}</CardTitle>
-            <div className="relative w-64">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t('common.search') || 'Search...'}
@@ -453,14 +457,15 @@ export function ExamRollNumbersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>{t('exams.rollNumbers.rollNumber') || 'Roll Number'}</TableHead>
-                <TableHead>{t('exams.studentCode') || 'Student Code'}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('exams.studentCode') || 'Student Code'}</TableHead>
                 <TableHead>{t('exams.studentName') || 'Name'}</TableHead>
-                <TableHead>{t('exams.fatherName') || 'Father Name'}</TableHead>
-                <TableHead>{t('exams.class') || 'Class'}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('exams.fatherName') || 'Father Name'}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t('exams.class') || 'Class'}</TableHead>
                 {hasAssignPermission && <TableHead className="w-24">{t('common.actions') || 'Actions'}</TableHead>}
               </TableRow>
             </TableHeader>
@@ -513,10 +518,17 @@ export function ExamRollNumbersPage() {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="font-mono text-sm">{student.studentCode || '-'}</TableCell>
-                    <TableCell>{student.fullName}</TableCell>
-                    <TableCell>{student.fatherName || '-'}</TableCell>
+                    <TableCell className="hidden sm:table-cell font-mono text-sm">{student.studentCode || '-'}</TableCell>
                     <TableCell>
+                      <div className="flex flex-col sm:hidden gap-1">
+                        <span>{student.fullName}</span>
+                        <span className="text-xs text-muted-foreground font-mono">{student.studentCode || '-'}</span>
+                        <span className="text-xs text-muted-foreground">{student.className}{student.section && ` - ${student.section}`}</span>
+                      </div>
+                      <div className="hidden sm:block">{student.fullName}</div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">{student.fatherName || '-'}</TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       {student.className}
                       {student.section && <span className="text-muted-foreground"> - {student.section}</span>}
                     </TableCell>
@@ -539,6 +551,7 @@ export function ExamRollNumbersPage() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -547,7 +560,7 @@ export function ExamRollNumbersPage() {
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('exams.rollNumbers.previewTitle') || 'Roll Number Assignment Preview'}</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="hidden md:block">
               {t('exams.rollNumbers.previewDescription') || 'Review the changes before confirming'}
             </DialogDescription>
           </DialogHeader>
@@ -611,8 +624,8 @@ export function ExamRollNumbersPage() {
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setShowPreviewDialog(false)} className="w-full sm:w-auto">
               {t('common.cancel') || 'Cancel'}
             </Button>
             <Button
@@ -624,8 +637,9 @@ export function ExamRollNumbersPage() {
                 }
               }}
               disabled={confirmMutation.isPending || !previewData || previewData.total === 0}
+              className="w-full sm:w-auto"
             >
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="h-4 w-4 sm:mr-2" />
               {t('exams.rollNumbers.confirmAssign') || 'Confirm & Assign'}
             </Button>
           </DialogFooter>

@@ -710,7 +710,7 @@ export default function GraduationBatchesPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
         title={t('nav.graduation.batches') || 'Graduation Batches'}
         description={t('graduation.batches.description') || 'Manage graduation batches, approve students, and issue certificates'}
@@ -721,7 +721,7 @@ export default function GraduationBatchesPage() {
           icon: <GraduationCap className="h-4 w-4" />,
         }}
         rightSlot={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <ReportExportButtons
               data={sortedBatches}
               columns={reportColumns}
@@ -738,6 +738,7 @@ export default function GraduationBatchesPage() {
               size="sm"
               onClick={() => setViewMode('cards')}
               aria-label={t('common.cardView') || 'Card view'}
+              className="flex-shrink-0"
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
@@ -746,6 +747,7 @@ export default function GraduationBatchesPage() {
               size="sm"
               onClick={() => setViewMode('table')}
               aria-label={t('common.tableView') || 'Table view'}
+              className="flex-shrink-0"
             >
               <TableIcon className="h-4 w-4" />
             </Button>
@@ -776,7 +778,7 @@ export default function GraduationBatchesPage() {
           }
         }}
       >
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{t('nav.graduation.batches')}</DialogTitle>
               <DialogDescription>
@@ -1081,12 +1083,12 @@ export default function GraduationBatchesPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
-                    {t('common.cancel')}
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setCreateOpen(false)} className="w-full sm:w-auto">
+                    <span className="text-xs sm:text-sm">{t('common.cancel')}</span>
                   </Button>
-                  <Button type="submit" disabled={createBatch.isPending}>
-                    {createBatch.isPending ? t('common.processing') : t('common.save')}
+                  <Button type="submit" disabled={createBatch.isPending} className="w-full sm:w-auto">
+                    <span className="text-xs sm:text-sm">{createBatch.isPending ? t('common.processing') : t('common.save')}</span>
                   </Button>
                 </div>
               </form>
@@ -1094,7 +1096,7 @@ export default function GraduationBatchesPage() {
       </Dialog>
 
       {/* Summary Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -1121,61 +1123,75 @@ export default function GraduationBatchesPage() {
         </Card>
       </div>
 
-      <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+      <FilterPanel 
+        title={t('common.filters') || 'Search & Filter'}
+        defaultOpenDesktop={true}
+        defaultOpenMobile={false}
+      >
         <div className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <Button 
-              variant={statusFilter === 'all' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatusFilter('all')}
-            >
-              {t('common.all') || 'All'} ({stats.total})
-            </Button>
-            <Button 
-              variant={statusFilter === 'draft' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatusFilter('draft')}
-            >
-              {t('graduation.status.draft') || 'Draft'} ({stats.draft})
-            </Button>
-            <Button 
-              variant={statusFilter === 'approved' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatusFilter('approved')}
-            >
-              {t('graduation.status.approved') || 'Approved'} ({stats.approved})
-            </Button>
-            <Button 
-              variant={statusFilter === 'issued' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatusFilter('issued')}
-            >
-              {t('graduation.status.issued') || 'Issued'} ({stats.issued})
-            </Button>
-          </div>
-
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={t('graduation.filters.searchPlaceholder') || 'Search by year, class, exam...'}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10"
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
+          <div>
+            <Label className="mb-2 block">{t('common.status') || 'Status'}</Label>
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant={statusFilter === 'all' ? 'default' : 'outline'}
                 size="sm"
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
-                onClick={() => setSearchQuery('')}
-                aria-label={t('common.clear') || 'Clear'}
+                onClick={() => setStatusFilter('all')}
+                className="text-xs sm:text-sm"
               >
-                <X className="h-4 w-4" />
+                {t('common.all') || 'All'} ({stats.total})
               </Button>
-            )}
+              <Button 
+                variant={statusFilter === 'draft' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('draft')}
+                className="text-xs sm:text-sm"
+              >
+                {t('graduation.status.draft') || 'Draft'} ({stats.draft})
+              </Button>
+              <Button 
+                variant={statusFilter === 'approved' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('approved')}
+                className="text-xs sm:text-sm"
+              >
+                {t('graduation.status.approved') || 'Approved'} ({stats.approved})
+              </Button>
+              <Button 
+                variant={statusFilter === 'issued' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('issued')}
+                className="text-xs sm:text-sm"
+              >
+                {t('graduation.status.issued') || 'Issued'} ({stats.issued})
+              </Button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <Label className="mb-2 block">{t('common.search') || 'Search'}</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={t('graduation.filters.searchPlaceholder') || 'Search by year, class, exam...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                  onClick={() => setSearchQuery('')}
+                  aria-label={t('common.clear') || 'Clear'}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <Label>{t('common.schoolManagement')}</Label>
               <Select value={schoolId || ''} onValueChange={(val) => setSchoolId(val || undefined)}>
@@ -1280,8 +1296,8 @@ export default function GraduationBatchesPage() {
                 </div>
               </div>
               <Button onClick={() => setCreateOpen(true)}>
-                <GraduationCap className="h-4 w-4 mr-2" />
-                {t('common.create') || 'Create Your First Batch'}
+                <GraduationCap className="h-4 w-4 sm:mr-2" />
+                <span className="text-xs sm:text-sm">{t('common.create') || 'Create Your First Batch'}</span>
               </Button>
             </div>
           </CardContent>
@@ -1388,8 +1404,8 @@ export default function GraduationBatchesPage() {
                                   }}
                                   disabled={generateStudents.isPending}
                                 >
-                                  <RefreshCw className="h-3 w-3 mr-1" />
-                                  Generate
+                                  <RefreshCw className="h-3 w-3 sm:mr-1" />
+                                  <span className="text-xs sm:text-sm">Generate</span>
                                 </Button>
                                 <Button
                                   size="sm"
@@ -1400,8 +1416,8 @@ export default function GraduationBatchesPage() {
                                   }}
                                   disabled={approveBatch.isPending}
                                 >
-                                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  Approve
+                                  <CheckCircle2 className="h-3 w-3 sm:mr-1" />
+                                  <span className="text-xs sm:text-sm">Approve</span>
                                 </Button>
                               </>
                             )}
@@ -1414,8 +1430,8 @@ export default function GraduationBatchesPage() {
                                   navigate(`/graduation/batches/${batch.id}`);
                                 }}
                               >
-                                <FileText className="h-3 w-3 mr-1" />
-                                Issue Certificates
+                                <FileText className="h-3 w-3 sm:mr-1" />
+                                <span className="text-xs sm:text-sm">Issue Certificates</span>
                               </Button>
                             )}
                           </div>
@@ -1424,8 +1440,11 @@ export default function GraduationBatchesPage() {
                     ))}
                   </div>
                 ) : (
-                  <Table>
-                  <TableHeader>
+                  <div className="overflow-x-auto -mx-4 md:mx-0">
+                    <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                      <div className="rounded-md border">
+                        <Table>
+                          <TableHeader>
                     <TableRow>
                       <TableHead>
                         <Button 
@@ -1542,8 +1561,11 @@ export default function GraduationBatchesPage() {
                         </TableCell>
                       </TableRow>
                     ))}
-                  </TableBody>
-                </Table>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -1555,16 +1577,17 @@ export default function GraduationBatchesPage() {
       {groupedBatches.length > 5 && (
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-sm text-muted-foreground text-center sm:text-left">
                 {t('graduation.pagination.showing') || 'Showing'} {(page - 1) * 5 + 1}-{Math.min(page * 5, groupedBatches.length)} {t('graduation.pagination.of') || 'of'} {groupedBatches.length} {t('graduation.summary.totalBatches') || 'year groups'}
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2 flex-wrap justify-center">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
+                  className="text-xs sm:text-sm"
                 >
                   {t('common.previous') || 'Previous'}
                 </Button>
@@ -1586,6 +1609,7 @@ export default function GraduationBatchesPage() {
                         variant={page === pageNum ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setPage(pageNum)}
+                        className="text-xs sm:text-sm"
                       >
                         {pageNum}
                       </Button>
@@ -1597,6 +1621,7 @@ export default function GraduationBatchesPage() {
                   size="sm"
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
+                  className="text-xs sm:text-sm"
                 >
                   {t('common.next') || 'Next'}
                 </Button>
@@ -1634,8 +1659,8 @@ export default function GraduationBatchesPage() {
                           onClick={handleEdit}
                           disabled={updateBatch.isPending}
                         >
-                          <Edit className="h-4 w-4 mr-2" />
-                          {t('common.edit')}
+                          <Edit className="h-4 w-4 sm:mr-2" />
+                          <span className="text-xs sm:text-sm">{t('common.edit')}</span>
                         </Button>
                         <Button
                           variant="destructive"
@@ -1643,15 +1668,15 @@ export default function GraduationBatchesPage() {
                           onClick={() => setIsDeleteDialogOpen(true)}
                           disabled={deleteBatch.isPending}
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          {t('common.delete')}
+                          <Trash2 className="h-4 w-4 sm:mr-2" />
+                          <span className="text-xs sm:text-sm">{t('common.delete')}</span>
                         </Button>
                       </>
                     )}
                     <Button variant="outline" size="sm" asChild>
                       <Link to={`/graduation/batches/${selectedBatch.id}`}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        {t('common.viewDetails') || 'View Details'}
+                        <Eye className="h-4 w-4 sm:mr-2" />
+                        <span className="text-xs sm:text-sm">{t('common.viewDetails') || 'View Details'}</span>
                       </Link>
                     </Button>
                   </div>
@@ -1805,7 +1830,7 @@ export default function GraduationBatchesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('common.edit')} {t('nav.graduation.batches')}</DialogTitle>
             <DialogDescription>

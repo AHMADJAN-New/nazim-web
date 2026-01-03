@@ -169,7 +169,7 @@ export default function FeeDashboard() {
     const originalTotal = dashboard.exceptions?.impactOnCollection.originalTotal || dashboard.summary.totalAssigned;
 
     return (
-        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
             <PageHeader
                 title={t('fees.dashboard') || 'Fee Dashboard'}
                 description={t('fees.dashboardDescription') || 'Overview of fee collection and management'}
@@ -206,8 +206,8 @@ export default function FeeDashboard() {
             {/* Summary Cards Row */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
                 {/* Total Assigned */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-8 -mt-8 opacity-50 pointer-events-none" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('fees.totalAssigned') || 'Total Assigned'}
@@ -238,8 +238,8 @@ export default function FeeDashboard() {
                 </Card>
 
                 {/* Total Paid */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full -mr-8 -mt-8 opacity-50 pointer-events-none" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('fees.totalPaid') || 'Total Paid'}
@@ -265,8 +265,8 @@ export default function FeeDashboard() {
                 </Card>
 
                 {/* Total Remaining */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full -mr-8 -mt-8 opacity-50 pointer-events-none" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('fees.totalRemaining') || 'Total Remaining'}
@@ -297,8 +297,8 @@ export default function FeeDashboard() {
                 </Card>
 
                 {/* Exceptions */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full -mr-8 -mt-8 opacity-50 pointer-events-none" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('fees.exceptions') || 'Exceptions'}
@@ -340,8 +340,8 @@ export default function FeeDashboard() {
                 </Card>
 
                 {/* Collection Rate */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 rounded-full -mr-8 -mt-8 opacity-50 pointer-events-none" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('fees.collectionRate') || 'Collection Rate'}
@@ -363,13 +363,13 @@ export default function FeeDashboard() {
             </div>
 
             {/* Main Content Row */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
                 {/* Status Distribution */}
-                <Card className="md:col-span-1">
+                <Card className="lg:col-span-1">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
                             <CardTitle className="text-lg">{t('fees.statusDistribution') || 'Status Distribution'}</CardTitle>
-                            <CardDescription className="mt-1">
+                            <CardDescription className="mt-1 hidden md:block">
                                 {t('fees.assignmentStatus') || 'Fee assignment status breakdown'}
                             </CardDescription>
                         </div>
@@ -387,7 +387,7 @@ export default function FeeDashboard() {
                                             color: 'hsl(var(--chart-1))',
                                         },
                                     } as ChartConfig}
-                                    className="h-[250px] w-full"
+                                    className="mx-auto aspect-square max-h-[150px] sm:max-h-[180px] md:max-h-[200px] w-full"
                                 >
                                     <PieChart>
                                         <Pie
@@ -396,7 +396,8 @@ export default function FeeDashboard() {
                                             cy="50%"
                                             labelLine={false}
                                             label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                            outerRadius={80}
+                                            innerRadius={40}
+                                            outerRadius={60}
                                             fill="#8884d8"
                                             dataKey="value"
                                         >
@@ -439,11 +440,11 @@ export default function FeeDashboard() {
                 </Card>
 
                 {/* Class-wise Collection */}
-                <Card className="md:col-span-1">
+                <Card className="lg:col-span-1">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
                             <CardTitle className="text-lg">{t('fees.collectionByClass') || 'Collection by Class'}</CardTitle>
-                            <CardDescription>Top 8 classes</CardDescription>
+                            <CardDescription className="hidden md:block">Top 8 classes</CardDescription>
                         </div>
                         <Button 
                             variant="outline" 
@@ -466,7 +467,7 @@ export default function FeeDashboard() {
                                         color: 'hsl(var(--chart-2))',
                                     },
                                 } as ChartConfig}
-                                className="h-[250px] w-full"
+                                className="h-[200px] sm:h-[220px] md:h-[250px] w-full"
                             >
                                 <BarChart data={classCollectionData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -478,6 +479,7 @@ export default function FeeDashboard() {
                                         angle={-45}
                                         textAnchor="end"
                                         height={80}
+                                        className="text-xs sm:text-sm"
                                     />
                                     <YAxis 
                                         tickLine={false}
@@ -516,11 +518,11 @@ export default function FeeDashboard() {
                 </Card>
 
                 {/* Exception Breakdown */}
-                <Card className="md:col-span-1">
+                <Card className="lg:col-span-1">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
                             <CardTitle className="text-lg">{t('fees.exceptionBreakdown') || 'Exception Breakdown'}</CardTitle>
-                            <CardDescription className="mt-1">
+                            <CardDescription className="mt-1 hidden md:block">
                                 {dashboard.exceptions?.totalCount || 0} {t('fees.activeExceptions') || 'active exceptions'}
                             </CardDescription>
                         </div>
@@ -539,7 +541,7 @@ export default function FeeDashboard() {
                                                 color: 'hsl(var(--chart-1))',
                                             },
                                         } as ChartConfig}
-                                        className="h-[200px] w-full"
+                                        className="mx-auto aspect-square max-h-[120px] sm:max-h-[150px] md:max-h-[180px] w-full"
                                     >
                                         <PieChart>
                                             <Pie
@@ -548,7 +550,8 @@ export default function FeeDashboard() {
                                                 cy="50%"
                                                 labelLine={false}
                                                 label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                                outerRadius={70}
+                                                innerRadius={30}
+                                                outerRadius={50}
                                                 fill="#8884d8"
                                                 dataKey="value"
                                             >
@@ -630,13 +633,13 @@ export default function FeeDashboard() {
             </div>
 
             {/* Recent Payments & Quick Actions */}
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                 {/* Recent Payments */}
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
                             <CardTitle className="text-lg">{t('fees.recentPayments') || 'Recent Payments'}</CardTitle>
-                            <CardDescription>Last 10 payments</CardDescription>
+                            <CardDescription className="hidden md:block">Last 10 payments</CardDescription>
                         </div>
                         <Button 
                             variant="outline" 
@@ -676,7 +679,7 @@ export default function FeeDashboard() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-lg">{t('fees.quickActions') || 'Quick Actions'}</CardTitle>
-                        <CardDescription>{t('fees.manageFees') || 'Manage fees and assignments'}</CardDescription>
+                        <CardDescription className="hidden md:block">{t('fees.manageFees') || 'Manage fees and assignments'}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-2">
                         <Button 

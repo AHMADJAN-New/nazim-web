@@ -438,7 +438,7 @@ export default function FeeAssignmentsPage() {
   }, [open, form]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
         title={t('fees.assignments')}
         icon={<GraduationCap className="h-5 w-5" />}
@@ -504,7 +504,7 @@ export default function FeeAssignmentsPage() {
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit, handleError)} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="academic_year_id"
@@ -664,8 +664,6 @@ export default function FeeAssignmentsPage() {
             </Form>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
 
       <FilterPanel title={t('fees.filters')}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -742,7 +740,8 @@ export default function FeeAssignmentsPage() {
                 <p className="text-muted-foreground text-center py-8">{t('common.noData') || 'No data available'}</p>
               ) : (
                 <>
-                  <Table>
+                  <div className="overflow-x-auto">
+                    <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('fees.class')}</TableHead>
@@ -811,6 +810,7 @@ export default function FeeAssignmentsPage() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
                 {pagination && (
                   <DataTablePagination
                     table={{
@@ -857,7 +857,8 @@ export default function FeeAssignmentsPage() {
                 <p className="text-muted-foreground text-center py-8">{t('common.noData') || 'No data available'}</p>
               ) : (
                 <>
-                  <Table>
+                  <div className="overflow-x-auto">
+                    <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('fees.student')}</TableHead>
@@ -936,6 +937,7 @@ export default function FeeAssignmentsPage() {
                     })}
                   </TableBody>
                 </Table>
+                </div>
                 {pagination && (
                   <DataTablePagination
                     table={{

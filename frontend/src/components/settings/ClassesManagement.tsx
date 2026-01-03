@@ -52,6 +52,8 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 
 const classSchema = z.object({
     name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
@@ -599,57 +601,74 @@ export function ClassesManagement() {
     }
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+            <PageHeader
+                title={t('academic.classes.management') || 'Classes Management'}
+                description={t('academic.classes.title') || 'Manage classes and class assignments'}
+                icon={<GraduationCap className="h-5 w-5" />}
+            />
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="flex items-center gap-2">
-                                <GraduationCap className="h-5 w-5" />
-                                {t('academic.classes.management')}
-                            </CardTitle>
-                            <CardDescription>
-                                {t('academic.classes.title')}
-                            </CardDescription>
-                        </div>
-                    </div>
+                    <CardTitle>{t('academic.classes.management')}</CardTitle>
+                    <CardDescription className="hidden md:block">{t('academic.classes.title')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
-                        <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="base">{t('academic.classes.baseClasses')}</TabsTrigger>
-                            <TabsTrigger value="year">{t('academic.classes.yearClasses')}</TabsTrigger>
-                            <TabsTrigger value="copy">{t('academic.classes.copyClasses')}</TabsTrigger>
+                        <TabsList className="flex w-full gap-1 h-auto flex-shrink-0 overflow-x-auto pb-1">
+                            <TabsTrigger value="base" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
+                                <GraduationCap className="h-4 w-4 flex-shrink-0" />
+                                <span className="text-xs sm:text-sm">{t('academic.classes.baseClasses')}</span>
+                            </TabsTrigger>
+                            <TabsTrigger value="year" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
+                                <Calendar className="h-4 w-4 flex-shrink-0" />
+                                <span className="text-xs sm:text-sm">{t('academic.classes.yearClasses')}</span>
+                            </TabsTrigger>
+                            <TabsTrigger value="copy" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
+                                <Copy className="h-4 w-4 flex-shrink-0" />
+                                <span className="text-xs sm:text-sm">{t('academic.classes.copyClasses')}</span>
+                            </TabsTrigger>
                         </TabsList>
 
                         {/* Base Classes Tab */}
                         <TabsContent value="base" className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4 flex-1">
-                                    <div className="relative flex-1 max-w-md">
-                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            placeholder={t('academic.classes.searchPlaceholder')}
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="pl-10"
-                                        />
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <FilterPanel
+                                    title={t('common.filters') || 'Filters'}
+                                    defaultOpenDesktop={true}
+                                    defaultOpenMobile={false}
+                                >
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <Label>{t('common.search') || 'Search'}</Label>
+                                            <div className="relative">
+                                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    placeholder={t('academic.classes.searchPlaceholder')}
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    className="pl-10"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <Label>{t('common.filterByGrade') || 'Grade Level'}</Label>
+                                            <Select value={gradeLevelFilter} onValueChange={setGradeLevelFilter}>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder={t('common.filterByGrade')} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">{t('common.all')} {t('academic.classes.gradeLevel')}</SelectItem>
+                                                    {Array.from({ length: 13 }, (_, i) => (
+                                                        <SelectItem key={i} value={i.toString()}>
+                                                            {t('academic.classes.gradeLevel')} {i}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
-                                    <Select value={gradeLevelFilter} onValueChange={setGradeLevelFilter}>
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder={t('common.filterByGrade')} />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">{t('common.all')} {t('academic.classes.gradeLevel')}</SelectItem>
-                                            {Array.from({ length: 13 }, (_, i) => (
-                                                <SelectItem key={i} value={i.toString()}>
-                                                    {t('academic.classes.gradeLevel')} {i}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="flex items-center gap-2">
+                                </FilterPanel>
+                                <div className="flex items-center gap-2 flex-shrink-0">
                                     <ReportExportButtons
                                         data={filteredClasses}
                                         columns={[
@@ -679,16 +698,18 @@ export function ClassesManagement() {
                                         disabled={filteredClasses.length === 0}
                                     />
                                     {hasCreatePermission && (
-                                        <Button onClick={() => handleOpenClassDialog()}>
-                                            <Plus className="h-4 w-4 mr-2" />
-                                            {t('academic.classes.addClass')}
+                                        <Button onClick={() => handleOpenClassDialog()} className="flex-shrink-0">
+                                            <Plus className="h-4 w-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">{t('academic.classes.addClass')}</span>
                                         </Button>
                                     )}
                                 </div>
                             </div>
 
-                            <div className="rounded-md border">
-                                <Table>
+                            <div className="overflow-x-auto -mx-4 md:mx-0">
+                                <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                                    <div className="rounded-md border">
+                                        <Table>
                                     <TableHeader>
                                         {baseClassesTable.getHeaderGroups().map((headerGroup) => (
                                             <TableRow key={headerGroup.id}>
@@ -727,7 +748,9 @@ export function ClassesManagement() {
                                             ))
                                         )}
                                     </TableBody>
-                                </Table>
+                                        </Table>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Pagination for base classes */}
@@ -743,23 +766,26 @@ export function ClassesManagement() {
 
                         {/* Academic Year Classes Tab */}
                         <TabsContent value="year" className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <Select
-                                    value={selectedAcademicYearId || ''}
-                                    onValueChange={setSelectedAcademicYearId}
-                                >
-                                    <SelectTrigger className="w-[300px]">
-                                        <SelectValue placeholder={t('academic.classes.selectAcademicYear')} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {academicYears?.map((year) => (
-                                            <SelectItem key={year.id} value={year.id}>
-                                                {year.name} {year.is_current && `(${t('academic.academicYears.current')})`}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <div className="flex gap-2">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex-1 min-w-0">
+                                    <Label className="mb-2 block">{t('academic.classes.selectAcademicYear')}</Label>
+                                    <Select
+                                        value={selectedAcademicYearId || ''}
+                                        onValueChange={setSelectedAcademicYearId}
+                                    >
+                                        <SelectTrigger className="w-full sm:w-[300px]">
+                                            <SelectValue placeholder={t('academic.classes.selectAcademicYear')} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {academicYears?.map((year) => (
+                                                <SelectItem key={year.id} value={year.id}>
+                                                    {year.name} {year.is_current && `(${t('academic.academicYears.current')})`}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
                                     {selectedAcademicYearId && classAcademicYears && classAcademicYears.length > 0 && (
                                         <ReportExportButtons
                                             data={classAcademicYears}
@@ -793,18 +819,20 @@ export function ClassesManagement() {
                                             onClick={() => handleOpenAssignDialog()}
                                             disabled={!selectedAcademicYearId}
                                             variant="outline"
+                                            className="flex-shrink-0"
                                         >
-                                            <Plus className="h-4 w-4 mr-2" />
-                                            {t('academic.classes.assignToYear')}
+                                            <Plus className="h-4 w-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">{t('academic.classes.assignToYear')}</span>
                                         </Button>
                                     )}
                                     {hasAssignPermission && (
                                         <Button
                                             onClick={() => handleOpenBulkSectionsDialog()}
                                             disabled={!selectedAcademicYearId}
+                                            className="flex-shrink-0"
                                         >
-                                            <Users className="h-4 w-4 mr-2" />
-                                            {t('academic.classes.bulkCreateSections')}
+                                            <Users className="h-4 w-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">{t('academic.classes.bulkCreateSections')}</span>
                                         </Button>
                                     )}
                                 </div>
@@ -814,8 +842,10 @@ export function ClassesManagement() {
                                 yearClassesLoading ? (
                                     <div className="text-center py-8">{t('common.loading')}</div>
                                 ) : (
-                                    <div className="rounded-md border">
-                                        <Table>
+                                    <div className="overflow-x-auto -mx-4 md:mx-0">
+                                        <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                                            <div className="rounded-md border">
+                                                <Table>
                                             <TableHeader>
                                                 <TableRow>
                                                     <TableHead>{t('academic.classes.name')}</TableHead>
@@ -875,7 +905,9 @@ export function ClassesManagement() {
                                                     ))
                                                 )}
                                             </TableBody>
-                                        </Table>
+                                                </Table>
+                                            </div>
+                                        </div>
                                     </div>
                                 )
                             ) : (
@@ -887,14 +919,15 @@ export function ClassesManagement() {
 
                         {/* Copy Classes Tab */}
                         <TabsContent value="copy" className="space-y-4">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-start">
                                 {hasCopyPermission && (
                                     <Button
                                         onClick={handleOpenCopyDialog}
                                         disabled={!selectedAcademicYearId}
+                                        className="flex-shrink-0"
                                     >
-                                        <Copy className="h-4 w-4 mr-2" />
-                                        {t('academic.classes.copyClasses')}
+                                        <Copy className="h-4 w-4 sm:mr-2" />
+                                        <span className="hidden sm:inline">{t('academic.classes.copyClasses')}</span>
                                     </Button>
                                 )}
                             </div>
@@ -920,7 +953,7 @@ export function ClassesManagement() {
             {/* Class History Dialog */}
             {viewingHistoryFor && (
                 <Dialog open={!!viewingHistoryFor} onOpenChange={() => setViewingHistoryFor(null)}>
-                    <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                    <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[80vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>{t('academic.classes.history')}</DialogTitle>
                             <DialogDescription>
@@ -971,7 +1004,7 @@ export function ClassesManagement() {
 
             {/* Create/Edit Class Dialog */}
             <Dialog open={isClassDialogOpen} onOpenChange={setIsClassDialogOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-2xl">
                     <form onSubmit={handleSubmitClass(onSubmitClass)}>
                         <DialogHeader>
                             <DialogTitle>
@@ -1080,7 +1113,7 @@ export function ClassesManagement() {
 
             {/* Assign Class to Year Dialog */}
             <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-2xl">
                     <form onSubmit={handleSubmitAssign(selectedClassInstance ? (data) => {
                         if (data.class_id && data.academic_year_id) {
                             handleUpdateInstance(data as AssignClassFormData & { class_id: string; academic_year_id: string });
@@ -1239,7 +1272,7 @@ export function ClassesManagement() {
 
             {/* Bulk Create Sections Dialog */}
             <Dialog open={isBulkSectionsDialogOpen} onOpenChange={setIsBulkSectionsDialogOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-2xl">
                     <form onSubmit={handleSubmitBulkSections(onSubmitBulkSections)}>
                         <DialogHeader>
                             <DialogTitle>{t('academic.classes.bulkCreateSections')}</DialogTitle>
@@ -1380,7 +1413,7 @@ export function ClassesManagement() {
 
             {/* Copy Classes Dialog */}
             <Dialog open={isCopyDialogOpen} onOpenChange={setIsCopyDialogOpen}>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[80vh] overflow-y-auto">
                     <form onSubmit={handleSubmitCopy(onSubmitCopy)}>
                         <DialogHeader>
                             <DialogTitle>{t('academic.classes.copyClasses')}</DialogTitle>

@@ -107,7 +107,7 @@ function GradeDialog({ open, onOpenChange, gradeId }: GradeDialogProps) {
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             {/* Multi-language name fields */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="nameEn">{t('grades.nameEn')}</Label>
                 <Input
@@ -131,7 +131,7 @@ function GradeDialog({ open, onOpenChange, gradeId }: GradeDialogProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="namePs">{t('grades.namePs')}</Label>
                 <Input
@@ -157,7 +157,7 @@ function GradeDialog({ open, onOpenChange, gradeId }: GradeDialogProps) {
             </div>
 
             {/* Percentage range */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="minPercentage">{t('grades.minPercentage')}</Label>
                 <Input
@@ -189,7 +189,7 @@ function GradeDialog({ open, onOpenChange, gradeId }: GradeDialogProps) {
             </div>
 
             {/* Order and Pass/Fail toggle */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="order">{t('grades.order')}</Label>
                 <Input
@@ -269,15 +269,15 @@ export default function GradesManagement() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle>{t('grades.management')}</CardTitle>
-              <CardDescription>{t('grades.managementDescription')}</CardDescription>
+              <CardDescription className="hidden md:block">{t('grades.managementDescription')}</CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
               {grades && grades.length > 0 && (
                 <ReportExportButtons
                   data={grades}
@@ -308,9 +308,9 @@ export default function GradesManagement() {
                 />
               )}
               {canCreate && (
-                <Button onClick={handleCreate}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t('grades.create')}
+                <Button onClick={handleCreate} className="w-full sm:w-auto">
+                  <Plus className="h-4 w-4" />
+                  <span className="ml-2">{t('grades.create')}</span>
                 </Button>
               )}
             </div>
@@ -329,8 +329,9 @@ export default function GradesManagement() {
               <div className="text-sm text-muted-foreground">{t('grades.noGradesDescription')}</div>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
                 <TableRow>
                   <TableHead>{t('grades.nameEn')}</TableHead>
                   <TableHead>{t('grades.nameAr')}</TableHead>
@@ -367,12 +368,14 @@ export default function GradesManagement() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-1.5 sm:gap-2">
                         {canUpdate && (
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleEdit(grade.id)}
+                            className="flex-shrink-0"
+                            aria-label={t('grades.edit')}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -382,8 +385,10 @@ export default function GradesManagement() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDeleteClick(grade.id)}
+                            className="flex-shrink-0"
+                            aria-label={t('common.delete')}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         )}
                       </div>
@@ -391,7 +396,8 @@ export default function GradesManagement() {
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

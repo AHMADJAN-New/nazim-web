@@ -108,31 +108,34 @@ export default function AssetsDashboard() {
             {/* Header with Date Range */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                         {t('assets.dashboard') || 'Assets Dashboard'}
                     </h1>
-                    <p className="text-muted-foreground mt-1">
+                    <p className="text-muted-foreground mt-1 text-sm sm:text-base hidden md:block">
                         {t('assets.dashboardDescription') || 'Overview of your organization\'s assets'}
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-lg border bg-background">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">
+                <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg border bg-background">
+                        <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-xs sm:text-sm font-medium hidden sm:inline">
                             {formatDate(startDate)} - {formatDate(endDate)}
                         </span>
+                        <span className="text-xs font-medium sm:hidden">
+                            {formatDate(startDate)}
+                        </span>
                     </div>
-                    <Button variant="outline" size="icon">
+                    <Button variant="outline" size="icon" className="flex-shrink-0">
                         <Download className="h-4 w-4" />
                     </Button>
                 </div>
             </div>
 
             {/* Summary Cards Row */}
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
                 {/* Total Assets */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('assets.totalAssets') || 'Total Assets'}
@@ -169,8 +172,8 @@ export default function AssetsDashboard() {
                 </Card>
 
                 {/* Total Value */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('assets.totalValue') || 'Total Value'}
@@ -196,8 +199,8 @@ export default function AssetsDashboard() {
                 </Card>
 
                 {/* Maintenance Cost */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('assets.maintenanceCost') || 'Maintenance Cost'}
@@ -223,8 +226,8 @@ export default function AssetsDashboard() {
                 </Card>
 
                 {/* Assigned Assets */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('assets.assignedAssets') || 'Assigned Assets'}
@@ -258,8 +261,8 @@ export default function AssetsDashboard() {
                 </Card>
 
                 {/* Assets in Maintenance */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('assets.inMaintenance') || 'In Maintenance'}
@@ -280,7 +283,7 @@ export default function AssetsDashboard() {
             </div>
 
             {/* Main Content Row */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
                 {/* Status Breakdown */}
                 <Card className="md:col-span-1">
                     <CardHeader className="flex flex-row items-center justify-between">
@@ -305,7 +308,7 @@ export default function AssetsDashboard() {
                                     };
                                     return acc;
                                 }, {} as ChartConfig)}
-                                className="mx-auto aspect-square max-h-[200px]"
+                                className="mx-auto aspect-square max-h-[150px] sm:max-h-[180px] md:max-h-[200px] w-full"
                             >
                                 <PieChart>
                                     <Pie
@@ -391,7 +394,7 @@ export default function AssetsDashboard() {
                                         color: 'hsl(var(--chart-1))',
                                     },
                                 } as ChartConfig}
-                                className="h-[250px] w-full"
+                                className="h-[200px] sm:h-[220px] md:h-[250px] w-full"
                             >
                                 <BarChart data={categoryData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />

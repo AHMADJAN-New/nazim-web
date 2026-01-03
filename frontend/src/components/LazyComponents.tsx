@@ -76,6 +76,7 @@ export const StaffReport = lazy(() => import('@/pages/StaffReport'));
 export const HostelManagement = lazy(() => import('@/pages/HostelManagement').then(module => ({ default: module.HostelManagement })));
 export const HostelReports = lazy(() => import('@/pages/HostelReports').then(module => ({ default: module.HostelReports })));
 export const AttendancePage = lazy(() => import('@/pages/Attendance').then(module => ({ default: module.default })));
+export const AttendanceMarking = lazy(() => import('@/pages/AttendanceMarking').then(module => ({ default: module.default })));
 export const AttendanceReports = lazy(() => import('@/pages/AttendanceReports'));
 export const AttendanceTotalsReports = lazy(() => import('@/pages/AttendanceTotalsReports'));
 export const UserManagement = lazy(() => import('@/components/admin/UserManagement').then(module => ({ default: module.UserManagement })));
@@ -111,7 +112,7 @@ export const FinanceReports = lazy(() => import('@/pages/finance/FinanceReports'
 export const FinanceSettings = lazy(() => import('@/pages/finance/FinanceSettings'));
 export const FeeDashboard = lazy(() => import('@/pages/fees/FeeDashboard'));
 export const FeeStructuresPage = lazy(() => import('@/pages/fees/FeeStructuresPage'));
-export const FeeAssignmentsPage = lazy(() => import('@/pages/fees/FeeAssignmentsPage'));
+export const FeeAssignmentsPage = lazy(() => import('@/pages/fees/FeeAssignmentsPage').then(module => ({ default: module.default })));
 export const FeePaymentsPage = lazy(() => import('@/pages/fees/FeePaymentsPage'));
 export const FeeExceptionsPage = lazy(() => import('@/pages/fees/FeeExceptionsPage'));
 export const FeeReportsPage = lazy(() => import('@/pages/fees/FeeReportsPage'));

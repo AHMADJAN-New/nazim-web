@@ -61,6 +61,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 
 export function ExamStudentEnrollment() {
   const { t } = useLanguage();
@@ -276,50 +278,42 @@ export function ExamStudentEnrollment() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            {urlExamId && (
-              <Button variant="ghost" size="icon" onClick={() => navigate('/exams')}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            )}
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">{t('exams.studentEnrollment') || 'Student Enrollment'}</h1>
-              <p className="text-muted-foreground mt-1">
-                {t('exams.studentEnrollmentDescription') || 'Enroll students in exams by class'}
-              </p>
+      <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+        <PageHeader
+          title={t('exams.studentEnrollment') || 'Student Enrollment'}
+          description={t('exams.studentEnrollmentDescription') || 'Enroll students in exams by class'}
+          icon={<GraduationCap className="h-5 w-5" />}
+          rightSlot={
+            <div className="flex items-center gap-2 flex-wrap">
+              {selectedExam && selectedExamClass && (
+                <>
+                  <Badge variant="outline" className="gap-1 py-1.5 px-3">
+                    <GraduationCap className="h-3 w-3" />
+                    {selectedExam.name}
+                  </Badge>
+                  <Badge className="gap-1 py-1.5 px-3">
+                    {selectedExamClass.classAcademicYear?.class?.name}
+                    {selectedExamClass.classAcademicYear?.sectionName && ` - ${selectedExamClass.classAcademicYear.sectionName}`}
+                  </Badge>
+                </>
+              )}
+              {selectedExam && hasAssign && (
+                <Button 
+                  variant="default"
+                  onClick={() => enrollAllStudents.mutate(selectedExam.id)}
+                  disabled={enrollAllStudents.isPending}
+                  className="flex-shrink-0"
+                >
+                  <UsersRound className="h-4 w-4 sm:mr-2" />
+                  <span className="text-xs sm:text-sm">{t('exams.enrollAllClasses') || 'Enroll All Classes'}</span>
+                </Button>
+              )}
             </div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {selectedExam && selectedExamClass && (
-              <>
-                <Badge variant="outline" className="gap-1 py-1.5 px-3">
-                  <GraduationCap className="h-3 w-3" />
-                  {selectedExam.name}
-                </Badge>
-                <Badge className="gap-1 py-1.5 px-3">
-                  {selectedExamClass.classAcademicYear?.class?.name}
-                  {selectedExamClass.classAcademicYear?.sectionName && ` - ${selectedExamClass.classAcademicYear.sectionName}`}
-                </Badge>
-              </>
-            )}
-            {selectedExam && hasAssign && (
-              <Button 
-                variant="default"
-                onClick={() => enrollAllStudents.mutate(selectedExam.id)}
-                disabled={enrollAllStudents.isPending}
-              >
-                <UsersRound className="h-4 w-4 mr-2" />
-                {t('exams.enrollAllClasses') || 'Enroll All Classes'}
-              </Button>
-            )}
-          </div>
-        </div>
+          }
+        />
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Card className="bg-gradient-to-br from-sky-500/10 to-sky-500/5 border-sky-500/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -376,7 +370,7 @@ export function ExamStudentEnrollment() {
             <Card className="sticky top-6">
               <CardHeader>
                 <CardTitle className="text-lg">{t('exams.selectExamAndClass') || 'Select Exam & Class'}</CardTitle>
-                <CardDescription>
+                <CardDescription className="hidden md:block">
                   {t('exams.selectExamAndClassDescription') || 'Choose an exam and class to enroll students'}
                 </CardDescription>
               </CardHeader>
@@ -488,13 +482,13 @@ export function ExamStudentEnrollment() {
                   {/* Available Students Section */}
                   <Card className="border-violet-200 dark:border-violet-800">
                     <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <CardTitle className="text-lg flex items-center gap-2">
                             <UserPlus className="h-5 w-5 text-violet-600" />
                             {t('exams.availableStudents') || 'Available Students'}
                           </CardTitle>
-                          <CardDescription>
+                          <CardDescription className="hidden md:block">
                             {stats.availableCount} {t('exams.studentsAvailable') || 'students available'}
                           </CardDescription>
                         </div>
@@ -510,8 +504,9 @@ export function ExamStudentEnrollment() {
                                 return newIds;
                               });
                             }}
+                            className="flex-shrink-0"
                           >
-                            {t('exams.selectAll') || 'Select All'}
+                            <span className="text-xs sm:text-sm">{t('exams.selectAll') || 'Select All'}</span>
                           </Button>
                         )}
                       </div>
@@ -614,13 +609,13 @@ export function ExamStudentEnrollment() {
                   {/* Selected Students Section */}
                   <Card className="border-emerald-200 dark:border-emerald-800">
                     <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <CardTitle className="text-lg flex items-center gap-2">
                             <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                             {t('exams.selectedStudents') || 'Selected Students'}
                           </CardTitle>
-                          <CardDescription>
+                          <CardDescription className="hidden md:block">
                             {selectedStudentIds.length} {t('exams.studentsSelected') || 'students selected'}
                           </CardDescription>
                         </div>
@@ -629,8 +624,9 @@ export function ExamStudentEnrollment() {
                             variant="outline"
                             size="sm"
                             onClick={() => setSelectedStudentIds([])}
+                            className="flex-shrink-0"
                           >
-                            {t('exams.clearAll') || 'Clear All'}
+                            <span className="text-xs sm:text-sm">{t('exams.clearAll') || 'Clear All'}</span>
                           </Button>
                         )}
                       </div>
@@ -683,8 +679,8 @@ export function ExamStudentEnrollment() {
                               className="w-full"
                               size="lg"
                             >
-                              <UserPlus className="h-4 w-4 mr-2" />
-                              {t('exams.enrollSelected') || `Enroll ${selectedStudentIds.length} Student(s)`}
+                              <UserPlus className="h-4 w-4 sm:mr-2" />
+                              <span className="text-xs sm:text-sm">{t('exams.enrollSelected') || `Enroll ${selectedStudentIds.length} Student(s)`}</span>
                             </Button>
                           </div>
                         </div>
@@ -700,7 +696,7 @@ export function ExamStudentEnrollment() {
                       <Plus className="h-5 w-5" />
                       {t('exams.quickEnroll') || 'Quick Enroll Single Student'}
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="hidden md:block">
                       {t('exams.quickEnrollDescription') || 'Enroll a single student quickly'}
                     </CardDescription>
                   </CardHeader>
@@ -743,9 +739,10 @@ export function ExamStudentEnrollment() {
                       <Button
                         onClick={handleEnroll}
                         disabled={!selectedStudentId || enrollStudent.isPending || admissionsLoading}
+                        className="flex-shrink-0"
                       >
-                        <Plus className="h-4 w-4 mr-1" />
-                        {t('exams.enroll') || 'Enroll'}
+                        <Plus className="h-4 w-4 sm:mr-1" />
+                        <span className="text-xs sm:text-sm">{t('exams.enroll') || 'Enroll'}</span>
                       </Button>
                     </div>
                   </CardContent>
@@ -759,7 +756,7 @@ export function ExamStudentEnrollment() {
                       {t('exams.enrolledStudents') || 'Enrolled Students'}
                       <Badge variant="secondary" className="ml-1">{stats.totalEnrolled}</Badge>
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="hidden md:block">
                       {t('exams.enrolledStudentsDescription') || 'Students enrolled in this exam class'}
                     </CardDescription>
                   </CardHeader>
@@ -775,46 +772,52 @@ export function ExamStudentEnrollment() {
                         </p>
                       </div>
                     ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>{t('students.admissionNo') || 'Admission No'}</TableHead>
-                            <TableHead>{t('students.name') || 'Name'}</TableHead>
-                            <TableHead>{t('students.class') || 'Class'}</TableHead>
-                            <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {enrolledStudents.map((examStudent) => (
-                            <TableRow key={examStudent.id}>
-                              <TableCell className="font-medium">
-                                {examStudent.studentAdmission?.admissionNo || '—'}
-                              </TableCell>
-                              <TableCell>
-                                {examStudent.studentAdmission?.student?.fullName || '—'}
-                              </TableCell>
-                              <TableCell>
-                                {examStudent.examClass?.classAcademicYear?.class?.name || '—'}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                {hasAssign && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    onClick={() => {
-                                      setStudentToRemove(examStudent);
-                                      setIsRemoveDialogOpen(true);
-                                    }}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                      <div className="overflow-x-auto -mx-4 md:mx-0">
+                        <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                          <div className="rounded-md border">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>{t('students.admissionNo') || 'Admission No'}</TableHead>
+                                  <TableHead>{t('students.name') || 'Name'}</TableHead>
+                                  <TableHead>{t('students.class') || 'Class'}</TableHead>
+                                  <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {enrolledStudents.map((examStudent) => (
+                                  <TableRow key={examStudent.id}>
+                                    <TableCell className="font-medium">
+                                      {examStudent.studentAdmission?.admissionNo || '—'}
+                                    </TableCell>
+                                    <TableCell>
+                                      {examStudent.studentAdmission?.student?.fullName || '—'}
+                                    </TableCell>
+                                    <TableCell>
+                                      {examStudent.examClass?.classAcademicYear?.class?.name || '—'}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      {hasAssign && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                          onClick={() => {
+                                            setStudentToRemove(examStudent);
+                                            setIsRemoveDialogOpen(true);
+                                          }}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -826,7 +829,7 @@ export function ExamStudentEnrollment() {
 
       {/* Remove Student Dialog */}
       <AlertDialog open={isRemoveDialogOpen} onOpenChange={setIsRemoveDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[95vw] sm:max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>{t('exams.removeStudent') || 'Remove Student'}</AlertDialogTitle>
             <AlertDialogDescription>

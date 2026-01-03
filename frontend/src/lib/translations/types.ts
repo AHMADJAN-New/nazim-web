@@ -464,6 +464,12 @@ export interface TranslationKeys {
     noStudentsMatchSearch: string;
     searchScans: string;
     noScansMatchSearch: string;
+    markAttendanceDescription: string;
+    selectSession: string;
+    selectSessionPlaceholder: string;
+    currentSession: string;
+    selectSessionForMarking: string;
+    searchSessions: string;
   };
 
   attendanceReports: {
