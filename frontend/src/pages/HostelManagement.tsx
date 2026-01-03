@@ -7,6 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -195,7 +198,7 @@ export function HostelManagement() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -213,24 +216,21 @@ export function HostelManagement() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BedDouble className="h-6 w-6" />
-            {t('nav.hostel')}
-          </h1>
-          <p className="text-muted-foreground">
-            Monitor hostel occupancy, room assignments, and warden coverage.
-          </p>
-        </div>
-        <Button onClick={exportCsv} variant="outline" disabled={filteredRooms.length === 0}>
-          <FileDown className="h-4 w-4 mr-2" />
-          {t('hostel.exportOccupancyCsv')}
-        </Button>
-      </div>
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <PageHeader
+        title={t('nav.hostel') || 'Hostel Management'}
+        description="Monitor hostel occupancy, room assignments, and warden coverage."
+        icon={<BedDouble className="h-5 w-5" />}
+        rightSlot={
+          <Button onClick={exportCsv} variant="outline" size="sm" disabled={filteredRooms.length === 0} className="flex-shrink-0">
+            <FileDown className="h-4 w-4" />
+            <span className="hidden sm:inline ml-2">{t('hostel.exportOccupancyCsv')}</span>
+          </Button>
+        }
+        showDescriptionOnMobile={false}
+      />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Rooms occupied</CardTitle>
@@ -280,38 +280,55 @@ export function HostelManagement() {
         </Card>
       </div>
 
+      <FilterPanel 
+        title={t('common.filters') || 'Search & Filter'}
+        defaultOpenDesktop={true}
+        defaultOpenMobile={false}
+      >
+        <div className="flex flex-col gap-4 md:flex-row md:items-end">
+          <div className="w-full md:w-[200px]">
+            <Label htmlFor="building-filter">Building</Label>
+            <Select value={buildingFilter} onValueChange={setBuildingFilter}>
+              <SelectTrigger id="building-filter">
+                <SelectValue placeholder={t('hostel.filterByBuilding')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All buildings</SelectItem>
+                {buildings.map((building) => (
+                  <SelectItem key={building.id} value={building.id}>
+                    {building.buildingName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex-1 min-w-0">
+            <Label htmlFor="search">Search</Label>
+            <Input
+              id="search"
+              placeholder={t('hostel.searchRoomsPlaceholder')}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
+        </div>
+      </FilterPanel>
+
       <Card>
         <CardHeader>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <CardTitle>Room occupancy</CardTitle>
-              <CardDescription>Track students per room and warden assignments.</CardDescription>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Select value={buildingFilter} onValueChange={setBuildingFilter}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder={t('hostel.filterByBuilding')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All buildings</SelectItem>
-                  {buildings.map((building) => (
-                    <SelectItem key={building.id} value={building.id}>
-                      {building.buildingName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder={t('hostel.searchRoomsPlaceholder')}
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className="w-full sm:w-64"
-              />
+              <CardDescription className="hidden md:block">Track students per room and warden assignments.</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <DataTable table={table} />
+          <div className="overflow-x-auto -mx-4 md:mx-0">
+            <div className="inline-block min-w-full align-middle px-4 md:px-0">
+              <DataTable table={table} />
+            </div>
+          </div>
 
           <DataTablePagination
             table={table}

@@ -36,6 +36,8 @@ import { RichTextEditor } from "@/components/dms/RichTextEditor";
 import { formatDate, formatDateForInput, getShortDescription } from "@/lib/dateUtils";
 import { Separator } from "@/components/ui/separator";
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { PageHeader } from "@/components/layout/PageHeader";
+import { FilterPanel } from "@/components/layout/FilterPanel";
 
 const statusOptions = [
   { label: "Pending", value: "pending" },
@@ -490,9 +492,12 @@ export default function IncomingDocuments() {
   const { data: currentAcademicYear } = useCurrentAcademicYear(profile?.organization_id);
   
   // Get departments
-  const { data: departments = [] } = useQuery({
+  const { data: departments = [] } = useQuery<Array<{ id: string; name: string }>>({
     queryKey: ["dms", "departments"],
-    queryFn: () => dmsApi.departments.list(),
+    queryFn: async () => {
+      const result = await dmsApi.departments.list();
+      return Array.isArray(result) ? result : [];
+    },
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
@@ -796,31 +801,27 @@ export default function IncomingDocuments() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <FileText className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Incoming Documents</h1>
-            <p className="text-muted-foreground">Manage and track incoming documents</p>
-          </div>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Document
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add Incoming Document</DialogTitle>
-              <DialogDescription>
-                Create a new incoming document record. Fill in the required fields and save.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <PageHeader
+        title={t('dms.incomingDocuments') || 'Incoming Documents'}
+        description={t('dms.incomingDocumentsDescription') || 'Manage and track incoming documents'}
+        icon={<FileText className="h-5 w-5" />}
+        primaryAction={{
+          label: t('dms.addDocument') || 'Add Document',
+          onClick: () => setIsDialogOpen(true),
+          icon: <Plus className="h-4 w-4" />,
+        }}
+      />
+
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Incoming Document</DialogTitle>
+            <DialogDescription>
+              Create a new incoming document record. Fill in the required fields and save.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
               {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Basic Information</h3>
@@ -845,7 +846,7 @@ export default function IncomingDocuments() {
                   </div>
                   <div className="space-y-2">
                     <Label>Received Date <span className="text-destructive">*</span></Label>
-                    <CalendarDatePicker date={newDoc.received_date ? new Date(newDoc.received_date) : undefined} onDateChange={(date) => setNewDoc(date ? date.toISOString().split("T")[0] : "")} />
+                    <CalendarDatePicker date={newDoc.received_date ? new Date(newDoc.received_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, received_date: date ? date.toISOString().split("T")[0] : "" }))} />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -969,7 +970,7 @@ export default function IncomingDocuments() {
                   </div>
                   <div className="space-y-2">
                     <Label>External Document Date</Label>
-                    <CalendarDatePicker date={newDoc.external_doc_date ? new Date(newDoc.external_doc_date) : undefined} onDateChange={(date) => setNewDoc(date ? date.toISOString().split("T")[0] : "")} />
+                    <CalendarDatePicker date={newDoc.external_doc_date ? new Date(newDoc.external_doc_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, external_doc_date: date ? date.toISOString().split("T")[0] : "" }))} />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -1061,10 +1062,9 @@ export default function IncomingDocuments() {
                   Cancel
                 </Button>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Document Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={handleEditDialogClose}>
@@ -1306,102 +1306,97 @@ export default function IncomingDocuments() {
         </DialogContent>
       </Dialog>
 
-      {/* Filters Card - Always Visible */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Search & Filter
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
-              <Label>Subject</Label>
-              <Input
-                placeholder="Search by subject..."
-                value={filters.subject}
-                onChange={(e) => setFilters((s) => ({ ...s, subject: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Sender Organization</Label>
-              <Input
-                placeholder="Search by sender..."
-                value={filters.sender_org}
-                onChange={(e) => setFilters((s) => ({ ...s, sender_org: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={filters.status || "all"}
-                onValueChange={(value) => setFilters((s) => ({ ...s, status: value === "all" ? "" : value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  {statusOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Security Level</Label>
-              <Select
-                value={filters.security_level_key || "all"}
-                onValueChange={(value) => setFilters((s) => ({ ...s, security_level_key: value === "all" ? "" : value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All levels" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All levels</SelectItem>
-                  <SelectItem value="public">Public</SelectItem>
-                  <SelectItem value="internal">Internal</SelectItem>
-                  <SelectItem value="confidential">Confidential</SelectItem>
-                  <SelectItem value="secret">Secret</SelectItem>
-                  <SelectItem value="top_secret">Top Secret</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Department</Label>
-              <Select
-                value={filters.routing_department_id === "" ? "unassigned" : (filters.routing_department_id || "all")}
-                onValueChange={(value) => setFilters((s) => ({ ...s, routing_department_id: value === "all" || value === "unassigned" ? "" : value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All departments" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All departments</SelectItem>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex gap-2 mt-4">
+      <FilterPanel
+        title={t('common.filters') || 'Search & Filter'}
+        footer={
+          <div className="flex gap-2">
             <Button
               variant="outline"
               onClick={() => setFilters({ subject: "", sender_org: "", status: "", security_level_key: "", academic_year_id: "", routing_department_id: "" })}
             >
               <X className="h-4 w-4 mr-2" />
-              Clear Filters
+              {t('common.clearFilters') || 'Clear Filters'}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        }
+      >
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-2">
+            <Label>{t('dms.subject') || 'Subject'}</Label>
+            <Input
+              placeholder={t('dms.searchBySubject') || 'Search by subject...'}
+              value={filters.subject}
+              onChange={(e) => setFilters((s) => ({ ...s, subject: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>{t('dms.senderOrganization') || 'Sender Organization'}</Label>
+            <Input
+              placeholder={t('dms.searchBySender') || 'Search by sender...'}
+              value={filters.sender_org}
+              onChange={(e) => setFilters((s) => ({ ...s, sender_org: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>{t('common.status') || 'Status'}</Label>
+            <Select
+              value={filters.status || "all"}
+              onValueChange={(value) => setFilters((s) => ({ ...s, status: value === "all" ? "" : value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('common.allStatuses') || 'All statuses'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common.allStatuses') || 'All statuses'}</SelectItem>
+                {statusOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{t('dms.securityLevel') || 'Security Level'}</Label>
+            <Select
+              value={filters.security_level_key || "all"}
+              onValueChange={(value) => setFilters((s) => ({ ...s, security_level_key: value === "all" ? "" : value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('common.allLevels') || 'All levels'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common.allLevels') || 'All levels'}</SelectItem>
+                <SelectItem value="public">Public</SelectItem>
+                <SelectItem value="internal">Internal</SelectItem>
+                <SelectItem value="confidential">Confidential</SelectItem>
+                <SelectItem value="secret">Secret</SelectItem>
+                <SelectItem value="top_secret">Top Secret</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{t('dms.department') || 'Department'}</Label>
+            <Select
+              value={filters.routing_department_id === "" ? "unassigned" : (filters.routing_department_id || "all")}
+              onValueChange={(value) => setFilters((s) => ({ ...s, routing_department_id: value === "all" || value === "unassigned" ? "" : value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('common.allDepartments') || 'All departments'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common.allDepartments') || 'All departments'}</SelectItem>
+                <SelectItem value="unassigned">{t('common.unassigned') || 'Unassigned'}</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </FilterPanel>
 
       {/* Documents List */}
       <Card>

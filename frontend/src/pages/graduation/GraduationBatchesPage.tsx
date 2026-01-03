@@ -1,12 +1,12 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ChevronUp, ChevronDown, ArrowUpDown, Edit, Trash2, Eye, Calendar, Users, GraduationCap, FileText, X, ArrowRightLeft, Filter, LayoutGrid, Table as TableIcon, RefreshCw, CheckCircle2, HelpCircle } from 'lucide-react';
+import { Search, ArrowUpDown, Edit, Trash2, Eye, Calendar, Users, GraduationCap, FileText, X, LayoutGrid, Table as TableIcon, RefreshCw, CheckCircle2, HelpCircle } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -33,6 +33,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 
 // Status Badge Component
 const StatusBadge = ({ status }: { status: string }) => {
@@ -78,7 +80,6 @@ export default function GraduationBatchesPage() {
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [filtersOpen, setFiltersOpen] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   
   // Sorting state
@@ -686,14 +687,11 @@ export default function GraduationBatchesPage() {
   if (!schoolId && schools.length > 0) {
     return (
       <div className="container mx-auto py-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">{t('nav.graduation.batches') || 'Graduation Batches'}</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {t('graduation.batches.description') || 'Manage graduation batches, approve students, and issue certificates'}
-            </p>
-          </div>
-        </div>
+        <PageHeader
+          title={t('nav.graduation.batches') || 'Graduation Batches'}
+          description={t('graduation.batches.description') || 'Manage graduation batches, approve students, and issue certificates'}
+          icon={<GraduationCap className="h-5 w-5" />}
+        />
         <Card>
           <CardContent className="pt-12 pb-12">
             <div className="text-center space-y-4">
@@ -712,52 +710,82 @@ export default function GraduationBatchesPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{t('nav.graduation.batches') || 'Graduation Batches'}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t('graduation.batches.description') || 'Manage graduation batches, approve students, and issue certificates'}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Dialog 
-            open={createOpen} 
-            onOpenChange={(open) => {
-              setCreateOpen(open);
-              if (!open) {
-                // Reset form when dialog closes
-                form.reset({
-                  graduation_type: 'final_year',
-                  school_id: schoolId || '',
-                  academic_year_id: '',
-                  class_id: '',
-                  from_class_id: '',
-                  to_class_id: '',
-                  exam_ids: [],
-                  exam_weights: {},
-                  graduation_date: '',
-                  min_attendance_percentage: 75.0,
-                  require_attendance: true,
-                  exclude_approved_leaves: true,
-                });
-              }
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button>
-                <GraduationCap className="h-4 w-4 mr-2" />
-                {t('common.create') || 'Create Batch'}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{t('nav.graduation.batches')}</DialogTitle>
-                <DialogDescription>
-                  {t('graduation.batches.description') || 'Create a new graduation batch. Configure the graduation type, select classes, exams, and set eligibility criteria.'}
-                </DialogDescription>
-              </DialogHeader>
-              <form className="space-y-4" onSubmit={form.handleSubmit(handleCreate)}>
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <PageHeader
+        title={t('nav.graduation.batches') || 'Graduation Batches'}
+        description={t('graduation.batches.description') || 'Manage graduation batches, approve students, and issue certificates'}
+        icon={<GraduationCap className="h-5 w-5" />}
+        primaryAction={{
+          label: t('common.create') || 'Create Batch',
+          onClick: () => setCreateOpen(true),
+          icon: <GraduationCap className="h-4 w-4" />,
+        }}
+        rightSlot={
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <ReportExportButtons
+              data={sortedBatches}
+              columns={reportColumns}
+              reportKey="graduation_batches"
+              title={t('nav.graduation.batches') || 'Graduation Batches Report'}
+              transformData={transformGraduationBatchData}
+              buildFiltersSummary={buildFiltersSummary}
+              schoolId={schoolId}
+              templateType="graduation_batches"
+              disabled={isLoading || sortedBatches.length === 0}
+            />
+            <Button
+              variant={viewMode === 'cards' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('cards')}
+              aria-label={t('common.cardView') || 'Card view'}
+              className="flex-shrink-0"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+              aria-label={t('common.tableView') || 'Table view'}
+              className="flex-shrink-0"
+            >
+              <TableIcon className="h-4 w-4" />
+            </Button>
+          </div>
+        }
+      />
+
+      <Dialog 
+        open={createOpen} 
+        onOpenChange={(open) => {
+          setCreateOpen(open);
+          if (!open) {
+            // Reset form when dialog closes
+            form.reset({
+              graduation_type: 'final_year',
+              school_id: schoolId || '',
+              academic_year_id: '',
+              class_id: '',
+              from_class_id: '',
+              to_class_id: '',
+              exam_ids: [],
+              exam_weights: {},
+              graduation_date: '',
+              min_attendance_percentage: 75.0,
+              require_attendance: true,
+              exclude_approved_leaves: true,
+            });
+          }
+        }}
+      >
+        <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{t('nav.graduation.batches')}</DialogTitle>
+              <DialogDescription>
+                {t('graduation.batches.description') || 'Create a new graduation batch. Configure the graduation type, select classes, exams, and set eligibility criteria.'}
+              </DialogDescription>
+            </DialogHeader>
+            <form className="space-y-4" onSubmit={form.handleSubmit(handleCreate)}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Graduation Type */}
                   <div>
@@ -1055,22 +1083,20 @@ export default function GraduationBatchesPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
-                    {t('common.cancel')}
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setCreateOpen(false)} className="w-full sm:w-auto">
+                    <span className="text-xs sm:text-sm">{t('common.cancel')}</span>
                   </Button>
-                  <Button type="submit" disabled={createBatch.isPending}>
-                    {createBatch.isPending ? t('common.processing') : t('common.save')}
+                  <Button type="submit" disabled={createBatch.isPending} className="w-full sm:w-auto">
+                    <span className="text-xs sm:text-sm">{createBatch.isPending ? t('common.processing') : t('common.save')}</span>
                   </Button>
                 </div>
               </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Summary Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -1097,196 +1123,146 @@ export default function GraduationBatchesPage() {
         </Card>
       </div>
 
-      {/* Quick Filter Buttons */}
-      <div className="flex flex-wrap gap-2">
-        <Button 
-          variant={statusFilter === 'all' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setStatusFilter('all')}
-        >
-          {t('common.all') || 'All'} ({stats.total})
-        </Button>
-        <Button 
-          variant={statusFilter === 'draft' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setStatusFilter('draft')}
-        >
-          {t('graduation.status.draft') || 'Draft'} ({stats.draft})
-        </Button>
-        <Button 
-          variant={statusFilter === 'approved' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setStatusFilter('approved')}
-        >
-          {t('graduation.status.approved') || 'Approved'} ({stats.approved})
-        </Button>
-        <Button 
-          variant={statusFilter === 'issued' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setStatusFilter('issued')}
-        >
-          {t('graduation.status.issued') || 'Issued'} ({stats.issued})
-        </Button>
-      </div>
-
-      {/* Search Bar, View Toggle, and Export */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={t('graduation.filters.searchPlaceholder') || 'Search by year, class, exam...'}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 pr-10"
-          />
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
-              onClick={() => setSearchQuery('')}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <ReportExportButtons
-            data={sortedBatches}
-            columns={reportColumns}
-            reportKey="graduation_batches"
-            title={t('nav.graduation.batches') || 'Graduation Batches Report'}
-            transformData={transformGraduationBatchData}
-            buildFiltersSummary={buildFiltersSummary}
-            schoolId={schoolId}
-            templateType="graduation_batches"
-            disabled={isLoading || sortedBatches.length === 0}
-          />
-          <Button
-            variant={viewMode === 'cards' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('cards')}
-            title="Card View"
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'table' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('table')}
-            title="Table View"
-          >
-            <TableIcon className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Collapsible Filters */}
-      <Card>
-        <CardHeader 
-          className="cursor-pointer hover:bg-muted/50 transition-colors"
-          onClick={() => setFiltersOpen(!filtersOpen)}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              <CardTitle>{t('common.filter')}</CardTitle>
-              {(() => {
-                const activeFilterCount = [
-                  schoolId,
-                  academicYearId,
-                  classId,
-                  examId,
-                  dateFrom,
-                  dateTo,
-                ].filter(Boolean).length;
-                return activeFilterCount > 0 ? (
-                  <Badge variant="secondary" className="ml-2">
-                    {activeFilterCount}
-                  </Badge>
-                ) : null;
-              })()}
+      <FilterPanel 
+        title={t('common.filters') || 'Search & Filter'}
+        defaultOpenDesktop={true}
+        defaultOpenMobile={false}
+      >
+        <div className="space-y-4">
+          <div>
+            <Label className="mb-2 block">{t('common.status') || 'Status'}</Label>
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant={statusFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('all')}
+                className="text-xs sm:text-sm"
+              >
+                {t('common.all') || 'All'} ({stats.total})
+              </Button>
+              <Button 
+                variant={statusFilter === 'draft' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('draft')}
+                className="text-xs sm:text-sm"
+              >
+                {t('graduation.status.draft') || 'Draft'} ({stats.draft})
+              </Button>
+              <Button 
+                variant={statusFilter === 'approved' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('approved')}
+                className="text-xs sm:text-sm"
+              >
+                {t('graduation.status.approved') || 'Approved'} ({stats.approved})
+              </Button>
+              <Button 
+                variant={statusFilter === 'issued' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('issued')}
+                className="text-xs sm:text-sm"
+              >
+                {t('graduation.status.issued') || 'Issued'} ({stats.issued})
+              </Button>
             </div>
-            {filtersOpen ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
           </div>
-        </CardHeader>
-        {filtersOpen && (
-          <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+
           <div>
-            <Label>{t('common.schoolManagement')}</Label>
-            <Select value={schoolId || ''} onValueChange={(val) => setSchoolId(val || undefined)}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('common.selectSchool')} />
-              </SelectTrigger>
-              <SelectContent>
-                {schools.map((school) => (
-                  <SelectItem key={school.id} value={school.id}>
-                    {school.schoolName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="mb-2 block">{t('common.search') || 'Search'}</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={t('graduation.filters.searchPlaceholder') || 'Search by year, class, exam...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                  onClick={() => setSearchQuery('')}
+                  aria-label={t('common.clear') || 'Clear'}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
-          <div>
-            <Label>{t('fees.academicYear')}</Label>
-            <Select value={academicYearId || ''} onValueChange={(val) => setAcademicYearId(val || undefined)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                {academicYears.map((ay) => (
-                  <SelectItem key={ay.id} value={ay.id}>
-                    {ay.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <Label>{t('common.schoolManagement')}</Label>
+              <Select value={schoolId || ''} onValueChange={(val) => setSchoolId(val || undefined)}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('common.selectSchool')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {schools.map((school) => (
+                    <SelectItem key={school.id} value={school.id}>
+                      {school.schoolName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>{t('fees.academicYear')}</Label>
+              <Select value={academicYearId || ''} onValueChange={(val) => setAcademicYearId(val || undefined)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {academicYears.map((ay) => (
+                    <SelectItem key={ay.id} value={ay.id}>
+                      {ay.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>{t('fees.class')}</Label>
+              <Select value={classId || ''} onValueChange={(val) => setClassId(val || undefined)}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('common.selectClass') ?? 'Select'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {classes.map((cls) => (
+                    <SelectItem key={cls.id} value={cls.id}>
+                      {cls.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>{t('nav.exams')}</Label>
+              <Select value={examId || ''} onValueChange={(val) => setExamId(val || undefined)}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('nav.exams')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {exams.map((exam) => (
+                    <SelectItem key={exam.id} value={exam.id}>
+                      {exam.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>{t('graduation.filters.dateFrom') || 'From Date'}</Label>
+              <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
+            </div>
+            <div>
+              <Label>{t('graduation.filters.dateTo') || 'To Date'}</Label>
+              <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
+            </div>
           </div>
-          <div>
-            <Label>{t('fees.class')}</Label>
-            <Select value={classId || ''} onValueChange={(val) => setClassId(val || undefined)}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('common.selectClass') ?? 'Select'} />
-              </SelectTrigger>
-              <SelectContent>
-                {classes.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id}>
-                    {cls.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>{t('nav.exams')}</Label>
-            <Select value={examId || ''} onValueChange={(val) => setExamId(val || undefined)}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('nav.exams')} />
-              </SelectTrigger>
-              <SelectContent>
-                {exams.map((exam) => (
-                  <SelectItem key={exam.id} value={exam.id}>
-                    {exam.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>{t('graduation.filters.dateFrom') || 'From Date'}</Label>
-            <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
-          </div>
-          <div>
-            <Label>{t('graduation.filters.dateTo') || 'To Date'}</Label>
-            <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
-          </div>
-          </CardContent>
-        )}
-      </Card>
+        </div>
+      </FilterPanel>
 
       {/* Grouped Batches by Academic Year */}
       {isLoading ? (
@@ -1319,14 +1295,10 @@ export default function GraduationBatchesPage() {
                   </ol>
                 </div>
               </div>
-              <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <GraduationCap className="h-4 w-4 mr-2" />
-                    {t('common.create') || 'Create Your First Batch'}
-                  </Button>
-                </DialogTrigger>
-              </Dialog>
+              <Button onClick={() => setCreateOpen(true)}>
+                <GraduationCap className="h-4 w-4 sm:mr-2" />
+                <span className="text-xs sm:text-sm">{t('common.create') || 'Create Your First Batch'}</span>
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -1432,8 +1404,8 @@ export default function GraduationBatchesPage() {
                                   }}
                                   disabled={generateStudents.isPending}
                                 >
-                                  <RefreshCw className="h-3 w-3 mr-1" />
-                                  Generate
+                                  <RefreshCw className="h-3 w-3 sm:mr-1" />
+                                  <span className="text-xs sm:text-sm">Generate</span>
                                 </Button>
                                 <Button
                                   size="sm"
@@ -1444,8 +1416,8 @@ export default function GraduationBatchesPage() {
                                   }}
                                   disabled={approveBatch.isPending}
                                 >
-                                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  Approve
+                                  <CheckCircle2 className="h-3 w-3 sm:mr-1" />
+                                  <span className="text-xs sm:text-sm">Approve</span>
                                 </Button>
                               </>
                             )}
@@ -1458,8 +1430,8 @@ export default function GraduationBatchesPage() {
                                   navigate(`/graduation/batches/${batch.id}`);
                                 }}
                               >
-                                <FileText className="h-3 w-3 mr-1" />
-                                Issue Certificates
+                                <FileText className="h-3 w-3 sm:mr-1" />
+                                <span className="text-xs sm:text-sm">Issue Certificates</span>
                               </Button>
                             )}
                           </div>
@@ -1468,8 +1440,11 @@ export default function GraduationBatchesPage() {
                     ))}
                   </div>
                 ) : (
-                  <Table>
-                  <TableHeader>
+                  <div className="overflow-x-auto -mx-4 md:mx-0">
+                    <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                      <div className="rounded-md border">
+                        <Table>
+                          <TableHeader>
                     <TableRow>
                       <TableHead>
                         <Button 
@@ -1586,8 +1561,11 @@ export default function GraduationBatchesPage() {
                         </TableCell>
                       </TableRow>
                     ))}
-                  </TableBody>
-                </Table>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -1599,16 +1577,17 @@ export default function GraduationBatchesPage() {
       {groupedBatches.length > 5 && (
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-sm text-muted-foreground text-center sm:text-left">
                 {t('graduation.pagination.showing') || 'Showing'} {(page - 1) * 5 + 1}-{Math.min(page * 5, groupedBatches.length)} {t('graduation.pagination.of') || 'of'} {groupedBatches.length} {t('graduation.summary.totalBatches') || 'year groups'}
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2 flex-wrap justify-center">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
+                  className="text-xs sm:text-sm"
                 >
                   {t('common.previous') || 'Previous'}
                 </Button>
@@ -1630,6 +1609,7 @@ export default function GraduationBatchesPage() {
                         variant={page === pageNum ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setPage(pageNum)}
+                        className="text-xs sm:text-sm"
                       >
                         {pageNum}
                       </Button>
@@ -1641,6 +1621,7 @@ export default function GraduationBatchesPage() {
                   size="sm"
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
+                  className="text-xs sm:text-sm"
                 >
                   {t('common.next') || 'Next'}
                 </Button>
@@ -1678,8 +1659,8 @@ export default function GraduationBatchesPage() {
                           onClick={handleEdit}
                           disabled={updateBatch.isPending}
                         >
-                          <Edit className="h-4 w-4 mr-2" />
-                          {t('common.edit')}
+                          <Edit className="h-4 w-4 sm:mr-2" />
+                          <span className="text-xs sm:text-sm">{t('common.edit')}</span>
                         </Button>
                         <Button
                           variant="destructive"
@@ -1687,15 +1668,15 @@ export default function GraduationBatchesPage() {
                           onClick={() => setIsDeleteDialogOpen(true)}
                           disabled={deleteBatch.isPending}
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          {t('common.delete')}
+                          <Trash2 className="h-4 w-4 sm:mr-2" />
+                          <span className="text-xs sm:text-sm">{t('common.delete')}</span>
                         </Button>
                       </>
                     )}
                     <Button variant="outline" size="sm" asChild>
                       <Link to={`/graduation/batches/${selectedBatch.id}`}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        {t('common.viewDetails') || 'View Details'}
+                        <Eye className="h-4 w-4 sm:mr-2" />
+                        <span className="text-xs sm:text-sm">{t('common.viewDetails') || 'View Details'}</span>
                       </Link>
                     </Button>
                   </div>
@@ -1849,7 +1830,7 @@ export default function GraduationBatchesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('common.edit')} {t('nav.graduation.batches')}</DialogTitle>
             <DialogDescription>

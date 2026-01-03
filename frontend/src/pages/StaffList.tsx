@@ -704,7 +704,7 @@ export function StaffList() {
                     setCurrentStep(1);
                 }
             }}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
                     <FormProvider {...formMethods}>
                       <form onSubmit={handleSubmit(async (data) => {
                         // Wait for profile to load
@@ -824,7 +824,7 @@ export function StaffList() {
                     })}>
                         <DialogHeader>
                             <DialogTitle>{t('staff.createEmployee')}</DialogTitle>
-                            <DialogDescription>
+                            <DialogDescription className="hidden md:block">
                                 {t('staff.createEmployeeDescription')}
                             </DialogDescription>
                         </DialogHeader>
@@ -834,9 +834,9 @@ export function StaffList() {
                             <UsageLimitWarning resourceKey="staff" compact />
                         )}
 
-                        <div className="grid grid-cols-[250px_1fr] gap-6 py-4">
-                            {/* Step Navigation - Vertical Sidebar */}
-                            <div className="border-r pr-6">
+                        <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-6 py-4">
+                            {/* Step Navigation - Vertical Sidebar (Desktop Only) */}
+                            <div className="hidden md:block border-r pr-6">
                                 <div className="flex flex-col">
                                     {steps.map((step, index) => {
                                         const StepIcon = step.icon;
@@ -884,6 +884,50 @@ export function StaffList() {
                                 </div>
                             </div>
 
+                            {/* Step Indicator - Mobile Only */}
+                            <div className="md:hidden mb-4">
+                                <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
+                                    <div className="flex items-center gap-3">
+                                        {(() => {
+                                            const currentStepData = steps.find(s => s.id === currentStep);
+                                            const currentStepIndex = steps.findIndex(s => s.id === currentStep);
+                                            const StepIcon = currentStepData?.icon || User;
+                                            return (
+                                                <>
+                                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground">
+                                                        <StepIcon className="h-5 w-5" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-medium">{currentStepData?.label || 'Step'}</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Step {currentStepIndex + 1} of {steps.length}
+                                                        </p>
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        {steps.map((step) => {
+                                            const isActive = currentStep === step.id;
+                                            const isCompleted = currentStep > step.id;
+                                            return (
+                                                <div
+                                                    key={step.id}
+                                                    className={`w-2 h-2 rounded-full transition-colors ${
+                                                        isActive
+                                                            ? 'bg-primary'
+                                                            : isCompleted
+                                                                ? 'bg-primary/50'
+                                                                : 'bg-muted'
+                                                    }`}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Step Content */}
                             <div className="flex-1">
                                 {/* Step 1: Basic Information */}
@@ -895,10 +939,10 @@ export function StaffList() {
                                                     <User className="h-5 w-5" />
                                                     Basic Information
                                                 </CardTitle>
-                                                <CardDescription>Core employee identification and status information</CardDescription>
+                                                <CardDescription className="hidden md:block">Core employee identification and status information</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="employee_id">{t('staff.employeeCode')} *</Label>
                                                         <Input id="employee_id" {...register('employee_id')} placeholder={t('staff.employeeCodePlaceholder')} />
@@ -974,10 +1018,10 @@ export function StaffList() {
                                                     <User className="h-5 w-5" />
                                                     Personal Details
                                                 </CardTitle>
-                                                <CardDescription>Personal information and identification</CardDescription>
+                                                <CardDescription className="hidden md:block">Personal information and identification</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
-                                                <div className="grid grid-cols-3 gap-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="first_name">{t('staff.firstName')} *</Label>
                                                         <Input id="first_name" {...register('first_name')} />
@@ -1021,10 +1065,10 @@ export function StaffList() {
                                                     <MapPin className="h-5 w-5" />
                                                     Contact & Location
                                                 </CardTitle>
-                                                <CardDescription>Contact information and addresses</CardDescription>
+                                                <CardDescription className="hidden md:block">Contact information and addresses</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="email">{t('staff.email')}</Label>
                                                         <Input id="email" type="email" {...register('email')} />
@@ -1039,10 +1083,10 @@ export function StaffList() {
                                                         <Input id="home_address" {...register('home_address')} />
                                                     </div>
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                                                     <div>
                                                         <h4 className="font-medium mb-3">{t('staff.originLocation')}</h4>
-                                                        <div className="grid grid-cols-3 gap-2">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                             <div className="grid gap-2">
                                                                 <Label htmlFor="origin_province">{t('staff.province')}</Label>
                                                                 <Input id="origin_province" {...register('origin_province')} />
@@ -1059,7 +1103,7 @@ export function StaffList() {
                                                     </div>
                                                     <div>
                                                         <h4 className="font-medium mb-3">{t('staff.currentLocation')}</h4>
-                                                        <div className="grid grid-cols-3 gap-2">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                             <div className="grid gap-2">
                                                                 <Label htmlFor="current_province">{t('staff.province')}</Label>
                                                                 <Input id="current_province" {...register('current_province')} />
@@ -1089,12 +1133,12 @@ export function StaffList() {
                                                     <GraduationCap className="h-5 w-5" />
                                                     Education
                                                 </CardTitle>
-                                                <CardDescription>Educational background and qualifications</CardDescription>
+                                                <CardDescription className="hidden md:block">Educational background and qualifications</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-6">
                                                 <div>
                                                     <h4 className="font-medium mb-3">{t('staff.religiousEducationSection')}</h4>
-                                                    <div className="grid grid-cols-2 gap-4">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div className="grid gap-2">
                                                             <Label htmlFor="religious_education">{t('staff.educationLevel')}</Label>
                                                             <Input id="religious_education" {...register('religious_education')} />
@@ -1115,7 +1159,7 @@ export function StaffList() {
                                                 </div>
                                                 <div className="pt-4 border-t">
                                                     <h4 className="font-medium mb-3">Modern Education</h4>
-                                                    <div className="grid grid-cols-2 gap-4">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div className="grid gap-2">
                                                             <Label htmlFor="modern_education">Education Level</Label>
                                                             <Input id="modern_education" {...register('modern_education')} />
@@ -1148,10 +1192,10 @@ export function StaffList() {
                                                     <Briefcase className="h-5 w-5" />
                                                     Employment
                                                 </CardTitle>
-                                                <CardDescription>Employment details and position information</CardDescription>
+                                                <CardDescription className="hidden md:block">Employment details and position information</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="position">{t('staff.position')}</Label>
                                                         <Input id="position" {...register('position')} />
@@ -1179,16 +1223,16 @@ export function StaffList() {
                                 )}
                             </div>
                         </div>
-                        <DialogFooter className="flex justify-between">
-                            <div className="flex gap-2">
+                        <DialogFooter className="flex flex-col sm:flex-row justify-between gap-2">
+                            <div className="flex gap-2 w-full sm:w-auto">
                                 {currentStep > 1 && (
-                                    <Button type="button" variant="outline" onClick={() => setCurrentStep(currentStep - 1)}>
+                                    <Button type="button" variant="outline" onClick={() => setCurrentStep(currentStep - 1)} className="flex-1 sm:flex-initial">
                                         <ChevronLeft className="h-4 w-4 mr-2" />
                                         Previous
                                     </Button>
                                 )}
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 w-full sm:w-auto">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -1197,11 +1241,12 @@ export function StaffList() {
                                         reset();
                                         setCurrentStep(1);
                                     }}
+                                    className="flex-1 sm:flex-initial"
                                 >
                                     {t('common.cancel')}
                                 </Button>
                                 {currentStep < steps.length ? (
-                                    <Button type="button" onClick={() => setCurrentStep(currentStep + 1)}>
+                                    <Button type="button" onClick={() => setCurrentStep(currentStep + 1)} className="flex-1 sm:flex-initial">
                                         {t('staff.next')}
                                         <ChevronRight className="h-4 w-4 ml-2" />
                                     </Button>
@@ -1209,6 +1254,7 @@ export function StaffList() {
                                     <Button
                                         type="submit"
                                         disabled={createStaff.isPending || !staffUsage.canCreate}
+                                        className="flex-1 sm:flex-initial"
                                     >
                                         {createStaff.isPending ? t('staff.creating') : t('staff.addStaff')}
                                     </Button>

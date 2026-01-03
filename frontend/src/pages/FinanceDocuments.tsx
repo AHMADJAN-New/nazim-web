@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { LoadingSpinner } from '@/components/ui/loading';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -188,14 +190,16 @@ export default function FinanceDocuments() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{t('finance.financeDocuments')}</h1>
-          <p className="text-muted-foreground mt-1">
-            {t('finance.manageFinanceDocuments')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title={t('finance.financeDocuments')}
+        description={t('finance.manageFinanceDocuments')}
+        icon={<FileText className="h-5 w-5" />}
+        primaryAction={{
+          label: t('finance.uploadDocument'),
+          onClick: () => setIsDialogOpen(true),
+          icon: <Plus className="h-4 w-4" />,
+        }}
+        rightSlot={
           <ReportExportButtons
             data={filteredDocuments}
             columns={[
@@ -242,12 +246,8 @@ export default function FinanceDocuments() {
             disabled={isLoading || filteredDocuments.length === 0}
             errorNoData={t('finance.noDocuments') || 'No documents to export'}
           />
-          <Button onClick={() => setIsDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('finance.uploadDocument')}
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -297,83 +297,74 @@ export default function FinanceDocuments() {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            {t('common.filters')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label>{t('finance.documentType')}</Label>
-              <Select
-                value={documentType}
-                onValueChange={(value) => {
-                  setDocumentType(value);
-                  handleFilterChange('document_type', value);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('common.all')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('common.all')}</SelectItem>
-                  {DOCUMENT_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {t(type.labelKey)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <FilterPanel title={t('common.filters') || 'Filters'}>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <Label>{t('finance.documentType')}</Label>
+            <Select
+              value={documentType}
+              onValueChange={(value) => {
+                setDocumentType(value);
+                handleFilterChange('document_type', value);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('common.all')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common.all')}</SelectItem>
+                {DOCUMENT_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {t(type.labelKey)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            <div className="space-y-2">
-              <Label>{t('finance.startDate')}</Label>
-              <CalendarDatePicker
-                date={startDate ? new Date(startDate) : undefined}
-                onDateChange={(date) => {
-                  const dateStr = date ? date.toISOString().slice(0, 10) : '';
-                  setStartDate(dateStr);
-                  handleFilterChange('start_date', dateStr);
+          <div className="space-y-2">
+            <Label>{t('finance.startDate')}</Label>
+            <CalendarDatePicker
+              date={startDate ? new Date(startDate) : undefined}
+              onDateChange={(date) => {
+                const dateStr = date ? date.toISOString().slice(0, 10) : '';
+                setStartDate(dateStr);
+                handleFilterChange('start_date', dateStr);
+              }}
+              placeholder={t('finance.startDate') || 'Start date'}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t('finance.endDate')}</Label>
+            <CalendarDatePicker
+              date={endDate ? new Date(endDate) : undefined}
+              onDateChange={(date) => {
+                const dateStr = date ? date.toISOString().slice(0, 10) : '';
+                setEndDate(dateStr);
+                handleFilterChange('end_date', dateStr);
+              }}
+              placeholder={t('finance.endDate') || 'End date'}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t('common.search')}</Label>
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={t('finance.searchPlaceholder')}
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  handleFilterChange('search', e.target.value);
                 }}
-                placeholder={t('finance.startDate') || 'Start date'}
+                className="pl-8"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('finance.endDate')}</Label>
-              <CalendarDatePicker
-                date={endDate ? new Date(endDate) : undefined}
-                onDateChange={(date) => {
-                  const dateStr = date ? date.toISOString().slice(0, 10) : '';
-                  setEndDate(dateStr);
-                  handleFilterChange('end_date', dateStr);
-                }}
-                placeholder={t('finance.endDate') || 'End date'}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('common.search')}</Label>
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={t('finance.searchPlaceholder')}
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    handleFilterChange('search', e.target.value);
-                  }}
-                  className="pl-8"
-                />
-              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </FilterPanel>
 
       {/* Documents Table */}
       <Card>

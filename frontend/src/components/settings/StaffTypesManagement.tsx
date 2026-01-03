@@ -190,7 +190,7 @@ export function StaffTypesManagement() {
 
     if (isLoading) {
         return (
-            <div className="container mx-auto p-6">
+            <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
                 <Card>
                     <CardContent className="p-6">
                         <div className="text-center">{t('common.loading')}</div>
@@ -201,20 +201,20 @@ export function StaffTypesManagement() {
     }
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
                             <CardTitle className="flex items-center gap-2">
-                                <Users className="h-5 w-5" />
+                                <Users className="h-5 w-5 hidden sm:inline-flex" />
                                 {t('academic.staffTypes.management')}
                             </CardTitle>
-                            <CardDescription>
+                            <CardDescription className="hidden md:block">
                                 {t('academic.staffTypes.title')}
                             </CardDescription>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
                             {filteredStaffTypes && filteredStaffTypes.length > 0 && (
                                 <ReportExportButtons
                                     data={filteredStaffTypes}
@@ -245,9 +245,9 @@ export function StaffTypesManagement() {
                                 />
                             )}
                             {hasCreatePermission && (
-                                <Button onClick={() => handleOpenDialog()}>
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    {t('academic.staffTypes.addStaffType')}
+                                <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto">
+                                    <Plus className="h-4 w-4" />
+                                    <span className="ml-2">{t('academic.staffTypes.addStaffType')}</span>
                                 </Button>
                             )}
                         </div>
@@ -266,7 +266,7 @@ export function StaffTypesManagement() {
                         </div>
                     </div>
 
-                    <div className="rounded-md border">
+                    <div className="rounded-md border overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -304,12 +304,14 @@ export function StaffTypesManagement() {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <div className="flex justify-end gap-2">
+                                                <div className="flex justify-end gap-1.5 sm:gap-2">
                                                     {hasUpdatePermission && (
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => handleOpenDialog(type.id)}
+                                                            className="flex-shrink-0"
+                                                            aria-label={t('academic.staffTypes.editStaffType')}
                                                         >
                                                             <Pencil className="h-4 w-4" />
                                                         </Button>
@@ -319,6 +321,8 @@ export function StaffTypesManagement() {
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => handleDeleteClick(type.id)}
+                                                            className="flex-shrink-0"
+                                                            aria-label={t('common.delete')}
                                                         >
                                                             <Trash2 className="h-4 w-4 text-destructive" />
                                                         </Button>

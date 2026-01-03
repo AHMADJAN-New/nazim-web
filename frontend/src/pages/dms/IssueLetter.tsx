@@ -780,19 +780,21 @@ export default function IssueLetter() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <Tabs defaultValue="issue" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="issue">
-            {t("dms.issueLetter.tabs.issue") || "Issue Letter"}
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="issue" className="flex items-center gap-2">
+            <span className="hidden sm:inline">{t("dms.issueLetter.tabs.issue") || "Issue Letter"}</span>
+            <span className="sm:hidden">Issue</span>
           </TabsTrigger>
-          <TabsTrigger value="issued-letters">
-            {t("dms.issueLetter.tabs.allIssued") || "All Issued Letters"}
+          <TabsTrigger value="issued-letters" className="flex items-center gap-2">
+            <span className="hidden sm:inline">{t("dms.issueLetter.tabs.allIssued") || "All Issued Letters"}</span>
+            <span className="sm:hidden">Issued</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="issue" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Issue from Template</CardTitle>
@@ -975,7 +977,7 @@ export default function IssueLetter() {
                 {payload.recipient_type === "external" && (
                   <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
                     <Label className="text-base font-semibold">External Recipient</Label>
-                    <div className="grid gap-3 md:grid-cols-2">
+                    <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
                       <div className="space-y-1">
                         <Label className="text-sm">Name</Label>
                         <Input
@@ -1023,7 +1025,7 @@ export default function IssueLetter() {
                         Fill in the template variables. These will be used to populate the letter.
                       </p>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                       {templateVariables.map((varDef) => (
                         <div key={varDef.name} className="space-y-2">
                           <Label htmlFor={`var-${varDef.name}`}>
@@ -1048,7 +1050,7 @@ export default function IssueLetter() {
                 )}
 
                 <div className="space-y-3">
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       variant="outline"
                       disabled={
@@ -1064,13 +1066,15 @@ export default function IssueLetter() {
                     >
                       {createDraftMutation.isPending ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {t("dms.issueLetter.creatingDraft") || "Creating..."}
+                          <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
+                          <span className="hidden sm:inline">{t("dms.issueLetter.creatingDraft") || "Creating..."}</span>
+                          <span className="sm:hidden">{t("dms.issueLetter.creatingDraft") || "Creating..."}</span>
                         </>
                       ) : (
                         <>
-                          <Upload className="h-4 w-4 mr-2" />
-                          {t("dms.issueLetter.uploadAttachments") || "Upload Attachments"}
+                          <Upload className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">{t("dms.issueLetter.uploadAttachments") || "Upload Attachments"}</span>
+                          <span className="sm:hidden">Upload</span>
                         </>
                       )}
                     </Button>
@@ -1088,11 +1092,15 @@ export default function IssueLetter() {
                     >
                       {issueMutation.isPending ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {t("dms.issueLetter.issuing") || "Issuing..."}
+                          <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
+                          <span className="hidden sm:inline">{t("dms.issueLetter.issuing") || "Issuing..."}</span>
+                          <span className="sm:hidden">{t("dms.issueLetter.issuing") || "Issuing..."}</span>
                         </>
                       ) : (
-                        t("dms.issueLetter.issueButton") || "Issue Letter"
+                        <>
+                          <span className="hidden sm:inline">{t("dms.issueLetter.issueButton") || "Issue Letter"}</span>
+                          <span className="sm:hidden">Issue</span>
+                        </>
                       )}
                     </Button>
                   </div>
@@ -1116,14 +1124,16 @@ export default function IssueLetter() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+            <CardTitle className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
               <span>Live Preview</span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => renderPreview()}
                   disabled={!canRenderPreview || isPreviewLoading}
+                  className="flex-shrink-0"
+                  aria-label="Refresh preview"
                 >
                   {isPreviewLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1136,27 +1146,33 @@ export default function IssueLetter() {
                   variant="outline"
                   onClick={handleDownloadPdf}
                   disabled={!canRenderPreview}
+                  className="flex-shrink-0"
+                  aria-label={t("dms.issueLetter.downloadPdf") || "Download PDF"}
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  {t("dms.issueLetter.downloadPdf") || "Download PDF"}
+                  <Download className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t("dms.issueLetter.downloadPdf") || "Download PDF"}</span>
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleDownloadImage}
                   disabled={!canRenderPreview}
+                  className="flex-shrink-0"
+                  aria-label={t("dms.issueLetter.downloadImage") || "Download Image"}
                 >
-                  <ImageIcon className="h-4 w-4 mr-2" />
-                  {t("dms.issueLetter.downloadImage") || "Download Image"}
+                  <ImageIcon className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t("dms.issueLetter.downloadImage") || "Download Image"}</span>
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handlePrintPreview}
                   disabled={!canRenderPreview}
+                  className="flex-shrink-0"
+                  aria-label={t("dms.issueLetter.print") || "Print"}
                 >
-                  <Printer className="h-4 w-4 mr-2" />
-                  {t("dms.issueLetter.print") || "Print"}
+                  <Printer className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t("dms.issueLetter.print") || "Print"}</span>
                 </Button>
               </div>
             </CardTitle>
@@ -1178,7 +1194,7 @@ export default function IssueLetter() {
             )}
 
             {isPreviewLoading && (
-              <div className="border rounded-lg bg-muted/50 p-8 text-center min-h-[600px] flex items-center justify-center">
+              <div className="border rounded-lg bg-muted/50 p-8 text-center min-h-[400px] flex items-center justify-center">
                 <div className="space-y-2">
                   <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
                   <p className="text-sm text-muted-foreground">Generating preview...</p>
@@ -1190,7 +1206,7 @@ export default function IssueLetter() {
               <div className="border rounded-lg bg-white overflow-hidden">
                 <div
                   className="w-full"
-                  style={{ aspectRatio: previewAspectRatio, minHeight: "600px" }}
+                  style={{ aspectRatio: previewAspectRatio, minHeight: "400px" }}
                 >
                   <img
                     src={previewImageUrl}
@@ -1200,7 +1216,7 @@ export default function IssueLetter() {
                 </div>
               </div>
             ) : !isPreviewLoading && !previewImageUrl ? (
-              <div className="rounded-md border bg-muted/50 p-6 text-sm text-muted-foreground min-h-[600px] flex items-center justify-center">
+              <div className="rounded-md border bg-muted/50 p-6 text-sm text-muted-foreground min-h-[400px] flex items-center justify-center">
                 <div className="text-center">
                   <p>Select a template and recipient to see a live preview.</p>
                   {payload.recipient_type === "student" && !payload.student_admission_id && (
@@ -1237,7 +1253,7 @@ export default function IssueLetter() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("dms.issueLetter.uploadAttachments") || "Upload Attachments"}</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="hidden md:block">
               {t("dms.issueLetter.uploadAttachmentsDescription") || "Upload attachments or files for this letter. Images will be automatically compressed."}
             </DialogDescription>
           </DialogHeader>
@@ -1265,8 +1281,8 @@ export default function IssueLetter() {
                 Create a draft to upload attachments.
               </div>
             )}
-            <div className="flex gap-2 pt-2">
-              <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)} className="flex-1">
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)} className="w-full sm:w-auto sm:ml-auto">
                 Close
               </Button>
             </div>

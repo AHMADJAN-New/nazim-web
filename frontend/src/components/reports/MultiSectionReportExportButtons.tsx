@@ -272,30 +272,46 @@ export function MultiSectionReportExportButtons({
 
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {showPrint ? (
           <Button
             variant="outline"
             size="sm"
             onClick={() => void generatePdf('print')}
             disabled={isDisabled}
+            className="flex-shrink-0"
           >
-            <Printer className="h-4 w-4 mr-2" />
-            {t('common.print') || 'Print'}
+            <Printer className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('common.print') || 'Print'}</span>
+            <span className="sm:hidden">Print</span>
           </Button>
         ) : null}
 
         {showExcel ? (
-          <Button variant="outline" size="sm" onClick={() => void generateExcel()} disabled={isDisabled}>
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            {t('common.exportExcel') || 'Export Excel'}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => void generateExcel()} 
+            disabled={isDisabled}
+            className="flex-shrink-0"
+          >
+            <FileSpreadsheet className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('common.exportExcel') || 'Export Excel'}</span>
+            <span className="sm:hidden">Excel</span>
           </Button>
         ) : null}
 
         {showPdf ? (
-          <Button variant="outline" size="sm" onClick={() => void generatePdf('download')} disabled={isDisabled}>
-            <FileDown className="h-4 w-4 mr-2" />
-            {t('common.exportPdf') || 'Export PDF'}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => void generatePdf('download')} 
+            disabled={isDisabled}
+            className="flex-shrink-0"
+          >
+            <FileDown className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('common.exportPdf') || 'Export PDF'}</span>
+            <span className="sm:hidden">PDF</span>
           </Button>
         ) : null}
       </div>

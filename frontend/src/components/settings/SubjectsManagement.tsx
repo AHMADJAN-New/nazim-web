@@ -46,11 +46,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Pencil, Trash2, Search, BookOpen, Copy, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, BookOpen, Copy, X, GraduationCap } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import * as z from 'zod';
 
 const subjectSchema = z.object({
@@ -586,53 +588,63 @@ export function SubjectsManagement() {
     };
 
     return (
-        <div className="container mx-auto py-6 space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold">{t('academic.subjects.title')}</h1>
-                    <p className="text-muted-foreground">{t('academic.subjects.management')}</p>
-                </div>
-            </div>
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+            <PageHeader
+                title={t('academic.subjects.title') || 'Subjects Management'}
+                description={t('academic.subjects.management') || 'Manage subjects and subject assignments'}
+                icon={<BookOpen className="h-5 w-5" />}
+            />
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="subjects">{t('academic.subjects.baseSubjects')}</TabsTrigger>
-                    <TabsTrigger value="classSubjects">{t('academic.subjects.classSubjects')}</TabsTrigger>
+                <TabsList className="flex w-full gap-1 h-auto flex-shrink-0 overflow-x-auto pb-1">
+                    <TabsTrigger value="subjects" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
+                        <BookOpen className="h-4 w-4 flex-shrink-0" />
+                        <span className="text-xs sm:text-sm">{t('academic.subjects.baseSubjects')}</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="classSubjects" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
+                        <GraduationCap className="h-4 w-4 flex-shrink-0" />
+                        <span className="text-xs sm:text-sm">{t('academic.subjects.classSubjects')}</span>
+                    </TabsTrigger>
                 </TabsList>
 
                 {/* Subjects Tab */}
                 <TabsContent value="subjects" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <CardTitle>{t('academic.subjects.baseSubjects')}</CardTitle>
-                                    <CardDescription>
+                                    <CardDescription className="hidden md:block">
                                         {t('academic.subjects.management')}
                                     </CardDescription>
                                 </div>
                                 {hasCreatePermission && (
-                                    <Button onClick={() => handleOpenSubjectDialog()}>
-                                        <Plus className="mr-2 h-4 w-4" />
-                                        {t('academic.subjects.addSubject')}
+                                    <Button onClick={() => handleOpenSubjectDialog()} className="flex-shrink-0">
+                                        <Plus className="h-4 w-4 sm:mr-2" />
+                                        <span className="hidden sm:inline">{t('academic.subjects.addSubject')}</span>
                                     </Button>
                                 )}
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex items-center space-x-4 mb-4">
-                                <div className="flex-1">
+                            <FilterPanel
+                                title={t('common.filters') || 'Filters'}
+                                defaultOpenDesktop={true}
+                                defaultOpenMobile={false}
+                            >
+                                <div>
+                                    <Label>{t('common.search') || 'Search'}</Label>
                                     <div className="relative">
-                                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                         <Input
                                             placeholder={t('academic.subjects.searchPlaceholder')}
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="pl-8"
+                                            className="pl-10"
                                         />
                                     </div>
                                 </div>
-                            </div>
+                            </FilterPanel>
 
                             {subjectsLoading ? (
                                 <div className="text-center py-8">{t('common.loading')}</div>
@@ -644,8 +656,10 @@ export function SubjectsManagement() {
                                 </div>
                             ) : (
                                 <>
-                                    <div className="rounded-md border">
-                                        <Table>
+                                    <div className="overflow-x-auto -mx-4 md:mx-0">
+                                        <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                                            <div className="rounded-md border">
+                                                <Table>
                                             <TableHeader>
                                                 {table.getHeaderGroups().map((headerGroup) => (
                                                     <TableRow key={headerGroup.id}>
@@ -682,7 +696,9 @@ export function SubjectsManagement() {
                                                     ))
                                                 )}
                                             </TableBody>
-                                        </Table>
+                                                </Table>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* Pagination */}
@@ -705,14 +721,14 @@ export function SubjectsManagement() {
                     {/* Step 1: Assign Subjects to Classes */}
                     <Card>
                         <CardHeader>
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <CardTitle>Step 1: Assign Subjects to Classes</CardTitle>
-                                    <CardDescription>
+                                    <CardDescription className="hidden md:block">
                                         First, assign subjects to classes. These subjects will appear in all academic years for the selected class.
                                     </CardDescription>
                                 </div>
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                     {classSubjectTemplates && classSubjectTemplates.length > 0 && selectedClassId && (
                                         <ReportExportButtons
                                             data={classSubjectTemplates}
@@ -737,13 +753,13 @@ export function SubjectsManagement() {
                                     )}
                                     {hasAssignPermission && selectedClassId && (
                                         <>
-                                            <Button variant="outline" onClick={handleOpenBulkAssignToClassDialog}>
-                                                <Plus className="mr-2 h-4 w-4" />
-                                                Bulk Assign
+                                            <Button variant="outline" onClick={handleOpenBulkAssignToClassDialog} className="flex-shrink-0">
+                                                <Plus className="h-4 w-4 sm:mr-2" />
+                                                <span className="hidden sm:inline">Bulk Assign</span>
                                             </Button>
-                                            <Button onClick={handleOpenAssignToClassDialog}>
-                                                <Plus className="mr-2 h-4 w-4" />
-                                                Assign Subject
+                                            <Button onClick={handleOpenAssignToClassDialog} className="flex-shrink-0">
+                                                <Plus className="h-4 w-4 sm:mr-2" />
+                                                <span className="hidden sm:inline">Assign Subject</span>
                                             </Button>
                                         </>
                                     )}
@@ -751,14 +767,15 @@ export function SubjectsManagement() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex items-center space-x-4 mb-4">
+                            <div className="mb-4">
+                                <Label className="mb-2 block">{t('common.selectClass')}</Label>
                                 <Select
                                     value={selectedClassId || undefined}
                                     onValueChange={(value) => {
                                         setSelectedClassId(value);
                                     }}
                                 >
-                                    <SelectTrigger className="w-[300px]">
+                                    <SelectTrigger className="w-full sm:w-[300px]">
                                         <SelectValue placeholder={t('common.selectClass')} />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -784,39 +801,45 @@ export function SubjectsManagement() {
                                     <p className="text-sm">Assign subjects to this class to get started</p>
                                 </div>
                             ) : (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>{t('academic.subjects.code')}</TableHead>
-                                            <TableHead>{t('academic.subjects.name')}</TableHead>
-                                            <TableHead className="text-right">{t('common.actions')}</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {classSubjectTemplates.map((template) => (
-                                            <TableRow key={template.id}>
-                                                <TableCell className="font-mono">{template.subject?.code}</TableCell>
-                                                <TableCell className="font-medium">{template.subject?.name}</TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end space-x-2">
-                                                        {hasDeletePermission && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => {
-                                                                    setSelectedClassSubject(template.id);
-                                                                    setIsRemoveDialogOpen(true);
-                                                                }}
-                                                            >
-                                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                <div className="overflow-x-auto -mx-4 md:mx-0">
+                                    <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                                        <div className="rounded-md border">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>{t('academic.subjects.code')}</TableHead>
+                                                        <TableHead>{t('academic.subjects.name')}</TableHead>
+                                                        <TableHead className="text-right">{t('common.actions')}</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {classSubjectTemplates.map((template) => (
+                                                        <TableRow key={template.id}>
+                                                            <TableCell className="font-mono">{template.subject?.code}</TableCell>
+                                                            <TableCell className="font-medium">{template.subject?.name}</TableCell>
+                                                            <TableCell className="text-right">
+                                                                <div className="flex items-center justify-end space-x-2">
+                                                                    {hasDeletePermission && (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => {
+                                                                                setSelectedClassSubject(template.id);
+                                                                                setIsRemoveDialogOpen(true);
+                                                                            }}
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </div>
+                                </div>
                             )}
                         </CardContent>
                     </Card>
@@ -824,14 +847,14 @@ export function SubjectsManagement() {
                     {/* Step 2: Customize Subjects per Academic Year */}
                     <Card>
                         <CardHeader>
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <CardTitle>Step 2: Customize Subjects per Academic Year</CardTitle>
-                                    <CardDescription>
+                                    <CardDescription className="hidden md:block">
                                         Customize teacher, room, and hours for subjects in specific academic years.
                                     </CardDescription>
                                 </div>
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                     {classSubjects && classSubjects.length > 0 && selectedClassAcademicYearId && (
                                         <ReportExportButtons
                                             data={classSubjects}
@@ -867,13 +890,13 @@ export function SubjectsManagement() {
                                     )}
                                     {hasAssignPermission && selectedClassAcademicYearId && (
                                         <>
-                                            <Button variant="outline" onClick={handleOpenBulkAssignDialog} disabled={!subjects || subjects.length === 0}>
-                                                <Plus className="mr-2 h-4 w-4" />
-                                                {t('academic.subjects.bulkAssignSubjects')}
+                                            <Button variant="outline" onClick={handleOpenBulkAssignDialog} disabled={!subjects || subjects.length === 0} className="flex-shrink-0">
+                                                <Plus className="h-4 w-4 sm:mr-2" />
+                                                <span className="hidden sm:inline">{t('academic.subjects.bulkAssignSubjects')}</span>
                                             </Button>
-                                            <Button onClick={handleOpenAssignDialog} disabled={!subjects || subjects.length === 0}>
-                                                <Plus className="mr-2 h-4 w-4" />
-                                                {t('academic.subjects.assignToClass')}
+                                            <Button onClick={handleOpenAssignDialog} disabled={!subjects || subjects.length === 0} className="flex-shrink-0">
+                                                <Plus className="h-4 w-4 sm:mr-2" />
+                                                <span className="hidden sm:inline">{t('academic.subjects.assignToClass')}</span>
                                             </Button>
                                         </>
                                     )}
@@ -881,63 +904,69 @@ export function SubjectsManagement() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex flex-wrap items-center gap-4 mb-4">
-                                <div className="flex-1 min-w-[200px]">
-                                    <Label className="mb-2 block">{t('academic.subjects.selectAcademicYear')}</Label>
-                                    <Select
-                                        value={selectedAcademicYearId || undefined}
-                                        onValueChange={(value) => {
-                                            setSelectedAcademicYearId(value);
-                                            setSelectedClassAcademicYearId(undefined);
-                                        }}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder={t('academic.subjects.selectAcademicYear')} />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {academicYears?.map((year) => (
-                                                <SelectItem key={year.id} value={year.id}>
-                                                    {year.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                {selectedAcademicYearId && (
-                                    <div className="flex-1 min-w-[200px]">
-                                        <Label className="mb-2 block">{t('academic.subjects.selectClass')}</Label>
+                            <FilterPanel
+                                title={t('common.filters') || 'Filters'}
+                                defaultOpenDesktop={true}
+                                defaultOpenMobile={false}
+                            >
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <Label className="mb-2 block">{t('academic.subjects.selectAcademicYear')}</Label>
                                         <Select
-                                            value={selectedClassAcademicYearId || undefined}
-                                            onValueChange={setSelectedClassAcademicYearId}
+                                            value={selectedAcademicYearId || undefined}
+                                            onValueChange={(value) => {
+                                                setSelectedAcademicYearId(value);
+                                                setSelectedClassAcademicYearId(undefined);
+                                            }}
                                         >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder={t('academic.subjects.selectClass')} />
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder={t('academic.subjects.selectAcademicYear')} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {classAcademicYears && classAcademicYears.length > 0 ? (
-                                                    classAcademicYears.map((cay) => (
-                                                        <SelectItem key={cay.id} value={cay.id}>
-                                                            {cay.class?.name} {cay.sectionName ? `- ${cay.sectionName}` : ''}
-                                                        </SelectItem>
-                                                    ))
-                                                ) : (
-                                                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                                        No classes available for this year
-                                                    </div>
-                                                )}
+                                                {academicYears?.map((year) => (
+                                                    <SelectItem key={year.id} value={year.id}>
+                                                        {year.name}
+                                                    </SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                )}
-                                {selectedClassAcademicYearId && hasCopyPermission && (
-                                    <div className="flex items-end">
-                                        <Button variant="outline" onClick={handleOpenCopyDialog}>
-                                            <Copy className="mr-2 h-4 w-4" />
-                                            {t('academic.subjects.copyBetweenYears')}
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
+                                    {selectedAcademicYearId && (
+                                        <div>
+                                            <Label className="mb-2 block">{t('academic.subjects.selectClass')}</Label>
+                                            <Select
+                                                value={selectedClassAcademicYearId || undefined}
+                                                onValueChange={setSelectedClassAcademicYearId}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder={t('academic.subjects.selectClass')} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {classAcademicYears && classAcademicYears.length > 0 ? (
+                                                        classAcademicYears.map((cay) => (
+                                                            <SelectItem key={cay.id} value={cay.id}>
+                                                                {cay.class?.name} {cay.sectionName ? `- ${cay.sectionName}` : ''}
+                                                            </SelectItem>
+                                                        ))
+                                                    ) : (
+                                                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                                            No classes available for this year
+                                                        </div>
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    )}
+                                    {selectedClassAcademicYearId && hasCopyPermission && (
+                                        <div className="flex items-end">
+                                            <Button variant="outline" onClick={handleOpenCopyDialog} className="w-full">
+                                                <Copy className="h-4 w-4 sm:mr-2" />
+                                                <span className="hidden sm:inline">{t('academic.subjects.copyBetweenYears')}</span>
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            </FilterPanel>
 
                             {!selectedClassAcademicYearId ? (
                                 <div className="text-center py-8 text-muted-foreground">
@@ -963,50 +992,56 @@ export function SubjectsManagement() {
                                     )}
                                 </div>
                             ) : (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>{t('academic.subjects.code')}</TableHead>
-                                            <TableHead>{t('academic.subjects.name')}</TableHead>
-                                            <TableHead>{t('academic.subjects.teacher')}</TableHead>
-                                            <TableHead>{t('academic.subjects.room')}</TableHead>
-                                            <TableHead>{t('academic.subjects.weeklyHours')}</TableHead>
-                                            <TableHead className="text-right">{t('common.actions')}</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {classSubjects.map((cs) => (
-                                            <TableRow key={cs.id}>
-                                                <TableCell className="font-mono">{cs.subject?.code}</TableCell>
-                                                <TableCell className="font-medium">{cs.subject?.name}</TableCell>
-                                                <TableCell>{cs.teacher?.fullName || '-'}</TableCell>
-                                                <TableCell>{cs.room?.roomNumber || '-'}</TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end space-x-2">
-                                                        {hasUpdatePermission && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => handleEditClassSubject(cs)}
-                                                            >
-                                                                <Pencil className="h-4 w-4" />
-                                                            </Button>
-                                                        )}
-                                                        {hasDeletePermission && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => handleRemoveClick(cs.id)}
-                                                            >
-                                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                <div className="overflow-x-auto -mx-4 md:mx-0">
+                                    <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                                        <div className="rounded-md border">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>{t('academic.subjects.code')}</TableHead>
+                                                        <TableHead>{t('academic.subjects.name')}</TableHead>
+                                                        <TableHead>{t('academic.subjects.teacher')}</TableHead>
+                                                        <TableHead>{t('academic.subjects.room')}</TableHead>
+                                                        <TableHead>{t('academic.subjects.weeklyHours')}</TableHead>
+                                                        <TableHead className="text-right">{t('common.actions')}</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {classSubjects.map((cs) => (
+                                                        <TableRow key={cs.id}>
+                                                            <TableCell className="font-mono">{cs.subject?.code}</TableCell>
+                                                            <TableCell className="font-medium">{cs.subject?.name}</TableCell>
+                                                            <TableCell>{cs.teacher?.fullName || '-'}</TableCell>
+                                                            <TableCell>{cs.room?.roomNumber || '-'}</TableCell>
+                                                            <TableCell className="text-right">
+                                                                <div className="flex items-center justify-end space-x-2">
+                                                                    {hasUpdatePermission && (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => handleEditClassSubject(cs)}
+                                                                        >
+                                                                            <Pencil className="h-4 w-4" />
+                                                                        </Button>
+                                                                    )}
+                                                                    {hasDeletePermission && (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => handleRemoveClick(cs.id)}
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </div>
+                                </div>
                             )}
                         </CardContent>
                     </Card>
@@ -1015,7 +1050,7 @@ export function SubjectsManagement() {
 
             {/* Create/Edit Subject Dialog */}
             <Dialog open={isSubjectDialogOpen} onOpenChange={setIsSubjectDialogOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>
                             {selectedSubject ? t('academic.subjects.editSubject') : t('academic.subjects.addSubject')}
@@ -1088,7 +1123,7 @@ export function SubjectsManagement() {
 
             {/* Assign Subject Dialog */}
             <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>{t('academic.subjects.assignToClass')}</DialogTitle>
                         <DialogDescription>
@@ -1238,7 +1273,7 @@ export function SubjectsManagement() {
 
             {/* Bulk Assign Subjects Dialog */}
             <Dialog open={isBulkAssignDialogOpen} onOpenChange={setIsBulkAssignDialogOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>{t('academic.subjects.bulkAssignSubjects')}</DialogTitle>
                         <DialogDescription>
@@ -1377,7 +1412,7 @@ export function SubjectsManagement() {
 
             {/* Assign Subject to Class Template Dialog */}
             <Dialog open={isAssignToClassDialogOpen} onOpenChange={setIsAssignToClassDialogOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>Assign Subject to Class</DialogTitle>
                         <DialogDescription>
@@ -1447,7 +1482,7 @@ export function SubjectsManagement() {
 
             {/* Bulk Assign Subjects to Class Template Dialog */}
             <Dialog open={isBulkAssignToClassDialogOpen} onOpenChange={setIsBulkAssignToClassDialogOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>{t('academic.subjects.bulkAssignSubjects')}</DialogTitle>
                         <DialogDescription>
@@ -1527,7 +1562,7 @@ export function SubjectsManagement() {
 
             {/* Copy Subjects Dialog */}
             <Dialog open={isCopyDialogOpen} onOpenChange={setIsCopyDialogOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>{t('academic.subjects.copyBetweenYears')}</DialogTitle>
                         <DialogDescription>

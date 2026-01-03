@@ -124,9 +124,9 @@ export function ProfileManagement() {
 
   if (currentProfileLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="text-center">{t('profileManagement.loadingProfile')}</div>
           </CardContent>
         </Card>
@@ -135,22 +135,23 @@ export function ProfileManagement() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
+                <User className="h-5 w-5 hidden md:inline-flex" />
                 {t('profileManagement.title')}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="hidden md:block">
                 {t('profileManagement.subtitle')}
               </CardDescription>
             </div>
-            <Button onClick={() => handleOpenDialog()}>
+            <Button onClick={() => handleOpenDialog()} className="flex-shrink-0">
               <Pencil className="h-4 w-4 mr-2" />
-              {t('profileManagement.editMyProfile')}
+              <span className="hidden sm:inline">{t('profileManagement.editMyProfile')}</span>
+              <span className="sm:hidden">{t('profileManagement.edit')}</span>
             </Button>
           </div>
         </CardHeader>
@@ -158,11 +159,11 @@ export function ProfileManagement() {
           {/* Current User Profile Card */}
           {currentProfile && (
             <div className="mb-6 p-4 border rounded-lg bg-muted/50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">{currentProfile.full_name || t('profileManagement.noName')}</h3>
-                  <p className="text-sm text-muted-foreground">{currentProfile.email || t('profileManagement.noEmail')}</p>
-                  <div className="flex gap-2 mt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold truncate">{currentProfile.full_name || t('profileManagement.noName')}</h3>
+                  <p className="text-sm text-muted-foreground truncate">{currentProfile.email || t('profileManagement.noEmail')}</p>
+                  <div className="flex flex-wrap gap-2 mt-2">
                     <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
                       {currentProfile.role}
                     </span>
@@ -178,9 +179,9 @@ export function ProfileManagement() {
                     )}
                   </div>
                 </div>
-                <Button variant="outline" onClick={() => handleOpenDialog()}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  {t('profileManagement.edit')}
+                <Button variant="outline" onClick={() => handleOpenDialog()} className="flex-shrink-0">
+                  <Pencil className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('profileManagement.edit')}</span>
                 </Button>
               </div>
             </div>
@@ -190,69 +191,89 @@ export function ProfileManagement() {
           {hasUpdatePermission && (
             <>
               <h3 className="text-lg font-semibold mb-4">{t('profileManagement.allProfiles')}</h3>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('profileManagement.name')}</TableHead>
-                      <TableHead>{t('profileManagement.email')}</TableHead>
-                      <TableHead>{t('profileManagement.role')}</TableHead>
-                      <TableHead>{t('profileManagement.status')}</TableHead>
-                      <TableHead className="text-right">{t('profileManagement.actions')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {profilesLoading ? (
+              <div className="rounded-md border overflow-hidden">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center">
-                          {t('profileManagement.loadingProfiles')}
-                        </TableCell>
+                        <TableHead>{t('profileManagement.name')}</TableHead>
+                        <TableHead className="hidden sm:table-cell">{t('profileManagement.email')}</TableHead>
+                        <TableHead className="hidden md:table-cell">{t('profileManagement.role')}</TableHead>
+                        <TableHead className="hidden lg:table-cell">{t('profileManagement.status')}</TableHead>
+                        <TableHead className="text-right">{t('profileManagement.actions')}</TableHead>
                       </TableRow>
-                    ) : profiles && profiles.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
-                          {t('profileManagement.noProfilesFound')}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      profiles?.map((profile) => {
-                        return (
-                          <TableRow key={profile.id}>
-                            <TableCell className="font-medium">
-                              {profile.fullName || t('profileManagement.noName')}
-                            </TableCell>
-                            <TableCell>{profile.email || t('profileManagement.noEmail')}</TableCell>
-                            <TableCell>
-                              <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                                {profile.role}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <span className={`text-xs px-2 py-1 rounded ${
-                                profile.isActive 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
-                                {profile.isActive ? t('profileManagement.active') : t('profileManagement.inactive')}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {hasUpdatePermission && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleOpenDialog(profile.id)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {profilesLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center">
+                            {t('profileManagement.loadingProfiles')}
+                          </TableCell>
+                        </TableRow>
+                      ) : profiles && profiles.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground">
+                            {t('profileManagement.noProfilesFound')}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        profiles?.map((profile) => {
+                          return (
+                            <TableRow key={profile.id}>
+                              <TableCell className="font-medium">
+                                <div className="flex flex-col sm:hidden gap-1">
+                                  <span>{profile.fullName || t('profileManagement.noName')}</span>
+                                  <span className="text-xs text-muted-foreground">{profile.email || t('profileManagement.noEmail')}</span>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                                      {profile.role}
+                                    </span>
+                                    <span className={`text-xs px-2 py-1 rounded ${
+                                      profile.isActive 
+                                        ? 'bg-green-100 text-green-800' 
+                                        : 'bg-red-100 text-red-800'
+                                    }`}>
+                                      {profile.isActive ? t('profileManagement.active') : t('profileManagement.inactive')}
+                                    </span>
+                                  </div>
+                                </div>
+                                <span className="hidden sm:inline">{profile.fullName || t('profileManagement.noName')}</span>
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell">{profile.email || t('profileManagement.noEmail')}</TableCell>
+                              <TableCell className="hidden md:table-cell">
+                                <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                                  {profile.role}
+                                </span>
+                              </TableCell>
+                              <TableCell className="hidden lg:table-cell">
+                                <span className={`text-xs px-2 py-1 rounded ${
+                                  profile.isActive 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {profile.isActive ? t('profileManagement.active') : t('profileManagement.inactive')}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {hasUpdatePermission && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleOpenDialog(profile.id)}
+                                    className="flex-shrink-0"
+                                    aria-label={t('profileManagement.edit')}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </>
           )}
@@ -261,13 +282,13 @@ export function ProfileManagement() {
 
       {/* Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
               <DialogTitle>
                 {isEditingOwnProfile ? t('profileManagement.editMyProfile') : t('profileManagement.editProfile')}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="hidden md:block">
                 {isEditingOwnProfile
                   ? t('profileManagement.updateOwnProfileDescription')
                   : t('profileManagement.updateProfileDescription')}
@@ -327,7 +348,9 @@ export function ProfileManagement() {
                           </SelectTrigger>
                           <SelectContent>
                             {rolesLoading ? (
-                              <SelectItem value="loading" disabled>{t('profileManagement.loadingRoles')}</SelectItem>
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                {t('profileManagement.loadingRoles')}
+                              </div>
                             ) : (
                               roles.map((role) => (
                                 <SelectItem key={role.name} value={role.name}>
@@ -368,12 +391,12 @@ export function ProfileManagement() {
                 </>
               )}
             </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleCloseDialog}>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button type="button" variant="outline" onClick={handleCloseDialog} className="w-full sm:w-auto">
                 {t('profileManagement.cancel')}
               </Button>
               {hasUpdatePermission && (
-                <Button type="submit" disabled={updateProfile.isPending}>
+                <Button type="submit" disabled={updateProfile.isPending} className="w-full sm:w-auto">
                   {t('profileManagement.update')}
                 </Button>
               )}

@@ -44,6 +44,8 @@ import { Plus, Pencil, Trash2, Search, Clock } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import * as z from 'zod';
 
 const scheduleSlotSchema = z.object({
@@ -323,81 +325,89 @@ export function ScheduleSlotsManagement() {
     };
 
     return (
-        <div className="p-4 md:p-6 space-y-4 md:space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-xl md:text-2xl font-semibold flex items-center gap-2">
-                        <Clock className="h-5 w-5" />
-                        {t('academic.scheduleSlots.title')}
-                    </h1>
-                    <p className="text-sm md:text-base text-muted-foreground">{t('academic.scheduleSlots.management')}</p>
-                </div>
-                {hasCreatePermission && (
-                    <Button onClick={() => openDialog()} className="w-full sm:w-auto">
-                        <Plus className="h-4 w-4 mr-2" />
-                        {t('academic.scheduleSlots.addSlot')}
-                    </Button>
-                )}
-            </div>
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+            <PageHeader
+                title={t('academic.scheduleSlots.title') || 'Schedule Slots'}
+                description={t('academic.scheduleSlots.management') || 'Manage time slots for class schedules'}
+                icon={<Clock className="h-5 w-5" />}
+                primaryAction={hasCreatePermission ? {
+                    label: t('academic.scheduleSlots.addSlot') || 'Add Slot',
+                    onClick: () => openDialog(),
+                    icon: <Plus className="h-4 w-4" />,
+                } : undefined}
+            />
 
             <Card>
                 <CardHeader>
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                            <CardTitle>{t('academic.scheduleSlots.title')}</CardTitle>
-                            <CardDescription>{t('academic.scheduleSlots.management')}</CardDescription>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-2 w-full">
-                            {academicYears && academicYears.length > 0 && (
-                                <Select
-                                    value={selectedAcademicYearId || 'all'}
-                                    onValueChange={(value) => setSelectedAcademicYearId(value === 'all' ? undefined : value)}
-                                >
-                                    <SelectTrigger className="w-full sm:w-48">
-                                        <SelectValue placeholder={t('academic.scheduleSlots.selectAcademicYear')} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">{t('common.allAcademicYears')}</SelectItem>
-                                        {academicYears.map((year) => (
-                                            <SelectItem key={year.id} value={year.id}>
-                                                {year.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-                            {schools && schools.length > 0 && (
-                                <Select
-                                    value={selectedSchoolId || 'all'}
-                                    onValueChange={(value) => setSelectedSchoolId(value === 'all' ? undefined : value)}
-                                >
-                                    <SelectTrigger className="w-full sm:w-48">
-                                        <SelectValue placeholder={t('academic.scheduleSlots.school')} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">{t('academic.scheduleSlots.allSchools')}</SelectItem>
-                                        <SelectItem value="none">{t('academic.scheduleSlots.organizationWide') || 'Organization-wide Only'}</SelectItem>
-                                        {schools.map((school) => (
-                                            <SelectItem key={school.id} value={school.id}>
-                                                {school.schoolName}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-                            <div className="relative w-full sm:w-64">
-                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder={t('academic.scheduleSlots.searchPlaceholder')}
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-8 w-full"
-                                />
-                            </div>
-                        </div>
-                    </div>
+                    <CardTitle>{t('academic.scheduleSlots.title')}</CardTitle>
+                    <CardDescription className="hidden md:block">{t('academic.scheduleSlots.management')}</CardDescription>
                 </CardHeader>
                 <CardContent>
+                    <FilterPanel
+                        title={t('common.filters') || 'Filters'}
+                        defaultOpenDesktop={true}
+                        defaultOpenMobile={false}
+                    >
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {academicYears && academicYears.length > 0 && (
+                                <div>
+                                    <Label>{t('academic.scheduleSlots.selectAcademicYear')}</Label>
+                                    <Select
+                                        value={selectedAcademicYearId || 'all'}
+                                        onValueChange={(value) => setSelectedAcademicYearId(value === 'all' ? undefined : value)}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder={t('academic.scheduleSlots.selectAcademicYear')} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">{t('common.allAcademicYears')}</SelectItem>
+                                            {academicYears.map((year) => (
+                                                <SelectItem key={year.id} value={year.id}>
+                                                    {year.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+                            {schools && schools.length > 0 && (
+                                <div>
+                                    <Label>{t('academic.scheduleSlots.school')}</Label>
+                                    <Select
+                                        value={selectedSchoolId || 'all'}
+                                        onValueChange={(value) => setSelectedSchoolId(value === 'all' ? undefined : value)}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder={t('academic.scheduleSlots.school')} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">{t('academic.scheduleSlots.allSchools')}</SelectItem>
+                                            <SelectItem value="none">{t('academic.scheduleSlots.organizationWide') || 'Organization-wide Only'}</SelectItem>
+                                            {schools.map((school) => (
+                                                <SelectItem key={school.id} value={school.id}>
+                                                    {school.schoolName}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+                            <div>
+                                <Label>{t('common.search') || 'Search'}</Label>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder={t('academic.scheduleSlots.searchPlaceholder')}
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="pl-10"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </FilterPanel>
+                </CardContent>
+                <CardContent className="space-y-4">
                     {isLoading ? (
                         <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>
                     ) : filteredSlots.length === 0 ? (
@@ -407,8 +417,10 @@ export function ScheduleSlotsManagement() {
                     ) : (
                         <>
                             {/* Desktop Table View */}
-                            <div className="hidden md:block overflow-x-auto">
-                                <Table>
+                            <div className="hidden md:block overflow-x-auto -mx-4 md:mx-0">
+                                <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                                    <div className="rounded-md border">
+                                        <Table>
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>{t('academic.scheduleSlots.code')}</TableHead>
@@ -524,7 +536,9 @@ export function ScheduleSlotsManagement() {
                                             </TableRow>
                                         ))}
                                     </TableBody>
-                                </Table>
+                                        </Table>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Mobile Card View */}
@@ -660,7 +674,7 @@ export function ScheduleSlotsManagement() {
             </Card>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto w-[95vw] md:w-full">
+                <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-5xl">
                     <DialogHeader>
                         <DialogTitle>{editingSlot ? t('academic.scheduleSlots.editSlot') : t('academic.scheduleSlots.addSlot')}</DialogTitle>
                         <DialogDescription>

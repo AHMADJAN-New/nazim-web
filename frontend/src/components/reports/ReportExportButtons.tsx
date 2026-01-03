@@ -9,6 +9,7 @@ import { useServerReport } from '@/hooks/useServerReport';
 import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
 import { showToast } from '@/lib/toast';
 import { useSchoolContext } from '@/contexts/SchoolContext';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
 
 export interface ReportExportButtonsProps<T extends Record<string, any>> {
@@ -231,30 +232,51 @@ export function ReportExportButtons<T extends Record<string, any>>({
   // Determine if buttons should be disabled
   const isDisabled = disabled || !data || data.length === 0 || !school || isGenerating;
 
+  const excelLabel = t('common.exportExcel') || 'Export Excel';
+  const pdfLabel = t('common.exportPdf') || 'Export PDF';
+
   return (
-    <>
-      <div className="flex items-center gap-2">
+    <TooltipProvider>
+      <div className="flex items-center gap-1.5 sm:gap-2">
         {!showPdfOnly && (
-          <Button
-            variant={buttonVariant}
-            size={buttonSize}
-            onClick={handleExportExcel}
-            disabled={isDisabled}
-          >
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            {t('common.exportExcel') || 'Export Excel'}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={buttonVariant}
+                size={buttonSize}
+                onClick={handleExportExcel}
+                disabled={isDisabled}
+                className="flex-shrink-0"
+                aria-label={excelLabel}
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">{excelLabel}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="sm:hidden">
+              <p>{excelLabel}</p>
+            </TooltipContent>
+          </Tooltip>
         )}
         {!showExcelOnly && (
-          <Button
-            variant={buttonVariant}
-            size={buttonSize}
-            onClick={handleExportPdf}
-            disabled={isDisabled}
-          >
-            <FileDown className="h-4 w-4 mr-2" />
-            {t('common.exportPdf') || 'Export PDF'}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={buttonVariant}
+                size={buttonSize}
+                onClick={handleExportPdf}
+                disabled={isDisabled}
+                className="flex-shrink-0"
+                aria-label={pdfLabel}
+              >
+                <FileDown className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">{pdfLabel}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="sm:hidden">
+              <p>{pdfLabel}</p>
+            </TooltipContent>
+          </Tooltip>
         )}
       </div>
 
@@ -268,7 +290,7 @@ export function ReportExportButtons<T extends Record<string, any>>({
         error={reportError}
         onDownload={downloadReport}
       />
-    </>
+    </TooltipProvider>
   );
 }
 

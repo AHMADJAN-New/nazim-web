@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,7 +46,6 @@ import {
   MoreHorizontal,
   Plus,
   Search,
-  Filter,
   RefreshCw,
   BookOpen,
 } from 'lucide-react';
@@ -175,32 +176,20 @@ export function CourseDocuments() {
   const isLoading = coursesLoading || documentsLoading;
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{t('courses.courseDocuments')}</h1>
-          <p className="text-muted-foreground mt-1">
-            {t('courses.manageDocuments')}
-          </p>
-        </div>
-        <Button
-          onClick={handleUploadClick}
-          disabled={courses.length === 0}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          {t('courses.uploadDocument')}
-        </Button>
-      </div>
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <PageHeader
+        title={t('courses.courseDocuments')}
+        description={t('courses.manageDocuments')}
+        primaryAction={{
+          label: t('courses.uploadDocument'),
+          onClick: handleUploadClick,
+          icon: <Plus className="h-4 w-4" />,
+          disabled: courses.length === 0,
+        }}
+      />
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            {t('common.filter')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <FilterPanel title={t('common.filter') || 'Filter'}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>{t('courses.courseName')}</Label>
@@ -264,8 +253,7 @@ export function CourseDocuments() {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+      </FilterPanel>
 
       {/* Documents Table */}
       <Card>

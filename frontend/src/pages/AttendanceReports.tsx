@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Download, Search, Filter, X, CheckCircle2, XCircle, Clock, AlertCircle, Heart, Calendar, FileText, Loader2 } from 'lucide-react';
+import { Download, X, CheckCircle2, XCircle, Clock, AlertCircle, Heart, Calendar, FileText, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useDatePreference } from '@/hooks/useDatePreference';
 import { useProfile } from '@/hooks/useProfiles';
@@ -10,7 +10,6 @@ import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import type { Student } from '@/types/domain/student';
 import { attendanceSessionsApi, apiClient } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -19,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -31,7 +30,6 @@ import {
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useDataTable } from '@/hooks/use-data-table';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { showToast } from '@/lib/toast';
 import { format } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
@@ -39,6 +37,8 @@ import type { AttendanceRecord } from '@/types/domain/attendance';
 import { mapAttendanceRecordApiToDomain } from '@/mappers/attendanceMapper';
 import type * as AttendanceApi from '@/types/api/attendance';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import {
   Dialog,
   DialogContent,
@@ -117,7 +117,6 @@ export default function AttendanceReports() {
     page: 1,
     perPage: 25,
   });
-  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const { data: reportData, isLoading } = useQuery({
     queryKey: ['attendance-report', profile?.organization_id, filters],
@@ -370,132 +369,136 @@ export default function AttendanceReports() {
 
   return (
     <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4">
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg">{t('attendanceReports.title') || 'Attendance Reports'}</CardTitle>
-              <CardDescription className="text-sm">{t('attendanceReports.subtitle') || 'View and analyze student attendance records'}</CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => {
+      <PageHeader
+        title={t('attendanceReports.title') || 'Attendance Reports'}
+        description={t('attendanceReports.subtitle') || 'View and analyze student attendance records'}
+        icon={<FileText className="h-5 w-5" />}
+        rightSlot={
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
                 setReportType('pdf');
                 handleGenerateReport();
-              }} disabled={isGenerating}>
-                {isGenerating && reportType === 'pdf' ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4 mr-2" />
-                )}
-                PDF
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => {
+              }}
+              disabled={isGenerating}
+            >
+              {isGenerating && reportType === 'pdf' ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
                 setReportType('excel');
                 handleGenerateReport();
-              }} disabled={isGenerating}>
-                {isGenerating && reportType === 'excel' ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4 mr-2" />
-                )}
-                Excel
+              }}
+              disabled={isGenerating}
+            >
+              {isGenerating && reportType === 'excel' ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Excel
+            </Button>
+          </div>
+        }
+      />
+
+      <FilterPanel
+        title={t('common.filters') || 'Filters'}
+        footer={
+          hasActiveFilters ? (
+            <div className="flex justify-end">
+              <Button variant="ghost" size="sm" onClick={handleResetFilters}>
+                <X className="h-4 w-4 mr-2" />
+                {t('common.reset') || 'Reset'}
               </Button>
             </div>
+          ) : null
+        }
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">{t('attendanceReports.student') || 'Student'}</label>
+            <Select value={filters.studentId || 'all'} onValueChange={(v) => handleFilterChange('studentId', v)}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('attendanceReports.allStudents') || 'All Students'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('attendanceReports.allStudents') || 'All Students'}</SelectItem>
+                {(students || []).map(student => (
+                  <SelectItem key={student.id} value={student.id}>
+                    {student.fullName} ({student.admissionNumber})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">{t('attendanceReports.class') || 'Class'}</label>
+            <Select value={filters.classId || 'all'} onValueChange={(v) => handleFilterChange('classId', v)}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('attendanceReports.allClasses') || 'All Classes'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('attendanceReports.allClasses') || 'All Classes'}</SelectItem>
+                {(classes || []).map(cls => (
+                  <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">{t('attendanceReports.school') || 'School'}</label>
+            <Select value={filters.schoolId || 'all'} onValueChange={(v) => handleFilterChange('schoolId', v)}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('attendanceReports.allSchools') || 'All Schools'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('attendanceReports.allSchools') || 'All Schools'}</SelectItem>
+                {(schools || []).map(school => (
+                  <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">{t('attendancePage.statusHeader') || 'Status'}</label>
+            <Select value={filters.status || 'all'} onValueChange={(v) => handleFilterChange('status', v)}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('attendanceReports.allStatus') || 'All Status'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('attendanceReports.allStatus') || 'All Status'}</SelectItem>
+                {getStatusOptions(t).map(option => (
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">{t('attendanceReports.fromDate') || 'From Date'}</label>
+            <CalendarDatePicker date={filters.dateFrom ? new Date(filters.dateFrom) : undefined} onDateChange={(date) => handleFilterChange('dateFrom', date ? date.toISOString().split("T")[0] : "")} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">{t('attendanceReports.toDate') || 'To Date'}</label>
+            <CalendarDatePicker date={filters.dateTo ? new Date(filters.dateTo) : undefined} onDateChange={(date) => handleFilterChange('dateTo', date ? date.toISOString().split("T")[0] : "")} />
+          </div>
+        </div>
+      </FilterPanel>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('attendanceReports.title') || 'Attendance Reports'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-            <div className="flex items-center justify-between">
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  {t('common.filter') || 'Filters'}
-                  {hasActiveFilters && (
-                    <Badge variant="secondary" className="ml-2">
-                      {Object.values(filters).filter(v => v && typeof v === 'string').length}
-                    </Badge>
-                  )}
-                </Button>
-              </CollapsibleTrigger>
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={handleResetFilters}>
-                  <X className="h-4 w-4 mr-2" />
-                  {t('common.reset') || 'Reset'}
-                </Button>
-              )}
-            </div>
-            <CollapsibleContent className="space-y-4 pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('attendanceReports.student') || 'Student'}</label>
-                  <Select value={filters.studentId || 'all'} onValueChange={(v) => handleFilterChange('studentId', v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('attendanceReports.allStudents') || 'All Students'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('attendanceReports.allStudents') || 'All Students'}</SelectItem>
-                      {(students || []).map(student => (
-                        <SelectItem key={student.id} value={student.id}>
-                          {student.fullName} ({student.admissionNumber})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('attendanceReports.class') || 'Class'}</label>
-                  <Select value={filters.classId || 'all'} onValueChange={(v) => handleFilterChange('classId', v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('attendanceReports.allClasses') || 'All Classes'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('attendanceReports.allClasses') || 'All Classes'}</SelectItem>
-                      {(classes || []).map(cls => (
-                        <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('attendanceReports.school') || 'School'}</label>
-                  <Select value={filters.schoolId || 'all'} onValueChange={(v) => handleFilterChange('schoolId', v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('attendanceReports.allSchools') || 'All Schools'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('attendanceReports.allSchools') || 'All Schools'}</SelectItem>
-                      {(schools || []).map(school => (
-                        <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('attendancePage.statusHeader') || 'Status'}</label>
-                  <Select value={filters.status || 'all'} onValueChange={(v) => handleFilterChange('status', v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('attendanceReports.allStatus') || 'All Status'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('attendanceReports.allStatus') || 'All Status'}</SelectItem>
-                      {getStatusOptions(t).map(option => (
-                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('attendanceReports.fromDate') || 'From Date'}</label>
-                  <CalendarDatePicker date={filters.dateFrom ? new Date(filters.dateFrom) : undefined} onDateChange={(date) => handleFilterChange('dateFrom', date ? date.toISOString().split("T")[0] : "")} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('attendanceReports.toDate') || 'To Date'}</label>
-                  <CalendarDatePicker date={filters.dateTo ? new Date(filters.dateTo) : undefined} onDateChange={(date) => handleFilterChange('dateTo', date ? date.toISOString().split("T")[0] : "")} />
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
           {isLoading ? (
             <LoadingSpinner />
           ) : (

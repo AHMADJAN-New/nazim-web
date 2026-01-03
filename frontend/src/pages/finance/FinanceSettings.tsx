@@ -4,8 +4,9 @@
  */
 
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { Coins, Tag, Tags, ArrowRightLeft, Settings } from 'lucide-react';
@@ -16,7 +17,6 @@ import ExchangeRates from './ExchangeRates';
 
 export default function FinanceSettings() {
     const { t } = useLanguage();
-    const navigate = useNavigate();
     const location = useLocation();
     
     // Check permissions
@@ -63,46 +63,37 @@ export default function FinanceSettings() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                        <Settings className="h-8 w-8" />
-                        {t('finance.settings') || 'Finance Settings'}
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        {t('finance.settingsDescription') || 'Manage currencies, categories, and exchange rates'}
-                    </p>
-                </div>
-            </div>
+            <PageHeader
+                title={t('finance.settings') || 'Finance Settings'}
+                description={t('finance.settingsDescription') || 'Manage currencies, categories, and exchange rates'}
+                icon={<Settings className="h-5 w-5" />}
+            />
 
             {/* Settings Tabs */}
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${
-                    [hasCurrenciesPermission, hasIncomeCategoriesPermission, hasExpenseCategoriesPermission, hasExchangeRatesPermission].filter(Boolean).length
-                }, 1fr)` }}>
+                <TabsList className="w-full overflow-x-auto">
                     {hasCurrenciesPermission && (
-                        <TabsTrigger value="currencies" className="flex items-center gap-2">
+                        <TabsTrigger value="currencies" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                             <Coins className="h-4 w-4" />
-                            {t('finance.currencies') || 'Currencies'}
+                            <span>{t('finance.currencies') || 'Currencies'}</span>
                         </TabsTrigger>
                     )}
                     {hasIncomeCategoriesPermission && (
-                        <TabsTrigger value="income-categories" className="flex items-center gap-2">
+                        <TabsTrigger value="income-categories" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                             <Tag className="h-4 w-4" />
-                            {t('finance.incomeCategories') || 'Income Categories'}
+                            <span>{t('finance.incomeCategories') || 'Income Categories'}</span>
                         </TabsTrigger>
                     )}
                     {hasExpenseCategoriesPermission && (
-                        <TabsTrigger value="expense-categories" className="flex items-center gap-2">
+                        <TabsTrigger value="expense-categories" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                             <Tags className="h-4 w-4" />
-                            {t('finance.expenseCategories') || 'Expense Categories'}
+                            <span>{t('finance.expenseCategories') || 'Expense Categories'}</span>
                         </TabsTrigger>
                     )}
                     {hasExchangeRatesPermission && (
-                        <TabsTrigger value="exchange-rates" className="flex items-center gap-2">
+                        <TabsTrigger value="exchange-rates" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                             <ArrowRightLeft className="h-4 w-4" />
-                            {t('finance.exchangeRates') || 'Exchange Rates'}
+                            <span>{t('finance.exchangeRates') || 'Exchange Rates'}</span>
                         </TabsTrigger>
                     )}
                 </TabsList>

@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { useFinanceDashboard } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
     Wallet,
     TrendingUp,
@@ -126,35 +127,36 @@ export default function FinanceDashboard() {
     const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
 
     return (
-        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            {/* Header with Date Range */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
-                        {t('finance.dashboard') || 'Finance Dashboard'}
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        {t('finance.dashboardDescription') || 'Overview of your organization\'s finances'}
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-lg border bg-background">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">
-                            {formatDate(startDate)} - {formatDate(endDate)}
-                        </span>
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+            <PageHeader
+                title={t('finance.dashboard') || 'Finance Dashboard'}
+                description={t('finance.dashboardDescription') || 'Overview of your organization\'s finances'}
+                icon={<Wallet className="h-5 w-5" />}
+                rightSlot={
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-lg border bg-background w-full sm:w-auto">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">
+                                {formatDate(startDate)} - {formatDate(endDate)}
+                            </span>
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="self-start sm:self-auto"
+                            aria-label={t('common.download') || 'Download'}
+                        >
+                            <Download className="h-4 w-4" />
+                        </Button>
                     </div>
-                    <Button variant="outline" size="icon">
-                        <Download className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
+                }
+            />
 
             {/* Summary Cards Row */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
                 {/* Total Balance - Enhanced with Toggle */}
-                <Card className="relative overflow-visible col-span-1 sm:col-span-2 lg:col-span-2">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden col-span-1 sm:col-span-2 lg:col-span-2">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('finance.totalBalance') || 'Total Balance'}
@@ -250,8 +252,8 @@ export default function FinanceDashboard() {
                 </Card>
 
                 {/* Net Profit */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('finance.netThisMonth') || 'Net Profit'}
@@ -277,8 +279,8 @@ export default function FinanceDashboard() {
                 </Card>
 
                 {/* Assets Value */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('finance.totalAssetsValue') || 'Total Assets Value'}
@@ -311,8 +313,8 @@ export default function FinanceDashboard() {
                 </Card>
 
                 {/* Library Books Value */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('finance.totalLibraryBooksValue') || 'Total Library Books Value'}
@@ -345,8 +347,8 @@ export default function FinanceDashboard() {
                 </Card>
 
                 {/* Expenses */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('finance.monthlyExpenses') || 'Expenses'}
@@ -372,8 +374,8 @@ export default function FinanceDashboard() {
                 </Card>
 
                 {/* Active Projects */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <Card className="relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('finance.activeProjects') || 'Active Projects'}
@@ -397,24 +399,24 @@ export default function FinanceDashboard() {
             </div>
 
             {/* Main Content Row */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
                 {/* Income Sources */}
-                <Card className="md:col-span-1">
+                <Card className="lg:col-span-1">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
                             <CardTitle className="text-lg">{t('finance.incomeByCategory') || 'Income Sources'}</CardTitle>
-                            <CardDescription className="mt-1">
+                            <CardDescription className="mt-1 hidden sm:block">
                                 Total: <span className="font-semibold text-foreground">{formatCurrency(incomeTotal)}</span>
                             </CardDescription>
                         </div>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" className="hidden sm:flex">
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4 text-green-500" />
-                            <span className="text-sm text-green-600 dark:text-green-400 font-medium">
+                            <TrendingUp className="h-4 w-4 text-green-500 flex-shrink-0" />
+                            <span className="text-xs sm:text-sm text-green-600 dark:text-green-400 font-medium">
                                 {incomeChange.toFixed(1)}% compared to last month
                             </span>
                         </div>
@@ -431,15 +433,15 @@ export default function FinanceDashboard() {
                         <div className="space-y-3">
                             {incomeData.slice(0, 4).map((item, index) => (
                                 <div key={item.id} className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
                                         <div 
-                                            className="w-3 h-3 rounded-full" 
+                                            className="w-3 h-3 rounded-full flex-shrink-0" 
                                             style={{ backgroundColor: COLORS[index % COLORS.length] }}
                                         />
-                                        <span className="text-sm font-medium">{item.name}</span>
+                                        <span className="text-xs sm:text-sm font-medium truncate">{item.name}</span>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="text-sm font-semibold">{formatCurrency(item.total)}</div>
+                                    <div className="text-right flex-shrink-0 ml-2">
+                                        <div className="text-xs sm:text-sm font-semibold">{formatCurrency(item.total)}</div>
                                         <div className="text-xs text-muted-foreground">{item.percentage.toFixed(1)}%</div>
                                     </div>
                                 </div>
@@ -460,15 +462,16 @@ export default function FinanceDashboard() {
                 </Card>
 
                 {/* Monthly Expenses Chart */}
-                <Card className="md:col-span-1">
+                <Card className="lg:col-span-1">
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
+                        <div className="min-w-0 flex-1">
                             <CardTitle className="text-lg">{t('finance.monthlyExpenses') || 'Monthly Expenses'}</CardTitle>
-                            <CardDescription>Last 6 months</CardDescription>
+                            <CardDescription className="hidden sm:block">Last 6 months</CardDescription>
                         </div>
                         <Button 
                             variant="outline" 
                             size="sm"
+                            className="hidden sm:flex flex-shrink-0 ml-2"
                             onClick={() => navigate('/finance/reports')}
                         >
                             {t('finance.viewReport') || 'View Report'}
@@ -482,7 +485,7 @@ export default function FinanceDashboard() {
                                     color: 'hsl(var(--chart-1))',
                                 },
                             } as ChartConfig}
-                            className="h-[250px] w-full"
+                            className="h-[200px] sm:h-[220px] md:h-[250px] w-full"
                         >
                             <BarChart data={monthlyExpensesData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -491,11 +494,13 @@ export default function FinanceDashboard() {
                                     tickLine={false}
                                     axisLine={false}
                                     tickMargin={8}
+                                    tick={{ fontSize: 12 }}
                                 />
                                 <YAxis 
                                     tickLine={false}
                                     axisLine={false}
                                     tickMargin={8}
+                                    tick={{ fontSize: 12 }}
                                     tickFormatter={(value) => {
                                         if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
                                         return `$${value}`;
@@ -515,28 +520,28 @@ export default function FinanceDashboard() {
                                 />
                             </BarChart>
                         </ChartContainer>
-                        <div className="flex items-center gap-2 mt-4 text-sm">
-                            <TrendingUp className="h-4 w-4 text-green-500" />
+                        <div className="flex items-center gap-2 mt-3 sm:mt-4 text-xs sm:text-sm">
+                            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
                             <span className="text-green-600 dark:text-green-400 font-medium">
                                 Trending up by 5.2% this month
                             </span>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">
+                        <p className="text-xs text-muted-foreground mt-2 hidden sm:block">
                             Showing data from the last 6 months
                         </p>
                     </CardContent>
                 </Card>
 
                 {/* Summary Donut Chart */}
-                <Card className="md:col-span-1">
+                <Card className="lg:col-span-1">
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
+                        <div className="min-w-0 flex-1">
                             <CardTitle className="text-lg">Summary</CardTitle>
-                            <CardDescription>
+                            <CardDescription className="hidden sm:block">
                                 Data from {formatDate(startDate)} - {formatDate(endDate)}
                             </CardDescription>
                         </div>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" className="hidden sm:flex flex-shrink-0 ml-2">
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </CardHeader>
@@ -551,7 +556,7 @@ export default function FinanceDashboard() {
                                     };
                                     return acc;
                                 }, {} as ChartConfig)}
-                                className="mx-auto aspect-square max-h-[200px]"
+                                className="mx-auto aspect-square max-h-[150px] sm:max-h-[180px] md:max-h-[200px] w-full"
                             >
                                 <PieChart>
                                     <Pie
@@ -562,8 +567,8 @@ export default function FinanceDashboard() {
                                         }))}
                                         dataKey="amount"
                                         nameKey="category"
-                                        innerRadius={60}
-                                        outerRadius={80}
+                                        innerRadius={40}
+                                        outerRadius={60}
                                     >
                                         {dashboard.expenseByCategory.map((_, index) => (
                                             <Cell key={`cell-${index}`} />
@@ -579,28 +584,28 @@ export default function FinanceDashboard() {
                                 </PieChart>
                             </ChartContainer>
                         ) : (
-                            <div className="flex items-center justify-center h-[200px] text-muted-foreground">
+                            <div className="flex items-center justify-center h-[150px] sm:h-[180px] md:h-[200px] text-muted-foreground">
                                 <div className="text-center">
-                                    <DollarSign className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                    <p>No expenses data</p>
+                                    <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 opacity-50" />
+                                    <p className="text-xs sm:text-sm">No expenses data</p>
                                 </div>
                             </div>
                         )}
-                        <div className="mt-4 space-y-2">
+                        <div className="mt-3 sm:mt-4 space-y-2">
                             {dashboard.expenseByCategory.slice(0, 4).map((item, index) => {
                                 const percentage = expenseTotal > 0 
                                     ? (item.total / expenseTotal) * 100 
                                     : 0;
                                 return (
-                                    <div key={item.id} className="flex items-center justify-between text-sm">
-                                        <div className="flex items-center gap-2">
+                                    <div key={item.id} className="flex items-center justify-between text-xs sm:text-sm">
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
                                             <div 
-                                                className="w-2 h-2 rounded-full" 
+                                                className="w-2 h-2 rounded-full flex-shrink-0" 
                                                 style={{ backgroundColor: COLORS[index % COLORS.length] }}
                                             />
-                                            <span>{item.name}</span>
+                                            <span className="truncate">{item.name}</span>
                                         </div>
-                                        <span className="font-medium">{percentage.toFixed(0)}%</span>
+                                        <span className="font-medium flex-shrink-0 ml-2">{percentage.toFixed(0)}%</span>
                                     </div>
                                 );
                             })}
@@ -610,9 +615,9 @@ export default function FinanceDashboard() {
             </div>
 
             {/* Bottom Row - Transactions and Accounts */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
                 {/* Recent Transactions */}
-                <Card className="md:col-span-2">
+                <Card className="lg:col-span-2">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="text-lg">{t('finance.transactions') || 'Transactions'}</CardTitle>
                         <Button 

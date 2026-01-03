@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -348,15 +350,11 @@ export default function LibraryReports() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <BookOpen className="h-8 w-8" />
-                    <div>
-                        <h1 className="text-2xl font-semibold">{t('library.libraryReports')}</h1>
-                        <p className="text-sm text-muted-foreground">{t('library.analytics')}</p>
-                    </div>
-                </div>
-            </div>
+            <PageHeader
+                title={t('library.libraryReports')}
+                description={t('library.analytics')}
+                icon={<BookOpen className="h-5 w-5" />}
+            />
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -441,36 +439,41 @@ export default function LibraryReports() {
 
             {/* Tabs for different report sections */}
             <Tabs defaultValue="books-report" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-5">
-                    <TabsTrigger value="books-report" className="flex items-center gap-2">
+                <TabsList className="flex w-full gap-1 h-auto flex-shrink-0 overflow-x-auto pb-1">
+                    <TabsTrigger value="books-report" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                         <FileText className="h-4 w-4" />
-                        Books Report
+                        <span className="hidden sm:inline">Books Report</span>
+                        <span className="sm:hidden">Books</span>
                     </TabsTrigger>
-                    <TabsTrigger value="overdue" className="flex items-center gap-2">
+                    <TabsTrigger value="overdue" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                         <AlertTriangle className="h-4 w-4" />
-                        Overdue Books
+                        <span className="hidden sm:inline">Overdue Books</span>
+                        <span className="sm:hidden">Overdue</span>
                         {stats.overdueCount > 0 && (
                             <Badge variant="destructive" className="ml-1">
                                 {stats.overdueCount}
                             </Badge>
                         )}
                     </TabsTrigger>
-                    <TabsTrigger value="due-soon" className="flex items-center gap-2">
+                    <TabsTrigger value="due-soon" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                         <Calendar className="h-4 w-4" />
-                        Due Soon
+                        <span className="hidden sm:inline">Due Soon</span>
+                        <span className="sm:hidden">Due</span>
                         {stats.dueSoonCount > 0 && (
                             <Badge variant="secondary" className="ml-1">
                                 {stats.dueSoonCount}
                             </Badge>
                         )}
                     </TabsTrigger>
-                    <TabsTrigger value="loan-history" className="flex items-center gap-2">
+                    <TabsTrigger value="loan-history" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                         <History className="h-4 w-4" />
-                        Loan History
+                        <span className="hidden sm:inline">Loan History</span>
+                        <span className="sm:hidden">History</span>
                     </TabsTrigger>
-                    <TabsTrigger value="most-borrowed" className="flex items-center gap-2">
+                    <TabsTrigger value="most-borrowed" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                         <TrendingUp className="h-4 w-4" />
-                        Most Borrowed
+                        <span className="hidden sm:inline">Most Borrowed</span>
+                        <span className="sm:hidden">Popular</span>
                     </TabsTrigger>
                 </TabsList>
 
@@ -692,11 +695,11 @@ export default function LibraryReports() {
                 <TabsContent value="loan-history" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <div className="space-y-4">
-                                <div>
-                                    <CardTitle>Loan History</CardTitle>
-                                    <CardDescription>All loans within the selected date range</CardDescription>
-                                </div>
+                            <CardTitle>Loan History</CardTitle>
+                            <CardDescription>All loans within the selected date range</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <FilterPanel title={t('common.filters') || 'Search & Filter'}>
                                 <div className="flex flex-col md:flex-row gap-4 items-end">
                                     <div className="space-y-2">
                                         <Label htmlFor="date-from">From Date</Label>
@@ -723,9 +726,8 @@ export default function LibraryReports() {
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
+                            </FilterPanel>
+
                             {filteredLoanHistory.length === 0 ? (
                                 <p className="text-sm text-muted-foreground text-center py-8">
                                     No loans found in the selected date range.
@@ -1005,46 +1007,50 @@ export default function LibraryReports() {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                <div className="flex flex-col md:flex-row gap-4 items-end">
-                                    <div className="relative flex-1 max-w-md">
-                                        <Label htmlFor="books-search" className="mb-2 block">Search</Label>
-                                        <Input
-                                            id="books-search"
-                                            placeholder="Search by title, author, ISBN, or book number..."
-                                            value={booksSearchQuery}
-                                            onChange={(e) => setBooksSearchQuery(e.target.value)}
-                                        />
+                                <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+                                    <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
+                                        <div className="relative flex-1 w-full sm:max-w-md">
+                                            <Label htmlFor="books-search" className="mb-2 block">Search</Label>
+                                            <Input
+                                                id="books-search"
+                                                placeholder="Search by title, author, ISBN, or book number..."
+                                                value={booksSearchQuery}
+                                                onChange={(e) => setBooksSearchQuery(e.target.value)}
+                                                className="w-full"
+                                            />
+                                        </div>
+                                        <div className="space-y-2 w-full sm:w-auto sm:min-w-[192px]">
+                                            <Label htmlFor="books-category-filter">Category</Label>
+                                            <Select value={booksCategoryFilter} onValueChange={setBooksCategoryFilter}>
+                                                <SelectTrigger id="books-category-filter" className="w-full sm:w-48">
+                                                    <SelectValue placeholder="All Categories" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">All Categories</SelectItem>
+                                                    {Array.isArray(categories) && categories.map((cat) => (
+                                                        <SelectItem key={cat.id} value={cat.id}>
+                                                            {cat.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        {(booksSearchQuery || booksCategoryFilter !== 'all') && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setBooksSearchQuery('');
+                                                    setBooksCategoryFilter('all');
+                                                }}
+                                                className="w-full sm:w-auto"
+                                            >
+                                                <X className="h-4 w-4 mr-2" />
+                                                Reset
+                                            </Button>
+                                        )}
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="books-category-filter">Category</Label>
-                                        <Select value={booksCategoryFilter} onValueChange={setBooksCategoryFilter}>
-                                            <SelectTrigger id="books-category-filter" className="w-48">
-                                                <SelectValue placeholder="All Categories" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">All Categories</SelectItem>
-                                                {Array.isArray(categories) && categories.map((cat) => (
-                                                    <SelectItem key={cat.id} value={cat.id}>
-                                                        {cat.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    {(booksSearchQuery || booksCategoryFilter !== 'all') && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => {
-                                                setBooksSearchQuery('');
-                                                setBooksCategoryFilter('all');
-                                            }}
-                                        >
-                                            <X className="h-4 w-4 mr-2" />
-                                            Reset
-                                        </Button>
-                                    )}
-                                </div>
+                                </FilterPanel>
 
                                 <div className="rounded-md border">
                                     <Table>

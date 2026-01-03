@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { FeeStatement } from '@/components/fees/FeeStatement';
 import { useFeeAssignments, useFeePayments, useFeeStructures } from '@/hooks/useFees';
 import { useLanguage } from '@/hooks/useLanguage';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FileText } from 'lucide-react';
 
 export default function StudentFeeStatementPage() {
   const { id } = useParams();
@@ -24,10 +26,11 @@ export default function StudentFeeStatementPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
+      <PageHeader
+        title={t('fees.studentFeeStatement')}
+        icon={<FileText className="h-5 w-5" />}
+      />
       <Card>
-        <CardHeader>
-          <CardTitle>{t('fees.studentFeeStatement')}</CardTitle>
-        </CardHeader>
         <CardContent>
           {isLoading ? (
             <p>{t('common.loading')}</p>

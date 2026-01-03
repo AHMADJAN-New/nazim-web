@@ -53,6 +53,8 @@ import { DataTablePagination } from '@/components/data-table/data-table-paginati
 import { useDataTable } from '@/hooks/use-data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import type { Room } from '@/types/domain/room';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 
 const roomSchema = z.object({
   room_number: z.string().min(1, 'Room number is required').max(100, 'Room number must be 100 characters or less'),
@@ -308,7 +310,7 @@ export function RoomsManagement() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -326,53 +328,55 @@ export function RoomsManagement() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <DoorOpen className="h-5 w-5" />
-                {t('settings.rooms.management')}
-              </CardTitle>
-              <CardDescription>{t('settings.rooms.title')}</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <ReportExportButtons
-                data={filteredRooms}
-                columns={[
-                  { key: 'room_number', label: t('settings.rooms.roomNumber'), align: 'left' },
-                  { key: 'building_name', label: t('settings.rooms.building'), align: 'left' },
-                  { key: 'staff_name', label: t('settings.rooms.staffWarden'), align: 'left' },
-                  { key: 'created_at', label: t('settings.rooms.createdAt'), align: 'left' },
-                ]}
-                reportKey="rooms"
-                title={t('settings.rooms.reportTitle') || 'Rooms Report'}
-                transformData={transformRoomsForExport}
-                buildFiltersSummary={buildFiltersSummary}
-                templateType="rooms"
-                disabled={isLoading}
-                errorNoSchool={t('settings.rooms.exportErrorNoSchool')}
-                errorNoData={t('settings.rooms.exportErrorNoRooms')}
-                successPdf={t('settings.rooms.exportSuccessPdf')}
-                successExcel={t('settings.rooms.exportSuccessExcel')}
-                errorPdf={t('settings.rooms.exportErrorPdf')}
-                errorExcel={t('settings.rooms.exportErrorExcel')}
-              />
-              {hasCreatePermission && (
-                <Button onClick={() => handleOpenDialog()}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t('settings.rooms.addRoom')}
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <PageHeader
+        title={t('settings.rooms.management')}
+        description={t('settings.rooms.title')}
+        icon={<DoorOpen className="h-5 w-5" />}
+        primaryAction={hasCreatePermission ? {
+          label: t('settings.rooms.addRoom'),
+          onClick: () => handleOpenDialog(),
+          icon: <Plus className="h-4 w-4" />,
+        } : undefined}
+        rightSlot={
+          <ReportExportButtons
+            data={filteredRooms}
+            columns={[
+              { key: 'room_number', label: t('settings.rooms.roomNumber'), align: 'left' },
+              { key: 'building_name', label: t('settings.rooms.building'), align: 'left' },
+              { key: 'staff_name', label: t('settings.rooms.staffWarden'), align: 'left' },
+              { key: 'created_at', label: t('settings.rooms.createdAt'), align: 'left' },
+            ]}
+            reportKey="rooms"
+            title={t('settings.rooms.reportTitle') || 'Rooms Report'}
+            transformData={transformRoomsForExport}
+            buildFiltersSummary={buildFiltersSummary}
+            templateType="rooms"
+            disabled={isLoading}
+            errorNoSchool={t('settings.rooms.exportErrorNoSchool')}
+            errorNoData={t('settings.rooms.exportErrorNoRooms')}
+            successPdf={t('settings.rooms.exportSuccessPdf')}
+            successExcel={t('settings.rooms.exportSuccessExcel')}
+            errorPdf={t('settings.rooms.exportErrorPdf')}
+            errorExcel={t('settings.rooms.exportErrorExcel')}
+          />
+        }
+        showDescriptionOnMobile={false}
+        mobilePrimaryActionVariant="icon"
+      />
+
+      <FilterPanel 
+        title={t('common.filters') || 'Search & Filter'}
+        defaultOpenDesktop={true}
+        defaultOpenMobile={false}
+      >
+        <div className="flex flex-col gap-4 md:flex-row md:items-end">
+          <div className="flex-1 min-w-0">
+            <Label htmlFor="search">Search</Label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                id="search"
                 placeholder={t('settings.rooms.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -380,9 +384,23 @@ export function RoomsManagement() {
               />
             </div>
           </div>
+        </div>
+      </FilterPanel>
 
-          <div className="rounded-md border">
-            <Table>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <CardTitle>{t('settings.rooms.management')}</CardTitle>
+              <CardDescription className="hidden md:block">{t('settings.rooms.title')}</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto -mx-4 md:mx-0">
+            <div className="inline-block min-w-full align-middle px-4 md:px-0">
+              <div className="rounded-md border">
+                <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
@@ -420,6 +438,8 @@ export function RoomsManagement() {
                 )}
               </TableBody>
             </Table>
+              </div>
+            </div>
           </div>
 
           {/* Pagination - Always show when using paginated mode */}
@@ -436,7 +456,7 @@ export function RoomsManagement() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] sm:max-w-[500px]">
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
               <DialogTitle>

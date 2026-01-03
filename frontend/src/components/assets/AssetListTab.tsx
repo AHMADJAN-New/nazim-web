@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { useLanguage } from '@/hooks/useLanguage';
 import {
   useAssets,
   useCreateAsset,
@@ -86,6 +88,7 @@ const assetSchema = z.object({
 type AssetFormValues = z.infer<typeof assetSchema>;
 
 export default function AssetListTab() {
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -584,7 +587,7 @@ export default function AssetListTab() {
   return (
     <div className="space-y-4">
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Total Assets</CardDescription>
@@ -616,46 +619,61 @@ export default function AssetListTab() {
       </div>
 
       {/* Filters and Actions */}
-      <div className="flex flex-wrap gap-3 items-center justify-between">
-        <div className="flex flex-wrap gap-3 items-center flex-1">
-          <div className="flex-1 min-w-[240px]">
+      <FilterPanel 
+        title={t('common.filters') || 'Search & Filter'}
+        defaultOpenDesktop={true}
+        defaultOpenMobile={false}
+      >
+        <div className="flex flex-col gap-4 md:flex-row md:items-end">
+          <div className="flex-1 min-w-0">
+            <Label htmlFor="search">Search</Label>
             <Input
+              id="search"
               placeholder="Search assets by name, tag, or serial"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Select value={statusFilter || 'all'} onValueChange={(value) => setStatusFilter(value === 'all' ? undefined : value)}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="available">Available</SelectItem>
-              <SelectItem value="assigned">Assigned</SelectItem>
-              <SelectItem value="maintenance">Maintenance</SelectItem>
-              <SelectItem value="retired">Retired</SelectItem>
-              <SelectItem value="lost">Lost</SelectItem>
-              <SelectItem value="disposed">Disposed</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="w-full md:w-[200px]">
+            <Label htmlFor="status-filter">Status</Label>
+            <Select value={statusFilter || 'all'} onValueChange={(value) => setStatusFilter(value === 'all' ? undefined : value)}>
+              <SelectTrigger id="status-filter">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="available">Available</SelectItem>
+                <SelectItem value="assigned">Assigned</SelectItem>
+                <SelectItem value="maintenance">Maintenance</SelectItem>
+                <SelectItem value="retired">Retired</SelectItem>
+                <SelectItem value="lost">Lost</SelectItem>
+                <SelectItem value="disposed">Disposed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        {canCreate && (
+      </FilterPanel>
+
+      {/* Actions */}
+      {canCreate && (
+        <div className="flex justify-end">
           <Button onClick={openCreate} className="gap-2">
-            <Plus className="h-4 w-4" /> New Asset
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">New Asset</span>
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Assets Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <CardTitle>Assets</CardTitle>
-              <CardDescription>Manage and track all assets in your organization</CardDescription>
+              <CardDescription className="hidden md:block">Manage and track all assets in your organization</CardDescription>
             </div>
-            <ReportExportButtons
+            <div className="flex-shrink-0">
+              <ReportExportButtons
               data={assets as Asset[]}
               columns={[
                 { key: 'name', label: 'Name', align: 'left' },
@@ -680,6 +698,7 @@ export default function AssetListTab() {
               buttonSize="sm"
               buttonVariant="outline"
             />
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -689,7 +708,9 @@ export default function AssetListTab() {
             </div>
           ) : (
             <div className="space-y-4">
-              <Table>
+              <div className="overflow-x-auto -mx-4 md:mx-0">
+                <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                  <Table>
                 <TableHeader>
                   {table.getHeaderGroups().map((headerGroup) => (
                     <TableRow key={headerGroup.id}>
@@ -723,6 +744,8 @@ export default function AssetListTab() {
                   )}
                 </TableBody>
               </Table>
+                </div>
+              </div>
               <DataTablePagination 
                 table={table} 
                 paginationMeta={pagination ?? null}
@@ -738,7 +761,7 @@ export default function AssetListTab() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingAsset ? 'Update Asset' : 'Create Asset'}</DialogTitle>
           </DialogHeader>

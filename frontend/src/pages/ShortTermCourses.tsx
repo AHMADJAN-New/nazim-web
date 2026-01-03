@@ -113,14 +113,15 @@ const CourseRow = ({ course, onEdit, onDelete, onClose, onReopen, onViewStudents
           {statusLabels[course.status] || course.status}
         </Badge>
       </TableCell>
-      <TableCell className="text-right">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">{t('common.actions')}</span>
-            </Button>
-          </DropdownMenuTrigger>
+      <TableCell>
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" aria-label={t('common.actions')}>
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">{t('common.actions')}</span>
+              </Button>
+            </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onViewStudents(course)}>
               <Eye className="mr-2 h-4 w-4" />
@@ -258,25 +259,31 @@ const ShortTermCourses = () => {
   };
 
   return (
-    <div className="container mx-auto max-w-7xl p-4 md:p-6 space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold leading-tight">{t('courses.title')}</h1>
-          <p className="text-muted-foreground">{t('courses.subtitle')}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={handleCreate}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t('courses.createCourse')}
-          </Button>
-          <Button variant="outline" onClick={() => refetch()}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            {t('common.refresh')}
-          </Button>
-        </div>
-      </div>
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-2xl">{t('courses.title')}</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1 hidden md:block">
+                {t('courses.subtitle')}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <Button onClick={handleCreate} className="w-full sm:w-auto">
+                <Plus className="h-4 w-4" />
+                <span className="ml-2">{t('courses.createCourse')}</span>
+              </Button>
+              <Button variant="outline" onClick={() => refetch()} className="w-full sm:w-auto">
+                <RefreshCw className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">{t('common.refresh')}</span>
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">{t('courses.open')}</CardTitle>
@@ -313,15 +320,17 @@ const ShortTermCourses = () => {
             <Users className="h-6 w-6 text-indigo-500" />
           </CardContent>
         </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="space-y-1 pb-3">
           <CardTitle className="text-lg font-semibold">{t('courses.courseList')}</CardTitle>
-          <p className="text-sm text-muted-foreground">{t('courses.subtitle')}</p>
+          <p className="text-sm text-muted-foreground hidden md:block">{t('courses.subtitle')}</p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label>{t('courses.status')}</Label>
               <Select value={status} onValueChange={setStatus}>
@@ -362,7 +371,7 @@ const ShortTermCourses = () => {
             </div>
           ) : (
             <>
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -370,7 +379,7 @@ const ShortTermCourses = () => {
                       <TableHead className="hidden md:table-cell">{t('courses.instructorName')}</TableHead>
                       <TableHead className="hidden md:table-cell">{t('courses.dates')}</TableHead>
                       <TableHead>{t('courses.status')}</TableHead>
-                      <TableHead className="text-right w-[50px]">{t('common.actions')}</TableHead>
+                      <TableHead className="w-[50px]">{t('common.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

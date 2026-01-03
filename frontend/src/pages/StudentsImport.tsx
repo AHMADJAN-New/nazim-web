@@ -317,21 +317,21 @@ export default function StudentsImport() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-6xl">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-6xl overflow-x-hidden">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold">{t('students.importTitle')}</h1>
-          <p className="text-muted-foreground">{t('students.importSubtitle')}</p>
+          <p className="text-muted-foreground hidden md:block">{t('students.importSubtitle')}</p>
         </div>
-        <Button variant="outline" onClick={() => navigate('/students')}>
+        <Button variant="outline" onClick={() => navigate('/students')} className="flex-shrink-0">
           {t('students.backToStudents')}
         </Button>
       </div>
 
       <Tabs defaultValue="template">
-        <TabsList>
-          <TabsTrigger value="template">{t('students.templateBuilder')}</TabsTrigger>
-          <TabsTrigger value="upload">{t('students.uploadImport')}</TabsTrigger>
+        <TabsList className="w-full overflow-x-auto">
+          <TabsTrigger value="template" className="whitespace-nowrap flex-shrink-0">{t('students.templateBuilder')}</TabsTrigger>
+          <TabsTrigger value="upload" className="whitespace-nowrap flex-shrink-0">{t('students.uploadImport')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="template" className="mt-4">
@@ -339,7 +339,7 @@ export default function StudentsImport() {
             <Card>
               <CardHeader>
                 <CardTitle>{t('students.studentFields')}</CardTitle>
-                <CardDescription>{t('students.templateFieldsHint')}</CardDescription>
+                <CardDescription className="hidden md:block">{t('students.templateFieldsHint')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -368,7 +368,7 @@ export default function StudentsImport() {
             <Card>
               <CardHeader>
                 <CardTitle>{t('students.admissionFields')}</CardTitle>
-                <CardDescription>{t('students.admissionFieldsHint')}</CardDescription>
+                <CardDescription className="hidden md:block">{t('students.admissionFieldsHint')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -464,7 +464,8 @@ export default function StudentsImport() {
                 <div className="flex gap-2">
                   <Button onClick={onDownloadTemplate} disabled={!canDownload || isDownloading} className="w-full">
                     <Download className="w-4 h-4 mr-2" />
-                    {t('students.downloadTemplate')}
+                    <span className="hidden sm:inline">{t('students.downloadTemplate')}</span>
+                    <span className="sm:hidden">{t('students.download') || 'Download'}</span>
                   </Button>
                 </div>
 
@@ -543,7 +544,7 @@ export default function StudentsImport() {
           <Card>
             <CardHeader>
               <CardTitle>{t('students.uploadImport')}</CardTitle>
-              <CardDescription>{t('students.uploadImportHint')}</CardDescription>
+              <CardDescription className="hidden md:block">{t('students.uploadImportHint')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {isLimitReached && (
@@ -590,16 +591,20 @@ export default function StudentsImport() {
                   variant="secondary" 
                   onClick={onValidate} 
                   disabled={!canUploadFile || !uploadFile || isValidating}
+                  className="flex-1 sm:flex-initial"
                 >
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  {t('students.validateFile')}
+                  <span className="hidden sm:inline">{t('students.validateFile')}</span>
+                  <span className="sm:hidden">{t('students.validate') || 'Validate'}</span>
                 </Button>
                 <Button 
                   onClick={onImport} 
                   disabled={!canUploadFile || !uploadFile || !validation?.is_valid || isImporting}
+                  className="flex-1 sm:flex-initial"
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {t('students.importNow')}
+                  <span className="hidden sm:inline">{t('students.importNow')}</span>
+                  <span className="sm:hidden">{t('students.import') || 'Import'}</span>
                 </Button>
               </div>
               
@@ -660,7 +665,7 @@ export default function StudentsImport() {
                   )}
 
                   {!validation.is_valid && flattenedErrors.length > 0 && (
-                    <div className="border rounded-md overflow-auto max-h-[420px]">
+                    <div className="border rounded-md overflow-x-auto max-h-[420px]">
                       <Table>
                         <TableHeader>
                           <TableRow>

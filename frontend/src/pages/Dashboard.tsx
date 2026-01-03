@@ -172,17 +172,18 @@ export default function Dashboard() {
   const renderDefaultDashboard = () => (
     <>
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 p-8 rounded-xl text-primary-foreground shadow-lg mb-8">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-primary to-primary/80 p-4 md:p-8 rounded-xl text-primary-foreground shadow-lg mb-6 md:mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">{t('dashboard.welcomeBack') || 'Welcome back'}, {user?.email?.split('@')[0] || t('common.user') || 'User'}!</h1>
-            <p className="text-primary-foreground/90 text-lg">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t('dashboard.welcomeBack') || 'Welcome back'}, {user?.email?.split('@')[0] || t('common.user') || 'User'}!</h1>
+            <p className="text-primary-foreground/90 text-sm sm:text-lg">
               {t('dashboard.welcomeMessage') || "Here's what's happening at your school today"}
             </p>
           </div>
           <div className="hidden md:flex items-center gap-2 text-primary-foreground/80">
             <Calendar className="h-5 w-5" />
-            <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <span className="hidden lg:inline">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <span className="lg:hidden">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </div>
         </div>
       </div>
@@ -201,7 +202,7 @@ export default function Dashboard() {
       </div>
 
       {/* Analytics Section - Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
         {/* Students by Class - Bar Chart */}
         {studentsByClass && studentsByClass.length > 0 && (
           <Card className="shadow-md hover:shadow-lg transition-shadow">
@@ -224,7 +225,7 @@ export default function Dashboard() {
                     color: "hsl(var(--primary))",
                   },
                 }}
-                className="h-[300px]"
+                className="h-[200px] sm:h-[220px] md:h-[250px] lg:h-[300px] w-full"
               >
                 <BarChart data={studentsByClass}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -274,7 +275,7 @@ export default function Dashboard() {
                     color: "hsl(0 72.2% 50.6%)",
                   },
                 }}
-                className="h-[300px]"
+                className="mx-auto aspect-square max-h-[150px] sm:max-h-[180px] md:max-h-[200px] lg:max-h-[250px] w-full"
               >
                 <RechartsPieChart>
                   <Pie
@@ -301,7 +302,7 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Actions & Recent Activity Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
         {/* Quick Actions */}
         <Card className="lg:col-span-2 shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
@@ -311,7 +312,7 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
               {[
                 { label: "Students", icon: Users, href: "/students", color: "hover:bg-primary/10 hover:border-primary" },
                 { label: "Staff", icon: GraduationCap, href: "/staff", color: "hover:bg-secondary/10 hover:border-secondary" },
@@ -365,7 +366,7 @@ export default function Dashboard() {
     <MainLayout title={t('dashboard.title') || "Dashboard"}>
       <div className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 h-auto p-1">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Home className="h-4 w-4" />
               <span className="hidden sm:inline">{t('dashboard.overview') || 'Overview'}</span>

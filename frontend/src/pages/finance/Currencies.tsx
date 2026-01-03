@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
     Dialog,
     DialogContent,
@@ -15,7 +16,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import {
     Table,
@@ -121,7 +121,7 @@ export default function Currencies() {
 
     const CurrencyForm = ({ onSubmit, isLoading: loading }: { onSubmit: () => void; isLoading: boolean }) => (
         <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="code">{t('finance.currencyCode') || 'Currency Code'} *</Label>
                     <Input
@@ -146,7 +146,7 @@ export default function Currencies() {
                     />
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="symbol">{t('finance.currencySymbol') || 'Symbol'}</Label>
                     <Input
@@ -198,34 +198,28 @@ export default function Currencies() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl font-bold">
-                        {t('finance.currencies') || 'Currencies'}
-                    </h1>
-                    <p className="text-muted-foreground">
-                        {t('finance.currenciesDescription') || 'Manage currencies for multi-currency support'}
-                    </p>
-                </div>
-                <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            {t('finance.addCurrency') || 'Add Currency'}
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{t('finance.addCurrency') || 'Add Currency'}</DialogTitle>
-                            <DialogDescription>
-                                {t('finance.addCurrencyDescription') || 'Create a new currency'}
-                            </DialogDescription>
-                        </DialogHeader>
-                        <CurrencyForm onSubmit={handleCreate} isLoading={createCurrency.isPending} />
-                    </DialogContent>
-                </Dialog>
-            </div>
+            <PageHeader
+                title={t('finance.currencies') || 'Currencies'}
+                description={t('finance.currenciesDescription') || 'Manage currencies for multi-currency support'}
+                icon={<Coins className="h-5 w-5" />}
+                primaryAction={{
+                    label: t('finance.addCurrency') || 'Add Currency',
+                    onClick: () => setIsCreateOpen(true),
+                    icon: <Plus className="h-4 w-4" />,
+                }}
+            />
+
+            <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('finance.addCurrency') || 'Add Currency'}</DialogTitle>
+                        <DialogDescription>
+                            {t('finance.addCurrencyDescription') || 'Create a new currency'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <CurrencyForm onSubmit={handleCreate} isLoading={createCurrency.isPending} />
+                </DialogContent>
+            </Dialog>
 
             {/* Currencies Table */}
             <Card>
@@ -239,7 +233,8 @@ export default function Currencies() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
+                    <div className="overflow-x-auto">
+                        <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>{t('finance.currencyCode') || 'Code'}</TableHead>
@@ -303,6 +298,7 @@ export default function Currencies() {
                             )}
                         </TableBody>
                     </Table>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -339,4 +335,5 @@ export default function Currencies() {
         </div>
     );
 }
+
 

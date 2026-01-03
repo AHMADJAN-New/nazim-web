@@ -26,6 +26,8 @@ import { FileText, Search, Plus, Eye, Edit, Trash2, MoreHorizontal, Download, Im
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 import { LetterheadForm } from "@/components/dms/LetterheadForm";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { FilterPanel } from "@/components/layout/FilterPanel";
 
 const letterTypeOptions = [
   { value: "application", label: "Application" },
@@ -267,22 +269,18 @@ export default function LetterheadsPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <FileText className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Letterheads</h1>
-            <p className="text-muted-foreground">Manage letterhead files and configurations</p>
-          </div>
-        </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Upload Letterhead
-            </Button>
-          </DialogTrigger>
+      <PageHeader
+        title={t('dms.letterheads') || 'Letterheads'}
+        description={t('dms.letterheadsDescription') || 'Manage letterhead files and configurations'}
+        icon={<FileText className="h-5 w-5" />}
+        primaryAction={{
+          label: t('dms.uploadLetterhead') || 'Upload Letterhead',
+          onClick: () => setIsCreateDialogOpen(true),
+          icon: <Plus className="h-4 w-4" />,
+        }}
+      />
+
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Upload Letterhead</DialogTitle>
@@ -299,79 +297,70 @@ export default function LetterheadsPage() {
         </Dialog>
       </div>
 
-      {/* Filters Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Search & Filter
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
-              <Label>Search</Label>
-              <Input
-                placeholder="Search by name..."
-                value={filters.search}
-                onChange={(e) => setFilters((s) => ({ ...s, search: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Letter Type</Label>
-              <Select
-                value={filters.letter_type || "all"}
-                onValueChange={(value) => setFilters((s) => ({ ...s, letter_type: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {letterTypeOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>File Type</Label>
-              <Select
-                value={filters.file_type || "all"}
-                onValueChange={(value) => setFilters((s) => ({ ...s, file_type: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="pdf">PDF</SelectItem>
-                  <SelectItem value="image">Image</SelectItem>
-                  <SelectItem value="html">HTML</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={filters.active || "all"}
-                onValueChange={(value) => setFilters((s) => ({ ...s, active: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="true">Active</SelectItem>
-                  <SelectItem value="false">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-2">
+            <Label>{t('common.search') || 'Search'}</Label>
+            <Input
+              placeholder={t('dms.searchByName') || 'Search by name...'}
+              value={filters.search}
+              onChange={(e) => setFilters((s) => ({ ...s, search: e.target.value }))}
+            />
           </div>
-        </CardContent>
-      </Card>
+          <div className="space-y-2">
+            <Label>{t('dms.letterType') || 'Letter Type'}</Label>
+            <Select
+              value={filters.letter_type || "all"}
+              onValueChange={(value) => setFilters((s) => ({ ...s, letter_type: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common.allTypes') || 'All Types'}</SelectItem>
+                {letterTypeOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{t('dms.fileType') || 'File Type'}</Label>
+            <Select
+              value={filters.file_type || "all"}
+              onValueChange={(value) => setFilters((s) => ({ ...s, file_type: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common.allTypes') || 'All Types'}</SelectItem>
+                <SelectItem value="pdf">PDF</SelectItem>
+                <SelectItem value="image">Image</SelectItem>
+                <SelectItem value="html">HTML</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{t('common.status') || 'Status'}</Label>
+            <Select
+              value={filters.active || "all"}
+              onValueChange={(value) => setFilters((s) => ({ ...s, active: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                <SelectItem value="true">{t('common.active') || 'Active'}</SelectItem>
+                <SelectItem value="false">{t('common.inactive') || 'Inactive'}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </FilterPanel>
 
       {/* Letterheads Table */}
       <Card>

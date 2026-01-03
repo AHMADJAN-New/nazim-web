@@ -1053,6 +1053,12 @@ export interface TranslationKeys {
     class: string;
     selectAtLeastOneClass: string;
     studentNotFound: string;
+    markAttendanceDescription: string;
+    selectSession: string;
+    selectSessionPlaceholder: string;
+    currentSession: string;
+    selectSessionForMarking: string;
+    searchSessions: string;
   };
 
   attendanceReports: {

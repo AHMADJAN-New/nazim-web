@@ -264,11 +264,11 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   };
 
   return (
-    <header className="h-16 bg-card border-b border-border sticky top-0 z-50">
-      <div className="h-full px-4 flex items-center justify-between">
-        {/* Left Section - Mobile menu trigger + Title/Breadcrumb */}
-        <div className="flex items-center gap-4">
-          <SidebarTrigger className="lg:hidden" />
+    <header className="bg-card border-b border-border sticky top-0 z-50 w-full shadow-sm flex-shrink-0">
+      <div className="px-4 py-2 flex flex-wrap items-center gap-3 sm:gap-4">
+        {/* Left Section - Sidebar trigger + Title/Breadcrumb */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <SidebarTrigger />
           
           <div className="hidden lg:block">
             {showBreadcrumb && breadcrumbItems.length > 0 ? (
@@ -290,10 +290,16 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               <h1 className="text-xl font-semibold text-foreground">{title}</h1>
             ) : null}
           </div>
+
+          <div className="lg:hidden">
+            {title ? (
+              <p className="text-base font-semibold text-foreground line-clamp-1 max-w-[160px]">{title}</p>
+            ) : null}
+          </div>
         </div>
 
         {/* Center Section - Search */}
-        <div className="flex-1 max-w-md mx-4" ref={searchContainerRef}>
+        <div className="order-3 w-full sm:order-none sm:flex-1 sm:min-w-[280px] lg:max-w-xl" ref={searchContainerRef}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
@@ -317,7 +323,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                 // Don't prevent other keys - allow normal typing
                 // Allow all other keys to work normally
               }}
-              className="pl-10 pr-16 bg-muted/50 border-0 focus:bg-background"
+              className="pl-10 pr-16 bg-muted/50 border-0 focus:bg-background w-full"
               autoComplete="off"
               spellCheck={false}
             />
@@ -351,7 +357,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
         />
 
         {/* Right Section - Actions & Profile */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end w-full sm:w-auto sm:flex-nowrap">
           {/* Platform Admin Button */}
           {isPlatformAdmin && (
             <Button

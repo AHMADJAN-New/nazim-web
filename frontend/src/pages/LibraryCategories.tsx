@@ -38,6 +38,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, Search, BookOpen } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -198,21 +200,20 @@ export default function LibraryCategories() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <BookOpen className="h-8 w-8" />
-                    <div>
-                        <h1 className="text-2xl font-semibold">{t('library.libraryCategories')}</h1>
-                        <p className="text-sm text-muted-foreground">{t('library.manageBookCategories')}</p>
-                    </div>
-                </div>
-                {hasCreatePermission && (
-                    <Button onClick={() => handleOpenDialog()}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        {t('library.addCategory')}
-                    </Button>
-                )}
-            </div>
+            <PageHeader
+                title={t('library.libraryCategories')}
+                description={t('library.manageBookCategories')}
+                icon={<BookOpen className="h-5 w-5" />}
+                primaryAction={
+                    hasCreatePermission
+                        ? {
+                            label: t('library.addCategory'),
+                            onClick: () => handleOpenDialog(),
+                            icon: <Plus className="h-4 w-4" />,
+                        }
+                        : undefined
+                }
+            />
 
             <Card>
                 <CardHeader>
@@ -222,7 +223,7 @@ export default function LibraryCategories() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="mb-4">
+                    <FilterPanel title={t('common.filters') || 'Search & Filter'}>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
@@ -232,7 +233,7 @@ export default function LibraryCategories() {
                                 className="pl-10"
                             />
                         </div>
-                    </div>
+                    </FilterPanel>
 
                     <div className="rounded-md border">
                         <Table>

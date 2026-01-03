@@ -50,6 +50,8 @@ import {
 } from '@/components/ui/table';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 
 type Step = 1 | 2;
 
@@ -447,7 +449,7 @@ export function TeacherSubjectAssignments() {
 
     if (!hasReadPermission) {
         return (
-            <div className="container mx-auto p-6">
+            <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
                 <Card>
                     <CardContent className="p-6">
                         <div className="text-center text-muted-foreground">{t('teacherSubjectAssignments.noPermission')}</div>
@@ -458,91 +460,100 @@ export function TeacherSubjectAssignments() {
     }
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
-            {/* Header */}
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+            <PageHeader
+                title={t('teacherSubjectAssignments.title') || 'Teacher Subject Assignments'}
+                description={t('teacherSubjectAssignments.subtitle') || 'Assign teachers to subjects for specific classes'}
+                icon={<BookOpen className="h-5 w-5" />}
+                primaryAction={hasCreatePermission ? {
+                    label: t('teacherSubjectAssignments.createAssignment') || 'Create Assignment',
+                    onClick: handleCreateClick,
+                    icon: <Plus className="h-4 w-4" />,
+                } : undefined}
+            />
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="flex items-center gap-2">
-                                <BookOpen className="h-5 w-5" />
-                                {t('teacherSubjectAssignments.title')}
-                            </CardTitle>
-                            <CardDescription>
-                                {t('teacherSubjectAssignments.subtitle')}
-                            </CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {hasCreatePermission && (
-                                <Button onClick={handleCreateClick}>
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    {t('teacherSubjectAssignments.createAssignment')}
-                                </Button>
-                            )}
-                        </div>
-                    </div>
+                    <CardTitle>{t('teacherSubjectAssignments.title')}</CardTitle>
+                    <CardDescription className="hidden md:block">{t('teacherSubjectAssignments.subtitle')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {/* Filters */}
-                    <div className="flex flex-wrap items-center gap-4 mb-4">
-                        <div className="relative flex-1 min-w-[200px]">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder={t('teacherSubjectAssignments.searchPlaceholder')}
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10"
-                            />
+                    <FilterPanel
+                        title={t('common.filters') || 'Filters'}
+                        defaultOpenDesktop={true}
+                        defaultOpenMobile={false}
+                    >
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <Label>{t('common.search') || 'Search'}</Label>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder={t('teacherSubjectAssignments.searchPlaceholder')}
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="pl-10"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <Label>{t('teacherSubjectAssignments.filterByTeacher')}</Label>
+                                <Select value={teacherFilter} onValueChange={setTeacherFilter}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder={t('teacherSubjectAssignments.filterByTeacher')} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">{t('teacherSubjectAssignments.allTeachers')}</SelectItem>
+                                        {teacherStaff.length === 0 ? (
+                                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                                {t('teacherSubjectAssignments.noActiveStaff')}
+                                            </div>
+                                        ) : (
+                                            teacherStaff.map((staffMember) => (
+                                                <SelectItem 
+                                                    key={staffMember.id} 
+                                                    value={staffMember.id}
+                                                >
+                                                    {staffMember.employeeId} - {staffMember.fullName || `${staffMember.firstName} ${staffMember.fatherName}`}
+                                                    {staffMember.staffTypeRelation && ` (${staffMember.staffTypeRelation.name})`}
+                                                </SelectItem>
+                                            ))
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label>{t('teacherSubjectAssignments.filterByAcademicYear')}</Label>
+                                <Select value={academicYearFilter} onValueChange={setAcademicYearFilter}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder={t('teacherSubjectAssignments.filterByAcademicYear')} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">{t('teacherSubjectAssignments.allAcademicYears')}</SelectItem>
+                                        {academicYears?.map((year) => (
+                                            <SelectItem key={year.id} value={year.id}>
+                                                {year.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
-                        <Select value={teacherFilter} onValueChange={setTeacherFilter}>
-                            <SelectTrigger className="w-[200px]">
-                                <SelectValue placeholder={t('teacherSubjectAssignments.filterByTeacher')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">{t('teacherSubjectAssignments.allTeachers')}</SelectItem>
-                                {teacherStaff.length === 0 ? (
-                                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                        {t('teacherSubjectAssignments.noActiveStaff')}
-                                    </div>
-                                ) : (
-                                    teacherStaff.map((staffMember) => (
-                                        <SelectItem 
-                                            key={staffMember.id} 
-                                            value={staffMember.id}
-                                        >
-                                            {staffMember.employeeId} - {staffMember.fullName || `${staffMember.firstName} ${staffMember.fatherName}`}
-                                            {staffMember.staffTypeRelation && ` (${staffMember.staffTypeRelation.name})`}
-                                        </SelectItem>
-                                    ))
-                                )}
-                            </SelectContent>
-                        </Select>
-                        <Select value={academicYearFilter} onValueChange={setAcademicYearFilter}>
-                            <SelectTrigger className="w-[200px]">
-                                <SelectValue placeholder={t('teacherSubjectAssignments.filterByAcademicYear')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">{t('teacherSubjectAssignments.allAcademicYears')}</SelectItem>
-                                {academicYears?.map((year) => (
-                                    <SelectItem key={year.id} value={year.id}>
-                                        {year.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
                         {(searchQuery || teacherFilter !== 'all' || academicYearFilter !== 'all') && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                    setSearchQuery('');
-                                    setTeacherFilter('all');
-                                    setAcademicYearFilter('all');
-                                }}
-                            >
-                                <X className="w-4 h-4 mr-2" />
-                                {t('teacherSubjectAssignments.clear')}
-                            </Button>
+                            <div className="mt-4">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        setTeacherFilter('all');
+                                        setAcademicYearFilter('all');
+                                    }}
+                                >
+                                    <X className="w-4 h-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">{t('teacherSubjectAssignments.clear')}</span>
+                                </Button>
+                            </div>
                         )}
                         {filteredAssignments && filteredAssignments.length > 0 && (
                             <ReportExportButtons
@@ -623,20 +634,22 @@ export function TeacherSubjectAssignments() {
                                 : t('teacherSubjectAssignments.noAssignmentsAvailable')}
                         </div>
                     ) : (
-                        <div className="rounded-md border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>{t('teacherSubjectAssignments.teacher')}</TableHead>
-                                        <TableHead>{t('teacherSubjectAssignments.academicYear')}</TableHead>
-                                        <TableHead>{t('teacherSubjectAssignments.class')}</TableHead>
-                                        <TableHead>{t('teacherSubjectAssignments.subject')}</TableHead>
-                                        <TableHead>{t('teacherSubjectAssignments.scheduleSlots')}</TableHead>
-                                        <TableHead>{t('teacherSubjectAssignments.status')}</TableHead>
-                                        <TableHead>{t('teacherSubjectAssignments.actions')}</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
+                        <div className="overflow-x-auto -mx-4 md:mx-0">
+                            <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                                <div className="rounded-md border">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>{t('teacherSubjectAssignments.teacher')}</TableHead>
+                                                <TableHead>{t('teacherSubjectAssignments.academicYear')}</TableHead>
+                                                <TableHead>{t('teacherSubjectAssignments.class')}</TableHead>
+                                                <TableHead>{t('teacherSubjectAssignments.subject')}</TableHead>
+                                                <TableHead>{t('teacherSubjectAssignments.scheduleSlots')}</TableHead>
+                                                <TableHead>{t('teacherSubjectAssignments.status')}</TableHead>
+                                                <TableHead>{t('teacherSubjectAssignments.actions')}</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
                                     {filteredAssignments.map((assignment) => (
                                         <TableRow key={assignment.id}>
                                             <TableCell>
@@ -725,8 +738,10 @@ export function TeacherSubjectAssignments() {
                                             </TableCell>
                                         </TableRow>
                                     ))}
-                                </TableBody>
-                            </Table>
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </CardContent>
@@ -743,7 +758,7 @@ export function TeacherSubjectAssignments() {
                     resetForm();
                 }
             }}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{t('teacherSubjectAssignments.createDialogTitle')}</DialogTitle>
                         <DialogDescription>
@@ -1085,7 +1100,7 @@ export function TeacherSubjectAssignments() {
                     setEditingAssignment(null);
                 }
             }}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{t('teacherSubjectAssignments.editDialogTitle')}</DialogTitle>
                         <DialogDescription>

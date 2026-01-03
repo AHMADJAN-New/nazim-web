@@ -58,6 +58,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 
 interface ExamClassCardProps {
   examClass: ExamClass;
@@ -232,8 +234,9 @@ function ExamClassCard({
                     setSelectedSubjectIds([]);
                   }
                 }}
+                className="flex-shrink-0"
               >
-                {showBulkEnroll ? t('common.cancel') || 'Cancel' : t('exams.bulkEnroll') || 'Bulk Enroll'}
+                <span className="text-xs sm:text-sm">{showBulkEnroll ? t('common.cancel') || 'Cancel' : t('exams.bulkEnroll') || 'Bulk Enroll'}</span>
               </Button>
             </div>
 
@@ -275,9 +278,10 @@ function ExamClassCard({
                         onClick={handleBulkEnroll}
                         disabled={selectedSubjectIds.length === 0 || enrollSubject.isPending}
                         size="sm"
+                        className="flex-shrink-0"
                       >
-                        <Plus className="h-4 w-4 mr-1" />
-                        {t('exams.enrollSelected') || `Enroll ${selectedSubjectIds.length} Subject(s)`}
+                        <Plus className="h-4 w-4 sm:mr-1" />
+                        <span className="text-xs sm:text-sm">{t('exams.enrollSelected') || `Enroll ${selectedSubjectIds.length} Subject(s)`}</span>
                       </Button>
                     </div>
                   </>
@@ -323,8 +327,10 @@ function ExamClassCard({
                   onClick={handleEnroll} 
                   disabled={!selectedClassSubjectId || enrollSubject.isPending || subjectsLoading}
                   size="sm"
+                  className="flex-shrink-0"
                 >
-                  <Plus className="h-4 w-4 mr-1" /> {t('common.add') || 'Add'}
+                  <Plus className="h-4 w-4 sm:mr-1" />
+                  <span className="text-xs sm:text-sm">{t('common.add') || 'Add'}</span>
                 </Button>
               </div>
             )}
@@ -377,7 +383,7 @@ function ExamClassCard({
                           )}
                         </div>
                       </div>
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <div>
                           <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('exams.totalMarks') || 'Total'}</Label>
                           <Input
@@ -428,8 +434,8 @@ function ExamClassCard({
                             }
                             disabled={!hasAssign || updateSubject.isPending}
                           >
-                            <NotebookPen className="h-3 w-3 mr-1" />
-                            {t('common.save') || 'Save'}
+                            <NotebookPen className="h-3 w-3 sm:mr-1" />
+                            <span className="text-xs sm:text-sm">{t('common.save') || 'Save'}</span>
                           </Button>
                         </div>
                       </div>
@@ -649,16 +655,12 @@ export function ExamEnrollment() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{t('exams.enrollment') || 'Exam Enrollment'}</h1>
-            <p className="text-muted-foreground mt-1">
-              {t('exams.enrollmentDescription') || 'Assign classes, enroll subjects, and set schedules for exams.'}
-            </p>
-          </div>
-          {selectedExam && (
+      <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+        <PageHeader
+          title={t('exams.enrollment') || 'Exam Enrollment'}
+          description={t('exams.enrollmentDescription') || 'Assign classes, enroll subjects, and set schedules for exams.'}
+          icon={<GraduationCap className="h-5 w-5" />}
+          rightSlot={selectedExam && (
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className="gap-1 py-1.5 px-3">
                 <Calendar className="h-3 w-3" />
@@ -669,10 +671,10 @@ export function ExamEnrollment() {
               </Badge>
             </div>
           )}
-        </div>
+        />
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Card className="bg-gradient-to-br from-sky-500/10 to-sky-500/5 border-sky-500/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -881,13 +883,13 @@ export function ExamEnrollment() {
                 {/* Add Class Section */}
                 <Card>
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Plus className="h-5 w-5" />
                           {t('exams.assignClass') || 'Assign Class'}
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="hidden md:block">
                           {unassignedClasses.length} {t('exams.classesAvailable') || 'classes available to assign'}
                           {selectedExam?.academicYear && (
                             <span className="ml-2 text-xs">
@@ -906,8 +908,9 @@ export function ExamEnrollment() {
                               setSelectedClassIds([]);
                             }
                           }}
+                          className="flex-shrink-0"
                         >
-                          {showBulkClassAssign ? t('common.cancel') || 'Cancel' : t('exams.bulkAssign') || 'Bulk Assign'}
+                          <span className="text-xs sm:text-sm">{showBulkClassAssign ? t('common.cancel') || 'Cancel' : t('exams.bulkAssign') || 'Bulk Assign'}</span>
                         </Button>
                       )}
                     </div>
@@ -950,9 +953,10 @@ export function ExamEnrollment() {
                               <Button
                                 onClick={handleBulkAssignClasses}
                                 disabled={selectedClassIds.length === 0 || assignClass.isPending}
+                                className="flex-shrink-0"
                               >
-                                <Plus className="h-4 w-4 mr-1" />
-                                {t('exams.assignSelected') || `Assign ${selectedClassIds.length} Class(es)`}
+                                <Plus className="h-4 w-4 sm:mr-1" />
+                                <span className="text-xs sm:text-sm">{t('exams.assignSelected') || `Assign ${selectedClassIds.length} Class(es)`}</span>
                               </Button>
                             </div>
                           </>
@@ -1003,9 +1007,10 @@ export function ExamEnrollment() {
                               { onSuccess: () => setSelectedClassId('') }
                             );
                           }}
+                          className="flex-shrink-0"
                         >
-                          <Plus className="h-4 w-4 mr-1" />
-                          {t('exams.assignClass') || 'Assign Class'}
+                          <Plus className="h-4 w-4 sm:mr-1" />
+                          <span className="text-xs sm:text-sm">{t('exams.assignClass') || 'Assign Class'}</span>
                         </Button>
                       </div>
                     )}
@@ -1023,7 +1028,7 @@ export function ExamEnrollment() {
                   </div>
 
                   {classesLoading ? (
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {[...Array(2)].map((_, i) => (
                         <Skeleton key={i} className="h-40 w-full rounded-lg" />
                       ))}
@@ -1041,7 +1046,7 @@ export function ExamEnrollment() {
                       </CardContent>
                     </Card>
                   ) : (
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {examClasses.map((examClass, index) => (
                         <ExamClassCard
                           key={examClass.id}

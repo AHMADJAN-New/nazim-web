@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { BarChart3, Filter, RefreshCw, UserCheck, Building2, AlertTriangle, X } from 'lucide-react';
+import { BarChart3, RefreshCw, UserCheck, Building2, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
@@ -25,6 +25,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Link } from 'react-router-dom';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 
 const statusOrder: AdmissionStatus[] = ['active', 'admitted', 'pending', 'inactive', 'suspended', 'withdrawn', 'graduated'];
 
@@ -94,7 +96,6 @@ const StudentAdmissionsReport = () => {
     perPage: 25,
   });
 
-  const [showFilters, setShowFilters] = useState(false);
 
   const hasInvalidRange = useMemo(() => {
     if (!filters.fromDate || !filters.toDate) return false;
@@ -207,28 +208,27 @@ const StudentAdmissionsReport = () => {
     );
   }, [filters]);
 
-  const activeFilterCount = useMemo(() => {
-    return Object.values(filters).filter(v => v !== undefined && v !== profile?.organization_id).length;
-  }, [filters, profile?.organization_id]);
-
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between min-w-0">
-        <div className="space-y-1 min-w-0">
-          <div className="flex-1">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight">{t('admissions.reportTitle') || 'Admissions Report'}</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              {t('admissions.reportSubtitle') || 'Analyze admissions performance across schools and years.'}
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => refetch()}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            {t('common.refresh') || 'Refresh'}
-          </Button>
-          {report && report.recentAdmissions.length > 0 && (
+      <PageHeader
+        title={t('admissions.reportTitle') || 'Admissions Report'}
+        description={t('admissions.reportSubtitle') || 'Analyze admissions performance across schools and years.'}
+        icon={<BarChart3 className="h-5 w-5" />}
+        primaryAction={{
+          label: t('admissions.list') || 'Admissions',
+          href: '/admissions',
+          icon: <UserCheck className="h-4 w-4" />,
+        }}
+        secondaryActions={[
+          {
+            label: t('common.refresh') || 'Refresh',
+            onClick: () => refetch(),
+            icon: <RefreshCw className="h-4 w-4" />,
+            variant: 'outline',
+          },
+        ]}
+        rightSlot={
+          report && report.recentAdmissions.length > 0 ? (
             <ReportExportButtons
               data={report.recentAdmissions}
               columns={[
@@ -269,133 +269,109 @@ const StudentAdmissionsReport = () => {
                 to_date: filters.toDate || undefined,
               }}
             />
-          )}
-          <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
-            <Filter className="mr-2 h-4 w-4" />
-            {t('admissions.filtersTitle') || 'Filters'}
-            {activeFilterCount > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {activeFilterCount}
-              </Badge>
-            )}
-          </Button>
-          <Button asChild>
-            <Link to="/admissions">
-              <UserCheck className="mr-2 h-4 w-4" />
-              {t('admissions.list') || 'Admissions'}
-            </Link>
-          </Button>
-        </div>
-      </div>
+          ) : null
+        }
+      />
 
-      {/* Filters */}
-      {showFilters && (
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle>{t('admissions.reportFilters') || 'Report filters'}</CardTitle>
-              <div className="flex items-center gap-2">
-                {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" onClick={handleResetFilters}>
-                    {t('admissions.resetFilters') || 'Reset'}
-                  </Button>
-                )}
-                <Button variant="ghost" size="sm" onClick={() => setShowFilters(false)}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+      <FilterPanel
+        title={t('admissions.reportFilters') || 'Report filters'}
+        footer={
+          hasActiveFilters ? (
+            <div className="flex justify-end">
+              <Button variant="ghost" size="sm" onClick={handleResetFilters}>
+                {t('admissions.resetFilters') || 'Reset'}
+              </Button>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-4">
-              <div className="space-y-2">
-                <Label>{t('admissions.school') || 'School'}</Label>
-                <Combobox
-                  options={(schools || []).map((school) => ({ label: school.schoolName, value: school.id }))}
-                  value={filters.schoolId || ''}
-                  onValueChange={(value) => handleFilterChange('schoolId', value || undefined)}
-                  placeholder={t('admissions.allSchools') || 'All schools'}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{t('admissions.academicYear') || 'Academic Year'}</Label>
-                <Select
-                  value={filters.academicYearId || 'all'}
-                  onValueChange={(value) => handleFilterChange('academicYearId', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('admissions.selectAcademicYear') || 'Select year'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
-                    {(academicYears || []).map((year) => (
-                      <SelectItem key={year.id} value={year.id}>
-                        {year.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>{t('admissions.residency') || 'Residency'}</Label>
-                <Select
-                  value={filters.residencyTypeId || 'all'}
-                  onValueChange={(value) => handleFilterChange('residencyTypeId', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('admissions.allResidency') || 'All residency'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
-                    {(residencyTypes || []).map((residency) => (
-                      <SelectItem key={residency.id} value={residency.id}>
-                        {residency.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>{t('admissions.status') || 'Status'}</Label>
-                <Select
-                  value={filters.enrollmentStatus || 'all'}
-                  onValueChange={(value) => handleFilterChange('enrollmentStatus', value as AdmissionStatus | 'all')}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('admissions.allStatus') || 'All status'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
-                    {statusOrder.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {statusLabels[status]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>{t('admissions.fromDate') || 'From date'}</Label>
-                <CalendarDatePicker date={filters.fromDate || '' ? new Date(filters.fromDate || '') : undefined} onDateChange={(date) => handleFilterChange("fromDate", date ? date.toISOString().split("T")[0] : "")} />
-              </div>
-              <div className="space-y-2">
-                <Label>{t('admissions.toDate') || 'To date'}</Label>
-                <CalendarDatePicker date={filters.toDate || '' ? new Date(filters.toDate || '') : undefined} onDateChange={(date) => handleFilterChange("toDate", date ? date.toISOString().split("T")[0] : "")} />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border px-4 py-3 md:col-span-2">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">{t('admissions.boarderOnly') || 'Boarders only'}</p>
-                  <p className="text-xs text-muted-foreground">{t('admissions.boarderOnlyHint') || 'Show only boarding students'}</p>
-                </div>
-                <Switch
-                  checked={!!filters.isBoarder}
-                  onCheckedChange={(checked) => handleFilterChange('isBoarder', checked ? true : undefined)}
-                />
-              </div>
+          ) : null
+        }
+      >
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-2">
+            <Label>{t('admissions.school') || 'School'}</Label>
+            <Combobox
+              options={(schools || []).map((school) => ({ label: school.schoolName, value: school.id }))}
+              value={filters.schoolId || ''}
+              onValueChange={(value) => handleFilterChange('schoolId', value || undefined)}
+              placeholder={t('admissions.allSchools') || 'All schools'}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>{t('admissions.academicYear') || 'Academic Year'}</Label>
+            <Select
+              value={filters.academicYearId || 'all'}
+              onValueChange={(value) => handleFilterChange('academicYearId', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('admissions.selectAcademicYear') || 'Select year'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                {(academicYears || []).map((year) => (
+                  <SelectItem key={year.id} value={year.id}>
+                    {year.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{t('admissions.residency') || 'Residency'}</Label>
+            <Select
+              value={filters.residencyTypeId || 'all'}
+              onValueChange={(value) => handleFilterChange('residencyTypeId', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('admissions.allResidency') || 'All residency'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                {(residencyTypes || []).map((residency) => (
+                  <SelectItem key={residency.id} value={residency.id}>
+                    {residency.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{t('admissions.status') || 'Status'}</Label>
+            <Select
+              value={filters.enrollmentStatus || 'all'}
+              onValueChange={(value) => handleFilterChange('enrollmentStatus', value as AdmissionStatus | 'all')}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('admissions.allStatus') || 'All status'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                {statusOrder.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {statusLabels[status]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{t('admissions.fromDate') || 'From date'}</Label>
+            <CalendarDatePicker date={filters.fromDate || '' ? new Date(filters.fromDate || '') : undefined} onDateChange={(date) => handleFilterChange("fromDate", date ? date.toISOString().split("T")[0] : "")} />
+          </div>
+          <div className="space-y-2">
+            <Label>{t('admissions.toDate') || 'To date'}</Label>
+            <CalendarDatePicker date={filters.toDate || '' ? new Date(filters.toDate || '') : undefined} onDateChange={(date) => handleFilterChange("toDate", date ? date.toISOString().split("T")[0] : "")} />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border px-4 py-3 md:col-span-2">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">{t('admissions.boarderOnly') || 'Boarders only'}</p>
+              <p className="text-xs text-muted-foreground">{t('admissions.boarderOnlyHint') || 'Show only boarding students'}</p>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <Switch
+              checked={!!filters.isBoarder}
+              onCheckedChange={(checked) => handleFilterChange('isBoarder', checked ? true : undefined)}
+            />
+          </div>
+        </div>
+      </FilterPanel>
 
       {/* Error States */}
       {hasInvalidRange && (
@@ -426,7 +402,7 @@ const StudentAdmissionsReport = () => {
       {!isLoading && !isError && report && (
         <>
           {/* Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <SummaryCard label={t('admissions.totalAdmissions') || 'Total admissions'} value={report.totals.total} icon={BarChart3} tone="primary" />
             <SummaryCard label={t('admissions.active') || 'Active'} value={report.totals.active} icon={BarChart3} tone="success" />
             <SummaryCard label={t('admissions.pending') || 'Pending'} value={report.totals.pending} icon={BarChart3} tone="warning" />
@@ -434,7 +410,7 @@ const StudentAdmissionsReport = () => {
           </div>
 
           {/* Breakdown Tables - Compact Grid */}
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">{t('admissions.statusBreakdown') || 'Status breakdown'}</CardTitle>

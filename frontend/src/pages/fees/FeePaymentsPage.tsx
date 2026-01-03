@@ -2,7 +2,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -32,7 +34,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Eye, FileText } from 'lucide-react';
+import { MoreHorizontal, Eye, FileText, CreditCard, Plus } from 'lucide-react';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 export default function FeePaymentsPage() {
@@ -228,10 +230,24 @@ export default function FeePaymentsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t('fees.payments')}</h1>
-        <div className="flex items-center gap-2">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <PageHeader
+        title={t('fees.payments')}
+        icon={<CreditCard className="h-5 w-5" />}
+        primaryAction={{
+          label: t('fees.recordPayment'),
+          onClick: () => setOpen(true),
+          icon: <Plus className="h-4 w-4" />,
+        }}
+        secondaryActions={[
+          {
+            label: t('fees.assignments') || 'Fee Assignments',
+            onClick: () => navigate('/finance/fees/assignments'),
+            icon: <FileText className="h-4 w-4" />,
+            variant: "outline",
+          },
+        ]}
+        rightSlot={
           <ReportExportButtons
             data={filteredPayments}
             columns={[
@@ -283,100 +299,87 @@ export default function FeePaymentsPage() {
             templateType="fee_payments"
             disabled={isLoading || filteredPayments.length === 0}
           />
-          <Button
-            variant="outline"
-            onClick={() => navigate('/finance/fees/assignments')}
-            className="flex items-center gap-2"
-          >
-            <FileText className="h-4 w-4" />
-            {t('fees.assignments') || 'Fee Assignments'}
-          </Button>
-          <Dialog 
-          open={open} 
-          onOpenChange={(isOpen) => {
-            setOpen(isOpen);
-            if (!isOpen) {
-              // Reset filters when dialog closes
-              if (currentAcademicYear) {
-                setFilterAcademicYear(currentAcademicYear.id);
-              }
-              setFilterClassAy(undefined);
+        }
+      />
+
+      <Dialog 
+        open={open} 
+        onOpenChange={(isOpen) => {
+          setOpen(isOpen);
+          if (!isOpen) {
+            // Reset filters when dialog closes
+            if (currentAcademicYear) {
+              setFilterAcademicYear(currentAcademicYear.id);
             }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button>{t('fees.recordPayment')}</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{t('fees.recordPayment')}</DialogTitle>
-              <DialogDescription>
-                {t('fees.recordPaymentDescription') || 'Record a fee payment for a student assignment'}
-              </DialogDescription>
-            </DialogHeader>
-            
-            {/* Academic Year and Class Filters in Dialog */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
-              <div>
-                <label className="text-sm font-medium mb-2 block">{t('fees.academicYear')}</label>
-                <Select
-                  value={filterAcademicYear || ''}
-                  onValueChange={(val) => {
-                    setFilterAcademicYear(val || undefined);
-                    setFilterClassAy(undefined); // Reset class when academic year changes
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('fees.selectAcademicYear')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {academicYears.map((ay) => (
-                      <SelectItem key={ay.id} value={ay.id}>
-                        {ay.name} {ay.isCurrent && `(${t('academic.academicYears.current')})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">{t('fees.class')}</label>
-                <Select 
-                  value={filterClassAy || 'all'} 
-                  onValueChange={(val) => setFilterClassAy(val === 'all' ? undefined : val)}
-                  disabled={!filterAcademicYear}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={filterAcademicYear ? t('fees.selectClass') : t('fees.selectAcademicYearFirst') || 'Select academic year first'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('fees.allClasses') || 'All Classes'}</SelectItem>
-                    {classAcademicYears.map((cay) => (
-                      <SelectItem key={cay.id} value={cay.id}>
-                        {cay.class?.name ?? cay.id}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            setFilterClassAy(undefined);
+          }
+        }}
+      >
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('fees.recordPayment')}</DialogTitle>
+            <DialogDescription>
+              {t('fees.recordPaymentDescription') || 'Record a fee payment for a student assignment'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Academic Year and Class Filters in Dialog */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
+            <div>
+              <label className="text-sm font-medium mb-2 block">{t('fees.academicYear')}</label>
+              <Select
+                value={filterAcademicYear || ''}
+                onValueChange={(val) => {
+                  setFilterAcademicYear(val || undefined);
+                  setFilterClassAy(undefined); // Reset class when academic year changes
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('fees.selectAcademicYear')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {academicYears.map((ay) => (
+                    <SelectItem key={ay.id} value={ay.id}>
+                      {ay.name} {ay.isCurrent && `(${t('academic.academicYears.current')})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">{t('fees.class')}</label>
+              <Select 
+                value={filterClassAy || 'all'} 
+                onValueChange={(val) => setFilterClassAy(val === 'all' ? undefined : val)}
+                disabled={!filterAcademicYear}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={filterAcademicYear ? t('fees.selectClass') : t('fees.selectAcademicYearFirst') || 'Select academic year first'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('fees.allClasses') || 'All Classes'}</SelectItem>
+                  {classAcademicYears.map((cay) => (
+                    <SelectItem key={cay.id} value={cay.id}>
+                      {cay.class?.name ?? cay.id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-            <FeePaymentForm
-              assignments={assignmentOptions}
-              accounts={accountOptions}
-              onSubmit={handleSubmit}
-              isSubmitting={createPayment.isPending}
-              onCancel={() => setOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
-        </div>
-      </div>
+          <FeePaymentForm
+            assignments={assignmentOptions}
+            accounts={accountOptions}
+            onSubmit={handleSubmit}
+            isSubmitting={createPayment.isPending}
+            onCancel={() => setOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('fees.filters')}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <FilterPanel title={t('fees.filters')}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div>
             <span className="text-sm font-medium">{t('fees.academicYear')}</span>
             <Select
@@ -414,8 +417,8 @@ export default function FeePaymentsPage() {
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </FilterPanel>
 
       <Card>
         <CardHeader>
@@ -426,7 +429,8 @@ export default function FeePaymentsPage() {
             <p>{t('common.loading')}</p>
           ) : (
             <>
-              <Table>
+              <div className="overflow-x-auto">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('fees.class')}</TableHead>
@@ -518,6 +522,7 @@ export default function FeePaymentsPage() {
                   })}
                 </TableBody>
               </Table>
+              </div>
               {pagination && (
                 <DataTablePagination
                   table={{

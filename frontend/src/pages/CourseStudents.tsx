@@ -176,12 +176,13 @@ const StudentRow = ({
                           </Badge>
         )}
       </TableCell>
-      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Actions</span>
+      <TableCell onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" aria-label={t('common.actions')}>
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">{t('common.actions')}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -407,39 +408,42 @@ const CourseStudents = () => {
   const openCourses = typedCourses.filter((c) => c.status === 'open' || c.status === 'draft');
 
   return (
-    <div className="container mx-auto max-w-7xl p-4 md:p-6 space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold leading-tight">{t('courses.courseStudents')}</h1>
-          <p className="text-muted-foreground">
-            {t('courses.manageEnrollments')}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={handleCreate}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t('courses.addStudent')}
-          </Button>
-          {openCourses.length > 0 && (
-            <>
-              <Button variant="outline" onClick={handleEnrollFromMain}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                {t('courses.enrollFromMain')}
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-2xl">{t('courses.courseStudents')}</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1 hidden md:block">
+                {t('courses.manageEnrollments')}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <Button onClick={handleCreate} className="w-full sm:w-auto">
+                <Plus className="h-4 w-4" />
+                <span className="ml-2">{t('courses.addStudent')}</span>
               </Button>
-              <Button variant="outline" onClick={() => setAssignDialogOpen(true)}>
-                <ArrowRight className="mr-2 h-4 w-4" />
-                {t('courses.assignToNewCourse')}
+              {openCourses.length > 0 && (
+                <>
+                  <Button variant="outline" onClick={handleEnrollFromMain} className="w-full sm:w-auto">
+                    <UserPlus className="h-4 w-4" />
+                    <span className="hidden sm:inline ml-2">{t('courses.enrollFromMain')}</span>
+                  </Button>
+                  <Button variant="outline" onClick={() => setAssignDialogOpen(true)} className="w-full sm:w-auto">
+                    <ArrowRight className="h-4 w-4" />
+                    <span className="hidden sm:inline ml-2">{t('courses.assignToNewCourse')}</span>
+                  </Button>
+                </>
+              )}
+              <Button variant="outline" onClick={() => refetch()} className="w-full sm:w-auto">
+                <RefreshCw className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">{t('common.refresh')}</span>
               </Button>
-            </>
-          )}
-          <Button variant="outline" onClick={() => refetch()}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            {t('common.refresh')}
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">{t('common.total')}</CardTitle>
@@ -476,17 +480,19 @@ const CourseStudents = () => {
             <AlertTriangle className="h-6 w-6 text-amber-500" />
           </CardContent>
         </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="space-y-1 pb-3">
           <CardTitle className="text-lg font-semibold">{t('courses.studentRoster')}</CardTitle>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground hidden md:block">
             {t('courses.filterByCourseStatus')}
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label>{t('courses.course')}</Label>
               <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
@@ -559,7 +565,7 @@ const CourseStudents = () => {
                       <TableHead className="hidden md:table-cell">{t('students.age')}</TableHead>
                       <TableHead className="hidden md:table-cell">{t('courses.registration')}</TableHead>
                       <TableHead>{t('courses.status')}</TableHead>
-                      <TableHead className="text-right w-[50px]">{t('common.actions')}</TableHead>
+                      <TableHead className="w-[50px]">{t('common.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

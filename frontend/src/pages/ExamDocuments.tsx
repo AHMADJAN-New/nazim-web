@@ -165,20 +165,25 @@ export function ExamDocuments() {
   const isLoading = examsLoading || documentsLoading;
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Exam Documents</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 hidden md:inline-flex" />
+            Exam Documents
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1 hidden md:block">
             Manage exam-related documents
           </p>
         </div>
         <Button
           onClick={handleUploadClick}
           disabled={exams.length === 0}
+          className="flex-shrink-0 w-full sm:w-auto"
         >
-          <Plus className="h-4 w-4 mr-2" />
-          Upload Document
+          <Plus className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Upload Document</span>
+          <span className="sm:hidden">Upload</span>
         </Button>
       </div>
 
@@ -186,12 +191,12 @@ export function ExamDocuments() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
+            <Filter className="h-5 w-5 hidden md:inline-flex" />
             Filter
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Exam</Label>
               <Select
@@ -274,38 +279,52 @@ export function ExamDocuments() {
               <p className="text-sm">Upload documents to get started</p>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Document</TableHead>
-                    <TableHead>Exam</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Size</TableHead>
-                    <TableHead>Uploaded</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
+            <div className="rounded-md border overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Document</TableHead>
+                      <TableHead className="hidden sm:table-cell">Exam</TableHead>
+                      <TableHead className="hidden md:table-cell">Type</TableHead>
+                      <TableHead className="hidden lg:table-cell">Size</TableHead>
+                      <TableHead className="hidden lg:table-cell">Uploaded</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {filteredDocuments.map((doc) => (
                     <TableRow key={doc.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           {getFileIcon(doc.mime_type)}
-                          <div>
-                            <p className="font-medium">{doc.title}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium truncate">{doc.title}</p>
                             {doc.description && (
-                              <p className="text-sm text-muted-foreground truncate max-w-xs">
+                              <p className="text-sm text-muted-foreground truncate max-w-xs hidden sm:block">
                                 {doc.description}
                               </p>
                             )}
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <div className="flex flex-col sm:hidden gap-1 mt-1">
+                              <p className="text-xs text-muted-foreground truncate">
+                                {doc.file_name}
+                              </p>
+                              <div className="flex flex-wrap gap-1">
+                                <Badge variant="outline" className="text-xs">
+                                  {DOCUMENT_TYPES.find(t => t.value === doc.document_type)?.label || doc.document_type}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">{formatFileSize(doc.file_size)}</span>
+                                <span className="text-xs text-muted-foreground">•</span>
+                                <span className="text-xs text-muted-foreground">{formatDate(doc.created_at)}</span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
                               {doc.file_name}
                             </p>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         <Button
                           variant="link"
                           className="p-0 h-auto"
@@ -314,13 +333,13 @@ export function ExamDocuments() {
                           {getExamName(doc.exam_id)}
                         </Button>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <Badge variant="outline">
                           {DOCUMENT_TYPES.find(t => t.value === doc.document_type)?.label || doc.document_type}
                         </Badge>
                       </TableCell>
-                      <TableCell>{formatFileSize(doc.file_size)}</TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">{formatFileSize(doc.file_size)}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {formatDate(doc.created_at)}
                       </TableCell>
                       <TableCell className="text-right">
@@ -330,6 +349,8 @@ export function ExamDocuments() {
                             variant="outline"
                             onClick={() => handleDownload(doc.id)}
                             disabled={downloadDocument.isPending}
+                            className="flex-shrink-0"
+                            aria-label="Download document"
                           >
                             <Download className="h-4 w-4" />
                           </Button>
@@ -340,6 +361,8 @@ export function ExamDocuments() {
                               setDocumentToDelete(doc.id);
                               setIsDeleteDialogOpen(true);
                             }}
+                            className="flex-shrink-0"
+                            aria-label="Delete document"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -349,6 +372,7 @@ export function ExamDocuments() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
         </CardContent>
@@ -516,13 +540,13 @@ export function ExamDocuments() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Document</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="hidden md:block">
               Are you sure you want to delete this document? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="w-full sm:w-auto">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

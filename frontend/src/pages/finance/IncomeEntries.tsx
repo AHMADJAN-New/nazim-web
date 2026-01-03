@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import {
     Dialog,
     DialogContent,
@@ -17,7 +19,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import {
     Table,
@@ -354,7 +355,7 @@ export default function IncomeEntries() {
             }}
             className="space-y-4 max-h-[70vh] overflow-y-auto pr-2"
         >
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="accountId">{t('finance.account') || 'Account'} *</Label>
                     <Select
@@ -392,7 +393,7 @@ export default function IncomeEntries() {
                     </Select>
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="amount">{t('finance.amount') || 'Amount'} *</Label>
                     <Input
@@ -409,7 +410,7 @@ export default function IncomeEntries() {
                     <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="currencyId">{t('finance.currency') || 'Currency'}</Label>
                     <Select
@@ -447,7 +448,7 @@ export default function IncomeEntries() {
                     )}
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="projectId">{t('finance.project') || 'Project'}</Label>
                     <Select
@@ -487,7 +488,7 @@ export default function IncomeEntries() {
                     </Select>
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="referenceNo">{t('finance.referenceNo') || 'Reference No.'}</Label>
                     <Input
@@ -534,17 +535,16 @@ export default function IncomeEntries() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl font-bold">
-                        {t('finance.incomeEntries') || 'Income Entries'}
-                    </h1>
-                    <p className="text-muted-foreground">
-                        {t('finance.incomeEntriesDescription') || 'Record and manage income'}
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
+            <PageHeader
+                title={t('finance.incomeEntries') || 'Income Entries'}
+                description={t('finance.incomeEntriesDescription') || 'Record and manage income'}
+                icon={<TrendingUp className="h-5 w-5" />}
+                primaryAction={{
+                    label: t('finance.addIncome') || 'Add Income',
+                    onClick: () => setIsCreateOpen(true),
+                    icon: <Plus className="h-4 w-4" />,
+                }}
+                rightSlot={
                     <ReportExportButtons
                         data={filteredEntries}
                         columns={[
@@ -591,104 +591,96 @@ export default function IncomeEntries() {
                         templateType="income_entries"
                         disabled={isLoading || filteredEntries.length === 0}
                     />
-                    <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            {t('finance.addIncome') || 'Add Income'}
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                            <DialogTitle>{t('finance.addIncome') || 'Add Income'}</DialogTitle>
-                            <DialogDescription>
-                                {t('finance.addIncomeDescription') || 'Record a new income entry'}
-                            </DialogDescription>
-                        </DialogHeader>
-                        {renderEntryForm(handleCreate, createEntry.isPending)}
-                    </DialogContent>
-                    </Dialog>
-                </div>
-            </div>
+                }
+            />
 
-            {/* Filters */}
-            <Card>
-                <CardContent className="pt-4">
-                    <div className="flex flex-wrap gap-4 items-end">
-                        <div className="flex-1 min-w-[200px]">
-                            <Label className="text-xs text-muted-foreground mb-1 block">
-                                {t('common.search') || 'Search'}
-                            </Label>
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder={t('common.search') || 'Search...'}
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-10"
-                                />
-                            </div>
+            <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>{t('finance.addIncome') || 'Add Income'}</DialogTitle>
+                        <DialogDescription>
+                            {t('finance.addIncomeDescription') || 'Record a new income entry'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {renderEntryForm(handleCreate, createEntry.isPending)}
+                </DialogContent>
+            </Dialog>
+
+            <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+                <div className="flex flex-wrap gap-4 items-end">
+                    <div className="flex-1 min-w-[200px]">
+                        <Label className="text-xs text-muted-foreground mb-1 block">
+                            {t('common.search') || 'Search'}
+                        </Label>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder={t('common.search') || 'Search...'}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10"
+                            />
                         </div>
-                        <div className="min-w-[150px]">
-                            <Label className="text-xs text-muted-foreground mb-1 block">
-                                <Calendar className="inline h-3 w-3 mr-1" />
-                                {t('common.from') || 'From'}
-                            </Label>
-                            <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
-                        </div>
-                        <div className="min-w-[150px]">
-                            <Label className="text-xs text-muted-foreground mb-1 block">
-                                <Calendar className="inline h-3 w-3 mr-1" />
-                                {t('common.to') || 'To'}
-                            </Label>
-                            <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
-                        </div>
-                        <div className="min-w-[160px]">
-                            <Label className="text-xs text-muted-foreground mb-1 block">
-                                <Filter className="inline h-3 w-3 mr-1" />
-                                {t('finance.category') || 'Category'}
-                            </Label>
-                            <Select value={filterCategory} onValueChange={setFilterCategory}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder={t('common.all') || 'All'} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
-                                    {categories?.map((category) => (
-                                        <SelectItem key={category.id} value={category.id}>
-                                            {category.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="min-w-[160px]">
-                            <Label className="text-xs text-muted-foreground mb-1 block">
-                                {t('finance.account') || 'Account'}
-                            </Label>
-                            <Select value={filterAccount} onValueChange={setFilterAccount}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder={t('common.all') || 'All'} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
-                                    {accounts?.map((account) => (
-                                        <SelectItem key={account.id} value={account.id}>
-                                            {account.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        {hasActiveFilters && (
-                            <Button variant="outline" size="sm" onClick={clearFilters}>
-                                <X className="h-4 w-4 mr-1" />
-                                {t('common.clearFilters') || 'Clear'}
-                            </Button>
-                        )}
                     </div>
-                </CardContent>
-            </Card>
+                    <div className="min-w-[150px]">
+                        <Label className="text-xs text-muted-foreground mb-1 block">
+                            <Calendar className="inline h-3 w-3 mr-1" />
+                            {t('common.from') || 'From'}
+                        </Label>
+                        <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
+                    </div>
+                    <div className="min-w-[150px]">
+                        <Label className="text-xs text-muted-foreground mb-1 block">
+                            <Calendar className="inline h-3 w-3 mr-1" />
+                            {t('common.to') || 'To'}
+                        </Label>
+                        <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
+                    </div>
+                    <div className="min-w-[160px]">
+                        <Label className="text-xs text-muted-foreground mb-1 block">
+                            <Filter className="inline h-3 w-3 mr-1" />
+                            {t('finance.category') || 'Category'}
+                        </Label>
+                        <Select value={filterCategory} onValueChange={setFilterCategory}>
+                            <SelectTrigger>
+                                <SelectValue placeholder={t('common.all') || 'All'} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                                {categories?.map((category) => (
+                                    <SelectItem key={category.id} value={category.id}>
+                                        {category.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="min-w-[160px]">
+                        <Label className="text-xs text-muted-foreground mb-1 block">
+                            {t('finance.account') || 'Account'}
+                        </Label>
+                        <Select value={filterAccount} onValueChange={setFilterAccount}>
+                            <SelectTrigger>
+                                <SelectValue placeholder={t('common.all') || 'All'} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                                {accounts?.map((account) => (
+                                    <SelectItem key={account.id} value={account.id}>
+                                        {account.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {hasActiveFilters && (
+                        <Button variant="outline" size="sm" onClick={clearFilters}>
+                            <X className="h-4 w-4 mr-1" />
+                            {t('common.clearFilters') || 'Clear'}
+                        </Button>
+                    )}
+                </div>
+            </FilterPanel>
 
             {/* Currency Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -891,7 +883,7 @@ export default function IncomeEntries() {
                                 {/* Entry Information */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">{t('finance.entryInformation') || 'Entry Information'}</h3>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">{t('finance.amount') || 'Amount'}</p>
                                             <p className="text-lg font-semibold text-green-600">
@@ -930,7 +922,7 @@ export default function IncomeEntries() {
                                     <>
                                         <div className="space-y-4">
                                             <h3 className="text-lg font-semibold">{t('finance.accountInformation') || 'Account Information'}</h3>
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                     <p className="text-sm font-medium text-muted-foreground">{t('finance.accountName') || 'Account Name'}</p>
                                                     <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 mt-1">
@@ -973,7 +965,7 @@ export default function IncomeEntries() {
                                     <>
                                         <div className="space-y-4">
                                             <h3 className="text-lg font-semibold">{t('finance.categoryInformation') || 'Category Information'}</h3>
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                     <p className="text-sm font-medium text-muted-foreground">{t('finance.category') || 'Category'}</p>
                                                     <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 mt-1">
@@ -1003,7 +995,7 @@ export default function IncomeEntries() {
                                     <>
                                         <div className="space-y-4">
                                             <h3 className="text-lg font-semibold">{t('finance.projectInformation') || 'Project Information'}</h3>
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                     <p className="text-sm font-medium text-muted-foreground">{t('finance.project') || 'Project'}</p>
                                                     <Badge variant="outline" className="bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400 mt-1">
@@ -1043,7 +1035,7 @@ export default function IncomeEntries() {
                                     <>
                                         <div className="space-y-4">
                                             <h3 className="text-lg font-semibold">{t('finance.donorInformation') || 'Donor Information'}</h3>
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                     <p className="text-sm font-medium text-muted-foreground">{t('finance.donor') || 'Donor'}</p>
                                                     <Badge variant="outline" className="bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400 mt-1">
@@ -1085,7 +1077,7 @@ export default function IncomeEntries() {
                                     <>
                                         <div className="space-y-4">
                                             <h3 className="text-lg font-semibold">{t('finance.currencyInformation') || 'Currency Information'}</h3>
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                     <p className="text-sm font-medium text-muted-foreground">{t('finance.currency') || 'Currency'}</p>
                                                     <Badge variant="outline" className="bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400 mt-1">
@@ -1107,7 +1099,7 @@ export default function IncomeEntries() {
                                 {/* Metadata */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">{t('common.metadata') || 'Metadata'}</h3>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {viewingEntry.createdAt && (
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">{t('common.createdAt') || 'Created At'}</p>
@@ -1130,3 +1122,4 @@ export default function IncomeEntries() {
         </div>
     );
 }
+

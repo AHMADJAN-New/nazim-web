@@ -36,6 +36,8 @@ import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { FileText, Upload, Search, Plus, X, Eye, File, Download, Image as ImageIcon, X as XIcon, Edit, Trash2, MoreHorizontal } from "lucide-react";
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 import { generateLetterPdf } from "@/services/dms/LetterPdfGenerator";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { FilterPanel } from "@/components/layout/FilterPanel";
 
 const statusOptions = [
   { label: "Draft", value: "draft" },
@@ -806,23 +808,19 @@ export default function OutgoingDocuments() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <FileText className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Outgoing Documents</h1>
-            <p className="text-muted-foreground">Manage and track outgoing documents and letters</p>
-          </div>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Document
-            </Button>
-          </DialogTrigger>
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <PageHeader
+        title={t('dms.outgoingDocuments') || 'Outgoing Documents'}
+        description={t('dms.outgoingDocumentsDescription') || 'Manage and track outgoing documents and letters'}
+        icon={<FileText className="h-5 w-5" />}
+        primaryAction={{
+          label: t('dms.addDocument') || 'Add Document',
+          onClick: () => setIsDialogOpen(true),
+          icon: <Plus className="h-4 w-4" />,
+        }}
+      />
+
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add Outgoing Document</DialogTitle>
@@ -1055,74 +1053,69 @@ export default function OutgoingDocuments() {
         </Dialog>
       </div>
 
-      {/* Filters Card - Always Visible */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Search & Filter
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
-              <Label>Subject</Label>
-              <Input
-                placeholder="Search by subject..."
-                value={filters.subject}
-                onChange={(e) => setFilters((s) => ({ ...s, subject: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Recipient Type</Label>
-              <Select
-                value={filters.recipient_type || "all"}
-                onValueChange={(value) => setFilters((s) => ({ ...s, recipient_type: value === "all" ? "" : value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All types</SelectItem>
-                  {recipientTypeOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={filters.status || "all"}
-                onValueChange={(value) => setFilters((s) => ({ ...s, status: value === "all" ? "" : value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  {statusOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex gap-2 mt-4">
+      <FilterPanel
+        title={t('common.filters') || 'Search & Filter'}
+        footer={
+          <div className="flex gap-2">
             <Button
               variant="outline"
               onClick={() => setFilters({ subject: "", recipient_type: "", status: "", academic_year_id: "" })}
             >
               <X className="h-4 w-4 mr-2" />
-              Clear Filters
+              {t('common.clearFilters') || 'Clear Filters'}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        }
+      >
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-2">
+            <Label>{t('dms.subject') || 'Subject'}</Label>
+            <Input
+              placeholder={t('dms.searchBySubject') || 'Search by subject...'}
+              value={filters.subject}
+              onChange={(e) => setFilters((s) => ({ ...s, subject: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>{t('dms.recipientType') || 'Recipient Type'}</Label>
+            <Select
+              value={filters.recipient_type || "all"}
+              onValueChange={(value) => setFilters((s) => ({ ...s, recipient_type: value === "all" ? "" : value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('common.allTypes') || 'All types'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common.allTypes') || 'All types'}</SelectItem>
+                {recipientTypeOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{t('common.status') || 'Status'}</Label>
+            <Select
+              value={filters.status || "all"}
+              onValueChange={(value) => setFilters((s) => ({ ...s, status: value === "all" ? "" : value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('common.allStatuses') || 'All statuses'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common.allStatuses') || 'All statuses'}</SelectItem>
+                {statusOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </FilterPanel>
 
       {/* Documents List */}
       <Card>

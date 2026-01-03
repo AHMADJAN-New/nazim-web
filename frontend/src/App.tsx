@@ -105,6 +105,7 @@ import {
   HostelManagement,
   HostelReports,
   AttendancePage,
+  AttendanceMarking,
   AttendanceReports,
   AttendanceTotalsReports,
   UserManagement,
@@ -909,6 +910,13 @@ const App = () => (
                       <PermissionRoute permission="attendance_sessions.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <AttendancePage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/attendance/marking" element={
+                      <PermissionRoute permission="attendance_sessions.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <AttendanceMarking />
                         </Suspense>
                       </PermissionRoute>
                     } />

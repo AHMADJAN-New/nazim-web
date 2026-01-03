@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -29,7 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Trash, Eye } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash, Eye, FileText, Plus } from 'lucide-react';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
@@ -229,10 +230,16 @@ export default function FeeStructuresPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t('fees.structures')}</h1>
-        <div className="flex items-center gap-2">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <PageHeader
+        title={t('fees.structures')}
+        icon={<FileText className="h-5 w-5" />}
+        primaryAction={{
+          label: t('fees.addStructure'),
+          onClick: () => setOpen(true),
+          icon: <Plus className="h-4 w-4" />,
+        }}
+        rightSlot={
           <ReportExportButtons
             data={structures}
             columns={[
@@ -264,20 +271,18 @@ export default function FeeStructuresPage() {
             templateType="fee_structures"
             disabled={isLoading || structures.length === 0}
           />
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button>{t('fees.addStructure')}</Button>
-            </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{t('fees.addStructure')}</DialogTitle>
-              <DialogDescription className="sr-only">{t('fees.addStructure')}</DialogDescription>
-            </DialogHeader>
-            <FeeStructureForm onSubmit={handleSubmit} isSubmitting={createMutation.isPending} />
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
+        }
+      />
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{t('fees.addStructure')}</DialogTitle>
+            <DialogDescription className="sr-only">{t('fees.addStructure')}</DialogDescription>
+          </DialogHeader>
+          <FeeStructureForm onSubmit={handleSubmit} isSubmitting={createMutation.isPending} />
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>
@@ -288,7 +293,8 @@ export default function FeeStructuresPage() {
             <p>{t('common.loading')}</p>
           ) : (
             <>
-              <Table>
+              <div className="overflow-x-auto">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('fees.name')}</TableHead>
@@ -395,6 +401,7 @@ export default function FeeStructuresPage() {
                   })}
                 </TableBody>
               </Table>
+              </div>
               {pagination && (
                 <DataTablePagination
                   table={{
@@ -466,7 +473,7 @@ export default function FeeStructuresPage() {
                 {/* Basic Information */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">{t('common.basicInformation')}</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">{t('fees.name')}</p>
                       <p className="text-sm font-medium">{viewingStructure.name}</p>

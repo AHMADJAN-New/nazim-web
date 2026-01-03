@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
     Dialog,
     DialogContent,
@@ -16,7 +17,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import {
     Table,
@@ -117,17 +117,16 @@ export default function ExpenseCategories() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl font-bold">
-                        {t('finance.expenseCategories') || 'Expense Categories'}
-                    </h1>
-                    <p className="text-muted-foreground">
-                        {t('finance.expenseCategoriesDescription') || 'Manage types of expenses'}
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
+            <PageHeader
+                title={t('finance.expenseCategories') || 'Expense Categories'}
+                description={t('finance.expenseCategoriesDescription') || 'Manage types of expenses'}
+                icon={<Tags className="h-5 w-5" />}
+                primaryAction={{
+                    label: t('finance.addCategory') || 'Add Category',
+                    onClick: () => setIsCreateOpen(true),
+                    icon: <Plus className="h-4 w-4" />,
+                }}
+                rightSlot={
                     <ReportExportButtons
                         data={categories || []}
                         columns={[
@@ -149,77 +148,72 @@ export default function ExpenseCategories() {
                         templateType="expense_categories"
                         disabled={isLoading || !categories || categories.length === 0}
                     />
-                    <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            {t('finance.addCategory') || 'Add Category'}
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{t('finance.addExpenseCategory') || 'Add Expense Category'}</DialogTitle>
-                            <DialogDescription>
-                                {t('finance.addExpenseCategoryDescription') || 'Create a new expense category'}
-                            </DialogDescription>
-                        </DialogHeader>
-                        <form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                handleCreate();
-                            }}
-                            className="space-y-4"
-                        >
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
-                                    <Input
-                                        id="name"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        placeholder={t('finance.categoryNamePlaceholder') || 'e.g., Salaries'}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="code">{t('common.code') || 'Code'}</Label>
-                                    <Input
-                                        id="code"
-                                        value={formData.code || ''}
-                                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                                        placeholder={t('finance.categoryCodePlaceholder') || 'e.g., SAL'}
-                                    />
-                                </div>
+                }
+            />
+
+            <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('finance.addExpenseCategory') || 'Add Expense Category'}</DialogTitle>
+                        <DialogDescription>
+                            {t('finance.addExpenseCategoryDescription') || 'Create a new expense category'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleCreate();
+                        }}
+                        className="space-y-4"
+                    >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
+                                <Input
+                                    id="name"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    placeholder={t('finance.categoryNamePlaceholder') || 'e.g., Salaries'}
+                                    required
+                                />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="description">{t('common.description') || 'Description'}</Label>
-                                <Textarea
-                                    id="description"
-                                    value={formData.description || ''}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    placeholder={t('finance.categoryDescriptionPlaceholder') || 'Description of this category...'}
-                                    rows={4}
-                                    className="resize-y min-h-[100px]"
+                                <Label htmlFor="code">{t('common.code') || 'Code'}</Label>
+                                <Input
+                                    id="code"
+                                    value={formData.code || ''}
+                                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                                    placeholder={t('finance.categoryCodePlaceholder') || 'e.g., SAL'}
                                 />
                             </div>
-                            <div className="flex items-center space-x-2">
-                                <Switch
-                                    id="isActive"
-                                    checked={formData.isActive}
-                                    onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                                />
-                                <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
-                            </div>
-                            <DialogFooter>
-                                <Button type="submit" disabled={createCategory.isPending || !formData.name.trim()}>
-                                    {t('common.create') || 'Create'}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
-            </div>
-            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="description">{t('common.description') || 'Description'}</Label>
+                            <Textarea
+                                id="description"
+                                value={formData.description || ''}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                placeholder={t('finance.categoryDescriptionPlaceholder') || 'Description of this category...'}
+                                rows={4}
+                                className="resize-y min-h-[100px]"
+                            />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Switch
+                                id="isActive"
+                                checked={formData.isActive}
+                                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+                            />
+                            <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" disabled={createCategory.isPending || !formData.name.trim()}>
+                                {t('common.create') || 'Create'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
             {/* Categories Table */}
             <Card>
@@ -233,7 +227,8 @@ export default function ExpenseCategories() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
+                    <div className="overflow-x-auto">
+                        <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>{t('common.name') || 'Name'}</TableHead>
@@ -283,6 +278,7 @@ export default function ExpenseCategories() {
                             )}
                         </TableBody>
                     </Table>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -302,7 +298,7 @@ export default function ExpenseCategories() {
                         }}
                         className="space-y-4"
                     >
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="edit-name">{t('common.name') || 'Name'} *</Label>
                                 <Input
@@ -371,3 +367,4 @@ export default function ExpenseCategories() {
         </div>
     );
 }
+

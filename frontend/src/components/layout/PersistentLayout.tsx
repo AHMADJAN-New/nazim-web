@@ -59,7 +59,7 @@ export function PersistentLayout() {
     <div className="min-h-screen flex w-full bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
       <SmartSidebar />
       
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 min-w-0 min-h-0 flex flex-col">
         <AppHeader 
           title={pageTitle}
           showBreadcrumb={false}
@@ -68,7 +68,7 @@ export function PersistentLayout() {
         
         {/* Subscription status banner - shows for trial, grace, readonly, blocked */}
         {showBanner && permissionsReady && (
-          <div className="px-4 py-2 border-b bg-background">
+          <div className="px-4 py-2 border-b bg-background flex-shrink-0">
             <SubscriptionStatusBanner 
               compact={true}
               onDismiss={handleDismissBanner}
@@ -77,7 +77,7 @@ export function PersistentLayout() {
           </div>
         )}
         
-        <div className="flex-1 overflow-auto custom-scrollbar">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar min-w-0">
           {showLoading ? (
             <div className="flex items-center justify-center h-full">
               <LoadingSpinner size="lg" text="Loading permissions..." />
@@ -90,4 +90,3 @@ export function PersistentLayout() {
     </div>
   );
 }
-

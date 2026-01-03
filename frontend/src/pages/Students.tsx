@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { studentSchema, type StudentFormData } from '@/lib/validations';
@@ -36,7 +36,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import {
@@ -56,6 +55,8 @@ import { StudentEducationalHistoryDialog } from '@/components/students/StudentEd
 import { StudentDisciplineRecordsDialog } from '@/components/students/StudentDisciplineRecordsDialog';
 import { generateStudentProfilePdf } from '@/lib/studentProfilePdf';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 
 
 // Helper function to convert StudentFormData to domain Student format
@@ -860,32 +861,29 @@ export function Students() {
 
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold truncate">{t('students.title') || 'Students'}</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              {t('students.subtitle') || 'Manage admissions with complete Afghan student records'}
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button variant="outline" asChild className="w-full sm:w-auto">
-              <Link to="/reports/student-registrations" className="flex items-center justify-center">
-                <FileText className="w-4 h-4 mr-2" />
-                <span className="text-xs sm:text-sm">{t('studentReport.title')}</span>
-              </Link>
-            </Button>
-            <Button onClick={() => setIsCreateOpen(true)} className="w-full sm:w-auto">
-              <Plus className="w-4 h-4 mr-2" />
-              <span className="text-xs sm:text-sm">{t('students.add') || 'Register Student'}</span>
-            </Button>
-          </div>
-          <StudentFormDialog
-            open={isCreateOpen}
-            onOpenChange={setIsCreateOpen}
-            onSuccess={() => setIsCreateOpen(false)}
-            onSubmitData={onDialogSubmit}
-          />
-        </div>
+        <PageHeader
+          title={t('students.title') || 'Students'}
+          description={t('students.subtitle') || 'Manage admissions with complete Afghan student records'}
+          primaryAction={{
+            label: t('students.add') || 'Register Student',
+            onClick: () => setIsCreateOpen(true),
+            icon: <Plus className="h-4 w-4" />,
+          }}
+          secondaryActions={[
+            {
+              label: t('studentReport.title') || 'Student Registration Report',
+              href: '/reports/student-registrations',
+              icon: <FileText className="h-4 w-4" />,
+              variant: 'outline',
+            },
+          ]}
+        />
+        <StudentFormDialog
+          open={isCreateOpen}
+          onOpenChange={setIsCreateOpen}
+          onSuccess={() => setIsCreateOpen(false)}
+          onSubmitData={onDialogSubmit}
+        />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card>
@@ -930,6 +928,55 @@ export function Students() {
         </Card>
       </div>
 
+      <FilterPanel title={t('common.filters')}>
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t('students.searchPlaceholder') || 'Search by name, admission number, father name...'}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 w-full"
+            />
+          </div>
+          <Select value={schoolFilter} onValueChange={setSchoolFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder={t('students.school') || 'School'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('students.allSchools') || 'All Schools'}</SelectItem>
+              {schools?.map((school) => (
+                <SelectItem key={school.id} value={school.id}>
+                  {school.schoolName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
+            <SelectTrigger className="w-full sm:w-[150px]">
+              <SelectValue placeholder={t('students.status') || 'Status'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('students.allStatus') || 'All Status'}</SelectItem>
+              <SelectItem value="applied">{t('students.applied') || 'Applied'}</SelectItem>
+              <SelectItem value="admitted">{t('students.admitted') || 'Admitted'}</SelectItem>
+              <SelectItem value="active">{t('students.active') || 'Active'}</SelectItem>
+              <SelectItem value="withdrawn">{t('students.withdrawn') || 'Withdrawn'}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={genderFilter} onValueChange={(value) => setGenderFilter(value as typeof genderFilter)}>
+            <SelectTrigger className="w-full sm:w-[150px]">
+              <SelectValue placeholder={t('students.gender') || 'Gender'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('students.allGenders') || 'All Genders'}</SelectItem>
+              <SelectItem value="male">{t('students.male') || 'Male'}</SelectItem>
+              <SelectItem value="female">{t('students.female') || 'Female'}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </FilterPanel>
+
       <Card>
         <CardHeader>
           <CardTitle>{t('students.list') || 'Student Registrations'}</CardTitle>
@@ -942,54 +989,6 @@ export function Students() {
             </div>
           ) : (
             <div className="space-y-4 overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2 items-center">
-                  <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder={t('students.searchPlaceholder') || 'Search by name, admission number, father name...'}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 w-full"
-                    />
-                  </div>
-                  <Select value={schoolFilter} onValueChange={setSchoolFilter}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                      <SelectValue placeholder={t('students.school') || 'School'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('students.allSchools') || 'All Schools'}</SelectItem>
-                      {schools?.map((school) => (
-                        <SelectItem key={school.id} value={school.id}>
-                          {school.schoolName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
-                    <SelectTrigger className="w-full sm:w-[150px]">
-                      <SelectValue placeholder={t('students.status') || 'Status'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('students.allStatus') || 'All Status'}</SelectItem>
-                      <SelectItem value="applied">{t('students.applied') || 'Applied'}</SelectItem>
-                      <SelectItem value="admitted">{t('students.admitted') || 'Admitted'}</SelectItem>
-                      <SelectItem value="active">{t('students.active') || 'Active'}</SelectItem>
-                      <SelectItem value="withdrawn">{t('students.withdrawn') || 'Withdrawn'}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={genderFilter} onValueChange={(value) => setGenderFilter(value as typeof genderFilter)}>
-                    <SelectTrigger className="w-full sm:w-[150px]">
-                      <SelectValue placeholder={t('students.gender') || 'Gender'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
-                      <SelectItem value="male">{t('students.male') || 'Male'}</SelectItem>
-                      <SelectItem value="female">{t('students.female') || 'Female'}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <div className="border rounded-lg overflow-x-auto -mx-4 sm:mx-0">
                   <Table className="w-full">
                     <TableHeader>
@@ -1125,7 +1124,6 @@ export function Students() {
                   showPageSizeSelector={true}
                   showTotalCount={true}
                 />
-              </div>
             </div>
           )}
         </CardContent>

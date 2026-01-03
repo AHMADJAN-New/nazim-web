@@ -43,6 +43,8 @@ import {
 import { showToast } from '@/lib/toast';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 
 export default function IssuedCertificatesPage() {
   const { t } = useLanguage();
@@ -244,24 +246,26 @@ export default function IssuedCertificatesPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <CardTitle>{t('certificates.issued') ?? 'Issued Certificates'}</CardTitle>
-            <ReportExportButtons
-              data={certificates}
-              columns={reportColumns}
-              reportKey="graduation_issued_certificates"
-              title={t('certificates.issued') || 'Issued Certificates Report'}
-              transformData={transformCertificateData}
-              buildFiltersSummary={buildFiltersSummary}
-              schoolId={schoolId}
-              templateType="graduation_certificates"
-              disabled={isLoading || certificates.length === 0}
-            />
-          </div>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <PageHeader
+        title={t('certificates.issued') ?? 'Issued Certificates'}
+        icon={<Award className="h-5 w-5" />}
+        rightSlot={
+          <ReportExportButtons
+            data={certificates}
+            columns={reportColumns}
+            reportKey="graduation_issued_certificates"
+            title={t('certificates.issued') || 'Issued Certificates Report'}
+            transformData={transformCertificateData}
+            buildFiltersSummary={buildFiltersSummary}
+            schoolId={schoolId}
+            templateType="graduation_certificates"
+            disabled={isLoading || certificates.length === 0}
+          />
+        }
+      />
+
+      <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <Label>{t('common.schoolManagement')}</Label>
             <Select value={schoolId || ''} onValueChange={(val) => setSchoolId(val || undefined)}>
@@ -285,8 +289,8 @@ export default function IssuedCertificatesPage() {
             <Label>{t('students.name') ?? 'Student ID'}</Label>
             <Input value={studentId || ''} onChange={(e) => setStudentId(e.target.value || undefined)} placeholder="Student ID" />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </FilterPanel>
 
       <Card>
         <CardHeader>

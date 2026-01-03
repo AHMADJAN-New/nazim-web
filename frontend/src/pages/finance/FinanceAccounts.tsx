@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
     Dialog,
     DialogContent,
@@ -18,7 +19,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import {
     Table,
@@ -60,7 +60,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
-import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
+import { formatDate, formatCurrency } from '@/lib/utils';
 
 export default function FinanceAccounts() {
     const { t } = useLanguage();
@@ -166,7 +166,7 @@ export default function FinanceAccounts() {
             }}
             className="space-y-4"
         >
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
                     <Input
@@ -186,7 +186,7 @@ export default function FinanceAccounts() {
                     />
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="type">{t('common.type') || 'Type'}</Label>
                     <Select
@@ -221,7 +221,7 @@ export default function FinanceAccounts() {
                     </Select>
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="openingBalance">{t('finance.openingBalance') || 'Opening Balance'}</Label>
                     <Input
@@ -261,17 +261,15 @@ export default function FinanceAccounts() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl font-bold">
-                        {t('finance.accounts') || 'Finance Accounts'}
-                    </h1>
-                    <p className="text-muted-foreground">
-                        {t('finance.accountsDescription') || 'Manage your cash locations and funds'}
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
+            <PageHeader
+                title={t('finance.accounts') || 'Finance Accounts'}
+                description={t('finance.accountsDescription') || 'Manage your cash locations and funds'}
+                primaryAction={{
+                    label: t('finance.addAccount') || 'Add Account',
+                    onClick: () => setIsCreateOpen(true),
+                    icon: <Plus className="h-4 w-4" />,
+                }}
+                rightSlot={
                     <ReportExportButtons
                         data={accounts || []}
                         columns={[
@@ -297,25 +295,20 @@ export default function FinanceAccounts() {
                         templateType="finance_accounts"
                         disabled={isLoading || !accounts || accounts.length === 0}
                     />
-                    <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            {t('finance.addAccount') || 'Add Account'}
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{t('finance.addAccount') || 'Add Account'}</DialogTitle>
-                            <DialogDescription>
-                                {t('finance.addAccountDescription') || 'Create a new cash location or fund'}
-                            </DialogDescription>
-                        </DialogHeader>
-                        {renderAccountForm(handleCreate, createAccount.isPending)}
-                    </DialogContent>
-                    </Dialog>
-                </div>
-            </div>
+                }
+            />
+
+            <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('finance.addAccount') || 'Add Account'}</DialogTitle>
+                        <DialogDescription>
+                            {t('finance.addAccountDescription') || 'Create a new cash location or fund'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {renderAccountForm(handleCreate, createAccount.isPending)}
+                </DialogContent>
+            </Dialog>
 
             {/* Accounts Table */}
             <Card>
@@ -509,7 +502,7 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                     {/* Account Information */}
                     <div className="space-y-3">
                         <h3 className="text-lg font-semibold">{t('finance.accountInformation') || 'Account Information'}</h3>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <p className="text-sm text-muted-foreground">{t('common.name') || 'Name'}</p>
                                 <p className="font-medium">{account.name}</p>
@@ -614,7 +607,7 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                                         {formatCurrency(transactions.latestTransaction.amount)}
                                     </p>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                     <div>
                                         <p className="text-muted-foreground">{t('common.date') || 'Date'}</p>
                                         <p className="font-medium">
@@ -657,7 +650,7 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                     {!transactions.isLoading && (
                         <div className="space-y-3">
                             <h3 className="text-lg font-semibold">{t('finance.transactionSummary') || 'Transaction Summary'}</h3>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="border rounded-lg p-4">
                                     <p className="text-sm text-muted-foreground">{t('finance.totalIncome') || 'Total Income'}</p>
                                     <p className="text-lg font-semibold text-green-600">{formatCurrency(transactions.totalIncome)}</p>
@@ -743,3 +736,4 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
         </Sheet>
     );
 }
+

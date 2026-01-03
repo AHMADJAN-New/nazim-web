@@ -228,10 +228,12 @@ export default function CourseAttendance() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t('courses.courseAttendance')}</h1>
-      </div>
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">{t('courses.courseAttendance')}</CardTitle>
+        </CardHeader>
+        <CardContent>
 
       {/* Course Selection */}
       <Card>
@@ -260,9 +262,9 @@ export default function CourseAttendance() {
           <Card className="lg:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg">{t('courses.sessions')}</CardTitle>
-              <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-1" />
-                {t('common.add')}
+              <Button size="sm" onClick={() => setIsCreateDialogOpen(true)} className="flex-shrink-0">
+                <Plus className="h-4 w-4" />
+                <span className="ml-2">{t('common.add')}</span>
               </Button>
             </CardHeader>
             <CardContent>
@@ -555,6 +557,8 @@ export default function CourseAttendance() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        </CardContent>
+      </Card>
     </div>
   );
 }

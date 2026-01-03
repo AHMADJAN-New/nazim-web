@@ -25,6 +25,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import {
   Dialog,
   DialogContent,
@@ -434,69 +436,66 @@ export function Exams() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">{t('exams') || 'Exams'}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t('exams.management') || 'Create and manage exams for academic years'}
-          </p>
-        </div>
-        {hasCreate && (
-          <Button onClick={() => {
-            setFormData(prev => ({
-              ...prev,
-              academicYearId: currentAcademicYear?.id || prev.academicYearId,
-            }));
-            setIsCreateDialogOpen(true);
-          }}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('exams.create') || 'Create Exam'}
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title={t('exams') || 'Exams'}
+        description={t('exams.management') || 'Create and manage exams for academic years'}
+        primaryAction={
+          hasCreate
+            ? {
+                label: t('exams.create') || 'Create Exam',
+                onClick: () => {
+                  setFormData(prev => ({
+                    ...prev,
+                    academicYearId: currentAcademicYear?.id || prev.academicYearId,
+                  }));
+                  setIsCreateDialogOpen(true);
+                },
+                icon: <Plus className="h-4 w-4" />,
+              }
+            : undefined
+        }
+      />
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t('exams.searchPlaceholder') || 'Search exams...'}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ExamStatus | 'all')}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder={t('exams.filterByStatus') || 'Filter by status'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
-                <SelectItem value="draft">{t('exams.status.draft') || 'Draft'}</SelectItem>
-                <SelectItem value="scheduled">{t('exams.status.scheduled') || 'Scheduled'}</SelectItem>
-                <SelectItem value="in_progress">{t('exams.status.in_progress') || 'In Progress'}</SelectItem>
-                <SelectItem value="completed">{t('exams.status.completed') || 'Completed'}</SelectItem>
-                <SelectItem value="archived">{t('exams.status.archived') || 'Archived'}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={examTypeFilter} onValueChange={(value) => setExamTypeFilter(value)}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder={t('exams.filterByExamType') || 'Filter by exam type'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
-                {examTypes?.filter(et => et.isActive).map((examType) => (
-                  <SelectItem key={examType.id} value={examType.id}>
-                    {examType.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <FilterPanel title={t('common.filters')}>
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t('exams.searchPlaceholder') || 'Search exams...'}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
           </div>
-        </CardContent>
-      </Card>
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ExamStatus | 'all')}>
+            <SelectTrigger className="w-full md:w-[180px]">
+              <SelectValue placeholder={t('exams.filterByStatus') || 'Filter by status'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+              <SelectItem value="draft">{t('exams.status.draft') || 'Draft'}</SelectItem>
+              <SelectItem value="scheduled">{t('exams.status.scheduled') || 'Scheduled'}</SelectItem>
+              <SelectItem value="in_progress">{t('exams.status.in_progress') || 'In Progress'}</SelectItem>
+              <SelectItem value="completed">{t('exams.status.completed') || 'Completed'}</SelectItem>
+              <SelectItem value="archived">{t('exams.status.archived') || 'Archived'}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={examTypeFilter} onValueChange={(value) => setExamTypeFilter(value)}>
+            <SelectTrigger className="w-full md:w-[180px]">
+              <SelectValue placeholder={t('exams.filterByExamType') || 'Filter by exam type'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+              {examTypes?.filter(et => et.isActive).map((examType) => (
+                <SelectItem key={examType.id} value={examType.id}>
+                  {examType.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </FilterPanel>
 
       <Card>
         <CardHeader>
@@ -756,7 +755,7 @@ export function Exams() {
                 rows={3}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="create-start-date">{t('exams.startDate') || 'Start Date'}</Label>
                 <CalendarDatePicker date={formData.startDate ? new Date(formData.startDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
@@ -845,7 +844,7 @@ export function Exams() {
                 rows={3}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-start-date">{t('exams.startDate') || 'Start Date'}</Label>
                 <CalendarDatePicker date={formData.startDate ? new Date(formData.startDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />

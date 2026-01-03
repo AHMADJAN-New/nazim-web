@@ -44,7 +44,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Search, Shield, User, X, Building2, Plus } from 'lucide-react';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
 
 export function UserPermissionsManagement() {
@@ -195,7 +195,7 @@ export function UserPermissionsManagement() {
       if (import.meta.env.DEV) {
         console.error('[UserPermissionsManagement] Invalid permission ID:', permission);
       }
-      toast.error(t('userPermissions.failedToUpdate'));
+      showToast.error(t('userPermissions.failedToUpdate'));
       return;
     }
     
@@ -209,20 +209,20 @@ export function UserPermissionsManagement() {
           userId: selectedUserId,
           permissionId: permission.id,
         });
-        toast.success(t('userPermissions.permissionRemoved'));
+        showToast.success(t('userPermissions.permissionRemoved'));
       } else if (!hasPermission) {
         // Add user-specific permission
         await assignPermission.mutateAsync({
           userId: selectedUserId,
           permissionId: permission.id,
         });
-        toast.success(t('userPermissions.permissionAssigned'));
+        showToast.success(t('userPermissions.permissionAssigned'));
       } else {
         // Permission exists via role, cannot remove (would need to remove from role)
-        toast.info(t('userPermissions.permissionFromRole'));
+        showToast.info(t('userPermissions.permissionFromRole'));
       }
     } catch (error: any) {
-      toast.error(error.message || t('userPermissions.failedToUpdate'));
+      showToast.error(error.message || t('userPermissions.failedToUpdate'));
     }
   };
 
@@ -235,7 +235,7 @@ export function UserPermissionsManagement() {
         role: roleName,
       });
     } catch (error: any) {
-      toast.error(error.message || t('userPermissions.failedToAssignRole'));
+      showToast.error(error.message || t('userPermissions.failedToAssignRole'));
     }
   };
 
@@ -252,16 +252,16 @@ export function UserPermissionsManagement() {
         role: roleName,
       });
     } catch (error: any) {
-      toast.error(error.message || t('userPermissions.failedToRemoveRole'));
+      showToast.error(error.message || t('userPermissions.failedToRemoveRole'));
     }
   };
   
   // Check if user has permission to view user permissions management
   if (!hasPermissionsPermission) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="text-center text-destructive">
               <Shield className="h-12 w-12 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">{t('userPermissions.accessDenied')}</h3>
@@ -275,9 +275,9 @@ export function UserPermissionsManagement() {
   
   if (usersLoading || permissionsLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="text-center">{t('userPermissions.loading')}</div>
           </CardContent>
         </Card>
@@ -286,18 +286,18 @@ export function UserPermissionsManagement() {
   }
   
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       {/* Organization Context Banner */}
       {currentOrg && (
         <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
           <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              <div>
-                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+            <div className="flex items-start gap-2">
+              <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-100 break-words">
                   {t('userPermissions.managingUserPermissionsFor').replace('{name}', currentOrg.name)}
                 </p>
-                <p className="text-xs text-blue-700 dark:text-blue-300">
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
                   {t('userPermissions.assignSpecificPermissions')}
                 </p>
               </div>
@@ -309,10 +309,10 @@ export function UserPermissionsManagement() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
+            <User className="h-5 w-5 hidden md:inline-flex" />
             {t('userPermissions.title')}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="hidden md:block">
             {t('userPermissions.subtitle')}
           </CardDescription>
         </CardHeader>
@@ -328,7 +328,7 @@ export function UserPermissionsManagement() {
                 className="pl-10"
               />
             </div>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <Label>{t('userPermissions.filterByRole')}</Label>
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -351,68 +351,81 @@ export function UserPermissionsManagement() {
           </div>
           
           {/* Users Table */}
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('userPermissions.name')}</TableHead>
-                  <TableHead>{t('userPermissions.email')}</TableHead>
-                  <TableHead>{t('userPermissions.role')}</TableHead>
-                  <TableHead>{t('userPermissions.status')}</TableHead>
-                  <TableHead className="text-right">{t('userPermissions.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.length === 0 ? (
+          <div className="rounded-md border overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      {t('userPermissions.noUsersFound')}
-                    </TableCell>
+                    <TableHead>{t('userPermissions.name')}</TableHead>
+                    <TableHead className="hidden sm:table-cell">{t('userPermissions.email')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('userPermissions.role')}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t('userPermissions.status')}</TableHead>
+                    <TableHead className="text-right">{t('userPermissions.actions')}</TableHead>
                   </TableRow>
-                ) : (
-                  filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">
-                        {user.fullName || t('userPermissions.noName')}
-                      </TableCell>
-                      <TableCell>{user.email || t('userPermissions.noEmail')}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{user.role}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                          {user.isActive ? t('userPermissions.active') : t('userPermissions.inactive')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {hasPermissionsUpdatePermission && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenPermissionsDialog(user.id)}
-                          >
-                            <Shield className="h-4 w-4 mr-2" />
-                            {t('userPermissions.managePermissions')}
-                          </Button>
-                        )}
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        {t('userPermissions.noUsersFound')}
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex flex-col sm:hidden gap-1">
+                            <span>{user.fullName || t('userPermissions.noName')}</span>
+                            <span className="text-xs text-muted-foreground">{user.email || t('userPermissions.noEmail')}</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              <Badge variant="outline" className="text-xs">{user.role}</Badge>
+                              <Badge variant={user.isActive ? 'default' : 'secondary'} className="text-xs">
+                                {user.isActive ? t('userPermissions.active') : t('userPermissions.inactive')}
+                              </Badge>
+                            </div>
+                          </div>
+                          <span className="hidden sm:inline">{user.fullName || t('userPermissions.noName')}</span>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">{user.email || t('userPermissions.noEmail')}</TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <Badge variant="outline">{user.role}</Badge>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                            {user.isActive ? t('userPermissions.active') : t('userPermissions.inactive')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {hasPermissionsUpdatePermission && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenPermissionsDialog(user.id)}
+                              className="flex-shrink-0"
+                            >
+                              <Shield className="h-4 w-4 sm:mr-2" />
+                              <span className="hidden sm:inline">{t('userPermissions.managePermissions')}</span>
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </CardContent>
       </Card>
       
       {/* Permissions Dialog */}
       <Dialog open={isPermissionsDialogOpen} onOpenChange={setIsPermissionsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="break-words">
               {t('userPermissions.managePermissionsDialogTitle').replace('{name}', selectedUser?.fullName || selectedUser?.email || 'User')}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="hidden md:block">
               {t('userPermissions.managePermissionsDialogDescription')}
             </DialogDescription>
           </DialogHeader>
@@ -427,7 +440,7 @@ export function UserPermissionsManagement() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">{t('userPermissions.userRoles')}</CardTitle>
-                  <CardDescription>
+                  <CardDescription className="hidden md:block">
                     {t('userPermissions.manageRolesDescription')}
                   </CardDescription>
                 </CardHeader>
@@ -489,7 +502,7 @@ export function UserPermissionsManagement() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">{t('userPermissions.directPermissions')}</CardTitle>
-                    <CardDescription>
+                    <CardDescription className="hidden md:block">
                       {t('userPermissions.directPermissionsDescription')}
                     </CardDescription>
                   </CardHeader>
@@ -511,26 +524,27 @@ export function UserPermissionsManagement() {
                         return (
                           <div
                             key={permission.id}
-                            className="flex items-center justify-between p-2 rounded border hover:bg-muted/50"
+                            className="flex items-start justify-between p-2 rounded border hover:bg-muted/50 gap-2"
                           >
-                            <div className="flex items-center gap-3 flex-1">
+                            <div className="flex items-start gap-3 flex-1 min-w-0">
                               <Checkbox
                                 checked={hasPermission}
                                 onCheckedChange={() => handleTogglePermission(permission)}
                                 disabled={!hasPermissionsUpdatePermission}
+                                className="mt-1 flex-shrink-0"
                               />
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <Label className="font-medium">{permission.name}</Label>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <Label className="font-medium break-words">{permission.name}</Label>
                                   {isUserSpecific && (
-                                    <Badge variant="default" className="text-xs">{t('permissions.userSpecific')}</Badge>
+                                    <Badge variant="default" className="text-xs flex-shrink-0">{t('permissions.userSpecific')}</Badge>
                                   )}
                                   {isRoleBased && (
-                                    <Badge variant="outline" className="text-xs">{t('permissions.fromRole')}</Badge>
+                                    <Badge variant="outline" className="text-xs flex-shrink-0">{t('permissions.fromRole')}</Badge>
                                   )}
                                 </div>
                                 {permission.description && (
-                                  <p className="text-sm text-muted-foreground">{permission.description}</p>
+                                  <p className="text-sm text-muted-foreground mt-1 break-words">{permission.description}</p>
                                 )}
                               </div>
                             </div>
@@ -545,7 +559,7 @@ export function UserPermissionsManagement() {
           )}
           
           <DialogFooter>
-            <Button variant="outline" onClick={handleClosePermissionsDialog}>
+            <Button variant="outline" onClick={handleClosePermissionsDialog} className="w-full sm:w-auto">
               {t('userPermissions.close')}
             </Button>
           </DialogFooter>

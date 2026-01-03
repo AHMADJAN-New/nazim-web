@@ -26,6 +26,7 @@ import { useCurrencies } from '@/hooks/useCurrencies';
 import type { LibraryBook } from '@/types/domain/library';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 const defaultLoanDate = format(new Date(), 'yyyy-MM-dd');
 
@@ -127,15 +128,11 @@ export default function Library() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <BookOpen className="h-8 w-8" />
-          <div>
-            <h1 className="text-2xl font-semibold">{t('library.title')}</h1>
-            <p className="text-sm text-muted-foreground">{t('library.subtitle')}</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title={t('library.title')}
+        description={t('library.subtitle')}
+        icon={<BookOpen className="h-5 w-5" />}
+      />
 
       <Tabs defaultValue="books" className="space-y-4">
         <TabsList>

@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import {
     Dialog,
     DialogContent,
@@ -17,7 +19,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import {
     Table,
@@ -148,7 +149,7 @@ export default function Donors() {
             }}
             className="space-y-4"
         >
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
                     <Input
@@ -175,7 +176,7 @@ export default function Donors() {
                     </Select>
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="phone">{t('common.phone') || 'Phone'}</Label>
                     <Input
@@ -236,17 +237,16 @@ export default function Donors() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl font-bold">
-                        {t('finance.donors') || 'Donors'}
-                    </h1>
-                    <p className="text-muted-foreground">
-                        {t('finance.donorsDescription') || 'Manage your donors and track contributions'}
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
+            <PageHeader
+                title={t('finance.donors') || 'Donors'}
+                description={t('finance.donorsDescription') || 'Manage your donors and track contributions'}
+                icon={<Users className="h-5 w-5" />}
+                primaryAction={{
+                    label: t('finance.addDonor') || 'Add Donor',
+                    onClick: () => setIsCreateOpen(true),
+                    icon: <Plus className="h-4 w-4" />,
+                }}
+                rightSlot={
                     <ReportExportButtons
                         data={filteredDonors}
                         columns={[
@@ -273,36 +273,37 @@ export default function Donors() {
                         templateType="finance_donors"
                         disabled={isLoading || filteredDonors.length === 0}
                     />
-                    <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            {t('finance.addDonor') || 'Add Donor'}
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{t('finance.addDonor') || 'Add Donor'}</DialogTitle>
-                            <DialogDescription>
-                                {t('finance.addDonorDescription') || 'Add a new donor to your records'}
-                            </DialogDescription>
-                        </DialogHeader>
-                        {renderDonorForm(handleCreate, createDonor.isPending)}
-                    </DialogContent>
-                    </Dialog>
-                </div>
-            </div>
+                }
+            />
 
-            {/* Search */}
-            <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder={t('finance.searchDonors') || 'Search donors...'}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                />
-            </div>
+            <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('finance.addDonor') || 'Add Donor'}</DialogTitle>
+                        <DialogDescription>
+                            {t('finance.addDonorDescription') || 'Add a new donor to your records'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {renderDonorForm(handleCreate, createDonor.isPending)}
+                </DialogContent>
+            </Dialog>
+
+            <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+                <div className="w-full md:max-w-sm">
+                    <Label className="text-xs text-muted-foreground mb-1 block">
+                        {t('common.search') || 'Search'}
+                    </Label>
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder={t('finance.searchDonors') || 'Search donors...'}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10"
+                        />
+                    </div>
+                </div>
+            </FilterPanel>
 
             {/* Summary Card */}
             <Card>
@@ -447,3 +448,4 @@ export default function Donors() {
         </div>
     );
 }
+

@@ -21,6 +21,8 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import {
   Banknote,
   TrendingUp,
@@ -30,7 +32,6 @@ import {
   CheckCircle,
   Clock,
   Search,
-  Download,
   ChevronRight,
   Calendar,
   CreditCard,
@@ -222,18 +223,12 @@ export default function FeeReportsPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {t('fees.reports') || 'Fee Reports'}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {t('fees.reportsDescription') || 'Track fee collection and student payment status'}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <PageHeader
+        title={t('fees.reports') || 'Fee Reports'}
+        description={t('fees.reportsDescription') || 'Track fee collection and student payment status'}
+        icon={<FileText className="h-5 w-5" />}
+        rightSlot={
           <ReportExportButtons
             data={studentFeesData?.data || []}
             columns={[
@@ -274,15 +269,11 @@ export default function FeeReportsPage() {
             templateType="fee_student_summary"
             disabled={dashboardLoading || !studentFeesData?.data || studentFeesData.data.length === 0}
           />
-        </div>
-      </div>
+        }
+      />
 
-      {/* Filters */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">{t('fees.filters') || 'Filters'}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <FilterPanel title={t('fees.filters') || 'Filters'}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="text-sm font-medium mb-2 block">{t('fees.academicYear') || 'Academic Year'}</label>
             <Select
@@ -348,11 +339,11 @@ export default function FeeReportsPage() {
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </FilterPanel>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {/* Total Fees */}
         <Card className="relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16" />
@@ -470,7 +461,7 @@ export default function FeeReportsPage() {
       </Card>
 
       {/* Charts Row */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         {/* Status Distribution */}
         <Card>
           <CardHeader>
@@ -614,7 +605,7 @@ export default function FeeReportsPage() {
                 </div>
               ) : studentFeesData && studentFeesData.data.length > 0 ? (
                 <>
-                  <div className="rounded-md border">
+                  <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -786,7 +777,7 @@ export default function FeeReportsPage() {
                 </div>
               ) : dashboard && dashboard.byClass.length > 0 ? (
                 <>
-                  <div className="rounded-md border">
+                  <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>

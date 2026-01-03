@@ -14,9 +14,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useGraduationBatch, useGenerateGraduationStudents, useApproveGraduationBatch, useIssueGraduationCertificates, useCertificateTemplatesV2 } from '@/hooks/useGraduation';
 import { useBulkDeactivateAdmissionsByStudentIds } from '@/hooks/useStudentAdmissions';
 import { useLanguage } from '@/hooks/useLanguage';
-import { X, RefreshCw, CheckCircle2, FileText, Users, TrendingUp, XCircle, ArrowLeft, Hash, Info } from 'lucide-react';
+import { X, RefreshCw, CheckCircle2, FileText, Users, TrendingUp, XCircle, ArrowLeft, Hash, Info, GraduationCap } from 'lucide-react';
 import { BatchWorkflowStepper } from '@/components/graduation/BatchWorkflowStepper';
 import { formatDate, formatDateTime } from '@/lib/utils';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function GraduationBatchDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -177,59 +178,62 @@ export default function GraduationBatchDetailPage() {
     setSelectedStudentIds(newSet);
   };
 
+  const statusLabel =
+    batch.status === 'draft'
+      ? t('graduation.status.draft') || 'Draft'
+      : batch.status === 'approved'
+        ? t('graduation.status.approved') || 'Approved'
+        : t('graduation.status.issued') || 'Issued';
+  const statusVariant = batch.status === 'draft' ? 'secondary' : batch.status === 'approved' ? 'default' : 'outline';
+  const headerDescription = `${batch.academic_year?.name || batch.academic_year_id} - ${
+    batch.graduation_date ? formatDate(batch.graduation_date) : 'No date set'
+  }`;
+  const secondaryActions = [
+    {
+      label: t('common.back') || 'Back',
+      onClick: () => navigate('/graduation/batches'),
+      icon: <ArrowLeft className="h-4 w-4" />,
+      variant: 'outline' as const,
+    },
+    ...(batch.status === 'draft'
+      ? [
+          {
+            label: t('common.generateStudents') || 'Generate Students',
+            onClick: handleGenerate,
+            icon: <RefreshCw className="h-4 w-4" />,
+            variant: 'outline' as const,
+            disabled: generateStudents.isPending,
+          },
+        ]
+      : []),
+  ];
+  const primaryAction =
+    batch.status === 'draft'
+      ? {
+          label: t('common.approve') || 'Approve Batch',
+          onClick: handleApprove,
+          icon: <CheckCircle2 className="h-4 w-4" />,
+          disabled: approveBatch.isPending,
+        }
+      : batch.status === 'approved'
+        ? {
+            label: t('certificates.issued') ?? 'Issue Certificates',
+            onClick: handleIssue,
+            icon: <FileText className="h-4 w-4" />,
+            disabled: !templateId || issueCertificates.isPending || !hasPassedStudents,
+          }
+        : undefined;
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Header with Actions */}
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/graduation/batches')}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {t('common.back') || 'Back'}
-            </Button>
-            <h1 className="text-3xl font-bold">{batch.class?.name || batch.class_id || 'Batch'}</h1>
-            <Badge variant={batch.status === 'draft' ? 'secondary' : batch.status === 'approved' ? 'default' : 'outline'}>
-              {batch.status === 'draft'
-                ? t('graduation.status.draft') || 'Draft'
-                : batch.status === 'approved'
-                  ? t('graduation.status.approved') || 'Approved'
-                  : t('graduation.status.issued') || 'Issued'}
-            </Badge>
-          </div>
-          <p className="text-muted-foreground">
-            {batch.academic_year?.name || batch.academic_year_id} •{' '}
-            {batch.graduation_date ? formatDate(batch.graduation_date) : 'No date set'}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {batch.status === 'draft' && (
-            <>
-              <Button onClick={handleGenerate} disabled={generateStudents.isPending}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Generate Students
-              </Button>
-              <Button onClick={handleApprove} disabled={approveBatch.isPending}>
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Approve Batch
-              </Button>
-            </>
-          )}
-          {batch.status === 'approved' && (
-            <Button 
-              onClick={handleIssue} 
-              disabled={!templateId || issueCertificates.isPending || !hasPassedStudents}
-              title={!hasPassedStudents ? 'No students with pass status' : !templateId ? 'Please select a template' : ''}
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Issue Certificates
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title={batch.class?.name || batch.class_id || 'Batch'}
+        description={headerDescription}
+        icon={<GraduationCap className="h-5 w-5" />}
+        primaryAction={primaryAction}
+        secondaryActions={secondaryActions}
+        rightSlot={<Badge variant={statusVariant}>{statusLabel}</Badge>}
+      />
 
       {/* Workflow Progress */}
       <Card>
@@ -831,3 +835,4 @@ export default function GraduationBatchDetailPage() {
     </div>
   );
 }
+

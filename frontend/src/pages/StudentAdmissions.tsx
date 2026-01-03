@@ -41,7 +41,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -52,6 +51,8 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 
 // Helper to convert empty strings to null for UUID fields
 const uuidOrNull = z.preprocess(
@@ -735,66 +736,65 @@ export function StudentAdmissions() {
     (adm) => selectedAdmissionIds.has(adm.id) && adm.enrollmentStatus === 'active'
   );
 
+  const handleOpenCreateDialog = () => {
+    if (isLimitReached) {
+      showToast.error(
+        t('admissions.limitReached') || 
+        `Student limit reached (${studentUsage.current}/${studentUsage.limit}). Please disable an old admission record first or upgrade your plan.`
+      );
+      return;
+    }
+
+    setSelectedAdmission(null);
+    setIsEdit(false);
+    setAdmissionToDelete(null);
+    setSelectedAcademicYear(undefined);
+    setActiveTab('basic');
+    reset();
+    setIsDialogOpen(true);
+  };
+
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 min-w-0">
-        <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold">{t('admissions.title') || 'Student Admissions'}</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            {t('admissions.subtitle') || 'Admit registered students into classes with residency and year tracking.'}
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          {canBulkDeactivate && (
-            <Button
-              variant="outline"
-              onClick={() => setIsBulkDeactivateDialogOpen(true)}
-              disabled={bulkDeactivate.isPending}
-              className="w-full sm:w-auto"
-            >
-              <X className="w-4 h-4 mr-2" />
-              {t('admissions.bulkDeactivate') || `Deactivate (${selectedCount})`}
-            </Button>
-          )}
-          <Dialog 
-            open={isDialogOpen} 
-            onOpenChange={(open) => {
-              setIsDialogOpen(open);
-              if (!open) {
-                // Reset edit state when dialog closes
-                setSelectedAdmission(null);
-                setIsEdit(false);
-                setSelectedAcademicYear(undefined);
-                setActiveTab('basic');
-                reset();
-              }
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button 
-                disabled={isLimitReached}
-                onClick={() => {
-                  if (isLimitReached) {
-                    showToast.error(
-                      t('admissions.limitReached') || 
-                      `Student limit reached (${studentUsage.current}/${studentUsage.limit}). Please disable an old admission record first or upgrade your plan.`
-                    );
-                    return;
-                  }
-                  // Clear edit state when opening create dialog
-                  setSelectedAdmission(null);
-                  setIsEdit(false);
-                  setAdmissionToDelete(null);
-                  setSelectedAcademicYear(undefined);
-                  setActiveTab('basic');
-                  reset();
-                }}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {t('admissions.add') || 'Admit Student'}
-              </Button>
-            </DialogTrigger>
-            <DialogContent 
+      <PageHeader
+        title={t('admissions.title') || 'Student Admissions'}
+        description={t('admissions.subtitle') || 'Admit registered students into classes with residency and year tracking.'}
+        primaryAction={{
+          label: t('admissions.add') || 'Admit Student',
+          onClick: handleOpenCreateDialog,
+          icon: <Plus className="h-4 w-4" />,
+          disabled: isLimitReached,
+        }}
+        secondaryActions={
+          canBulkDeactivate
+            ? [
+                {
+                  label: t('admissions.bulkDeactivate') || `Deactivate (${selectedCount})`,
+                  onClick: () => setIsBulkDeactivateDialogOpen(true),
+                  icon: <X className="h-4 w-4" />,
+                  variant: 'outline',
+                  disabled: bulkDeactivate.isPending,
+                },
+              ]
+            : []
+        }
+      />
+
+      <Dialog 
+        open={isDialogOpen} 
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            // Reset edit state when dialog closes
+            setSelectedAdmission(null);
+            setIsEdit(false);
+            setSelectedAcademicYear(undefined);
+            setActiveTab('basic');
+            reset();
+          }
+        }}
+      >
+        <DialogContent 
               className="max-w-5xl max-h-[100vh] h-[100vh] sm:max-h-[95vh] sm:h-[95vh] w-full sm:w-[95vw] md:w-[90vw] lg:w-full p-0 gap-0 flex flex-col m-0 sm:m-4 rounded-none sm:rounded-lg"
               aria-describedby="admission-form-description"
             >
@@ -862,7 +862,7 @@ export function StudentAdmissions() {
                     
                     <div className="flex-1 overflow-y-auto pb-4 min-h-0">
                       <TabsContent value="basic" className="space-y-4 mt-0">
-                        <div className="grid md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {schools && schools.length > 1 && (
                 <div>
                   <Label>{t('admissions.school') || 'School'}</Label>
@@ -924,7 +924,7 @@ export function StudentAdmissions() {
                       </TabsContent>
                       
                       <TabsContent value="academic" className="space-y-4 mt-0">
-                        <div className="grid md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>{t('admissions.academicYear') || 'Academic Year'}</Label>
                     <Controller
@@ -1026,7 +1026,7 @@ export function StudentAdmissions() {
                       </TabsContent>
                       
                       <TabsContent value="residency" className="space-y-4 mt-0">
-                        <div className="grid md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>{t('admissions.residencyType') || 'Residency Type'}</Label>
                     <Controller
@@ -1083,7 +1083,7 @@ export function StudentAdmissions() {
                       </TabsContent>
                       
                       <TabsContent value="additional" className="space-y-4 mt-0">
-                        <div className="grid md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>{t('admissions.admissionYear') || 'Admission Year'}</Label>
                     <Input 
@@ -1241,10 +1241,8 @@ export function StudentAdmissions() {
                 </DialogFooter>
               </form>
               </FormProvider>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card>
@@ -1289,6 +1287,61 @@ export function StudentAdmissions() {
         </Card>
       </div>
 
+      <FilterPanel title={t('admissions.filtersTitle')}>
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t('common.search') || 'Search by student name, admission number, class...'}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={schoolFilter} onValueChange={setSchoolFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder={t('admissions.school') || 'School'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('admissions.allSchools') || 'All Schools'}</SelectItem>
+              {schools?.map((school) => (
+                <SelectItem key={school.id} value={school.id}>
+                  {school.school_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as AdmissionStatus | 'all')}>
+            <SelectTrigger className="w-full sm:w-[150px]">
+              <SelectValue placeholder={t('admissions.status') || 'Status'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('admissions.allStatus') || 'All Status'}</SelectItem>
+              <SelectItem value="pending">{t('admissions.pending') || 'Pending'}</SelectItem>
+              <SelectItem value="admitted">{t('admissions.admitted') || 'Admitted'}</SelectItem>
+              <SelectItem value="active">{t('admissions.active') || 'Active'}</SelectItem>
+              <SelectItem value="inactive">{t('admissions.inactive') || 'Inactive'}</SelectItem>
+              <SelectItem value="suspended">{t('admissions.suspended') || 'Suspended'}</SelectItem>
+              <SelectItem value="withdrawn">{t('admissions.withdrawn') || 'Withdrawn'}</SelectItem>
+              <SelectItem value="graduated">{t('admissions.graduated') || 'Graduated'}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={residencyFilter} onValueChange={(value) => setResidencyFilter(value)}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue placeholder={t('admissions.residency') || 'Residency'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('admissions.allResidency') || 'All Residency'}</SelectItem>
+              {residencyTypes?.map((type) => (
+                <SelectItem key={type.id} value={type.id}>
+                  {type.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </FilterPanel>
+
       <Card>
         <CardHeader>
           <CardTitle>{t('admissions.list') || 'Admissions'}</CardTitle>
@@ -1311,135 +1364,80 @@ export function StudentAdmissions() {
             </div>
           ) : (
             <div className="space-y-4 overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2 items-center">
-                  <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder={t('common.search') || 'Search by student name, admission number, class...'}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                  <Select value={schoolFilter} onValueChange={setSchoolFilter}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                      <SelectValue placeholder={t('admissions.school') || 'School'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('admissions.allSchools') || 'All Schools'}</SelectItem>
-                      {schools?.map((school) => (
-                        <SelectItem key={school.id} value={school.id}>
-                          {school.school_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as AdmissionStatus | 'all')}>
-                    <SelectTrigger className="w-full sm:w-[150px]">
-                      <SelectValue placeholder={t('admissions.status') || 'Status'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('admissions.allStatus') || 'All Status'}</SelectItem>
-                      <SelectItem value="pending">{t('admissions.pending') || 'Pending'}</SelectItem>
-                      <SelectItem value="admitted">{t('admissions.admitted') || 'Admitted'}</SelectItem>
-                      <SelectItem value="active">{t('admissions.active') || 'Active'}</SelectItem>
-                      <SelectItem value="inactive">{t('admissions.inactive') || 'Inactive'}</SelectItem>
-                      <SelectItem value="suspended">{t('admissions.suspended') || 'Suspended'}</SelectItem>
-                      <SelectItem value="withdrawn">{t('admissions.withdrawn') || 'Withdrawn'}</SelectItem>
-                      <SelectItem value="graduated">{t('admissions.graduated') || 'Graduated'}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={residencyFilter} onValueChange={(value) => setResidencyFilter(value)}>
-                    <SelectTrigger className="w-full sm:w-[200px]">
-                      <SelectValue placeholder={t('admissions.residency') || 'Residency'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('admissions.allResidency') || 'All Residency'}</SelectItem>
-                      {residencyTypes?.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="border rounded-lg overflow-x-auto -mx-4 sm:mx-0">
-                  <Table className="w-full">
-                    <TableHeader>
-                      {table.getHeaderGroups().map((headerGroup) => (
-                        <TableRow key={headerGroup.id}>
-                          {headerGroup.headers.map((header) => {
-                            const columnId = header.column.id;
-                            let headerClassName = '';
-                            if (columnId === 'picture') headerClassName = 'w-[60px]';
-                            else if (columnId === 'studentCode') headerClassName = 'hidden sm:table-cell';
-                            else if (columnId === 'school') headerClassName = 'hidden md:table-cell';
-                            else if (columnId === 'residency') headerClassName = 'hidden lg:table-cell';
-                            else if (columnId === 'room') headerClassName = 'hidden lg:table-cell';
-                            else if (columnId === 'actions') headerClassName = 'text-right w-[100px]';
+              <div className="border rounded-lg overflow-x-auto -mx-4 sm:mx-0">
+                <Table className="w-full">
+                  <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => {
+                          const columnId = header.column.id;
+                          let headerClassName = '';
+                          if (columnId === 'picture') headerClassName = 'w-[60px]';
+                          else if (columnId === 'studentCode') headerClassName = 'hidden sm:table-cell';
+                          else if (columnId === 'school') headerClassName = 'hidden md:table-cell';
+                          else if (columnId === 'residency') headerClassName = 'hidden lg:table-cell';
+                          else if (columnId === 'room') headerClassName = 'hidden lg:table-cell';
+                          else if (columnId === 'actions') headerClassName = 'text-right w-[100px]';
+                          
+                          return (
+                            <TableHead key={header.id} className={headerClassName}>
+                              {header.isPlaceholder
+                                ? null
+                                : typeof header.column.columnDef.header === 'function'
+                                ? header.column.columnDef.header({ column: header.column, header, table })
+                                : header.column.columnDef.header}
+                            </TableHead>
+                          );
+                        })}
+                      </TableRow>
+                    ))}
+                  </TableHeader>
+                  <TableBody>
+                    {table.getRowModel().rows.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={columns.length} className="h-24 text-center">
+                          {t('admissions.noDataFound') || 'No data found.'}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      table.getRowModel().rows.map((row) => (
+                        <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                          {row.getVisibleCells().map((cell) => {
+                            const columnId = cell.column.id;
+                            let cellClassName = '';
+                            if (columnId === 'picture') cellClassName = 'w-[60px]';
+                            else if (columnId === 'studentCode') cellClassName = 'hidden sm:table-cell';
+                            else if (columnId === 'school') cellClassName = 'hidden md:table-cell';
+                            else if (columnId === 'residency') cellClassName = 'hidden lg:table-cell';
+                            else if (columnId === 'room') cellClassName = 'hidden lg:table-cell';
+                            else if (columnId === 'actions') cellClassName = 'text-right w-[100px]';
                             
                             return (
-                              <TableHead key={header.id} className={headerClassName}>
-                                {header.isPlaceholder
-                                  ? null
-                                  : typeof header.column.columnDef.header === 'function'
-                                  ? header.column.columnDef.header({ column: header.column, header, table })
-                                  : header.column.columnDef.header}
-                              </TableHead>
+                              <TableCell key={cell.id} className={cellClassName}>
+                                {cell.column.columnDef.cell
+                                  ? typeof cell.column.columnDef.cell === 'function'
+                                    ? cell.column.columnDef.cell(cell.getContext())
+                                    : cell.column.columnDef.cell
+                                  : null}
+                              </TableCell>
                             );
                           })}
                         </TableRow>
-                      ))}
-                    </TableHeader>
-                    <TableBody>
-                      {table.getRowModel().rows.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={columns.length} className="h-24 text-center">
-                            {t('admissions.noDataFound') || 'No data found.'}
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        table.getRowModel().rows.map((row) => (
-                          <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                            {row.getVisibleCells().map((cell) => {
-                              const columnId = cell.column.id;
-                              let cellClassName = '';
-                              if (columnId === 'picture') cellClassName = 'w-[60px]';
-                              else if (columnId === 'studentCode') cellClassName = 'hidden sm:table-cell';
-                              else if (columnId === 'school') cellClassName = 'hidden md:table-cell';
-                              else if (columnId === 'residency') cellClassName = 'hidden lg:table-cell';
-                              else if (columnId === 'room') cellClassName = 'hidden lg:table-cell';
-                              else if (columnId === 'actions') cellClassName = 'text-right w-[100px]';
-                              
-                              return (
-                                <TableCell key={cell.id} className={cellClassName}>
-                                  {cell.column.columnDef.cell
-                                    ? typeof cell.column.columnDef.cell === 'function'
-                                      ? cell.column.columnDef.cell(cell.getContext())
-                                      : cell.column.columnDef.cell
-                                    : null}
-                                </TableCell>
-                              );
-                            })}
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                {/* Pagination */}
-                <DataTablePagination
-                  table={table}
-                  paginationMeta={pagination ?? null}
-                  onPageChange={setPage}
-                  onPageSizeChange={setPageSize}
-                  showPageSizeSelector={true}
-                  showTotalCount={true}
-                />
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
               </div>
+
+              {/* Pagination */}
+              <DataTablePagination
+                table={table}
+                paginationMeta={pagination ?? null}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+                showPageSizeSelector={true}
+                showTotalCount={true}
+              />
             </div>
           )}
         </CardContent>

@@ -174,25 +174,27 @@ export function ExamTypesPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-96 w-full" />
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-96 w-full" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle>{t('examTypes.title') || 'Exam Types'}</CardTitle>
-              <CardDescription>
+              <CardDescription className="hidden md:block">
                 {t('examTypes.description') || 'Manage exam types for your organization'}
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
               {filteredExamTypes && filteredExamTypes.length > 0 && (
                 <ReportExportButtons
                   data={filteredExamTypes}
@@ -223,9 +225,9 @@ export function ExamTypesPage() {
                 />
               )}
               {hasCreate && (
-                <Button onClick={() => setIsCreateDialogOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  {t('common.add') || 'Add'}
+                <Button onClick={() => setIsCreateDialogOpen(true)} className="w-full sm:w-auto">
+                  <Plus className="h-4 w-4" />
+                  <span className="ml-2">{t('examTypes.create') || t('common.add') || 'Add'}</span>
                 </Button>
               )}
             </div>
@@ -244,8 +246,9 @@ export function ExamTypesPage() {
             </div>
           </div>
 
-          <Table>
-            <TableHeader>
+          <div className="rounded-md border overflow-x-auto">
+            <Table>
+              <TableHeader>
               <TableRow>
                 <TableHead>{t('examTypes.name') || 'Name'}</TableHead>
                 <TableHead>{t('examTypes.code') || 'Code'}</TableHead>
@@ -283,12 +286,14 @@ export function ExamTypesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-1.5 sm:gap-2">
                         {hasUpdate && (
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => openEditDialog(examType)}
+                            className="flex-shrink-0"
+                            aria-label={t('examTypes.edit') || 'Edit'}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -298,8 +303,10 @@ export function ExamTypesPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => openDeleteDialog(examType)}
+                            className="flex-shrink-0"
+                            aria-label={t('common.delete') || 'Delete'}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         )}
                       </div>
@@ -308,7 +315,8 @@ export function ExamTypesPage() {
                 ))
               )}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

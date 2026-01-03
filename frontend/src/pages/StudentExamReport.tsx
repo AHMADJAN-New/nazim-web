@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import type { Student } from '@/types/domain/student';
@@ -22,6 +22,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useProfile } from '@/hooks/useProfiles';
 import { calculateGrade } from '@/lib/utils/gradeCalculator';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 
 // Report data type matching API response
 type StudentReportData = {
@@ -624,19 +626,15 @@ export default function StudentExamReport() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('studentReportCard.title')}</h1>
-        <p className="text-muted-foreground mt-2">{t('studentReportCard.selectStudentPrompt')}</p>
-      </div>
+      <PageHeader
+        title={t('studentReportCard.title')}
+        description={t('studentReportCard.selectStudentPrompt')}
+        icon={<Award className="h-5 w-5" />}
+      />
 
       {/* Selection Panel */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('studentReportCard.selectStudent')}</CardTitle>
-          <CardDescription>{t('studentReportCard.selectStudentPrompt')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+      <FilterPanel title={t('studentReportCard.selectStudent')}>
+        <div className="grid gap-4 md:grid-cols-3">
             {/* Exam Selection */}
             <div className="space-y-2">
               <Label htmlFor="exam">{t('examReports.selectExam')}</Label>
@@ -806,8 +804,8 @@ export default function StudentExamReport() {
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </FilterPanel>
 
       {/* Report Cards Display */}
       {selectedStudentIds.length > 0 && selectedExamId && (

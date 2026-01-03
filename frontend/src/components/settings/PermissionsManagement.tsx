@@ -8,6 +8,9 @@ import {
   useUpdatePermission,
   useDeletePermission,
   useRoles,
+  useCreateRole,
+  useUpdateRole,
+  useDeleteRole,
   type Permission,
   type Role
 } from '@/hooks/usePermissions';
@@ -18,14 +21,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -33,12 +28,242 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Shield, Edit, Save, X, Trash2, Building2 } from 'lucide-react';
+import { Plus, Search, Shield, Edit, Save, X, Trash2, Building2, Users } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { LoadingSpinner } from '@/components/ui/loading';
+
+const roleSchema = z.object({
+  name: z.string().min(1, 'Role name is required').max(255, 'Role name must be 255 characters or less'),
+  description: z.string().max(1000, 'Description must be 1000 characters or less').optional().nullable(),
+});
+
+type RoleFormData = z.infer<typeof roleSchema>;
+
+// Component to fetch and display role permissions
+function RolePermissionsCard({ role, allPermissions, onEdit, onDelete, canEdit, canDelete }: {
+  role: Role;
+  allPermissions: Permission[];
+  onEdit: (role: Role) => void;
+  onDelete: (role: Role) => void;
+  canEdit: boolean;
+  canDelete: boolean;
+}) {
+  const { t } = useLanguage();
+  const { data: rolePermsData, isLoading } = useRolePermissions(role.name);
+  const assignPermission = useAssignPermissionToRole();
+  const removePermission = useRemovePermissionFromRole();
+  const [editingPermissions, setEditingPermissions] = useState<Set<string>>(new Set());
+  const [isEditing, setIsEditing] = useState(false);
+
+  const rolePermissions = rolePermsData?.permissions || [];
+
+  // Group permissions by resource
+  const groupedPermissions = useMemo(() => {
+    const grouped: Record<string, { read: boolean; write: boolean; delete: boolean }> = {};
+    
+    allPermissions.forEach(permission => {
+      if (!grouped[permission.resource]) {
+        grouped[permission.resource] = { read: false, write: false, delete: false };
+      }
+      
+      const hasPermission = rolePermissions.includes(permission.name);
+      if (hasPermission) {
+        if (permission.action === 'read') grouped[permission.resource].read = true;
+        if (permission.action === 'write' || permission.action === 'create' || permission.action === 'update') grouped[permission.resource].write = true;
+        if (permission.action === 'delete') grouped[permission.resource].delete = true;
+      }
+    });
+    
+    return grouped;
+  }, [allPermissions, rolePermissions]);
+
+  // Get permission name for a resource and action
+  const getPermissionName = (resource: string, action: string): string | null => {
+    const perm = allPermissions.find(p => p.resource === resource && (
+      (action === 'read' && p.action === 'read') ||
+      (action === 'write' && (p.action === 'write' || p.action === 'create' || p.action === 'update')) ||
+      (action === 'delete' && p.action === 'delete')
+    ));
+    return perm?.name || null;
+  };
+
+  const handleTogglePermission = async (resource: string, action: 'read' | 'write' | 'delete') => {
+    if (!isEditing) return;
+    
+    const permission = allPermissions.find(p => {
+      if (p.resource !== resource) return false;
+      if (action === 'read' && p.action === 'read') return true;
+      if (action === 'write' && (p.action === 'write' || p.action === 'create' || p.action === 'update')) return true;
+      if (action === 'delete' && p.action === 'delete') return true;
+      return false;
+    });
+    
+    if (!permission) return;
+
+    const hasPermission = rolePermissions.includes(permission.name);
+    
+    try {
+      if (hasPermission) {
+        await removePermission.mutateAsync({ role: role.name, permissionId: permission.id });
+      } else {
+        await assignPermission.mutateAsync({ role: role.name, permissionId: permission.id });
+      }
+    } catch (error: any) {
+      showToast.error(error.message || t('permissions.failedToUpdate'));
+    }
+  };
+
+  const handleStartEdit = () => {
+    setIsEditing(true);
+    setEditingPermissions(new Set(rolePermissions));
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditingPermissions(new Set());
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <LoadingSpinner size="sm" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="relative overflow-hidden">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg font-semibold capitalize">{role.name}</CardTitle>
+        {role.description && (
+          <CardDescription className="text-sm">{role.description}</CardDescription>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Permissions grouped by resource */}
+        {Object.entries(groupedPermissions).map(([resource, perms]) => (
+          <div key={resource} className="space-y-2 border-b pb-3 last:border-0">
+            <Label className="text-sm font-medium capitalize">{resource}</Label>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id={`${role.id}-${resource}-read`}
+                  checked={perms.read}
+                  onCheckedChange={() => handleTogglePermission(resource, 'read')}
+                  disabled={!isEditing || !getPermissionName(resource, 'read')}
+                />
+                <Label
+                  htmlFor={`${role.id}-${resource}-read`}
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Read
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id={`${role.id}-${resource}-write`}
+                  checked={perms.write}
+                  onCheckedChange={() => handleTogglePermission(resource, 'write')}
+                  disabled={!isEditing || !getPermissionName(resource, 'write')}
+                />
+                <Label
+                  htmlFor={`${role.id}-${resource}-write`}
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Write
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id={`${role.id}-${resource}-delete`}
+                  checked={perms.delete}
+                  onCheckedChange={() => handleTogglePermission(resource, 'delete')}
+                  disabled={!isEditing || !getPermissionName(resource, 'delete')}
+                />
+                <Label
+                  htmlFor={`${role.id}-${resource}-delete`}
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Delete
+                </Label>
+              </div>
+            </div>
+          </div>
+        ))}
+        
+        {/* Action buttons */}
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          {!isEditing ? (
+            <>
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleStartEdit}
+                  className="flex-shrink-0"
+                >
+                  <Edit className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-2">{t('common.edit')}</span>
+                </Button>
+              )}
+              {canDelete && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => onDelete(role)}
+                  className="flex-shrink-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-2">{t('common.delete')}</span>
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancelEdit}
+                className="flex-shrink-0"
+              >
+                <X className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">{t('common.cancel')}</span>
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleCancelEdit}
+                disabled={assignPermission.isPending || removePermission.isPending}
+                className="flex-shrink-0"
+              >
+                <Save className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">{t('common.save')}</span>
+              </Button>
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export function PermissionsManagement() {
   const { t } = useLanguage();
@@ -47,8 +272,14 @@ export function PermissionsManagement() {
   const { data: roles = [], isLoading: rolesLoading } = useRoles();
   const hasPermissionsPermission = useHasPermission('permissions.read');
   const hasPermissionsUpdatePermission = useHasPermission('permissions.update');
+  const hasRolesCreatePermission = useHasPermission('roles.create');
+  const hasRolesUpdatePermission = useHasPermission('roles.update');
+  const hasRolesDeletePermission = useHasPermission('roles.delete');
 
   const { data: allPermissions, isLoading: permissionsLoading } = usePermissions();
+  const createRole = useCreateRole();
+  const updateRole = useUpdateRole();
+  const deleteRole = useDeleteRole();
 
   // Filter permissions by organization: show global (organization_id = NULL) + user's org permissions
   const permissions = useMemo(() => {
@@ -61,180 +292,101 @@ export function PermissionsManagement() {
   }, [allPermissions, profile]);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedResource, setSelectedResource] = useState<string | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editingPermission, setEditingPermission] = useState<string | null>(null);
-  const [selectedRoles, setSelectedRoles] = useState<Record<string, string[]>>({});
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [newPermission, setNewPermission] = useState({
-    name: '',
-    resource: '',
-    action: '',
-    description: '',
+  const [showCreateRoleDialog, setShowCreateRoleDialog] = useState(false);
+  const [showEditRoleDialog, setShowEditRoleDialog] = useState(false);
+  const [showDeleteRoleDialog, setShowDeleteRoleDialog] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<RoleFormData>({
+    resolver: zodResolver(roleSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+    },
   });
 
-  // Fetch role permissions for all roles
-  // We'll fetch for the main roles (admin, staff, teacher) and handle others dynamically
-  const adminRolePerms = useRolePermissions('admin');
-  const staffRolePerms = useRolePermissions('staff');
-  const teacherRolePerms = useRolePermissions('teacher');
+  // Filter roles based on search
+  const filteredRoles = useMemo(() => {
+    if (!roles) return [];
 
-  // Create a map of role permissions for easy lookup
-  const rolePermissionsMap = useMemo(() => {
-    const map: Record<string, string[]> = {};
-
-    // Add permissions for main roles
-    if (adminRolePerms.data) {
-      map['admin'] = adminRolePerms.data.permissions || [];
-    }
-    if (staffRolePerms.data) {
-      map['staff'] = staffRolePerms.data.permissions || [];
-    }
-    if (teacherRolePerms.data) {
-      map['teacher'] = teacherRolePerms.data.permissions || [];
-    }
-
-    // Initialize other roles with empty arrays (they'll be populated when needed)
-    roles.forEach(role => {
-      if (!map[role.name]) {
-        map[role.name] = [];
-      }
-    });
-
-    return map;
-  }, [adminRolePerms.data, staffRolePerms.data, teacherRolePerms.data, roles]);
-
-  const assignPermission = useAssignPermissionToRole();
-  const removePermission = useRemovePermissionFromRole();
-  const createPermission = useCreatePermission();
-  const updatePermission = useUpdatePermission();
-  const deletePermission = useDeletePermission();
-
-  // Group permissions by resource
-  const groupedPermissions = useMemo(() => {
-    if (!permissions) return {};
-
-    const grouped: Record<string, typeof permissions> = {};
-    permissions.forEach(permission => {
-      if (!grouped[permission.resource]) {
-        grouped[permission.resource] = [];
-      }
-      grouped[permission.resource].push(permission);
-    });
-
-    return grouped;
-  }, [permissions]);
-
-  // Get roles that have a specific permission
-  const getRolesWithPermission = (permissionId: string): string[] => {
-    // Find the permission by ID to get its name
-    const permission = permissions?.find(p => p.id === permissionId);
-    if (!permission) return [];
-
-    const permissionName = permission.name;
-    const rolesWithPerm: string[] = [];
-
-    Object.entries(rolePermissionsMap).forEach(([roleName, permNames]) => {
-      if (permNames.includes(permissionName)) {
-        rolesWithPerm.push(roleName);
-      }
-    });
-
-    return rolesWithPerm;
-  };
-
-  // Filter permissions based on search and resource filter
-  const filteredPermissions = useMemo(() => {
-    if (!permissions) return [];
-
-    let filtered = permissions;
+    let filtered = roles;
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(p =>
-        p.name?.toLowerCase().includes(query) ||
-        p.resource?.toLowerCase().includes(query) ||
-        p.action?.toLowerCase().includes(query) ||
-        (p.description && p.description.toLowerCase().includes(query))
+      filtered = filtered.filter(
+        role =>
+          role.name.toLowerCase().includes(query) ||
+          (role.description && role.description.toLowerCase().includes(query))
       );
     }
 
-    if (selectedResource) {
-      filtered = filtered.filter(p => p.resource === selectedResource);
-    }
+    return filtered.sort((a, b) => a.name.localeCompare(b.name));
+  }, [roles, searchQuery]);
 
-    return filtered;
-  }, [permissions, searchQuery, selectedResource]);
-
-  // Get unique resources for filter
-  const resources = useMemo(() => {
-    if (!permissions) return [];
-    return Array.from(new Set(permissions.map(p => p.resource))).sort();
-  }, [permissions]);
-
-  const handleEditPermission = (permissionId: string) => {
-    setEditingPermission(permissionId);
-    const rolesWithPermission = getRolesWithPermission(permissionId);
-    setSelectedRoles({
-      [permissionId]: rolesWithPermission,
-    });
-    setIsEditMode(true);
-  };
-
-  const handleSavePermission = async (permissionId: string) => {
-    if (!editingPermission) return;
-
-    const currentRoles = getRolesWithPermission(permissionId);
-    const newRoles = selectedRoles[permissionId] || [];
-
-    // Find roles to add
-    const rolesToAdd = newRoles.filter(role => !currentRoles.includes(role));
-    // Find roles to remove
-    const rolesToRemove = currentRoles.filter(role => !newRoles.includes(role));
-
+  const handleCreateRole = async (data: RoleFormData) => {
     try {
-      // Add new role-permission assignments
-      for (const role of rolesToAdd) {
-        await assignPermission.mutateAsync({ role, permissionId });
-      }
-
-      // Remove role-permission assignments
-      for (const role of rolesToRemove) {
-        await removePermission.mutateAsync({ role, permissionId });
-      }
-
-      showToast.success(t('permissions.permissionRolesUpdated'));
-      setIsEditMode(false);
-      setEditingPermission(null);
-      setSelectedRoles({});
+      await createRole.mutateAsync({
+        name: data.name,
+        description: data.description || null,
+        guard_name: 'web',
+      });
+      setShowCreateRoleDialog(false);
+      reset();
     } catch (error: any) {
-      showToast.error(error.message || t('permissions.failedToUpdate'));
+      // Error handled by mutation
     }
   };
 
-  const handleCancelEdit = () => {
-    setIsEditMode(false);
-    setEditingPermission(null);
-    setSelectedRoles({});
+  const handleEditRole = (role: Role) => {
+    setSelectedRole(role);
+    reset({
+      name: role.name,
+      description: role.description || '',
+    });
+    setShowEditRoleDialog(true);
   };
 
-  const toggleRoleForPermission = (permissionId: string, roleName: string) => {
-    setSelectedRoles(prev => {
-      const current = prev[permissionId] || getRolesWithPermission(permissionId);
-      const newRoles = current.includes(roleName)
-        ? current.filter(r => r !== roleName)
-        : [...current, roleName];
-      return {
-        ...prev,
-        [permissionId]: newRoles,
-      };
-    });
+  const handleUpdateRole = async (data: RoleFormData) => {
+    if (!selectedRole) return;
+    try {
+      await updateRole.mutateAsync({
+        id: selectedRole.id,
+        name: data.name,
+        description: data.description || null,
+      });
+      setShowEditRoleDialog(false);
+      setSelectedRole(null);
+      reset();
+    } catch (error: any) {
+      // Error handled by mutation
+    }
+  };
+
+  const handleDeleteRole = (role: Role) => {
+    setSelectedRole(role);
+    setShowDeleteRoleDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedRole) return;
+    try {
+      await deleteRole.mutateAsync(selectedRole.id);
+      setShowDeleteRoleDialog(false);
+      setSelectedRole(null);
+    } catch (error: any) {
+      // Error handled by mutation
+    }
   };
 
   // Check if user has permission to view permissions management
   if (!hasPermissionsPermission) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <Card>
           <CardContent className="p-6">
             <div className="text-center text-destructive">
@@ -248,53 +400,22 @@ export function PermissionsManagement() {
     );
   }
 
-  if (permissionsLoading) {
+  if (permissionsLoading || rolesLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <Card>
           <CardContent className="p-6">
-            <div className="text-center">{t('permissions.loadingPermissions')}</div>
+            <div className="text-center">
+              <LoadingSpinner size="lg" text={t('permissions.loadingPermissions')} />
+            </div>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  const handleCreatePermission = async () => {
-    try {
-      await createPermission.mutateAsync(newPermission);
-      setShowCreateDialog(false);
-      setNewPermission({ name: '', resource: '', action: '', description: '' });
-    } catch (error: any) {
-      showToast.error(error.message || t('toast.permissionCreateFailed'));
-    }
-  };
-
-  const handleDeletePermission = async (permissionId: string) => {
-    if (!confirm(t('permissions.deleteConfirm'))) {
-      return;
-    }
-    try {
-      await deletePermission.mutateAsync(permissionId);
-    } catch (error: any) {
-      showToast.error(error.message || t('permissions.failedToDelete'));
-    }
-  };
-
-  const isPermissionEditable = (permission: Permission): boolean => {
-    if (!hasPermissionsUpdatePermission) return false;
-    // Users can only edit permissions for their organization
-    return permission.organizationId === profile?.organization_id;
-  };
-
-  const isPermissionDeletable = (permission: Permission): boolean => {
-    if (!hasPermissionsUpdatePermission) return false;
-    // Users can only delete permissions for their organization (not global)
-    return permission.organizationId === profile?.organization_id && permission.organizationId !== null;
-  };
-
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       {/* Organization Context Banner */}
       {currentOrg && (
         <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
@@ -316,306 +437,189 @@ export function PermissionsManagement() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                {t('permissions.title')}
+                <Shield className="h-5 w-5 hidden sm:inline-flex" />
+                {t('permissions.title') || 'Roles and Permissions'}
               </CardTitle>
-              <CardDescription>
-                {t('permissions.subtitle').replace('{orgName}', currentOrg?.name || 'your organization')}
+              <CardDescription className="hidden md:block">
+                {t('permissions.subtitle')?.replace('{orgName}', currentOrg?.name || 'your organization') || 
+                 'user roles and permissions management panel. where the admin can create a new roles for the users and set permission in the role.'}
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              {hasPermissionsUpdatePermission && (
-                <Button
-                  variant="default"
-                  onClick={() => setShowCreateDialog(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t('permissions.createPermission')}
-                </Button>
-              )}
-              {!isEditMode && (
-                <Button
-                  variant="outline"
-                  onClick={() => setIsEditMode(true)}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  {t('permissions.editMode')}
-                </Button>
-              )}
-              {isEditMode && (
-                <Button
-                  variant="outline"
-                  onClick={() => handleCancelEdit()}
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  {t('permissions.cancelEdit')}
-                </Button>
-              )}
-            </div>
+            {hasRolesCreatePermission && (
+              <Button
+                variant="default"
+                onClick={() => setShowCreateRoleDialog(true)}
+                className="w-full sm:w-auto"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="ml-2">{t('roles.createRole') || t('common.add') || 'Add Role'}</span>
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
-          {/* Search and Filter */}
-          <div className="mb-6 space-y-4">
+          {/* Search */}
+          <div className="mb-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('permissions.searchPlaceholder')}
+                placeholder={t('roles.searchPlaceholder') || t('common.search') || 'Search roles...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant={selectedResource === null ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSelectedResource(null)}
-              >
-                {t('permissions.allResources')}
-              </Button>
-              {resources.map(resource => (
-                <Button
-                  key={resource}
-                  variant={selectedResource === resource ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectedResource(resource)}
-                >
-                  {resource}
-                </Button>
+          </div>
+
+          {/* Role Cards Grid */}
+          {filteredRoles.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              {searchQuery ? (t('roles.noRolesFound') || 'No roles found') : (t('roles.noRolesMessage') || 'No roles available')}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredRoles.map((role) => (
+                <RolePermissionsCard
+                  key={role.id}
+                  role={role}
+                  allPermissions={permissions}
+                  onEdit={handleEditRole}
+                  onDelete={handleDeleteRole}
+                  canEdit={hasRolesUpdatePermission}
+                  canDelete={hasRolesDeletePermission}
+                />
               ))}
             </div>
-          </div>
-
-          {/* Permissions Table */}
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('permissions.permissionName')}</TableHead>
-                  <TableHead>{t('permissions.resource')}</TableHead>
-                  <TableHead>{t('permissions.action')}</TableHead>
-                  <TableHead>{t('permissions.description')}</TableHead>
-                  <TableHead>{t('permissions.roles')}</TableHead>
-                  {isEditMode && <TableHead className="text-right">{t('permissions.actions')}</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPermissions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={isEditMode ? 6 : 5} className="text-center text-muted-foreground">
-                      {t('permissions.noPermissionsFound')}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredPermissions.map((permission) => {
-                    const rolesWithPermission = getRolesWithPermission(permission.id);
-                    const isEditing = editingPermission === permission.id;
-                    const selectedRolesForPermission = selectedRoles[permission.id] || rolesWithPermission;
-
-                    return (
-                      <TableRow key={permission.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            {permission.name}
-                            {permission.organizationId === null ? (
-                              <Badge variant="outline" className="text-xs">{t('permissions.globalBadge')}</Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-xs">{t('permissions.orgSpecificBadge')}</Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{permission.resource}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{permission.action}</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {permission.description || t('permissions.noDescription')}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {isEditing ? (
-                              <div className="space-y-2">
-                                {roles.map(role => (
-                                  <div key={role.name} className="flex items-center space-x-2">
-                                    <Checkbox
-                                      id={`${permission.id}-${role.name}`}
-                                      checked={selectedRolesForPermission.includes(role.name)}
-                                      onCheckedChange={() => toggleRoleForPermission(permission.id, role.name)}
-                                    />
-                                    <Label
-                                      htmlFor={`${permission.id}-${role.name}`}
-                                      className="text-sm font-normal cursor-pointer"
-                                    >
-                                      {role.name.replace(/_/g, ' ')}
-                                    </Label>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              rolesWithPermission.map(role => (
-                                <Badge key={role} variant="default">
-                                  {role.replace('_', ' ')}
-                                </Badge>
-                              ))
-                            )}
-                          </div>
-                        </TableCell>
-                        {isEditMode && (
-                          <TableCell className="text-right">
-                            {isEditing ? (
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleSavePermission(permission.id)}
-                                  disabled={assignPermission.isPending || removePermission.isPending}
-                                >
-                                  <Save className="h-4 w-4 mr-2" />
-                                  {t('permissions.save')}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleCancelEdit()}
-                                >
-                                  <X className="h-4 w-4 mr-2" />
-                                  {t('permissions.cancel')}
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="flex justify-end gap-2">
-                                {isPermissionEditable(permission) && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleEditPermission(permission.id)}
-                                  >
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    {t('permissions.editRoles')}
-                                  </Button>
-                                )}
-                                {isPermissionDeletable(permission) && (
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => handleDeletePermission(permission.id)}
-                                    disabled={deletePermission.isPending}
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    {t('permissions.delete')}
-                                  </Button>
-                                )}
-                              </div>
-                            )}
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Statistics */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">{t('permissions.totalPermissions')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{permissions?.length || 0}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">{t('permissions.resources')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{resources.length}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">{t('permissions.rolesCount')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{roles.length}</div>
-              </CardContent>
-            </Card>
-          </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Create Permission Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      {/* Create Role Dialog */}
+      <Dialog open={showCreateRoleDialog} onOpenChange={setShowCreateRoleDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('permissions.createDialogTitle')}</DialogTitle>
+            <DialogTitle>{t('roles.createRoleDialog') || 'Create Role'}</DialogTitle>
             <DialogDescription>
-              {t('permissions.createDialogDescription')}
+              {t('roles.createNewRole') || 'Create a new role for your organization'}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="permission-name">{t('permissions.permissionName')}</Label>
+          <form onSubmit={handleSubmit(handleCreateRole)} className="space-y-4">
+            <div>
+              <Label htmlFor="create-role-name">{t('roles.roleNameRequired') || 'Role Name'} *</Label>
               <Input
-                id="permission-name"
-                placeholder={t('permissions.permissionNamePlaceholder')}
-                value={newPermission.name}
-                onChange={(e) => setNewPermission({ ...newPermission, name: e.target.value })}
+                id="create-role-name"
+                {...register('name')}
+                placeholder={t('roles.roleNamePlaceholder') || 'e.g., Manager, Editor'}
               />
-              <p className="text-xs text-muted-foreground">
-                {t('permissions.permissionNameFormat')}
-              </p>
+              {errors.name && (
+                <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="permission-resource">{t('permissions.resource')}</Label>
+            <div>
+              <Label htmlFor="create-role-description">{t('roles.description') || 'Description'}</Label>
               <Input
-                id="permission-resource"
-                placeholder={t('permissions.resourcePlaceholder')}
-                value={newPermission.resource}
-                onChange={(e) => setNewPermission({ ...newPermission, resource: e.target.value })}
+                id="create-role-description"
+                {...register('description')}
+                placeholder={t('roles.descriptionPlaceholder') || 'Optional description'}
               />
+              {errors.description && (
+                <p className="text-sm text-destructive mt-1">{errors.description.message}</p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="permission-action">{t('permissions.action')}</Label>
-              <Input
-                id="permission-action"
-                placeholder={t('permissions.actionPlaceholder')}
-                value={newPermission.action}
-                onChange={(e) => setNewPermission({ ...newPermission, action: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="permission-description">{t('permissions.description')}</Label>
-              <Input
-                id="permission-description"
-                placeholder={t('permissions.descriptionPlaceholder')}
-                value={newPermission.description}
-                onChange={(e) => setNewPermission({ ...newPermission, description: e.target.value })}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-              {t('permissions.cancel')}
-            </Button>
-            <Button
-              onClick={handleCreatePermission}
-              disabled={!newPermission.name || !newPermission.resource || !newPermission.action || createPermission.isPending}
-            >
-              {createPermission.isPending ? t('permissions.creating') : t('permissions.createPermissionButton')}
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => {
+                setShowCreateRoleDialog(false);
+                reset();
+              }}>
+                {t('common.cancel') || 'Cancel'}
+              </Button>
+              <Button type="submit" disabled={createRole.isPending}>
+                {createRole.isPending ? (t('common.saving') || 'Saving...') : (t('roles.create') || 'Create')}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Role Dialog */}
+      <Dialog open={showEditRoleDialog} onOpenChange={setShowEditRoleDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('roles.editRole') || 'Edit Role'}</DialogTitle>
+            <DialogDescription>
+              {t('roles.updateRoleInfo') || 'Update role information'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(handleUpdateRole)} className="space-y-4">
+            <div>
+              <Label htmlFor="edit-role-name">{t('roles.roleNameRequired') || 'Role Name'} *</Label>
+              <Input
+                id="edit-role-name"
+                {...register('name')}
+                placeholder={t('roles.roleNamePlaceholder') || 'e.g., Manager, Editor'}
+                disabled
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                {t('roles.roleNameCannotChange') || 'Role name cannot be changed'}
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="edit-role-description">{t('roles.description') || 'Description'}</Label>
+              <Input
+                id="edit-role-description"
+                {...register('description')}
+                placeholder={t('roles.descriptionPlaceholder') || 'Optional description'}
+              />
+              {errors.description && (
+                <p className="text-sm text-destructive mt-1">{errors.description.message}</p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => {
+                setShowEditRoleDialog(false);
+                setSelectedRole(null);
+                reset();
+              }}>
+                {t('common.cancel') || 'Cancel'}
+              </Button>
+              <Button type="submit" disabled={updateRole.isPending}>
+                {updateRole.isPending ? (t('common.saving') || 'Saving...') : (t('common.update') || 'Update')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Role Dialog */}
+      <AlertDialog open={showDeleteRoleDialog} onOpenChange={setShowDeleteRoleDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('roles.deleteRole') || 'Delete Role'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('roles.deleteConfirm')?.replace('{name}', selectedRole?.name || '') || 
+               `Are you sure you want to delete "${selectedRole?.name}"? This action cannot be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowDeleteRoleDialog(false);
+              setSelectedRole(null);
+            }}>
+              {t('common.cancel') || 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteRole.isPending}
+            >
+              {deleteRole.isPending ? (t('common.deleting') || 'Deleting...') : (t('common.delete') || 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
-

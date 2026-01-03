@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 // Import pdfmake for Arabic support - handle both default and named exports
+import { PageHeader } from '@/components/layout/PageHeader';
 import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
 const pdfMake = (pdfMakeModule as any).default || pdfMakeModule;
 
@@ -270,20 +271,24 @@ export default function CourseDashboard() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t('courses.courseDashboard')}</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/short-term-courses')}>
-            <BookOpen className="h-4 w-4 mr-2" />
-            {t('courses.management')}
-          </Button>
-          <Button variant="outline" onClick={() => navigate('/course-attendance')}>
-            <Calendar className="h-4 w-4 mr-2" />
-            {t('nav.attendance')}
-          </Button>
-        </div>
-      </div>
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <PageHeader
+        title={t('courses.courseDashboard')}
+        secondaryActions={[
+          {
+            label: t('courses.management'),
+            onClick: () => navigate('/short-term-courses'),
+            icon: <BookOpen className="h-4 w-4" />,
+            variant: 'outline',
+          },
+          {
+            label: t('nav.attendance'),
+            onClick: () => navigate('/course-attendance'),
+            icon: <Calendar className="h-4 w-4" />,
+            variant: 'outline',
+          },
+        ]}
+      />
 
       {/* Overall Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

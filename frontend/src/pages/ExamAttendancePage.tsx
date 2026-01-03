@@ -463,48 +463,52 @@ export default function ExamAttendancePage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          {examIdFromParams ? (
-            <Button variant="outline" size="sm" onClick={() => navigate('/exams')}>
-              <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-              Back
-            </Button>
-          ) : (
-            <div className="w-64">
-              <Select
-                value={selectedExamId || ''}
-                onValueChange={(value) => setSelectedExamId(value === '' ? undefined : value)}
-                disabled={examsLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('exams.selectExam') || 'Select exam'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(allExams || []).map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.name} {e.academicYear ? `(${e.academicYear.name})` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-1 min-w-0">
+              {examIdFromParams ? (
+                <Button variant="outline" size="sm" onClick={() => navigate('/exams')} className="flex-shrink-0">
+                  <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  <span className="hidden sm:inline">Back</span>
+                </Button>
+              ) : (
+                <div className="w-full sm:w-64 flex-shrink-0">
+                  <Select
+                    value={selectedExamId || ''}
+                    onValueChange={(value) => setSelectedExamId(value === '' ? undefined : value)}
+                    disabled={examsLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('exams.selectExam') || 'Select exam'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(allExams || []).map((e) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {e.name} {e.academicYear ? `(${e.academicYear.name})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-2xl truncate">{t('exams.attendance.title') || 'Exam Attendance'}</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1 truncate">{exam.name}</p>
+              </div>
             </div>
-          )}
-          <div>
-            <h1 className="text-2xl font-bold">{t('exams.attendance.title') || 'Exam Attendance'}</h1>
-            <p className="text-muted-foreground">{exam.name}</p>
+            <Badge variant={canMarkAttendance ? 'default' : 'secondary'} className="flex-shrink-0">
+              {exam.status.replace('_', ' ').toUpperCase()}
+            </Badge>
           </div>
-        </div>
-        <Badge variant={canMarkAttendance ? 'default' : 'secondary'}>
-          {exam.status.replace('_', ' ').toUpperCase()}
-        </Badge>
-      </div>
+        </CardHeader>
+      </Card>
 
       {/* Summary Cards */}
       {attendanceSummary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Enrolled Students</CardDescription>
@@ -623,7 +627,7 @@ export default function ExamAttendancePage() {
                   </CardDescription>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                 {timeslotData?.counts && (
                   <div className="text-sm text-muted-foreground">
                     <span className="font-medium">{timeslotData.counts.marked}</span> / {timeslotData.counts.total} marked
@@ -634,10 +638,11 @@ export default function ExamAttendancePage() {
                     variant="outline"
                     size="sm"
                     onClick={() => setUnlockDialogOpen(true)}
-                    className="gap-2"
+                    className="gap-2 flex-shrink-0 w-full sm:w-auto"
                   >
                     <Unlock className="h-4 w-4" />
-                    {t('exams.attendance.unlock') || 'Unlock'}
+                    <span className="hidden sm:inline">{t('exams.attendance.unlock') || 'Unlock'}</span>
+                    <span className="sm:hidden">Unlock</span>
                   </Button>
                 )}
               </div>
@@ -650,14 +655,14 @@ export default function ExamAttendancePage() {
               </div>
             ) : timeslotData?.students && timeslotData.students.length > 0 ? (
               <Tabs defaultValue="manual" className="space-y-4">
-                <TabsList>
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="manual" className="flex items-center gap-2">
                     <UserCheck className="h-4 w-4" />
-                    {t('exams.attendance.manual') || 'Manual'}
+                    <span className="hidden sm:inline">{t('exams.attendance.manual') || 'Manual'}</span>
                   </TabsTrigger>
                   <TabsTrigger value="barcode" className="flex items-center gap-2">
                     <QrCode className="h-4 w-4" />
-                    {t('exams.attendance.barcode') || 'Barcode'}
+                    <span className="hidden sm:inline">{t('exams.attendance.barcode') || 'Barcode'}</span>
                   </TabsTrigger>
                 </TabsList>
 
@@ -665,19 +670,23 @@ export default function ExamAttendancePage() {
                 <TabsContent value="manual" className="space-y-4">
                   {/* Bulk Actions */}
                   {canMarkAttendance && (
-                    <div className="flex items-center justify-between mb-4 p-3 bg-muted rounded-lg">
-                      <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4 p-3 bg-muted rounded-lg">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => initializeEntries()}
+                          className="flex-shrink-0"
                         >
-                          Load Existing
+                          <span className="hidden sm:inline">Load Existing</span>
+                          <span className="sm:hidden">Load</span>
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              Mark All As <ChevronDown className="h-4 w-4 ml-1" />
+                            <Button variant="outline" size="sm" className="flex-shrink-0">
+                              <span className="hidden sm:inline">Mark All As</span>
+                              <span className="sm:hidden">All</span>
+                              <ChevronDown className="h-4 w-4 ml-1" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
@@ -694,17 +703,22 @@ export default function ExamAttendancePage() {
                             variant="outline"
                             size="sm"
                             onClick={() => setBulkStatusDialogOpen(true)}
+                            className="flex-shrink-0"
                           >
-                            Update Selected ({selectedStudents.size})
+                            <span className="hidden sm:inline">Update Selected ({selectedStudents.size})</span>
+                            <span className="sm:hidden">Update ({selectedStudents.size})</span>
                           </Button>
                         )}
                       </div>
                       <Button
                         onClick={handleSaveAttendance}
                         disabled={markAttendance.isPending || attendanceEntries.size === 0}
+                        className="w-full sm:w-auto flex-shrink-0"
                       >
-                        <Save className="h-4 w-4 mr-2" />
-                        {markAttendance.isPending ? 'Saving...' : 'Save Attendance'}
+                        <Save className="h-4 w-4" />
+                        <span className="ml-2">
+                          {markAttendance.isPending ? 'Saving...' : 'Save Attendance'}
+                        </span>
                       </Button>
                       {timeslotData?.students && timeslotData.students.length > 0 && (
                         <ReportExportButtons
@@ -755,7 +769,7 @@ export default function ExamAttendancePage() {
                   )}
 
                   {/* Students Table */}
-                  <div className="border rounded-lg">
+                  <div className="border rounded-lg overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -895,7 +909,7 @@ export default function ExamAttendancePage() {
                     </Card>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>{t('exams.rollNumbers.rollNumber') || 'Roll Number'}</Label>
                       <div className="relative">
@@ -941,7 +955,7 @@ export default function ExamAttendancePage() {
                         placeholder={t('exams.attendance.note') || 'Note'}
                       />
                     </div>
-                    <div className="flex gap-2 justify-end">
+                    <div className="flex flex-col sm:flex-row gap-2 justify-end">
                       <Button
                         variant="secondary"
                         onClick={() => {
@@ -949,16 +963,20 @@ export default function ExamAttendancePage() {
                             scanInputRef.current.focus();
                           }
                         }}
+                        className="w-full sm:w-auto flex-shrink-0"
                       >
-                        <Activity className="h-4 w-4 mr-2" />
-                        {t('exams.attendance.focusScanner') || 'Focus Scanner'}
+                        <Activity className="h-4 w-4" />
+                        <span className="ml-2">{t('exams.attendance.focusScanner') || 'Focus Scanner'}</span>
                       </Button>
                       <Button
                         onClick={() => void handleScanSubmit()}
                         disabled={selectedTimeIds.size === 0 || scanAttendance.isPending || !canMarkAttendance}
+                        className="w-full sm:w-auto flex-shrink-0"
                       >
-                        <ScanLine className="h-4 w-4 mr-2" />
-                        {scanAttendance.isPending ? (t('exams.attendance.scanning') || 'Scanning...') : (t('exams.attendance.recordScan') || 'Record Scan')}
+                        <ScanLine className="h-4 w-4" />
+                        <span className="ml-2">
+                          {scanAttendance.isPending ? (t('exams.attendance.scanning') || 'Scanning...') : (t('exams.attendance.recordScan') || 'Record Scan')}
+                        </span>
                       </Button>
                     </div>
                   </div>
@@ -974,10 +992,10 @@ export default function ExamAttendancePage() {
                         placeholder={t('exams.attendance.searchScans') || 'Search scans...'}
                         value={scanFeedSearch}
                         onChange={(e) => setScanFeedSearch(e.target.value)}
-                        className="w-48"
+                        className="w-full sm:w-48"
                       />
                     </div>
-                    <div className="border rounded-md overflow-hidden">
+                    <div className="border rounded-md overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>

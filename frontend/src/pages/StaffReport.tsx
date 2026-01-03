@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Eye, User } from 'lucide-react';
+import { Eye, User, Search } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
@@ -39,7 +39,8 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
-import { Search } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 
 const statusBadgeVariant = (status?: string) => {
   switch (status) {
@@ -340,15 +341,11 @@ const StaffReport = () => {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold leading-tight">{t('staff.staffRegistrationReport')}</h1>
-          <p className="text-muted-foreground">
-            {t('staff.staffRegistrationReportDescription')}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <PageHeader
+        title={t('staff.staffRegistrationReport')}
+        description={t('staff.staffRegistrationReportDescription')}
+        icon={<User className="h-5 w-5" />}
+        rightSlot={
           <ReportExportButtons
             data={filteredStaff}
             columns={[
@@ -398,88 +395,82 @@ const StaffReport = () => {
             errorPdf={t('staff.failedToExport') || 'Failed to generate PDF report'}
             errorExcel={t('staff.failedToExport') || 'Failed to generate Excel report'}
           />
-        </div>
-      </div>
+        }
+      />
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('staff.filters')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder={t('staff.searchByNamePlaceholder')}
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setPage(1);
-                }}
-                className="pl-10"
-              />
-            </div>
-            <Select
-              value={schoolFilter}
-              onValueChange={(value) => {
-                setSchoolFilter(value as typeof schoolFilter);
+      <FilterPanel title={t('staff.filters')}>
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder={t('staff.searchByNamePlaceholder')}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
                 setPage(1);
               }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('staff.allSchools')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('staff.allSchools')}</SelectItem>
-                {schools?.map((school) => (
-                  <SelectItem key={school.id} value={school.id}>
-                    {school.schoolName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={statusFilter}
-              onValueChange={(value) => {
-                setStatusFilter(value as typeof statusFilter);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('staff.allStatus')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('staff.allStatus')}</SelectItem>
-                <SelectItem value="active">{t('staff.statusActive')}</SelectItem>
-                <SelectItem value="inactive">{t('staff.statusInactive')}</SelectItem>
-                <SelectItem value="on_leave">{t('staff.statusOnLeave')}</SelectItem>
-                <SelectItem value="terminated">{t('staff.statusTerminated')}</SelectItem>
-                <SelectItem value="suspended">{t('staff.statusSuspended')}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={staffTypeFilter}
-              onValueChange={(value) => {
-                setStaffTypeFilter(value as typeof staffTypeFilter);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('staff.allStaffTypes')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('staff.allStaffTypes')}</SelectItem>
-                {staffTypes?.map((type) => (
-                  <SelectItem key={type.id} value={type.id}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              className="pl-10"
+            />
           </div>
-        </CardContent>
-      </Card>
+          <Select
+            value={schoolFilter}
+            onValueChange={(value) => {
+              setSchoolFilter(value as typeof schoolFilter);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('staff.allSchools')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('staff.allSchools')}</SelectItem>
+              {schools?.map((school) => (
+                <SelectItem key={school.id} value={school.id}>
+                  {school.schoolName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value as typeof statusFilter);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('staff.allStatus')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('staff.allStatus')}</SelectItem>
+              <SelectItem value="active">{t('staff.statusActive')}</SelectItem>
+              <SelectItem value="inactive">{t('staff.statusInactive')}</SelectItem>
+              <SelectItem value="on_leave">{t('staff.statusOnLeave')}</SelectItem>
+              <SelectItem value="terminated">{t('staff.statusTerminated')}</SelectItem>
+              <SelectItem value="suspended">{t('staff.statusSuspended')}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={staffTypeFilter}
+            onValueChange={(value) => {
+              setStaffTypeFilter(value as typeof staffTypeFilter);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('staff.allStaffTypes')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('staff.allStaffTypes')}</SelectItem>
+              {staffTypes?.map((type) => (
+                <SelectItem key={type.id} value={type.id}>
+                  {type.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </FilterPanel>
 
       {/* Table */}
       <Card>
