@@ -223,6 +223,9 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     // Translations (no permission required - accessible to all authenticated users)
     Route::get('/translations', [TranslationController::class, 'index']);
     Route::post('/translations', [TranslationController::class, 'store']);
+    Route::post('/translations/changes', [TranslationController::class, 'storeChanges']);
+    Route::get('/translations/changed-files', [TranslationController::class, 'getChangedFiles']);
+    Route::post('/translations/mark-built', [TranslationController::class, 'markAsBuilt']);
 
     // Help Center (organization-scoped, not school-scoped)
     Route::prefix('help-center')->group(function () {

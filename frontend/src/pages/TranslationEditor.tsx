@@ -36,6 +36,15 @@ export default function TranslationEditor() {
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [changedKeys, setChangedKeys] = useState<Set<string>>(new Set());
+  const [changedFiles, setChangedFiles] = useState<Array<{
+    file_name: string;
+    language: string;
+    keys_changed: number;
+    changed_keys: string[];
+    last_modified_at: string;
+  }>>([]);
+  const [totalKeysChanged, setTotalKeysChanged] = useState(0);
   const editInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Load translations on mount
@@ -51,6 +60,21 @@ export default function TranslationEditor() {
       setIsLoading(false);
     }
   }, []);
+
+  // Fetch changed files on mount and after save
+  useEffect(() => {
+    fetchChangedFiles();
+  }, []);
+
+  const fetchChangedFiles = async () => {
+    try {
+      const response = await translationsApi.getChangedFiles();
+      setChangedFiles(response.changed_files || []);
+      setTotalKeysChanged(response.total_keys_changed || 0);
+    } catch (error) {
+      console.error('Failed to fetch changed files:', error);
+    }
+  };
 
   // Filter translations
   const filteredTranslations = useMemo(() => {
@@ -108,14 +132,38 @@ export default function TranslationEditor() {
     if (!editingCell) return;
     
     const newTranslations = [...translations];
-    const originalIndex = translations.findIndex(t => t.key === filteredTranslations[editingCell.row].key);
+    const row = filteredTranslations[editingCell.row];
+    const originalIndex = translations.findIndex(t => t.key === row.key);
+    const originalRow = originalTranslations.find(t => t.key === row.key);
     
     if (originalIndex !== -1) {
+      const newValue = editValue;
+      const oldValue = originalRow?.[editingCell.col as keyof TranslationRow] as string || '';
+      
+      // Update the translation first
       newTranslations[originalIndex] = {
         ...newTranslations[originalIndex],
-        [editingCell.col]: editValue,
+        [editingCell.col]: newValue,
       };
+      
+      // Track if this key changed - check after update
+      const newChangedKeys = new Set(changedKeys);
+      if (newValue !== oldValue) {
+        newChangedKeys.add(row.key);
+      } else {
+        // Check if all values match original (after update)
+        const allMatch = ['en', 'ps', 'fa', 'ar'].every(lang => {
+          const currentValue = newTranslations[originalIndex][lang as keyof TranslationRow] as string;
+          const origValue = originalRow?.[lang as keyof TranslationRow] as string || '';
+          return currentValue === origValue;
+        });
+        if (allMatch) {
+          newChangedKeys.delete(row.key);
+        }
+      }
+      
       setTranslations(newTranslations);
+      setChangedKeys(newChangedKeys);
     }
     
     setEditingCell(null);
@@ -182,7 +230,28 @@ export default function TranslationEditor() {
         }
       }
       
+      // Update changedKeys to track imported changes
+      const newChangedKeys = new Set<string>();
+      merged.forEach(row => {
+        const originalRow = originalTranslations.find(t => t.key === row.key);
+        if (originalRow) {
+          // Check if any language differs from original
+          const hasChanges = ['en', 'ps', 'fa', 'ar'].some(lang => {
+            const currentValue = row[lang as keyof TranslationRow] as string || '';
+            const origValue = originalRow[lang as keyof TranslationRow] as string || '';
+            return currentValue !== origValue;
+          });
+          if (hasChanges) {
+            newChangedKeys.add(row.key);
+          }
+        } else {
+          // New key, mark as changed
+          newChangedKeys.add(row.key);
+        }
+      });
+      
       setTranslations(merged.sort((a, b) => a.key.localeCompare(b.key)));
+      setChangedKeys(newChangedKeys);
       setShowImportDialog(false);
       setImportFile(null);
       toast.success('Translations imported successfully');
@@ -195,6 +264,7 @@ export default function TranslationEditor() {
   // Reset changes
   const handleReset = () => {
     setTranslations([...originalTranslations]);
+    setChangedKeys(new Set());
     setHasChanges(false);
     toast.info('Changes reset');
   };
@@ -228,28 +298,57 @@ export default function TranslationEditor() {
     toast.success('Translations downloaded as JSON');
   };
 
-  // Save translations to files via API
+  // Save translations to files via API (incremental - only changed keys)
   const handleSave = async () => {
-    if (!hasChanges) {
+    if (!hasChanges || changedKeys.size === 0) {
       toast.info('No changes to save');
       return;
     }
 
     setIsSaving(true);
     try {
-      const nested = nestTranslations(translations);
+      // Build array of only changed translations
+      const changes: Array<{ key: string; lang: string; value: string }> = [];
       
-      await translationsApi.save({
-        en: nested.en as Record<string, unknown>,
-        ps: nested.ps as Record<string, unknown>,
-        fa: nested.fa as Record<string, unknown>,
-        ar: nested.ar as Record<string, unknown>,
-      });
+      for (const key of changedKeys) {
+        const currentRow = translations.find(t => t.key === key);
+        const originalRow = originalTranslations.find(t => t.key === key);
+        
+        if (currentRow && originalRow) {
+          // Check each language for changes
+          for (const lang of ['en', 'ps', 'fa', 'ar'] as const) {
+            const currentValue = currentRow[lang] || '';
+            const originalValue = originalRow[lang] || '';
+            
+            if (currentValue !== originalValue) {
+              changes.push({
+                key,
+                lang,
+                value: currentValue
+              });
+            }
+          }
+        }
+      }
+      
+      if (changes.length === 0) {
+        toast.info('No changes to save');
+        setIsSaving(false);
+        return;
+      }
+      
+      // Send only changes to backend
+      await translationsApi.saveChanges(changes);
 
       // Update original translations to reflect saved state
       setOriginalTranslations([...translations]);
+      setChangedKeys(new Set());
       setHasChanges(false);
-      toast.success('Translations saved successfully to files');
+      
+      // Refresh changed files list
+      await fetchChangedFiles();
+      
+      toast.success(`Saved ${changes.length} translation change(s) successfully`);
     } catch (error: any) {
       const errorMessage = error?.response?.data?.error || error?.message || 'Failed to save translations';
       toast.error(errorMessage);
@@ -266,27 +365,44 @@ export default function TranslationEditor() {
       const missingCount = synced.length - translations.length;
       
       if (missingCount > 0) {
+        // New keys added - mark them as changed
+        const newChangedKeys = new Set(changedKeys);
+        synced.forEach(row => {
+          const existing = translations.find(t => t.key === row.key);
+          if (!existing) {
+            newChangedKeys.add(row.key);
+          }
+        });
         setTranslations(synced);
         setOriginalTranslations(synced);
+        setChangedKeys(newChangedKeys);
         toast.success(`Added ${missingCount} missing translation key(s). English text used as placeholder.`);
       } else {
         // Check if any existing keys have missing translations
         let filledCount = 0;
+        const newChangedKeys = new Set(changedKeys);
         const updated = translations.map(row => {
           const syncedRow = synced.find(s => s.key === row.key);
           if (syncedRow) {
             const updatedRow = { ...row };
+            let rowChanged = false;
             if (!row.ps && syncedRow.ps) {
               updatedRow.ps = syncedRow.ps;
               filledCount++;
+              rowChanged = true;
             }
             if (!row.fa && syncedRow.fa) {
               updatedRow.fa = syncedRow.fa;
               filledCount++;
+              rowChanged = true;
             }
             if (!row.ar && syncedRow.ar) {
               updatedRow.ar = syncedRow.ar;
               filledCount++;
+              rowChanged = true;
+            }
+            if (rowChanged) {
+              newChangedKeys.add(row.key);
             }
             return updatedRow;
           }
@@ -295,6 +411,7 @@ export default function TranslationEditor() {
         
         if (filledCount > 0) {
           setTranslations(updated);
+          setChangedKeys(newChangedKeys);
           toast.success(`Filled ${filledCount} missing translation(s) with English text.`);
         } else {
           toast.info('All translation keys are already synced!');
@@ -371,10 +488,10 @@ export default function TranslationEditor() {
                     disabled={isSaving}
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {isSaving ? 'Saving...' : 'Save Changes'}
+                    {isSaving ? 'Saving...' : `Save Changes (${changedKeys.size} keys)`}
                   </Button>
                   <Badge variant="destructive" className="ml-2">
-                    Unsaved Changes
+                    {changedKeys.size} Unsaved Change{changedKeys.size !== 1 ? 's' : ''}
                   </Badge>
                 </>
               )}
@@ -382,6 +499,50 @@ export default function TranslationEditor() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Changed Files Status */}
+          <div className="mb-4 p-4 bg-muted/50 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-sm">Changed Files Status</h3>
+              {changedFiles.length > 0 && (
+                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200">
+                  {changedFiles.length} file(s) pending build
+                </Badge>
+              )}
+            </div>
+            
+            {changedFiles.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No files have been modified</p>
+            ) : (
+              <div className="space-y-2">
+                {changedFiles.map((file) => (
+                  <div 
+                    key={file.file_name} 
+                    className="flex items-center justify-between p-2 bg-background rounded border border-green-200 dark:border-green-800"
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      <span className="font-mono text-sm">{file.file_name}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {file.keys_changed} key(s) changed
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(file.last_modified_at).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    Total: {totalKeysChanged} translation key(s) changed across {changedFiles.length} file(s)
+                  </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                    ⚠️ These changes will be included in the next daily build
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -417,48 +578,72 @@ export default function TranslationEditor() {
                     paginatedTranslations.map((row, rowIndex) => {
                       // Calculate absolute index for editing cell comparison
                       const absoluteIndex = (page - 1) * pageSize + rowIndex;
+                      const isChanged = changedKeys.has(row.key);
+                      
                       return (
-                        <TableRow key={row.key} className="hover:bg-muted/30">
+                        <TableRow 
+                          key={row.key} 
+                          className={cn(
+                            "hover:bg-muted/30",
+                            isChanged && "bg-green-50 dark:bg-green-950/20 border-l-4 border-l-green-500"
+                          )}
+                        >
                           <TableCell className="font-mono text-sm bg-muted/30 sticky left-0 z-0">
-                            {row.key}
-                          </TableCell>
-                          {(['en', 'ps', 'fa', 'ar'] as const).map((lang) => (
-                            <TableCell
-                              key={lang}
-                              className="cursor-pointer hover:bg-muted/50 min-w-[200px] p-0"
-                              onClick={() => handleCellClick(rowIndex, lang)}
-                            >
-                              {editingCell?.row === absoluteIndex && editingCell?.col === lang ? (
-                                <div className="p-2">
-                                  <Textarea
-                                    ref={editInputRef}
-                                    value={editValue}
-                                    onChange={(e) => setEditValue(e.target.value)}
-                                    onBlur={handleCellSave}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                                        e.preventDefault();
-                                        handleCellSave();
-                                      }
-                                      if (e.key === 'Escape') {
-                                        e.preventDefault();
-                                        handleCellCancel();
-                                      }
-                                    }}
-                                    className="min-h-[80px] resize-none"
-                                    autoFocus
-                                  />
-                                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                                    <span>Press Ctrl+Enter to save, Esc to cancel</span>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="py-2 px-3 min-h-[40px] whitespace-pre-wrap break-words">
-                                  {row[lang] || <span className="text-muted-foreground italic">Empty</span>}
-                                </div>
+                            <div className="flex items-center gap-2">
+                              {row.key}
+                              {isChanged && (
+                                <Badge variant="outline" className="bg-green-500 text-white border-green-600 text-xs">
+                                  Changed
+                                </Badge>
                               )}
-                            </TableCell>
-                          ))}
+                            </div>
+                          </TableCell>
+                          {(['en', 'ps', 'fa', 'ar'] as const).map((lang) => {
+                            const originalRow = originalTranslations.find(t => t.key === row.key);
+                            const isLangChanged = isChanged && 
+                              (row[lang] !== (originalRow?.[lang] || ''));
+                            
+                            return (
+                              <TableCell
+                                key={lang}
+                                className={cn(
+                                  "cursor-pointer hover:bg-muted/50 min-w-[200px] p-0",
+                                  isLangChanged && "bg-green-100 dark:bg-green-900/30"
+                                )}
+                                onClick={() => handleCellClick(rowIndex, lang)}
+                              >
+                                {editingCell?.row === absoluteIndex && editingCell?.col === lang ? (
+                                  <div className="p-2">
+                                    <Textarea
+                                      ref={editInputRef}
+                                      value={editValue}
+                                      onChange={(e) => setEditValue(e.target.value)}
+                                      onBlur={handleCellSave}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                          e.preventDefault();
+                                          handleCellSave();
+                                        }
+                                        if (e.key === 'Escape') {
+                                          e.preventDefault();
+                                          handleCellCancel();
+                                        }
+                                      }}
+                                      className="min-h-[80px] resize-none"
+                                      autoFocus
+                                    />
+                                    <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                                      <span>Press Ctrl+Enter to save, Esc to cancel</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="py-2 px-3 min-h-[40px] whitespace-pre-wrap break-words">
+                                    {row[lang] || <span className="text-muted-foreground italic">Empty</span>}
+                                  </div>
+                                )}
+                              </TableCell>
+                            );
+                          })}
                         </TableRow>
                       );
                     })

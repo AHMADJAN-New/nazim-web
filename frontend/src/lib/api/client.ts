@@ -2831,6 +2831,42 @@ export const translationsApi = {
     fa: Record<string, unknown>;
     ar: Record<string, unknown>;
   }) => apiClient.post<{ message: string; languages: string[] }>('/translations', { translations }),
+
+  saveChanges: async (changes: Array<{ key: string; lang: string; value: string }>) => 
+    apiClient.post<{ 
+      message: string; 
+      updated_files: string[]; 
+      updated_keys_count: number;
+      file_changes: Record<string, {
+        file_name: string;
+        language: string;
+        keys_changed: number;
+        changed_keys: string[];
+      }>;
+    }>('/translations/changes', { changes }),
+
+  getChangedFiles: async () => 
+    apiClient.get<{
+      changed_files: Array<{
+        file_name: string;
+        language: string;
+        keys_changed: number;
+        changed_keys: string[];
+        last_modified_at: string;
+        modified_by: number | null;
+      }>;
+      total_files: number;
+      total_keys_changed: number;
+    }>('/translations/changed-files'),
+
+  markAsBuilt: async (fileNames?: string[], markAll?: boolean) =>
+    apiClient.post<{
+      message: string;
+      updated_count: number;
+    }>('/translations/mark-built', {
+      file_names: fileNames,
+      mark_all: markAll,
+    }),
 };
 // Exam Types API
 export const examTypesApi = {
