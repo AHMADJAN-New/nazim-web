@@ -33,6 +33,7 @@ export default defineConfig({
       '@tanstack/react-table',
       'recharts',
       'jszip',
+      'shepherd.js',
     ],
     exclude: [
       'pdfmake-arabic',
@@ -51,6 +52,9 @@ export default defineConfig({
     port: 5173,
     host: true, // Allow access from network (0.0.0.0)
     strictPort: false, // Allow port fallback if 5173 is taken
+    watch: {
+      ignored: ['**/src/lib/translations/**'],
+    },
     // Only use HTTPS if certificate files exist (for dev server with camera API on mobile)
     ...(function() {
       const keyPath = path.resolve(__dirname, 'certs/key.pem');

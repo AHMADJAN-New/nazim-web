@@ -16,6 +16,9 @@ export type Profile = {
   schools_access_all?: boolean;
   event_id?: string | null;
   is_event_user?: boolean;
+  has_completed_onboarding?: boolean;
+  has_completed_tour?: boolean;
+  onboarding_completed_at?: string | null;
 };
 
 interface User {

@@ -83,6 +83,65 @@ class HelpCenterArticleController extends Controller
     }
 
     /**
+     * Apply permission-based filtering to article query
+     * Filters articles by context_key matching user permissions
+     */
+    private function applyPermissionFilter($query, $user, $organizationId)
+    {
+        if ($user && $organizationId) {
+            // Set organization context for permission checks
+            setPermissionsTeamId($organizationId);
+            
+            // Get user permissions
+            try {
+                $userPermissions = $user->getAllPermissions()->pluck('name')->toArray();
+                
+                // Check if user has admin or organization_admin role (for onboarding article)
+                $hasAdminRole = false;
+                $hasOrgAdminRole = false;
+                try {
+                    $hasAdminRole = $user->hasRole('admin');
+                    $hasOrgAdminRole = $user->hasRole('organization_admin');
+                } catch (\Exception $e) {
+                    // Role check failed, continue without role-based access
+                }
+                
+                // Filter articles by permissions
+                $query->where(function ($q) use ($userPermissions, $hasAdminRole, $hasOrgAdminRole) {
+                    // Articles with no context_key are visible to all authenticated users
+                    $q->whereNull('context_key')
+                      ->orWhere('context_key', '');
+                    
+                    // Articles with context_key require matching permission
+                    if (!empty($userPermissions)) {
+                        $q->orWhereIn('context_key', $userPermissions);
+                    }
+                    
+                    // Special case: Onboarding article for admin/organization_admin roles
+                    if ($hasAdminRole || $hasOrgAdminRole) {
+                        $q->orWhere('context_key', 'onboarding.read');
+                    }
+                });
+            } catch (\Exception $e) {
+                Log::warning("Permission-based article filtering failed: " . $e->getMessage());
+                // If permission check fails, only show articles with no context_key
+                $query->where(function ($q) {
+                    $q->whereNull('context_key')
+                      ->orWhere('context_key', '');
+                });
+            }
+        } else {
+            // For unauthenticated users or users without organization, only show articles with no context_key
+            $query->where(function ($q) {
+                $q->whereNull('context_key')
+                  ->orWhere('context_key', '');
+            });
+        }
+        
+        return $query;
+    }
+
+    /**
      * Display a listing of help center articles
      */
     public function index(Request $request)
@@ -119,6 +178,9 @@ class HelpCenterArticleController extends Controller
 
             // Apply visibility filter
             $query->visibleTo($user, $hasStaffPermission);
+
+            // Apply permission-based filtering (articles filtered by context_key matching user permissions)
+            $this->applyPermissionFilter($query, $user, $organizationId);
 
             // Filter by status
             $status = $request->input('status');
@@ -286,6 +348,9 @@ class HelpCenterArticleController extends Controller
             // Apply visibility filter
             $query->visibleTo($user, $hasStaffPermission);
 
+            // Apply permission-based filtering
+            $this->applyPermissionFilter($query, $user, $organizationId);
+
             // Check if user can see drafts
             if (!$this->canSeeDrafts($user)) {
                 $query->published();
@@ -358,6 +423,9 @@ class HelpCenterArticleController extends Controller
             // Apply visibility filter
             $articlesQuery->visibleTo($user, $hasStaffPermission);
 
+            // Apply permission-based filtering
+            $this->applyPermissionFilter($articlesQuery, $user, $organizationId);
+
             // Filter by status
             if (!$this->canSeeDrafts($user)) {
                 $articlesQuery->published();
@@ -419,6 +487,9 @@ class HelpCenterArticleController extends Controller
 
             // Apply visibility filter
             $query->visibleTo($user, $hasStaffPermission);
+
+            // Apply permission-based filtering
+            $this->applyPermissionFilter($query, $user, $organizationId);
 
             // Admins can see drafts
             if ($this->canSeeDrafts($user)) {
@@ -1031,6 +1102,9 @@ class HelpCenterArticleController extends Controller
             // Apply visibility filter
             $query->visibleTo($user, $hasStaffPermission);
 
+            // Apply permission-based filtering
+            $this->applyPermissionFilter($query, $user, $organizationId);
+
             $articles = $query->orderBy('order')
                 ->orderBy('published_at', 'desc')
                 ->limit($limit)
@@ -1069,6 +1143,9 @@ class HelpCenterArticleController extends Controller
 
             // Apply visibility filter
             $query->visibleTo($user, $hasStaffPermission);
+
+            // Apply permission-based filtering
+            $this->applyPermissionFilter($query, $user, $organizationId);
 
             $articles = $query->orderBy('view_count', 'desc')
                 ->limit($limit)
@@ -1118,6 +1195,9 @@ class HelpCenterArticleController extends Controller
 
             // Apply visibility filter
             $query->visibleTo($user, $hasStaffPermission);
+
+            // Apply permission-based filtering
+            $this->applyPermissionFilter($query, $user, $organizationId);
 
             // Try to match by context_key first (exact match)
             if ($contextKey) {

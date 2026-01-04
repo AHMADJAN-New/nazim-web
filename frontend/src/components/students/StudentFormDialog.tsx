@@ -638,14 +638,14 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                             />
                                         </div>
                                         <div>
-                                            <Label>{t('students.status') || 'Student Status'}</Label>
+                                            <Label>{t('students.status.label') || 'Student Status'}</Label>
                                             <Controller
                                                 control={control}
                                                 name="student_status"
                                                 render={({ field }) => (
                                                     <Select value={field.value} onValueChange={field.onChange}>
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder={t('students.status') || 'Status'} />
+                                                            <SelectValue placeholder={t('students.status.label') || 'Status'} />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             <SelectItem value="applied">{t('students.applied') || 'Applied'}</SelectItem>

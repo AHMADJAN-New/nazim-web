@@ -406,7 +406,7 @@ export function SchoolsManagement() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden" data-tour="schools-management-page">
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -516,6 +516,7 @@ export function SchoolsManagement() {
                                 title={t('schools.edit')}
                                 className="flex-shrink-0"
                                 aria-label={t('schools.edit')}
+                                data-tour="schools-edit-button"
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -554,7 +555,7 @@ export function SchoolsManagement() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" data-tour="schools-edit-dialog">
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
               <DialogTitle>

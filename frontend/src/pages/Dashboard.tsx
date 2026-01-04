@@ -163,14 +163,14 @@ export default function Dashboard() {
 
   if (statsLoading || roleLoading) {
     return (
-      <MainLayout title={t('dashboard.title') || "Dashboard"}>
-        <LoadingSpinner />
-      </MainLayout>
+        <MainLayout title={t('dashboard.title') || "Dashboard"}>
+          <LoadingSpinner />
+        </MainLayout>
     );
   }
 
   const renderDefaultDashboard = () => (
-    <>
+    <div data-tour="dashboard">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-primary to-primary/80 p-4 md:p-8 rounded-xl text-primary-foreground shadow-lg mb-6 md:mb-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -359,11 +359,11 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   );
 
   return (
-    <MainLayout title={t('dashboard.title') || "Dashboard"}>
+      <MainLayout title={t('dashboard.title') || "Dashboard"}>
       <div className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 h-auto p-1">

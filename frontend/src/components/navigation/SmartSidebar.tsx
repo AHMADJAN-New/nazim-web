@@ -527,7 +527,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
         children: [
           ...(hasGraduationBatchesPermission ? [{
             title: "Dashboard",
-            titleKey: "nav.dashboard",
+            titleKey: "dashboard",
             url: "/graduation",
             icon: LucideIcons.Home,
           }] : []),
@@ -616,6 +616,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "admissionsReport",
             url: "/admissions/report",
             icon: FileText,
+          }] : []),
+          ...(hasStudentsPermission ? [{
+            title: "Student History",
+            titleKey: "studentHistory",
+            url: "/students/history",
+            icon: LucideIcons.History,
           }] : []),
         ],
       }] : []),
@@ -1207,6 +1213,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           // Only show child items if user has the required permission
           ...(hasBrandingPermission ? [{
             title: "Schools Management",
+            titleKey: "schoolsManagement",
             url: "/settings/schools",
             icon: School,
           }] : []),
@@ -1477,16 +1484,39 @@ export const SmartSidebar = memo(function SmartSidebar() {
     );
   }, []);
 
+  // Get data-tour attribute for menu items
+  const getDataTourAttr = (titleKey: string): string | undefined => {
+    const tourMap: Record<string, string> = {
+      'dashboard': 'sidebar-dashboard',
+      'students': 'sidebar-students',
+      'studentManagement': 'sidebar-students',
+      'staffManagement': 'sidebar-staff',
+      'staff': 'sidebar-staff',
+      'attendance': 'sidebar-attendance',
+      'exams': 'sidebar-exams',
+      'examManagement': 'sidebar-exams',
+      'finance': 'sidebar-finance',
+      'academic': 'sidebar-academic',
+      'academicManagement': 'sidebar-academic',
+      'academicSettings': 'sidebar-academicSettings',
+      'schoolsManagement': 'sidebar-schools-management',
+      'settings': 'sidebar-settings',
+      'helpCenter': 'sidebar-help',
+    };
+    return tourMap[titleKey];
+  };
+
   const renderMenuItem = (item: NavigationItem) => {
     const label = t(`nav.${item.titleKey}`);
     const iconColorClass = item.iconColor || categoryColors.default;
+    const dataTour = getDataTourAttr(item.titleKey);
     // Always show parent items even if they have no children (they might have children that load later)
     if (item.children) {
       const isExpanded = expandedItems.includes(item.titleKey) || isChildActive(item.children);
 
       return (
         <Collapsible key={item.titleKey} open={isExpanded} onOpenChange={() => toggleExpanded(item.titleKey)}>
-          <SidebarMenuItem>
+          <SidebarMenuItem data-tour={dataTour}>
             <CollapsibleTrigger asChild>
               <SidebarMenuButton className={getNavCls({ isActive: isChildActive(item.children) })}>
                 <item.icon className={`h-4 w-4 ${iconColorClass}`} />
@@ -1521,7 +1551,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
                             <CollapsibleTrigger asChild>
                               <SidebarMenuButton className={getNavCls({ isActive: isChildActive(child.children) })}>
                                 <child.icon className="h-4 w-4" />
-                                <span className="flex-1">{child.titleKey ? (child.titleKey.includes('.') ? t(child.titleKey) : t(`nav.${child.titleKey}`)) : child.title}</span>
+                                <span className="flex-1">{child.titleKey ? t(`nav.${child.titleKey}`) : child.title}</span>
                                 {isChildExpanded ? (
                                   <ChevronDown className="h-4 w-4" />
                                 ) : (
@@ -1540,7 +1570,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
                                         end={(grandchild.url || '#') === '/'}
                                       >
                                         <grandchild.icon className="h-4 w-4" />
-                                        <span>{grandchild.titleKey ? (grandchild.titleKey.includes('.') ? t(grandchild.titleKey) : t(`nav.${grandchild.titleKey}`)) : grandchild.title}</span>
+                                        <span>{grandchild.titleKey ? t(`nav.${grandchild.titleKey}`) : grandchild.title}</span>
                                       </NavLink>
                                     </SidebarMenuButton>
                                   </SidebarMenuItem>
@@ -1553,8 +1583,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
                     }
                     // Regular child item with URL
                     // Use titleKey as primary key to avoid duplicate keys when multiple items share the same URL
+                    const childDataTour = child.titleKey ? getDataTourAttr(child.titleKey) : undefined;
                     return (
-                      <SidebarMenuItem key={child.titleKey || child.url || child.title}>
+                      <SidebarMenuItem key={child.titleKey || child.url || child.title} data-tour={childDataTour}>
                         <SidebarMenuButton asChild>
                           <NavLink
                             to={child.url || '#'}
@@ -1562,7 +1593,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
                             end={(child.url || '#') === '/'}
                           >
                             <child.icon className="h-4 w-4" />
-                            <span>{child.titleKey ? (child.titleKey.includes('.') ? t(child.titleKey) : t(`nav.${child.titleKey}`)) : child.title}</span>
+                            <span>{child.titleKey ? t(`nav.${child.titleKey}`) : child.title}</span>
                             {child.contextual && navigationContext.currentModule.includes('attendance') && (
                               <Star className="h-3 w-3 text-warning ml-auto" />
                             )}
@@ -1580,7 +1611,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
     }
 
     return (
-      <SidebarMenuItem key={item.url}>
+      <SidebarMenuItem key={item.url} data-tour={dataTour}>
         <SidebarMenuButton asChild>
           <NavLink
             to={item.url || '/'}
@@ -1612,6 +1643,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
       collapsible="icon"
       side={isRTL ? "right" : "left"}
       dir={isRTL ? 'rtl' : 'ltr'}
+      data-tour="sidebar"
     >
       {/* Logo Section */}
       <div className="p-4 border-b border-sidebar-border">
@@ -1705,7 +1737,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
         {/* Operations Section */}
         {groupedItems.operations.length > 0 && (
-          <SidebarGroup>
+          <SidebarGroup data-tour="sidebar-operations">
             <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
               {t('nav.sections.operations')}
             </SidebarGroupLabel>
@@ -1719,7 +1751,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
         {/* Academic Section */}
         {groupedItems.academic.length > 0 && (
-          <SidebarGroup>
+          <SidebarGroup data-tour="sidebar-academic-section">
             <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
               {t('nav.sections.academic')}
             </SidebarGroupLabel>
@@ -1733,7 +1765,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
         {/* Finance Section */}
         {groupedItems.finance.length > 0 && (
-          <SidebarGroup>
+          <SidebarGroup data-tour="sidebar-finance-section">
             <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
               {t('nav.sections.finance')}
             </SidebarGroupLabel>
@@ -1747,7 +1779,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
         {/* Admin Section */}
         {groupedItems.admin.length > 0 && (
-          <SidebarGroup>
+          <SidebarGroup data-tour="sidebar-admin-section">
             <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
               {t('nav.sections.admin')}
             </SidebarGroupLabel>

@@ -561,6 +561,12 @@ class ReportService
 
             // Date service for row data
             'date_service' => $this->dateService,
+
+            // Pass through all custom data keys (for custom templates like student-history)
+            // This allows templates to access custom data like 'student', 'summary', 'sections', etc.
+            ...array_filter($data, function ($key) {
+                return !in_array($key, ['columns', 'rows']);
+            }, ARRAY_FILTER_USE_KEY),
         ];
     }
 

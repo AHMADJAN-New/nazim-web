@@ -235,9 +235,23 @@ export function OrganizationsManagement() {
   };
 
   const onSubmit = (data: OrganizationFormData) => {
+    // Transform establishedDate from Date to string if needed
+    const transformedData = {
+      ...data,
+      establishedDate: data.establishedDate instanceof Date
+        ? data.establishedDate.toISOString().slice(0, 10)
+        : data.establishedDate || null,
+      // Auto-add https:// to website if missing
+      website: data.website && data.website !== ''
+        ? (data.website.startsWith('http://') || data.website.startsWith('https://'))
+          ? data.website
+          : `https://${data.website}`
+        : null,
+    };
+
     if (selectedOrganization) {
       updateOrganization.mutate(
-        { id: selectedOrganization, ...data },
+        { id: selectedOrganization, ...transformedData },
         {
           onSuccess: () => {
             handleCloseDialog();
@@ -248,11 +262,11 @@ export function OrganizationsManagement() {
       if (data.name && data.slug) {
         // For platform admins, include admin fields
         const createData = isPlatformAdminRoute ? {
-          ...data,
+          ...transformedData,
           admin_email: data.admin_email || '',
           admin_password: data.admin_password || '',
           admin_full_name: data.admin_full_name || '',
-        } : data;
+        } : transformedData;
         
         createOrganization.mutate(createData as any, {
           onSuccess: () => {

@@ -5344,4 +5344,406 @@ Before creating or modifying platform admin features, verify:
 - Access ALL organizations (no filtering)
 - Register platform routes as nested routes under `/platform` with `<Outlet />`
 
+## Onboarding & Guided Tour System
+
+**CRITICAL: The application uses Shepherd.js for guided tours and onboarding. All tour-related code is centralized in `/src/onboarding/`.**
+
+### Overview
+
+The onboarding system provides:
+- **Professional guided tours** using Shepherd.js
+- **Route-aware navigation** (tours can navigate between routes)
+- **UI-state-aware** (can open/close sidebar, switch tabs, etc.)
+- **Persistence** via localStorage (completion state, progress, version tracking)
+- **RTL/LTR support** with automatic placement flipping
+- **Graceful fallbacks** for missing targets (optional vs required steps)
+- **Debug mode** for development (`VITE_TOUR_DEBUG=true`)
+
+### Directory Structure
+
+```
+frontend/src/onboarding/
+├── index.ts                    # Main exports
+├── TourProvider.tsx            # React context provider
+├── TourRunner.ts               # Core tour execution engine
+├── TourRegistry.ts             # Tour definitions registry
+├── types.ts                    # TypeScript definitions
+├── storage.ts                  # localStorage persistence
+├── rtl.ts                      # RTL detection and placement utilities
+├── dom.ts                      # DOM utilities (waitFor, scroll, etc.)
+├── styles.css                  # Custom Shepherd styling for Nazim theme
+├── actions/
+│   ├── index.ts                # Action registry exports
+│   └── uiActions.ts            # UI action implementations
+└── tours/
+    └── appCore/
+        ├── index.ts            # Tour definition export
+        ├── steps.ts            # Step definitions
+        └── content.ts          # Step content (for i18n later)
+```
+
+### Core Components
+
+#### TourProvider
+
+**CRITICAL: Wrap protected routes with `TourProvider` in `App.tsx`.**
+
+```tsx
+import { TourProvider, appCoreTour } from "@/onboarding";
+
+<Route element={
+  <ProtectedRoute>
+    <TourProvider tours={[appCoreTour]}>
+      <PersistentLayout />
+    </TourProvider>
+  </ProtectedRoute>
+}>
+```
+
+**TourProvider Props:**
+- `tours`: Array of `TourDefinition` objects to register
+- `autoStart`: Boolean to auto-start first eligible tour (default: false)
+- `onTourStart`, `onTourComplete`, `onTourCancel`: Callback functions
+
+#### useTour Hook
+
+**CRITICAL: Use `useTour()` hook to access tour functionality in components.**
+
+```tsx
+import { useTour } from "@/onboarding";
+
+function MyComponent() {
+  const { startTour, resumeTour, stopTour, resetTour, isTourCompleted } = useTour();
+  
+  const handleStartTour = () => {
+    startTour('appCore');
+  };
+  
+  return (
+    <Button onClick={handleStartTour}>
+      Take App Tour
+    </Button>
+  );
+}
+```
+
+**Available Methods:**
+- `startTour(tourId: string, fromStep?: string)`: Start a tour (optionally from a specific step)
+- `resumeTour(tourId: string)`: Resume a tour from the last saved step
+- `stopTour()`: Stop the currently running tour
+- `resetTour(tourId: string)`: Reset a tour's completion state (allow retaking)
+- `isTourCompleted(tourId: string)`: Check if a tour has been completed
+- `getAvailableTours()`: Get tours eligible for the current context
+
+### Tour Definition Pattern
+
+**CRITICAL: All tours MUST follow this structure.**
+
+```typescript
+import type { TourDefinition } from '@/onboarding/types';
+import { appCoreSteps } from './steps';
+
+export const myTour: TourDefinition = {
+  id: 'myTour',
+  version: '1.0.0',
+  title: 'My Tour',
+  description: 'Description of what this tour covers',
+  steps: appCoreSteps,
+  priority: 100, // Higher = more important (for auto-start)
+  eligible: (ctx) => {
+    // Return true if user is eligible for this tour
+    return !ctx.isTourCompleted('myTour');
+  },
+};
+```
+
+### Step Definition Pattern
+
+**CRITICAL: Steps MUST use `data-tour` selectors for targeting elements.**
+
+```typescript
+import type { TourStep } from '@/onboarding/types';
+
+export const mySteps: TourStep[] = [
+  {
+    id: 'welcome',
+    title: 'Welcome!',
+    text: 'Welcome to this feature...',
+    attachTo: { selector: 'body', on: 'center' },
+    route: '/dashboard', // Navigate to this route before showing step
+    preActions: [
+      { type: 'expandSidebar' },
+      { type: 'openSidebarGroup', payload: { groupId: 'students' } },
+    ],
+    waitFor: { selector: '[data-tour="dashboard"]', timeoutMs: 5000 },
+    scroll: 'center',
+    optional: false, // If true, skip silently if target not found
+    rtlPlacementFlip: true, // Auto-flip placement for RTL (default: true)
+  },
+];
+```
+
+**Step Properties:**
+- `id`: Unique identifier for the step
+- `title`: Optional title displayed in step header
+- `text`: Content text (string or array of strings for paragraphs)
+- `attachTo`: Element to attach step to (`{ selector: string, on: TourPlacement }`)
+- `route`: Route to navigate to before showing step
+- `preActions`: Array of actions to execute before showing step
+- `waitFor`: Wait for element visibility before showing step
+- `scroll`: Scroll behavior ('center', 'start', 'end', 'nearest')
+- `allowClicksOnTarget`: Allow clicks on target element while step is shown
+- `optional`: If true, skip step silently if target not found
+- `rtlPlacementFlip`: Auto-flip placement for RTL (default: true)
+
+### Available Actions
+
+**CRITICAL: Use these action types in `preActions` array.**
+
+```typescript
+// Navigation
+{ type: 'navigate', payload: { route: '/dashboard' } }
+
+// Sidebar
+{ type: 'expandSidebar' }
+{ type: 'collapseSidebar' }
+{ type: 'openSidebarGroup', payload: { groupId: 'students' } }
+{ type: 'closeSidebarGroup', payload: { groupId: 'students' } }
+
+// User Menu
+{ type: 'openUserMenu' }
+{ type: 'closeUserMenu' }
+
+// Tabs
+{ type: 'switchTab', payload: { containerId: 'tabs', tabId: 'overview' } }
+
+// Modals
+{ type: 'openModal', payload: { modalId: 'myModal' } }
+{ type: 'closeModal', payload: { modalId: 'myModal' } }
+
+// Scrolling
+{ type: 'scrollTo', payload: { selector: '[data-tour="element"]' } }
+
+// Clicking
+{ type: 'click', payload: { selector: '[data-tour="button"]' } }
+
+// Waiting
+{ type: 'wait', payload: { ms: 500 } }
+```
+
+### data-tour Attributes
+
+**CRITICAL: Add `data-tour` attributes to components for tour targeting.**
+
+**Required Attributes:**
+- `data-tour="app-header"` - AppHeader component
+- `data-tour="sidebar"` - Sidebar component
+- `data-tour="dashboard"` - Dashboard main content
+- `data-tour="user-menu"` - User dropdown trigger
+- `data-tour="help-button"` - Help button
+
+**Sidebar Menu Items:**
+- `data-tour="sidebar-dashboard"` - Dashboard menu item
+- `data-tour="sidebar-students"` - Students menu item
+- `data-tour="sidebar-staff"` - Staff menu item
+- `data-tour="sidebar-attendance"` - Attendance menu item
+- `data-tour="sidebar-exams"` - Exams menu item
+- `data-tour="sidebar-finance"` - Finance menu item
+- `data-tour="sidebar-academic"` - Academic menu item
+- `data-tour="sidebar-settings"` - Settings menu item
+
+**Pattern for Adding data-tour Attributes:**
+
+```tsx
+// In component
+<header data-tour="app-header">
+  {/* ... */}
+</header>
+
+// In sidebar menu items (SmartSidebar.tsx)
+<SidebarMenuItem data-tour={getDataTourAttr(item.titleKey)}>
+  {/* ... */}
+</SidebarMenuItem>
+```
+
+### Creating New Tours
+
+**CRITICAL: Follow these steps when creating a new tour.**
+
+1. **Create tour directory**: `frontend/src/onboarding/tours/myTour/`
+2. **Create content file**: `content.ts` with step content
+3. **Create steps file**: `steps.ts` with step definitions using `data-tour` selectors
+4. **Create index file**: `index.ts` exporting the tour definition
+5. **Register tour**: Add to `TourProvider` in `App.tsx`:
+
+```tsx
+import { myTour } from "@/onboarding/tours/myTour";
+
+<TourProvider tours={[appCoreTour, myTour]}>
+```
+
+6. **Trigger tour**: Use `startTour('myTour')` from any component
+
+### Storage & Persistence
+
+**CRITICAL: Tour state is persisted in localStorage with the following structure.**
+
+```typescript
+interface TourState {
+  completed: boolean;
+  version: string | null;
+  lastStepId: string | null;
+  lastUpdated: number;
+}
+```
+
+**Storage Functions:**
+- `getTourState(tourId)`: Get tour state from localStorage
+- `setTourState(tourId, state)`: Save tour state to localStorage
+- `completeTour(tourId, version)`: Mark tour as completed
+- `saveProgress(tourId, stepId, version)`: Save current step for resuming
+- `resetTour(tourId)`: Clear tour state (allow retaking)
+- `isTourCompleted(tourId)`: Check if tour is completed
+
+**Key Rules:**
+- ✅ **ALWAYS** use storage functions (never access localStorage directly)
+- ✅ **ALWAYS** include version in tour definitions for tracking updates
+- ✅ **ALWAYS** check version when determining eligibility (show tour again if version changed)
+- ❌ **NEVER** hardcode localStorage keys (use storage functions)
+
+### RTL Support
+
+**CRITICAL: Tours automatically handle RTL/LTR layout.**
+
+- **Automatic detection**: Uses `document.documentElement.dir` and `localStorage.getItem('nazim-language')`
+- **Placement flipping**: Automatically flips placements for RTL languages (Arabic, Pashto, Farsi)
+- **Text direction**: Steps respect RTL text direction
+- **Button order**: Buttons reorder for RTL layout
+
+**RTL Utilities:**
+- `isRTL()`: Check if current language is RTL
+- `getRTLPlacement(step)`: Get RTL-aware placement for a step
+- `flipPlacement(placement, shouldFlip)`: Flip a placement for RTL
+
+### Debug Mode
+
+**CRITICAL: Enable debug mode for development.**
+
+Set environment variable: `VITE_TOUR_DEBUG=true`
+
+**Debug logging includes:**
+- Step start/end events
+- Action execution
+- Wait-for timeouts
+- Missing target warnings
+- Route navigation
+- Error messages
+
+**Usage:**
+```bash
+# In .env.local
+VITE_TOUR_DEBUG=true
+```
+
+### Styling
+
+**CRITICAL: Custom Shepherd styling is in `/src/onboarding/styles.css`.**
+
+- **Theme**: Nazim theme with CSS variables
+- **Z-index**: 99999+ to ensure visibility above all content
+- **Fonts**: Uses Nazim font family (Bahij Nazanin)
+- **RTL support**: Automatic RTL/LTR styling
+- **Responsive**: Mobile-friendly with proper breakpoints
+- **Dark mode**: Supports dark mode via CSS variables
+
+**Key CSS Variables:**
+- `--shepherd-primary`: Primary color
+- `--shepherd-bg`: Background color
+- `--shepherd-text`: Text color
+- `--shepherd-border`: Border color
+- `--shepherd-z-index`: Z-index for tour elements
+
+### Integration Checklist
+
+Before marking a tour feature as complete, verify:
+
+- [ ] Tour is registered in `TourProvider` in `App.tsx`
+- [ ] All target elements have `data-tour` attributes
+- [ ] Steps use `data-tour` selectors (not class names or IDs)
+- [ ] Optional steps are marked as `optional: true`
+- [ ] Required steps have proper `waitFor` configuration
+- [ ] Pre-actions are defined for steps that need UI state changes
+- [ ] Routes are specified for steps that need navigation
+- [ ] Tour version is set and checked in eligibility function
+- [ ] RTL placement flipping is enabled (default: true)
+- [ ] Debug mode works correctly (`VITE_TOUR_DEBUG=true`)
+- [ ] Tour can be started, stopped, and resumed
+- [ ] Tour state persists in localStorage
+- [ ] Tour can be reset and retaken
+
+### Common Patterns
+
+#### Triggering Tour from Button
+
+```tsx
+import { useTour } from "@/onboarding";
+
+function MyComponent() {
+  const { startTour, isTourCompleted } = useTour();
+  const isCompleted = isTourCompleted('appCore');
+  
+  return (
+    <Button onClick={() => startTour('appCore')}>
+      {isCompleted ? 'Retake Tour' : 'Take App Tour'}
+    </Button>
+  );
+}
+```
+
+#### Auto-Start Tour on First Login
+
+```tsx
+<TourProvider tours={[appCoreTour]} autoStart={true}>
+  <PersistentLayout />
+</TourProvider>
+```
+
+#### Module-Specific Tour
+
+```typescript
+// tours/finance/index.ts
+export const financeTour: TourDefinition = {
+  id: 'finance',
+  version: '1.0.0',
+  title: 'Finance Module Tour',
+  description: 'Introduction to finance features',
+  steps: financeSteps,
+  eligible: (ctx) => {
+    // Only show if user has finance permission
+    return ctx.isAuthenticated && !ctx.isTourCompleted('finance');
+  },
+};
+```
+
+### Common Mistakes to Avoid
+
+❌ **DON'T:**
+- Use class names or IDs for targeting (use `data-tour` attributes)
+- Hardcode localStorage keys (use storage functions)
+- Skip `waitFor` for dynamically loaded elements
+- Forget to mark optional steps as `optional: true`
+- Use `TourProvider` outside protected routes
+- Create tours without version tracking
+- Skip RTL support (it's automatic, but verify)
+
+✅ **DO:**
+- Use `data-tour` attributes for all tour targets
+- Use storage functions for persistence
+- Always include `waitFor` for dynamic elements
+- Mark optional steps appropriately
+- Register tours in `TourProvider`
+- Include version in tour definitions
+- Test tours in both RTL and LTR languages
+- Enable debug mode during development
+
 Remember: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your code. Always use translations for user-facing text, and ensure RTL support is properly implemented. The backend is now Laravel, so follow Laravel conventions and best practices.
