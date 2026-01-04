@@ -3,52 +3,52 @@ import type { TranslationKeys } from './types';
 export const ar: TranslationKeys = {
   aboutUs: {
     cta: {
-      button: null,
-      text: null
+      button: '',
+      text: '',
     },
     mission: {
-      content: null,
-      title: null
+      content: '',
+      title: '',
     },
-    subtitle: null,
-    title: null,
+    subtitle: '',
+    title: '',
     values: {
       community: {
-        content: null,
-        title: null
+        content: '',
+        title: '',
       },
       excellence: {
-        content: null,
-        title: null
+        content: '',
+        title: '',
       },
       innovation: {
-        content: null,
-        title: null
+        content: '',
+        title: '',
       },
       integrity: {
-        content: null,
-        title: null
+        content: '',
+        title: '',
       },
-      title: null
+      title: '',
     },
     vision: {
-      content: null,
-      title: null
+      content: '',
+      title: '',
     },
     whatWeOffer: {
       affordable: {
-        content: null,
-        title: null
+        content: '',
+        title: '',
       },
       comprehensive: {
-        content: null,
-        title: null
+        content: '',
+        title: '',
       },
       support: {
-        content: null,
-        title: null
+        content: '',
+        title: '',
       },
-      title: null
+      title: '',
     }
   },
   academic: {
@@ -455,7 +455,7 @@ export const ar: TranslationKeys = {
     withdrawn: 'منسحب',
     year: 'السنة'
   },
-  articleFound: null,
+  articleFound: '',
   assets: {
     active: 'نشط',
     assetAssigned: 'تم تخصيص الأصل بنجاح',
@@ -552,21 +552,20 @@ export const ar: TranslationKeys = {
     viewCategories: 'عرض الفئات',
     warrantyExpiry: 'انتهاء الضمان'
   },
-  },
   attendance: {
-    absent: null,
-    attendanceRate: null,
-    closed: null,
-    latestAttendanceSessions: null,
-    noSessions: null,
-    open: null,
-    present: null,
-    recentSessions: null,
-    records: null,
-    students: null,
-    today: null,
-    total: null,
-    totalSessions: null
+    absent: '',
+    attendanceRate: '',
+    closed: '',
+    latestAttendanceSessions: '',
+    noSessions: '',
+    open: '',
+    present: '',
+    recentSessions: '',
+    records: '',
+    students: '',
+    today: '',
+    total: '',
+    totalSessions: '',
   },
   attendancePage: {
     admissionHeader: 'القبول',
@@ -757,7 +756,7 @@ export const ar: TranslationKeys = {
     subtitle: 'الوصول إلى نظام إدارة مدرستك',
     title: 'نظام إدارة المدرسة'
   },
-  browseHelpCenter: null,
+  browseHelpCenter: '',
   certificates: {
     issued: 'الشهادات الصادرة',
     noIssuedCertificates: 'Certificates',
@@ -972,10 +971,10 @@ export const ar: TranslationKeys = {
     years: 'سنوات',
     yes: 'نعم'
   },
-  completionDate: null,
-  contextualHelp: null,
-  course: null,
-  courseDocuments: null,
+  completionDate: '',
+  contextualHelp: '',
+  course: '',
+  courseDocuments: '',
   courses: {
     active: 'Active',
     addStudent: 'Add student',
@@ -1165,8 +1164,8 @@ export const ar: TranslationKeys = {
     welcomeBack: 'Assets Dashboard',
     welcomeMessage: 'Assets Dashboard'
   },
-  deleteDocument: null,
-  deleteDocumentConfirm: null,
+  deleteDocument: '',
+  deleteDocumentConfirm: '',
   dms: {
     deleteDocumentWarning: 'هل أنت متأكد أنك تريد حذف هذه الوثيقة الصادرة؟ لا يمكن التراجع عن هذا الإجراء.',
     fields: {
@@ -1261,9 +1260,9 @@ export const ar: TranslationKeys = {
     reports: 'التقارير',
     settings: 'الإعدادات'
   },
-  documentDescription: null,
-  documentTitle: null,
-  documentType: null,
+  documentDescription: '',
+  documentTitle: '',
+  documentType: '',
   errorBoundary: {
     anErrorOccurred: 'An error occurred',
     applicationCrashed: 'Something went wrong and the application crashed.',
@@ -1283,16 +1282,16 @@ export const ar: TranslationKeys = {
     tryReloading: 'This component encountered an error. You can try reloading it.',
     workingOnFix: 'We'
   },
-  errorLoading: null,
+  errorLoading: '',
   events: {
     users: {
-      fillAllFields: null,
-      userCreated: null,
-      userCreateFailed: null,
-      userDeleted: null,
-      userDeleteFailed: null,
-      userUpdated: null,
-      userUpdateFailed: null
+      fillAllFields: '',
+      userCreated: '',
+      userCreateFailed: '',
+      userDeleted: '',
+      userDeleteFailed: '',
+      userUpdated: '',
+      userUpdateFailed: '',
     }
   },
   examPaperPreview: {
@@ -1637,9 +1636,9 @@ export const ar: TranslationKeys = {
     invigilator: 'Exams',
     list: 'قائمة الامتحانات',
     listDescription: 'عرض وإدارة جميع الامتحانات',
-    locked: null,
+    locked: '',
     management: 'إنشاء وإدارة الامتحانات للسنوات الأكاديمية',
-    markAttendance: null,
+    markAttendance: '',
     marks: 'Exams',
     marksDescription: 'Exams',
     marksEntry: 'Exams',
@@ -1850,13 +1849,13 @@ export const ar: TranslationKeys = {
     studentEnrollment: 'تسجيل الطلاب',
     studentEnrollmentDescription: 'تسجيل الطلاب في الامتحانات حسب الفصل',
     studentName: 'Exams',
-    students: null,
+    students: '',
     studentsAvailable: 'طلاب متاحون للتسجيل',
     studentsSelected: 'طلاب محددون',
     subject: 'Exams',
     subjects: 'المواد',
-    time: null,
-    timeSlot: null,
+    time: '',
+    timeSlot: '',
     timetable: 'Exams',
     timetableDescription: 'Exams',
     total: 'Exams',
@@ -1881,7 +1880,7 @@ export const ar: TranslationKeys = {
     namePlaceholder: 'e.g., Midterm Exam',
     title: 'Exam Attendance'
   },
-  failed: null,
+  failed: '',
   fees: {
     academicYear: 'السنة الدراسية',
     account: 'الحساب',
@@ -2252,26 +2251,26 @@ export const ar: TranslationKeys = {
     }
   },
   footer: {
-    aboutUs: null,
-    apiDocumentation: null,
-    careers: null,
-    company: null,
-    contactSupport: null,
-    cookiePolicy: null,
-    copyright: null,
-    features: null,
-    helpCenter: null,
-    integrations: null,
-    pricing: null,
-    privacyPolicy: null,
-    product: null,
-    releaseNotes: null,
-    security: null,
-    support: null,
-    systemStatus: null,
-    tagline: null,
-    termsOfService: null,
-    trainingVideos: null
+    aboutUs: '',
+    apiDocumentation: '',
+    careers: '',
+    company: '',
+    contactSupport: '',
+    cookiePolicy: '',
+    copyright: '',
+    features: '',
+    helpCenter: '',
+    integrations: '',
+    pricing: '',
+    privacyPolicy: '',
+    product: '',
+    releaseNotes: '',
+    security: '',
+    support: '',
+    systemStatus: '',
+    tagline: '',
+    termsOfService: '',
+    trainingVideos: '',
   },
   forms: {
     invalidCnic: 'يرجى إدخال رقم هوية صحيح',
@@ -2282,12 +2281,12 @@ export const ar: TranslationKeys = {
     passwordMismatch: 'كلمات المرور غير متطابقة',
     required: 'هذا الحقل مطلوب'
   },
-  generateCertificate: null,
-  generated: null,
-  generating: null,
-  generatingReport: null,
-  goBack: null,
-  goHome: null,
+  generateCertificate: '',
+  generated: '',
+  generating: '',
+  generatingReport: '',
+  goBack: '',
+  goHome: '',
   grades: {
     addGrade: 'إضافة درجة',
     create: 'إنشاء درجة',
@@ -2355,39 +2354,39 @@ export const ar: TranslationKeys = {
     viewFullArticle: 'View Full Article'
   },
   helpCenter: {
-    allArticles: null,
-    allCategories: null,
-    articleFound: null,
-    articleNotFound: null,
-    articleNotFoundDescription: null,
-    articles: null,
-    articlesFound: null,
-    backToHelpCenter: null,
-    browseHelpCenter: null,
-    clearFilters: null,
-    contextualHelp: null,
-    errorLoading: null,
-    errorLoadingArticles: null,
-    errorLoadingCategories: null,
-    featuredArticles: null,
-    linkCopied: null,
-    no: null,
-    noArticleFound: null,
-    noArticlesDescription: null,
-    noArticlesFound: null,
-    popularArticles: null,
-    relatedArticles: null,
-    searchPlaceholder: null,
-    share: null,
-    subtitle: null,
-    thankYou: null,
+    allArticles: '',
+    allCategories: '',
+    articleFound: '',
+    articleNotFound: '',
+    articleNotFoundDescription: '',
+    articles: '',
+    articlesFound: '',
+    backToHelpCenter: '',
+    browseHelpCenter: '',
+    clearFilters: '',
+    contextualHelp: '',
+    errorLoading: '',
+    errorLoadingArticles: '',
+    errorLoadingCategories: '',
+    featuredArticles: '',
+    linkCopied: '',
+    no: '',
+    noArticleFound: '',
+    noArticlesDescription: '',
+    noArticlesFound: '',
+    popularArticles: '',
+    relatedArticles: '',
+    searchPlaceholder: '',
+    share: '',
+    subtitle: '',
+    thankYou: '',
     title: {
-      helpCenterManagement: null
+      helpCenterManagement: '',
     },
-    viewFullArticle: null,
-    views: null,
-    wasThisHelpful: null,
-    yes: null
+    viewFullArticle: '',
+    views: '',
+    wasThisHelpful: '',
+    yes: '',
   },
   hostel: {
     acrossHostelNetwork: 'Across the hostel network',
@@ -2490,21 +2489,21 @@ export const ar: TranslationKeys = {
       wardenCoverageDescription: 'Reports',
       wardenName: 'Reports'
     },
-    residencyTypeColumn: null,
+    residencyTypeColumn: '',
     room: 'الغرفة',
     roomAndBuildings: 'Room & Buildings',
-    roomAndBuildingsDescription: null,
+    roomAndBuildingsDescription: '',
     roomAndBuildingsTab: 'Room & Buildings',
-    roomAndBuildingsTitle: null,
-    roomLabel: null,
+    roomAndBuildingsTitle: '',
+    roomLabel: '',
     roomNumber: 'رقم الغرفة',
     roomOccupancy: 'Room occupancy',
     rooms: 'الغرف',
-    roomsColumn: null,
+    roomsColumn: '',
     roomsCurrentlySupervised: 'Rooms currently supervised',
     roomsOccupied: 'Rooms occupied',
     roomsWithAssignedWardens: 'Rooms with assigned wardens',
-    roomsWithWardens: null,
+    roomsWithWardens: '',
     searchByNameAdmission: 'Search by name, admission number, room, or building...',
     searchByNameAdmissionClass: 'Search by name, admission number, or class...',
     searchRoomsPlaceholder: 'البحث عن الغرف أو المسؤولين أو الطلاب',
@@ -2515,7 +2514,7 @@ export const ar: TranslationKeys = {
     students: 'الطلاب',
     studentsCount: 'الطلاب',
     studentsInHostel: 'Students in hostel',
-    studentsLabel: null,
+    studentsLabel: '',
     subtitle: 'إدارة غرف السكن الداخلي والنزلاء',
     title: 'إدارة السكن الداخلي',
     totalRooms: 'إجمالي الغرف',
@@ -2523,14 +2522,14 @@ export const ar: TranslationKeys = {
     trackStudentsPerRoom: 'Track students per room and warden assignments.',
     unassigned: 'غير معين',
     unassignedBoarders: 'النزلاء غير المعينين',
-    unassignedBoardersDescription: null,
-    unassignedBoardersTitle: null,
+    unassignedBoardersDescription: '',
+    unassignedBoardersTitle: '',
     unassignedTab: 'Unassigned',
-    utilizationColumn: null,
+    utilizationColumn: '',
     waitingForRoomPlacement: 'Waiting for room placement',
     warden: 'المسؤول',
     wardenCoverage: 'تغطية المسؤول',
-    wardenCoverageDescription: null,
+    wardenCoverageDescription: '',
     wardenCoverageLabel: 'Warden coverage',
     wardenCoverageSubtitle: 'Warden coverage',
     wardenCoverageTab: 'Warden Coverage',
@@ -3565,7 +3564,7 @@ export const ar: TranslationKeys = {
     timeRemaining: 'الوقت المتبقي',
     title: 'النظام قيد الصيانة'
   },
-  message: null,
+  message: '',
   nav: {
     academicManagement: 'الإدارة الأكاديمية',
     academicSettings: 'الإعدادات الأكاديمية',
@@ -3700,8 +3699,8 @@ export const ar: TranslationKeys = {
     studentReportCard: 'بطاقة تقرير الطالب',
     examNumberReports: 'تقارير الأرقام'
   },
-  noArticleFound: null,
-  noDocuments: null,
+  noArticleFound: '',
+  noDocuments: '',
   notFound: {
     goBack: 'Go Back',
     goHome: 'Go Home',
@@ -3851,57 +3850,57 @@ export const ar: TranslationKeys = {
     subtitle: 'عرض والبحث في جميع أرقام الهواتف من الطلاب والموظفين والمتبرعين والضيوف',
     title: 'دليل الهاتف'
   },
-  pleaseWait: null,
+  pleaseWait: '',
   privacyPolicy: {
     contact: {
-      content: null,
-      title: null
+      content: '',
+      title: '',
     },
     dataRetention: {
-      content: null,
-      title: null
+      content: '',
+      title: '',
     },
     dataSecurity: {
-      content: null,
-      title: null
+      content: '',
+      title: '',
     },
     howWeUse: {
-      analytics: null,
-      communicate: null,
-      provide: null,
-      security: null,
-      support: null,
-      title: null
+      analytics: '',
+      communicate: '',
+      provide: '',
+      security: '',
+      support: '',
+      title: '',
     },
     informationWeCollect: {
       personal: {
-        content: null,
-        title: null
+        content: '',
+        title: '',
       },
       technical: {
-        content: null,
-        title: null
+        content: '',
+        title: '',
       },
-      title: null,
+      title: '',
       usage: {
-        content: null,
-        title: null
+        content: '',
+        title: '',
       }
     },
     introduction: {
-      content: null,
-      title: null
+      content: '',
+      title: '',
     },
-    lastUpdated: null,
-    title: null,
+    lastUpdated: '',
+    title: '',
     yourRights: {
-      access: null,
-      correct: null,
-      delete: null,
-      export: null,
-      intro: null,
-      object: null,
-      title: null
+      access: '',
+      correct: '',
+      delete: '',
+      export: '',
+      intro: '',
+      object: '',
+      title: '',
     }
   },
   profileManagement: {
@@ -4012,12 +4011,12 @@ export const ar: TranslationKeys = {
   },
   reportGeneration: 'د راپور جوړول',
   reports: {
-    failed: null,
-    generated: null,
-    generating: null,
-    generatingReport: null,
-    pleaseWait: null,
-    reportGeneration: null
+    failed: '',
+    generated: '',
+    generating: '',
+    generatingReport: '',
+    pleaseWait: '',
+    reportGeneration: '',
   },
   reportTemplates: {
     aboveSchoolName: 'Above School Name',
@@ -4378,7 +4377,7 @@ export const ar: TranslationKeys = {
     uploadDocument: 'Upload document',
     uploaded: 'Uploaded'
   },
-  size: null,
+  size: '',
   staff: {
     acrossSelected: 'Staff',
     actions: 'الإجراءات',
@@ -4557,7 +4556,7 @@ export const ar: TranslationKeys = {
     village: 'القرية',
     villageMaxLength: 'يجب أن تكون القرية 50 حرفًا أو أقل'
   },
-  student: null,
+  student: '',
   studentReport: {
     academicInformation: 'المعلومات الأكاديمية',
     active: 'نشط',
@@ -5084,61 +5083,61 @@ export const ar: TranslationKeys = {
   },
   termsOfService: {
     acceptance: {
-      content: null,
-      title: null
+      content: '',
+      title: '',
     },
     account: {
-      accurate: null,
-      intro: null,
-      maintain: null,
-      notify: null,
-      responsible: null,
-      title: null
+      accurate: '',
+      intro: '',
+      maintain: '',
+      notify: '',
+      responsible: '',
+      title: '',
     },
     changes: {
-      content: null,
-      title: null
+      content: '',
+      title: '',
     },
     contact: {
-      content: null,
-      title: null
+      content: '',
+      title: '',
     },
     intellectualProperty: {
-      content: null,
-      title: null
+      content: '',
+      title: '',
     },
     introduction: {
-      content: null,
-      title: null
+      content: '',
+      title: '',
     },
-    lastUpdated: null,
+    lastUpdated: '',
     liability: {
-      content: null,
-      title: null
+      content: '',
+      title: '',
     },
     subscription: {
-      cancellation: null,
-      content: null,
-      title: null
+      cancellation: '',
+      content: '',
+      title: '',
     },
     termination: {
-      content: null,
-      title: null
+      content: '',
+      title: '',
     },
-    title: null,
+    title: '',
     use: {
       permitted: {
-        content: null,
-        title: null
+        content: '',
+        title: '',
       },
       prohibited: {
-        interfere: null,
-        malicious: null,
-        title: null,
-        unauthorized: null,
-        violate: null
+        interfere: '',
+        malicious: '',
+        title: '',
+        unauthorized: '',
+        violate: '',
       },
-      title: null
+      title: '',
     }
   },
   timetable: {
@@ -5208,7 +5207,7 @@ export const ar: TranslationKeys = {
     title: 'إنشاء الجدول الزمني',
     unscheduledNotice: 'تعذر جدولة بعض الدروس'
   },
-  title: null,
+  title: '',
   toast: {
     admissionsCreated: 'تم إنشاء {count} سجل(ات) قبول',
     allStudentsEnrolled: 'All students enrolled',
@@ -5257,7 +5256,7 @@ export const ar: TranslationKeys = {
       generated: 'تم إنشاء الشهادة بنجاح',
       updated: 'تم تحديث قالب الشهادة بنجاح'
     },
-    checkinFailed: null,
+    checkinFailed: '',
     classAssigned: 'Class assigned to exam',
     classAssignFailed: 'Failed to assign class',
     classRemoved: 'Class removed from exam',
@@ -5347,18 +5346,18 @@ export const ar: TranslationKeys = {
     educationalHistoryUpdateFailed: 'فشل تحديث السجل التعليمي',
     enrollAllFailed: 'Failed to enroll all students',
     error: 'حدث خطأ',
-    eventCreated: null,
-    eventCreateFailed: null,
-    eventDeleted: null,
-    eventDeleteFailed: null,
-    eventTypeCreated: null,
-    eventTypeCreateFailed: null,
-    eventTypeDeleted: null,
-    eventTypeDeleteFailed: null,
-    eventTypeUpdated: null,
-    eventTypeUpdateFailed: null,
-    eventUpdated: null,
-    eventUpdateFailed: null,
+    eventCreated: '',
+    eventCreateFailed: '',
+    eventDeleted: '',
+    eventDeleteFailed: '',
+    eventTypeCreated: '',
+    eventTypeCreateFailed: '',
+    eventTypeDeleted: '',
+    eventTypeDeleteFailed: '',
+    eventTypeUpdated: '',
+    eventTypeUpdateFailed: '',
+    eventUpdated: '',
+    eventUpdateFailed: '',
     examCreated: 'Exam created successfully',
     examCreateFailed: 'Failed to create exam',
     examDeleted: 'Exam deleted successfully',
@@ -5441,13 +5440,13 @@ export const ar: TranslationKeys = {
     feeStructureDeleteFailed: 'فشل حذف هيكل الرسوم',
     feeStructureUpdated: 'تم تحديث هيكل الرسوم',
     feeStructureUpdateFailed: 'Fee structure update failed',
-    fieldsSaved: null,
-    fieldsSaveFailed: null,
+    fieldsSaved: '',
+    fieldsSaveFailed: '',
     fileDownloaded: 'تم تنزيل الملف بنجاح',
     fileDownloadFailed: 'فشل تنزيل الملف',
     fileUploaded: 'تم رفع الملف بنجاح',
     fileUploadFailed: 'فشل رفع الملف',
-    fillAllFields: null,
+    fillAllFields: '',
     finance: {
       accountCode: 'Account Code',
       accountCreated: 'تم إنشاء الحساب بنجاح',
@@ -5699,15 +5698,15 @@ export const ar: TranslationKeys = {
         weightsMustSum100: 'يجب أن يصل مجموع الأوزان إلى 100%'
       }
     },
-    guestAdded: null,
-    guestAddFailed: null,
-    guestCheckedIn: null,
-    guestDeleted: null,
-    guestDeleteFailed: null,
-    guestStatusUpdated: null,
-    guestStatusUpdateFailed: null,
-    guestUpdated: null,
-    guestUpdateFailed: null,
+    guestAdded: '',
+    guestAddFailed: '',
+    guestCheckedIn: '',
+    guestDeleted: '',
+    guestDeleteFailed: '',
+    guestStatusUpdated: '',
+    guestStatusUpdateFailed: '',
+    guestUpdated: '',
+    guestUpdateFailed: '',
     idCardAssignFailed: 'فشل تعيين بطاقة الهوية',
     idCardDeleted: 'تم حذف بطاقة الهوية',
     idCardDeleteFailed: 'فشل حذف بطاقة الهوية',
@@ -5973,8 +5972,8 @@ export const ar: TranslationKeys = {
       toggle: 'تبديل الشريط الجانبي'
     }
   },
-  uploadDocument: null,
-  uploaded: null,
+  uploadDocument: '',
+  uploaded: '',
   userManagement: {
     active: 'نشط',
     addUser: 'إضافة مستخدم',
@@ -6085,7 +6084,7 @@ export const ar: TranslationKeys = {
     phoneMaxLength: 'يجب أن يكون رقم الهاتف 30 حرفًا أو أقل',
     teacherRequired: 'المعلم مطلوب'
   },
-  viewFullArticle: null,
+  viewFullArticle: '',
   watermarks: {
     actions: 'الإجراءات',
     active: 'نشط',
