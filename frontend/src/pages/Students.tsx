@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ColumnDef } from '@tanstack/react-table';
-import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search, MoreHorizontal, DollarSign } from 'lucide-react';
+import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search, MoreHorizontal, DollarSign, History } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -823,6 +823,10 @@ export function Students() {
                 <AlertTriangle className="mr-2 h-4 w-4 text-orange-600 dark:text-orange-400" />
                 {t('students.disciplineRecords') || 'Discipline Records'}
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate(`/students/${row.original.id}/history`)}>
+                <History className="mr-2 h-4 w-4 text-teal-600 dark:text-teal-400" />
+                {t('students.viewHistory') || 'View History'}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleEdit(row.original)}>
                 <Pencil className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -955,7 +959,7 @@ export function Students() {
           </Select>
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
             <SelectTrigger className="w-full sm:w-[150px]">
-              <SelectValue placeholder={t('students.status') || 'Status'} />
+              <SelectValue placeholder={t('students.status.label') || 'Status'} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('students.allStatus') || 'All Status'}</SelectItem>
@@ -1087,6 +1091,10 @@ export function Students() {
                                   <DropdownMenuItem onClick={() => navigate(`/students/${student.id}/fees`)}>
                                     <DollarSign className="mr-2 h-4 w-4 text-green-600 dark:text-green-400" />
                                     {t('fees.studentFeeAssignments') || 'Fee Assignments'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => navigate(`/students/${student.id}/history`)}>
+                                    <History className="mr-2 h-4 w-4 text-teal-600 dark:text-teal-400" />
+                                    {t('students.viewHistory') || 'View History'}
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => handleEdit(student)}>
