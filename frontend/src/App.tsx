@@ -186,7 +186,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SchoolProvider } from "@/contexts/SchoolContext";
 import { AuthProvider } from "@/hooks/useAuth";
-import { LanguageProvider } from "@/hooks/useLanguage";
 
 // Optimized QueryClient with better caching and performance settings
 const queryClient = new QueryClient({
@@ -216,9 +215,8 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <LanguageProvider>
-        <AuthProvider>
-          <SchoolProvider>
+      <AuthProvider>
+        <SchoolProvider>
           <BrowserRouter
             future={{
               v7_startTransition: true,
@@ -1462,9 +1460,8 @@ const App = () => (
               </ErrorBoundary>
             </SidebarProvider>
           </BrowserRouter>
-          </SchoolProvider>
-        </AuthProvider>
-      </LanguageProvider>
+        </SchoolProvider>
+      </AuthProvider>
     </TooltipProvider>
     {import.meta.env.DEV && import.meta.env.VITE_ENABLE_QUERY_DEVTOOLS === 'true' && (
       <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />

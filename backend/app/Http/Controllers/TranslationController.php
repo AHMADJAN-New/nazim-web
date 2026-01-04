@@ -996,6 +996,44 @@ class TranslationController extends Controller
     }
 
     /**
+     * Check if a key needs to be quoted in TypeScript
+     * Keys with dots, hyphens, or other special characters need quotes
+     */
+    private function needsQuotedKey(string $key): bool
+    {
+        // Check if key contains dots, hyphens, or starts with a number
+        if (strpos($key, '.') !== false || strpos($key, '-') !== false) {
+            return true;
+        }
+        
+        // Check if key starts with a number (invalid identifier)
+        if (preg_match('/^\d/', $key)) {
+            return true;
+        }
+        
+        // Check if key is a valid JavaScript identifier
+        // Valid identifiers: letters, digits, underscore, dollar sign (but not starting with digit)
+        if (!preg_match('/^[a-zA-Z_$][a-zA-Z0-9_$]*$/', $key)) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Format a key for TypeScript (quote if necessary)
+     */
+    private function formatKey(string $key): string
+    {
+        if ($this->needsQuotedKey($key)) {
+            // Escape single quotes in the key
+            $escaped = str_replace("'", "\\'", $key);
+            return "'{$escaped}'";
+        }
+        return $key;
+    }
+
+    /**
      * Recursively format object for TypeScript
      */
     private function formatObject(array $data, array &$lines, string $indent, int $level): void
@@ -1008,14 +1046,15 @@ class TranslationController extends Controller
         foreach ($keys as $index => $key) {
             $value = $data[$key];
             $isLast = ($index === $lastIndex);
+            $formattedKey = $this->formatKey($key);
             
             if (is_array($value) && $this->isAssociativeArray($value)) {
-                $lines[] = "{$currentIndent}{$key}: {";
+                $lines[] = "{$currentIndent}{$formattedKey}: {";
                 $this->formatObject($value, $lines, $indent, $level + 1);
                 $lines[] = "{$currentIndent}}" . ($isLast ? '' : ',');
             } else {
                 $formattedValue = $this->formatValue($value);
-                $lines[] = "{$currentIndent}{$key}: {$formattedValue}" . ($isLast ? '' : ',');
+                $lines[] = "{$currentIndent}{$formattedKey}: {$formattedValue}" . ($isLast ? '' : ',');
             }
         }
     }

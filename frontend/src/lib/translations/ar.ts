@@ -3,52 +3,52 @@ import type { TranslationKeys } from './types';
 export const ar: TranslationKeys = {
   aboutUs: {
     cta: {
-      button: null,
-      text: null
+      button: 'Contact Us',
+      text: 'Want to learn more about how we can help your school?'
     },
     mission: {
-      content: null,
-      title: null
+      content: 'Our mission is to provide comprehensive, user-friendly, and affordable school management solutions that help educational institutions streamline their operations, enhance learning outcomes, and strengthen community connections. We believe that every school, regardless of size, deserves access to modern technology that can transform the way they manage their institution.',
+      title: 'Our Mission'
     },
-    subtitle: null,
-    title: null,
+    subtitle: 'Empowering educational institutions with modern technology solutions for better learning outcomes.',
+    title: 'About Nazim School Management System',
     values: {
       community: {
-        content: null,
-        title: null
+        content: 'We are committed to building strong relationships with our customers and supporting the educational community.',
+        title: 'Community'
       },
       excellence: {
-        content: null,
-        title: null
+        content: 'We strive for excellence in every aspect of our service, from product development to customer support.',
+        title: 'Excellence'
       },
       innovation: {
-        content: null,
-        title: null
+        content: 'We continuously innovate to provide cutting-edge solutions that meet the evolving needs of educational institutions.',
+        title: 'Innovation'
       },
       integrity: {
-        content: null,
-        title: null
+        content: 'We operate with honesty, transparency, and ethical practices in all our business dealings.',
+        title: 'Integrity'
       },
-      title: null
+      title: 'Our Values'
     },
     vision: {
-      content: null,
-      title: null
+      content: 'We envision a future where all educational institutions, especially Islamic schools and madrasas, have access to powerful, intuitive, and culturally-aware management systems that support their unique needs. We aim to be the leading provider of school management solutions in the region, helping thousands of schools digitize their operations and focus on what matters most: education.',
+      title: 'Our Vision'
     },
     whatWeOffer: {
       affordable: {
-        content: null,
-        title: null
+        content: 'We offer flexible pricing plans that fit schools of all sizes, from small madrasas to large institutions.',
+        title: 'Affordable Pricing'
       },
       comprehensive: {
-        content: null,
-        title: null
+        content: 'From student management to finance, attendance to exams, we cover all aspects of school administration.',
+        title: 'Comprehensive Solutions'
       },
       support: {
-        content: null,
-        title: null
+        content: 'Our team is always ready to help with training, technical support, and ongoing assistance.',
+        title: 'Dedicated Support'
       },
-      title: null
+      title: 'What We Offer'
     }
   },
   academic: {
@@ -455,7 +455,7 @@ export const ar: TranslationKeys = {
     withdrawn: 'منسحب',
     year: 'السنة'
   },
-  articleFound: null,
+  articleFound: 'Here is the help article for this page',
   assets: {
     active: 'نشط',
     assetAssigned: 'تم تعيين الأصل بنجاح',
@@ -553,19 +553,19 @@ export const ar: TranslationKeys = {
     warrantyExpiry: 'انتهاء الضمان'
   },
   attendance: {
-    absent: null,
-    attendanceRate: null,
-    closed: null,
-    latestAttendanceSessions: null,
-    noSessions: null,
-    open: null,
-    present: null,
-    recentSessions: null,
-    records: null,
-    students: null,
-    today: null,
-    total: null,
-    totalSessions: null
+    absent: 'Absent',
+    attendanceRate: 'Attendance Rate',
+    closed: 'Closed',
+    latestAttendanceSessions: 'Latest attendance sessions',
+    noSessions: 'No attendance sessions found',
+    open: 'Open',
+    present: 'Present',
+    recentSessions: 'Recent Sessions',
+    records: 'records',
+    students: 'students',
+    today: 'today',
+    total: 'total',
+    totalSessions: 'Total Sessions'
   },
   attendancePage: {
     admissionHeader: 'القبول',
@@ -756,7 +756,7 @@ export const ar: TranslationKeys = {
     subtitle: 'Access your school management system',
     title: 'School Management System'
   },
-  browseHelpCenter: null,
+  browseHelpCenter: 'Browse Help Center',
   certificates: {
     issued: 'الشهادات الصادرة',
     noIssuedCertificates: 'Certificates',
@@ -971,10 +971,10 @@ export const ar: TranslationKeys = {
     years: 'سنوات',
     yes: 'نعم'
   },
-  completionDate: null,
-  contextualHelp: null,
-  course: null,
-  courseDocuments: null,
+  completionDate: 'Completion date',
+  contextualHelp: 'Get help',
+  course: 'Course',
+  courseDocuments: 'Course documents',
   courses: {
     active: 'Active',
     addStudent: 'Add student',
@@ -1164,8 +1164,8 @@ export const ar: TranslationKeys = {
     welcomeBack: 'Assets Dashboard',
     welcomeMessage: 'Assets Dashboard'
   },
-  deleteDocument: null,
-  deleteDocumentConfirm: null,
+  deleteDocument: 'Delete document',
+  deleteDocumentConfirm: 'Delete document confirm',
   dms: {
     deleteDocumentWarning: 'Are you sure you want to delete this outgoing document? This action cannot be undone.',
     fields: {
@@ -1260,9 +1260,9 @@ export const ar: TranslationKeys = {
     reports: 'التقارير',
     settings: 'الإعدادات'
   },
-  documentDescription: null,
-  documentTitle: null,
-  documentType: null,
+  documentDescription: 'Document description',
+  documentTitle: 'Document title',
+  documentType: 'Document type',
   errorBoundary: {
     anErrorOccurred: 'An error occurred',
     applicationCrashed: 'Something went wrong and the application crashed.',
@@ -1282,16 +1282,16 @@ export const ar: TranslationKeys = {
     tryReloading: 'This component encountered an error. You can try reloading it.',
     workingOnFix: 'We'
   },
-  errorLoading: null,
+  errorLoading: 'Error loading help article',
   events: {
     users: {
-      fillAllFields: null,
-      userCreated: null,
-      userCreateFailed: null,
-      userDeleted: null,
-      userDeleteFailed: null,
-      userUpdated: null,
-      userUpdateFailed: null
+      fillAllFields: 'Please fill all required fields',
+      userCreated: 'Event user created successfully',
+      userCreateFailed: 'Failed to create event user',
+      userDeleted: 'Event user deactivated successfully',
+      userDeleteFailed: 'Failed to deactivate event user',
+      userUpdated: 'Event user updated successfully',
+      userUpdateFailed: 'Failed to update event user'
     }
   },
   examPaperPreview: {
@@ -1636,9 +1636,9 @@ export const ar: TranslationKeys = {
     invigilator: 'Exams',
     list: 'قائمة الامتحانات',
     listDescription: 'عرض وإدارة جميع الامتحانات',
-    locked: null,
+    locked: 'Locked',
     management: 'إنشاء وإدارة الامتحانات للسنوات الأكاديمية',
-    markAttendance: null,
+    markAttendance: 'Mark Attendance',
     marks: 'Exams',
     marksDescription: 'Exams',
     marksEntry: 'Exams',
@@ -1849,13 +1849,13 @@ export const ar: TranslationKeys = {
     studentEnrollment: 'تسجيل الطلاب',
     studentEnrollmentDescription: 'تسجيل الطلاب في الامتحانات حسب الفصل',
     studentName: 'Exams',
-    students: null,
+    students: 'Students',
     studentsAvailable: 'طلاب متاحون للتسجيل',
     studentsSelected: 'طلاب محددون',
     subject: 'Exams',
     subjects: 'المواد',
-    time: null,
-    timeSlot: null,
+    time: 'Time',
+    timeSlot: 'Time Slot',
     timetable: 'Exams',
     timetableDescription: 'Exams',
     total: 'Exams',
@@ -1880,7 +1880,7 @@ export const ar: TranslationKeys = {
     namePlaceholder: 'e.g., Midterm Exam',
     title: 'Exam Attendance'
   },
-  failed: null,
+  failed: 'راپور ناکام شو',
   fees: {
     academicYear: 'السنة الدراسية',
     account: 'الحساب',
@@ -2251,26 +2251,26 @@ export const ar: TranslationKeys = {
     }
   },
   footer: {
-    aboutUs: null,
-    apiDocumentation: null,
-    careers: null,
-    company: null,
-    contactSupport: null,
-    cookiePolicy: null,
-    copyright: null,
-    features: null,
-    helpCenter: null,
-    integrations: null,
-    pricing: null,
-    privacyPolicy: null,
-    product: null,
-    releaseNotes: null,
-    security: null,
-    support: null,
-    systemStatus: null,
-    tagline: null,
-    termsOfService: null,
-    trainingVideos: null
+    aboutUs: 'About Us',
+    apiDocumentation: 'API Documentation',
+    careers: 'Careers',
+    company: 'Company',
+    contactSupport: 'Contact Support',
+    cookiePolicy: 'Cookie Policy',
+    copyright: '© 2026 Nazim School Management System. All rights reserved.',
+    features: 'Features',
+    helpCenter: 'Help Center',
+    integrations: 'Integrations',
+    pricing: 'Pricing',
+    privacyPolicy: 'Privacy Policy',
+    product: 'Product',
+    releaseNotes: 'Release Notes',
+    security: 'Security',
+    support: 'Support',
+    systemStatus: 'System Status',
+    tagline: 'Empowering educational institutions with modern technology solutions for better learning outcomes.',
+    termsOfService: 'Terms of Service',
+    trainingVideos: 'Training Videos'
   },
   forms: {
     invalidCnic: 'يرجى إدخال رقم هوية صحيح',
@@ -2281,12 +2281,12 @@ export const ar: TranslationKeys = {
     passwordMismatch: 'كلمات المرور غير متطابقة',
     required: 'هذا الحقل مطلوب'
   },
-  generateCertificate: null,
-  generated: null,
-  generating: null,
-  generatingReport: null,
-  goBack: null,
-  goHome: null,
+  generateCertificate: 'Generate certificate',
+  generated: 'راپور بریالی شو',
+  generating: 'راپور جوړیږي...',
+  generatingReport: 'Report generation in progress',
+  goBack: 'Go Back',
+  goHome: 'Go Home',
   grades: {
     addGrade: 'إضافة درجة',
     create: 'إنشاء درجة',
@@ -2354,39 +2354,39 @@ export const ar: TranslationKeys = {
     viewFullArticle: 'View Full Article'
   },
   helpCenter: {
-    allArticles: null,
-    allCategories: null,
-    articleFound: null,
-    articleNotFound: null,
-    articleNotFoundDescription: null,
-    articles: null,
-    articlesFound: null,
-    backToHelpCenter: null,
-    browseHelpCenter: null,
-    clearFilters: null,
-    contextualHelp: null,
-    errorLoading: null,
-    errorLoadingArticles: null,
-    errorLoadingCategories: null,
-    featuredArticles: null,
-    linkCopied: null,
-    no: null,
-    noArticleFound: null,
-    noArticlesDescription: null,
-    noArticlesFound: null,
-    popularArticles: null,
-    relatedArticles: null,
-    searchPlaceholder: null,
-    share: null,
-    subtitle: null,
-    thankYou: null,
+    allArticles: 'All Articles',
+    allCategories: 'All Categories',
+    articleFound: 'Here is the help article for this page',
+    articleNotFound: 'Article not found',
+    articleNotFoundDescription: 'The article you are looking for does not exist or has been removed.',
+    articles: 'Articles',
+    articlesFound: 'articles found',
+    backToHelpCenter: 'Back to Help Center',
+    browseHelpCenter: 'Browse Help Center',
+    clearFilters: 'Clear Filters',
+    contextualHelp: 'Get help',
+    errorLoading: 'Error loading help article',
+    errorLoadingArticles: 'Error loading articles',
+    errorLoadingCategories: 'Error loading categories',
+    featuredArticles: 'Featured Articles',
+    linkCopied: 'Link copied to clipboard!',
+    no: 'No',
+    noArticleFound: 'No specific help article found for this page',
+    noArticlesDescription: 'Try adjusting your search or filters',
+    noArticlesFound: 'No articles found',
+    popularArticles: 'Popular Articles',
+    relatedArticles: 'Related Articles',
+    searchPlaceholder: 'Search for help articles...',
+    share: 'Share',
+    subtitle: 'Find answers to your questions and learn how to use Nazim SMS',
+    thankYou: 'Thank you for your feedback!',
     title: {
-      helpCenterManagement: null
+      helpCenterManagement: 'Help Center Management'
     },
-    viewFullArticle: null,
-    views: null,
-    wasThisHelpful: null,
-    yes: null
+    viewFullArticle: 'View Full Article',
+    views: 'views',
+    wasThisHelpful: 'Was this article helpful?',
+    yes: 'Yes'
   },
   hostel: {
     acrossHostelNetwork: 'Across the hostel network',
@@ -2489,21 +2489,21 @@ export const ar: TranslationKeys = {
       wardenCoverageDescription: 'Reports',
       wardenName: 'Reports'
     },
-    residencyTypeColumn: null,
+    residencyTypeColumn: 'Residency Type',
     room: 'الغرفة',
     roomAndBuildings: 'Room & Buildings',
-    roomAndBuildingsDescription: null,
+    roomAndBuildingsDescription: 'All students assigned to rooms, organized by building and room.',
     roomAndBuildingsTab: 'Room & Buildings',
-    roomAndBuildingsTitle: null,
-    roomLabel: null,
+    roomAndBuildingsTitle: 'Room & Buildings Report',
+    roomLabel: 'Room',
     roomNumber: 'رقم الغرفة',
     roomOccupancy: 'Room occupancy',
     rooms: 'الغرف',
-    roomsColumn: null,
+    roomsColumn: 'Rooms',
     roomsCurrentlySupervised: 'Rooms currently supervised',
     roomsOccupied: 'Rooms occupied',
     roomsWithAssignedWardens: 'Rooms with assigned wardens',
-    roomsWithWardens: null,
+    roomsWithWardens: 'Rooms with wardens',
     searchByNameAdmission: 'Search by name, admission number, room, or building...',
     searchByNameAdmissionClass: 'Search by name, admission number, or class...',
     searchRoomsPlaceholder: 'البحث عن الغرف أو المسؤولين أو الطلاب',
@@ -2514,7 +2514,7 @@ export const ar: TranslationKeys = {
     students: 'الطلاب',
     studentsCount: 'الطلاب',
     studentsInHostel: 'Students in hostel',
-    studentsLabel: null,
+    studentsLabel: 'students',
     subtitle: 'إدارة غرف السكن الداخلي والنزلاء',
     title: 'إدارة السكن الداخلي',
     totalRooms: 'إجمالي الغرف',
@@ -2522,14 +2522,14 @@ export const ar: TranslationKeys = {
     trackStudentsPerRoom: 'Track students per room and warden assignments.',
     unassigned: 'غير معين',
     unassignedBoarders: 'النزلاء غير المعينين',
-    unassignedBoardersDescription: null,
-    unassignedBoardersTitle: null,
+    unassignedBoardersDescription: 'Students marked as boarders who still need a room assignment.',
+    unassignedBoardersTitle: 'Unassigned Boarders',
     unassignedTab: 'Unassigned',
-    utilizationColumn: null,
+    utilizationColumn: 'Utilization',
     waitingForRoomPlacement: 'Waiting for room placement',
     warden: 'المسؤول',
     wardenCoverage: 'تغطية المسؤول',
-    wardenCoverageDescription: null,
+    wardenCoverageDescription: 'Room assignments and student counts per warden.',
     wardenCoverageLabel: 'Warden coverage',
     wardenCoverageSubtitle: 'Warden coverage',
     wardenCoverageTab: 'Warden Coverage',
@@ -3564,7 +3564,7 @@ export const ar: TranslationKeys = {
     timeRemaining: 'الوقت المتبقي',
     title: 'النظام قيد الصيانة'
   },
-  message: null,
+  message: 'The page you are looking for does not exist.',
   nav: {
     academicManagement: 'الإدارة الأكاديمية',
     academicSettings: 'الإعدادات الأكاديمية',
@@ -3699,8 +3699,8 @@ export const ar: TranslationKeys = {
     studentReportCard: 'بطاقة تقرير الطالب',
     examNumberReports: 'تقارير الأرقام'
   },
-  noArticleFound: null,
-  noDocuments: null,
+  noArticleFound: 'No help article found for this page. Opening Help Center...',
+  noDocuments: 'No documents',
   notFound: {
     goBack: 'Go Back',
     goHome: 'Go Home',
@@ -3850,57 +3850,57 @@ export const ar: TranslationKeys = {
     subtitle: 'عرض والبحث في جميع أرقام الهواتف من الطلاب والموظفين والمتبرعين والضيوف',
     title: 'دليل الهاتف'
   },
-  pleaseWait: null,
+  pleaseWait: 'مهرباني وکړئ انتظار وکړئ...',
   privacyPolicy: {
     contact: {
-      content: null,
-      title: null
+      content: 'If you have any questions about this Privacy Policy or our data practices, please contact us at support@nazimapp.com or through our contact form.',
+      title: 'Contact Us'
     },
     dataRetention: {
-      content: null,
-      title: null
+      content: 'We retain your personal information for as long as necessary to provide our services and comply with legal obligations. When you delete your account, we will delete or anonymize your personal information, except where we are required to retain it by law.',
+      title: 'Data Retention'
     },
     dataSecurity: {
-      content: null,
-      title: null
+      content: 'We implement industry-standard security measures to protect your information, including encryption, secure data storage, and access controls. However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.',
+      title: 'Data Security'
     },
     howWeUse: {
-      analytics: null,
-      communicate: null,
-      provide: null,
-      security: null,
-      support: null,
-      title: null
+      analytics: 'To analyze usage patterns and improve user experience',
+      communicate: 'To communicate with you about your account and our services',
+      provide: 'To provide, maintain, and improve our services',
+      security: 'To ensure the security and integrity of our platform',
+      support: 'To provide customer support and respond to your inquiries',
+      title: 'How We Use Your Information'
     },
     informationWeCollect: {
       personal: {
-        content: null,
-        title: null
+        content: 'We collect personal information that you provide to us, such as your name, email address, phone number, and school information when you register for our services.',
+        title: 'Personal Information'
       },
       technical: {
-        content: null,
-        title: null
+        content: 'We collect technical information such as IP address, browser type, device information, and operating system for security and performance purposes.',
+        title: 'Technical Information'
       },
-      title: null,
+      title: 'Information We Collect',
       usage: {
-        content: null,
-        title: null
+        content: 'We automatically collect information about how you use our platform, including pages visited, features used, and time spent on the platform.',
+        title: 'Usage Information'
       }
     },
     introduction: {
-      content: null,
-      title: null
+      content: 'At Nazim School Management System, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform.',
+      title: 'Introduction'
     },
-    lastUpdated: null,
-    title: null,
+    lastUpdated: 'Last Updated: January 2026',
+    title: 'Privacy Policy',
     yourRights: {
-      access: null,
-      correct: null,
-      delete: null,
-      export: null,
-      intro: null,
-      object: null,
-      title: null
+      access: 'Access your personal information',
+      correct: 'Correct inaccurate or incomplete information',
+      delete: 'Request deletion of your personal information',
+      export: 'Export your data in a portable format',
+      intro: 'You have the right to:',
+      object: 'Object to processing of your personal information',
+      title: 'Your Rights'
     }
   },
   profileManagement: {
@@ -4011,12 +4011,12 @@ export const ar: TranslationKeys = {
   },
   reportGeneration: 'د راپور جوړول',
   reports: {
-    failed: null,
-    generated: null,
-    generating: null,
-    generatingReport: null,
-    pleaseWait: null,
-    reportGeneration: null
+    failed: 'راپور ناکام شو',
+    generated: 'راپور بریالی شو',
+    generating: 'راپور جوړیږي...',
+    generatingReport: 'Report generation in progress',
+    pleaseWait: 'مهرباني وکړئ انتظار وکړئ...',
+    reportGeneration: 'د راپور جوړول'
   },
   reportTemplates: {
     aboveSchoolName: 'Above School Name',
@@ -4377,7 +4377,7 @@ export const ar: TranslationKeys = {
     uploadDocument: 'Upload document',
     uploaded: 'Uploaded'
   },
-  size: null,
+  size: 'Size',
   staff: {
     acrossSelected: 'Staff',
     actions: 'الإجراءات',
@@ -4556,7 +4556,7 @@ export const ar: TranslationKeys = {
     village: 'القرية',
     villageMaxLength: 'يجب أن تكون القرية 50 حرفًا أو أقل'
   },
-  student: null,
+  student: 'Student',
   studentReport: {
     academicInformation: 'المعلومات الأكاديمية',
     active: 'نشط',
@@ -5083,61 +5083,61 @@ export const ar: TranslationKeys = {
   },
   termsOfService: {
     acceptance: {
-      content: null,
-      title: null
+      content: 'By accessing or using our platform, you acknowledge that you have read, understood, and agree to be bound by these Terms. If you do not agree to these Terms, you may not use our services.',
+      title: 'Acceptance of Terms'
     },
     account: {
-      accurate: null,
-      intro: null,
-      maintain: null,
-      notify: null,
-      responsible: null,
-      title: null
+      accurate: 'Provide accurate and complete information',
+      intro: 'To use our services, you must:',
+      maintain: 'Maintain the security of your account credentials',
+      notify: 'Notify us immediately of any unauthorized access',
+      responsible: 'Be responsible for all activities under your account',
+      title: 'Account Registration'
     },
     changes: {
-      content: null,
-      title: null
+      content: 'We may modify these Terms at any time. We will notify you of any material changes by email or through the platform. Your continued use of the platform after such changes constitutes acceptance of the modified Terms.',
+      title: 'Changes to Terms'
     },
     contact: {
-      content: null,
-      title: null
+      content: 'If you have any questions about these Terms of Service, please contact us at support@nazimapp.com or through our contact form.',
+      title: 'Contact Us'
     },
     intellectualProperty: {
-      content: null,
-      title: null
+      content: 'All content, features, and functionality of the platform are owned by Nazim School Management System and are protected by copyright, trademark, and other intellectual property laws. You may not copy, modify, or distribute any part of the platform without our written permission.',
+      title: 'Intellectual Property'
     },
     introduction: {
-      content: null,
-      title: null
+      content: 'These Terms of Service ("Terms") govern your access to and use of the Nazim School Management System platform. By using our services, you agree to be bound by these Terms. Please read them carefully.',
+      title: 'Introduction'
     },
-    lastUpdated: null,
+    lastUpdated: 'Last Updated: January 2026',
     liability: {
-      content: null,
-      title: null
+      content: 'To the maximum extent permitted by law, Nazim School Management System shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform. Our total liability shall not exceed the amount you paid for the services in the 12 months preceding the claim.',
+      title: 'Limitation of Liability'
     },
     subscription: {
-      cancellation: null,
-      content: null,
-      title: null
+      cancellation: 'You may cancel your subscription at any time. Cancellation will take effect at the end of your current billing period.',
+      content: 'Subscription fees are billed in advance on a monthly or annual basis. All fees are non-refundable except as required by law. We reserve the right to change our pricing with 30 days notice.',
+      title: 'Subscription and Payment'
     },
     termination: {
-      content: null,
-      title: null
+      content: 'We reserve the right to suspend or terminate your account at any time for violation of these Terms or for any other reason. Upon termination, your right to use the platform will immediately cease.',
+      title: 'Termination'
     },
-    title: null,
+    title: 'Terms of Service',
     use: {
       permitted: {
-        content: null,
-        title: null
+        content: 'You may use our services for lawful educational and administrative purposes only. You agree to use the platform in accordance with all applicable laws and regulations.',
+        title: 'Permitted Use'
       },
       prohibited: {
-        interfere: null,
-        malicious: null,
-        title: null,
-        unauthorized: null,
-        violate: null
+        interfere: 'Interference with the platform\'s operation',
+        malicious: 'Introduction of viruses, malware, or harmful code',
+        title: 'Prohibited Activities',
+        unauthorized: 'Unauthorized access to other accounts or systems',
+        violate: 'Violation of any applicable laws or regulations'
       },
-      title: null
+      title: 'Use of Services'
     }
   },
   timetable: {
@@ -5207,7 +5207,7 @@ export const ar: TranslationKeys = {
     title: 'إنشاء الجدول الزمني',
     unscheduledNotice: 'تعذر جدولة بعض الدروس'
   },
-  title: null,
+  title: 'Page Not Found',
   toast: {
     admissionsCreated: 'تم إنشاء {count} سجل(ات) قبول',
     allStudentsEnrolled: 'All students enrolled',
@@ -5256,7 +5256,7 @@ export const ar: TranslationKeys = {
       generated: 'تم إنشاء الشهادة بنجاح',
       updated: 'تم تحديث قالب الشهادة بنجاح'
     },
-    checkinFailed: null,
+    checkinFailed: 'Check-in failed',
     classAssigned: 'Class assigned to exam',
     classAssignFailed: 'Failed to assign class',
     classRemoved: 'Class removed from exam',
@@ -5346,18 +5346,18 @@ export const ar: TranslationKeys = {
     educationalHistoryUpdateFailed: 'فشل تحديث السجل التعليمي',
     enrollAllFailed: 'Failed to enroll all students',
     error: 'حدث خطأ',
-    eventCreated: null,
-    eventCreateFailed: null,
-    eventDeleted: null,
-    eventDeleteFailed: null,
-    eventTypeCreated: null,
-    eventTypeCreateFailed: null,
-    eventTypeDeleted: null,
-    eventTypeDeleteFailed: null,
-    eventTypeUpdated: null,
-    eventTypeUpdateFailed: null,
-    eventUpdated: null,
-    eventUpdateFailed: null,
+    eventCreated: 'Event created successfully',
+    eventCreateFailed: 'Failed to create event',
+    eventDeleted: 'Event deleted successfully',
+    eventDeleteFailed: 'Failed to delete event',
+    eventTypeCreated: 'Event type created successfully',
+    eventTypeCreateFailed: 'Failed to create event type',
+    eventTypeDeleted: 'Event type deleted successfully',
+    eventTypeDeleteFailed: 'Failed to delete event type',
+    eventTypeUpdated: 'Event type updated successfully',
+    eventTypeUpdateFailed: 'Failed to update event type',
+    eventUpdated: 'Event updated successfully',
+    eventUpdateFailed: 'Failed to update event',
     examCreated: 'Exam created successfully',
     examCreateFailed: 'Failed to create exam',
     examDeleted: 'Exam deleted successfully',
@@ -5440,13 +5440,13 @@ export const ar: TranslationKeys = {
     feeStructureDeleteFailed: 'فشل حذف هيكل الرسوم',
     feeStructureUpdated: 'تم تحديث هيكل الرسوم',
     feeStructureUpdateFailed: 'Fee structure update failed',
-    fieldsSaved: null,
-    fieldsSaveFailed: null,
+    fieldsSaved: 'Fields saved successfully',
+    fieldsSaveFailed: 'Failed to save fields',
     fileDownloaded: 'تم تنزيل الملف بنجاح',
     fileDownloadFailed: 'فشل تنزيل الملف',
     fileUploaded: 'تم رفع الملف بنجاح',
     fileUploadFailed: 'فشل رفع الملف',
-    fillAllFields: null,
+    fillAllFields: 'Please fill all required fields',
     finance: {
       accountCode: 'Account Code',
       accountCreated: 'تم إنشاء الحساب بنجاح',
@@ -5698,15 +5698,15 @@ export const ar: TranslationKeys = {
         weightsMustSum100: 'Weights must sum to 100%'
       }
     },
-    guestAdded: null,
-    guestAddFailed: null,
-    guestCheckedIn: null,
-    guestDeleted: null,
-    guestDeleteFailed: null,
-    guestStatusUpdated: null,
-    guestStatusUpdateFailed: null,
-    guestUpdated: null,
-    guestUpdateFailed: null,
+    guestAdded: 'Guest added successfully',
+    guestAddFailed: 'Failed to add guest',
+    guestCheckedIn: 'Guest checked in successfully',
+    guestDeleted: 'Guest deleted successfully',
+    guestDeleteFailed: 'Failed to delete guest',
+    guestStatusUpdated: 'Guest status updated successfully',
+    guestStatusUpdateFailed: 'Failed to update guest status',
+    guestUpdated: 'Guest updated successfully',
+    guestUpdateFailed: 'Failed to update guest',
     idCardAssignFailed: 'Id card assign failed',
     idCardDeleted: 'Id card deleted',
     idCardDeleteFailed: 'Id card delete failed',
@@ -5972,8 +5972,8 @@ export const ar: TranslationKeys = {
       toggle: 'تبديل الشريط الجانبي'
     }
   },
-  uploadDocument: null,
-  uploaded: null,
+  uploadDocument: 'Upload document',
+  uploaded: 'Uploaded',
   userManagement: {
     active: 'نشط',
     addUser: 'إضافة مستخدم',
@@ -6084,7 +6084,7 @@ export const ar: TranslationKeys = {
     phoneMaxLength: 'يجب أن يكون رقم الهاتف 30 حرفًا أو أقل',
     teacherRequired: 'المعلم مطلوب'
   },
-  viewFullArticle: null,
+  viewFullArticle: 'View Full Article',
   watermarks: {
     actions: 'الإجراءات',
     active: 'نشط',
@@ -6120,6 +6120,20 @@ export const ar: TranslationKeys = {
     repeat: 'تكرار',
     repeatPattern: 'نمط التكرار',
     repeatX: 'تكرار X',
-    repeatY: 'تكرار Y'
+    repeatY: 'تكرار Y',
+    reportKey: 'Report',
+    reportKeyHint: 'Leave empty to apply to all reports, or specify a report key like "student_list"',
+    rotation: 'Rotation',
+    scale: 'Scale',
+    sortOrder: 'Sort Order',
+    status: 'Status',
+    subtitle: 'Manage watermarks for reports',
+    text: 'Text',
+    title: 'Watermarks',
+    topLeft: 'Top Left',
+    topRight: 'Top Right',
+    type: 'Type',
+    update: 'Update',
+    updateWatermarkInfo: 'Update watermark settings'
   }
 };

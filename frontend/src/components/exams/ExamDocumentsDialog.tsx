@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -169,6 +170,9 @@ export function ExamDocumentsDialog({
             <DialogTitle>
               Documents - {examName}
             </DialogTitle>
+            <DialogDescription>
+              Manage documents for this exam. Upload, view, and delete exam-related files.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="flex-1 overflow-hidden flex flex-col">
