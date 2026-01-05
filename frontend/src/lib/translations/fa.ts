@@ -449,6 +449,9 @@ export const fa: TranslationKeys = {
     "minPercentage": "min Percentage"
   },
   "attendancePage": {
+    "title": "حاضری",
+    "subtitle": "حاضری روزانه را با علامت‌گذاری دستی یا بارکد ثبت کنید.",
+    "dateRange": "محدوده تاریخ",
     "admissionHeader": "شمولیت",
     "barcodeTab": "بارکد",
     "cardHeader": "کارت",
@@ -587,8 +590,9 @@ export const fa: TranslationKeys = {
   "browseHelpCenter": "مرور مرکز کمک",
   "certificates": {
     "issued": "گواهینامه‌های صادر شده",
-    "noIssuedCertificates": "هیچ گواهینامه‌ای صادر نشده است",
+    "noIssuedCertificates": "هیچ گواهینامه‌ای صادر نشده است، و یا ممکن شما اجازه دیدن آن ندارید.",
     "revoke": "ابطال",
+    "duplicate": "مثنی",
     "revoked": "ابطال شده",
     "templateRequired": "قالب الزامی است",
     "templates": "قالب‌های گواهینامه"
