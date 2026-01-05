@@ -34,7 +34,6 @@ import { useNotificationCount } from "@/hooks/useNotifications";
 import { useSchools } from "@/hooks/useSchools";
 import { authApi, apiClient } from "@/lib/api/client";
 import { showToast } from "@/lib/toast";
-import { useTour } from "@/onboarding";
 
 interface UserProfile {
   full_name: string;
@@ -64,9 +63,6 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const queryClient = useQueryClient();
   const { data: schools = [] } = useSchools(authProfile?.organization_id ?? undefined);
   const { selectedSchoolId, setSelectedSchoolId, hasSchoolsAccessAll } = useSchoolContext();
-  
-  // Tour system
-  const { startTour, isTourCompleted } = useTour();
 
   // Check if user is platform admin (for main app context)
   // Only check if we're NOT on platform routes (we're in main app)
@@ -515,17 +511,6 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>
-              {!isTourCompleted('initialSetup') ? (
-                <DropdownMenuItem onClick={() => startTour('initialSetup')}>
-                  <Play className="mr-2 h-4 w-4" />
-                  <span>{t('onboarding.actions.initialSetup') || 'Initial Setup Tour'}</span>
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem onClick={() => startTour('appCore')}>
-                  <Play className="mr-2 h-4 w-4" />
-                  <span>{t('onboarding.actions.takeTour') || 'Take App Tour'}</span>
-                </DropdownMenuItem>
-              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={signOut} className="text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
