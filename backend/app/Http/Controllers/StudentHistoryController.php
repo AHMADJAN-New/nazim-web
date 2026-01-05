@@ -530,11 +530,15 @@ class StudentHistoryController extends Controller
         $sections = $history['sections'] ?? [];
 
         // For Excel, we'll create multiple sheets worth of data
+        // CRITICAL: ExcelReportService expects sheets under parameters.sheets
         return [
             'student' => $student,
             'summary' => $summary,
-            'sheets' => [
+            'parameters' => [
+                'sheets' => [
                 'overview' => [
+                    'sheet_name' => 'Overview',
+                    'title' => 'Student Overview',
                     'columns' => [
                         ['key' => 'field', 'label' => 'Field'],
                         ['key' => 'value', 'label' => 'Value'],
@@ -551,6 +555,8 @@ class StudentHistoryController extends Controller
                     ],
                 ],
                 'admissions' => [
+                    'sheet_name' => 'Admissions',
+                    'title' => 'Admission History',
                     'columns' => [
                         ['key' => 'admissionDate', 'label' => 'Admission Date'],
                         ['key' => 'class', 'label' => 'Class'],
@@ -567,6 +573,8 @@ class StudentHistoryController extends Controller
                     }, $sections['admissions'] ?? []),
                 ],
                 'exams' => [
+                    'sheet_name' => 'Exams',
+                    'title' => 'Exam Results',
                     'columns' => [
                         ['key' => 'examName', 'label' => 'Exam Name'],
                         ['key' => 'className', 'label' => 'Class'],
@@ -585,6 +593,8 @@ class StudentHistoryController extends Controller
                     }, $sections['exams']['exams'] ?? []),
                 ],
                 'fees' => [
+                    'sheet_name' => 'Fees',
+                    'title' => 'Fee History',
                     'columns' => [
                         ['key' => 'feeStructure', 'label' => 'Fee Structure'],
                         ['key' => 'academicYear', 'label' => 'Academic Year'],
@@ -605,6 +615,8 @@ class StudentHistoryController extends Controller
                     }, $sections['fees']['assignments'] ?? []),
                 ],
                 'library' => [
+                    'sheet_name' => 'Library',
+                    'title' => 'Library Loans',
                     'columns' => [
                         ['key' => 'bookTitle', 'label' => 'Book Title'],
                         ['key' => 'loanDate', 'label' => 'Loan Date'],
@@ -621,6 +633,7 @@ class StudentHistoryController extends Controller
                             'status' => $loan['status'] ?? '',
                         ];
                     }, $sections['library']['loans'] ?? []),
+                ],
                 ],
             ],
             'metadata' => $history['metadata'] ?? [],

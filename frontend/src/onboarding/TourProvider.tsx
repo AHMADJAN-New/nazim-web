@@ -17,6 +17,7 @@ import {
 import { isTourCompleted, getTourVersion, resetTour } from './storageApi';
 import { isRTL, getCurrentLanguage } from './rtl';
 import { getActiveTourState, hasActiveTourState } from './sessionStorage';
+import { isTourDismissed } from './dismissedTours';
 
 // Import tour styles
 import './styles.css';
@@ -78,6 +79,9 @@ export function TourProvider({
   const [state, setState] = useState<TourContextState>(defaultState);
   const runnerRef = useRef<TourRunner | null>(null);
   const registeredRef = useRef(false);
+  const autoStartTimerRef = useRef<number | null>(null);
+  const latestStateRef = useRef<TourContextState>(defaultState);
+  const hasAutoStartedRef = useRef(false);
   
   // Create tour runner
   useEffect(() => {
@@ -119,6 +123,23 @@ export function TourProvider({
   useEffect(() => {
     runnerRef.current?.setNavigate(navigate);
   }, [navigate]);
+
+  // Keep a ref to the latest state to avoid re-running effects just to read state
+  useEffect(() => {
+    latestStateRef.current = state;
+  }, [state]);
+  
+  // Reset stuck tour state on mount (if tour is marked as running but Shepherd tour is null)
+  useEffect(() => {
+    if (runnerRef.current) {
+      runnerRef.current.resetStuckState();
+      // Also check and clean up dismissed tours
+      const actuallyRunning = runnerRef.current.getIsRunning();
+      if (import.meta.env.DEV && !actuallyRunning) {
+        console.log('[TourProvider] Cleaned up stale tour state on mount');
+      }
+    }
+  }, []);
   
   // Restore tour state after navigation (if tour was active)
   useEffect(() => {
@@ -127,28 +148,52 @@ export function TourProvider({
     const activeState = getActiveTourState();
     if (!activeState) return;
     
-    // Check if tour is already running
-    if (runnerRef.current.getIsRunning()) {
+    // Check if tour is already running (this will clean up dismissed tours)
+    const actuallyRunning = runnerRef.current.getIsRunning();
+    if (actuallyRunning) {
       if (import.meta.env.DEV) {
         console.log('[TourProvider] Skipping restore - tour already running');
       }
       return;
     }
     
+    // Check state as well (double-check)
+    // But also check if the active tour is dismissed (stale state)
+    if (state.isRunning || state.activeTourId) {
+      if (state.activeTourId && isTourDismissed(state.activeTourId)) {
+        // Stale state - tour is dismissed but marked as running
+        if (import.meta.env.DEV) {
+          console.log('[TourProvider] Stale state detected - tour dismissed but marked as running, cleaning up');
+        }
+        // Don't return - allow restore to proceed (stale state will be cleaned up)
+      } else {
+        if (import.meta.env.DEV) {
+          console.log('[TourProvider] Skipping restore - tour already running in state');
+        }
+        return;
+      }
+    }
+    
     // Restore tour from saved state
     const restoreTour = async () => {
       // Reduced wait time - just enough for page to render
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Double-check tour is still not running (might have been started by route handler)
-      if (runnerRef.current && !runnerRef.current.getIsRunning() && activeState) {
+      // Triple-check tour is still not running (might have been started by route handler or auto-start)
+      if (runnerRef.current && 
+          !runnerRef.current.getIsRunning() && 
+          !latestStateRef.current.isRunning && 
+          !latestStateRef.current.activeTourId &&
+          activeState) {
         // Resume tour from the saved step
         await runnerRef.current.start(activeState.tourId, activeState.stepId);
+      } else if (import.meta.env.DEV) {
+        console.log('[TourProvider] Skipping restore - tour started during wait');
       }
     };
     
     restoreTour();
-  }, [location.pathname]); // Restore when route changes
+  }, [location.pathname]); // Restore when route changes; internal checks use refs
   
   // Create tour context for eligibility checks (must be defined before useEffects that use it)
   const createTourContext = useCallback((): TourContext => ({
@@ -194,50 +239,76 @@ export function TourProvider({
   // Auto-start if enabled (wait for profile to be available)
   useEffect(() => {
     if (!autoStart || tours.length === 0) return;
-    
-    // Wait for profile to load (if profile is null, wait a bit more)
-    const checkAndStart = () => {
+
+    // Clear any previous scheduled auto-start (StrictMode / re-renders)
+    if (autoStartTimerRef.current) {
+      window.clearTimeout(autoStartTimerRef.current);
+      autoStartTimerRef.current = null;
+    }
+
+    const delayMs = profile === null ? 2000 : 1000;
+    autoStartTimerRef.current = window.setTimeout(async () => {
+      // Auto-start should run at most once per mount
+      if (hasAutoStartedRef.current) return;
+
+      // If a tour is already persisted as active, let the restore effect handle it
+      if (hasActiveTourState()) {
+        if (import.meta.env.DEV) {
+          console.log('[TourProvider] Skipping auto-start - active tour in sessionStorage');
+        }
+        return;
+      }
+
       const context = createTourContext();
       const eligible = getEligibleTours(context);
-      
+
       if (import.meta.env.DEV) {
         console.log('[TourProvider] Auto-start check:', {
           autoStart,
           toursCount: tours.length,
           eligibleCount: eligible.length,
-          eligibleTours: eligible.map(t => t.id),
+          eligibleTours: eligible.map((t) => t.id),
           profile: profile ? 'loaded' : 'null',
           has_completed_onboarding: profile?.has_completed_onboarding,
         });
       }
-      
+
+      if (!runnerRef.current) return;
+      const s = latestStateRef.current;
+      if (runnerRef.current.getIsRunning() || s.isRunning || s.activeTourId) {
+        if (import.meta.env.DEV) {
+          console.log('[TourProvider] Skipping auto-start - tour already running');
+        }
+        return;
+      }
+
       if (eligible.length > 0) {
-        // Delay to allow app to render and profile to load
-        setTimeout(() => {
-          if (runnerRef.current && !runnerRef.current.getIsRunning()) {
-            if (import.meta.env.DEV) {
-              console.log('[TourProvider] Starting tour:', eligible[0].id);
-            }
-            runnerRef.current.start(eligible[0].id);
-          } else if (import.meta.env.DEV) {
-            console.log('[TourProvider] Skipping start - tour already running');
-          }
-        }, 1500);
+        if (import.meta.env.DEV) {
+          console.log('[TourProvider] Starting tour:', eligible[0].id);
+        }
+        // Auto-start should respect dismissal (force=false)
+        const started = await runnerRef.current.start(eligible[0].id, undefined, { force: false });
+        if (started) {
+          hasAutoStartedRef.current = true;
+        }
       } else if (import.meta.env.DEV) {
         console.log('[TourProvider] No eligible tours found');
       }
+    }, delayMs);
+
+    return () => {
+      if (autoStartTimerRef.current) {
+        window.clearTimeout(autoStartTimerRef.current);
+        autoStartTimerRef.current = null;
+      }
     };
-    
-    // Always check and start (profile can be null, which is fine for eligibility check)
-    // Wait a bit to ensure everything is loaded
-    const timeout = setTimeout(checkAndStart, profile === null ? 2000 : 1000);
-    return () => clearTimeout(timeout);
   }, [autoStart, tours, profile, createTourContext]);
   
   // Start a tour
-  const startTour = useCallback(async (tourId: string, fromStep?: string): Promise<void> => {
+  // Manual starts (from UI) should work even if tour is dismissed (auto-undismiss)
+  const startTour = useCallback(async (tourId: string, fromStep?: string, force: boolean = true): Promise<void> => {
     if (!runnerRef.current) return;
-    await runnerRef.current.start(tourId, fromStep);
+    await runnerRef.current.start(tourId, fromStep, { force });
   }, []);
   
   // Resume a tour
@@ -288,12 +359,43 @@ export function TourProvider({
 
 /**
  * Hook to use the tour context
+ * Returns a safe default if context is not available (for components that render before provider is ready)
  */
 export function useTour(): TourProviderContextValue {
   const context = useContext(TourProviderContext);
   
   if (!context) {
-    throw new Error('useTour must be used within a TourProvider');
+    // Return safe default instead of throwing - allows components to render
+    // Tour functionality will be disabled until provider is available
+    if (import.meta.env.DEV) {
+      console.warn('[useTour] TourProvider context not available - returning safe default');
+    }
+    
+    return {
+      state: defaultState,
+      startTour: async () => {
+        if (import.meta.env.DEV) {
+          console.warn('[useTour] startTour called but TourProvider not available');
+        }
+      },
+      resumeTour: async () => {
+        if (import.meta.env.DEV) {
+          console.warn('[useTour] resumeTour called but TourProvider not available');
+        }
+      },
+      stopTour: () => {
+        if (import.meta.env.DEV) {
+          console.warn('[useTour] stopTour called but TourProvider not available');
+        }
+      },
+      resetTour: async () => {
+        if (import.meta.env.DEV) {
+          console.warn('[useTour] resetTour called but TourProvider not available');
+        }
+      },
+      isTourCompleted: () => false,
+      getAvailableTours: () => [],
+    };
   }
   
   return context;

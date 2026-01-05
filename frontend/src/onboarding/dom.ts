@@ -101,6 +101,7 @@ export function waitForElement(
 
 /**
  * Wait for an element to be visible
+ * Supports multiple selectors separated by comma (tries each until one matches)
  */
 export function waitForVisible(
   config: WaitForConfig
@@ -110,13 +111,19 @@ export function waitForVisible(
   return new Promise((resolve) => {
     const startTime = Date.now();
     
+    // Support multiple selectors (comma-separated)
+    const selectors = selector.split(',').map(s => s.trim());
+    
     const check = () => {
-      const element = findElement(selector);
-      
-      if (element) {
-        if (!visible || isElementVisible(element)) {
-          resolve(element);
-          return;
+      // Try each selector until one matches
+      for (const sel of selectors) {
+        const element = findElement(sel);
+        
+        if (element) {
+          if (!visible || isElementVisible(element)) {
+            resolve(element);
+            return;
+          }
         }
       }
       

@@ -11,6 +11,7 @@ import { useTour } from '@/onboarding';
 import { userToursApi } from '@/lib/api/userTours';
 import { useAuth } from './useAuth';
 import { isTourDismissed } from '@/onboarding/dismissedTours';
+import { hasActiveTourState } from '@/onboarding/sessionStorage';
 
 /**
  * Hook to automatically trigger tours for the current route
@@ -23,25 +24,31 @@ export function useRouteTours() {
   useEffect(() => {
     if (!user) return;
 
-    // Don't trigger if a tour is already running - check both state and active tour state
+    // Don't trigger if a tour is actually running
+    // Check if the active tour is dismissed - if so, it's stale state
     if (state.isRunning || state.activeTourId) {
-      if (import.meta.env.DEV) {
-        console.log('[useRouteTours] Skipping - tour already running:', state.activeTourId);
-      }
-      return;
-    }
-
-    // Also check sessionStorage for active tour
-    try {
-      const { hasActiveTourState } = require('@/onboarding/sessionStorage');
-      if (hasActiveTourState && hasActiveTourState()) {
+      // Check if the active tour is dismissed - if so, it's stale state
+      // isTourDismissed is already imported at the top
+      if (state.activeTourId && isTourDismissed(state.activeTourId)) {
+        // Stale state - tour is dismissed but marked as running
         if (import.meta.env.DEV) {
-          console.log('[useRouteTours] Skipping - active tour in sessionStorage');
+          console.log('[useRouteTours] Stale state detected - tour dismissed but marked as running:', state.activeTourId);
+        }
+        // Don't return - allow tour to start (the stale state will be cleaned up)
+      } else {
+        if (import.meta.env.DEV) {
+          console.log('[useRouteTours] Skipping - tour already running:', state.activeTourId);
         }
         return;
       }
-    } catch (error) {
-      // Ignore if module not available
+    }
+
+    // Also check sessionStorage for active tour
+    if (hasActiveTourState()) {
+      if (import.meta.env.DEV) {
+        console.log('[useRouteTours] Skipping - active tour in sessionStorage');
+      }
+      return;
     }
 
     const checkAndTriggerTours = async () => {

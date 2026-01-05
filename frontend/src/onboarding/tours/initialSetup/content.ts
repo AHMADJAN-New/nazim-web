@@ -115,28 +115,15 @@ export const tourContent = {
     ],
   },
   schoolManagementPage: {
-    title: 'Schools Management Page',
+    title: 'Edit School Information',
     text: [
-      'This is the Schools Management page.',
-      'Here you can view and manage all your school configurations.',
-      'You\'ll see a list of schools with options to edit, delete, or manage watermarks.',
-      'Take a moment to familiarize yourself with this page.',
+      'This is where you configure your school’s core information (used across reports and the whole system).',
+      'Click the edit button (pencil icon) next to your school to update details like name, contact info, and branding.',
+      'You can make changes now, or do it later—when you’re ready, click Next to continue.',
     ],
   },
-  schoolManagement: {
-    title: 'School Management',
-    text: [
-      'First, configure your school data.',
-      'Click the edit button to open the school management form.',
-      'Fill in your school information correctly:',
-      '• School name (in all languages)',
-      '• Contact information (address, phone, email)',
-      '• School logos (primary, secondary, ministry)',
-      '• Branding colors and fonts',
-      'This data will be used in all reports, certificates, and official documents.',
-      'Make sure all information is accurate and complete.',
-    ],
-  },
+  // NOTE: We intentionally do not have a "schoolManagement" dialog step anymore.
+  // We keep this key removed to avoid forcing modal interaction during the tour.
   userPermissions: {
     title: 'User Permissions Setup',
     text: [

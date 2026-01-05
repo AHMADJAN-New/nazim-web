@@ -123,14 +123,14 @@ export const initialSetupSteps: TourStep[] = [
     optional: false,
   },
   
-  // Step 12: Navigate to Schools Management (show sidebar and link)
+  // Step 12: Navigate to Schools Management (show sidebar group)
   {
     id: 'school-management-navigate',
     title: 'Navigate to Schools Management',
     text: [
       'Let\'s navigate to the Schools Management page.',
-      'First, expand the Academic Settings section in the sidebar.',
-      'Then click on "Schools Management" to open the page.',
+      'First, expand the Academic Settings section in the sidebar by clicking on it.',
+      'This will reveal the menu items including "Schools Management".',
     ],
     attachTo: { selector: '[data-tour="sidebar-academicSettings"]', on: 'right' },
     route: '/dashboard',
@@ -138,9 +138,9 @@ export const initialSetupSteps: TourStep[] = [
       { type: 'expandSidebar' },
       { type: 'wait', payload: { ms: 200 } },
       { type: 'openSidebarGroup', payload: { groupId: 'academicSettings' } },
-      { type: 'wait', payload: { ms: 200 } },
+      { type: 'wait', payload: { ms: 300 } },
     ],
-    waitFor: { selector: '[data-tour="sidebar-schools-management"]', timeoutMs: 3000 },
+    waitFor: { selector: '[data-tour="sidebar-academicSettings"]', timeoutMs: 3000 },
     allowClicksOnTarget: true, // Allow user to click the sidebar group
     optional: false,
     rtlPlacementFlip: true,
@@ -151,7 +151,7 @@ export const initialSetupSteps: TourStep[] = [
     id: 'school-management-click',
     title: 'Open Schools Management',
     text: [
-      'Click on "Schools Management" to navigate to the page.',
+      'Now click on "Schools Management" to navigate to the page.',
       'This will open the Schools Management interface where you can configure your school data.',
     ],
     attachTo: { selector: '[data-tour="sidebar-schools-management"]', on: 'right' },
@@ -160,42 +160,29 @@ export const initialSetupSteps: TourStep[] = [
       { type: 'expandSidebar' },
       { type: 'wait', payload: { ms: 100 } },
       { type: 'openSidebarGroup', payload: { groupId: 'academicSettings' } },
-      { type: 'wait', payload: { ms: 100 } },
+      { type: 'wait', payload: { ms: 300 } },
     ],
-    waitFor: { selector: '[data-tour="sidebar-schools-management"]', timeoutMs: 3000 },
+    waitFor: { selector: '[data-tour="sidebar-schools-management"]', timeoutMs: 5000 },
     allowClicksOnTarget: true, // Allow user to click the link directly
     optional: false,
     rtlPlacementFlip: true,
   },
   
-  // Step 14: Show Schools Management Page
+  // Step 14: Show Schools Management Page - Instruct user to edit school details
+  // Simple instruction step. User may edit details if needed, then press Next.
   {
     id: 'school-management-page',
     ...getStepContent('schoolManagementPage'),
-    attachTo: { selector: '[data-tour="schools-management-page"]', on: 'center' },
+    // Attach to edit button if it exists, otherwise show centered (handled in TourRunner)
+    attachTo: { selector: '[data-tour="schools-edit-button"]', on: 'bottom' },
     route: '/settings/schools',
-    waitFor: { selector: '[data-tour="schools-management-page"]', timeoutMs: 5000 },
-    optional: false,
+    // Don't wait for element - show step immediately and attach if element exists
+    // If element doesn't exist (e.g., user doesn't have update permission), step shows centered
+    optional: false, // Required step - always show, even if element doesn't exist
+    allowClicksOnTarget: true, // Allow user to click the edit button if it exists
   },
   
-  // Step 15: School Management Edit
-  {
-    id: 'school-management',
-    ...getStepContent('schoolManagement'),
-    attachTo: { selector: '[data-tour="schools-edit-dialog"]', on: 'center' },
-    route: '/settings/schools',
-    preActions: [
-      { type: 'wait', payload: { ms: 500 } }, // Wait for page to be fully ready
-      { type: 'click', payload: { selector: '[data-tour="schools-edit-button"]' } },
-      { type: 'wait', payload: { ms: 800 } }, // Wait longer for dialog to open
-    ],
-    waitFor: { selector: '[data-tour="schools-edit-dialog"]', timeoutMs: 8000 }, // Increased timeout for dialog
-    allowClicksOnTarget: true, // Allow user to interact with the dialog
-    optional: false,
-    rtlPlacementFlip: true,
-  },
-  
-  // Step 16: User Permissions
+  // Step 15: User Permissions
   {
     id: 'user-permissions',
     ...getStepContent('userPermissions'),
@@ -209,7 +196,7 @@ export const initialSetupSteps: TourStep[] = [
     rtlPlacementFlip: true,
   },
   
-  // Step 17: User Creation
+  // Step 16: User Creation
   {
     id: 'user-creation',
     ...getStepContent('userCreation'),
@@ -223,7 +210,7 @@ export const initialSetupSteps: TourStep[] = [
     rtlPlacementFlip: true,
   },
   
-  // Step 18: Role Assignment
+  // Step 17: Role Assignment
   {
     id: 'role-assignment',
     ...getStepContent('roleAssignment'),
@@ -237,7 +224,7 @@ export const initialSetupSteps: TourStep[] = [
     rtlPlacementFlip: true,
   },
   
-  // Step 19: Role Permissions
+  // Step 18: Role Permissions
   {
     id: 'role-permissions',
     ...getStepContent('rolePermissions'),

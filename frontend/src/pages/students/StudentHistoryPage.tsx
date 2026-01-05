@@ -44,7 +44,7 @@ export default function StudentHistoryPage() {
   const exportExcel = useExportStudentHistoryExcel();
 
   const handleExportPdf = () => {
-    if (studentId) {
+    if (studentId && !exportPdf.isPending && !exportPdf.isPolling) {
       exportPdf.mutate({ studentId });
     }
   };
@@ -172,11 +172,15 @@ export default function StudentHistoryPage() {
                       variant="outline"
                       size="sm"
                       onClick={handleExportPdf}
-                      disabled={exportPdf.isPending}
+                      disabled={exportPdf.isPending || exportPdf.isPolling}
                       className="gap-2"
                     >
                       <FileDown className="h-4 w-4" />
-                      <span className="hidden sm:inline">{t('common.exportPdf') || 'Export PDF'}</span>
+                      <span className="hidden sm:inline">
+                        {exportPdf.isPolling 
+                          ? (t('common.generating') || 'Generating...') 
+                          : (t('common.exportPdf') || 'Export PDF')}
+                      </span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="sm:hidden">

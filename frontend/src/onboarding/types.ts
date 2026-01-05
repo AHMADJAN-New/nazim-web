@@ -106,6 +106,10 @@ export interface TourStep {
   classes?: string;
   /** Custom buttons for this step */
   buttons?: TourStepButton[];
+  /** If true, hide tour overlay when Next is clicked and wait for user interaction */
+  hideOnNext?: boolean;
+  /** Selector for dialog to wait for when hideOnNext is true */
+  waitForDialog?: string;
 }
 
 /**

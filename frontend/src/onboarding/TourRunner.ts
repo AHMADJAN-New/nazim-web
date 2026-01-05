@@ -13,7 +13,7 @@ import { getRTLPlacement, isRTL, getTextDirection } from './rtl';
 import { waitForVisible, scrollToElement, waitForRouteChange, wait, findElement } from './dom';
 import { executeActions, setNavigateFunction } from './actions';
 import { saveActiveTourState, clearActiveTourState } from './sessionStorage';
-import { dismissTour } from './dismissedTours';
+import { dismissTour, isTourDismissed, undismissTour } from './dismissedTours';
 
 const DEBUG = import.meta.env.VITE_TOUR_DEBUG === 'true';
 
@@ -63,6 +63,9 @@ export class TourRunner {
   private currentTourDef: TourDefinition | null = null;
   private options: TourRunnerOptions;
   private isRunning: boolean = false;
+  private isStarting: boolean = false; // Prevent concurrent start() calls (StrictMode + timers)
+  private runToken = 0; // Prevents stale async "start" work
+  private suppressDismissOnCancel: boolean = false; // Prevent dismiss when we cancel programmatically
   
   constructor(options: TourRunnerOptions = {}) {
     this.options = options;
@@ -75,29 +78,69 @@ export class TourRunner {
   /**
    * Start a tour
    */
-  async start(tourId: string, fromStepId?: string): Promise<boolean> {
-    // CRITICAL: If a tour is already running, don't start a new one
-    // This prevents duplicate tours from showing
-    if (this.isRunning) {
+  async start(tourId: string, fromStepId?: string, options?: { force?: boolean }): Promise<boolean> {
+    // Prevent concurrent starts (common in React StrictMode / multiple timers)
+    if (this.isStarting) {
       debugLog({
         timestamp: Date.now(),
         type: 'warning',
-        message: 'Tour already running, cannot start new tour',
-        data: { currentTourId: this.currentTourId, newTourId: tourId },
+        message: 'Tour start already in progress, ignoring duplicate start()',
+        data: { tourId, currentTourId: this.currentTourId },
       });
-      
-      // If it's the same tour, just continue (don't restart)
-      if (this.currentTourId === tourId) {
-        if (DEBUG) {
-          console.log(`[TourRunner] Tour "${tourId}" is already running, continuing...`);
-        }
-        return true;
+      return false;
+    }
+
+    // CRITICAL: Check if tour is dismissed
+    // If force=true (manual start), undismiss the tour automatically
+    // If force=false or undefined (auto-start), respect dismissal
+    if (isTourDismissed(tourId)) {
+      if (options?.force) {
+        // Manual start - undismiss the tour
+        undismissTour(tourId);
+        debugLog({
+          timestamp: Date.now(),
+          type: 'info',
+          message: `Manually starting dismissed tour - undismissing: ${tourId}`,
+        });
+      } else {
+        // Auto-start - respect dismissal
+        debugLog({
+          timestamp: Date.now(),
+          type: 'warning',
+          message: `Cannot auto-start dismissed tour: ${tourId}`,
+        });
+        return false;
       }
+    }
+    
+    // CRITICAL: If a tour is already running, check if it's actually running
+    // (might be stale state if tour was dismissed)
+    if (this.isRunning) {
+      // Use getIsRunning() which will clean up dismissed tours
+      const actuallyRunning = this.getIsRunning();
       
-      // Different tour - stop current and start new (but log warning)
-      this.stop();
-      // Wait a bit for cleanup
-      await new Promise(resolve => setTimeout(resolve, 100));
+      if (actuallyRunning) {
+        debugLog({
+          timestamp: Date.now(),
+          type: 'warning',
+          message: 'Tour already running, cannot start new tour',
+          data: { currentTourId: this.currentTourId, newTourId: tourId },
+        });
+        
+        // If it's the same tour, just continue (don't restart)
+        if (this.currentTourId === tourId) {
+          if (DEBUG) {
+            console.log(`[TourRunner] Tour "${tourId}" is already running, continuing...`);
+          }
+          return true;
+        }
+        
+        // Different tour - stop current and start new (but log warning)
+        this.stop();
+        // Wait a bit for cleanup
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      // If getIsRunning() returned false (dismissed tour cleaned up), continue with start
     }
     
     const tourDef = getTour(tourId);
@@ -112,12 +155,18 @@ export class TourRunner {
     
     this.currentTourId = tourId;
     this.currentTourDef = tourDef;
+
+    // Mark start in progress ASAP (prevents parallel addSteps/start)
+    this.isStarting = true;
+    
+    // Increment run token to prevent stale async work
+    const token = ++this.runToken;
     
     debugLog({
       timestamp: Date.now(),
       type: 'info',
       message: `Starting tour: ${tourId}`,
-      data: { version: tourDef.version, steps: tourDef.steps.length },
+      data: { version: tourDef.version, steps: tourDef.steps.length, token },
     });
     
     // Create Shepherd tour
@@ -132,12 +181,24 @@ export class TourRunner {
       }
     }
     
-    // Add steps
-    await this.addSteps(tourDef.steps, startIndex);
+    try {
+      // Add steps
+      await this.addSteps(tourDef.steps, startIndex);
     
-    // Start the tour
-    this.isRunning = true;
-    this.options.onStart?.(tourId);
+      // Check if aborted by another start/stop
+      if (token !== this.runToken) {
+        debugLog({
+          timestamp: Date.now(),
+          type: 'warning',
+          message: `Tour start aborted - another start/stop occurred`,
+          data: { tourId, token, currentToken: this.runToken },
+        });
+        return false;
+      }
+    
+      // Start the tour
+      this.isRunning = true;
+      this.options.onStart?.(tourId);
     
     // Save active tour state to sessionStorage
     saveActiveTourState({
@@ -147,9 +208,11 @@ export class TourRunner {
       timestamp: Date.now(),
     });
     
-    this.shepherdTour.start();
-    
-    return true;
+      this.shepherdTour.start();
+      return true;
+    } finally {
+      this.isStarting = false;
+    }
   }
   
   /**
@@ -164,8 +227,17 @@ export class TourRunner {
    * Stop the current tour
    */
   stop(): void {
+    // Increment run token to abort any pending async work
+    this.runToken++;
+    
     if (this.shepherdTour) {
-      this.shepherdTour.cancel();
+      // Programmatic stop: do NOT dismiss the tour
+      this.suppressDismissOnCancel = true;
+      try {
+        this.shepherdTour.cancel();
+      } finally {
+        this.suppressDismissOnCancel = false;
+      }
       this.shepherdTour = null;
     }
     
@@ -175,6 +247,7 @@ export class TourRunner {
         type: 'info',
         message: `Tour stopped: ${this.currentTourId}`,
       });
+      // Cancel callback may have already fired via Shepherd 'cancel' event, but safe to call again
       this.options.onCancel?.(this.currentTourId);
     }
     
@@ -186,8 +259,44 @@ export class TourRunner {
   
   /**
    * Check if a tour is running
+   * CRITICAL: Also checks if current tour is dismissed - if so, cleans up and returns false
    */
   getIsRunning(): boolean {
+    // If no tour is marked as running, return false
+    if (!this.isRunning || !this.currentTourId) {
+      return false;
+    }
+    
+    // CRITICAL: If the current tour is dismissed, it's not actually running
+    // Clean up the stale state
+    if (isTourDismissed(this.currentTourId)) {
+      if (DEBUG) {
+        console.log(`[TourRunner] Tour "${this.currentTourId}" is dismissed but marked as running - cleaning up`);
+      }
+      const staleTourId = this.currentTourId;
+
+      // Clean up stale state
+      if (this.shepherdTour) {
+        try {
+          // Programmatic cleanup: do NOT dismiss the tour
+          this.suppressDismissOnCancel = true;
+          this.shepherdTour.cancel();
+        } catch (e) {
+          // Ignore errors during cleanup
+        } finally {
+          this.suppressDismissOnCancel = false;
+        }
+        this.shepherdTour = null;
+      }
+      clearActiveTourState();
+      this.isRunning = false;
+      this.currentTourId = null;
+      this.currentTourDef = null;
+      // Ensure provider state is reset (if cancel handler didn't run for some reason)
+      this.options.onCancel?.(staleTourId);
+      return false;
+    }
+    
     return this.isRunning;
   }
   
@@ -196,6 +305,33 @@ export class TourRunner {
    */
   getCurrentTourId(): string | null {
     return this.currentTourId;
+  }
+  
+  /**
+   * Reset stuck tour state (if tour is marked as running but Shepherd tour is null)
+   * This can happen if the page was refreshed or tour was dismissed while running
+   */
+  resetStuckState(): void {
+    if (this.isRunning && !this.shepherdTour) {
+      if (DEBUG) {
+        console.log('[TourRunner] Resetting stuck tour state');
+      }
+      const staleTourId = this.currentTourId;
+      debugLog({
+        timestamp: Date.now(),
+        type: 'warning',
+        message: 'Resetting stuck tour state - isRunning=true but no Shepherd tour',
+        data: { currentTourId: this.currentTourId },
+      });
+      
+      this.isRunning = false;
+      this.currentTourId = null;
+      this.currentTourDef = null;
+      clearActiveTourState();
+      if (staleTourId) {
+        this.options.onCancel?.(staleTourId);
+      }
+    }
   }
   
   /**
@@ -260,8 +396,11 @@ export class TourRunner {
         message: `Tour cancelled: ${tourDef.id}`,
       });
       
-      // Mark tour as dismissed if user cancelled it
-      dismissTour(tourDef.id);
+      // Mark tour as dismissed only when user cancels (not when we cancel programmatically)
+      // Also: do not permanently dismiss initial setup tour; onboarding should remain available until completed.
+      if (!this.suppressDismissOnCancel && tourDef.id !== 'initialSetup') {
+        dismissTour(tourDef.id);
+      }
       
       clearActiveTourState(); // Clear session storage
       this.isRunning = false;
@@ -284,6 +423,34 @@ export class TourRunner {
     
     for (let i = startIndex; i < steps.length; i++) {
       const step = steps[i];
+      
+      // Skip optional steps if target doesn't exist and no route change expected
+      // CRITICAL: Never skip hideOnNext steps - they need to show even if element not found
+      if (step.optional && !step.hideOnNext && step.attachTo?.selector && step.attachTo.selector !== 'body') {
+        const el = findElement(step.attachTo.selector);
+        if (!el && !step.route) {
+          // Safe skip - no navigation means element won't appear
+          debugLog({
+            timestamp: Date.now(),
+            type: 'info',
+            message: `Skipping optional step "${step.id}" - target not found and no route change`,
+            data: { selector: step.attachTo.selector },
+          });
+          continue;
+        }
+        // If route exists, element might appear after navigation - keep the step
+      }
+      
+      // Log hideOnNext steps to help debug
+      if (step.hideOnNext) {
+        debugLog({
+          timestamp: Date.now(),
+          type: 'info',
+          message: `Adding hideOnNext step "${step.id}" at index ${i}`,
+          data: { selector: step.attachTo?.selector, route: step.route },
+        });
+      }
+      
       const isFirst = i === startIndex;
       const isLast = i === steps.length - 1;
       
@@ -292,6 +459,13 @@ export class TourRunner {
       
       if (stepOptions) {
         this.shepherdTour.addStep(stepOptions);
+        if (step.hideOnNext) {
+          debugLog({
+            timestamp: Date.now(),
+            type: 'info',
+            message: `Successfully added hideOnNext step "${step.id}" to Shepherd tour`,
+          });
+        }
       }
     }
   }
@@ -338,33 +512,103 @@ export class TourRunner {
         classes: 'shepherd-button-primary',
       });
     } else {
-      buttons.push({
-        text: rtl ? 'بعدی ←' : 'Next →',
-        action: () => this.shepherdTour?.next(),
-        classes: 'shepherd-button-primary',
-      });
+      // Special handling for steps that should hide tour on next
+      if (step.hideOnNext && step.waitForDialog) {
+        buttons.push({
+          text: rtl ? 'بعدی ←' : 'Next →',
+          action: () => {
+            debugLog({
+              timestamp: Date.now(),
+              type: 'info',
+              message: `Next button clicked for hideOnNext step: ${step.id}`,
+            });
+            if (DEBUG) {
+              console.log(`[TourRunner] Next button clicked for hideOnNext step: ${step.id}`);
+            }
+            try {
+              this.handleHideAndWaitForDialog(step.waitForDialog!);
+            } catch (error) {
+              debugLog({
+                timestamp: Date.now(),
+                type: 'error',
+                message: `Error in handleHideAndWaitForDialog for step "${step.id}"`,
+                data: { error: error instanceof Error ? error.message : String(error) },
+              });
+              if (DEBUG) {
+                console.error('[TourRunner] Error in handleHideAndWaitForDialog:', error);
+              }
+              // Fallback: just proceed to next step
+              this.shepherdTour?.next();
+            }
+          },
+          classes: 'shepherd-button-primary',
+        });
+      } else {
+        buttons.push({
+          text: rtl ? 'بعدی ←' : 'Next →',
+          action: () => this.shepherdTour?.next(),
+          classes: 'shepherd-button-primary',
+        });
+      }
     }
     
     // Determine attachment
+    // For hideOnNext steps, check if element exists first
+    // If not, show centered (attachTo = undefined)
     let attachTo: any;
     
     if (step.attachTo && step.attachTo.selector !== 'body') {
-      const placement = getRTLPlacement(step);
-      attachTo = {
-        element: step.attachTo.selector,
-        on: placement === 'center' ? 'bottom' : placement,
-      };
+      // For hideOnNext steps, check if element exists synchronously
+      // If not, we'll show centered and wait for element in beforeShowPromise
+      if (step.hideOnNext) {
+        const element = findElement(step.attachTo.selector);
+        if (element) {
+          const placement = getRTLPlacement(step);
+          attachTo = {
+            element: step.attachTo.selector,
+            on: placement === 'center' ? 'bottom' : placement,
+          };
+        } else {
+          // Element doesn't exist yet - show centered, will reattach in beforeShowPromise
+          attachTo = undefined;
+          debugLog({
+            timestamp: Date.now(),
+            type: 'info',
+            message: `Element not found for hideOnNext step "${step.id}", will show centered and wait`,
+            data: { selector: step.attachTo.selector },
+          });
+        }
+      } else {
+        // Normal steps - check if element exists, otherwise show centered
+        const element = findElement(step.attachTo.selector);
+        if (element) {
+          const placement = getRTLPlacement(step);
+          attachTo = {
+            element: step.attachTo.selector,
+            on: placement === 'center' ? 'bottom' : placement,
+          };
+        } else {
+          // Element doesn't exist - show centered (attach to body)
+          attachTo = undefined;
+          if (DEBUG) {
+            console.log(`[TourRunner] Element not found for step "${step.id}", showing centered`);
+          }
+        }
+      }
     }
     
     // Create step options
     const stepOptions: any = {
       id: step.id,
       text: `${progressHtml}${titleHtml}${textHtml}`,
-      attachTo,
+      attachTo, // undefined for hideOnNext if element not found (shows centered)
       buttons,
       classes: step.classes,
       canClickTarget: step.allowClicksOnTarget ?? false,
-      beforeShowPromise: async () => {
+      // CRITICAL: For hideOnNext steps, do NOT set beforeShowPromise at all.
+      // Shepherd disables buttons while beforeShowPromise is pending; even Promise.resolve()
+      // can cause flakiness. All setup for hideOnNext steps happens in when.show (non-blocking).
+      beforeShowPromise: step.hideOnNext ? undefined : async () => {
         // CRITICAL: Add timeout to ensure promise always resolves
         // This prevents buttons from being stuck
         const timeoutPromise = new Promise<void>((resolve) => {
@@ -388,7 +632,11 @@ export class TourRunner {
             // Navigate if needed (only if not already on the route)
             // CRITICAL: Don't navigate if we're already on the target route
             // This prevents redirecting away from pages like /settings/schools
-            if (step.route && window.location.pathname !== step.route) {
+            // Also, don't navigate if we're waiting for a dialog/modal (they're on the same route)
+            const isWaitingForDialog = step.waitFor?.selector.includes('dialog') || 
+                                      step.attachTo?.selector.includes('dialog');
+            
+            if (step.route && window.location.pathname !== step.route && !isWaitingForDialog) {
               if (this.options.navigate) {
                 this.options.navigate(step.route);
                 // Reduced wait time - just wait for route change, not extra delay
@@ -400,7 +648,8 @@ export class TourRunner {
               }
             } else if (step.route && window.location.pathname === step.route) {
               // Already on the correct route - just wait a bit for page to be ready
-              await wait(100);
+              // If waiting for dialog, wait longer for it to open
+              await wait(isWaitingForDialog ? 500 : 100);
             }
             
             // Execute pre-actions
@@ -409,11 +658,16 @@ export class TourRunner {
             }
             
             // Wait for element if needed (with timeout)
+            // CRITICAL: For dialogs, wait longer and don't block buttons if element not found
             let targetElement: Element | null = null;
+            const isDialogStep = step.waitFor?.selector.includes('dialog') || 
+                                step.attachTo?.selector.includes('dialog');
+            
             if (step.waitFor) {
+              const timeoutMs = isDialogStep ? Math.max(step.waitFor.timeoutMs || 10000, 10000) : (step.waitFor.timeoutMs || 5000);
               targetElement = await Promise.race([
                 waitForVisible(step.waitFor),
-                new Promise<Element | null>((resolve) => setTimeout(() => resolve(null), step.waitFor!.timeoutMs || 5000)),
+                new Promise<Element | null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
               ]);
               
               if (!targetElement && !step.optional) {
@@ -423,36 +677,37 @@ export class TourRunner {
                   message: `WaitFor target not found for step "${step.id}"`,
                   data: { selector: step.waitFor.selector },
                 });
-              }
-            } else if (step.attachTo && step.attachTo.selector !== 'body') {
-              // Wait for attach target (with timeout)
-              targetElement = await Promise.race([
-                waitForVisible({
-                  selector: step.attachTo.selector,
-                  timeoutMs: 8000, // Increased timeout for dialogs that might take time to open
-                }),
-                new Promise<Element | null>((resolve) => setTimeout(() => resolve(null), 8000)),
-              ]);
-              
-              if (!targetElement) {
-                if (step.optional) {
+                // For dialog steps, don't block - show step anyway (user might have closed dialog)
+                if (isDialogStep) {
                   debugLog({
                     timestamp: Date.now(),
                     type: 'info',
-                    message: `Skipping optional step "${step.id}" - target not found`,
+                    message: `Dialog not found for step "${step.id}", showing step anyway (user may have closed dialog)`,
                   });
-                  // Skip this step
-                  setTimeout(() => this.shepherdTour?.next(), 100);
-                  return;
                 }
-                
+              }
+            } else if (step.attachTo && step.attachTo.selector !== 'body') {
+              // Wait for attach target (with timeout)
+              const timeoutMs = isDialogStep ? 10000 : 8000;
+              targetElement = await Promise.race([
+                waitForVisible({
+                  selector: step.attachTo.selector,
+                  timeoutMs,
+                }),
+                new Promise<Element | null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+              ]);
+              
+              if (!targetElement) {
+                // DO NOT call next() here - optional steps are handled in addSteps()
+                // Just show centered if element not found
                 debugLog({
                   timestamp: Date.now(),
-                  type: 'warning',
+                  type: step.optional ? 'info' : 'warning',
                   message: `Attach target not found for step "${step.id}", showing centered`,
-                  data: { selector: step.attachTo.selector },
+                  data: { selector: step.attachTo.selector, optional: step.optional },
                 });
                 // Step will show centered if element not found
+                // For dialog steps, this is OK - user might have closed it, we'll show step anyway
               }
             }
             
@@ -521,6 +776,92 @@ export class TourRunner {
             type: 'step-end',
             message: `Step "${step.id}" shown`,
           });
+          
+          // CRITICAL: Force enable buttons for ALL steps after they're shown
+          // This ensures buttons are always functional, even if beforeShowPromise had issues
+          setTimeout(() => {
+            const stepElement = document.querySelector(`[data-shepherd-step-id="${step.id}"]`);
+            if (stepElement) {
+              const buttons = stepElement.querySelectorAll('.shepherd-button');
+              buttons.forEach((btn) => {
+                (btn as HTMLButtonElement).disabled = false;
+                (btn as HTMLElement).style.pointerEvents = 'auto';
+                (btn as HTMLElement).style.opacity = '1';
+              });
+              if (DEBUG && buttons.length > 0) {
+                console.log(`[TourRunner] Force-enabled ${buttons.length} button(s) for step "${step.id}"`);
+              }
+            }
+          }, 100);
+          
+          // For hideOnNext steps, do minimal setup after step is shown
+          // This doesn't block buttons since step is already visible
+          if (step.hideOnNext) {
+            debugLog({
+              timestamp: Date.now(),
+              type: 'step-start',
+              message: `Step "${step.id}" shown (hideOnNext mode - buttons should be enabled)`,
+              data: { index, route: step.route, stepId: step.id },
+            });
+            
+            // Note: Buttons are already force-enabled above for all steps
+            
+            // Navigate if needed (non-blocking, fire and forget)
+            if (step.route && window.location.pathname !== step.route) {
+              if (this.options.navigate) {
+                this.options.navigate(step.route);
+                // Fire and forget - don't wait
+              } else {
+                window.location.href = step.route;
+              }
+            }
+            
+            // Wait for element in background (non-blocking)
+            if (step.waitFor) {
+              void (async () => {
+                try {
+                  const element = await Promise.race([
+                    waitForVisible(step.waitFor!),
+                    new Promise<Element | null>((resolve) => setTimeout(() => resolve(null), step.waitFor!.timeoutMs || 5000)),
+                  ]);
+                  if (element) {
+                    debugLog({
+                      timestamp: Date.now(),
+                      type: 'info',
+                      message: `Element found for hideOnNext step "${step.id}"`,
+                      data: { selector: step.waitFor!.selector },
+                    });
+                  } else {
+                    debugLog({
+                      timestamp: Date.now(),
+                      type: 'warning',
+                      message: `Element not found for hideOnNext step "${step.id}"`,
+                      data: { selector: step.waitFor!.selector },
+                    });
+                  }
+                } catch (error) {
+                  // Ignore errors
+                }
+              })();
+            }
+            
+            // Save progress (non-blocking)
+            void (async () => {
+              try {
+                await saveProgress(tourId, step.id, tourVersion);
+                saveActiveTourState({
+                  tourId,
+                  stepId: step.id,
+                  stepIndex: index,
+                  timestamp: Date.now(),
+                });
+              } catch (error) {
+                if (DEBUG) {
+                  console.warn(`[TourRunner] Failed to save progress for step "${step.id}":`, error);
+                }
+              }
+            })();
+          }
         },
       },
     };
@@ -534,6 +875,118 @@ export class TourRunner {
   setNavigate(fn: (path: string) => void): void {
     this.options.navigate = fn;
     setNavigateFunction(fn);
+  }
+  
+  /**
+   * Handle hiding tour and waiting for dialog to appear
+   * CRITICAL: Single-shot implementation to prevent double next() calls
+   */
+  private handleHideAndWaitForDialog(dialogSelector: string): void {
+    const tour = this.shepherdTour;
+    if (!tour) return;
+
+    const currentStep = tour.getCurrentStep();
+    if (!currentStep) return;
+
+    let done = false;
+
+    const restoreShepherdUI = () => {
+      const els = document.querySelectorAll('.shepherd-element, .shepherd-modal-overlay-container');
+      els.forEach((el) => {
+        const h = el as HTMLElement;
+        h.style.display = '';
+        h.style.visibility = '';
+        h.style.pointerEvents = '';
+        h.style.opacity = '';
+      });
+    };
+
+    const hideShepherdUI = () => {
+      const els = document.querySelectorAll('.shepherd-element, .shepherd-modal-overlay-container');
+      els.forEach((el) => {
+        const h = el as HTMLElement;
+        // Avoid display:none if you can; opacity is safer with Shepherd transitions
+        h.style.opacity = '0';
+        h.style.visibility = 'hidden';
+        h.style.pointerEvents = 'none';
+      });
+    };
+
+    const finishOnce = (reason: 'detected' | 'timeout') => {
+      if (done) return;
+      done = true;
+
+      clearInterval(checkInterval);
+      observer.disconnect();
+      clearTimeout(timeoutId);
+
+      restoreShepherdUI();
+
+      debugLog({
+        timestamp: Date.now(),
+        type: reason === 'timeout' ? 'warning' : 'info',
+        message: reason === 'timeout'
+          ? `Timeout waiting for dialog: ${dialogSelector}, proceeding anyway`
+          : `Dialog detected: ${dialogSelector}, proceeding to next step`,
+      });
+
+      setTimeout(() => {
+        if (tour) { // Tour still exists
+          tour.next();
+        }
+      }, 50);
+    };
+
+    // Hide current step and UI
+    try {
+      currentStep.hide();
+    } catch (error) {
+      if (DEBUG) {
+        console.error('[TourRunner] Error hiding step:', error);
+      }
+    }
+    hideShepherdUI();
+
+    const pickVisibleDialog = (): Element | null => {
+      // Try the data-tour selector first
+      let candidates = Array.from(document.querySelectorAll(dialogSelector));
+      
+      // If no matches, try Radix UI dialog pattern as fallback
+      if (candidates.length === 0) {
+        // Try to find DialogContent with data-tour inside an open dialog
+        const dialogContent = document.querySelector('[data-tour="schools-edit-dialog"]');
+        if (dialogContent) {
+          candidates = [dialogContent];
+        } else {
+          // Fallback: find any open Radix UI dialog
+          candidates = Array.from(document.querySelectorAll('[role="dialog"][data-state="open"]'));
+        }
+      }
+      
+      return candidates.find((el) => {
+        const style = window.getComputedStyle(el);
+        if (style.display === 'none' || style.visibility === 'hidden') return false;
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      }) ?? null;
+    };
+
+    const observer = new MutationObserver(() => {
+      if (pickVisibleDialog()) finishOnce('detected');
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style', 'class', 'data-state', 'aria-hidden', 'open'],
+    });
+
+    const checkInterval = setInterval(() => {
+      if (pickVisibleDialog()) finishOnce('detected');
+    }, 200);
+
+    const timeoutId = setTimeout(() => finishOnce('timeout'), 15000);
   }
   
   /**
