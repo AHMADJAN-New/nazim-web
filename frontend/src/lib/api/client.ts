@@ -447,9 +447,6 @@ class ApiClient {
 
 export const apiClient = new ApiClient(API_URL);
 
-// Re-export user tours API
-export { userToursApi } from './userTours';
-
 // Maintenance API (public - no auth required)
 export const maintenanceApi = {
   getPublicStatus: async () => {
