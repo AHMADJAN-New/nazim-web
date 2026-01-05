@@ -153,7 +153,7 @@ export default function FeeDashboard() {
     if (error) {
         return (
             <div className="text-center py-8 text-destructive">
-                {t('common.error') || 'An error occurred'}: {(error as Error).message}
+                {t('events.error') || 'An error occurred'}: {(error as Error).message}
             </div>
         );
     }
@@ -161,7 +161,7 @@ export default function FeeDashboard() {
     if (!dashboard) {
         return (
             <div className="text-center py-8 text-muted-foreground">
-                {t('common.noData') || 'No data available'}
+                {t('events.noData') || 'No data available'}
             </div>
         );
     }
@@ -197,7 +197,7 @@ export default function FeeDashboard() {
                             variant="outline"
                             size="icon"
                             className="self-start sm:self-auto"
-                            aria-label={t('common.download') || 'Download'}
+                            aria-label={t('events.download') || 'Download'}
                         >
                             <Download className="h-4 w-4" />
                         </Button>
@@ -282,7 +282,7 @@ export default function FeeDashboard() {
                             {formatCurrency(dashboard.summary.totalRemaining)}
                         </div>
                         <div className="text-xs text-muted-foreground mb-2 break-words">
-                            {dashboard.summary.totalStudents} {t('fees.students') || 'students'}
+                            {dashboard.summary.totalStudents} {t('table.students') || 'students'}
                         </div>
                     </CardContent>
                     <CardFooter className="pt-3 pb-3">
@@ -293,7 +293,7 @@ export default function FeeDashboard() {
                             onClick={() => navigate('/finance/fees/reports')}
                         >
                             <ChevronRight className="h-4 w-4 mr-1.5 flex-shrink-0" />
-                            <span className="text-left">{t('fees.viewReports') || 'View Reports'}</span>
+                            <span className="text-left">{t('dashboard.viewReports') || 'View Reports'}</span>
                         </Button>
                     </CardFooter>
                 </Card>
@@ -435,7 +435,7 @@ export default function FeeDashboard() {
                             </>
                         ) : (
                             <div className="text-center py-8 text-muted-foreground">
-                                {t('common.noData') || 'No data available'}
+                                {t('events.noData') || 'No data available'}
                             </div>
                         )}
                     </CardContent>
@@ -453,7 +453,7 @@ export default function FeeDashboard() {
                             size="sm"
                             onClick={() => navigate('/finance/fees/reports')}
                         >
-                            {t('fees.viewReport') || 'View Report'}
+                            {t('examReports.viewReport') || 'View Report'}
                         </Button>
                     </CardHeader>
                     <CardContent>
@@ -513,7 +513,7 @@ export default function FeeDashboard() {
                             </ChartContainer>
                         ) : (
                             <div className="text-center py-8 text-muted-foreground">
-                                {t('common.noData') || 'No data available'}
+                                {t('events.noData') || 'No data available'}
                             </div>
                         )}
                     </CardContent>
@@ -648,7 +648,7 @@ export default function FeeDashboard() {
                             size="sm"
                             onClick={() => navigate('/finance/fees/payments')}
                         >
-                            {t('fees.viewAll') || 'View All'}
+                            {t('events.viewAll') || 'View All'}
                         </Button>
                     </CardHeader>
                     <CardContent>
@@ -680,7 +680,7 @@ export default function FeeDashboard() {
                 {/* Quick Actions */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-lg">{t('fees.quickActions') || 'Quick Actions'}</CardTitle>
+                        <CardTitle className="text-lg">{t('dashboard.quickActions') || 'Quick Actions'}</CardTitle>
                         <CardDescription className="hidden md:block">{t('fees.manageFees') || 'Manage fees and assignments'}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-2">
@@ -722,7 +722,7 @@ export default function FeeDashboard() {
                             onClick={() => navigate('/finance/fees/reports')}
                         >
                             <BarChart3 className="h-4 w-4 mr-2" />
-                            {t('fees.reports') || 'Fee Reports'}
+                            {t('nav.reports') || 'Fee Reports'}
                         </Button>
                     </CardContent>
                 </Card>

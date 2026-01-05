@@ -58,7 +58,7 @@ export default function AttendanceDashboard() {
   }, [attendanceSessions]);
 
   if (isLoading) {
-    return <LoadingSpinner text={t('common.loading') || 'Loading attendance data...'} />;
+    return <LoadingSpinner text={t('events.loading') || 'Loading attendance data...'} />;
   }
 
   return (
@@ -75,7 +75,7 @@ export default function AttendanceDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{dashboardStats.totalSessions}</div>
             <p className="text-xs text-muted-foreground">
-              {dashboardStats.todaySessions} {t('attendance.today') || 'today'}
+              {dashboardStats.todaySessions} {t('events.today') || 'today'}
             </p>
           </CardContent>
         </Card>
@@ -90,7 +90,7 @@ export default function AttendanceDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{dashboardStats.attendanceRate}%</div>
             <p className="text-xs text-muted-foreground">
-              {dashboardStats.presentCount} {t('attendance.present') || 'present'} / {dashboardStats.totalRecords} {t('attendance.total') || 'total'}
+              {dashboardStats.presentCount} {t('examReports.present') || 'present'} / {dashboardStats.totalRecords} {t('events.total') || 'total'}
             </p>
           </CardContent>
         </Card>
@@ -98,14 +98,14 @@ export default function AttendanceDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              {t('attendance.present') || 'Present'}
+              {t('examReports.present') || 'Present'}
             </CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{dashboardStats.presentCount}</div>
             <p className="text-xs text-muted-foreground">
-              {t('attendance.students') || 'students'}
+              {t('table.students') || 'students'}
             </p>
           </CardContent>
         </Card>
@@ -120,7 +120,7 @@ export default function AttendanceDashboard() {
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{dashboardStats.absentCount}</div>
             <p className="text-xs text-muted-foreground">
-              {t('attendance.students') || 'students'}
+              {t('table.students') || 'students'}
             </p>
           </CardContent>
         </Card>
@@ -137,7 +137,7 @@ export default function AttendanceDashboard() {
               </CardDescription>
             </div>
             <Button variant="outline" onClick={() => navigate('/attendance')}>
-              {t('common.viewAll') || 'View All'}
+              {t('events.viewAll') || 'View All'}
             </Button>
           </div>
         </CardHeader>
@@ -163,7 +163,7 @@ export default function AttendanceDashboard() {
                     </div>
                   </div>
                   <Badge variant={session.status === 'closed' ? 'secondary' : 'default'}>
-                    {session.status === 'closed' ? t('attendance.closed') || 'Closed' : t('attendance.open') || 'Open'}
+                    {session.status === 'closed' ? t('attendance.closed') || 'Closed' : t('common.open') || 'Open'}
                   </Badge>
                 </div>
               ))}

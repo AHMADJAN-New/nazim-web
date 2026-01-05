@@ -62,7 +62,7 @@ export default function DmsReports() {
               buildFiltersSummary={buildFiltersSummary}
               templateType="dms"
               disabled={incomingByDeptData.length === 0}
-              errorNoData={t('common.noDataToExport') || 'No data to export'}
+              errorNoData={t('events.noDataToExport') || 'No data to export'}
             />
           </div>
         </CardHeader>
@@ -102,7 +102,7 @@ export default function DmsReports() {
               buildFiltersSummary={buildFiltersSummary}
               templateType="dms"
               disabled={securityBreakdownData.length === 0}
-              errorNoData={t('common.noDataToExport') || 'No data to export'}
+              errorNoData={t('events.noDataToExport') || 'No data to export'}
               buttonSize="icon"
             />
           </div>
@@ -143,7 +143,7 @@ export default function DmsReports() {
               buildFiltersSummary={buildFiltersSummary}
               templateType="dms"
               disabled={pendingAgingData.length === 0}
-              errorNoData={t('common.noDataToExport') || 'No data to export'}
+              errorNoData={t('events.noDataToExport') || 'No data to export'}
             />
           </div>
         </CardHeader>

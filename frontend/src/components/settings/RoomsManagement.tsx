@@ -143,7 +143,7 @@ export function RoomsManagement() {
     const parts: string[] = [];
 
     if (searchQuery) {
-      parts.push(`${t('common.search')}: ${searchQuery}`);
+      parts.push(`${t('events.search')}: ${searchQuery}`);
     }
 
     return parts.length > 0 ? parts.join(' | ') : '';
@@ -193,7 +193,7 @@ export function RoomsManagement() {
     },
     {
       id: 'actions',
-      header: () => <div className="text-right">{t('common.actions')}</div>,
+      header: () => <div className="text-right">{t('events.actions')}</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
           {hasUpdatePermission && (
@@ -371,7 +371,7 @@ export function RoomsManagement() {
       />
 
       <FilterPanel 
-        title={t('common.filters') || 'Search & Filter'}
+        title={t('events.filters') || 'Search & Filter'}
         defaultOpenDesktop={true}
         defaultOpenMobile={false}
       >
@@ -537,7 +537,7 @@ export function RoomsManagement() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                {t('common.cancel')}
+                {t('events.cancel')}
               </Button>
               <Button type="submit" disabled={createRoom.isPending || updateRoom.isPending}>
                 {selectedRoom ? t('settings.rooms.update') : t('settings.rooms.create')}
@@ -551,7 +551,7 @@ export function RoomsManagement() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('events.delete')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('settings.rooms.deleteConfirm')}
               {selectedRoom &&
@@ -561,12 +561,12 @@ export function RoomsManagement() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('common.delete')}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

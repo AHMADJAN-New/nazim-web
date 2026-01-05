@@ -58,7 +58,13 @@ export function mapOrganizationDomainToInsert(domain: Partial<Organization>): Or
         license_number: domain.licenseNumber || null,
         type: domain.type || null,
         description: domain.description || null,
-        established_date: domain.establishedDate ? domain.establishedDate.toISOString().slice(0, 10) : null,
+        established_date: domain.establishedDate 
+            ? (domain.establishedDate instanceof Date 
+                ? domain.establishedDate.toISOString().slice(0, 10)
+                : typeof domain.establishedDate === 'string' && domain.establishedDate.trim() !== ''
+                    ? domain.establishedDate
+                    : null)
+            : null,
         is_active: domain.isActive ?? true,
         contact_person_name: domain.contactPersonName || null,
         contact_person_email: domain.contactPersonEmail || null,

@@ -200,7 +200,7 @@ export default function MaintenancePage({
         <Card className="w-full max-w-2xl shadow-2xl border-0">
           <CardContent className="flex flex-col items-center justify-center py-16 space-y-4">
             <LoadingSpinner size="lg" />
-            <p className="text-muted-foreground">{t('common.loading') || 'Loading...'}</p>
+            <p className="text-muted-foreground">{t('events.loading') || 'Loading...'}</p>
           </CardContent>
         </Card>
       </div>
@@ -238,7 +238,7 @@ export default function MaintenancePage({
             
             <div className="space-y-3">
               <CardTitle className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                {t('maintenance.title') || 'System Under Maintenance'}
+                {t('events.title') || 'System Under Maintenance'}
               </CardTitle>
               <CardDescription className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
                 {displayMessage}
@@ -386,7 +386,7 @@ export default function MaintenancePage({
                   "h-5 w-5 mr-2",
                   countdown !== null && countdown > 0 && "animate-spin"
                 )} />
-                {t('maintenance.retry') || 'Retry Connection'}
+                {t('events.retry') || 'Retry Connection'}
               </Button>
               
               {!scheduledEndAt && (
@@ -397,7 +397,7 @@ export default function MaintenancePage({
                   className="min-w-[200px] border-2 hover:bg-slate-50"
                 >
                   <Shield className="h-5 w-5 mr-2" />
-                  {t('maintenance.refresh') || 'Refresh Page'}
+                  {t('events.refresh') || 'Refresh Page'}
                 </Button>
               )}
             </div>

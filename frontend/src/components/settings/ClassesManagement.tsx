@@ -264,7 +264,7 @@ export function ClassesManagement() {
         },
         {
             id: 'actions',
-            header: () => <div className="text-right">{t('students.actions')}</div>,
+            header: () => <div className="text-right">{t('events.actions')}</div>,
             cell: ({ row }) => (
                 <div className="flex justify-end gap-2">
                     <Button
@@ -598,7 +598,7 @@ export function ClassesManagement() {
             <div className="container mx-auto p-6">
                 <Card>
                     <CardContent className="p-6">
-                        <div className="text-center">{t('common.loading')}</div>
+                        <div className="text-center">{t('events.loading')}</div>
                     </CardContent>
                 </Card>
             </div>
@@ -638,13 +638,13 @@ export function ClassesManagement() {
                         <TabsContent value="base" className="space-y-4">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <FilterPanel
-                                    title={t('common.filters') || 'Filters'}
+                                    title={t('events.filters') || 'Filters'}
                                     defaultOpenDesktop={true}
                                     defaultOpenMobile={false}
                                 >
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <Label>{t('common.search') || 'Search'}</Label>
+                                            <Label>{t('events.search') || 'Search'}</Label>
                                             <div className="relative">
                                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                                 <Input
@@ -656,13 +656,13 @@ export function ClassesManagement() {
                                             </div>
                                         </div>
                                         <div>
-                                            <Label>{t('common.filterByGrade') || 'Grade Level'}</Label>
+                                            <Label>{t('events.filterByGrade') || 'Grade Level'}</Label>
                                             <Select value={gradeLevelFilter} onValueChange={setGradeLevelFilter}>
                                                 <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder={t('common.filterByGrade')} />
+                                                    <SelectValue placeholder={t('events.filterByGrade')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="all">{t('common.all')} {t('academic.classes.gradeLevel')}</SelectItem>
+                                                    <SelectItem value="all">{t('subjects.all')} {t('academic.classes.gradeLevel')}</SelectItem>
                                                     {Array.from({ length: 13 }, (_, i) => (
                                                         <SelectItem key={i} value={i.toString()}>
                                                             {t('academic.classes.gradeLevel')} {i}
@@ -845,7 +845,7 @@ export function ClassesManagement() {
 
                             {selectedAcademicYearId ? (
                                 yearClassesLoading ? (
-                                    <div className="text-center py-8">{t('common.loading')}</div>
+                                    <div className="text-center py-8">{t('events.loading')}</div>
                                 ) : (
                                     <div className="overflow-x-auto -mx-4 md:mx-0">
                                         <div className="inline-block min-w-full align-middle px-4 md:px-0">
@@ -858,7 +858,7 @@ export function ClassesManagement() {
                                                     <TableHead>{t('academic.classes.room')}</TableHead>
                                                     <TableHead>{t('academic.classes.capacity')}</TableHead>
                                                     <TableHead>{t('academic.classes.studentCount')}</TableHead>
-                                                    <TableHead className="text-right">{t('students.actions')}</TableHead>
+                                                    <TableHead className="text-right">{t('events.actions')}</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -1057,7 +1057,7 @@ export function ClassesManagement() {
                                         min="0"
                                         max="12"
                                         {...registerClass('grade_level', { valueAsNumber: true })}
-                                        placeholder={t('common.gradeExample')}
+                                        placeholder={t('events.gradeExample')}
                                     />
                                     {classErrors.grade_level && (
                                         <p className="text-sm text-destructive">{classErrors.grade_level.message}</p>
@@ -1106,10 +1106,10 @@ export function ClassesManagement() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseClassDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit">
-                                {t('common.save')}
+                                {t('events.save')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -1199,7 +1199,7 @@ export function ClassesManagement() {
                                 <Input
                                     id="section_name"
                                     {...registerAssign('section_name')}
-                                    placeholder={t('common.sectionExample')}
+                                    placeholder={t('events.sectionExample')}
                                 />
                                 {assignErrors.section_name && (
                                     <p className="text-sm text-destructive">{assignErrors.section_name.message}</p>
@@ -1221,7 +1221,7 @@ export function ClassesManagement() {
                                                 <SelectValue placeholder={t('academic.classes.selectRoom')} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="none">{t('common.none')}</SelectItem>
+                                                <SelectItem value="none">{t('events.none')}</SelectItem>
                                                 {rooms?.map((room) => (
                                                     <SelectItem key={room.id} value={room.id}>
                                                         {room.roomNumber} {room.building && `(${room.building.buildingName})`}
@@ -1242,7 +1242,7 @@ export function ClassesManagement() {
                                     min="1"
                                     max="200"
                                     {...registerAssign('capacity', { valueAsNumber: true })}
-                                    placeholder={t('common.overrideCapacity')}
+                                    placeholder={t('events.overrideCapacity')}
                                 />
                                 {assignErrors.capacity && (
                                     <p className="text-sm text-destructive">{assignErrors.capacity.message}</p>
@@ -1265,10 +1265,10 @@ export function ClassesManagement() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseAssignDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit">
-                                {t('common.save')}
+                                {t('events.save')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -1346,18 +1346,18 @@ export function ClassesManagement() {
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="bulk_sections">
-                                    {t('academic.classes.sectionsInput')} * ({t('common.example')}: A, B, C, D)
+                                    {t('academic.classes.sectionsInput')} * ({t('events.example')}: A, B, C, D)
                                 </Label>
                                 <Input
                                     id="bulk_sections"
                                     {...registerBulkSections('sections')}
-                                    placeholder={`${t('common.example')}: A, B, C, D`}
+                                    placeholder={`${t('events.example')}: A, B, C, D`}
                                 />
                                 {bulkSectionsErrors.sections && (
                                     <p className="text-sm text-destructive">{bulkSectionsErrors.sections.message}</p>
                                 )}
                                 <p className="text-xs text-muted-foreground">
-                                    {t('common.sectionsInputHint')}
+                                    {t('events.sectionsInputHint')}
                                 </p>
                             </div>
                             <div className="grid gap-2">
@@ -1376,7 +1376,7 @@ export function ClassesManagement() {
                                                 <SelectValue placeholder={t('academic.classes.selectRoom')} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="none">{t('common.none')}</SelectItem>
+                                                <SelectItem value="none">{t('events.none')}</SelectItem>
                                                 {rooms?.map((room) => (
                                                     <SelectItem key={room.id} value={room.id}>
                                                         {room.roomNumber} {room.building && `(${room.building.buildingName})`}
@@ -1397,7 +1397,7 @@ export function ClassesManagement() {
                                     min="1"
                                     max="200"
                                     {...registerBulkSections('default_capacity', { valueAsNumber: true })}
-                                    placeholder={t('common.overrideCapacityAll')}
+                                    placeholder={t('events.overrideCapacityAll')}
                                 />
                                 {bulkSectionsErrors.default_capacity && (
                                     <p className="text-sm text-destructive">{bulkSectionsErrors.default_capacity.message}</p>
@@ -1406,7 +1406,7 @@ export function ClassesManagement() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseBulkSectionsDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit" disabled={bulkAssignSections.isPending}>
                                 {t('academic.classes.createSections')}
@@ -1554,7 +1554,7 @@ export function ClassesManagement() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseCopyDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit" disabled={copyClasses.isPending}>
                                 {t('academic.classes.copyClasses')}
@@ -1568,18 +1568,18 @@ export function ClassesManagement() {
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('events.delete')}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('academic.classes.deleteConfirm')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDeleteConfirm}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            {t('common.delete')}
+                            {t('events.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -1589,18 +1589,18 @@ export function ClassesManagement() {
             <AlertDialog open={isRemoveDialogOpen} onOpenChange={setIsRemoveDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('events.delete')}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('academic.classes.removeConfirm')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleRemoveConfirm}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            {t('common.delete')}
+                            {t('events.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

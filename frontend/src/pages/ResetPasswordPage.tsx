@@ -112,23 +112,23 @@ export default function ResetPasswordPage() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2">
             <Shield className="h-6 w-6" />
-            {t('resetPassword.title') || 'Reset Password'}
+            {t('events.title') || 'Reset Password'}
           </CardTitle>
           <CardDescription className="text-center">
-            {t('resetPassword.subtitle') || 'Create a new secure password for your account'}
+            {t('hostel.subtitle') || 'Create a new secure password for your account'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="password">{t('resetPassword.newPassword') || 'New Password'}</Label>
+              <Label htmlFor="password">{t('userManagement.newPassword') || 'New Password'}</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder={t('resetPassword.newPassword') || 'Enter your new password'}
+                  placeholder={t('userManagement.newPassword') || 'Enter your new password'}
                   required
                 />
                 <Button
@@ -161,14 +161,14 @@ export default function ResetPasswordPage() {
             </div>
 
             <div>
-              <Label htmlFor="confirmPassword">{t('resetPassword.confirmPassword') || 'Confirm New Password'}</Label>
+              <Label htmlFor="confirmPassword">{t('auth.confirmPassword') || 'Confirm New Password'}</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  placeholder={t('resetPassword.confirmPassword') || 'Confirm your new password'}
+                  placeholder={t('auth.confirmPassword') || 'Confirm your new password'}
                   required
                 />
                 <Button

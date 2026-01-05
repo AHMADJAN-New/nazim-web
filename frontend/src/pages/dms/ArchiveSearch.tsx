@@ -378,7 +378,7 @@ export default function ArchiveSearch() {
       </div>
 
       <FilterPanel
-        title={t('common.filters') || 'Search & Filter'}
+        title={t('events.filters') || 'Search & Filter'}
         footer={
           <div className="flex gap-2">
             <Button onClick={handleApplyFilters}>
@@ -415,9 +415,9 @@ export default function ArchiveSearch() {
         <div className="space-y-4">
           {/* Search Query */}
           <div className="space-y-2">
-            <Label>{t('common.search') || 'Search'}</Label>
+            <Label>{t('events.search') || 'Search'}</Label>
             <Input
-              placeholder={t('dms.searchPlaceholder') || 'Search by document number, subject, sender, description, external doc number...'}
+              placeholder={t('assets.searchPlaceholder') || 'Search by document number, subject, sender, description, external doc number...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
@@ -431,7 +431,7 @@ export default function ArchiveSearch() {
           {/* Filters Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <div className="space-y-2">
-              <Label>{t('common.status') || 'Status'}</Label>
+              <Label>{t('events.status') || 'Status'}</Label>
               <Select
                 value={filters.status}
                 onValueChange={(value) => setFilters((s) => ({ ...s, status: value }))}
@@ -460,7 +460,7 @@ export default function ArchiveSearch() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('common.allLevels') || 'All Levels'}</SelectItem>
-                  <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
+                  <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
                   <SelectItem value="public">Public</SelectItem>
                   <SelectItem value="internal">Internal</SelectItem>
                   <SelectItem value="confidential">Confidential</SelectItem>
@@ -491,12 +491,12 @@ export default function ArchiveSearch() {
             </div>
 
             <div className="space-y-2">
-              <Label>{t('common.fromDate') || 'From Date'}</Label>
+              <Label>{t('library.fromDate') || 'From Date'}</Label>
               <CalendarDatePicker date={filters.from_date ? new Date(filters.from_date) : undefined} onDateChange={(date) => setFilters((s) => ({ ...s, from_date: date ? date.toISOString().split("T")[0] : "" }))} />
             </div>
 
             <div className="space-y-2">
-              <Label>{t('common.toDate') || 'To Date'}</Label>
+              <Label>{t('library.toDate') || 'To Date'}</Label>
               <CalendarDatePicker date={filters.to_date ? new Date(filters.to_date) : undefined} onDateChange={(date) => setFilters((s) => ({ ...s, to_date: date ? date.toISOString().split("T")[0] : "" }))} />
             </div>
           </div>
@@ -556,7 +556,7 @@ export default function ArchiveSearch() {
                       buildFiltersSummary={buildFiltersSummary}
                       templateType="dms"
                       disabled={incomingExportData.length === 0}
-                      errorNoData={t('common.noDataToExport') || 'No data to export'}
+                      errorNoData={t('events.noDataToExport') || 'No data to export'}
                     />
                   )}
                   {activeTab === 'outgoing' && (
@@ -578,7 +578,7 @@ export default function ArchiveSearch() {
                       buildFiltersSummary={buildFiltersSummary}
                       templateType="dms"
                       disabled={outgoingExportData.length === 0}
-                      errorNoData={t('common.noDataToExport') || 'No data to export'}
+                      errorNoData={t('events.noDataToExport') || 'No data to export'}
                     />
                   )}
                 </div>

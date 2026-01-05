@@ -288,7 +288,7 @@ export default function AttendanceMarking() {
     
     const foundStudent = studentCache.get(scannedValue);
     if (!foundStudent && roster && roster.length > 0) {
-      setScanError(t('attendancePage.studentNotFound') || 'Student not found');
+      setScanError(t('leave.studentNotFound') || 'Student not found');
       setTimeout(() => setScanError(null), 2000);
       setScanCardNumber('');
       if (scanInputRef.current) {
@@ -312,7 +312,7 @@ export default function AttendanceMarking() {
           setScanNote('');
         },
         onError: (error: any) => {
-          setScanError(error.message || t('common.error') || 'Failed to scan');
+          setScanError(error.message || t('events.error') || 'Failed to scan');
           setTimeout(() => setScanError(null), 2000);
         },
       }
@@ -329,7 +329,7 @@ export default function AttendanceMarking() {
           <div className="flex items-center gap-3">
             <ClipboardList className="h-5 w-5 text-muted-foreground" />
             <div>
-              <CardTitle>{t('attendancePage.markAttendance') || 'Mark Attendance'}</CardTitle>
+              <CardTitle>{t('dashboard.markAttendance') || 'Mark Attendance'}</CardTitle>
               <CardDescription className="hidden md:block">
                 {t('attendancePage.markAttendanceDescription') || 'Track attendance with manual marking or barcode scans'}
               </CardDescription>
@@ -399,7 +399,7 @@ export default function AttendanceMarking() {
                   <CommandList>
                     <CommandEmpty>
                       {sessionsLoading 
-                        ? (t('common.loading') || 'Loading...')
+                        ? (t('events.loading') || 'Loading...')
                         : (t('attendancePage.noSessions') || 'No sessions available')}
                     </CommandEmpty>
                     <CommandGroup>
@@ -479,7 +479,7 @@ export default function AttendanceMarking() {
       {selectedSessionId ? (
         <Card>
           <CardHeader>
-            <CardTitle>{t('attendancePage.markAttendance') || 'Mark Attendance'}</CardTitle>
+            <CardTitle>{t('dashboard.markAttendance') || 'Mark Attendance'}</CardTitle>
             <CardDescription>{t('attendancePage.markAttendanceDescription') || 'Track attendance with manual marking or barcode scans'}</CardDescription>
           </CardHeader>
           <CardContent>

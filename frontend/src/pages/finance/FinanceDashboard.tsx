@@ -107,7 +107,7 @@ export default function FinanceDashboard() {
     if (error) {
         return (
             <div className="text-center py-8 text-destructive">
-                {t('common.error') || 'An error occurred'}: {(error as Error).message}
+                {t('events.error') || 'An error occurred'}: {(error as Error).message}
             </div>
         );
     }
@@ -115,7 +115,7 @@ export default function FinanceDashboard() {
     if (!dashboard) {
         return (
             <div className="text-center py-8 text-muted-foreground">
-                {t('common.noData') || 'No data available'}
+                {t('events.noData') || 'No data available'}
             </div>
         );
     }
@@ -149,7 +149,7 @@ export default function FinanceDashboard() {
                             variant="outline"
                             size="icon"
                             className="self-start sm:self-auto"
-                            aria-label={t('common.download') || 'Download'}
+                            aria-label={t('events.download') || 'Download'}
                         >
                             <Download className="h-4 w-4" />
                         </Button>
@@ -479,7 +479,7 @@ export default function FinanceDashboard() {
                             className="hidden sm:flex flex-shrink-0 ml-2"
                             onClick={() => navigate('/finance/reports')}
                         >
-                            {t('finance.viewReport') || 'View Report'}
+                            {t('examReports.viewReport') || 'View Report'}
                         </Button>
                     </CardHeader>
                     <CardContent>
@@ -633,7 +633,7 @@ export default function FinanceDashboard() {
                                 navigate('/finance/income');
                             }}
                         >
-                            {t('finance.viewAll') || 'View All'}
+                            {t('events.viewAll') || 'View All'}
                         </Button>
                     </CardHeader>
                     <CardContent>

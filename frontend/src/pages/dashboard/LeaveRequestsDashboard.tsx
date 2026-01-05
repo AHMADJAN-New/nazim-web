@@ -50,7 +50,7 @@ export default function LeaveRequestsDashboard() {
   }, [leaveRequests]);
 
   if (isLoading) {
-    return <LoadingSpinner text={t('common.loading') || 'Loading leave requests data...'} />;
+    return <LoadingSpinner text={t('events.loading') || 'Loading leave requests data...'} />;
   }
 
   return (
@@ -67,7 +67,7 @@ export default function LeaveRequestsDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{dashboardStats.total}</div>
             <p className="text-xs text-muted-foreground">
-              {dashboardStats.thisMonthRequests} {t('leave.thisMonth') || 'this month'}
+              {dashboardStats.thisMonthRequests} {t('finance.thisMonth') || 'this month'}
             </p>
           </CardContent>
         </Card>
@@ -90,7 +90,7 @@ export default function LeaveRequestsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              {t('leave.approved') || 'Approved'}
+              {t('status.approved') || 'Approved'}
             </CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-600" />
           </CardHeader>
@@ -129,7 +129,7 @@ export default function LeaveRequestsDashboard() {
               </CardDescription>
             </div>
             <Button variant="outline" onClick={() => navigate('/leave-management')}>
-              {t('common.viewAll') || 'View All'}
+              {t('events.viewAll') || 'View All'}
             </Button>
           </div>
         </CardHeader>
@@ -168,7 +168,7 @@ export default function LeaveRequestsDashboard() {
                     {request.status === 'pending'
                       ? t('leave.pending') || 'Pending'
                       : request.status === 'approved'
-                      ? t('leave.approved') || 'Approved'
+                      ? t('status.approved') || 'Approved'
                       : t('leave.rejected') || 'Rejected'}
                   </Badge>
                 </div>
@@ -180,4 +180,5 @@ export default function LeaveRequestsDashboard() {
     </div>
   );
 }
+
 

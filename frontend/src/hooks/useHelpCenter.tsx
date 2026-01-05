@@ -159,7 +159,7 @@ export const useCreateHelpCenterCategory = () => {
       });
     },
     onSuccess: () => {
-      showToast.success(t('toast.categoryCreated') || 'Category created successfully');
+      showToast.success(t('library.categoryCreated') || 'Category created successfully');
       void queryClient.invalidateQueries({ queryKey: ['help-center-categories'] });
     },
     onError: (error: Error) => {
@@ -177,7 +177,7 @@ export const useUpdateHelpCenterCategory = () => {
       return await helpCenterCategoriesApi.update(id, updates);
     },
     onSuccess: () => {
-      showToast.success(t('toast.categoryUpdated') || 'Category updated successfully');
+      showToast.success(t('library.categoryUpdated') || 'Category updated successfully');
       void queryClient.invalidateQueries({ queryKey: ['help-center-categories'] });
     },
     onError: (error: Error) => {
@@ -195,7 +195,7 @@ export const useDeleteHelpCenterCategory = () => {
       await helpCenterCategoriesApi.delete(id);
     },
     onSuccess: async () => {
-      showToast.success(t('toast.categoryDeleted') || 'Category deleted successfully');
+      showToast.success(t('library.categoryDeleted') || 'Category deleted successfully');
       await queryClient.invalidateQueries({ queryKey: ['help-center-categories'] });
       await queryClient.refetchQueries({ queryKey: ['help-center-categories'] });
     },
@@ -296,4 +296,5 @@ export const useMarkArticleNotHelpful = () => {
     },
   });
 };
+
 

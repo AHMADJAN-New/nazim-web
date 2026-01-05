@@ -107,7 +107,7 @@ export default function ExamPaperPrintTracking() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-center text-muted-foreground">
-              {t('common.unauthorized') || 'You do not have permission to view this page.'}
+              {t('events.unauthorized') || 'You do not have permission to view this page.'}
             </p>
           </CardContent>
         </Card>
@@ -187,12 +187,12 @@ export default function ExamPaperPrintTracking() {
             {/* Search */}
             <div className="relative md:col-span-1">
               <Label className="text-xs font-medium text-muted-foreground mb-2 block">
-                {t('examPapers.search') || 'Search'}
+                {t('events.search') || 'Search'}
               </Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder={t('examPapers.searchPlaceholder') || 'Search papers...'}
+                  placeholder={t('assets.searchPlaceholder') || 'Search papers...'}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -203,14 +203,14 @@ export default function ExamPaperPrintTracking() {
             {/* School Filter */}
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground">
-                {t('examPapers.filterSchool') || 'School'}
+                {t('questionBank.filterSchool') || 'School'}
               </Label>
               <Select value={selectedSchoolId || 'all'} onValueChange={(val) => setSelectedSchoolId(val === 'all' ? undefined : val)}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('examPapers.filterSchool') || 'School'} />
+                  <SelectValue placeholder={t('questionBank.filterSchool') || 'School'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('common.all') || 'All Schools'}</SelectItem>
+                  <SelectItem value="all">{t('subjects.all') || 'All Schools'}</SelectItem>
                   {(schools || []).map(school => (
                     <SelectItem key={school.id} value={school.id}>
                       {school.schoolName}
@@ -223,14 +223,14 @@ export default function ExamPaperPrintTracking() {
             {/* Subject Filter */}
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground">
-                {t('examPapers.filterSubject') || 'Subject'}
+                {t('questionBank.filterSubject') || 'Subject'}
               </Label>
               <Select value={selectedSubjectId || 'all'} onValueChange={(val) => setSelectedSubjectId(val === 'all' ? undefined : val)}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('examPapers.filterSubject') || 'Subject'} />
+                  <SelectValue placeholder={t('questionBank.filterSubject') || 'Subject'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('common.all') || 'All Subjects'}</SelectItem>
+                  <SelectItem value="all">{t('subjects.all') || 'All Subjects'}</SelectItem>
                   {(subjects || []).map(subject => (
                     <SelectItem key={subject.id} value={subject.id}>
                       {subject.name}
@@ -250,7 +250,7 @@ export default function ExamPaperPrintTracking() {
                   <SelectValue placeholder={t('examPapers.filterExam') || 'Exam'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('common.all') || 'All Exams'}</SelectItem>
+                  <SelectItem value="all">{t('subjects.all') || 'All Exams'}</SelectItem>
                   {(exams || []).map(exam => (
                     <SelectItem key={exam.id} value={exam.id}>
                       {exam.name}
@@ -270,7 +270,7 @@ export default function ExamPaperPrintTracking() {
                   <SelectValue placeholder={t('examPapers.filterPrintStatus') || 'Print Status'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('common.all') || 'All Statuses'}</SelectItem>
+                  <SelectItem value="all">{t('subjects.all') || 'All Statuses'}</SelectItem>
                   {Object.entries(printStatusConfig).map(([value, config]) => (
                     <SelectItem key={value} value={value}>
                       {config.label}
@@ -318,7 +318,7 @@ export default function ExamPaperPrintTracking() {
                     <TableHead>{t('examPapers.printStatus') || 'Print Status'}</TableHead>
                     <TableHead>{t('examPapers.copiesPrinted') || 'Copies Printed'}</TableHead>
                     <TableHead>{t('examPapers.lastPrinted') || 'Last Printed'}</TableHead>
-                    <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                    <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -335,7 +335,7 @@ export default function ExamPaperPrintTracking() {
                           {template.title}
                           {template.isDefaultForExamSubject && (
                             <Badge variant="secondary" className="ml-2">
-                              {t('examPapers.default') || 'Default'}
+                              {t('events.default') || 'Default'}
                             </Badge>
                           )}
                         </TableCell>
@@ -379,22 +379,22 @@ export default function ExamPaperPrintTracking() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+                              <DropdownMenuLabel>{t('events.actions') || 'Actions'}</DropdownMenuLabel>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => navigate(`/exams/papers/${template.id}/edit`)}>
                                 <FileText className="h-4 w-4 mr-2" />
-                                {t('common.edit') || 'Edit'}
+                                {t('events.edit') || 'Edit'}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 setSelectedTemplate(template);
                                 setIsPreviewDialogOpen(true);
                               }}>
                                 <Printer className="h-4 w-4 mr-2" />
-                                {t('examPapers.print') || 'Print'}
+                                {t('events.print') || 'Print'}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openDetailsDialog(template)}>
                                 <Eye className="h-4 w-4 mr-2" />
-                                {t('common.viewDetails') || 'View Details'}
+                                {t('events.viewDetails') || 'View Details'}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -473,7 +473,7 @@ export default function ExamPaperPrintTracking() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
-              {t('common.close') || 'Close'}
+              {t('events.close') || 'Close'}
             </Button>
           </DialogFooter>
         </DialogContent>

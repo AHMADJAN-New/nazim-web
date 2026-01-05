@@ -36,6 +36,7 @@ use App\Http\Controllers\StudentImportController;
 use App\Http\Controllers\StudentDocumentController;
 use App\Http\Controllers\StudentEducationalHistoryController;
 use App\Http\Controllers\StudentDisciplineRecordController;
+use App\Http\Controllers\StudentHistoryController;
 use App\Http\Controllers\TeacherTimetablePreferenceController;
 use App\Http\Controllers\StudentReportController;
 use App\Http\Controllers\StaffReportController;
@@ -185,6 +186,13 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     // Profiles
     Route::apiResource('profiles', ProfileController::class);
     Route::get('/profiles/me', [ProfileController::class, 'me']);
+
+    // User Tours
+    Route::get('/user-tours/my', [\App\Http\Controllers\UserTourController::class, 'myTours']);
+    Route::get('/user-tours/for-route', [\App\Http\Controllers\UserTourController::class, 'toursForRoute']);
+    Route::apiResource('user-tours', \App\Http\Controllers\UserTourController::class);
+    Route::post('/user-tours/{id}/complete', [\App\Http\Controllers\UserTourController::class, 'complete']);
+    Route::post('/user-tours/{id}/progress', [\App\Http\Controllers\UserTourController::class, 'saveProgress']);
 
     // Users (user management)
     Route::apiResource('users', UserController::class);
@@ -392,6 +400,12 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::delete('/student-discipline-records/{id}', [StudentDisciplineRecordController::class, 'destroy']);
             Route::post('/student-discipline-records/{id}/resolve', [StudentDisciplineRecordController::class, 'resolve']);
         });
+
+        // Student Lifetime History (core feature)
+        Route::get('/students/{student}/history', [StudentHistoryController::class, 'index']);
+        Route::get('/students/{student}/history/{section}', [StudentHistoryController::class, 'section']);
+        Route::post('/students/{student}/history/export/pdf', [StudentHistoryController::class, 'exportPdf']);
+        Route::post('/students/{student}/history/export/excel', [StudentHistoryController::class, 'exportExcel']);
 
         // Student Admissions (core feature)
         Route::get('/student-admissions/stats', [StudentAdmissionController::class, 'stats']);

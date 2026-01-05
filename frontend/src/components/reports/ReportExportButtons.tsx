@@ -133,14 +133,14 @@ export function ReportExportButtons<T extends Record<string, any>>({
     // Validation
     if (!school) {
       showToast.error(
-        errorNoSchool || t('common.exportErrorNoSchool') || 'School is required for export'
+        errorNoSchool || t('events.exportErrorNoSchool') || 'School is required for export'
       );
       return;
     }
 
     if (!data || data.length === 0) {
       showToast.error(
-        errorNoData || t('common.exportErrorNoData') || 'No data to export'
+        errorNoData || t('events.exportErrorNoData') || 'No data to export'
       );
       return;
     }
@@ -187,8 +187,8 @@ export function ReportExportButtons<T extends Record<string, any>>({
         onComplete: () => {
           const successMessage =
             reportType === 'pdf'
-              ? successPdf || t('common.exportSuccessPdf') || 'PDF report generated successfully'
-              : successExcel || t('common.exportSuccessExcel') || 'Excel report generated successfully';
+              ? successPdf || t('events.exportSuccessPdf') || 'PDF report generated successfully'
+              : successExcel || t('events.exportSuccessExcel') || 'Excel report generated successfully';
           
           showToast.success(successMessage);
           
@@ -203,8 +203,8 @@ export function ReportExportButtons<T extends Record<string, any>>({
         onError: (error) => {
           const errorMessage =
             reportType === 'pdf'
-              ? error || errorPdf || t('common.exportErrorPdf') || 'Failed to generate PDF report'
-              : error || errorExcel || t('common.exportErrorExcel') || 'Failed to generate Excel report';
+              ? error || errorPdf || t('events.exportErrorPdf') || 'Failed to generate PDF report'
+              : error || errorExcel || t('events.exportErrorExcel') || 'Failed to generate Excel report';
           
           showToast.error(errorMessage);
           setShowReportProgress(false);
@@ -217,8 +217,8 @@ export function ReportExportButtons<T extends Record<string, any>>({
       
       const errorMessage =
         reportType === 'pdf'
-          ? errorPdf || t('common.exportErrorPdf') || 'Failed to generate PDF report'
-          : errorExcel || t('common.exportErrorExcel') || 'Failed to generate Excel report';
+          ? errorPdf || t('events.exportErrorPdf') || 'Failed to generate PDF report'
+          : errorExcel || t('events.exportErrorExcel') || 'Failed to generate Excel report';
       
       showToast.error(
         error instanceof Error ? error.message : errorMessage
@@ -233,8 +233,8 @@ export function ReportExportButtons<T extends Record<string, any>>({
   // Determine if buttons should be disabled
   const isDisabled = disabled || !data || data.length === 0 || !school || isGenerating;
 
-  const excelLabel = t('common.exportExcel') || 'Export Excel';
-  const pdfLabel = t('common.exportPdf') || 'Export PDF';
+  const excelLabel = t('events.exportExcel') || 'Export Excel';
+  const pdfLabel = t('events.exportPdf') || 'Export PDF';
 
   return (
     <TooltipProvider>

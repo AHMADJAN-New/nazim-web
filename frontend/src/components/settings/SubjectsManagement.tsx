@@ -317,7 +317,7 @@ export function SubjectsManagement() {
         },
         {
             id: 'actions',
-            header: () => <div className="text-right">{t('common.actions')}</div>,
+            header: () => <div className="text-right">{t('events.actions')}</div>,
             cell: ({ row }) => (
                 <div className="flex items-center justify-end space-x-2">
                     {hasUpdatePermission && (
@@ -630,12 +630,12 @@ export function SubjectsManagement() {
                         </CardHeader>
                         <CardContent>
                             <FilterPanel
-                                title={t('common.filters') || 'Filters'}
+                                title={t('events.filters') || 'Filters'}
                                 defaultOpenDesktop={true}
                                 defaultOpenMobile={false}
                             >
                                 <div>
-                                    <Label>{t('common.search') || 'Search'}</Label>
+                                    <Label>{t('events.search') || 'Search'}</Label>
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                         <Input
@@ -649,7 +649,7 @@ export function SubjectsManagement() {
                             </FilterPanel>
 
                             {subjectsLoading ? (
-                                <div className="text-center py-8">{t('common.loading')}</div>
+                                <div className="text-center py-8">{t('events.loading')}</div>
                             ) : filteredSubjects.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
                                     <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-50" />
@@ -770,7 +770,7 @@ export function SubjectsManagement() {
                         </CardHeader>
                         <CardContent>
                             <div className="mb-4">
-                                <Label className="mb-2 block">{t('common.selectClass')}</Label>
+                                <Label className="mb-2 block">{t('events.selectClass')}</Label>
                                 <Select
                                     value={selectedClassId || undefined}
                                     onValueChange={(value) => {
@@ -778,7 +778,7 @@ export function SubjectsManagement() {
                                     }}
                                 >
                                     <SelectTrigger className="w-full sm:w-[300px]">
-                                        <SelectValue placeholder={t('common.selectClass')} />
+                                        <SelectValue placeholder={t('events.selectClass')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {classes?.map((cls) => (
@@ -795,7 +795,7 @@ export function SubjectsManagement() {
                                     <p>Please select a class to view and manage its subjects</p>
                                 </div>
                             ) : classSubjectTemplatesLoading ? (
-                                <div className="text-center py-8">{t('common.loading')}</div>
+                                <div className="text-center py-8">{t('events.loading')}</div>
                             ) : !classSubjectTemplates || classSubjectTemplates.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
                                     <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-50" />
@@ -811,7 +811,7 @@ export function SubjectsManagement() {
                                                     <TableRow>
                                                         <TableHead>{t('academic.subjects.code')}</TableHead>
                                                         <TableHead>{t('academic.subjects.name')}</TableHead>
-                                                        <TableHead className="text-right">{t('common.actions')}</TableHead>
+                                                        <TableHead className="text-right">{t('events.actions')}</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
@@ -907,7 +907,7 @@ export function SubjectsManagement() {
                         </CardHeader>
                         <CardContent>
                             <FilterPanel
-                                title={t('common.filters') || 'Filters'}
+                                title={t('events.filters') || 'Filters'}
                                 defaultOpenDesktop={true}
                                 defaultOpenMobile={false}
                             >
@@ -979,7 +979,7 @@ export function SubjectsManagement() {
                             ) : classSubjectsLoading ? (
                                 <div className="text-center py-8">
                                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                                    <p className="mt-2 text-muted-foreground">{t('common.loading')}</p>
+                                    <p className="mt-2 text-muted-foreground">{t('events.loading')}</p>
                                 </div>
                             ) : !classSubjects || classSubjects.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
@@ -1005,7 +1005,7 @@ export function SubjectsManagement() {
                                                         <TableHead>{t('academic.subjects.teacher')}</TableHead>
                                                         <TableHead>{t('academic.subjects.room')}</TableHead>
                                                         <TableHead>{t('academic.subjects.weeklyHours')}</TableHead>
-                                                        <TableHead className="text-right">{t('common.actions')}</TableHead>
+                                                        <TableHead className="text-right">{t('events.actions')}</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
@@ -1068,7 +1068,7 @@ export function SubjectsManagement() {
                                 <Input
                                     id="name"
                                     {...registerSubject('name')}
-                                    placeholder={t('common.example') + ' Mathematics'}
+                                    placeholder={t('events.example') + ' Mathematics'}
                                 />
                                 {subjectErrors.name && (
                                     <p className="text-sm text-destructive">{subjectErrors.name.message}</p>
@@ -1113,10 +1113,10 @@ export function SubjectsManagement() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseSubjectDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit" disabled={createSubject.isPending || updateSubject.isPending}>
-                                {t('common.save')}
+                                {t('events.save')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -1263,10 +1263,10 @@ export function SubjectsManagement() {
                         <input type="hidden" {...registerAssign('class_academic_year_id')} value={selectedClassAcademicYearId || ''} />
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseAssignDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit" disabled={assignSubject.isPending}>
-                                {t('common.save')}
+                                {t('events.save')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -1402,7 +1402,7 @@ export function SubjectsManagement() {
                         <input type="hidden" {...registerBulk('class_academic_year_id')} value={selectedClassAcademicYearId || ''} />
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseBulkAssignDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit" disabled={bulkAssignSubjects.isPending}>
                                 {t('academic.subjects.assignSubjects')}
@@ -1430,7 +1430,7 @@ export function SubjectsManagement() {
                                 render={({ field }) => (
                                     <Select value={field.value || undefined} onValueChange={field.onChange}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder={t('common.selectClass')} />
+                                            <SelectValue placeholder={t('events.selectClass')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {classes?.map((cls) => (
@@ -1472,10 +1472,10 @@ export function SubjectsManagement() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseAssignToClassDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit" disabled={assignSubjectToClass.isPending}>
-                                {t('common.save')}
+                                {t('events.save')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -1500,7 +1500,7 @@ export function SubjectsManagement() {
                                 render={({ field }) => (
                                     <Select value={field.value || undefined} onValueChange={field.onChange}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder={t('common.selectClass')} />
+                                            <SelectValue placeholder={t('events.selectClass')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {classes?.map((cls) => (
@@ -1552,7 +1552,7 @@ export function SubjectsManagement() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseBulkAssignToClassDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit" disabled={bulkAssignSubjectsToClass.isPending}>
                                 {t('academic.subjects.assignSubjects')}
@@ -1638,7 +1638,7 @@ export function SubjectsManagement() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseCopyDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit" disabled={copySubjects.isPending}>
                                 {t('academic.subjects.copyBetweenYears')}
@@ -1652,18 +1652,18 @@ export function SubjectsManagement() {
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('events.delete')}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('academic.subjects.deleteConfirm')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDeleteConfirm}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            {t('common.delete')}
+                            {t('events.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -1673,18 +1673,18 @@ export function SubjectsManagement() {
             <AlertDialog open={isRemoveDialogOpen} onOpenChange={setIsRemoveDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('events.delete')}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('academic.subjects.removeConfirm')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleRemoveConfirm}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            {t('common.delete')}
+                            {t('events.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

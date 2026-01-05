@@ -336,8 +336,19 @@ class OrganizationController extends Controller
             ], 403);
         }
 
-        // All users can only update their own organization
-        if ($profile->organization_id !== $organization->id) {
+        // Platform admins can update any organization, regular users can only update their own
+        $isPlatformAdmin = false;
+        try {
+            // Check if user is platform admin (has subscription.admin permission)
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
+            $isPlatformAdmin = $user->hasPermissionTo('subscription.admin');
+        } catch (\Exception $e) {
+            // If permission check fails, user is not platform admin
+            Log::debug("Platform admin check failed: " . $e->getMessage());
+        }
+
+        if (!$isPlatformAdmin && $profile->organization_id !== $organization->id) {
             return response()->json(['error' => 'Cannot update organization from different organization'], 403);
         }
 
@@ -835,8 +846,19 @@ class OrganizationController extends Controller
             return response()->json(['error' => 'Organization not found'], 404);
         }
 
-        // All users can only update their own organization
-        if ($profile->organization_id !== $organization->id) {
+        // Platform admins can update permissions for any organization, regular users can only update their own
+        $isPlatformAdmin = false;
+        try {
+            // Check if user is platform admin (has subscription.admin permission)
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
+            $isPlatformAdmin = $user->hasPermissionTo('subscription.admin');
+        } catch (\Exception $e) {
+            // If permission check fails, user is not platform admin
+            Log::debug("Platform admin check failed: " . $e->getMessage());
+        }
+
+        if (!$isPlatformAdmin && $profile->organization_id !== $organization->id) {
             return response()->json(['error' => 'Cannot update organization from different organization'], 403);
         }
 

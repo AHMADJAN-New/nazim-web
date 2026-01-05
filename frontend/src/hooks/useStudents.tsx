@@ -320,7 +320,7 @@ export const useDeleteStudentDocument = () => {
       return { documentId, studentId };
     },
     onSuccess: (_, variables) => {
-      showToast.success('toast.documentDeleted');
+      showToast.success('courses.documentDeleted');
       void queryClient.invalidateQueries({ queryKey: ['student-documents', variables.studentId] });
     },
     onError: (error: Error) => {

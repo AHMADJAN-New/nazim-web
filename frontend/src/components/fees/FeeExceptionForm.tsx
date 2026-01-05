@@ -225,16 +225,16 @@ export function FeeExceptionForm({
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         {/* Class Selection */}
         <FormItem>
-          <FormLabel>{t('fees.class')}</FormLabel>
+          <FormLabel>{t('search.class')}</FormLabel>
           <Combobox
             options={classOptions}
             value={selectedClassId}
             onValueChange={(val) => {
               setSelectedClassId(val);
             }}
-            placeholder={t('fees.selectClass') || 'Select class...'}
-            searchPlaceholder={t('common.search') || 'Search classes...'}
-            emptyText={t('common.noResults') || 'No classes found.'}
+            placeholder={t('events.selectClass') || 'Select class...'}
+            searchPlaceholder={t('events.search') || 'Search classes...'}
+            emptyText={t('events.noResults') || 'No classes found.'}
           />
         </FormItem>
 
@@ -248,8 +248,8 @@ export function FeeExceptionForm({
               setSelectedAcademicYearId(val);
             }}
             placeholder={t('fees.selectAcademicYear') || 'Select academic year...'}
-            searchPlaceholder={t('common.search') || 'Search academic years...'}
-            emptyText={t('common.noResults') || 'No academic years found.'}
+            searchPlaceholder={t('events.search') || 'Search academic years...'}
+            emptyText={t('events.noResults') || 'No academic years found.'}
           />
         </FormItem>
 
@@ -263,9 +263,9 @@ export function FeeExceptionForm({
               onValueChange={(val) => {
                 setSelectedStudentId(val);
               }}
-              placeholder={t('fees.selectStudent') || 'Select student...'}
-              searchPlaceholder={t('common.search') || 'Search students...'}
-              emptyText={t('common.noResults') || 'No students found.'}
+              placeholder={t('library.selectStudent') || 'Select student...'}
+              searchPlaceholder={t('events.search') || 'Search students...'}
+              emptyText={t('events.noResults') || 'No students found.'}
             />
           </FormItem>
         )}
@@ -430,7 +430,7 @@ export function FeeExceptionForm({
           name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('fees.notes')}</FormLabel>
+              <FormLabel>{t('events.notes')}</FormLabel>
               <FormControl>
                 <Textarea 
                   placeholder={t('fees.notesPlaceholder') || 'Enter any additional notes...'} 
@@ -448,11 +448,11 @@ export function FeeExceptionForm({
         <div className="flex justify-end gap-2">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-              {t('common.cancel')}
+              {t('events.cancel')}
             </Button>
           )}
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? t('common.saving') : t('common.save')}
+            {isSubmitting ? t('events.saving') : t('events.save')}
           </Button>
         </div>
       </form>

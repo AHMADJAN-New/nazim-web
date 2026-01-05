@@ -11,8 +11,8 @@ export default function TimetableGeneration() {
 	return (
 		<div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
 			<PageHeader
-				title={t('timetable.title') || 'Timetable Generation'}
-				description={t('timetable.description') || 'Generate and manage class timetables'}
+				title={t('events.title') || 'Timetable Generation'}
+				description={t('events.description') || 'Generate and manage class timetables'}
 				icon={<Calendar className="h-5 w-5" />}
 			/>
 			<PermissionGuard permission="timetables.read">

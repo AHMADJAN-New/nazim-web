@@ -329,14 +329,14 @@ const StudentReport = () => {
     },
     {
       accessorKey: 'admissionNumber',
-      header: t('students.admissionNo') || 'Admission #',
+      header: t('examReports.admissionNo') || 'Admission #',
       cell: ({ row }) => (
         <div className="font-medium">{row.original.admissionNumber || '—'}</div>
       ),
     },
     {
       accessorKey: 'fullName',
-      header: t('studentReport.fullName') || 'Name',
+      header: t('userManagement.fullName') || 'Name',
       cell: ({ row }) => (
         <div className="font-semibold min-w-0 break-words">
           {row.original.fullName}
@@ -381,7 +381,7 @@ const StudentReport = () => {
     },
     {
       accessorKey: 'status',
-      header: t('studentReport.status') || 'Status',
+      header: t('events.status') || 'Status',
       cell: ({ row }) => (
         <Badge variant={statusBadgeVariant(row.original.status)} className="capitalize">
           {formatStatus(row.original.status)}
@@ -390,7 +390,7 @@ const StudentReport = () => {
     },
     {
       id: 'actions',
-      header: t('common.actions') || 'Actions',
+      header: t('events.actions') || 'Actions',
       cell: ({ row }) => (
         <Button
           variant="ghost"
@@ -399,7 +399,7 @@ const StudentReport = () => {
           className="h-8 w-8 p-0"
         >
           <Eye className="h-4 w-4" />
-          <span className="sr-only">{t('common.view') || 'View details'}</span>
+          <span className="sr-only">{t('events.view') || 'View details'}</span>
         </Button>
       ),
       meta: {
@@ -436,24 +436,24 @@ const StudentReport = () => {
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
       <PageHeader
-        title={t('studentReport.title') || 'Student Registration Report'}
-        description={t('studentReport.subtitle') || 'View and export student registration data with detailed information'}
+        title={t('events.title') || 'Student Registration Report'}
+        description={t('hostel.subtitle') || 'View and export student registration data with detailed information'}
         icon={<User className="h-5 w-5" />}
         rightSlot={
           <ReportExportButtons
             data={filteredStudents}
             columns={[
-              { key: 'admission_no', label: t('students.admissionNo') || 'Admission #' },
+              { key: 'admission_no', label: t('examReports.admissionNo') || 'Admission #' },
               { key: 'card_number', label: t('attendancePage.cardHeader') || 'Card #' },
-              { key: 'status', label: t('studentReport.status') || 'Status' },
-              { key: 'full_name', label: t('studentReport.fullName') || 'Full Name' },
-              { key: 'father_name', label: t('students.fatherName') || 'Father Name' },
+              { key: 'status', label: t('events.status') || 'Status' },
+              { key: 'full_name', label: t('userManagement.fullName') || 'Full Name' },
+              { key: 'father_name', label: t('examReports.fatherName') || 'Father Name' },
               { key: 'gender', label: t('students.gender') || 'Gender' },
               { key: 'age', label: t('studentReport.age') || 'Age' },
               { key: 'birth_date', label: t('students.birthDate') || 'Birth Date' },
               { key: 'nationality', label: t('students.nationality') || 'Nationality' },
-              { key: 'address', label: t('students.address') || 'Address' },
-              { key: 'phone', label: t('students.phone') || 'Phone' },
+              { key: 'address', label: t('events.address') || 'Address' },
+              { key: 'phone', label: t('events.phone') || 'Phone' },
               { key: 'guardian', label: t('students.guardian') || 'Guardian' },
               { key: 'applying_grade', label: t('students.applyingGrade') || 'Applying Grade' },
               { key: 'school', label: t('students.school') || 'School' },
@@ -467,14 +467,14 @@ const StudentReport = () => {
               { key: 'emergency_contact', label: t('studentReport.emergencyContact') || 'Emergency Contact' },
             ]}
             reportKey="student_list"
-            title={t('studentReport.title') || 'Students Report'}
+            title={t('events.title') || 'Students Report'}
             transformData={transformStudentData}
             buildFiltersSummary={buildFiltersSummary}
             schoolId={currentSchoolId}
             templateType="student_list"
             disabled={filteredStudents.length === 0 || isLoading}
             errorNoSchool={t('studentReport.schoolRequired') || 'A school is required to export the report.'}
-            errorNoData={t('studentReport.noDataToExport') || 'No data to export'}
+            errorNoData={t('events.noDataToExport') || 'No data to export'}
             successPdf={t('studentReport.reportExported') || 'PDF report generated successfully'}
             successExcel={t('studentReport.reportExported') || 'Excel report generated successfully'}
             errorPdf={t('studentReport.exportFailed') || 'Failed to generate PDF report'}
@@ -483,12 +483,12 @@ const StudentReport = () => {
         }
       />
 
-      <FilterPanel title={t('studentReport.filters') || 'Filters'}>
+      <FilterPanel title={t('events.filters') || 'Filters'}>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
           <div className="relative min-w-0">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder={t('studentReport.searchPlaceholder') || 'Search by name, admission number...'}
+              placeholder={t('assets.searchPlaceholder') || 'Search by name, admission number...'}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -505,10 +505,10 @@ const StudentReport = () => {
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder={t('studentReport.allSchools') || 'All Schools'} />
+              <SelectValue placeholder={t('leave.allSchools') || 'All Schools'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('studentReport.allSchools') || 'All Schools'}</SelectItem>
+              <SelectItem value="all">{t('leave.allSchools') || 'All Schools'}</SelectItem>
               {schools?.map((school) => (
                 <SelectItem key={school.id} value={school.id}>
                   {school.schoolName}
@@ -524,13 +524,13 @@ const StudentReport = () => {
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder={t('studentReport.allStatus') || 'All Status'} />
+              <SelectValue placeholder={t('userManagement.allStatus') || 'All Status'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('studentReport.allStatus') || 'All Status'}</SelectItem>
+              <SelectItem value="all">{t('userManagement.allStatus') || 'All Status'}</SelectItem>
               <SelectItem value="applied">{t('studentReport.applied') || 'Applied'}</SelectItem>
               <SelectItem value="admitted">{t('studentReport.admitted') || 'Admitted'}</SelectItem>
-              <SelectItem value="active">{t('studentReport.active') || 'Active'}</SelectItem>
+              <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
               <SelectItem value="withdrawn">{t('studentReport.withdrawn') || 'Withdrawn'}</SelectItem>
             </SelectContent>
           </Select>
@@ -556,7 +556,7 @@ const StudentReport = () => {
       {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('studentReport.students') || 'Students'} ({filteredStudents.length})</CardTitle>
+          <CardTitle>{t('table.students') || 'Students'} ({filteredStudents.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -688,11 +688,11 @@ const StudentReport = () => {
                         </div>
                       )}
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.fullName') || 'Full Name'}</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('userManagement.fullName') || 'Full Name'}</span>
                         <span className="text-sm font-medium">{selectedStudent.fullName}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.fatherName') || 'Father Name'}</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('examReports.fatherName') || 'Father Name'}</span>
                         <span className="text-sm">{selectedStudent.fatherName || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
@@ -714,7 +714,7 @@ const StudentReport = () => {
                         <span className="text-sm">{selectedStudent.nationality || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.status') || 'Status'}</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('events.status') || 'Status'}</span>
                         <Badge variant={statusBadgeVariant(selectedStudent.status)} className="capitalize">
                           {formatStatus(selectedStudent.status)}
                         </Badge>
@@ -802,7 +802,7 @@ const StudentReport = () => {
                       <div className="flex items-center justify-between py-2 border-b">
                         <span className="text-sm font-medium text-muted-foreground">{t('studentReport.isOrphan') || 'Is Orphan'}</span>
                         <Badge variant={selectedStudent.isOrphan ? 'secondary' : 'outline'}>
-                          {selectedStudent.isOrphan ? (t('studentReport.yes') || 'Yes') : (t('studentReport.no') || 'No')}
+                          {selectedStudent.isOrphan ? (t('events.yes') || 'Yes') : (t('events.no') || 'No')}
                         </Badge>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">

@@ -226,7 +226,7 @@ export default function LibraryCategories() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+                    <FilterPanel title={t('events.filters') || 'Search & Filter'}>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
@@ -242,19 +242,19 @@ export default function LibraryCategories() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>{t('library.categoryName')}</TableHead>
-                                    <TableHead>{t('library.categoryCode')}</TableHead>
-                                    <TableHead>{t('library.categoryDescription')}</TableHead>
+                                    <TableHead>{t('assets.categoryName')}</TableHead>
+                                    <TableHead>{t('assets.categoryCode')}</TableHead>
+                                    <TableHead>{t('assets.categoryDescription')}</TableHead>
                                     <TableHead>{t('library.order')}</TableHead>
-                                    <TableHead>{t('library.status')}</TableHead>
-                                    <TableHead className="text-right">{t('common.actions')}</TableHead>
+                                    <TableHead>{t('events.status')}</TableHead>
+                                    <TableHead className="text-right">{t('events.actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredCategories.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                            {searchQuery ? t('library.noCategoriesFound') : t('library.noCategoriesMessage')}
+                                            {searchQuery ? t('assets.noCategoriesFound') : t('assets.noCategoriesMessage')}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -274,7 +274,7 @@ export default function LibraryCategories() {
                                             <TableCell>{category.display_order}</TableCell>
                                             <TableCell>
                                                 <Badge variant={category.is_active ? 'default' : 'secondary'}>
-                                                    {category.is_active ? t('library.active') : t('library.inactive')}
+                                                    {category.is_active ? t('events.active') : t('events.inactive')}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
@@ -325,7 +325,7 @@ export default function LibraryCategories() {
                         <div className="space-y-4 py-4">
                             <div>
                                 <Label htmlFor="name">
-                                    {t('library.categoryName')} <span className="text-destructive">*</span>
+                                    {t('assets.categoryName')} <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="name"
@@ -338,7 +338,7 @@ export default function LibraryCategories() {
                             </div>
 
                             <div>
-                                <Label htmlFor="code">{t('library.categoryCode')}</Label>
+                                <Label htmlFor="code">{t('assets.categoryCode')}</Label>
                                 <Input
                                     id="code"
                                     {...register('code')}
@@ -350,7 +350,7 @@ export default function LibraryCategories() {
                             </div>
 
                             <div>
-                                <Label htmlFor="description">{t('library.categoryDescription')}</Label>
+                                <Label htmlFor="description">{t('assets.categoryDescription')}</Label>
                                 <Textarea
                                     id="description"
                                     {...register('description')}
@@ -364,7 +364,7 @@ export default function LibraryCategories() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="display_order">{t('library.displayOrder')}</Label>
+                                    <Label htmlFor="display_order">{t('events.displayOrder')}</Label>
                                     <Input
                                         id="display_order"
                                         type="number"
@@ -383,20 +383,20 @@ export default function LibraryCategories() {
                                         onCheckedChange={(checked) => setValue('is_active', checked)}
                                     />
                                     <Label htmlFor="is_active" className="cursor-pointer">
-                                        {t('library.active')}
+                                        {t('events.active')}
                                     </Label>
                                 </div>
                             </div>
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={createCategory.isPending || updateCategory.isPending}
                             >
-                                {selectedCategory ? t('library.update') : t('library.create')}
+                                {selectedCategory ? t('events.update') : t('events.create')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -413,13 +413,13 @@ export default function LibraryCategories() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDelete}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             disabled={deleteCategory.isPending}
                         >
-                            {deleteCategory.isPending ? t('library.deleting') : t('common.delete')}
+                            {deleteCategory.isPending ? t('events.deleting') : t('events.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

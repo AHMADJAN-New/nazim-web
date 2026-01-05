@@ -58,7 +58,7 @@ export default function FinanceSettings() {
         return (
             <div className="container mx-auto p-4 md:p-6 max-w-7xl">
                 <div className="text-center py-8 text-muted-foreground">
-                    {t('common.noPermission') || 'You do not have permission to access finance settings'}
+                    {t('events.noPermission') || 'You do not have permission to access finance settings'}
                 </div>
             </div>
         );

@@ -342,6 +342,22 @@ class PermissionSeeder extends Seeder
     }
 
     /**
+     * Permissions that should be EXCLUDED from admin role (organization admins).
+     * These permissions are only for specific roles, not general admins.
+     *
+     * @return array<string>
+     */
+    public static function getExcludedAdminPermissions(): array
+    {
+        return [
+            'help_center.create', // Only platform admins can create help center articles
+            'help_center.update', // Only platform admins can update help center articles
+            'help_center.delete', // Only platform admins can delete help center articles
+            'help_center.read_staff', // Only specific roles need staff-only articles
+        ];
+    }
+
+    /**
      * Run the database seeds.
      * Creates permissions in two ways:
      * 1. Global permissions (organization_id = NULL) - available to all organizations

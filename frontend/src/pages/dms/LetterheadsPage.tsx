@@ -297,10 +297,10 @@ export default function LetterheadsPage() {
           </DialogContent>
         </Dialog>
 
-      <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+      <FilterPanel title={t('events.filters') || 'Search & Filter'}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
-            <Label>{t('common.search') || 'Search'}</Label>
+            <Label>{t('events.search') || 'Search'}</Label>
             <Input
               placeholder={t('dms.searchByName') || 'Search by name...'}
               value={filters.search}
@@ -344,7 +344,7 @@ export default function LetterheadsPage() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>{t('common.status') || 'Status'}</Label>
+            <Label>{t('events.status') || 'Status'}</Label>
             <Select
               value={filters.active || "all"}
               onValueChange={(value) => setFilters((s) => ({ ...s, active: value }))}
@@ -353,9 +353,9 @@ export default function LetterheadsPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
-                <SelectItem value="true">{t('common.active') || 'Active'}</SelectItem>
-                <SelectItem value="false">{t('common.inactive') || 'Inactive'}</SelectItem>
+                <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                <SelectItem value="true">{t('events.active') || 'Active'}</SelectItem>
+                <SelectItem value="false">{t('events.inactive') || 'Inactive'}</SelectItem>
               </SelectContent>
             </Select>
           </div>

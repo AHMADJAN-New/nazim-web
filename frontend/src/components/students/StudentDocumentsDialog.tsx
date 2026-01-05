@@ -133,7 +133,7 @@ export function StudentDocumentsDialog({
 
       if (!response.ok) {
         if (response.status === 401) {
-          toast.error(t('common.unauthorized') || 'Unauthorized. Please log in again.');
+          toast.error(t('events.unauthorized') || 'Unauthorized. Please log in again.');
           return;
         }
         throw new Error(`Failed to download: ${response.statusText}`);
@@ -199,7 +199,7 @@ export function StudentDocumentsDialog({
 
       if (!response.ok) {
         if (response.status === 401) {
-          toast.error(t('common.unauthorized') || 'Unauthorized. Please log in again.');
+          toast.error(t('events.unauthorized') || 'Unauthorized. Please log in again.');
           setIsViewerOpen(false);
           return;
         }
@@ -256,7 +256,7 @@ export function StudentDocumentsDialog({
                     <TableHead>{t('students.fileName') || 'File Name'}</TableHead>
                     <TableHead>{t('students.fileSize') || 'Size'}</TableHead>
                     <TableHead>{t('students.uploadDate') || 'Upload Date'}</TableHead>
-                    <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                    <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -285,7 +285,7 @@ export function StudentDocumentsDialog({
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleView(doc)}
-                                title={t('common.view') || 'View'}
+                                title={t('events.view') || 'View'}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -294,7 +294,7 @@ export function StudentDocumentsDialog({
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDownload(doc)}
-                              title={t('common.download') || 'Download'}
+                              title={t('events.download') || 'Download'}
                             >
                               <Download className="h-4 w-4" />
                             </Button>
@@ -305,7 +305,7 @@ export function StudentDocumentsDialog({
                                 setSelectedDocument(doc);
                                 setIsDeleteDialogOpen(true);
                               }}
-                              title={t('common.delete') || 'Delete'}
+                              title={t('events.delete') || 'Delete'}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -347,7 +347,7 @@ export function StudentDocumentsDialog({
           </DialogHeader>
           <form onSubmit={handleSubmit(handleUpload)} className="space-y-4">
             <div>
-              <Label htmlFor="file">{t('students.selectFile') || 'Select File'} *</Label>
+              <Label htmlFor="file">{t('courses.selectFile') || 'Select File'} *</Label>
               <Controller
                 control={control}
                 name="file"
@@ -380,11 +380,11 @@ export function StudentDocumentsDialog({
               )}
             </div>
             <div>
-              <Label htmlFor="description">{t('students.description') || 'Description'}</Label>
+              <Label htmlFor="description">{t('events.description') || 'Description'}</Label>
               <Textarea
                 id="description"
                 {...register('description')}
-                placeholder={t('students.descriptionPlaceholder') || 'Optional description'}
+                placeholder={t('permissions.descriptionPlaceholder') || 'Optional description'}
                 rows={3}
               />
               {errors.description && (
@@ -397,15 +397,15 @@ export function StudentDocumentsDialog({
                 variant="outline" 
                 onClick={() => setIsUploadDialogOpen(false)}
               >
-                {t('common.cancel') || 'Cancel'}
+                {t('events.cancel') || 'Cancel'}
               </Button>
               <Button
                 type="submit"
                 disabled={uploadDocument.isPending}
               >
                 {uploadDocument.isPending
-                  ? t('common.uploading') || 'Uploading...'
-                  : t('common.upload') || 'Upload'}
+                  ? t('events.uploading') || 'Uploading...'
+                  : t('events.upload') || 'Upload'}
               </Button>
             </DialogFooter>
           </form>
@@ -422,12 +422,12 @@ export function StudentDocumentsDialog({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('common.delete') || 'Delete'}
+              {t('events.delete') || 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -448,7 +448,7 @@ export function StudentDocumentsDialog({
               <div>
                 <DialogTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  {viewerDocument?.file_name || t('students.viewDocument') || 'View Document'}
+                  {viewerDocument?.file_name || t('courses.viewDocument') || 'View Document'}
                 </DialogTitle>
                 <DialogDescription>
                   {viewerDocument?.document_type 

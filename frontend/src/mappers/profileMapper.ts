@@ -19,6 +19,9 @@ export function mapProfileApiToDomain(api: ProfileApi.Profile): Profile {
     defaultSchoolId: api.default_school_id,
     eventId: api.event_id ?? null,
     isEventUser: api.is_event_user ?? false,
+    hasCompletedOnboarding: api.has_completed_onboarding ?? false,
+    hasCompletedTour: api.has_completed_tour ?? false,
+    onboardingCompletedAt: api.onboarding_completed_at ? new Date(api.onboarding_completed_at) : null,
     createdAt: api.created_at ? new Date(api.created_at) : undefined,
     updatedAt: api.updated_at ? new Date(api.updated_at) : undefined,
     deletedAt: api.deleted_at ? new Date(api.deleted_at) : null,
@@ -40,6 +43,9 @@ export function mapProfileDomainToInsert(domain: Partial<Profile>): ProfileApi.P
     default_school_id: domain.defaultSchoolId || null,
     event_id: domain.eventId ?? null,
     is_event_user: domain.isEventUser ?? false,
+    has_completed_onboarding: domain.hasCompletedOnboarding ?? false,
+    has_completed_tour: domain.hasCompletedTour ?? false,
+    onboarding_completed_at: domain.onboardingCompletedAt ? domain.onboardingCompletedAt.toISOString() : null,
   };
 }
 
@@ -59,6 +65,11 @@ export function mapProfileDomainToUpdate(domain: Partial<Profile>): ProfileApi.P
   if (domain.defaultSchoolId !== undefined) update.default_school_id = domain.defaultSchoolId;
   if (domain.eventId !== undefined) update.event_id = domain.eventId;
   if (domain.isEventUser !== undefined) update.is_event_user = domain.isEventUser;
+  if (domain.hasCompletedOnboarding !== undefined) update.has_completed_onboarding = domain.hasCompletedOnboarding;
+  if (domain.hasCompletedTour !== undefined) update.has_completed_tour = domain.hasCompletedTour;
+  if (domain.onboardingCompletedAt !== undefined) {
+    update.onboarding_completed_at = domain.onboardingCompletedAt ? domain.onboardingCompletedAt.toISOString() : null;
+  }
   
   return update;
 }

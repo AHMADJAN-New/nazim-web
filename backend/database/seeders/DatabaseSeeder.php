@@ -195,6 +195,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 28: Seeding help center categories...');
         $this->call(HelpCenterCategorySeeder::class);
 
+        // Step 28a: Seed onboarding article (global)
+        $this->command->info('Step 28a: Seeding onboarding article...');
+        $this->call(OnboardingArticleSeeder::class);
+
         $this->command->info('');
         $this->command->info('✅ Database seeding completed successfully!');
         $this->command->info('');
@@ -340,10 +344,15 @@ class DatabaseSeeder extends Seeder
         $skippedCount = 0;
 
         if ($permissionList === '*') {
-            // Admin gets all organization permissions (except subscription.admin - it's global only)
+            // Admin gets all organization permissions (except subscription.admin and help_center write permissions)
+            $excludedPermissions = array_merge(
+                \Database\Seeders\PermissionSeeder::getSuperAdminOnlyPermissions(),
+                \Database\Seeders\PermissionSeeder::getExcludedAdminPermissions()
+            );
+            
             foreach ($orgPermissions as $permission) {
-                // CRITICAL: Skip subscription.admin - it's GLOBAL only and should NEVER be assigned to organization roles
-                if ($permission->name === 'subscription.admin') {
+                // CRITICAL: Skip excluded permissions
+                if (in_array($permission->name, $excludedPermissions)) {
                     continue;
                 }
 
@@ -366,9 +375,14 @@ class DatabaseSeeder extends Seeder
             }
         } else {
             // Assign specific permissions
+            $excludedPermissions = array_merge(
+                \Database\Seeders\PermissionSeeder::getSuperAdminOnlyPermissions(),
+                \Database\Seeders\PermissionSeeder::getExcludedAdminPermissions()
+            );
+            
             foreach ($permissionList as $permissionName) {
-                // CRITICAL: Skip subscription.admin - it's GLOBAL only
-                if ($permissionName === 'subscription.admin') {
+                // CRITICAL: Skip excluded permissions
+                if (in_array($permissionName, $excludedPermissions)) {
                     continue;
                 }
 

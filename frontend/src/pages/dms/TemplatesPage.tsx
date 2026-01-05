@@ -107,7 +107,7 @@ export default function TemplatesPage() {
   const createMutation = useMutation({
     mutationFn: (payload: any) => dmsApi.templates.create(payload),
     onSuccess: () => {
-      showToast.success(t('toast.templateCreated') || 'Template created successfully');
+      showToast.success(t('certificateTemplates.templateCreated') || 'Template created successfully');
       queryClient.invalidateQueries({ queryKey: ["dms", "templates"] });
       setIsCreateDialogOpen(false);
     },
@@ -119,7 +119,7 @@ export default function TemplatesPage() {
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: any }) => dmsApi.templates.update(id, payload),
     onSuccess: () => {
-      showToast.success(t('toast.templateUpdated') || 'Template updated successfully');
+      showToast.success(t('certificateTemplates.templateUpdated') || 'Template updated successfully');
       queryClient.invalidateQueries({ queryKey: ["dms", "templates"] });
       setIsEditDialogOpen(false);
       setSelectedTemplate(null);
@@ -132,7 +132,7 @@ export default function TemplatesPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => dmsApi.templates.delete(id),
     onSuccess: async () => {
-      showToast.success(t('toast.templateDeleted') || 'Template deleted successfully');
+      showToast.success(t('certificateTemplates.templateDeleted') || 'Template deleted successfully');
       await queryClient.invalidateQueries({ queryKey: ["dms", "templates"] });
       await queryClient.refetchQueries({ queryKey: ["dms", "templates"] });
       setIsDeleteDialogOpen(false);
@@ -243,7 +243,7 @@ export default function TemplatesPage() {
         </DialogContent>
       </Dialog>
 
-      <FilterPanel title={t("common.filters")}>
+      <FilterPanel title={t("events.filters")}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
             <Label>Search</Label>

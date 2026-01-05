@@ -279,7 +279,7 @@ export function UserPermissionsManagement() {
       <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <Card>
           <CardContent className="p-4 md:p-6">
-            <div className="text-center">{t('userPermissions.loading')}</div>
+            <div className="text-center">{t('events.loading')}</div>
           </CardContent>
         </Card>
       </div>
@@ -311,10 +311,10 @@ export function UserPermissionsManagement() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5 hidden md:inline-flex" />
-            {t('userPermissions.title')}
+            {t('events.title')}
           </CardTitle>
           <CardDescription className="hidden md:block">
-            {t('userPermissions.subtitle')}
+            {t('hostel.subtitle')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -323,7 +323,7 @@ export function UserPermissionsManagement() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('userPermissions.searchPlaceholder')}
+                placeholder={t('assets.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -334,10 +334,10 @@ export function UserPermissionsManagement() {
                 <Label>{t('userPermissions.filterByRole')}</Label>
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t('userPermissions.allRoles')} />
+                    <SelectValue placeholder={t('userManagement.allRoles')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t('userPermissions.allRoles')}</SelectItem>
+                    <SelectItem value="all">{t('userManagement.allRoles')}</SelectItem>
                     <SelectItem value="staff">Staff</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                     <SelectItem value="teacher">Teacher</SelectItem>
@@ -357,18 +357,18 @@ export function UserPermissionsManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('userPermissions.name')}</TableHead>
-                    <TableHead className="hidden sm:table-cell">{t('userPermissions.email')}</TableHead>
-                    <TableHead className="hidden md:table-cell">{t('userPermissions.role')}</TableHead>
-                    <TableHead className="hidden lg:table-cell">{t('userPermissions.status')}</TableHead>
-                    <TableHead className="text-right">{t('userPermissions.actions')}</TableHead>
+                    <TableHead>{t('events.name')}</TableHead>
+                    <TableHead className="hidden sm:table-cell">{t('events.email')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('userManagement.role')}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t('events.status')}</TableHead>
+                    <TableHead className="text-right">{t('events.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center text-muted-foreground">
-                        {t('userPermissions.noUsersFound')}
+                        {t('userManagement.noUsersFound')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -381,7 +381,7 @@ export function UserPermissionsManagement() {
                             <div className="flex flex-wrap gap-1 mt-1">
                               <Badge variant="outline" className="text-xs">{user.role}</Badge>
                               <Badge variant={user.isActive ? 'default' : 'secondary'} className="text-xs">
-                                {user.isActive ? t('userPermissions.active') : t('userPermissions.inactive')}
+                                {user.isActive ? t('events.active') : t('events.inactive')}
                               </Badge>
                             </div>
                           </div>
@@ -393,7 +393,7 @@ export function UserPermissionsManagement() {
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
                           <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                            {user.isActive ? t('userPermissions.active') : t('userPermissions.inactive')}
+                            {user.isActive ? t('events.active') : t('events.inactive')}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -561,7 +561,7 @@ export function UserPermissionsManagement() {
           
           <DialogFooter>
             <Button variant="outline" onClick={handleClosePermissionsDialog} className="w-full sm:w-auto">
-              {t('userPermissions.close')}
+              {t('events.close')}
             </Button>
           </DialogFooter>
         </DialogContent>

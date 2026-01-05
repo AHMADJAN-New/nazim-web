@@ -66,7 +66,7 @@ export function PhoneBook() {
               <div className="text-center text-muted-foreground">
                 <Phone className="h-12 w-12 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">{t('guards.accessDenied') || 'Access Denied'}</h3>
-                <p>{t('guards.noPermission') || 'You do not have permission to view any phone book entries.'}</p>
+                <p>{t('events.noPermission') || 'You do not have permission to view any phone book entries.'}</p>
               </div>
             </CardContent>
           </Card>
@@ -87,7 +87,7 @@ export function PhoneBook() {
   const columns: ColumnDef<PhoneBookEntry>[] = useMemo(() => [
     {
       accessorKey: 'name',
-      header: () => <div className={isRTL ? 'text-right' : 'text-left'}>{t('phoneBook.name') || 'Name'}</div>,
+      header: () => <div className={isRTL ? 'text-right' : 'text-left'}>{t('events.name') || 'Name'}</div>,
       cell: ({ row }) => {
         const entry = row.original;
         return (
@@ -102,7 +102,7 @@ export function PhoneBook() {
     },
     {
       accessorKey: 'phone',
-      header: () => <div className={isRTL ? 'text-right' : 'text-left'}>{t('phoneBook.phone') || 'Phone'}</div>,
+      header: () => <div className={isRTL ? 'text-right' : 'text-left'}>{t('events.phone') || 'Phone'}</div>,
       cell: ({ row }) => {
         const phone = row.original.phone;
         return (
@@ -122,7 +122,7 @@ export function PhoneBook() {
     },
     {
       accessorKey: 'email',
-      header: () => <div className={isRTL ? 'text-right' : 'text-left'}>{t('phoneBook.email') || 'Email'}</div>,
+      header: () => <div className={isRTL ? 'text-right' : 'text-left'}>{t('events.email') || 'Email'}</div>,
       cell: ({ row }) => {
         const email = row.original.email;
         if (!email) return <span className="text-muted-foreground">-</span>;
@@ -140,17 +140,17 @@ export function PhoneBook() {
     },
     {
       accessorKey: 'category',
-      header: () => <div className={isRTL ? 'text-right' : 'text-left'}>{t('phoneBook.category') || 'Category'}</div>,
+      header: () => <div className={isRTL ? 'text-right' : 'text-left'}>{t('assets.category') || 'Category'}</div>,
       cell: ({ row }) => {
         const category = row.original.category;
         const categoryLabels: Record<string, string> = {
           student_guardian: t('phoneBook.studentGuardian') || 'Student Guardian',
           student_emergency: t('phoneBook.studentEmergency') || 'Student Emergency',
           student_zamin: t('phoneBook.studentZamin') || 'Student Zamin',
-          staff: t('phoneBook.staff') || 'Staff',
+          staff: t('settings.staff') || 'Staff',
           donor: t('phoneBook.donor') || 'Donor',
           guest: t('phoneBook.guest') || 'Guest',
-          other: t('phoneBook.other') || 'Other',
+          other: t('events.other') || 'Other',
         };
         // Color-coded badges for better visual distinction
         const getBadgeStyle = () => {
@@ -184,7 +184,7 @@ export function PhoneBook() {
     },
     {
       accessorKey: 'details',
-      header: () => <div className={isRTL ? 'text-right' : 'text-left'}>{t('phoneBook.details') || 'Details'}</div>,
+      header: () => <div className={isRTL ? 'text-right' : 'text-left'}>{t('library.details') || 'Details'}</div>,
       cell: ({ row }) => {
         const entry = row.original;
         const details: string[] = [];
@@ -193,10 +193,10 @@ export function PhoneBook() {
           details.push(`${t('phoneBook.student') || 'Student'}: ${entry.student_name}`);
         }
         if (entry.admission_no) {
-          details.push(`${t('phoneBook.admissionNo') || 'Admission No'}: ${entry.admission_no}`);
+          details.push(`${t('examReports.admissionNo') || 'Admission No'}: ${entry.admission_no}`);
         }
         if (entry.employee_id) {
-          details.push(`${t('phoneBook.employeeId') || 'Employee ID'}: ${entry.employee_id}`);
+          details.push(`${t('search.employeeId') || 'Employee ID'}: ${entry.employee_id}`);
         }
         if (entry.guest_code) {
           details.push(`${t('phoneBook.guestCode') || 'Guest Code'}: ${entry.guest_code}`);
@@ -220,7 +220,7 @@ export function PhoneBook() {
     },
     {
       accessorKey: 'address',
-      header: () => <div className={isRTL ? 'text-right' : 'text-left'}>{t('phoneBook.address') || 'Address'}</div>,
+      header: () => <div className={isRTL ? 'text-right' : 'text-left'}>{t('events.address') || 'Address'}</div>,
       cell: ({ row }) => {
         const address = row.original.address;
         if (!address) return <span className="text-muted-foreground">-</span>;
@@ -254,15 +254,15 @@ export function PhoneBook() {
   // Transform data for export
   const transformDataForExport = (data: PhoneBookEntry[]) => {
     return data.map((entry) => ({
-      [t('phoneBook.name') || 'Name']: entry.name,
-      [t('phoneBook.phone') || 'Phone']: entry.phone,
-      [t('phoneBook.email') || 'Email']: entry.email || '',
-      [t('phoneBook.category') || 'Category']: entry.category,
+      [t('events.name') || 'Name']: entry.name,
+      [t('events.phone') || 'Phone']: entry.phone,
+      [t('events.email') || 'Email']: entry.email || '',
+      [t('assets.category') || 'Category']: entry.category,
       [t('phoneBook.relation') || 'Relation']: entry.relation,
       [t('phoneBook.student') || 'Student']: entry.student_name || '',
-      [t('phoneBook.admissionNo') || 'Admission No']: entry.admission_no || '',
-      [t('phoneBook.employeeId') || 'Employee ID']: entry.employee_id || '',
-      [t('phoneBook.address') || 'Address']: entry.address || '',
+      [t('examReports.admissionNo') || 'Admission No']: entry.admission_no || '',
+      [t('search.employeeId') || 'Employee ID']: entry.employee_id || '',
+      [t('events.address') || 'Address']: entry.address || '',
     }));
   };
 
@@ -270,25 +270,25 @@ export function PhoneBook() {
   const buildFiltersSummary = () => {
     const parts: string[] = [];
     if (effectiveActiveTab !== 'all') {
-      parts.push(`${t('phoneBook.category') || 'Category'}: ${t(`phoneBook.${effectiveActiveTab}`) || effectiveActiveTab}`);
+      parts.push(`${t('assets.category') || 'Category'}: ${t(`phoneBook.${effectiveActiveTab}`) || effectiveActiveTab}`);
     }
     if (search) {
-      parts.push(`${t('common.search') || 'Search'}: ${search}`);
+      parts.push(`${t('events.search') || 'Search'}: ${search}`);
     }
     return parts.join(' | ');
   };
 
   // Export columns
   const exportColumns = useMemo(() => [
-    { key: 'name', label: t('phoneBook.name') || 'Name', width: 30 },
-    { key: 'phone', label: t('phoneBook.phone') || 'Phone', width: 20 },
-    { key: 'email', label: t('phoneBook.email') || 'Email', width: 30 },
-    { key: 'category', label: t('phoneBook.category') || 'Category', width: 20 },
+    { key: 'name', label: t('events.name') || 'Name', width: 30 },
+    { key: 'phone', label: t('events.phone') || 'Phone', width: 20 },
+    { key: 'email', label: t('events.email') || 'Email', width: 30 },
+    { key: 'category', label: t('assets.category') || 'Category', width: 20 },
     { key: 'relation', label: t('phoneBook.relation') || 'Relation', width: 20 },
     { key: 'student_name', label: t('phoneBook.student') || 'Student', width: 25 },
-    { key: 'admission_no', label: t('phoneBook.admissionNo') || 'Admission No', width: 20 },
-    { key: 'employee_id', label: t('phoneBook.employeeId') || 'Employee ID', width: 20 },
-    { key: 'address', label: t('phoneBook.address') || 'Address', width: 40 },
+    { key: 'admission_no', label: t('examReports.admissionNo') || 'Admission No', width: 20 },
+    { key: 'employee_id', label: t('search.employeeId') || 'Employee ID', width: 20 },
+    { key: 'address', label: t('events.address') || 'Address', width: 40 },
   ], [t]);
 
   if (isLoading) {
@@ -305,21 +305,21 @@ export function PhoneBook() {
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       {/* Header */}
       <PageHeader
-        title={t('phoneBook.title') || 'Phone Book'}
-        description={t('phoneBook.subtitle') || 'View and search all phone numbers from students, staff, donors, and guests'}
+        title={t('events.title') || 'Phone Book'}
+        description={t('hostel.subtitle') || 'View and search all phone numbers from students, staff, donors, and guests'}
         icon={<Phone className="h-5 w-5" />}
         rightSlot={
           <ReportExportButtons
             data={entries}
             columns={exportColumns}
             reportKey="phonebook"
-            title={t('phoneBook.title') || 'Phone Book'}
+            title={t('events.title') || 'Phone Book'}
             transformData={transformDataForExport}
             buildFiltersSummary={buildFiltersSummary}
             schoolId={selectedSchoolId}
             templateType="phonebook"
             disabled={entries.length === 0}
-            errorNoData={t('phoneBook.noDataToExport') || 'No data to export'}
+            errorNoData={t('events.noDataToExport') || 'No data to export'}
           />
         }
       />
@@ -334,7 +334,7 @@ export function PhoneBook() {
           {availableTabs.includes('all') && (
             <TabsTrigger value="all" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
               <Users className="h-4 w-4 flex-shrink-0" />
-              <span className="text-xs sm:text-sm">{t('phoneBook.all') || 'All'}</span>
+              <span className="text-xs sm:text-sm">{t('subjects.all') || 'All'}</span>
               {pagination && effectiveActiveTab === 'all' && (
                 <Badge variant="outline" className="ml-1 bg-primary/10 text-primary border-primary/20 font-semibold text-xs flex-shrink-0">
                   {pagination.total}
@@ -345,13 +345,13 @@ export function PhoneBook() {
           {hasStudentsPermission && (
             <TabsTrigger value="students" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
               <UserCheck className="h-4 w-4 flex-shrink-0" />
-              <span className="text-xs sm:text-sm">{t('phoneBook.students') || 'Students'}</span>
+              <span className="text-xs sm:text-sm">{t('table.students') || 'Students'}</span>
             </TabsTrigger>
           )}
           {hasStaffPermission && (
             <TabsTrigger value="staff" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
               <Building2 className="h-4 w-4 flex-shrink-0" />
-              <span className="text-xs sm:text-sm">{t('phoneBook.staff') || 'Staff'}</span>
+              <span className="text-xs sm:text-sm">{t('settings.staff') || 'Staff'}</span>
             </TabsTrigger>
           )}
           {hasDonorsPermission && (
@@ -384,7 +384,7 @@ export function PhoneBook() {
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder={t('phoneBook.searchPlaceholder') || 'Search by name, phone, email...'}
+                      placeholder={t('assets.searchPlaceholder') || 'Search by name, phone, email...'}
                       value={search}
                       onChange={(e) => {
                         setSearch(e.target.value);
@@ -428,7 +428,7 @@ export function PhoneBook() {
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder={t('phoneBook.searchPlaceholder') || 'Search by name, phone, email...'}
+                      placeholder={t('assets.searchPlaceholder') || 'Search by name, phone, email...'}
                       value={search}
                       onChange={(e) => {
                         setSearch(e.target.value);
@@ -472,7 +472,7 @@ export function PhoneBook() {
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder={t('phoneBook.searchPlaceholder') || 'Search by name, phone, email...'}
+                      placeholder={t('assets.searchPlaceholder') || 'Search by name, phone, email...'}
                       value={search}
                       onChange={(e) => {
                         setSearch(e.target.value);
@@ -516,7 +516,7 @@ export function PhoneBook() {
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder={t('phoneBook.searchPlaceholder') || 'Search by name, phone, email...'}
+                      placeholder={t('assets.searchPlaceholder') || 'Search by name, phone, email...'}
                       value={search}
                       onChange={(e) => {
                         setSearch(e.target.value);
@@ -560,7 +560,7 @@ export function PhoneBook() {
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder={t('phoneBook.searchPlaceholder') || 'Search by name, phone, email...'}
+                      placeholder={t('assets.searchPlaceholder') || 'Search by name, phone, email...'}
                       value={search}
                       onChange={(e) => {
                         setSearch(e.target.value);

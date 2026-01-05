@@ -58,8 +58,25 @@ export function t(key: string, lang: Language = 'en', params?: Record<string, st
   let value: unknown = translations[safeLang];
 
   // Try to get translation from requested language
-  for (const k of keys) {
-    if (typeof value === 'object' && value !== null && k in (value as Record<string, unknown>)) {
+  for (let i = 0; i < keys.length; i++) {
+    if (typeof value !== 'object' || value === null) {
+      value = undefined;
+      break;
+    }
+
+    // 1. Try the longest possible remaining path as a quoted key first
+    // This handles "nav" -> "finance.fees.dashboard" if that key exists in nav
+    const remainingPath = keys.slice(i).join('.');
+    if (remainingPath in (value as Record<string, unknown>)) {
+      value = (value as Record<string, unknown>)[remainingPath];
+      // Found the exact translation or the remaining path as a key, break and return
+      i = keys.length; // End loop
+      break;
+    }
+
+    // 2. Otherwise, take the next segment and descend
+    const k = keys[i];
+    if (k in (value as Record<string, unknown>)) {
       value = (value as Record<string, unknown>)[k];
     } else {
       value = undefined;
@@ -70,8 +87,21 @@ export function t(key: string, lang: Language = 'en', params?: Record<string, st
   // If translation not found, try English fallback
   if (typeof value !== 'string' && safeLang !== 'en') {
     value = translations.en;
-    for (const k of keys) {
-      if (typeof value === 'object' && value !== null && k in (value as Record<string, unknown>)) {
+    for (let i = 0; i < keys.length; i++) {
+      if (typeof value !== 'object' || value === null) {
+        value = undefined;
+        break;
+      }
+
+      const remainingPath = keys.slice(i).join('.');
+      if (remainingPath in (value as Record<string, unknown>)) {
+        value = (value as Record<string, unknown>)[remainingPath];
+        i = keys.length;
+        break;
+      }
+
+      const k = keys[i];
+      if (k in (value as Record<string, unknown>)) {
         value = (value as Record<string, unknown>)[k];
       } else {
         value = undefined;

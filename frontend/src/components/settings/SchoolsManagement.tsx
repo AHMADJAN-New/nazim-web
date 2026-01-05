@@ -393,9 +393,9 @@ export function SchoolsManagement() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <SchoolIcon className="h-5 w-5 hidden sm:inline-flex" />
-              {t('schools.title')}
+              {t('events.title')}
             </CardTitle>
-            <CardDescription className="hidden md:block">{t('schools.subtitle')}</CardDescription>
+            <CardDescription className="hidden md:block">{t('hostel.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <LoadingSpinner size="lg" text={t('schools.loadingSchools')} />
@@ -406,16 +406,16 @@ export function SchoolsManagement() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden" data-tour="schools-management-page">
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <SchoolIcon className="h-5 w-5 hidden sm:inline-flex" />
-                {t('schools.title')}
+                {t('events.title')}
               </CardTitle>
-              <CardDescription className="hidden md:block">{t('schools.subtitle')}</CardDescription>
+              <CardDescription className="hidden md:block">{t('hostel.subtitle')}</CardDescription>
             </div>
             {hasCreatePermission && (
               <Button 
@@ -436,7 +436,7 @@ export function SchoolsManagement() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('schools.searchPlaceholder')}
+                placeholder={t('assets.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -452,10 +452,10 @@ export function SchoolsManagement() {
                   <TableHead>{t('schools.schoolName')}</TableHead>
                   <TableHead>{t('schools.arabicName')}</TableHead>
                   <TableHead>{t('schools.pashtoName')}</TableHead>
-                  <TableHead>{t('schools.email')}</TableHead>
-                  <TableHead>{t('schools.phone')}</TableHead>
-                  <TableHead>{t('schools.status')}</TableHead>
-                  <TableHead className="text-right">{t('schools.actions')}</TableHead>
+                  <TableHead>{t('events.email')}</TableHead>
+                  <TableHead>{t('events.phone')}</TableHead>
+                  <TableHead>{t('events.status')}</TableHead>
+                  <TableHead className="text-right">{t('events.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -476,7 +476,7 @@ export function SchoolsManagement() {
                         <TableCell>{school.schoolPhone || '-'}</TableCell>
                         <TableCell>
                           <Badge variant={school.isActive ? 'default' : 'secondary'}>
-                            {school.isActive ? t('schools.active') : t('schools.inactive')}
+                            {school.isActive ? t('events.active') : t('events.inactive')}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -488,9 +488,9 @@ export function SchoolsManagement() {
                                 setSelectedSchool(school.id);
                                 setIsDetailsDialogOpen(true);
                               }}
-                              title={t('schools.viewDetails')}
+                              title={t('events.viewDetails')}
                               className="flex-shrink-0"
-                              aria-label={t('schools.viewDetails')}
+                              aria-label={t('events.viewDetails')}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -513,9 +513,10 @@ export function SchoolsManagement() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleOpenDialog(school.id)}
-                                title={t('schools.edit')}
+                                title={t('events.edit')}
                                 className="flex-shrink-0"
-                                aria-label={t('schools.edit')}
+                                aria-label={t('events.edit')}
+                                data-tour="schools-edit-button"
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -525,9 +526,9 @@ export function SchoolsManagement() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteClick(school.id)}
-                                title={t('schools.delete')}
+                                title={t('events.delete')}
                                 className="flex-shrink-0"
-                                aria-label={t('schools.delete')}
+                                aria-label={t('events.delete')}
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
@@ -554,7 +555,7 @@ export function SchoolsManagement() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" data-tour="schools-edit-dialog">
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
               <DialogTitle>
@@ -605,7 +606,7 @@ export function SchoolsManagement() {
                 </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="school_address">{t('schools.address')}</Label>
+                <Label htmlFor="school_address">{t('events.address')}</Label>
                 <Input
                   id="school_address"
                   {...register('school_address')}
@@ -614,7 +615,7 @@ export function SchoolsManagement() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="school_phone">{t('schools.phone')}</Label>
+                  <Label htmlFor="school_phone">{t('events.phone')}</Label>
                   <Input
                     id="school_phone"
                     {...register('school_phone')}
@@ -622,12 +623,12 @@ export function SchoolsManagement() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="school_email">{t('schools.email')}</Label>
+                  <Label htmlFor="school_email">{t('events.email')}</Label>
                   <Input
                     id="school_email"
                     type="email"
                     {...register('school_email')}
-                    placeholder={t('schools.enterEmail')}
+                    placeholder={t('auth.enterEmail')}
                   />
                   {errors.school_email && (
                     <p className="text-sm text-destructive">{errors.school_email.message}</p>
@@ -1123,7 +1124,7 @@ export function SchoolsManagement() {
                           <SelectItem value="header">{t('schools.header')}</SelectItem>
                           <SelectItem value="footer">{t('schools.footer')}</SelectItem>
                           <SelectItem value="both">{t('schools.both')}</SelectItem>
-                          <SelectItem value="none">{t('schools.none')}</SelectItem>
+                          <SelectItem value="none">{t('events.none')}</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -1143,7 +1144,7 @@ export function SchoolsManagement() {
                           <SelectItem value="header">{t('schools.header')}</SelectItem>
                           <SelectItem value="footer">{t('schools.footer')}</SelectItem>
                           <SelectItem value="both">{t('schools.both')}</SelectItem>
-                          <SelectItem value="none">{t('schools.none')}</SelectItem>
+                          <SelectItem value="none">{t('events.none')}</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -1163,7 +1164,7 @@ export function SchoolsManagement() {
                           <SelectItem value="header">{t('schools.header')}</SelectItem>
                           <SelectItem value="footer">{t('schools.footer')}</SelectItem>
                           <SelectItem value="both">{t('schools.both')}</SelectItem>
-                          <SelectItem value="none">{t('schools.none')}</SelectItem>
+                          <SelectItem value="none">{t('events.none')}</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -1181,15 +1182,15 @@ export function SchoolsManagement() {
                     />
                   )}
                 />
-                <Label htmlFor="is_active">{t('schools.active')}</Label>
+                <Label htmlFor="is_active">{t('events.active')}</Label>
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                {t('schools.cancel')}
+                {t('events.cancel')}
               </Button>
               <Button type="submit" disabled={createSchool.isPending || updateSchool.isPending}>
-                {selectedSchool ? t('common.update') : t('common.create')} {t('schools.schoolName')}
+                {selectedSchool ? t('events.update') : t('events.create')} {t('schools.schoolName')}
               </Button>
             </DialogFooter>
           </form>
@@ -1229,19 +1230,19 @@ export function SchoolsManagement() {
                 )}
                 {selectedSchoolData.schoolAddress && (
                   <div className="col-span-2">
-                    <Label className="text-muted-foreground">{t('schools.address')}</Label>
+                    <Label className="text-muted-foreground">{t('events.address')}</Label>
                     <p>{selectedSchoolData.schoolAddress}</p>
                   </div>
                 )}
                 {selectedSchoolData.schoolPhone && (
                   <div>
-                    <Label className="text-muted-foreground">{t('schools.phone')}</Label>
+                    <Label className="text-muted-foreground">{t('events.phone')}</Label>
                     <p>{selectedSchoolData.schoolPhone}</p>
                   </div>
                 )}
                 {selectedSchoolData.schoolEmail && (
                   <div>
-                    <Label className="text-muted-foreground">{t('schools.email')}</Label>
+                    <Label className="text-muted-foreground">{t('events.email')}</Label>
                     <p>{selectedSchoolData.schoolEmail}</p>
                   </div>
                 )}
@@ -1252,9 +1253,9 @@ export function SchoolsManagement() {
                   </div>
                 )}
                 <div>
-                  <Label className="text-muted-foreground">{t('schools.status')}</Label>
+                  <Label className="text-muted-foreground">{t('events.status')}</Label>
                   <Badge variant={selectedSchoolData.isActive ? 'default' : 'secondary'}>
-                    {selectedSchoolData.isActive ? t('schools.active') : t('schools.inactive')}
+                    {selectedSchoolData.isActive ? t('events.active') : t('events.inactive')}
                   </Badge>
                 </div>
               </div>
@@ -1403,7 +1404,7 @@ export function SchoolsManagement() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
-              {t('schools.close')}
+              {t('events.close')}
             </Button>
             <Button onClick={() => {
               setIsDetailsDialogOpen(false);
@@ -1426,12 +1427,12 @@ export function SchoolsManagement() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('schools.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('schools.delete')}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -473,7 +473,7 @@ export default function LibraryDistribution() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+                        <FilterPanel title={t('events.filters') || 'Search & Filter'}>
                             <div className="flex flex-col md:flex-row gap-4 items-end">
                                 <div className="relative flex-1 max-w-md w-full">
                                     <Label htmlFor="search" className="mb-2 block">Search</Label>

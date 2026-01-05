@@ -12,8 +12,8 @@ const Assets = () => {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
-        title={t('assets.title') || 'Assets'}
-        description={t('assets.subtitle')}
+        title={t('events.title') || 'Assets'}
+        description={t('hostel.subtitle')}
         icon={<Boxes className="h-5 w-5" />}
         showDescriptionOnMobile={false}
       />

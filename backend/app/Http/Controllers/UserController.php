@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\SchoolBranding;
+use App\Services\TourAssignmentService;
 use App\Helpers\OrganizationHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -304,6 +305,29 @@ class UserController extends Controller
                 // Spatie will use the organization context from EnsureOrganizationAccess middleware
                 $userModel->givePermissionTo('schools.access_all');
             }
+        }
+
+        // Auto-assign tours based on user permissions
+        try {
+            $userModel = \App\Models\User::find($userId);
+            if ($userModel && $organizationId) {
+                // Set organization context for permission checks
+                $userModel->setPermissionsTeamId($organizationId);
+                
+                // Get user's permissions (from roles and direct assignments)
+                $userPermissions = $userModel->getAllPermissions()->pluck('name')->toArray();
+                
+                // Assign tours based on permissions
+                $tourService = app(TourAssignmentService::class);
+                $assignedTours = $tourService->assignToursForUser($userId, $userPermissions);
+                
+                if (!empty($assignedTours) && config('app.debug')) {
+                    Log::info("Assigned tours to user {$userId}: " . implode(', ', $assignedTours));
+                }
+            }
+        } catch (\Exception $e) {
+            // Don't fail user creation if tour assignment fails
+            Log::warning("Failed to assign tours to user {$userId}: " . $e->getMessage());
         }
 
         $createdProfile = DB::table('profiles')->where('id', $userId)->first();

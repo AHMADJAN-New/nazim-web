@@ -235,9 +235,23 @@ export function OrganizationsManagement() {
   };
 
   const onSubmit = (data: OrganizationFormData) => {
+    // Transform establishedDate from Date to string if needed
+    const transformedData = {
+      ...data,
+      establishedDate: data.establishedDate instanceof Date
+        ? data.establishedDate.toISOString().slice(0, 10)
+        : data.establishedDate || null,
+      // Auto-add https:// to website if missing
+      website: data.website && data.website !== ''
+        ? (data.website.startsWith('http://') || data.website.startsWith('https://'))
+          ? data.website
+          : `https://${data.website}`
+        : null,
+    };
+
     if (selectedOrganization) {
       updateOrganization.mutate(
-        { id: selectedOrganization, ...data },
+        { id: selectedOrganization, ...transformedData },
         {
           onSuccess: () => {
             handleCloseDialog();
@@ -248,11 +262,11 @@ export function OrganizationsManagement() {
       if (data.name && data.slug) {
         // For platform admins, include admin fields
         const createData = isPlatformAdminRoute ? {
-          ...data,
+          ...transformedData,
           admin_email: data.admin_email || '',
           admin_password: data.admin_password || '',
           admin_full_name: data.admin_full_name || '',
-        } : data;
+        } : transformedData;
         
         createOrganization.mutate(createData as any, {
           onSuccess: () => {
@@ -322,9 +336,9 @@ export function OrganizationsManagement() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              {t('organizations.title')}
+              {t('events.title')}
             </CardTitle>
-            <CardDescription>{t('organizations.subtitle')}</CardDescription>
+            <CardDescription>{t('hostel.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <LoadingSpinner size="lg" text={t('organizations.loadingOrganizations')} />
@@ -342,9 +356,9 @@ export function OrganizationsManagement() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
-                {t('organizations.title')}
+                {t('events.title')}
               </CardTitle>
-              <CardDescription>{t('organizations.subtitle')}</CardDescription>
+              <CardDescription>{t('hostel.subtitle')}</CardDescription>
             </div>
             {canCreateOrganization && (
               <Button onClick={() => handleOpenDialog()}>
@@ -359,7 +373,7 @@ export function OrganizationsManagement() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('organizations.searchPlaceholder')}
+                placeholder={t('assets.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -371,19 +385,19 @@ export function OrganizationsManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('organizations.name')}</TableHead>
+                  <TableHead>{t('events.name')}</TableHead>
                   <TableHead>{t('organizations.slug')}</TableHead>
                   <TableHead>{t('organizations.settings')}</TableHead>
-                  <TableHead>{t('organizations.createdAt')}</TableHead>
-                  <TableHead>{t('organizations.updatedAt')}</TableHead>
-                  <TableHead className="text-right">{t('organizations.actions')}</TableHead>
+                  <TableHead>{t('events.createdAt')}</TableHead>
+                  <TableHead>{t('events.updatedAt')}</TableHead>
+                  <TableHead className="text-right">{t('events.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredOrganizations.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground">
-                      {searchQuery ? t('organizations.noOrganizationsFound') : t('organizations.noOrganizationsMessage')}
+                      {searchQuery ? t('auth.noOrganizationsFound') : t('organizations.noOrganizationsMessage')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -426,7 +440,7 @@ export function OrganizationsManagement() {
                                 setSelectedOrganization(org.id);
                                 setIsDetailsDialogOpen(true);
                               }}
-                              title={t('organizations.viewDetails')}
+                              title={t('events.viewDetails')}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -447,7 +461,7 @@ export function OrganizationsManagement() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleOpenDialog(org.id)}
-                                title={t('organizations.edit')}
+                                title={t('events.edit')}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -457,7 +471,7 @@ export function OrganizationsManagement() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteClick(org.id)}
-                                title={t('organizations.delete')}
+                                title={t('events.delete')}
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
@@ -866,10 +880,10 @@ export function OrganizationsManagement() {
             </Tabs>
             <DialogFooter className="mt-6">
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                {t('organizations.cancel')}
+                {t('events.cancel')}
               </Button>
               <Button type="submit" disabled={createOrganization.isPending || updateOrganization.isPending}>
-                {selectedOrganization ? t('organizations.update') : t('organizations.create')}
+                {selectedOrganization ? t('events.update') : t('events.create')}
               </Button>
             </DialogFooter>
           </form>
@@ -892,10 +906,10 @@ export function OrganizationsManagement() {
             <div className="space-y-6 py-4">
               {/* Basic Information */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">{t('organizations.basicInformation')}</h3>
+                <h3 className="font-semibold text-lg">{t('events.basicInformation')}</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-muted-foreground">{t('organizations.name')}</Label>
+                    <Label className="text-muted-foreground">{t('events.name')}</Label>
                     <p className="font-medium">{selectedOrg.name}</p>
                   </div>
                   <div>
@@ -909,11 +923,11 @@ export function OrganizationsManagement() {
                     <p className="text-sm font-mono text-muted-foreground break-all">{selectedOrg.id}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">{t('organizations.createdAt')}</Label>
+                    <Label className="text-muted-foreground">{t('events.createdAt')}</Label>
                     <p className="text-sm">{formatDateTime(selectedOrg.createdAt)}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">{t('organizations.updatedAt')}</Label>
+                    <Label className="text-muted-foreground">{t('events.updatedAt')}</Label>
                     <p className="text-sm">{formatDateTime(selectedOrg.updatedAt)}</p>
                   </div>
                 </div>
@@ -952,7 +966,7 @@ export function OrganizationsManagement() {
                           <GraduationCap className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.studentCount}</p>
-                            <p className="text-sm text-muted-foreground">{t('organizations.students')}</p>
+                            <p className="text-sm text-muted-foreground">{t('table.students')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -963,7 +977,7 @@ export function OrganizationsManagement() {
                           <BookOpen className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.classCount}</p>
-                            <p className="text-sm text-muted-foreground">{t('organizations.classes')}</p>
+                            <p className="text-sm text-muted-foreground">{t('nav.classes')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -974,7 +988,7 @@ export function OrganizationsManagement() {
                           <UserCheck className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.staffCount}</p>
-                            <p className="text-sm text-muted-foreground">{t('organizations.staff')}</p>
+                            <p className="text-sm text-muted-foreground">{t('settings.staff')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -985,7 +999,7 @@ export function OrganizationsManagement() {
                           <Building className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.buildingCount}</p>
-                            <p className="text-sm text-muted-foreground">{t('organizations.buildings')}</p>
+                            <p className="text-sm text-muted-foreground">{t('dashboard.buildings')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -996,7 +1010,7 @@ export function OrganizationsManagement() {
                           <DoorOpen className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.roomCount}</p>
-                            <p className="text-sm text-muted-foreground">{t('organizations.rooms')}</p>
+                            <p className="text-sm text-muted-foreground">{t('hostel.rooms')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -1022,7 +1036,7 @@ export function OrganizationsManagement() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
-              {t('organizations.close')}
+              {t('events.close')}
             </Button>
             <Button onClick={() => {
               setIsDetailsDialogOpen(false);
@@ -1045,12 +1059,12 @@ export function OrganizationsManagement() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('organizations.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('organizations.delete')}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

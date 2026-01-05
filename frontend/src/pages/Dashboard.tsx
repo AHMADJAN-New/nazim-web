@@ -115,7 +115,7 @@ export default function Dashboard() {
   // Create stats cards from real data
   const statsCards = dashboardStats ? [
     {
-      title: t('dashboard.totalStudents') || "Total Students",
+      title: t('students.totalStudents') || "Total Students",
       value: dashboardStats.totalStudents.toLocaleString(),
       icon: Users,
       description: t('dashboard.activeStudents') || "Active students",
@@ -139,7 +139,7 @@ export default function Dashboard() {
       onClick: "/settings/classes"
     },
     {
-      title: t('dashboard.totalRooms') || "Total Rooms",
+      title: t('hostel.totalRooms') || "Total Rooms",
       value: dashboardStats.totalRooms.toLocaleString(),
       icon: Building,
       description: t('dashboard.availableRooms') || "Available rooms",
@@ -163,19 +163,19 @@ export default function Dashboard() {
 
   if (statsLoading || roleLoading) {
     return (
-      <MainLayout title={t('dashboard.title') || "Dashboard"}>
-        <LoadingSpinner />
-      </MainLayout>
+        <MainLayout title={t('events.title') || "Dashboard"}>
+          <LoadingSpinner />
+        </MainLayout>
     );
   }
 
   const renderDefaultDashboard = () => (
-    <>
+    <div data-tour="dashboard">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-primary to-primary/80 p-4 md:p-8 rounded-xl text-primary-foreground shadow-lg mb-6 md:mb-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t('dashboard.welcomeBack') || 'Welcome back'}, {user?.email?.split('@')[0] || t('common.user') || 'User'}!</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t('dashboard.welcomeBack') || 'Welcome back'}, {user?.email?.split('@')[0] || t('events.user') || 'User'}!</h1>
             <p className="text-primary-foreground/90 text-sm sm:text-lg">
               {t('dashboard.welcomeMessage') || "Here's what's happening at your school today"}
             </p>
@@ -359,11 +359,11 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   );
 
   return (
-    <MainLayout title={t('dashboard.title') || "Dashboard"}>
+      <MainLayout title={t('events.title') || "Dashboard"}>
       <div className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 h-auto p-1">
@@ -393,7 +393,7 @@ export default function Dashboard() {
             </TabsTrigger>
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('nav.documents') || 'Documents'}</span>
+              <span className="hidden sm:inline">{t('students.documents') || 'Documents'}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -402,37 +402,37 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="finance" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading finance dashboard...'} />}>
+            <Suspense fallback={<LoadingSpinner text={t('events.loading') || 'Loading finance dashboard...'} />}>
               <FinanceDashboard />
             </Suspense>
           </TabsContent>
 
           <TabsContent value="assets" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading assets dashboard...'} />}>
+            <Suspense fallback={<LoadingSpinner text={t('events.loading') || 'Loading assets dashboard...'} />}>
               <AssetsDashboard />
             </Suspense>
           </TabsContent>
 
           <TabsContent value="library" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading library dashboard...'} />}>
+            <Suspense fallback={<LoadingSpinner text={t('events.loading') || 'Loading library dashboard...'} />}>
               <LibraryDashboard />
             </Suspense>
           </TabsContent>
 
           <TabsContent value="attendance" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading attendance dashboard...'} />}>
+            <Suspense fallback={<LoadingSpinner text={t('events.loading') || 'Loading attendance dashboard...'} />}>
               <AttendanceDashboard />
             </Suspense>
           </TabsContent>
 
           <TabsContent value="leave" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading leave requests dashboard...'} />}>
+            <Suspense fallback={<LoadingSpinner text={t('events.loading') || 'Loading leave requests dashboard...'} />}>
               <LeaveRequestsDashboard />
             </Suspense>
           </TabsContent>
 
           <TabsContent value="documents" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading documents dashboard...'} />}>
+            <Suspense fallback={<LoadingSpinner text={t('events.loading') || 'Loading documents dashboard...'} />}>
               <DmsDashboard />
             </Suspense>
           </TabsContent>

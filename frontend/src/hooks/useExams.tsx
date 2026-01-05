@@ -558,7 +558,7 @@ export const useEnrollStudent = () => {
       return examStudentsApi.create(data);
     },
     onSuccess: () => {
-      showToast.success(t('toast.studentEnrolled') || 'Student enrolled successfully');
+      showToast.success(t('courses.studentEnrolled') || 'Student enrolled successfully');
       void queryClient.invalidateQueries({ queryKey: ['exam-students'] });
       void queryClient.invalidateQueries({ queryKey: ['enrollment-stats'] });
     },

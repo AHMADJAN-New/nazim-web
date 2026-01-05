@@ -130,8 +130,8 @@ export default function Library() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('library.title')}
-        description={t('library.subtitle')}
+        title={t('events.title')}
+        description={t('hostel.subtitle')}
         icon={<BookOpen className="h-5 w-5" />}
       />
 
@@ -181,7 +181,7 @@ export default function Library() {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label>{t('library.category')}</Label>
+                      <Label>{t('assets.category')}</Label>
                       <Input
                         value={bookForm.category}
                         onChange={(e) => setBookForm({ ...bookForm, category: e.target.value })}
@@ -289,7 +289,7 @@ export default function Library() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('library.bookTitle')}</TableHead>
-                      <TableHead>{t('library.copies')}</TableHead>
+                      <TableHead>{t('assets.copies')}</TableHead>
                       <TableHead>{t('library.depositAmount')}</TableHead>
                       <TableHead>{t('library.addCopy')}</TableHead>
                     </TableRow>
@@ -297,7 +297,7 @@ export default function Library() {
                   <TableBody>
                     {isLoading && (
                       <TableRow>
-                        <TableCell colSpan={4}>{t('common.loading')}</TableCell>
+                        <TableCell colSpan={4}>{t('events.loading')}</TableCell>
                       </TableRow>
                     )}
                     {!isLoading && (!Array.isArray(books) || books.length === 0) && (
@@ -463,7 +463,7 @@ export default function Library() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>{t('library.activeLoans')}</CardTitle>
                 <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-                  <RefreshCw className="h-4 w-4 mr-1" /> {t('common.refresh')}
+                  <RefreshCw className="h-4 w-4 mr-1" /> {t('events.refresh')}
                 </Button>
               </CardHeader>
               <CardContent className="space-y-3">

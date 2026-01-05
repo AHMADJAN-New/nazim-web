@@ -138,7 +138,7 @@ export default function Currencies() {
                     </p>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
+                    <Label htmlFor="name">{t('events.name') || 'Name'} *</Label>
                     <Input
                         id="name"
                         value={formData.name}
@@ -185,13 +185,13 @@ export default function Currencies() {
                         checked={formData.isActive}
                         onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
                     />
-                    <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
+                    <Label htmlFor="isActive">{t('events.active') || 'Active'}</Label>
                 </div>
             </div>
             <DialogFooter>
                 <Button onClick={onSubmit} disabled={loading || !formData.code || !formData.name}>
                     {loading ? <LoadingSpinner className="mr-2 h-4 w-4" /> : null}
-                    {editCurrency ? t('common.update') || 'Update' : t('common.create') || 'Create'}
+                    {editCurrency ? t('events.update') || 'Update' : t('events.create') || 'Create'}
                 </Button>
             </DialogFooter>
         </div>
@@ -239,12 +239,12 @@ export default function Currencies() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>{t('finance.currencyCode') || 'Code'}</TableHead>
-                                <TableHead>{t('common.name') || 'Name'}</TableHead>
+                                <TableHead>{t('events.name') || 'Name'}</TableHead>
                                 <TableHead>{t('finance.currencySymbol') || 'Symbol'}</TableHead>
                                 <TableHead>{t('finance.decimalPlaces') || 'Decimals'}</TableHead>
                                 <TableHead>{t('finance.baseCurrency') || 'Base'}</TableHead>
-                                <TableHead>{t('common.status') || 'Status'}</TableHead>
-                                <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                                <TableHead>{t('events.status') || 'Status'}</TableHead>
+                                <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -258,7 +258,7 @@ export default function Currencies() {
                                         {currency.isBase ? (
                                             <Badge variant="default" className="gap-1">
                                                 <Star className="h-3 w-3" />
-                                                {t('common.yes') || 'Yes'}
+                                                {t('events.yes') || 'Yes'}
                                             </Badge>
                                         ) : (
                                             <span className="text-muted-foreground">-</span>
@@ -266,7 +266,7 @@ export default function Currencies() {
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant={currency.isActive ? 'default' : 'secondary'}>
-                                            {currency.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
+                                            {currency.isActive ? t('events.active') || 'Active' : t('events.inactive') || 'Inactive'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -320,15 +320,15 @@ export default function Currencies() {
             <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('events.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('finance.deleteCurrencyWarning') || 'Are you sure you want to delete this currency? This action cannot be undone.'}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                            {t('common.delete') || 'Delete'}
+                            {t('events.delete') || 'Delete'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

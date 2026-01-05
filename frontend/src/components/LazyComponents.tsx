@@ -55,6 +55,8 @@ export const StudentsImport = lazy(() => import('@/pages/StudentsImport'));
 export const StudentAdmissions = lazy(() => import('@/pages/StudentAdmissions').then(module => ({ default: module.StudentAdmissions })));
 export const StudentReport = lazy(() => import('@/pages/StudentReport'));
 export const StudentAdmissionsReport = lazy(() => import('@/pages/StudentAdmissionsReport'));
+export const StudentHistoryPage = lazy(() => import('@/pages/students/StudentHistoryPage'));
+export const StudentHistoryListPage = lazy(() => import('@/pages/students/StudentHistoryListPage'));
 export const ShortTermCourses = lazy(() => import('@/pages/ShortTermCourses'));
 export const CourseStudents = lazy(() => import('@/pages/CourseStudents'));
 export const CourseStudentReports = lazy(() => import('@/pages/CourseStudentReports'));

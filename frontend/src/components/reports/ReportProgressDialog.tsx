@@ -64,7 +64,7 @@ export function ReportProgressDialog({
 
   const getStatusTitle = () => {
     if (isProcessing) {
-      return t('reports.generating') || 'راپور جوړیږي...';
+      return t('studentReportCard.generating') || 'راپور جوړیږي...';
     }
     if (isCompleted) {
       return t('reports.generated') || 'راپور بریالی شو';
@@ -137,7 +137,7 @@ export function ReportProgressDialog({
                 className="gap-2"
               >
                 <Download className="h-4 w-4" />
-                {t('common.download') || 'ډاونلوډ'}
+                {t('events.download') || 'ډاونلوډ'}
               </Button>
             </>
           )}
@@ -149,7 +149,7 @@ export function ReportProgressDialog({
               className="gap-2"
             >
               <X className="h-4 w-4" />
-              {t('common.close') || 'بند کول'}
+              {t('events.close') || 'بند کول'}
             </Button>
           )}
 
@@ -160,7 +160,7 @@ export function ReportProgressDialog({
               disabled
               className="gap-2"
             >
-              {t('common.cancel') || 'لغوه'}
+              {t('events.cancel') || 'لغوه'}
             </Button>
           )}
         </DialogFooter>

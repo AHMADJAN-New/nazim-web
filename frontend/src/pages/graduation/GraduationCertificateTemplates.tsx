@@ -244,10 +244,10 @@ export default function GraduationCertificateTemplates() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <PageHeader
-        title={t('certificateTemplates.title') || 'Graduation Certificate Templates'}
+        title={t('events.title') || 'Graduation Certificate Templates'}
         icon={<FileText className="h-5 w-5" />}
         primaryAction={{
-          label: t('certificateTemplates.createTemplate') || 'Create Template',
+          label: t('examPapers.createTemplate') || 'Create Template',
           onClick: () => handleOpenDialog(),
           icon: <Plus className="h-4 w-4" />,
         }}
@@ -259,7 +259,7 @@ export default function GraduationCertificateTemplates() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-muted-foreground">{t('common.loading')}</p>
+            <p className="text-muted-foreground">{t('events.loading')}</p>
           ) : templates.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
@@ -273,12 +273,12 @@ export default function GraduationCertificateTemplates() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('certificateTemplates.templateName') || 'Template Name'}</TableHead>
-                  <TableHead>{t('certificateTemplates.description') || 'Description'}</TableHead>
+                  <TableHead>{t('events.description') || 'Description'}</TableHead>
                   <TableHead>School</TableHead>
                   <TableHead>Background</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
-                  <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                  <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

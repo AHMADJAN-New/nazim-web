@@ -368,7 +368,7 @@ export default function AssetCategories() {
                                 <Input
                                     id="name"
                                     {...register('name')}
-                                    placeholder={t('common.exampleCategories')}
+                                    placeholder={t('events.exampleCategories')}
                                 />
                                 {errors.name && (
                                     <p className="text-sm text-destructive mt-1">{errors.name.message}</p>

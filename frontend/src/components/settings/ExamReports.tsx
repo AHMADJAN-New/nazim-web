@@ -99,7 +99,7 @@ export function ExamReports() {
             </Button>
           )}
           <div>
-            <h1 className="text-2xl font-bold">{t('exams.reports') || 'Exam Insights'}</h1>
+            <h1 className="text-2xl font-bold">{t('nav.reports') || 'Exam Insights'}</h1>
             <p className="text-muted-foreground">{examName || (t('exams.reportsDescription') || 'Generate summaries, planned schedules, and grade-ready cards.')}</p>
           </div>
         </div>

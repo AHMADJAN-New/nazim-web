@@ -162,7 +162,7 @@ export function FeePaymentForm({
                         <span className="font-semibold text-primary">{assignment.remainingAmount.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('fees.status')}:</span>
+                        <span className="text-muted-foreground">{t('events.status')}:</span>
                         <span className="capitalize">{assignment.status}</span>
                       </div>
                     </div>
@@ -272,7 +272,7 @@ export function FeePaymentForm({
             name="notes"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('fees.notes')}</FormLabel>
+                <FormLabel>{t('events.notes')}</FormLabel>
                 <FormControl>
                   <Input placeholder={t('fees.notesPlaceholder')} {...field} />
                 </FormControl>
@@ -293,11 +293,11 @@ export function FeePaymentForm({
               }} 
               disabled={isSubmitting}
             >
-              {t('common.cancel')}
+              {t('events.cancel')}
             </Button>
           )}
           <Button type="submit" disabled={isSubmitting || assignments.length === 0}>
-            {isSubmitting ? t('common.saving') : t('common.save')}
+            {isSubmitting ? t('events.saving') : t('events.save')}
           </Button>
         </div>
       </form>

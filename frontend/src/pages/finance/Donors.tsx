@@ -152,7 +152,7 @@ export default function Donors() {
         >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
+                    <Label htmlFor="name">{t('events.name') || 'Name'} *</Label>
                     <Input
                         id="name"
                         value={formData.name}
@@ -162,7 +162,7 @@ export default function Donors() {
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="type">{t('common.type') || 'Type'}</Label>
+                    <Label htmlFor="type">{t('events.type') || 'Type'}</Label>
                     <Select
                         value={formData.type}
                         onValueChange={(value: 'individual' | 'organization') => setFormData({ ...formData, type: value })}
@@ -172,14 +172,14 @@ export default function Donors() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="individual">{t('finance.individual') || 'Individual'}</SelectItem>
-                            <SelectItem value="organization">{t('finance.organization') || 'Organization'}</SelectItem>
+                            <SelectItem value="organization">{t('students.organization') || 'Organization'}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="phone">{t('common.phone') || 'Phone'}</Label>
+                    <Label htmlFor="phone">{t('events.phone') || 'Phone'}</Label>
                     <Input
                         id="phone"
                         value={formData.phone || ''}
@@ -188,7 +188,7 @@ export default function Donors() {
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="email">{t('common.email') || 'Email'}</Label>
+                    <Label htmlFor="email">{t('events.email') || 'Email'}</Label>
                     <Input
                         id="email"
                         type="email"
@@ -199,7 +199,7 @@ export default function Donors() {
                 </div>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="address">{t('common.address') || 'Address'}</Label>
+                <Label htmlFor="address">{t('events.address') || 'Address'}</Label>
                 <Textarea
                     id="address"
                     value={formData.address || ''}
@@ -210,7 +210,7 @@ export default function Donors() {
                 />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="notes">{t('common.notes') || 'Notes'}</Label>
+                <Label htmlFor="notes">{t('events.notes') || 'Notes'}</Label>
                 <Textarea
                     id="notes"
                     value={formData.notes || ''}
@@ -226,11 +226,11 @@ export default function Donors() {
                     checked={formData.isActive}
                     onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
                 />
-                <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
+                <Label htmlFor="isActive">{t('events.active') || 'Active'}</Label>
             </div>
             <DialogFooter>
                 <Button type="submit" disabled={loading || !formData.name.trim()}>
-                    {editDonor ? t('common.update') || 'Update' : t('common.create') || 'Create'}
+                    {editDonor ? t('events.update') || 'Update' : t('events.create') || 'Create'}
                 </Button>
             </DialogFooter>
         </form>
@@ -251,26 +251,26 @@ export default function Donors() {
                     <ReportExportButtons
                         data={filteredDonors}
                         columns={[
-                            { key: 'name', label: t('common.name'), align: 'left' },
-                            { key: 'type', label: t('common.type'), align: 'left' },
-                            { key: 'phone', label: t('common.phone'), align: 'left' },
-                            { key: 'email', label: t('common.email'), align: 'left' },
+                            { key: 'name', label: t('events.name'), align: 'left' },
+                            { key: 'type', label: t('events.type'), align: 'left' },
+                            { key: 'phone', label: t('events.phone'), align: 'left' },
+                            { key: 'email', label: t('events.email'), align: 'left' },
                             { key: 'totalDonated', label: t('finance.totalDonated'), align: 'right' },
-                            { key: 'isActive', label: t('common.status'), align: 'center' },
+                            { key: 'isActive', label: t('events.status'), align: 'center' },
                         ]}
                         reportKey="finance_donors"
                         title={t('finance.donors') || 'Donors'}
                         transformData={(data) =>
                             data.map((donor) => ({
                                 name: donor.name,
-                                type: donor.type === 'individual' ? t('finance.individual') || 'Individual' : t('finance.organization') || 'Organization',
+                                type: donor.type === 'individual' ? t('finance.individual') || 'Individual' : t('students.organization') || 'Organization',
                                 phone: donor.phone || '-',
                                 email: donor.email || '-',
                                 totalDonated: formatCurrency(donor.totalDonated),
-                                isActive: donor.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive',
+                                isActive: donor.isActive ? t('events.active') || 'Active' : t('events.inactive') || 'Inactive',
                             }))
                         }
-                        buildFiltersSummary={() => searchTerm ? `${t('common.search')}: ${searchTerm}` : ''}
+                        buildFiltersSummary={() => searchTerm ? `${t('events.search')}: ${searchTerm}` : ''}
                         templateType="finance_donors"
                         disabled={isLoading || filteredDonors.length === 0}
                     />
@@ -289,10 +289,10 @@ export default function Donors() {
                 </DialogContent>
             </Dialog>
 
-            <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+            <FilterPanel title={t('events.filters') || 'Search & Filter'}>
                 <div className="w-full md:max-w-sm">
                     <Label className="text-xs text-muted-foreground mb-1 block">
-                        {t('common.search') || 'Search'}
+                        {t('events.search') || 'Search'}
                     </Label>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -340,12 +340,12 @@ export default function Donors() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>{t('common.name') || 'Name'}</TableHead>
-                                <TableHead>{t('common.type') || 'Type'}</TableHead>
-                                <TableHead>{t('common.contact') || 'Contact'}</TableHead>
+                                <TableHead>{t('events.name') || 'Name'}</TableHead>
+                                <TableHead>{t('events.type') || 'Type'}</TableHead>
+                                <TableHead>{t('events.contact') || 'Contact'}</TableHead>
                                 <TableHead className="text-right">{t('finance.totalDonated') || 'Total Donated'}</TableHead>
-                                <TableHead>{t('common.status') || 'Status'}</TableHead>
-                                <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                                <TableHead>{t('events.status') || 'Status'}</TableHead>
+                                <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -356,7 +356,7 @@ export default function Donors() {
                                         <Badge variant="outline">
                                             {donor.type === 'individual'
                                                 ? t('finance.individual') || 'Individual'
-                                                : t('finance.organization') || 'Organization'}
+                                                : t('students.organization') || 'Organization'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>
@@ -381,7 +381,7 @@ export default function Donors() {
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant={donor.isActive ? 'default' : 'secondary'}>
-                                            {donor.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
+                                            {donor.isActive ? t('events.active') || 'Active' : t('events.inactive') || 'Inactive'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -433,15 +433,15 @@ export default function Donors() {
             <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('events.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('finance.deleteDonorWarning') || 'Are you sure you want to delete this donor? This action cannot be undone.'}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                            {t('common.delete') || 'Delete'}
+                            {t('events.delete') || 'Delete'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

@@ -34,7 +34,7 @@ export default function StudentFeeStatementPage() {
       <Card>
         <CardContent>
           {isLoading ? (
-            <p>{t('common.loading')}</p>
+            <p>{t('events.loading')}</p>
           ) : (
             <FeeStatement assignments={assignments} payments={payments} structureNames={structureNames} />
           )}

@@ -28,7 +28,7 @@ export function getValidationMessage(key: string, params?: Record<string, string
  */
 export const validationMessages = {
   invalidUuid: () => getValidationMessage('validation.invalidUuid'),
-  invalidEmail: () => getValidationMessage('validation.invalidEmail'),
+  invalidEmail: () => getValidationMessage('forms.invalidEmail'),
   phoneMaxLength: () => getValidationMessage('validation.phoneMaxLength'),
   fieldMaxLength: (fieldName: string, max: number) => 
     getValidationMessage('validation.fieldMaxLength', { fieldName, max }),
@@ -42,7 +42,7 @@ export const validationMessages = {
   fileTypeInvalid: (types: string) => 
     getValidationMessage('validation.fileTypeInvalid', { types }),
   currentPasswordRequired: () => getValidationMessage('validation.currentPasswordRequired'),
-  passwordMinLength: () => getValidationMessage('validation.passwordMinLength'),
+  passwordMinLength: () => getValidationMessage('userManagement.passwordMinLength'),
   passwordUppercase: () => getValidationMessage('validation.passwordUppercase'),
   passwordLowercase: () => getValidationMessage('validation.passwordLowercase'),
   passwordNumber: () => getValidationMessage('validation.passwordNumber'),
