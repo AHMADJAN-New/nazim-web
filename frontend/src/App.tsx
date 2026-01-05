@@ -188,9 +188,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SchoolProvider } from "@/contexts/SchoolContext";
 import { AuthProvider } from "@/hooks/useAuth";
-import { appCoreTour, initialSetupTour } from "@/onboarding";
-import { TourProviderWrapper } from "@/components/TourProviderWrapper";
-import { RouteToursHandler } from "@/components/RouteToursHandler";
 
 // Optimized QueryClient with better caching and performance settings
 const queryClient = new QueryClient({
@@ -364,10 +361,7 @@ const App = () => (
                   {/* Protected routes with persistent layout */}
                   <Route element={
                     <ProtectedRoute>
-                      <TourProviderWrapper tours={[appCoreTour, initialSetupTour]} autoStart={true}>
-                        <RouteToursHandler />
-                        <PersistentLayout />
-                      </TourProviderWrapper>
+                      <PersistentLayout />
                     </ProtectedRoute>
                   }>
                     {/* Dashboard with optimized loading */}
