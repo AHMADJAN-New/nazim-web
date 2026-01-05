@@ -72,8 +72,6 @@ import {
   StudentAdmissions,
   StudentReport,
   StudentAdmissionsReport,
-  StudentHistoryPage,
-  StudentHistoryListPage,
   NotificationsPage,
   ShortTermCourses,
   CourseStudents,
@@ -865,21 +863,6 @@ const App = () => (
                           <PhoneBook />
                         </Suspense>
                       </AnyPermissionRoute>
-                    } />
-                    {/* Student History routes must come BEFORE /students route to avoid route conflicts */}
-                    <Route path="/students/history" element={
-                      <PermissionRoute permission="students.read">
-                        <Suspense fallback={<PageSkeleton />}>
-                          <StudentHistoryListPage />
-                        </Suspense>
-                      </PermissionRoute>
-                    } />
-                    <Route path="/students/:studentId/history" element={
-                      <PermissionRoute permission="students.read">
-                        <Suspense fallback={<PageSkeleton />}>
-                          <StudentHistoryPage />
-                        </Suspense>
-                      </PermissionRoute>
                     } />
                     <Route path="/students" element={
                       <PermissionRoute permission="students.read">
