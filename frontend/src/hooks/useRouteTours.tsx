@@ -59,7 +59,26 @@ export function useRouteTours() {
         }
 
         // Get tours assigned for this route
-        const tours = await userToursApi.toursForRoute(location.pathname);
+        // Gracefully handle database errors - if table doesn't exist, just skip
+        let tours: any[] = [];
+        try {
+          tours = await userToursApi.toursForRoute(location.pathname);
+        } catch (error: any) {
+          // If it's a database error (table doesn't exist), just log and continue
+          // The tour can still start via auto-start or manual trigger
+          if (error?.message?.includes('does not exist') || error?.message?.includes('Undefined table')) {
+            if (import.meta.env.DEV) {
+              console.warn('[useRouteTours] Database table not found - tours will use localStorage fallback:', error.message);
+            }
+            // Return early - don't prevent tour from starting via other means
+            return;
+          }
+          // For other errors, log but don't prevent tour from starting
+          if (import.meta.env.DEV) {
+            console.warn('[useRouteTours] Failed to check route tours:', error);
+          }
+          return;
+        }
         
         // Filter to only incomplete and non-dismissed tours
         const eligibleTours = tours.filter(t => {
@@ -89,8 +108,9 @@ export function useRouteTours() {
           }, 300);
         }
       } catch (error) {
+        // Catch-all for any unexpected errors - don't prevent tour from starting
         if (import.meta.env.DEV) {
-          console.warn('[useRouteTours] Failed to check route tours:', error);
+          console.warn('[useRouteTours] Unexpected error:', error);
         }
       }
     };

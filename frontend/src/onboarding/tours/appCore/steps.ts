@@ -1,6 +1,7 @@
 /**
  * App Core Tour - Step Definitions
  * 
+ * Unified tour steps (merged from appCore and initialSetup tours).
  * Defines all steps for the main application tour.
  */
 
@@ -31,54 +32,20 @@ export const appCoreSteps: TourStep[] = [
     optional: true,
   },
   
-  // Step 2.5: Dashboard Tabs Introduction
+  // Step 3: Dashboard Tabs Introduction (Combined tabs knowledge)
   {
     id: 'dashboard-tabs',
     ...getStepContent('dashboardTabs'),
-    attachTo: { selector: '[data-tour="dashboard-tabs"]', on: 'bottom' },
+    attachTo: { selector: '[data-tour="dashboard-tabs-list"]', on: 'bottom' },
     route: '/dashboard',
-    waitFor: { selector: '[data-tour="dashboard-tabs"]', timeoutMs: 5000 },
+    preActions: [
+      { type: 'switchTab', payload: { containerId: 'dashboard-tabs', tabId: 'overview' } },
+    ],
+    waitFor: { selector: '[data-tour="dashboard-tabs-list"]', timeoutMs: 5000 },
     optional: true,
   },
   
-  // Step 2.6: General Tabs Knowledge
-  {
-    id: 'tabs-general',
-    ...getStepContent('tabsGeneral'),
-    attachTo: { selector: '[data-tour="dashboard-tabs"]', on: 'bottom' },
-    route: '/dashboard',
-    waitFor: { selector: '[data-tour="dashboard-tabs"]', timeoutMs: 5000 },
-    optional: true,
-  },
-  
-  // Step 3: Top Bar Introduction
-  {
-    id: 'top-bar',
-    ...getStepContent('topBar'),
-    attachTo: { selector: '[data-tour="app-header"]', on: 'bottom' },
-    waitFor: { selector: '[data-tour="app-header"]', timeoutMs: 3000 },
-    optional: true,
-  },
-  
-  // Step 4: Search Bar
-  {
-    id: 'search',
-    ...getStepContent('search'),
-    attachTo: { selector: '[data-tour="search-container"]', on: 'bottom' },
-    waitFor: { selector: '[data-tour="search-container"]', timeoutMs: 3000 },
-    optional: true,
-  },
-  
-  // Step 5: Notifications
-  {
-    id: 'notifications',
-    ...getStepContent('notifications'),
-    attachTo: { selector: '[data-tour="notifications"]', on: 'bottom' },
-    waitFor: { selector: '[data-tour="notifications"]', timeoutMs: 3000 },
-    optional: true,
-  },
-  
-  // Step 6: Sidebar Navigation
+  // Step 4: Sidebar Navigation
   {
     id: 'sidebar',
     ...getStepContent('sidebar'),
@@ -91,7 +58,61 @@ export const appCoreSteps: TourStep[] = [
     rtlPlacementFlip: true,
   },
   
-  // Step 7: Students Menu
+  // Step 5: Edit Icon
+  {
+    id: 'edit-icon',
+    ...getStepContent('editIcon'),
+    attachTo: { selector: 'body', on: 'center' },
+    route: '/dashboard',
+    optional: false,
+  },
+  
+  // Step 6: Delete Icon
+  {
+    id: 'delete-icon',
+    ...getStepContent('deleteIcon'),
+    attachTo: { selector: 'body', on: 'center' },
+    route: '/dashboard',
+    optional: false,
+  },
+  
+  // Step 7: View Icon
+  {
+    id: 'view-icon',
+    ...getStepContent('viewIcon'),
+    attachTo: { selector: 'body', on: 'center' },
+    route: '/dashboard',
+    optional: false,
+  },
+  
+  // Step 8: Top Bar Introduction
+  {
+    id: 'top-bar',
+    ...getStepContent('topBar'),
+    attachTo: { selector: '[data-tour="app-header"]', on: 'bottom' },
+    waitFor: { selector: '[data-tour="app-header"]', timeoutMs: 3000 },
+    optional: true,
+  },
+  
+  // Step 9: Search Bar
+  {
+    id: 'search',
+    ...getStepContent('search'),
+    attachTo: { selector: '[data-tour="search-container"]', on: 'bottom' },
+    waitFor: { selector: '[data-tour="search-container"]', timeoutMs: 3000 },
+    optional: true,
+  },
+  
+  // Step 10: Notifications
+  {
+    id: 'notifications',
+    ...getStepContent('notifications'),
+    attachTo: { selector: '[data-tour="notifications"]', on: 'bottom' },
+    waitFor: { selector: '[data-tour="notifications"]', timeoutMs: 3000 },
+    optional: true,
+  },
+  
+  // Step 11: Students Menu
   {
     id: 'sidebar-students',
     ...getStepContent('sidebarStudents'),
@@ -104,7 +125,7 @@ export const appCoreSteps: TourStep[] = [
     rtlPlacementFlip: true,
   },
   
-  // Step 8: Staff Menu
+  // Step 12: Staff Menu
   {
     id: 'sidebar-staff',
     ...getStepContent('sidebarStaff'),
@@ -114,7 +135,7 @@ export const appCoreSteps: TourStep[] = [
     rtlPlacementFlip: true,
   },
   
-  // Step 9: Attendance Menu
+  // Step 13: Attendance Menu
   {
     id: 'sidebar-attendance',
     ...getStepContent('sidebarAttendance'),
@@ -124,7 +145,7 @@ export const appCoreSteps: TourStep[] = [
     rtlPlacementFlip: true,
   },
   
-  // Step 10: Exams Menu
+  // Step 14: Exams Menu
   {
     id: 'sidebar-exams',
     ...getStepContent('sidebarExams'),
@@ -134,7 +155,7 @@ export const appCoreSteps: TourStep[] = [
     rtlPlacementFlip: true,
   },
   
-  // Step 11: Finance Menu
+  // Step 15: Finance Menu
   {
     id: 'sidebar-finance',
     ...getStepContent('sidebarFinance'),
@@ -144,7 +165,7 @@ export const appCoreSteps: TourStep[] = [
     rtlPlacementFlip: true,
   },
   
-  // Step 12: Academic Menu
+  // Step 16: Academic Menu
   {
     id: 'sidebar-academic',
     ...getStepContent('sidebarAcademic'),
@@ -154,7 +175,7 @@ export const appCoreSteps: TourStep[] = [
     rtlPlacementFlip: true,
   },
   
-  // Step 13: Settings Menu
+  // Step 17: Settings Menu
   {
     id: 'sidebar-settings',
     ...getStepContent('sidebarSettings'),
@@ -164,7 +185,7 @@ export const appCoreSteps: TourStep[] = [
     rtlPlacementFlip: true,
   },
   
-  // Step 14: User Menu
+  // Step 18: User Menu
   {
     id: 'user-menu',
     ...getStepContent('userMenu'),
@@ -173,7 +194,7 @@ export const appCoreSteps: TourStep[] = [
     optional: true,
   },
   
-  // Step 15: Help Center
+  // Step 19: Help Center
   {
     id: 'help-center',
     ...getStepContent('helpCenter'),
@@ -182,7 +203,7 @@ export const appCoreSteps: TourStep[] = [
     optional: true,
   },
   
-  // Step 16: Complete
+  // Step 20: Complete
   {
     id: 'complete',
     ...getStepContent('complete'),
@@ -190,4 +211,3 @@ export const appCoreSteps: TourStep[] = [
     optional: false,
   },
 ];
-

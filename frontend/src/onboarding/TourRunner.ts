@@ -209,7 +209,38 @@ export class TourRunner {
       timestamp: Date.now(),
     });
     
+      // Start the tour
       this.shepherdTour.start();
+      
+      // CRITICAL: Ensure step element is visible after starting
+      setTimeout(() => {
+        const stepElement = document.querySelector('.shepherd-element') as HTMLElement;
+        const overlay = document.querySelector('.shepherd-modal-overlay-container') as HTMLElement;
+        
+        if (DEBUG) {
+          console.log('[TourRunner] After tour.start():', {
+            stepElementExists: !!stepElement,
+            overlayExists: !!overlay,
+            stepElementVisible: stepElement ? window.getComputedStyle(stepElement).display !== 'none' : false,
+          });
+        }
+        
+        if (stepElement) {
+          // Force visibility
+          stepElement.style.display = 'block';
+          stepElement.style.visibility = 'visible';
+          stepElement.style.opacity = '1';
+          stepElement.style.zIndex = '100000';
+          
+          // Ensure it's in the DOM and visible
+          if (stepElement.offsetParent === null) {
+            console.warn('[TourRunner] Step element has no offsetParent - may be hidden');
+          }
+        } else {
+          console.error('[TourRunner] Step element not found after tour.start()');
+        }
+      }, 200);
+      
       return true;
     } finally {
       this.isStarting = false;
@@ -362,7 +393,7 @@ export class TourRunner {
       useModalOverlay: true,
       defaultStepOptions: {
         classes: `shepherd-theme-nazim ${rtl ? 'shepherd-rtl' : 'shepherd-ltr'}`,
-        scrollTo: { behavior: 'smooth', block: 'center' },
+        scrollTo: false, // Disable automatic scrolling to prevent dialog movement
         cancelIcon: {
           enabled: true,
         },
@@ -381,6 +412,14 @@ export class TourRunner {
         message: `Tour completed: ${tourDef.id}`,
       });
       
+      // CRITICAL: Remove all shepherd elements when tour completes
+      const allElements = document.querySelectorAll('.shepherd-element, .shepherd-modal-overlay-container');
+      allElements.forEach((el) => el.remove());
+      
+      // Remove active class to restore normal scrolling
+      document.body.classList.remove('shepherd-active');
+      document.documentElement.classList.remove('shepherd-active');
+      
       // Mark as completed in database (with localStorage fallback)
       await completeTour(tourDef.id, tourDef.version);
       clearActiveTourState(); // Clear session storage
@@ -396,6 +435,14 @@ export class TourRunner {
         type: 'info',
         message: `Tour cancelled: ${tourDef.id}`,
       });
+      
+      // CRITICAL: Remove all shepherd elements when tour is cancelled
+      const allElements = document.querySelectorAll('.shepherd-element, .shepherd-modal-overlay-container');
+      allElements.forEach((el) => el.remove());
+      
+      // Remove active class to restore normal scrolling
+      document.body.classList.remove('shepherd-active');
+      document.documentElement.classList.remove('shepherd-active');
       
       // Mark tour as dismissed only when user cancels (not when we cancel programmatically)
       // Also: do not permanently dismiss initial setup tour; onboarding should remain available until completed.
@@ -569,11 +616,20 @@ export class TourRunner {
     }
     
     // Create step options
+    // CRITICAL: Always include buttons, even for optional steps
+    // This ensures buttons are always available, even if element is not found
     const stepOptions: any = {
       id: step.id,
       text: `${progressHtml}${titleHtml}${textHtml}`,
       attachTo, // undefined for hideOnNext if element not found (shows centered)
-      buttons,
+      buttons: buttons.length > 0 ? buttons : [
+        // Fallback: Always have at least a Next button
+        {
+          text: rtl ? 'بعدی ←' : 'Next →',
+          action: () => this.shepherdTour?.next(),
+          classes: 'shepherd-button-primary',
+        },
+      ],
       classes: step.classes,
       canClickTarget: step.allowClicksOnTarget ?? false,
       // CRITICAL: For hideOnNext steps, do NOT set beforeShowPromise at all.
@@ -685,11 +741,13 @@ export class TourRunner {
             }
             
             // Scroll to element if needed (only if element exists)
+            // Do this BEFORE waiting for element to ensure smooth positioning
             if (step.scroll && step.attachTo && step.attachTo.selector !== 'body') {
               const scrollElement = findElement(step.attachTo.selector);
               if (scrollElement) {
                 scrollToElement(step.attachTo.selector, step.scroll);
-                await wait(300);
+                // Wait longer for scroll to complete and DOM to settle
+                await wait(500);
               }
             }
             
@@ -747,15 +805,136 @@ export class TourRunner {
           this.resetShepherdUIStyles();
           this.applyOverlayInteractivity(step.allowClicksOutside === true);
           
+          // CRITICAL: Ensure step element is visible after showing
+          setTimeout(() => {
+            const stepElement = document.querySelector('.shepherd-element') as HTMLElement;
+            if (stepElement) {
+              stepElement.style.display = 'block';
+              stepElement.style.visibility = 'visible';
+              stepElement.style.opacity = '1';
+              stepElement.style.zIndex = '100000';
+              
+              if (DEBUG) {
+                console.log('[TourRunner] Step element visibility ensured:', {
+                  display: stepElement.style.display,
+                  visibility: stepElement.style.visibility,
+                  opacity: stepElement.style.opacity,
+                  zIndex: stepElement.style.zIndex,
+                  computedDisplay: window.getComputedStyle(stepElement).display,
+                  computedVisibility: window.getComputedStyle(stepElement).visibility,
+                });
+              }
+            } else if (DEBUG) {
+              console.warn('[TourRunner] Step element not found after show event');
+            }
+          }, 100);
+          
           debugLog({
             timestamp: Date.now(),
             type: 'step-end',
             message: `Step "${step.id}" shown`,
           });
           
+          // Prevent dialog repositioning after step is shown
+          // But allow repositioning on scroll to keep dialog visible
+          const stepElement = document.querySelector('.shepherd-element');
+          if (stepElement) {
+            // Keep Popper.js updates enabled but with better configuration
+            const popperInstance = (stepElement as any)._popper;
+            if (popperInstance && popperInstance.setOptions) {
+              popperInstance.setOptions({
+                modifiers: [
+                  ...(popperInstance.options?.modifiers || []).filter((m: any) => 
+                    m.name !== 'eventListeners' && m.name !== 'preventOverflow'
+                  ),
+                  {
+                    name: 'eventListeners',
+                    enabled: true, // Enable to allow repositioning on scroll
+                    options: {
+                      scroll: true,
+                      resize: true,
+                    },
+                  },
+                  {
+                    name: 'preventOverflow',
+                    enabled: true,
+                    options: {
+                      boundary: 'viewport',
+                      padding: 8,
+                      rootBoundary: 'viewport',
+                    },
+                  },
+                ],
+              });
+            }
+          }
+          
           // CRITICAL: Force enable buttons for ALL steps after they're shown
           // This ensures buttons are always functional, even if beforeShowPromise had issues
           this.scheduleStepInteractivity(step.id);
+          
+          // Ensure buttons are visible and enabled immediately
+          // This is critical for optional steps (finance, settings) where element might not be found
+          setTimeout(() => {
+            this.forceEnableStepInteractivity(step.id);
+            // Also try to find by step ID directly
+            const stepEl = document.querySelector(`.shepherd-element[data-step-id="${step.id}"], .shepherd-element[id="${step.id}"]`) as HTMLElement;
+            if (stepEl) {
+              const buttons = stepEl.querySelectorAll<HTMLButtonElement>('button.shepherd-button');
+              buttons.forEach((btn) => {
+                btn.disabled = false;
+                btn.removeAttribute('disabled');
+                btn.removeAttribute('aria-disabled');
+                btn.style.pointerEvents = 'auto';
+                btn.style.opacity = '1';
+                btn.style.visibility = 'visible';
+                btn.style.display = '';
+              });
+            }
+          }, 100);
+          
+          // Add scroll listener to ensure buttons stay visible when scrolling
+          const ensureButtonsVisible = () => {
+            const stepEl = document.querySelector('.shepherd-element') as HTMLElement;
+            if (stepEl) {
+              const buttons = stepEl.querySelectorAll<HTMLButtonElement>('button.shepherd-button, .shepherd-button');
+              buttons.forEach((btn) => {
+                btn.style.visibility = 'visible';
+                btn.style.display = 'inline-flex';
+                btn.style.opacity = '1';
+                btn.disabled = false;
+                btn.removeAttribute('disabled');
+              });
+              
+              // Ensure step element itself is visible
+              stepEl.style.visibility = 'visible';
+              stepEl.style.display = 'block';
+              stepEl.style.opacity = '1';
+              
+              // Ensure footer is visible
+              const footer = stepEl.querySelector('.shepherd-footer') as HTMLElement;
+              if (footer) {
+                footer.style.visibility = 'visible';
+                footer.style.display = 'flex';
+                footer.style.opacity = '1';
+              }
+            }
+          };
+          
+          // Call immediately and on scroll/resize
+          ensureButtonsVisible();
+          const scrollHandler = () => ensureButtonsVisible();
+          window.addEventListener('scroll', scrollHandler, { passive: true });
+          window.addEventListener('resize', scrollHandler, { passive: true });
+          
+          // Clean up listeners when step is hidden
+          const cleanup = () => {
+            window.removeEventListener('scroll', scrollHandler);
+            window.removeEventListener('resize', scrollHandler);
+          };
+          
+          // Store cleanup function to call on hide
+          (this as any)._scrollCleanup = cleanup;
           
           // For hideOnNext steps, do minimal setup after step is shown
           // This doesn't block buttons since step is already visible
@@ -827,7 +1006,31 @@ export class TourRunner {
           }
         },
         hide: () => {
+          // CRITICAL: Remove this step element immediately when hiding
+          const stepElement = document.querySelector(`.shepherd-element[id="${step.id}"], .shepherd-element[data-step-id="${step.id}"]`) as HTMLElement;
+          if (stepElement) {
+            stepElement.remove();
+          }
+          
+          // Also remove any orphaned shepherd elements
+          const allElements = document.querySelectorAll('.shepherd-element');
+          const currentStep = this.shepherdTour?.getCurrentStep();
+          allElements.forEach((el) => {
+            const elId = el.getAttribute('id') || el.getAttribute('data-step-id');
+            const currentStepId = currentStep?.id;
+            // Remove if not the current step
+            if (elId !== currentStepId && elId !== step.id) {
+              el.remove();
+            }
+          });
+          
           this.resetShepherdUIStyles();
+          
+          // Clean up scroll listeners
+          if ((this as any)._scrollCleanup) {
+            (this as any)._scrollCleanup();
+            (this as any)._scrollCleanup = null;
+          }
         },
       },
     };
@@ -836,8 +1039,29 @@ export class TourRunner {
   }
 
   private resetShepherdUIStyles(): void {
-    const elements = document.querySelectorAll('.shepherd-element, .shepherd-modal-overlay-container');
-    elements.forEach((el) => {
+    // Remove all shepherd elements except the current one
+    const allElements = document.querySelectorAll('.shepherd-element');
+    const currentStep = this.shepherdTour?.getCurrentStep();
+    const currentStepId = currentStep?.id;
+    
+    allElements.forEach((el) => {
+      const stepId = el.getAttribute('id') || el.getAttribute('data-step-id');
+      // Only keep the current step visible, remove all others
+      if (stepId !== currentStepId) {
+        el.remove();
+      } else {
+        // Reset styles for current step
+        const h = el as HTMLElement;
+        h.style.display = '';
+        h.style.visibility = '';
+        h.style.pointerEvents = '';
+        h.style.opacity = '';
+      }
+    });
+    
+    // Reset overlay styles
+    const overlays = document.querySelectorAll('.shepherd-modal-overlay-container');
+    overlays.forEach((el) => {
       const h = el as HTMLElement;
       h.style.display = '';
       h.style.visibility = '';
@@ -854,35 +1078,71 @@ export class TourRunner {
   }
 
   private forceEnableStepInteractivity(stepId: string): void {
-    const stepElement = document.querySelector(`[data-shepherd-step-id="${stepId}"]`) as HTMLElement | null;
+    // Try multiple selectors to find the step element
+    const selectors = [
+      `[data-shepherd-step-id="${stepId}"]`,
+      `.shepherd-element[data-step-id="${stepId}"]`,
+      `.shepherd-element[id="${stepId}"]`,
+      `.shepherd-element`,
+    ];
+    
+    let stepElement: HTMLElement | null = null;
+    for (const selector of selectors) {
+      stepElement = document.querySelector(selector) as HTMLElement | null;
+      if (stepElement) break;
+    }
+    
+    if (!stepElement) {
+      // Try to find any shepherd element (fallback)
+      stepElement = document.querySelector('.shepherd-element') as HTMLElement | null;
+    }
+    
     if (!stepElement) return;
 
     stepElement.style.pointerEvents = 'auto';
+    stepElement.style.visibility = 'visible';
+    stepElement.style.display = '';
+    stepElement.style.opacity = '1';
+    
     stepElement.querySelectorAll<HTMLElement>('*').forEach((el) => {
       el.style.pointerEvents = 'auto';
     });
 
-    const buttons = stepElement.querySelectorAll<HTMLButtonElement>('button.shepherd-button');
+    const buttons = stepElement.querySelectorAll<HTMLButtonElement>('button.shepherd-button, .shepherd-button');
     buttons.forEach((btn) => {
       btn.disabled = false;
       btn.removeAttribute('disabled');
       btn.removeAttribute('aria-disabled');
       btn.style.pointerEvents = 'auto';
       btn.style.opacity = '1';
+      btn.style.visibility = 'visible';
+      btn.style.display = '';
+      // Ensure button is not hidden by CSS
+      btn.classList.remove('shepherd-button-hidden');
     });
 
     if (DEBUG && buttons.length > 0) {
       console.log(`[TourRunner] Force-enabled ${buttons.length} button(s) for step "${stepId}"`);
+    } else if (DEBUG && buttons.length === 0) {
+      console.warn(`[TourRunner] No buttons found for step "${stepId}"`);
     }
   }
 
   private applyOverlayInteractivity(allowClicksOutside: boolean): void {
-    if (!allowClicksOutside) return;
-
     const overlay = document.querySelector('.shepherd-modal-overlay-container') as HTMLElement | null;
     if (overlay) {
+      // Always allow scrolling by making overlay non-interactive
+      // This allows scroll events to pass through while keeping overlay visible
       overlay.style.pointerEvents = 'none';
+      const svg = overlay.querySelector('svg');
+      if (svg) {
+        (svg as unknown as HTMLElement).style.pointerEvents = 'none';
+      }
     }
+    
+    // Always allow body scrolling when tour is active
+    document.body.classList.add('shepherd-active');
+    document.documentElement.classList.add('shepherd-active');
   }
   
   /**

@@ -366,7 +366,7 @@ export default function Dashboard() {
       <MainLayout title={t('dashboard.title') || "Dashboard"}>
       <div className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" data-tour="dashboard-tabs">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 h-auto p-1" data-tour="dashboard-tabs-list">
             <TabsTrigger value="overview" className="flex items-center gap-2" data-tour="tab-overview">
               <Home className="h-4 w-4" />
               <span className="hidden sm:inline">{t('dashboard.overview') || 'Overview'}</span>

@@ -3713,6 +3713,7 @@ export const en: TranslationKeys = {
       operations: 'Operations'
     },
     settings: 'Settings',
+    schoolsManagement: 'Schools Management',
     shortTermCourses: 'Short Term Courses',
     staff: 'Staff',
     staffManagement: 'Staff Management',

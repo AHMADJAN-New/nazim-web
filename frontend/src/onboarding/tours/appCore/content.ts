@@ -1,7 +1,7 @@
 /**
  * App Core Tour - Content
  * 
- * Step content for the main app tour.
+ * Step content for the unified app tour (merged from appCore and initialSetup).
  * This file can be extended for i18n support later.
  */
 
@@ -11,7 +11,7 @@ export const tourContent = {
     icon: 'School',
     text: [
       "We're excited to have you here! Let's take a quick tour to help you get familiar with the application.",
-      'This tour will show you the main features and how to navigate around.',
+      'This tour will show you the main features, navigation, and common actions you will use every day.',
     ],
   },
   dashboard: {
@@ -24,11 +24,14 @@ export const tourContent = {
   },
   dashboardTabs: {
     title: 'Dashboard Tabs',
-    icon: 'Home',
+    icon: 'FileText',
     text: [
       'The dashboard uses tabs to organize different sections of information.',
       'Click on any tab to switch between Overview, Finance, Assets, Library, Attendance, Leave Requests, and Documents.',
       'Each tab shows relevant data and quick actions for that area. Tabs help you navigate without leaving the dashboard.',
+      'Tabs are used throughout the application to organize related content. You\'ll find tabs in many pages: student profiles, staff records, reports, and more.',
+      'Click any tab to switch views. The active tab is highlighted. On mobile, tab labels may be hidden - icons are always visible.',
+      'Action buttons near the tabs (Add, Export, Filter, etc.) let you perform tasks immediately. Together the tabs and actions keep you moving through the workflow without extra navigation.',
     ],
   },
   tabsGeneral: {
@@ -39,6 +42,53 @@ export const tourContent = {
       'You\'ll find tabs in many pages: student profiles, staff records, reports, and more.',
       'Click any tab to switch views. The active tab is highlighted. On mobile, tab labels may be hidden - icons are always visible.',
       'Tabs help you access different sections of information without navigating away from the current page.',
+    ],
+  },
+  sidebar: {
+    title: 'Navigation Sidebar',
+    icon: 'Home',
+    text: [
+      'The sidebar is your main navigation hub, organized into logical sections.',
+      'Operations: Manage students, staff, and attendance. Academic: Handle classes, subjects, and exams. Finance: Track fees and payments. Administration: Configure settings and permissions.',
+      'Click any menu item to explore. Items with arrows have sub-menus that expand when clicked.',
+    ],
+  },
+  editIcon: {
+    title: 'Edit Icon (Pencil)',
+    icon: 'Pencil',
+    text: [
+      'The edit action always uses the `Pencil` icon from our lucide set.',
+      'You will find it beside each record in tables and lists.',
+      'Click it to open the inline form where you can update fields right away.',
+      'Keeping edits next to the data prevents losing context.',
+    ],
+  },
+  deleteIcon: {
+    title: 'Delete Icon (Trash)',
+    icon: 'Trash2',
+    text: [
+      'Our delete icon is the `Trash2` icon from lucide.',
+      'It appears beside the edit icon in the same action area.',
+      'Use it to remove outdated entries, and confirm when prompted before the deletion goes through.',
+    ],
+  },
+  viewIcon: {
+    title: 'View Icon (Eye)',
+    icon: 'Eye',
+    text: [
+      'The `Eye` icon lets you open a read-only view of a record.',
+      'Use its button when you want to preview data before editing or deleting.',
+      'It is handy for quick lookups without navigating away from the list.',
+    ],
+  },
+  tabsActions: {
+    title: 'Tabs & Action Buttons',
+    icon: 'FileText',
+    text: [
+      'Many pages show tabs or pills at the top of the content area (for example, Overview, Records, and Reports).',
+      'Switch between these tabs to change the focus of the page without leaving the module.',
+      'Action buttons near the tabs (Add, Export, Filter, etc.) let you perform tasks immediately.',
+      'Together the tabs and actions keep you moving through the workflow without extra navigation.',
     ],
   },
   topBar: {
@@ -64,15 +114,6 @@ export const tourContent = {
     text: [
       'Stay updated with important notifications.',
       'Click the bell icon to see all your notifications. The badge shows unread count.',
-    ],
-  },
-  sidebar: {
-    title: 'Navigation Sidebar',
-    icon: 'Home',
-    text: [
-      'The sidebar is your main navigation hub, organized into logical sections.',
-      'Operations: Manage students, staff, and attendance. Academic: Handle classes, subjects, and exams. Finance: Track fees and payments. Administration: Configure settings and permissions.',
-      'Click any menu item to explore. Items with arrows have sub-menus that expand when clicked.',
     ],
   },
   sidebarStudents: {
@@ -153,6 +194,7 @@ export const tourContent = {
     icon: 'School',
     text: [
       'Congratulations! You now know the basics of navigating Nazim.',
+      'You\'ve learned about the sidebar, dashboard tabs, common icons (edit, delete, view), and how to access help.',
       'Feel free to explore the app and take this tour again anytime from your profile menu or the help center.',
       'Welcome to Nazim!',
     ],
@@ -170,4 +212,3 @@ export function getStepContent(stepId: keyof typeof tourContent): { title: strin
     icon: content.icon,
   };
 }
-

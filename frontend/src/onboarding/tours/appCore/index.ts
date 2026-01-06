@@ -20,14 +20,33 @@ export const appCoreTour: TourDefinition = {
   eligible: (ctx) => {
     // Show tour to users who haven't completed it
     // Or if the version has changed
-    if (!ctx.isTourCompleted('appCore')) {
+    const isCompleted = ctx.isTourCompleted('appCore');
+    const completedVersion = ctx.getTourVersion('appCore');
+    
+    if (import.meta.env.DEV) {
+      console.log('[appCoreTour] Eligibility check:', {
+        isCompleted,
+        completedVersion,
+        currentVersion: '1.0.0',
+        willShow: !isCompleted || completedVersion !== '1.0.0',
+      });
+    }
+    
+    if (!isCompleted) {
       return true;
     }
     
     // Check if version changed
-    const completedVersion = ctx.getTourVersion('appCore');
     if (completedVersion !== '1.0.0') {
       return true;
+    }
+    
+    // In development, allow showing tour even if completed (for testing)
+    // This makes it easier to test the tour without resetting localStorage
+    if (import.meta.env.DEV) {
+      console.log('[appCoreTour] Tour is completed, but allowing in development mode for testing');
+      console.log('[appCoreTour] To permanently reset, run: window.resetTour("appCore")');
+      return true; // Allow in development even if completed
     }
     
     return false;

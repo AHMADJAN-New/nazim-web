@@ -723,6 +723,7 @@ export interface TranslationKeys {
     reports: string;
     admissionsReport: string;
     settings: string;
+    schoolsManagement: string;
     translations: string;
     authentication: string;
     academicSettings: string;

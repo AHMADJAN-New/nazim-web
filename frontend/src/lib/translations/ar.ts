@@ -3713,6 +3713,7 @@ export const ar: TranslationKeys = {
       operations: 'العمليات'
     },
     settings: 'الإعدادات',
+    schoolsManagement: 'إدارة المدارس',
     shortTermCourses: 'الدورات قصيرة الأجل',
     staff: 'الموظفون',
     staffManagement: 'إدارة الموظفين',

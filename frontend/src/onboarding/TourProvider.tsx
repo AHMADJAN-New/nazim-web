@@ -287,12 +287,72 @@ export function TourProvider({
           console.log('[TourProvider] Starting tour:', eligible[0].id);
         }
         // Auto-start should respect dismissal (force=false)
-        const started = await runnerRef.current.start(eligible[0].id, undefined, { force: false });
+        // But in development, allow force-start if tour is completed or dismissed (for testing)
+        const isCompleted = localStorageIsTourCompleted(eligible[0].id);
+        const isDismissed = isTourDismissed(eligible[0].id);
+        const forceStart = import.meta.env.DEV && (isCompleted || isDismissed);
+        
+        if (import.meta.env.DEV && forceStart) {
+          console.log('[TourProvider] Force-starting tour in development mode (completed or dismissed)');
+        }
+        
+        const started = await runnerRef.current.start(eligible[0].id, undefined, { force: forceStart });
         if (started) {
           hasAutoStartedRef.current = true;
+        } else if (import.meta.env.DEV) {
+          console.warn('[TourProvider] Tour start returned false - tour may be dismissed or already running');
+          if (forceStart) {
+            console.warn('[TourProvider] Force start was attempted but failed. Try resetting: window.resetTour("appCore")');
+          }
         }
       } else if (import.meta.env.DEV) {
-        console.log('[TourProvider] No eligible tours found');
+        console.warn('[TourProvider] No eligible tours found');
+        console.warn('[TourProvider] To reset appCore tour, run in console:');
+        console.warn('  localStorage.removeItem("tour:appCore")');
+        console.warn('  localStorage.removeItem("tour-dismissed:appCore")');
+        console.warn('  Then refresh the page');
+        
+        // In development, log all tours and their eligibility with details
+        const allTours = getAllTours();
+        console.log('[TourProvider] All registered tours:', allTours.map(t => {
+          const context = createTourContext();
+          const isCompleted = context.isTourCompleted(t.id);
+          const isDismissed = isTourDismissed(t.id);
+          const eligible = t.eligible ? t.eligible(context) : true;
+          return {
+            id: t.id,
+            isCompleted,
+            isDismissed,
+            eligible,
+            hasEligibleFn: !!t.eligible,
+          };
+        }));
+        
+        // Also expose a global helper function for resetting tours
+        if (typeof window !== 'undefined') {
+          (window as any).resetTour = (tourId: string = 'appCore') => {
+            // Clear completion status
+            localStorage.removeItem(`tour:${tourId}`);
+            // Clear dismissed status
+            const dismissed = JSON.parse(localStorage.getItem('tour:dismissed') || '[]') as string[];
+            const filtered = dismissed.filter(id => id !== tourId);
+            localStorage.setItem('tour:dismissed', JSON.stringify(filtered));
+            // Clear active state
+            sessionStorage.removeItem('tour:active');
+            console.log(`[TourHelper] Reset tour "${tourId}". Refresh the page to see the tour.`);
+          };
+          (window as any).startTour = async (tourId: string = 'appCore') => {
+            if (runnerRef.current) {
+              console.log(`[TourHelper] Manually starting tour "${tourId}"...`);
+              await runnerRef.current.start(tourId, undefined, { force: true });
+            } else {
+              console.error('[TourHelper] Tour runner not available');
+            }
+          };
+          console.log('[TourProvider] Helper functions available:');
+          console.log('  window.resetTour("appCore") - Reset tour completion/dismissal');
+          console.log('  window.startTour("appCore") - Force start tour immediately');
+        }
       }
     }, delayMs);
 

@@ -3541,6 +3541,7 @@ export const fa: TranslationKeys = {
       operations: 'عملیات'
     },
     settings: 'تنظیمات',
+    schoolsManagement: 'مدیریت مکاتب',
     shortTermCourses: 'کورس‌های کوتاه‌مدت',
     staff: 'کارمندان',
     staffManagement: 'مدیریت کارمندان',

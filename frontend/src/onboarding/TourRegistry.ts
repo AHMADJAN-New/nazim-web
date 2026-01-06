@@ -64,12 +64,15 @@ export function getEligibleTours(context: TourContext): TourDefinition[] {
   
   return allTours
     .filter((tour) => {
-      // Skip dismissed tours
+      // Skip dismissed tours (unless in development mode for testing)
       if (isTourDismissed(tour.id)) {
         if (import.meta.env.DEV) {
-          console.log(`[TourRegistry] Tour "${tour.id}" is dismissed`);
+          console.log(`[TourRegistry] Tour "${tour.id}" is dismissed, but allowing in development mode`);
+          // In development, allow dismissed tours to be eligible (they can be force-started)
+          // This makes testing easier
+        } else {
+          return false;
         }
-        return false;
       }
       
       // If no eligibility function, tour is always eligible

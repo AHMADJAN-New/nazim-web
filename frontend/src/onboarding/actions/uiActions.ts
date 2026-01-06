@@ -191,25 +191,117 @@ export async function switchTab(containerId: string, tabId: string): Promise<boo
     console.log(`[TourActions] Switching to tab: ${tabId} in ${containerId}`);
   }
   
+  // First, try to find the tab container
+  const container = findElement(`[data-tour="${containerId}"]`);
+  if (!container) {
+    if (DEBUG) {
+      console.warn(`[TourActions] Could not find tab container: ${containerId}`);
+    }
+    return false;
+  }
+  
+  // Try multiple selectors for the tab trigger
+  // Priority: data-tour attribute > value attribute > role-based
   const selectors = [
-    `[data-tour="${containerId}"] [data-value="${tabId}"]`,
-    `[data-tour="${containerId}"] [value="${tabId}"]`,
-    `[data-tour="${tabId}"]`,
-    `[role="tab"][data-value="${tabId}"]`,
-    `button[value="${tabId}"]`,
+    `[data-tour="tab-${tabId}"]`, // Direct data-tour on tab (e.g., data-tour="tab-overview")
+    `[data-tour="${containerId}"] [data-tour="tab-${tabId}"]`, // Nested data-tour
+    `[data-tour="${containerId}"] button[value="${tabId}"]`, // Button with value attribute (shadcn TabsTrigger)
+    `[data-tour="${containerId}"] [role="tab"][data-state][aria-selected]`, // Role-based tab
+    `[data-tour="${containerId}"] button[aria-controls*="${tabId}"]`, // Button with aria-controls
   ];
+  
+  let tabElement: HTMLElement | null = null;
   
   for (const selector of selectors) {
     const element = findElement(selector);
     if (element) {
-      clickElement(selector);
+      tabElement = element as HTMLElement;
+      break;
+    }
+  }
+  
+  // Fallback: Try to find by data-tour attribute with tab- prefix within the container
+  if (!tabElement) {
+    const element = container.querySelector(`[data-tour="tab-${tabId}"]`);
+    if (element) {
+      tabElement = element as HTMLElement;
+    }
+  }
+  
+  // Fallback: Try to find by value attribute within the container
+  if (!tabElement) {
+    const element = container.querySelector(`button[value="${tabId}"]`);
+    if (element) {
+      tabElement = element as HTMLElement;
+    }
+  }
+  
+  if (tabElement) {
+    // Check if it's already active
+    const isActive = tabElement.getAttribute('data-state') === 'active' ||
+                    tabElement.getAttribute('aria-selected') === 'true' ||
+                    tabElement.classList.contains('active') ||
+                    tabElement.classList.contains('data-[state=active]');
+    
+    if (!isActive) {
+      // Click the element
+      tabElement.click();
+      
+      // Wait for React to update the state and apply highlighting
+      // Check multiple times to ensure the active state is applied
+      let attempts = 0;
+      const maxAttempts = 10;
+      while (attempts < maxAttempts) {
+        await wait(100);
+        const nowActive = tabElement.getAttribute('data-state') === 'active' ||
+                         tabElement.getAttribute('aria-selected') === 'true' ||
+                         tabElement.classList.contains('active') ||
+                         tabElement.classList.contains('data-[state=active]');
+        if (nowActive) {
+          if (DEBUG) {
+            console.log(`[TourActions] Tab ${tabId} is now active after ${attempts + 1} attempts`);
+          }
+          // Wait a bit more for visual highlight to apply
+          await wait(200);
+          return true;
+        }
+        attempts++;
+      }
+      
+      // Even if we can't detect active state, assume it worked after waiting
       await wait(300);
+      if (DEBUG) {
+        console.warn(`[TourActions] Tab ${tabId} clicked but active state not detected after ${maxAttempts} attempts`);
+      }
+      return true;
+    } else {
+      if (DEBUG) {
+        console.log(`[TourActions] Tab ${tabId} is already active`);
+      }
+      return true;
+    }
+  }
+  
+  // Final fallback: Try to find by text content within the container
+  const allButtons = container.querySelectorAll('button[role="tab"], [role="tab"]');
+  for (const button of allButtons) {
+    const text = button.textContent?.toLowerCase() || '';
+    const ariaLabel = button.getAttribute('aria-label')?.toLowerCase() || '';
+    if (text.includes(tabId.toLowerCase()) || ariaLabel.includes(tabId.toLowerCase())) {
+      const isActive = button.getAttribute('data-state') === 'active' ||
+                      button.getAttribute('aria-selected') === 'true';
+      if (!isActive) {
+        (button as HTMLElement).click();
+        // Wait for state update
+        await wait(500);
+        return true;
+      }
       return true;
     }
   }
   
   if (DEBUG) {
-    console.warn(`[TourActions] Could not find tab: ${tabId}`);
+    console.warn(`[TourActions] Could not find tab: ${tabId} in container: ${containerId}`);
   }
   return false;
 }

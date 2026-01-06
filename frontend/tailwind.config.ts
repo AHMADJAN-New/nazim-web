@@ -58,6 +58,10 @@ export default {
 					DEFAULT: 'hsl(var(--warning))',
 					foreground: 'hsl(var(--warning-foreground))'
 				},
+				info: {
+					DEFAULT: 'hsl(var(--info))',
+					foreground: 'hsl(var(--info-foreground))'
+				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
 					foreground: 'hsl(var(--muted-foreground))'
@@ -79,6 +83,21 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Nazim Brand Colors (direct hex values)
+				nazim: {
+					primary: 'var(--nazim-primary)',
+					secondary: 'var(--nazim-secondary)',
+					gold: 'var(--nazim-gold)',
+					'gold-soft': 'var(--nazim-gold-soft)',
+					bg: 'var(--nazim-bg)',
+					surface: 'var(--nazim-surface)',
+					border: 'var(--nazim-border)',
+					text: 'var(--nazim-text)',
+					success: 'var(--nazim-success)',
+					warning: 'var(--nazim-warning)',
+					danger: 'var(--nazim-danger)',
+					info: 'var(--nazim-info)'
 				}
 			},
 			borderRadius: {

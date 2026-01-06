@@ -41,10 +41,35 @@
    ============================================ */
 .shepherd-modal-overlay-container {
   z-index: var(--shepherd-z-index) !important;
+  /* Allow scrolling - make overlay non-blocking for scroll events */
+  pointer-events: none;
+}
+
+/* Make the SVG overlay non-interactive to allow scrolling */
+.shepherd-modal-overlay-container svg {
+  pointer-events: none;
 }
 
 .shepherd-modal-overlay-container .shepherd-modal-mask-rect {
   fill: var(--shepherd-overlay);
+  pointer-events: none;
+}
+
+/* Allow page scrolling when tour is active */
+body.shepherd-active,
+html.shepherd-active {
+  overflow: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Ensure the page content can be scrolled */
+.shepherd-active .shepherd-modal-overlay-container {
+  pointer-events: none;
+}
+
+/* But keep the step element interactive */
+.shepherd-element {
+  pointer-events: auto;
 }
 
 /* ============================================
@@ -59,6 +84,14 @@
   box-shadow: var(--shepherd-shadow);
   border: 1px solid var(--shepherd-border);
   font-family: var(--shepherd-font-family);
+  /* Prevent layout shifts that cause repositioning */
+  contain: layout style paint;
+  /* Ensure dialog is interactive */
+  pointer-events: auto;
+  /* CRITICAL: Ensure element is always visible */
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .shepherd-element.shepherd-has-title .shepherd-content .shepherd-header {
@@ -200,6 +233,15 @@
   transition: all 0.15s ease;
   border: none;
   font-family: var(--shepherd-font-family);
+  pointer-events: auto;
+}
+
+/* Disabled button styles */
+.shepherd-button[disabled],
+.shepherd-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: auto;
 }
 
 .shepherd-button:focus {
@@ -344,6 +386,8 @@
    ============================================ */
 .shepherd-theme-nazim {
   /* Uses CSS variables defined above */
+  /* This class is used for theming via CSS variables */
+  color: inherit;
 }
 
 .shepherd-theme-nazim.shepherd-element {
