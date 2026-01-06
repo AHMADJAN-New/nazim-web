@@ -553,48 +553,15 @@ export class TourRunner {
     }
     
     // Determine attachment
-    // For hideOnNext steps, check if element exists first
-    // If not, show centered (attachTo = undefined)
+    // Use a lazy resolver so steps can attach after route changes.
     let attachTo: any;
     
     if (step.attachTo && step.attachTo.selector !== 'body') {
-      // For hideOnNext steps, check if element exists synchronously
-      // If not, we'll show centered and wait for element in beforeShowPromise
-      if (step.hideOnNext) {
-        const element = findElement(step.attachTo.selector);
-        if (element) {
-          const placement = getRTLPlacement(step);
-          attachTo = {
-            element: step.attachTo.selector,
-            on: placement === 'center' ? 'bottom' : placement,
-          };
-        } else {
-          // Element doesn't exist yet - show centered, will reattach in beforeShowPromise
-          attachTo = undefined;
-          debugLog({
-            timestamp: Date.now(),
-            type: 'info',
-            message: `Element not found for hideOnNext step "${step.id}", will show centered and wait`,
-            data: { selector: step.attachTo.selector },
-          });
-        }
-      } else {
-        // Normal steps - check if element exists, otherwise show centered
-        const element = findElement(step.attachTo.selector);
-        if (element) {
-          const placement = getRTLPlacement(step);
-          attachTo = {
-            element: step.attachTo.selector,
-            on: placement === 'center' ? 'bottom' : placement,
-          };
-        } else {
-          // Element doesn't exist - show centered (attach to body)
-          attachTo = undefined;
-          if (DEBUG) {
-            console.log(`[TourRunner] Element not found for step "${step.id}", showing centered`);
-          }
-        }
-      }
+      const placement = getRTLPlacement(step);
+      attachTo = {
+        element: () => findElement(step.attachTo!.selector),
+        on: placement === 'center' ? 'bottom' : placement,
+      };
     }
     
     // Create step options
@@ -633,7 +600,8 @@ export class TourRunner {
             // CRITICAL: Don't navigate if we're already on the target route
             // This prevents redirecting away from pages like /settings/schools
             // Also, don't navigate if we're waiting for a dialog/modal (they're on the same route)
-            const isWaitingForDialog = step.waitFor?.selector.includes('dialog') || 
+            const isWaitingForDialog = Boolean(step.waitForDialog) ||
+                                      step.waitFor?.selector.includes('dialog') || 
                                       step.attachTo?.selector.includes('dialog');
             
             if (step.route && window.location.pathname !== step.route && !isWaitingForDialog) {
@@ -660,7 +628,8 @@ export class TourRunner {
             // Wait for element if needed (with timeout)
             // CRITICAL: For dialogs, wait longer and don't block buttons if element not found
             let targetElement: Element | null = null;
-            const isDialogStep = step.waitFor?.selector.includes('dialog') || 
+            const isDialogStep = Boolean(step.waitForDialog) ||
+                                step.waitFor?.selector.includes('dialog') || 
                                 step.attachTo?.selector.includes('dialog');
             
             if (step.waitFor) {
@@ -771,6 +740,9 @@ export class TourRunner {
       },
       when: {
         show: () => {
+          this.resetShepherdUIStyles();
+          this.applyOverlayInteractivity(step.allowClicksOutside === true);
+          
           debugLog({
             timestamp: Date.now(),
             type: 'step-end',
@@ -779,20 +751,7 @@ export class TourRunner {
           
           // CRITICAL: Force enable buttons for ALL steps after they're shown
           // This ensures buttons are always functional, even if beforeShowPromise had issues
-          setTimeout(() => {
-            const stepElement = document.querySelector(`[data-shepherd-step-id="${step.id}"]`);
-            if (stepElement) {
-              const buttons = stepElement.querySelectorAll('.shepherd-button');
-              buttons.forEach((btn) => {
-                (btn as HTMLButtonElement).disabled = false;
-                (btn as HTMLElement).style.pointerEvents = 'auto';
-                (btn as HTMLElement).style.opacity = '1';
-              });
-              if (DEBUG && buttons.length > 0) {
-                console.log(`[TourRunner] Force-enabled ${buttons.length} button(s) for step "${step.id}"`);
-              }
-            }
-          }, 100);
+          this.scheduleStepInteractivity(step.id);
           
           // For hideOnNext steps, do minimal setup after step is shown
           // This doesn't block buttons since step is already visible
@@ -863,10 +822,63 @@ export class TourRunner {
             })();
           }
         },
+        hide: () => {
+          this.resetShepherdUIStyles();
+        },
       },
     };
     
     return stepOptions;
+  }
+
+  private resetShepherdUIStyles(): void {
+    const elements = document.querySelectorAll('.shepherd-element, .shepherd-modal-overlay-container');
+    elements.forEach((el) => {
+      const h = el as HTMLElement;
+      h.style.display = '';
+      h.style.visibility = '';
+      h.style.pointerEvents = '';
+      h.style.opacity = '';
+    });
+  }
+
+  private scheduleStepInteractivity(stepId: string): void {
+    const delays = [0, 120, 300, 600];
+    delays.forEach((delay) => {
+      setTimeout(() => this.forceEnableStepInteractivity(stepId), delay);
+    });
+  }
+
+  private forceEnableStepInteractivity(stepId: string): void {
+    const stepElement = document.querySelector(`[data-shepherd-step-id="${stepId}"]`) as HTMLElement | null;
+    if (!stepElement) return;
+
+    stepElement.style.pointerEvents = 'auto';
+    stepElement.querySelectorAll<HTMLElement>('*').forEach((el) => {
+      el.style.pointerEvents = 'auto';
+    });
+
+    const buttons = stepElement.querySelectorAll<HTMLButtonElement>('button.shepherd-button');
+    buttons.forEach((btn) => {
+      btn.disabled = false;
+      btn.removeAttribute('disabled');
+      btn.removeAttribute('aria-disabled');
+      btn.style.pointerEvents = 'auto';
+      btn.style.opacity = '1';
+    });
+
+    if (DEBUG && buttons.length > 0) {
+      console.log(`[TourRunner] Force-enabled ${buttons.length} button(s) for step "${stepId}"`);
+    }
+  }
+
+  private applyOverlayInteractivity(allowClicksOutside: boolean): void {
+    if (!allowClicksOutside) return;
+
+    const overlay = document.querySelector('.shepherd-modal-overlay-container') as HTMLElement | null;
+    if (overlay) {
+      overlay.style.pointerEvents = 'none';
+    }
   }
   
   /**
@@ -947,22 +959,28 @@ export class TourRunner {
     }
     hideShepherdUI();
 
-    const pickVisibleDialog = (): Element | null => {
-      // Try the data-tour selector first
-      let candidates = Array.from(document.querySelectorAll(dialogSelector));
-      
-      // If no matches, try Radix UI dialog pattern as fallback
-      if (candidates.length === 0) {
-        // Try to find DialogContent with data-tour inside an open dialog
-        const dialogContent = document.querySelector('[data-tour="schools-edit-dialog"]');
-        if (dialogContent) {
-          candidates = [dialogContent];
-        } else {
-          // Fallback: find any open Radix UI dialog
-          candidates = Array.from(document.querySelectorAll('[role="dialog"][data-state="open"]'));
+    const safeQueryAll = (selector: string): Element[] => {
+      try {
+        return Array.from(document.querySelectorAll(selector));
+      } catch (error) {
+        if (DEBUG) {
+          console.warn(`[TourRunner] Invalid dialog selector "${selector}"`, error);
         }
+        return [];
       }
-      
+    };
+
+    const pickVisibleDialog = (): Element | null => {
+      // Try the provided selector first
+      let candidates = safeQueryAll(dialogSelector);
+
+      // Fallback: find any open dialog
+      if (candidates.length === 0) {
+        candidates = safeQueryAll(
+          '[role="dialog"][data-state="open"], [role="dialog"][open], [data-state="open"][role="dialog"], [data-radix-dialog-content][data-state="open"]'
+        );
+      }
+
       return candidates.find((el) => {
         const style = window.getComputedStyle(el);
         if (style.display === 'none' || style.visibility === 'hidden') return false;

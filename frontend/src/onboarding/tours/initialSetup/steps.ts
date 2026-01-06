@@ -180,6 +180,7 @@ export const initialSetupSteps: TourStep[] = [
     // If element doesn't exist (e.g., user doesn't have update permission), step shows centered
     optional: false, // Required step - always show, even if element doesn't exist
     allowClicksOnTarget: true, // Allow user to click the edit button if it exists
+    allowClicksOutside: true, // Allow dialog interaction without overlay blocking
   },
   
   // Step 15: User Permissions

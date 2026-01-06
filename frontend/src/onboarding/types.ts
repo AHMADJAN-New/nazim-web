@@ -98,6 +98,8 @@ export interface TourStep {
   scroll?: ScrollBehavior;
   /** Allow clicks on the target element while step is shown */
   allowClicksOnTarget?: boolean;
+  /** Allow interaction with the rest of the page while step is shown (disables overlay pointer-events) */
+  allowClicksOutside?: boolean;
   /** If true, skip this step silently if target is not found */
   optional?: boolean;
   /** Whether to flip placement for RTL languages (default: true) */
