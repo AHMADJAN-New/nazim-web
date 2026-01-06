@@ -365,33 +365,33 @@ export default function Dashboard() {
   return (
       <MainLayout title={t('dashboard.title') || "Dashboard"}>
       <div className="space-y-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" data-tour="dashboard-tabs">
           <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 h-auto p-1">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
+            <TabsTrigger value="overview" className="flex items-center gap-2" data-tour="tab-overview">
               <Home className="h-4 w-4" />
               <span className="hidden sm:inline">{t('dashboard.overview') || 'Overview'}</span>
             </TabsTrigger>
-            <TabsTrigger value="finance" className="flex items-center gap-2">
+            <TabsTrigger value="finance" className="flex items-center gap-2" data-tour="tab-finance">
               <DollarSign className="h-4 w-4" />
               <span className="hidden sm:inline">{t('nav.finance') || 'Finance'}</span>
             </TabsTrigger>
-            <TabsTrigger value="assets" className="flex items-center gap-2">
+            <TabsTrigger value="assets" className="flex items-center gap-2" data-tour="tab-assets">
               <Package className="h-4 w-4" />
               <span className="hidden sm:inline">{t('nav.assets') || 'Assets'}</span>
             </TabsTrigger>
-            <TabsTrigger value="library" className="flex items-center gap-2">
+            <TabsTrigger value="library" className="flex items-center gap-2" data-tour="tab-library">
               <BookOpen className="h-4 w-4" />
               <span className="hidden sm:inline">{t('nav.library') || 'Library'}</span>
             </TabsTrigger>
-            <TabsTrigger value="attendance" className="flex items-center gap-2">
+            <TabsTrigger value="attendance" className="flex items-center gap-2" data-tour="tab-attendance">
               <Activity className="h-4 w-4" />
               <span className="hidden sm:inline">{t('nav.attendance') || 'Attendance'}</span>
             </TabsTrigger>
-            <TabsTrigger value="leave" className="flex items-center gap-2">
+            <TabsTrigger value="leave" className="flex items-center gap-2" data-tour="tab-leave">
               <Calendar className="h-4 w-4" />
               <span className="hidden sm:inline">{t('nav.leaveRequests') || 'Leave Requests'}</span>
             </TabsTrigger>
-            <TabsTrigger value="documents" className="flex items-center gap-2">
+            <TabsTrigger value="documents" className="flex items-center gap-2" data-tour="tab-documents">
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">{t('nav.documents') || 'Documents'}</span>
             </TabsTrigger>

@@ -304,7 +304,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
         </div>
 
         {/* Center Section - Search */}
-        <div className="order-3 w-full sm:order-none sm:flex-1 sm:min-w-[280px] lg:max-w-xl" ref={searchContainerRef}>
+        <div className="order-3 w-full sm:order-none sm:flex-1 sm:min-w-[280px] lg:max-w-xl" ref={searchContainerRef} data-tour="search-container">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
@@ -316,6 +316,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               onFocus={handleSearchFocus}
               onBlur={handleSearchBlur}
               onClick={handleSearchClick}
+              data-tour="search-input"
               onKeyDown={(e) => {
                 // Allow Ctrl+K / Cmd+K to work in search input
                 if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {

@@ -86,6 +86,8 @@ export interface TourStep {
   title?: string;
   /** Content text - can be a string or array of strings for multiple paragraphs */
   text: string | string[];
+  /** Icon to display in the step header (optional) - can be a React component name from lucide-react or HTML string */
+  icon?: string;
   /** Element to attach the step to (optional - centered if not provided) */
   attachTo?: AttachToConfig;
   /** Route to navigate to before showing this step (optional) */

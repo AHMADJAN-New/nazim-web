@@ -1,183 +1,75 @@
 /**
  * Initial Setup Tour - Content
  * 
- * Step content for the initial setup and onboarding tour.
+ * Step content for the updated guided tour.
  */
 
 export const tourContent = {
   welcome: {
     title: 'Welcome to Nazim!',
     text: [
-      "Welcome to Nazim School Management System! We're excited to help you get started.",
-      "This tour will guide you through the essential features and help you complete your initial setup.",
-      "Let's begin by exploring the main interface and then we'll walk you through the setup process.",
-    ],
-  },
-  topBar: {
-    title: 'Top Navigation Bar',
-    text: [
-      'This is your top navigation bar. Here you can access:',
-      '• Help Center: Get assistance and documentation',
-      '• Notifications: Stay updated with important alerts',
-      '• User Menu: Access your profile and settings',
-      '• Search: Quickly find anything in the system',
-    ],
-  },
-  helpCenter: {
-    title: 'Help Center',
-    text: [
-      'The Help Center provides comprehensive documentation and guides.',
-      'You can access detailed articles, tutorials, and get support whenever you need it.',
-      'This is especially useful when setting up your school for the first time.',
-    ],
-  },
-  notifications: {
-    title: 'Notifications',
-    text: [
-      'Stay informed with real-time notifications.',
-      'You will receive alerts about important events, pending tasks, and system updates.',
-      'The badge shows the number of unread notifications.',
-    ],
-  },
-  userMenu: {
-    title: 'User Menu',
-    text: [
-      'Access your profile, settings, and account options from here.',
-      'You can also take this tour again anytime from the user menu.',
-      'Let\'s continue to explore the sidebar navigation.',
+      'This guided tour highlights the navigation, layout, and quick actions you will rely on every day.',
+      'You will stay on the dashboard as we walk through the core sections and icons you often see.',
+      'Let us show you the key pieces that keep your school running smoothly.',
     ],
   },
   sidebar: {
     title: 'Sidebar Navigation',
     text: [
-      'The sidebar is your main navigation hub.',
-      'It organizes features into logical sections:',
-      '• Operations: Daily operations like students, staff, attendance',
-      '• Academic: Academic settings, classes, subjects, exams',
-      '• Finance: Financial management and fee collection',
-      '• Administration: System settings and user management',
+      'The sidebar is the spine of the application.',
+      'It groups features into Operations, Academic, Finance, and Administration, so you always know where to go.',
+      'Expand a section to reveal the related links that take you into each module; collapse it to reclaim screen space.',
+      'Think of each group as a domain of work: Operations for people and processes, Academic for curriculum, Finance for money, and Administration for users and settings.',
     ],
   },
-  operationsSection: {
-    title: 'Operations Section',
+  editIcon: {
+    title: 'Edit Icon (Pencil)',
     text: [
-      'The Operations section handles your daily school operations.',
-      'Here you can manage:',
-      '• Students: Register and manage student records',
-      '• Staff: Manage teachers and staff members',
-      '• Attendance: Track daily attendance',
-      '• Phone Book: Quick access to contacts',
+      'The edit action always uses the `Pencil` icon from our lucide set.',
+      'You will find it beside each record in tables and lists.',
+      'Click it to open the inline form where you can update fields right away.',
+      'Keeping edits next to the data prevents losing context.',
     ],
   },
-  academicSection: {
-    title: 'Academic Section',
+  deleteIcon: {
+    title: 'Delete Icon (Trash)',
     text: [
-      'The Academic section is where you configure your academic structure.',
-      'Key features include:',
-      '• Academic Years: Set up your academic calendar',
-      '• Classes: Create and manage class levels',
-      '• Subjects: Define subjects for your curriculum',
-      '• Exams: Manage examinations and assessments',
+      'Our delete icon is the `Trash2` icon from lucide.',
+      'It appears beside the edit icon in the same action area.',
+      'Use it to remove outdated entries, and confirm when prompted before the deletion goes through.',
     ],
   },
-  financeSection: {
-    title: 'Finance Section',
+  viewIcon: {
+    title: 'View Icon (Eye)',
     text: [
-      'The Finance section handles all financial operations.',
-      'You can manage:',
-      '• Fee Structures: Define fee categories and amounts',
-      '• Fee Payments: Record and track payments',
-      '• Financial Reports: Generate financial statements',
-      '• Accounts: Manage income and expenses',
+      'The `Eye` icon lets you open a read-only view of a record.',
+      'Use its button when you want to preview data before editing or deleting.',
+      'It is handy for quick lookups without navigating away from the list.',
     ],
   },
-  administrationSection: {
-    title: 'Administration Section',
+  tabsActions: {
+    title: 'Tabs & Action Buttons',
     text: [
-      'The Administration section is for system configuration.',
-      'This is where you set up:',
-      '• Users: Create and manage user accounts',
-      '• Roles: Define user roles and responsibilities',
-      '• Permissions: Control access to features',
-      '• School Settings: Configure your school information',
+      'Many pages show tabs or pills at the top of the content area (for example, Overview, Records, and Reports).',
+      'Switch between these tabs to change the focus of the page without leaving the module.',
+      'Action buttons near the tabs (Add, Export, Filter, etc.) let you perform tasks immediately.',
+      'Together the tabs and actions keep you moving through the workflow without extra navigation.',
     ],
   },
-  initialSetup: {
-    title: 'Initial Setup Required',
+  helpCenter: {
+    title: 'Help Center',
     text: [
-      "Now let's complete your initial setup!",
-      'To get started, you need to configure:',
-      '1. School Data: Set up your school information',
-      '2. Academic Structure: Create academic years, classes, and subjects',
-      '3. Users & Permissions: Create users and assign roles',
-      '4. Role Permissions: Assign permissions to roles',
-      "Let's start with the school management settings.",
-    ],
-  },
-  schoolManagementPage: {
-    title: 'Edit School Information',
-    text: [
-      'This is where you configure your school’s core information (used across reports and the whole system).',
-      'Click the edit button (pencil icon) next to your school to update details like name, contact info, and branding.',
-      'You can make changes now, or do it later—when you’re ready, click Next to continue.',
-    ],
-  },
-  // NOTE: We intentionally do not have a "schoolManagement" dialog step anymore.
-  // We keep this key removed to avoid forcing modal interaction during the tour.
-  userPermissions: {
-    title: 'User Permissions Setup',
-    text: [
-      'Next, set up user permissions.',
-      'Navigate to Settings → Permissions to:',
-      '• View available permissions',
-      '• Understand the permission system',
-      '• See how permissions control feature access',
-      'Permissions are organized by resource and action (e.g., students.read, students.create).',
-    ],
-  },
-  userCreation: {
-    title: 'Create User Accounts',
-    text: [
-      'Now create user accounts for your team.',
-      'Go to Settings → Users to:',
-      '• Create new user accounts',
-      '• Assign users to your organization',
-      '• Set user roles and permissions',
-      'Each user needs an account to access the system.',
-    ],
-  },
-  roleAssignment: {
-    title: 'Role Assignment',
-    text: [
-      'Assign roles to users.',
-      'Go to Settings → Roles to:',
-      '• View available roles (Admin, Teacher, Staff, etc.)',
-      '• Assign roles to users',
-      '• Understand role-based access control',
-      'Roles define what users can do in the system.',
-    ],
-  },
-  rolePermissions: {
-    title: 'Assign Permissions to Roles',
-    text: [
-      'Finally, assign permissions to roles.',
-      'In Settings → Roles, you can:',
-      '• Assign permissions to each role',
-      '• Control what each role can access',
-      '• Customize permissions per role',
-      'For example, assign "students.read" and "students.create" to the Teacher role.',
+      'If you ever get stuck, click the help icon in the top bar.',
+      'It opens the Help Center where you can browse documentation, tutorials, and contextual tips.',
+      'Treat it as the living knowledge base for the entire app whenever you need extra guidance.',
     ],
   },
   complete: {
-    title: "You're All Set!",
+    title: "You're Ready!",
     text: [
-      'Congratulations! You have completed the initial setup tour.',
-      'You now know:',
-      '• How to navigate the interface',
-      '• Where to find key features',
-      '• How to complete initial setup',
-      'Remember: You can take this tour again anytime from your user menu.',
-      'Welcome to Nazim!',
+      'You just explored the sidebar, the icons for edit/delete/view, and the tabs/actions that keep workflows tight.',
+      'You now know where the core navigation lives and how to act on records from the dashboard.',
+      'Reopen this tour anytime from the user menu if you want a refresher.',
     ],
   },
 };
@@ -192,4 +84,3 @@ export function getStepContent(stepId: keyof typeof tourContent): { title: strin
     text: Array.isArray(content.text) ? content.text : [content.text],
   };
 }
-

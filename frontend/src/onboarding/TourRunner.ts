@@ -14,6 +14,7 @@ import { waitForVisible, scrollToElement, waitForRouteChange, wait, findElement 
 import { executeActions, setNavigateFunction } from './actions';
 import { saveActiveTourState, clearActiveTourState } from './sessionStorage';
 import { dismissTour, isTourDismissed, undismissTour } from './dismissedTours';
+import { getIconSvg } from './iconUtils';
 
 const DEBUG = import.meta.env.VITE_TOUR_DEBUG === 'true';
 
@@ -489,9 +490,12 @@ export class TourRunner {
       ? step.text.join('<br/><br/>') 
       : step.text;
     
+    // Build icon HTML if provided
+    const iconHtml = step.icon ? `<div class="shepherd-icon-wrapper">${getIconSvg(step.icon, 24)}</div>` : '';
+    
     // Build HTML content with progress indicator
     const progressHtml = `<div class="shepherd-progress">${index + 1} / ${total}</div>`;
-    const titleHtml = step.title ? `<h3 class="shepherd-title">${step.title}</h3>` : '';
+    const titleHtml = step.title ? `<h3 class="shepherd-title">${iconHtml}${step.title}</h3>` : (iconHtml ? `<div class="shepherd-icon-only">${iconHtml}</div>` : '');
     const textHtml = `<div class="shepherd-text" dir="${getTextDirection()}">${textContent}</div>`;
     
     // Build buttons
