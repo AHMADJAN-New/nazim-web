@@ -590,6 +590,34 @@ class DatabaseSeeder extends Seeder
 
                 $this->command->info("  ✓ Assigned {$userData['role']} role to {$userData['email']} (org: {$organization->id})");
             }
+            
+            // CRITICAL: Assign tours to user (especially initialSetup tour)
+            try {
+                $tourService = app(\App\Services\TourAssignmentService::class);
+                
+                // Always assign initialSetup tour first (no permissions required)
+                $tourService->assignInitialSetupTour($userId);
+                
+                // Then assign other tours based on permissions
+                $userModel = \App\Models\User::find($userId);
+                if ($userModel) {
+                    // Set organization context for permission checks
+                    $userModel->setPermissionsTeamId($organization->id);
+                    
+                    // Get user's permissions (from roles and direct assignments)
+                    $userPermissions = $userModel->getAllPermissions()->pluck('name')->toArray();
+                    
+                    // Assign other tours based on permissions
+                    $assignedTours = $tourService->assignToursForUser($userId, $userPermissions);
+                    
+                    if (!empty($assignedTours)) {
+                        $this->command->info("  ✓ Assigned tours to {$userData['email']}: " . implode(', ', $assignedTours));
+                    }
+                }
+            } catch (\Exception $e) {
+                // Don't fail user creation if tour assignment fails
+                $this->command->warn("  ⚠ Failed to assign tours to {$userData['email']}: " . $e->getMessage());
+            }
         } catch (\Exception $e) {
             $this->command->error("  ❌ Error processing user {$userData['email']}: " . $e->getMessage());
             $this->command->error("     Stack trace: " . $e->getTraceAsString());

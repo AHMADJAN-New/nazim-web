@@ -1188,6 +1188,34 @@ class SubscriptionAdminController extends Controller
             // Assign role to user
             setPermissionsTeamId($organizationId);
             $userModel->assignRole($adminRole);
+            
+            // CRITICAL: Assign tours to user (especially initialSetup tour)
+            // Do this AFTER role assignment so user has permissions
+            try {
+                $tourService = app(\App\Services\TourAssignmentService::class);
+                
+                // Always assign initialSetup tour first (no permissions required)
+                $tourService->assignInitialSetupTour($userId);
+                
+                // Then assign other tours based on permissions
+                if ($userModel) {
+                    // Set organization context for permission checks
+                    $userModel->setPermissionsTeamId($organizationId);
+                    
+                    // Get user's permissions (from roles and direct assignments)
+                    $userPermissions = $userModel->getAllPermissions()->pluck('name')->toArray();
+                    
+                    // Assign other tours based on permissions
+                    $assignedTours = $tourService->assignToursForUser($userId, $userPermissions);
+                    
+                    if (!empty($assignedTours) && config('app.debug')) {
+                        Log::info("Assigned tours to platform user {$userId}: " . implode(', ', $assignedTours));
+                    }
+                }
+            } catch (\Exception $e) {
+                // Don't fail user creation if tour assignment fails
+                Log::warning("Failed to assign tours to platform user {$userId}: " . $e->getMessage());
+            }
 
             // Ensure organization_id is set in model_has_roles
             $roleAssignment = DB::table('model_has_roles')

@@ -14,7 +14,12 @@ export const initialSetupSteps: TourStep[] = [
   // Step 1: Welcome
   {
     id: 'welcome',
-    ...getStepContent('welcome'),
+    get title() {
+      return getStepContent('welcome').title;
+    },
+    get text() {
+      return getStepContent('welcome').text;
+    },
     attachTo: { selector: 'body', on: 'center' },
     route: '/dashboard',
     optional: false,
@@ -23,7 +28,12 @@ export const initialSetupSteps: TourStep[] = [
   // Step 2: Sidebar Navigation
   {
     id: 'sidebar',
-    ...getStepContent('sidebar'),
+    get title() {
+      return getStepContent('sidebar').title;
+    },
+    get text() {
+      return getStepContent('sidebar').text;
+    },
     attachTo: { selector: '[data-tour="sidebar"]', on: 'right' },
     preActions: [{ type: 'expandSidebar' }],
     waitFor: { selector: '[data-tour="sidebar"]', timeoutMs: 5000 },
@@ -34,7 +44,12 @@ export const initialSetupSteps: TourStep[] = [
   // Step 3: Edit Icon
   {
     id: 'edit-icon',
-    ...getStepContent('editIcon'),
+    get title() {
+      return getStepContent('editIcon').title;
+    },
+    get text() {
+      return getStepContent('editIcon').text;
+    },
     attachTo: { selector: 'body', on: 'center' },
     route: '/dashboard',
     optional: false,
@@ -43,7 +58,12 @@ export const initialSetupSteps: TourStep[] = [
   // Step 4: Delete Icon
   {
     id: 'delete-icon',
-    ...getStepContent('deleteIcon'),
+    get title() {
+      return getStepContent('deleteIcon').title;
+    },
+    get text() {
+      return getStepContent('deleteIcon').text;
+    },
     attachTo: { selector: 'body', on: 'center' },
     route: '/dashboard',
     optional: false,
@@ -52,7 +72,12 @@ export const initialSetupSteps: TourStep[] = [
   // Step 5: View Icon
   {
     id: 'view-icon',
-    ...getStepContent('viewIcon'),
+    get title() {
+      return getStepContent('viewIcon').title;
+    },
+    get text() {
+      return getStepContent('viewIcon').text;
+    },
     attachTo: { selector: 'body', on: 'center' },
     route: '/dashboard',
     optional: false,
@@ -61,7 +86,12 @@ export const initialSetupSteps: TourStep[] = [
   // Step 6: Tabs & Actions
   {
     id: 'tabs-actions',
-    ...getStepContent('tabsActions'),
+    get title() {
+      return getStepContent('tabsActions').title;
+    },
+    get text() {
+      return getStepContent('tabsActions').text;
+    },
     attachTo: { selector: 'body', on: 'center' },
     route: '/dashboard',
     optional: true,
@@ -70,7 +100,12 @@ export const initialSetupSteps: TourStep[] = [
   // Step 7: Help Center Button
   {
     id: 'help-center',
-    ...getStepContent('helpCenter'),
+    get title() {
+      return getStepContent('helpCenter').title;
+    },
+    get text() {
+      return getStepContent('helpCenter').text;
+    },
     attachTo: { selector: '[data-tour="help-button"]', on: 'bottom' },
     waitFor: { selector: '[data-tour="help-button"]', timeoutMs: 3000 },
     optional: true,
@@ -79,7 +114,12 @@ export const initialSetupSteps: TourStep[] = [
   // Step 8: Complete
   {
     id: 'complete',
-    ...getStepContent('complete'),
+    get title() {
+      return getStepContent('complete').title;
+    },
+    get text() {
+      return getStepContent('complete').text;
+    },
     attachTo: { selector: 'body', on: 'center' },
     route: '/dashboard',
     optional: false,

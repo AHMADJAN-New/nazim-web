@@ -11,7 +11,7 @@ import { useTour } from '@/onboarding';
 import { userToursApi } from '@/lib/api/userTours';
 import { useAuth } from './useAuth';
 import { isTourDismissed } from '@/onboarding/dismissedTours';
-import { hasActiveTourState } from '@/onboarding/sessionStorage';
+import { hasActiveTourState, clearActiveTourState } from '@/onboarding/sessionStorage';
 
 /**
  * Hook to automatically trigger tours for the current route
@@ -44,11 +44,29 @@ export function useRouteTours() {
     }
 
     // Also check sessionStorage for active tour
+    // But verify it's actually running - if not, clear stale state
     if (hasActiveTourState()) {
-      if (import.meta.env.DEV) {
-        console.log('[useRouteTours] Skipping - active tour in sessionStorage');
+      // Check if tour is actually running
+      if (state.isRunning || state.activeTourId) {
+        if (import.meta.env.DEV) {
+          console.log('[useRouteTours] Skipping - active tour in sessionStorage and state');
+        }
+        return;
       }
-      return;
+      
+      // Stale state - clear it and continue
+      if (import.meta.env.DEV) {
+        console.log('[useRouteTours] Clearing stale sessionStorage state');
+      }
+      clearActiveTourState();
+      
+      // Also clean up any orphaned elements
+      const allElements = document.querySelectorAll('.shepherd-element, .shepherd-modal-overlay-container');
+      if (allElements.length > 0) {
+        allElements.forEach((el) => el.remove());
+        document.body.classList.remove('shepherd-active');
+        document.documentElement.classList.remove('shepherd-active');
+      }
     }
 
     const checkAndTriggerTours = async () => {

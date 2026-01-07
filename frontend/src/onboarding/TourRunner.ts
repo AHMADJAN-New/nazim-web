@@ -185,7 +185,7 @@ export class TourRunner {
     try {
       // Add steps
       await this.addSteps(tourDef.steps, startIndex);
-    
+      
       // Check if aborted by another start/stop
       if (token !== this.runToken) {
         debugLog({
@@ -196,50 +196,127 @@ export class TourRunner {
         });
         return false;
       }
-    
+      
+      // CRITICAL: Check if any steps were actually added
+      if (!this.shepherdTour || this.shepherdTour.steps.length === 0) {
+        debugLog({
+          timestamp: Date.now(),
+          type: 'error',
+          message: `No steps added to tour - cannot start`,
+          data: { tourId, totalSteps: tourDef.steps.length, startIndex },
+        });
+        // Clean up
+        this.shepherdTour = null;
+        this.isRunning = false;
+        this.currentTourId = null;
+        this.currentTourDef = null;
+        return false;
+      }
+      
+      // Set up a listener for the 'show' event to know when step is actually shown
+      let stepShown = false;
+      const showListener = () => {
+        stepShown = true;
+      };
+      this.shepherdTour.on('show', showListener);
+      
       // Start the tour
       this.isRunning = true;
       this.options.onStart?.(tourId);
     
-    // Save active tour state to sessionStorage
-    saveActiveTourState({
-      tourId,
-      stepId: tourDef.steps[startIndex]?.id || '',
-      stepIndex: startIndex,
-      timestamp: Date.now(),
-    });
+      // Save active tour state to sessionStorage
+      saveActiveTourState({
+        tourId,
+        stepId: tourDef.steps[startIndex]?.id || '',
+        stepIndex: startIndex,
+        timestamp: Date.now(),
+      });
     
       // Start the tour
       this.shepherdTour.start();
       
-      // CRITICAL: Ensure step element is visible after starting
-      setTimeout(() => {
+      // CRITICAL: Wait for step to actually show, with multiple checks
+      // Shepherd.js might need time to resolve beforeShowPromise and create DOM elements
+      let checkCount = 0;
+      const maxChecks = 20; // Check for up to 2 seconds (20 * 100ms)
+      
+      const checkStepElement = () => {
+        checkCount++;
         const stepElement = document.querySelector('.shepherd-element') as HTMLElement;
         const overlay = document.querySelector('.shepherd-modal-overlay-container') as HTMLElement;
         
-        if (DEBUG) {
-          console.log('[TourRunner] After tour.start():', {
-            stepElementExists: !!stepElement,
-            overlayExists: !!overlay,
-            stepElementVisible: stepElement ? window.getComputedStyle(stepElement).display !== 'none' : false,
-          });
-        }
-        
         if (stepElement) {
-          // Force visibility
+          // Step element found - ensure visibility
           stepElement.style.display = 'block';
           stepElement.style.visibility = 'visible';
           stepElement.style.opacity = '1';
           stepElement.style.zIndex = '100000';
           
+          // Remove the show listener
+          this.shepherdTour?.off('show', showListener);
+          
+          if (DEBUG) {
+            console.log('[TourRunner] Step element found after tour.start():', {
+              checkCount,
+              stepShown,
+              stepElementVisible: window.getComputedStyle(stepElement).display !== 'none',
+            });
+          }
+          
           // Ensure it's in the DOM and visible
           if (stepElement.offsetParent === null) {
             console.warn('[TourRunner] Step element has no offsetParent - may be hidden');
           }
+        } else if (checkCount >= maxChecks) {
+          // CRITICAL: If step element not found after max checks, clean up tour state and overlay
+          console.error('[TourRunner] Step element not found after tour.start() - cleaning up');
+          
+          // Remove the show listener
+          this.shepherdTour?.off('show', showListener);
+          
+          // Remove overlay if it exists
+          if (overlay) {
+            overlay.remove();
+          }
+          
+          // Remove any shepherd elements
+          const allElements = document.querySelectorAll('.shepherd-element, .shepherd-modal-overlay-container');
+          allElements.forEach((el) => el.remove());
+          
+          // Remove active class
+          document.body.classList.remove('shepherd-active');
+          document.documentElement.classList.remove('shepherd-active');
+          
+          // Clean up tour state
+          clearActiveTourState();
+          this.isRunning = false;
+          this.currentTourId = null;
+          this.currentTourDef = null;
+          
+          // Cancel callback
+          this.options.onCancel?.(tourId);
+          
+          // Stop the shepherd tour
+          if (this.shepherdTour) {
+            try {
+              // Programmatic cleanup: do NOT dismiss the tour
+              this.suppressDismissOnCancel = true;
+              this.shepherdTour.cancel();
+            } catch (e) {
+              // Ignore errors during cleanup
+            } finally {
+              this.suppressDismissOnCancel = false;
+            }
+            this.shepherdTour = null;
+          }
         } else {
-          console.error('[TourRunner] Step element not found after tour.start()');
+          // Step not found yet, check again
+          setTimeout(checkStepElement, 100);
         }
-      }, 200);
+      };
+      
+      // Start checking after a short delay
+      setTimeout(checkStepElement, 100);
       
       return true;
     } finally {
@@ -468,6 +545,8 @@ export class TourRunner {
     
     const rtl = isRTL();
     const totalSteps = steps.length;
+    let addedCount = 0;
+    let skippedCount = 0;
     
     for (let i = startIndex; i < steps.length; i++) {
       const step = steps[i];
@@ -478,6 +557,7 @@ export class TourRunner {
         const el = findElement(step.attachTo.selector);
         if (!el && !step.route) {
           // Safe skip - no navigation means element won't appear
+          skippedCount++;
           debugLog({
             timestamp: Date.now(),
             type: 'info',
@@ -506,16 +586,48 @@ export class TourRunner {
       const stepOptions = await this.createStepOptions(step, i, totalSteps, isFirst, isLast, rtl);
       
       if (stepOptions) {
-        this.shepherdTour.addStep(stepOptions);
-        if (step.hideOnNext) {
+        try {
+          this.shepherdTour.addStep(stepOptions);
+          addedCount++;
+          if (step.hideOnNext) {
+            debugLog({
+              timestamp: Date.now(),
+              type: 'info',
+              message: `Successfully added hideOnNext step "${step.id}" to Shepherd tour`,
+            });
+          }
+        } catch (error) {
           debugLog({
             timestamp: Date.now(),
-            type: 'info',
-            message: `Successfully added hideOnNext step "${step.id}" to Shepherd tour`,
+            type: 'error',
+            message: `Failed to add step "${step.id}" to Shepherd tour`,
+            data: { error: error instanceof Error ? error.message : String(error) },
           });
+          skippedCount++;
         }
+      } else {
+        skippedCount++;
+        debugLog({
+          timestamp: Date.now(),
+          type: 'warning',
+          message: `Step options not created for step "${step.id}"`,
+        });
       }
     }
+    
+    // Log summary
+    debugLog({
+      timestamp: Date.now(),
+      type: 'info',
+      message: `Added steps to tour`,
+      data: { 
+        total: steps.length, 
+        startIndex, 
+        added: addedCount, 
+        skipped: skippedCount,
+        finalStepCount: this.shepherdTour.steps.length,
+      },
+    });
   }
   
   /**
@@ -1007,7 +1119,9 @@ export class TourRunner {
         },
         hide: () => {
           // CRITICAL: Remove this step element immediately when hiding
-          const stepElement = document.querySelector(`.shepherd-element[id="${step.id}"], .shepherd-element[data-step-id="${step.id}"]`) as HTMLElement;
+          const stepElement = document.querySelector(
+            `.shepherd-element[data-shepherd-step-id="${step.id}"], .shepherd-element[id="${step.id}"], .shepherd-element[data-step-id="${step.id}"]`
+          ) as HTMLElement;
           if (stepElement) {
             stepElement.remove();
           }
@@ -1016,7 +1130,10 @@ export class TourRunner {
           const allElements = document.querySelectorAll('.shepherd-element');
           const currentStep = this.shepherdTour?.getCurrentStep();
           allElements.forEach((el) => {
-            const elId = el.getAttribute('id') || el.getAttribute('data-step-id');
+            const elId =
+              el.getAttribute('data-shepherd-step-id') ||
+              el.getAttribute('id') ||
+              el.getAttribute('data-step-id');
             const currentStepId = currentStep?.id;
             // Remove if not the current step
             if (elId !== currentStepId && elId !== step.id) {
@@ -1045,7 +1162,10 @@ export class TourRunner {
     const currentStepId = currentStep?.id;
     
     allElements.forEach((el) => {
-      const stepId = el.getAttribute('id') || el.getAttribute('data-step-id');
+      const stepId =
+        el.getAttribute('data-shepherd-step-id') ||
+        el.getAttribute('id') ||
+        el.getAttribute('data-step-id');
       // Only keep the current step visible, remove all others
       if (stepId !== currentStepId) {
         el.remove();

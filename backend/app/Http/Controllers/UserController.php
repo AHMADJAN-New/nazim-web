@@ -307,8 +307,15 @@ class UserController extends Controller
             }
         }
 
-        // Auto-assign tours based on user permissions
+        // CRITICAL: Auto-assign tours to new users
+        // initialSetup tour should ALWAYS be assigned to all users, regardless of organization or permissions
         try {
+            $tourService = app(TourAssignmentService::class);
+            
+            // CRITICAL: Always assign initialSetup tour first (no permissions required)
+            $tourService->assignInitialSetupTour($userId);
+            
+            // Then assign other tours based on permissions (if user has organization and permissions)
             $userModel = \App\Models\User::find($userId);
             if ($userModel && $organizationId) {
                 // Set organization context for permission checks
@@ -317,12 +324,16 @@ class UserController extends Controller
                 // Get user's permissions (from roles and direct assignments)
                 $userPermissions = $userModel->getAllPermissions()->pluck('name')->toArray();
                 
-                // Assign tours based on permissions
-                $tourService = app(TourAssignmentService::class);
+                // Assign other tours based on permissions (initialSetup already assigned above)
                 $assignedTours = $tourService->assignToursForUser($userId, $userPermissions);
                 
                 if (!empty($assignedTours) && config('app.debug')) {
                     Log::info("Assigned tours to user {$userId}: " . implode(', ', $assignedTours));
+                }
+            } else {
+                // User created without organization - still assign initialSetup (already done above)
+                if (config('app.debug')) {
+                    Log::info("Assigned initialSetup tour to user {$userId} (no organization/permissions yet)");
                 }
             }
         } catch (\Exception $e) {

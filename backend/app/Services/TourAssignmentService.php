@@ -30,7 +30,7 @@ class TourAssignmentService
             'description' => 'A guided tour to help new users set up their school and understand core features.',
             'version' => '1.0.0',
             'required_permissions' => [], // Available to all users
-            'trigger_route' => null,
+            'trigger_route' => '/dashboard', // Trigger on dashboard route
         ],
         'examsFlow' => [
             'title' => 'Exams Flow Tutorial',
@@ -66,16 +66,23 @@ class TourAssignmentService
      * Assign tours to a user based on their permissions
      * 
      * @param string $userId
-     * @param array $userPermissions Array of permission names the user has
+     * @param array $userPermissions Array of permission names the user has (can be empty)
      * @return array Array of assigned tour IDs
      */
-    public function assignToursForUser(string $userId, array $userPermissions): array
+    public function assignToursForUser(string $userId, array $userPermissions = []): array
     {
         $assignedTours = [];
 
         foreach ($this->tourDefinitions as $tourId => $tourDef) {
+            // CRITICAL: initialSetup tour should ALWAYS be assigned to all users
+            // It has empty required_permissions, so it should always pass
+            // But we explicitly check for it to ensure it's always assigned
+            $isInitialSetup = ($tourId === 'initialSetup');
+            
             // Check if user has all required permissions
-            $hasAllPermissions = empty($tourDef['required_permissions']) || 
+            // For initialSetup, always assign (no permissions required)
+            $hasAllPermissions = $isInitialSetup || 
+                empty($tourDef['required_permissions']) || 
                 count(array_intersect($tourDef['required_permissions'], $userPermissions)) === count($tourDef['required_permissions']);
 
             if (!$hasAllPermissions) {
@@ -108,12 +115,64 @@ class TourAssignmentService
                 ]);
 
                 $assignedTours[] = $tourId;
+                
+                if ($isInitialSetup) {
+                    Log::info("Assigned initialSetup tour to user {$userId}");
+                }
             } catch (\Exception $e) {
                 Log::error("Failed to assign tour {$tourId} to user {$userId}: " . $e->getMessage());
             }
         }
 
         return $assignedTours;
+    }
+    
+    /**
+     * Assign initialSetup tour to a user (always, regardless of permissions)
+     * This is a convenience method for ensuring initialSetup is always assigned
+     * 
+     * @param string $userId
+     * @return bool True if assigned, false if already exists or failed
+     */
+    public function assignInitialSetupTour(string $userId): bool
+    {
+        // Check if tour already exists
+        $existing = UserTour::where('user_id', $userId)
+            ->where('tour_id', 'initialSetup')
+            ->whereNull('deleted_at')
+            ->first();
+
+        if ($existing) {
+            return true; // Already assigned
+        }
+
+        // Get initialSetup tour definition
+        $tourDef = $this->tourDefinitions['initialSetup'] ?? null;
+        if (!$tourDef) {
+            Log::error("InitialSetup tour definition not found");
+            return false;
+        }
+
+        // Create tour assignment
+        try {
+            UserTour::create([
+                'user_id' => $userId,
+                'tour_id' => 'initialSetup',
+                'tour_version' => $tourDef['version'],
+                'tour_title' => $tourDef['title'],
+                'tour_description' => $tourDef['description'],
+                'assigned_by' => 'system',
+                'required_permissions' => $tourDef['required_permissions'],
+                'trigger_route' => $tourDef['trigger_route'],
+                'is_completed' => false,
+            ]);
+
+            Log::info("Assigned initialSetup tour to user {$userId}");
+            return true;
+        } catch (\Exception $e) {
+            Log::error("Failed to assign initialSetup tour to user {$userId}: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**

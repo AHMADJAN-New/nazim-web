@@ -16,7 +16,7 @@ import {
 } from './storage';
 import { isTourCompleted, getTourVersion, resetTour } from './storageApi';
 import { isRTL, getCurrentLanguage } from './rtl';
-import { getActiveTourState, hasActiveTourState } from './sessionStorage';
+import { getActiveTourState, hasActiveTourState, clearActiveTourState } from './sessionStorage';
 import { isTourDismissed } from './dismissedTours';
 
 // Import tour styles
@@ -131,12 +131,45 @@ export function TourProvider({
   
   // Reset stuck tour state on mount (if tour is marked as running but Shepherd tour is null)
   useEffect(() => {
+    // CRITICAL: Clean up any orphaned overlay/elements immediately on mount
+    // This prevents blocking overlays from previous sessions
+    const cleanupOrphanedElements = () => {
+      const allElements = document.querySelectorAll('.shepherd-element, .shepherd-modal-overlay-container');
+      if (allElements.length > 0) {
+        allElements.forEach((el) => el.remove());
+        document.body.classList.remove('shepherd-active');
+        document.documentElement.classList.remove('shepherd-active');
+        return true;
+      }
+      return false;
+    };
+    
+    const hadOrphanedElements = cleanupOrphanedElements();
+    
     if (runnerRef.current) {
       runnerRef.current.resetStuckState();
       // Also check and clean up dismissed tours
       const actuallyRunning = runnerRef.current.getIsRunning();
-      if (import.meta.env.DEV && !actuallyRunning) {
+      
+      // CRITICAL: If tour is not actually running, clean up any remaining orphaned overlay/elements
+      if (!actuallyRunning) {
+        cleanupOrphanedElements();
+        // Clear sessionStorage
+        clearActiveTourState();
+        
+        if (import.meta.env.DEV) {
+          console.log('[TourProvider] Cleaned up stale tour state and orphaned elements on mount');
+        }
+      } else if (hadOrphanedElements && import.meta.env.DEV) {
+        console.log('[TourProvider] Cleaned up orphaned elements on mount (tour is running)');
+      } else if (import.meta.env.DEV) {
         console.log('[TourProvider] Cleaned up stale tour state on mount');
+      }
+    } else if (hadOrphanedElements) {
+      // Runner not created yet, but we found orphaned elements - clean them up
+      clearActiveTourState();
+      if (import.meta.env.DEV) {
+        console.log('[TourProvider] Cleaned up orphaned elements before runner creation');
       }
     }
   }, []);
@@ -251,12 +284,30 @@ export function TourProvider({
       // Auto-start should run at most once per mount
       if (hasAutoStartedRef.current) return;
 
-      // If a tour is already persisted as active, let the restore effect handle it
+      // If a tour is already persisted as active, check if it's actually running
       if (hasActiveTourState()) {
-        if (import.meta.env.DEV) {
-          console.log('[TourProvider] Skipping auto-start - active tour in sessionStorage');
+        // Check if tour is actually running (this will clean up dismissed tours)
+        const actuallyRunning = runnerRef.current?.getIsRunning();
+        if (actuallyRunning) {
+          if (import.meta.env.DEV) {
+            console.log('[TourProvider] Skipping auto-start - tour already running');
+          }
+          return;
         }
-        return;
+        
+        // If not running, clear stale state and continue
+        if (import.meta.env.DEV) {
+          console.log('[TourProvider] Clearing stale sessionStorage state and continuing auto-start');
+        }
+        clearActiveTourState();
+        
+        // Also clean up any orphaned elements
+        const allElements = document.querySelectorAll('.shepherd-element, .shepherd-modal-overlay-container');
+        if (allElements.length > 0) {
+          allElements.forEach((el) => el.remove());
+          document.body.classList.remove('shepherd-active');
+          document.documentElement.classList.remove('shepherd-active');
+        }
       }
 
       const context = createTourContext();
