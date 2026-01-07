@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,6 +8,8 @@ import type * as StudentHistoryApi from '@/types/api/studentHistory';
 import type { StudentHistory, StudentHistoryFilters, StudentHistoryExportRequest } from '@/types/domain/studentHistory';
 import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
+import type { ReportStatus } from '@/lib/reporting/serverReportTypes';
+import { useServerReport } from '@/hooks/useServerReport';
 
 // Re-export domain types for convenience
 export type {
@@ -102,20 +104,79 @@ export const useStudentHistorySection = (
 };
 
 /**
- * Hook to export student history as PDF
- * Returns mutation and report progress state for use with ReportProgressDialog
+ * Shared report runner for student history exports (PDF/Excel) using backend endpoints,
+ * but exposing the same progress state as the central report system.
  */
-export const useExportStudentHistoryPdf = () => {
+function useExportStudentHistoryReport(reportType: 'pdf' | 'excel') {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
-  const [reportId, setReportId] = useState<string | null>(null);
   const [isPolling, setIsPolling] = useState(false);
+  const [reportId, setReportId] = useState<string | null>(null);
+  const [status, setStatus] = useState<ReportStatus | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollAttemptsRef = useRef(0);
 
+  const reset = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearTimeout(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    pollAttemptsRef.current = 0;
+    setIsPolling(false);
+    setReportId(null);
+    setStatus(null);
+    setProgress(0);
+    setDownloadUrl(null);
+    setFileName(null);
+    setError(null);
+  }, []);
+
+  const downloadReport = useCallback(async () => {
+    if (!downloadUrl || !reportId) return;
+
+    try {
+      const url = new URL(downloadUrl);
+      let endpoint = url.pathname;
+
+      // Remove /api prefix if present (apiClient adds /api itself)
+      if (endpoint.startsWith('/api/')) {
+        endpoint = endpoint.substring(4);
+      } else if (endpoint.startsWith('/api')) {
+        endpoint = endpoint.substring(4);
+      }
+
+      if (!endpoint.startsWith('/')) {
+        endpoint = '/' + endpoint;
+      }
+
+      const { blob, filename } = await apiClient.requestFile(endpoint);
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename || fileName || (reportType === 'pdf' ? 'student-history.pdf' : 'student-history.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : (t('toast.reportDownloadFailed') || 'Failed to download report');
+      setError(msg);
+      showToast.error(msg);
+    }
+  }, [downloadUrl, reportId, fileName, reportType, t]);
+
   const pollReportStatus = (id: string): void => {
     setIsPolling(true);
+    setStatus('pending');
+    setProgress(0);
+    setError(null);
     pollAttemptsRef.current = 0;
     const maxAttempts = 300; // 5 minutes max
 
@@ -129,6 +190,8 @@ export const useExportStudentHistoryPdf = () => {
 
         if (pollAttemptsRef.current >= maxAttempts) {
           setIsPolling(false);
+          setStatus('failed');
+          setError(t('toast.reportGenerationTimeout') || 'Report generation timed out');
           showToast.error(t('toast.reportGenerationTimeout') || 'Report generation timed out');
           return;
         }
@@ -137,7 +200,7 @@ export const useExportStudentHistoryPdf = () => {
 
         const response = await apiClient.get<{
           success: boolean;
-          status: string;
+          status: ReportStatus;
           progress: number;
           download_url?: string | null;
           file_name?: string | null;
@@ -147,6 +210,8 @@ export const useExportStudentHistoryPdf = () => {
 
         if (!response.success) {
           setIsPolling(false);
+          setStatus('failed');
+          setError(response.error || response.error_message || t('toast.reportGenerationFailed') || 'Failed to generate report');
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = null;
@@ -155,25 +220,34 @@ export const useExportStudentHistoryPdf = () => {
           return;
         }
 
+        setStatus(response.status);
+        setProgress(response.progress ?? 0);
+        setDownloadUrl(response.download_url || null);
+        setFileName(response.file_name || null);
+        setError(response.error_message || response.error || null);
+
         if (response.status === 'completed' && response.download_url) {
           setIsPolling(false);
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = null;
           }
-          // Trigger download
-          const link = document.createElement('a');
-          link.href = response.download_url;
-          link.download = response.file_name || 'student-history.pdf';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          setStatus('completed');
+          setProgress(100);
+          setDownloadUrl(response.download_url || null);
+          setFileName(response.file_name || null);
+
+          // Authenticated download (same approach as central export buttons)
+          await downloadReport();
+
           showToast.success(t('toast.reportDownloaded') || 'Report downloaded successfully');
           return;
         }
 
         if (response.status === 'failed') {
           setIsPolling(false);
+          setStatus('failed');
+          setError(response.error_message || response.error || t('toast.reportGenerationFailed') || 'Failed to generate report');
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = null;
@@ -190,11 +264,13 @@ export const useExportStudentHistoryPdf = () => {
         }
       } catch (error) {
         setIsPolling(false);
+        setStatus('failed');
         if (pollIntervalRef.current) {
           clearInterval(pollIntervalRef.current);
           pollIntervalRef.current = null;
         }
         const errorMessage = error instanceof Error ? error.message : 'Failed to check report status';
+        setError(errorMessage);
         showToast.error(errorMessage);
       }
     };
@@ -217,8 +293,8 @@ export const useExportStudentHistoryPdf = () => {
       if (options?.language) params.language = options.language;
       if (options?.sections) params.sections = options.sections;
 
-      const response = await apiClient.post<{ id: string; status: string; message?: string }>(
-        `/students/${studentId}/history/export/pdf`,
+      const response = await apiClient.post<{ id: string; status: ReportStatus; message?: string }>(
+        `/students/${studentId}/history/export/${reportType}`,
         params
       );
 
@@ -227,15 +303,22 @@ export const useExportStudentHistoryPdf = () => {
     onSuccess: (data) => {
       if (data.id) {
         setReportId(data.id);
+        setStatus(data.status ?? 'pending');
+        setProgress(0);
+        setError(null);
         showToast.success(t('toast.reportGenerationStarted') || 'Report generation started');
         void queryClient.invalidateQueries({ queryKey: ['reports'] });
         // Start polling for status
         void pollReportStatus(data.id);
       } else {
+        setStatus('failed');
+        setError(t('toast.reportGenerationFailed') || 'Failed to start report generation');
         showToast.error(t('toast.reportGenerationFailed') || 'Failed to start report generation');
       }
     },
     onError: (error: Error) => {
+      setStatus('failed');
+      setError(error.message || t('toast.reportGenerationFailed') || 'Failed to generate report');
       showToast.error(error.message || t('toast.reportGenerationFailed') || 'Failed to generate report');
     },
   });
@@ -244,17 +327,35 @@ export const useExportStudentHistoryPdf = () => {
     ...mutation,
     reportId,
     isPolling,
+    status,
+    progress,
+    downloadUrl,
+    fileName,
+    error,
+    downloadReport,
+    reset,
   };
-};
+}
 
 /**
- * Hook to export student history as Excel
+ * Hook to export student history as PDF (with progress state)
+ * Uses useServerReport for consistent progress tracking
  */
-export const useExportStudentHistoryExcel = () => {
-  const queryClient = useQueryClient();
+export const useExportStudentHistoryPdf = () => {
   const { t } = useLanguage();
+  const {
+    generateReport,
+    status,
+    progress,
+    downloadUrl,
+    fileName,
+    isGenerating,
+    error,
+    downloadReport,
+    reset,
+  } = useServerReport();
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: async ({
       studentId,
       options,
@@ -262,22 +363,115 @@ export const useExportStudentHistoryExcel = () => {
       studentId: string;
       options?: StudentHistoryExportRequest;
     }) => {
-      const params: Record<string, string | string[]> = {};
-      if (options?.brandingId) params.branding_id = options.brandingId;
-      if (options?.calendarPreference) params.calendar_preference = options.calendarPreference;
-      if (options?.language) params.language = options.language;
-      if (options?.sections) params.sections = options.sections;
-
-      return await apiClient.post(`/students/${studentId}/history/export/excel`, params);
+      // Call the central generateReport function
+      // Note: For custom templates like student-history, we pass minimal columns/rows
+      // The backend will fetch the actual data from parameters.student_id
+      await generateReport({
+        reportKey: 'student_lifetime_history',
+        reportType: 'pdf',
+        title: t('studentHistory.lifetimeHistory') || 'Student Lifetime History',
+        columns: [{ key: 'placeholder', label: 'Placeholder' }], // Minimal column for validation
+        rows: [{ placeholder: '' }], // Minimal row for validation
+        brandingId: options?.brandingId,
+        calendarPreference: options?.calendarPreference,
+        language: options?.language,
+        templateName: 'student-history', // Explicitly use the custom template
+        parameters: {
+          student_id: studentId, // Pass student ID as a parameter for the backend to fetch data
+          sections: options?.sections,
+        },
+        async: true,
+      });
     },
-    onSuccess: (data) => {
-      showToast.success(t('toast.reportGenerationStarted') || 'Report generation started');
-      void queryClient.invalidateQueries({ queryKey: ['reports'] });
-      return data;
+    onSuccess: () => {
+      // The useServerReport hook handles success toasts and download
     },
-    onError: (error: Error) => {
-      showToast.error(error.message || t('toast.reportGenerationFailed') || 'Failed to generate report');
+    onError: (err: Error) => {
+      // The useServerReport hook handles error toasts
+      console.error('PDF export mutation error:', err);
     },
   });
+
+  return {
+    ...mutation,
+    status,
+    progress,
+    fileName,
+    downloadUrl,
+    isPolling: isGenerating, // Expose isGenerating as isPolling for consistency
+    isPending: mutation.isPending || isGenerating, // Include isGenerating in isPending
+    error,
+    downloadReport,
+    reset,
+  };
+};
+
+/**
+ * Hook to export student history as Excel (with progress state)
+ * Uses useServerReport for consistent progress tracking
+ */
+export const useExportStudentHistoryExcel = () => {
+  const { t } = useLanguage();
+  const {
+    generateReport,
+    status,
+    progress,
+    downloadUrl,
+    fileName,
+    isGenerating,
+    error,
+    downloadReport,
+    reset,
+  } = useServerReport();
+
+  const mutation = useMutation({
+    mutationFn: async ({
+      studentId,
+      options,
+    }: {
+      studentId: string;
+      options?: StudentHistoryExportRequest;
+    }) => {
+      // Call the central generateReport function
+      // Note: For Excel with multi-sheet structure, we pass minimal columns/rows
+      // The backend will fetch the actual data from parameters.student_id and build sheets
+      await generateReport({
+        reportKey: 'student_lifetime_history',
+        reportType: 'excel',
+        title: t('studentHistory.lifetimeHistory') || 'Student Lifetime History',
+        columns: [{ key: 'placeholder', label: 'Placeholder' }], // Minimal column for validation
+        rows: [{ placeholder: '' }], // Minimal row for validation
+        brandingId: options?.brandingId,
+        calendarPreference: options?.calendarPreference,
+        language: options?.language,
+        templateName: null, // Excel uses multi-sheet structure, no template needed
+        parameters: {
+          student_id: studentId, // Pass student ID as a parameter for the backend to fetch data
+          sections: options?.sections,
+        },
+        async: true, // Excel can also be async
+      });
+    },
+    onSuccess: () => {
+      // The useServerReport hook handles success toasts and download
+    },
+    onError: (err: Error) => {
+      // The useServerReport hook handles error toasts
+      console.error('Excel export mutation error:', err);
+    },
+  });
+
+  return {
+    ...mutation,
+    status,
+    progress,
+    fileName,
+    downloadUrl,
+    isPolling: isGenerating, // Expose isGenerating as isPolling for consistency
+    isPending: mutation.isPending || isGenerating, // Include isGenerating in isPending
+    error,
+    downloadReport,
+    reset,
+  };
 };
 

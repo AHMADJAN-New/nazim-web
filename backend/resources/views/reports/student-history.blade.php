@@ -64,7 +64,15 @@
             <td class="info-label">{{ $labels['fatherName'] ?? 'Father Name' }}:</td>
             <td class="info-value">{{ $student['father_name'] ?? '—' }}</td>
             <td class="info-label">{{ $labels['currentClass'] ?? 'Current Class' }}:</td>
-            <td class="info-value">{{ $student['current_class'] ?? '—' }}</td>
+            <td class="info-value">
+                {{ $student['current_class'] ?? '—' }}
+                @if(!empty($student['current_section']))
+                    ({{ $student['current_section'] }})
+                @endif
+                @if(!empty($student['current_academic_year']))
+                    - {{ $student['current_academic_year'] }}
+                @endif
+            </td>
         </tr>
         <tr>
             <td class="info-label">{{ $labels['dob'] ?? 'Date of Birth' }}:</td>
@@ -78,9 +86,55 @@
         </tr>
         <tr>
             <td class="info-label">{{ $labels['phone'] ?? 'Phone' }}:</td>
-            <td class="info-value">{{ $student['phone'] ?? '—' }}</td>
+            <td class="info-value">{{ $student['guardian_phone'] ?? ($student['phone'] ?? '—') }}</td>
             <td class="info-label">{{ $labels['generatedAt'] ?? 'Generated At' }}:</td>
             <td class="info-value">{{ $generatedAt ?? now()->format('Y-m-d H:i') }}</td>
+        </tr>
+    </table>
+
+    {{-- Extended Details (matches UI "cards/tabs" info) --}}
+    <table class="info-table" style="margin-top: 10px;">
+        <tr>
+            <td class="info-label">{{ $labels['studentCode'] ?? 'Student Code' }}:</td>
+            <td class="info-value">{{ $student['student_code'] ?? '—' }}</td>
+            <td class="info-label">{{ $labels['cardNumber'] ?? 'Card Number' }}:</td>
+            <td class="info-value">{{ $student['card_number'] ?? '—' }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">{{ $labels['school'] ?? 'School' }}:</td>
+            <td class="info-value">{{ $student['school_name'] ?? '—' }}</td>
+            <td class="info-label">{{ $labels['organization'] ?? 'Organization' }}:</td>
+            <td class="info-value">{{ $student['organization_name'] ?? '—' }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">{{ $labels['guardianName'] ?? 'Guardian' }}:</td>
+            <td class="info-value">
+                {{ $student['guardian_name'] ?? '—' }}
+                @if(!empty($student['guardian_relation']))
+                    ({{ $student['guardian_relation'] }})
+                @endif
+            </td>
+            <td class="info-label">{{ $labels['emergencyContact'] ?? 'Emergency Contact' }}:</td>
+            <td class="info-value">
+                {{ $student['emergency_contact_name'] ?? '—' }}
+                @if(!empty($student['emergency_contact_phone']))
+                    - {{ $student['emergency_contact_phone'] }}
+                @endif
+            </td>
+        </tr>
+        <tr>
+            <td class="info-label">{{ $labels['nationality'] ?? 'Nationality' }}:</td>
+            <td class="info-value">{{ $student['nationality'] ?? '—' }}</td>
+            <td class="info-label">{{ $labels['preferredLanguage'] ?? 'Preferred Language' }}:</td>
+            <td class="info-value">{{ $student['preferred_language'] ?? '—' }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">{{ $labels['address'] ?? 'Address' }}:</td>
+            <td class="info-value" colspan="3">{{ $student['home_address'] ?? '—' }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">{{ $labels['previousSchool'] ?? 'Previous School' }}:</td>
+            <td class="info-value" colspan="3">{{ $student['previous_school'] ?? '—' }}</td>
         </tr>
     </table>
 </div>
@@ -158,7 +212,7 @@
         <tbody>
             @forelse($sections['admissions'] as $index => $admission)
             <tr>
-                <td class="row-number">{{ $index + 1 }}</td>
+                <td class="row-number">{{ (int)$index + 1 }}</td>
                 <td>{{ $admission['academic_year'] ?? '—' }}</td>
                 <td>{{ $admission['class'] ?? '—' }}</td>
                 <td>{{ $admission['admission_date'] ?? '—' }}</td>
@@ -180,11 +234,15 @@
 @if(!empty($sections['attendance']))
 <div class="history-section">
     <h3 class="section-title">{{ $labels['attendanceTitle'] ?? 'Attendance Summary' }}</h3>
+    @php
+        $attendanceSummary = $sections['attendance']['summary'] ?? [];
+        $attendanceMonthly = $sections['attendance']['monthly_breakdown'] ?? [];
+    @endphp
+
+    {{-- Summary --}}
     <table class="data-table">
         <thead>
             <tr>
-                <th>{{ $labels['academicYear'] ?? 'Academic Year' }}</th>
-                <th>{{ $labels['class'] ?? 'Class' }}</th>
                 <th>{{ $labels['totalDays'] ?? 'Total Days' }}</th>
                 <th>{{ $labels['present'] ?? 'Present' }}</th>
                 <th>{{ $labels['absent'] ?? 'Absent' }}</th>
@@ -193,23 +251,42 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($sections['attendance'] as $attendance)
             <tr>
-                <td>{{ $attendance['academic_year'] ?? '—' }}</td>
-                <td>{{ $attendance['class'] ?? '—' }}</td>
-                <td>{{ $attendance['total_days'] ?? 0 }}</td>
-                <td class="present-cell">{{ $attendance['present'] ?? 0 }}</td>
-                <td class="absent-cell">{{ $attendance['absent'] ?? 0 }}</td>
-                <td class="late-cell">{{ $attendance['late'] ?? 0 }}</td>
-                <td>{{ $attendance['rate'] ?? '0' }}%</td>
+                <td>{{ $attendanceSummary['total_days'] ?? 0 }}</td>
+                <td class="present-cell">{{ $attendanceSummary['present'] ?? 0 }}</td>
+                <td class="absent-cell">{{ $attendanceSummary['absent'] ?? 0 }}</td>
+                <td class="late-cell">{{ $attendanceSummary['late'] ?? 0 }}</td>
+                <td>{{ $attendanceSummary['rate'] ?? 0 }}%</td>
             </tr>
-            @empty
-            <tr>
-                <td colspan="7" class="empty-row">{{ $labels['noAttendance'] ?? 'No attendance records found' }}</td>
-            </tr>
-            @endforelse
         </tbody>
     </table>
+
+    {{-- Monthly breakdown --}}
+    @if(!empty($attendanceMonthly))
+        <div style="height: 8px;"></div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>{{ $labels['month'] ?? 'Month' }}</th>
+                    <th>{{ $labels['present'] ?? 'Present' }}</th>
+                    <th>{{ $labels['absent'] ?? 'Absent' }}</th>
+                    <th>{{ $labels['late'] ?? 'Late' }}</th>
+                    <th>{{ $labels['attendanceRate'] ?? 'Rate' }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($attendanceMonthly as $m)
+                    <tr>
+                        <td>{{ $m['month'] ?? '—' }}</td>
+                        <td class="present-cell">{{ $m['present'] ?? 0 }}</td>
+                        <td class="absent-cell">{{ $m['absent'] ?? 0 }}</td>
+                        <td class="late-cell">{{ $m['late'] ?? 0 }}</td>
+                        <td>{{ $m['rate'] ?? 0 }}%</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
 </div>
 @endif
 
@@ -217,42 +294,84 @@
 @if(!empty($sections['exams']))
 <div class="history-section">
     <h3 class="section-title">{{ $labels['examsTitle'] ?? 'Exam History' }}</h3>
+    @php
+        $examsSummary = $sections['exams']['summary'] ?? [];
+        $examRows = $sections['exams']['exams'] ?? [];
+    @endphp
+
+    {{-- Summary --}}
     <table class="data-table">
         <thead>
             <tr>
-                <th>#</th>
-                <th>{{ $labels['examName'] ?? 'Exam' }}</th>
-                <th>{{ $labels['academicYear'] ?? 'Year' }}</th>
-                <th>{{ $labels['class'] ?? 'Class' }}</th>
-                <th>{{ $labels['totalMarks'] ?? 'Total' }}</th>
-                <th>{{ $labels['obtainedMarks'] ?? 'Obtained' }}</th>
-                <th>{{ $labels['percentage'] ?? '%' }}</th>
-                <th>{{ $labels['grade'] ?? 'Grade' }}</th>
-                <th>{{ $labels['result'] ?? 'Result' }}</th>
+                <th>{{ $labels['totalExams'] ?? 'Total Exams' }}</th>
+                <th>{{ $labels['averagePercentage'] ?? 'Average %' }}</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($sections['exams'] as $index => $exam)
             <tr>
-                <td class="row-number">{{ $index + 1 }}</td>
-                <td>{{ $exam['exam_name'] ?? '—' }}</td>
-                <td>{{ $exam['academic_year'] ?? '—' }}</td>
-                <td>{{ $exam['class'] ?? '—' }}</td>
-                <td>{{ $exam['total_marks'] ?? 0 }}</td>
-                <td>{{ $exam['obtained_marks'] ?? 0 }}</td>
-                <td>{{ $exam['percentage'] ?? '0' }}%</td>
-                <td>{{ $exam['grade'] ?? '—' }}</td>
-                <td class="{{ strtolower($exam['result'] ?? '') === 'pass' ? 'pass-cell' : 'fail-cell' }}">
-                    {{ $exam['result'] ?? '—' }}
-                </td>
+                <td>{{ $examsSummary['total_exams'] ?? 0 }}</td>
+                <td>{{ $examsSummary['average_percentage'] ?? 0 }}%</td>
             </tr>
-            @empty
-            <tr>
-                <td colspan="9" class="empty-row">{{ $labels['noExams'] ?? 'No exam records found' }}</td>
-            </tr>
-            @endforelse
         </tbody>
     </table>
+
+    {{-- Exams --}}
+    @if(!empty($examRows))
+        <div style="height: 8px;"></div>
+        @foreach($examRows as $idx => $exam)
+            <div class="history-subsection" style="margin-top: 6px;">
+                <div style="font-weight: 700; margin-bottom: 4px;">
+                    {{ ((int)$idx + 1) }}. {{ $exam['exam_name'] ?? '—' }} — {{ $exam['class_name'] ?? '' }} @if(!empty($exam['exam_date'])) ({{ $exam['exam_date'] }}) @endif
+                </div>
+
+                <table class="data-table" style="margin-bottom: 6px;">
+                    <thead>
+                        <tr>
+                            <th>{{ $labels['totalMarks'] ?? 'Total' }}</th>
+                            <th>{{ $labels['maxMarks'] ?? 'Max' }}</th>
+                            <th>{{ $labels['percentage'] ?? '%' }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{{ $exam['total_marks'] ?? 0 }}</td>
+                            <td>{{ $exam['max_marks'] ?? 0 }}</td>
+                            <td>{{ $exam['percentage'] ?? 0 }}%</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                @if(!empty($exam['subject_results']))
+                    <table class="data-table" style="font-size: 11px;">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>{{ $labels['subject'] ?? 'Subject' }}</th>
+                                <th>{{ $labels['obtainedMarks'] ?? 'Obtained' }}</th>
+                                <th>{{ $labels['maxMarks'] ?? 'Max' }}</th>
+                                <th>{{ $labels['percentage'] ?? '%' }}</th>
+                                <th>{{ $labels['absent'] ?? 'Absent' }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($exam['subject_results'] as $sIdx => $sr)
+                                <tr>
+                                    <td class="row-number">{{ (int)$sIdx + 1 }}</td>
+                                    <td>{{ $sr['subject_name'] ?? '—' }}</td>
+                                    <td>{{ $sr['marks_obtained'] ?? 0 }}</td>
+                                    <td>{{ $sr['max_marks'] ?? 0 }}</td>
+                                    <td>{{ $sr['percentage'] ?? 0 }}%</td>
+                                    <td>{{ !empty($sr['is_absent']) ? '✓' : '—' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                @endif
+            </div>
+        @endforeach
+    @else
+        <div class="empty-row">{{ $labels['noExams'] ?? 'No exam records found' }}</div>
+    @endif
 </div>
 @endif
 
@@ -260,44 +379,86 @@
 @if(!empty($sections['fees']))
 <div class="history-section">
     <h3 class="section-title">{{ $labels['feesTitle'] ?? 'Fee History' }}</h3>
+    @php
+        $feesSummary = $sections['fees']['summary'] ?? [];
+        $feeAssignments = $sections['fees']['assignments'] ?? [];
+    @endphp
+
+    {{-- Summary --}}
     <table class="data-table">
         <thead>
             <tr>
-                <th>#</th>
-                <th>{{ $labels['feeType'] ?? 'Fee Type' }}</th>
-                <th>{{ $labels['academicYear'] ?? 'Year' }}</th>
-                <th>{{ $labels['assignedAmount'] ?? 'Assigned' }}</th>
-                <th>{{ $labels['paidAmount'] ?? 'Paid' }}</th>
-                <th>{{ $labels['balance'] ?? 'Balance' }}</th>
-                <th>{{ $labels['status'] ?? 'Status' }}</th>
+                <th>{{ $labels['totalAssigned'] ?? 'Total Assigned' }}</th>
+                <th>{{ $labels['totalPaid'] ?? 'Total Paid' }}</th>
+                <th>{{ $labels['totalOutstanding'] ?? 'Outstanding' }}</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($sections['fees'] as $index => $fee)
             <tr>
-                <td class="row-number">{{ $index + 1 }}</td>
-                <td>{{ $fee['fee_type'] ?? '—' }}</td>
-                <td>{{ $fee['academic_year'] ?? '—' }}</td>
-                <td>{{ number_format($fee['assigned_amount'] ?? 0, 0) }}</td>
-                <td class="paid-cell">{{ number_format($fee['paid_amount'] ?? 0, 0) }}</td>
-                <td class="{{ ($fee['balance'] ?? 0) > 0 ? 'balance-cell' : '' }}">
-                    {{ number_format($fee['balance'] ?? 0, 0) }}
-                </td>
-                <td>{{ $fee['status'] ?? '—' }}</td>
+                <td>{{ number_format($feesSummary['total_assigned'] ?? 0, 0) }}</td>
+                <td class="paid-cell">{{ number_format($feesSummary['total_paid'] ?? 0, 0) }}</td>
+                <td class="balance-cell">{{ number_format($feesSummary['total_remaining'] ?? 0, 0) }}</td>
             </tr>
-            @empty
-            <tr>
-                <td colspan="7" class="empty-row">{{ $labels['noFees'] ?? 'No fee records found' }}</td>
-            </tr>
-            @endforelse
         </tbody>
     </table>
-    @if(!empty($sections['fees_totals']))
-    <div class="totals-row">
-        <span><strong>{{ $labels['totalAssigned'] ?? 'Total Assigned' }}:</strong> {{ number_format($sections['fees_totals']['assigned'] ?? 0, 0) }}</span>
-        <span><strong>{{ $labels['totalPaid'] ?? 'Total Paid' }}:</strong> {{ number_format($sections['fees_totals']['paid'] ?? 0, 0) }}</span>
-        <span><strong>{{ $labels['totalOutstanding'] ?? 'Outstanding' }}:</strong> {{ number_format($sections['fees_totals']['outstanding'] ?? 0, 0) }}</span>
-    </div>
+
+    {{-- Assignments --}}
+    @if(!empty($feeAssignments))
+        <div style="height: 8px;"></div>
+        @foreach($feeAssignments as $idx => $fa)
+            <div class="history-subsection" style="margin-top: 6px;">
+                <div style="font-weight: 700; margin-bottom: 4px;">
+                    {{ ((int)$idx + 1) }}. {{ $fa['fee_structure'] ?? '—' }} — {{ $fa['academic_year'] ?? '' }}
+                    @if(!empty($fa['status'])) ({{ $fa['status'] }}) @endif
+                </div>
+
+                <table class="data-table" style="margin-bottom: 6px;">
+                    <thead>
+                        <tr>
+                            <th>{{ $labels['assignedAmount'] ?? 'Assigned' }}</th>
+                            <th>{{ $labels['paidAmount'] ?? 'Paid' }}</th>
+                            <th>{{ $labels['balance'] ?? 'Balance' }}</th>
+                            <th>{{ $labels['dueDate'] ?? 'Due Date' }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{{ number_format($fa['assigned_amount'] ?? 0, 0) }}</td>
+                            <td class="paid-cell">{{ number_format($fa['paid_amount'] ?? 0, 0) }}</td>
+                            <td class="balance-cell">{{ number_format($fa['remaining_amount'] ?? 0, 0) }}</td>
+                            <td>{{ $fa['due_date'] ?? '—' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                @if(!empty($fa['payments']))
+                    <table class="data-table" style="font-size: 11px;">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>{{ $labels['paymentDate'] ?? 'Payment Date' }}</th>
+                                <th>{{ $labels['amount'] ?? 'Amount' }}</th>
+                                <th>{{ $labels['paymentMethod'] ?? 'Method' }}</th>
+                                <th>{{ $labels['referenceNo'] ?? 'Reference' }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($fa['payments'] as $pIdx => $p)
+                                <tr>
+                                    <td class="row-number">{{ (int)$pIdx + 1 }}</td>
+                                    <td>{{ $p['payment_date'] ?? '—' }}</td>
+                                    <td>{{ number_format($p['amount'] ?? 0, 0) }}</td>
+                                    <td>{{ $p['payment_method'] ?? '—' }}</td>
+                                    <td>{{ $p['reference_no'] ?? '—' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                @endif
+            </div>
+        @endforeach
+    @else
+        <div class="empty-row">{{ $labels['noFees'] ?? 'No fee records found' }}</div>
     @endif
 </div>
 @endif
@@ -311,7 +472,7 @@
             <tr>
                 <th>#</th>
                 <th>{{ $labels['bookTitle'] ?? 'Book Title' }}</th>
-                <th>{{ $labels['accessionNumber'] ?? 'Accession #' }}</th>
+                <th>{{ $labels['author'] ?? 'Author' }}</th>
                 <th>{{ $labels['loanDate'] ?? 'Loan Date' }}</th>
                 <th>{{ $labels['dueDate'] ?? 'Due Date' }}</th>
                 <th>{{ $labels['returnDate'] ?? 'Return Date' }}</th>
@@ -321,9 +482,9 @@
         <tbody>
             @forelse($sections['library'] as $index => $loan)
             <tr>
-                <td class="row-number">{{ $index + 1 }}</td>
+                <td class="row-number">{{ (int)$index + 1 }}</td>
                 <td>{{ $loan['book_title'] ?? '—' }}</td>
-                <td>{{ $loan['accession_number'] ?? '—' }}</td>
+                <td>{{ $loan['author'] ?? '—' }}</td>
                 <td>{{ $loan['loan_date'] ?? '—' }}</td>
                 <td>{{ $loan['due_date'] ?? '—' }}</td>
                 <td>{{ $loan['return_date'] ?? '—' }}</td>
@@ -350,21 +511,21 @@
                 <th>{{ $labels['cardNumber'] ?? 'Card Number' }}</th>
                 <th>{{ $labels['template'] ?? 'Template' }}</th>
                 <th>{{ $labels['academicYear'] ?? 'Year' }}</th>
+                <th>{{ $labels['class'] ?? 'Class' }}</th>
                 <th>{{ $labels['issueDate'] ?? 'Issue Date' }}</th>
                 <th>{{ $labels['printed'] ?? 'Printed' }}</th>
-                <th>{{ $labels['feePaid'] ?? 'Fee Paid' }}</th>
             </tr>
         </thead>
         <tbody>
             @forelse($sections['id_cards'] as $index => $card)
             <tr>
-                <td class="row-number">{{ $index + 1 }}</td>
+                <td class="row-number">{{ (int)$index + 1 }}</td>
                 <td>{{ $card['card_number'] ?? '—' }}</td>
                 <td>{{ $card['template'] ?? '—' }}</td>
                 <td>{{ $card['academic_year'] ?? '—' }}</td>
-                <td>{{ $card['issue_date'] ?? '—' }}</td>
-                <td>{{ $card['printed'] ? '✓' : '✗' }}</td>
-                <td>{{ $card['fee_paid'] ? '✓' : '✗' }}</td>
+                <td>{{ $card['class'] ?? '—' }}</td>
+                <td>{{ $card['issued_at'] ?? '—' }}</td>
+                <td>{{ !empty($card['is_printed']) ? '✓' : '✗' }}</td>
             </tr>
             @empty
             <tr>
@@ -395,7 +556,7 @@
         <tbody>
             @forelse($sections['courses'] as $index => $course)
             <tr>
-                <td class="row-number">{{ $index + 1 }}</td>
+                <td class="row-number">{{ (int)$index + 1 }}</td>
                 <td>{{ $course['course_name'] ?? '—' }}</td>
                 <td>{{ $course['registration_date'] ?? '—' }}</td>
                 <td>{{ $course['completion_date'] ?? '—' }}</td>
@@ -430,7 +591,7 @@
         <tbody>
             @forelse($sections['graduations'] as $index => $graduation)
             <tr>
-                <td class="row-number">{{ $index + 1 }}</td>
+                <td class="row-number">{{ (int)$index + 1 }}</td>
                 <td>{{ $graduation['batch_name'] ?? '—' }}</td>
                 <td>{{ $graduation['graduation_date'] ?? '—' }}</td>
                 <td>{{ $graduation['final_result'] ?? '—' }}</td>
@@ -463,7 +624,7 @@
         <tbody>
             @forelse($sections['educational_history'] as $index => $history)
             <tr>
-                <td class="row-number">{{ $index + 1 }}</td>
+                <td class="row-number">{{ (int)$index + 1 }}</td>
                 <td>{{ $history['institution'] ?? '—' }}</td>
                 <td>{{ $history['grade_level'] ?? '—' }}</td>
                 <td>{{ $history['period'] ?? '—' }}</td>
@@ -497,7 +658,7 @@
         <tbody>
             @forelse($sections['discipline'] as $index => $record)
             <tr>
-                <td class="row-number">{{ $index + 1 }}</td>
+                <td class="row-number">{{ (int)$index + 1 }}</td>
                 <td>{{ $record['incident_date'] ?? '—' }}</td>
                 <td>{{ $record['incident_type'] ?? '—' }}</td>
                 <td class="severity-{{ strtolower($record['severity'] ?? 'minor') }}">{{ $record['severity'] ?? '—' }}</td>

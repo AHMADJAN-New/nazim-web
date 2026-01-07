@@ -37,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscription' => \App\Http\Middleware\EnsureSubscriptionAccess::class,
             'feature' => \App\Http\Middleware\EnsureFeatureAccess::class,
             'limit' => \App\Http\Middleware\EnforceUsageLimit::class,
+            'token.from.query' => \App\Http\Middleware\AcceptTokenFromQuery::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

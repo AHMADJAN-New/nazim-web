@@ -516,17 +516,10 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>
-              {!isTourCompleted('initialSetup') ? (
-                <DropdownMenuItem onClick={() => startTour('initialSetup')}>
-                  <Play className="mr-2 h-4 w-4" />
-                  <span>{t('onboarding.actions.initialSetup') || 'Initial Setup Tour'}</span>
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem onClick={() => startTour('appCore')}>
-                  <Play className="mr-2 h-4 w-4" />
-                  <span>{t('onboarding.actions.takeTour') || 'Take App Tour'}</span>
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuItem onClick={() => startTour('appCore')}>
+                <Play className="mr-2 h-4 w-4" />
+                <span>{t('onboarding.actions.takeTour') || 'Take App Tour'}</span>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={signOut} className="text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />

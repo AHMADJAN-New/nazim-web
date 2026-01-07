@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useStudentHistory, useExportStudentHistoryPdf, useExportStudentHistoryExcel } from '@/hooks/useStudentHistory';
 import { 
@@ -42,15 +43,29 @@ export default function StudentHistoryPage() {
   const { data: history, isLoading, error } = useStudentHistory(studentId);
   const exportPdf = useExportStudentHistoryPdf();
   const exportExcel = useExportStudentHistoryExcel();
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [activeExport, setActiveExport] = useState<'pdf' | 'excel' | null>(null);
 
   const handleExportPdf = () => {
     if (studentId && !exportPdf.isPending && !exportPdf.isPolling) {
+      // Open dialog immediately
+      setActiveExport('pdf');
+      setExportDialogOpen(true);
+      // Reset state before starting
+      exportPdf.reset();
+      // Start export
       exportPdf.mutate({ studentId });
     }
   };
 
   const handleExportExcel = () => {
-    if (studentId) {
+    if (studentId && !exportExcel.isPending && !exportExcel.isPolling) {
+      // Open dialog immediately
+      setActiveExport('excel');
+      setExportDialogOpen(true);
+      // Reset state before starting
+      exportExcel.reset();
+      // Start export
       exportExcel.mutate({ studentId });
     }
   };
@@ -262,6 +277,31 @@ export default function StudentHistoryPage() {
           fees={sections.fees}
         />
       )}
+
+      {/* Export Progress Dialog (same UX as central export buttons) */}
+      <ReportProgressDialog
+        open={exportDialogOpen && (exportPdf.isPending || exportPdf.isPolling || exportPdf.isSuccess || exportPdf.isError || 
+          exportExcel.isPending || exportExcel.isPolling || exportExcel.isSuccess || exportExcel.isError)}
+        onOpenChange={(open) => {
+          setExportDialogOpen(open);
+          if (!open) {
+            setActiveExport(null);
+            exportPdf.reset();
+            exportExcel.reset();
+          }
+        }}
+        status={activeExport === 'excel' ? exportExcel.status : exportPdf.status}
+        progress={activeExport === 'excel' ? exportExcel.progress : exportPdf.progress}
+        fileName={activeExport === 'excel' ? exportExcel.fileName : exportPdf.fileName}
+        error={activeExport === 'excel' ? exportExcel.error : exportPdf.error}
+        onDownload={activeExport === 'excel' ? exportExcel.downloadReport : exportPdf.downloadReport}
+        onClose={() => {
+          setActiveExport(null);
+          exportPdf.reset();
+          exportExcel.reset();
+          setExportDialogOpen(false);
+        }}
+      />
     </div>
   );
 }

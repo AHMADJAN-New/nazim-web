@@ -196,9 +196,25 @@ class StudentHistoryController extends Controller
             // Build report data
             $reportData = $this->buildPdfReportData($history);
 
+            // Debug: Log data structure to verify sections are included
+            if (config('app.debug')) {
+                \Log::debug("Student History PDF Report Data", [
+                    'has_student' => !empty($reportData['student']),
+                    'has_summary' => !empty($reportData['summary']),
+                    'has_sections' => !empty($reportData['sections']),
+                    'sections_keys' => array_keys($reportData['sections'] ?? []),
+                    'admissions_count' => count($reportData['sections']['admissions'] ?? []),
+                    'attendance_has_data' => !empty($reportData['sections']['attendance']),
+                    'exams_has_data' => !empty($reportData['sections']['exams']),
+                    'fees_has_data' => !empty($reportData['sections']['fees']),
+                    'library_count' => count($reportData['sections']['library'] ?? []),
+                ]);
+            }
+
             // Create report config
             // CRITICAL: Set template_name explicitly to use student-history.blade.php
             // This prevents auto-selection based on column count
+            // NOTE: Template name must match the file name (student-history.blade.php)
             $config = ReportConfig::fromArray([
                 'report_key' => 'student_lifetime_history',
                 'report_type' => 'pdf',
@@ -206,7 +222,7 @@ class StudentHistoryController extends Controller
                 'title' => 'Student Lifetime History - ' . ($history['student']['fullName'] ?? 'Unknown'),
                 'calendar_preference' => $request->get('calendar_preference', 'jalali'),
                 'language' => $request->get('language', 'ps'),
-                'template_name' => 'student_history', // Explicitly set to use student-history.blade.php
+                'template_name' => 'student-history', // Must match student-history.blade.php file name
             ]);
 
             // Generate report
@@ -316,7 +332,7 @@ class StudentHistoryController extends Controller
      * CRITICAL: This method prepares data for the student-history.blade.php template
      * The template expects specific structure: student, summary, sections, labels, etc.
      */
-    private function buildPdfReportData(array $history): array
+    public function buildPdfReportData(array $history): array
     {
         $student = $history['student'] ?? [];
         $summary = $history['summary'] ?? [];
@@ -329,10 +345,26 @@ class StudentHistoryController extends Controller
             'admission_no' => $student['admissionNumber'] ?? '',
             'father_name' => $student['fatherName'] ?? '',
             'current_class' => $student['currentClass']['name'] ?? '',
+            'current_section' => $student['currentClass']['section'] ?? '',
+            'current_academic_year' => $student['currentClass']['academicYear'] ?? '',
             'birth_date' => isset($student['dateOfBirth']) && $student['dateOfBirth'] ? \Carbon\Carbon::parse($student['dateOfBirth'])->format('Y-m-d') : '',
             'status' => $student['status'] ?? '',
             'phone' => $student['phone'] ?? '',
             'picture_path' => $student['picturePath'] ?? null,
+            'school_name' => $student['schoolName'] ?? '',
+            'organization_name' => $student['organizationName'] ?? '',
+            'student_code' => $student['studentCode'] ?? '',
+            'card_number' => $student['cardNumber'] ?? '',
+            'gender' => $student['gender'] ?? '',
+            'nationality' => $student['nationality'] ?? '',
+            'preferred_language' => $student['preferredLanguage'] ?? '',
+            'home_address' => $student['homeAddress'] ?? '',
+            'previous_school' => $student['previousSchool'] ?? '',
+            'guardian_name' => $student['guardianName'] ?? '',
+            'guardian_relation' => $student['guardianRelation'] ?? '',
+            'guardian_phone' => $student['guardianPhone'] ?? '',
+            'emergency_contact_name' => $student['emergencyContactName'] ?? '',
+            'emergency_contact_phone' => $student['emergencyContactPhone'] ?? '',
         ];
 
         // Format summary data for template
@@ -446,7 +478,7 @@ class StudentHistoryController extends Controller
                 'author' => $loan['book']['author'] ?? '',
                 'loan_date' => isset($loan['loanDate']) && $loan['loanDate'] ? \Carbon\Carbon::parse($loan['loanDate'])->format('Y-m-d') : '',
                 'due_date' => isset($loan['dueDate']) && $loan['dueDate'] ? \Carbon\Carbon::parse($loan['dueDate'])->format('Y-m-d') : '',
-                'returned_at' => isset($loan['returnedAt']) && $loan['returnedAt'] ? \Carbon\Carbon::parse($loan['returnedAt'])->format('Y-m-d') : null,
+                'return_date' => isset($loan['returnedAt']) && $loan['returnedAt'] ? \Carbon\Carbon::parse($loan['returnedAt'])->format('Y-m-d') : null,
                 'status' => $loan['status'] ?? '',
             ];
         }, $sections['library']['loans'] ?? []);
@@ -459,6 +491,8 @@ class StudentHistoryController extends Controller
                 'class' => $card['class']['name'] ?? '',
                 'issued_at' => isset($card['createdAt']) && $card['createdAt'] ? \Carbon\Carbon::parse($card['createdAt'])->format('Y-m-d') : '',
                 'is_printed' => $card['isPrinted'] ?? false,
+                'template' => $card['templateName'] ?? ($card['template']['name'] ?? ''),
+                'fee_paid' => $card['feePaid'] ?? null,
             ];
         }, $sections['idCards'] ?? []);
 
@@ -467,7 +501,7 @@ class StudentHistoryController extends Controller
             return [
                 'course_name' => $course['course']['name'] ?? '',
                 'registration_date' => isset($course['registrationDate']) && $course['registrationDate'] ? \Carbon\Carbon::parse($course['registrationDate'])->format('Y-m-d') : '',
-                'completion_status' => $course['completionStatus'] ?? '',
+                'status' => $course['completionStatus'] ?? '',
                 'completion_date' => isset($course['completionDate']) && $course['completionDate'] ? \Carbon\Carbon::parse($course['completionDate'])->format('Y-m-d') : null,
                 'grade' => $course['grade'] ?? '',
                 'certificate_issued' => $course['certificateIssued'] ?? false,
@@ -479,7 +513,8 @@ class StudentHistoryController extends Controller
             return [
                 'batch_name' => $graduation['batch']['name'] ?? '',
                 'graduation_date' => isset($graduation['createdAt']) && $graduation['createdAt'] ? \Carbon\Carbon::parse($graduation['createdAt'])->format('Y-m-d') : '',
-                'final_result_status' => $graduation['finalResultStatus'] ?? '',
+                'final_result' => $graduation['finalResultStatus'] ?? '',
+                'certificate_number' => $graduation['certificateNumber'] ?? '',
             ];
         }, $sections['graduations'] ?? []);
 
@@ -523,7 +558,7 @@ class StudentHistoryController extends Controller
     /**
      * Build Excel report data from history
      */
-    private function buildExcelReportData(array $history): array
+    public function buildExcelReportData(array $history): array
     {
         $student = $history['student'] ?? [];
         $summary = $history['summary'] ?? [];
@@ -565,7 +600,7 @@ class StudentHistoryController extends Controller
                     ],
                     'rows' => array_map(function ($admission) {
                         return [
-                            'admissionDate' => $admission['admissionDate'] ?? '',
+                            'admissionDate' => isset($admission['admissionDate']) && $admission['admissionDate'] ? \Carbon\Carbon::parse($admission['admissionDate'])->format('Y-m-d') : '',
                             'class' => $admission['class']['name'] ?? '',
                             'academicYear' => $admission['academicYear']['name'] ?? '',
                             'status' => $admission['enrollmentStatus'] ?? '',
@@ -619,6 +654,8 @@ class StudentHistoryController extends Controller
                     'title' => 'Library Loans',
                     'columns' => [
                         ['key' => 'bookTitle', 'label' => 'Book Title'],
+                        ['key' => 'author', 'label' => 'Author'],
+                        ['key' => 'accessionNumber', 'label' => 'Accession #'],
                         ['key' => 'loanDate', 'label' => 'Loan Date'],
                         ['key' => 'dueDate', 'label' => 'Due Date'],
                         ['key' => 'returnedAt', 'label' => 'Returned'],
@@ -627,17 +664,181 @@ class StudentHistoryController extends Controller
                     'rows' => array_map(function ($loan) {
                         return [
                             'bookTitle' => $loan['book']['title'] ?? '',
-                            'loanDate' => $loan['loanDate'] ?? '',
-                            'dueDate' => $loan['dueDate'] ?? '',
-                            'returnedAt' => $loan['returnedAt'] ?? '-',
+                            'author' => $loan['book']['author'] ?? '',
+                            'accessionNumber' => $loan['book']['accessionNumber'] ?? '',
+                            'loanDate' => isset($loan['loanDate']) && $loan['loanDate'] ? \Carbon\Carbon::parse($loan['loanDate'])->format('Y-m-d') : '',
+                            'dueDate' => isset($loan['dueDate']) && $loan['dueDate'] ? \Carbon\Carbon::parse($loan['dueDate'])->format('Y-m-d') : '',
+                            'returnedAt' => isset($loan['returnedAt']) && $loan['returnedAt'] ? \Carbon\Carbon::parse($loan['returnedAt'])->format('Y-m-d') : '',
                             'status' => $loan['status'] ?? '',
                         ];
                     }, $sections['library']['loans'] ?? []),
+                ],
+                'attendance' => [
+                    'sheet_name' => 'Attendance',
+                    'title' => 'Attendance Summary',
+                    'columns' => [
+                        ['key' => 'month', 'label' => 'Month'],
+                        ['key' => 'present', 'label' => 'Present'],
+                        ['key' => 'absent', 'label' => 'Absent'],
+                        ['key' => 'late', 'label' => 'Late'],
+                        ['key' => 'rate', 'label' => 'Rate (%)'],
+                    ],
+                    'rows' => array_map(function ($item) {
+                        return [
+                            'month' => $item['month'] ?? '',
+                            'present' => (string) ($item['present'] ?? 0),
+                            'absent' => (string) ($item['absent'] ?? 0),
+                            'late' => (string) ($item['late'] ?? 0),
+                            'rate' => round($item['rate'] ?? 0, 2) . '%',
+                        ];
+                    }, $sections['attendance']['monthlyBreakdown'] ?? []),
+                ],
+                'id_cards' => [
+                    'sheet_name' => 'ID Cards',
+                    'title' => 'ID Card History',
+                    'columns' => [
+                        ['key' => 'cardNumber', 'label' => 'Card Number'],
+                        ['key' => 'template', 'label' => 'Template'],
+                        ['key' => 'academicYear', 'label' => 'Academic Year'],
+                        ['key' => 'class', 'label' => 'Class'],
+                        ['key' => 'issueDate', 'label' => 'Issue Date'],
+                        ['key' => 'isPrinted', 'label' => 'Printed'],
+                        ['key' => 'feePaid', 'label' => 'Fee Paid'],
+                    ],
+                    'rows' => array_map(function ($card) {
+                        return [
+                            'cardNumber' => $card['cardNumber'] ?? '',
+                            'template' => $card['template']['name'] ?? '',
+                            'academicYear' => $card['academicYear']['name'] ?? '',
+                            'class' => $card['class']['name'] ?? '',
+                            'issueDate' => isset($card['createdAt']) && $card['createdAt'] ? \Carbon\Carbon::parse($card['createdAt'])->format('Y-m-d') : '',
+                            'isPrinted' => $card['isPrinted'] ? 'Yes' : 'No',
+                            'feePaid' => $card['feePaid'] ? 'Yes' : 'No',
+                        ];
+                    }, $sections['idCards'] ?? []),
+                ],
+                'courses' => [
+                    'sheet_name' => 'Courses',
+                    'title' => 'Short-Term Courses',
+                    'columns' => [
+                        ['key' => 'courseName', 'label' => 'Course Name'],
+                        ['key' => 'registrationDate', 'label' => 'Registration Date'],
+                        ['key' => 'completionDate', 'label' => 'Completion Date'],
+                        ['key' => 'completionStatus', 'label' => 'Status'],
+                        ['key' => 'grade', 'label' => 'Grade'],
+                        ['key' => 'certificateIssued', 'label' => 'Certificate Issued'],
+                    ],
+                    'rows' => array_map(function ($course) {
+                        return [
+                            'courseName' => $course['course']['name'] ?? '',
+                            'registrationDate' => isset($course['registrationDate']) && $course['registrationDate'] ? \Carbon\Carbon::parse($course['registrationDate'])->format('Y-m-d') : '',
+                            'completionDate' => isset($course['completionDate']) && $course['completionDate'] ? \Carbon\Carbon::parse($course['completionDate'])->format('Y-m-d') : '',
+                            'completionStatus' => $course['completionStatus'] ?? '',
+                            'grade' => $course['grade'] ?? '',
+                            'certificateIssued' => $course['certificateIssued'] ? 'Yes' : 'No',
+                        ];
+                    }, $sections['courses'] ?? []),
+                ],
+                'graduations' => [
+                    'sheet_name' => 'Graduations',
+                    'title' => 'Graduation Records',
+                    'columns' => [
+                        ['key' => 'batchName', 'label' => 'Batch Name'],
+                        ['key' => 'graduationDate', 'label' => 'Graduation Date'],
+                        ['key' => 'finalResult', 'label' => 'Final Result'],
+                        ['key' => 'certificateNumber', 'label' => 'Certificate #'],
+                    ],
+                    'rows' => array_map(function ($graduation) {
+                        return [
+                            'batchName' => $graduation['batch']['name'] ?? '',
+                            'graduationDate' => isset($graduation['createdAt']) && $graduation['createdAt'] ? \Carbon\Carbon::parse($graduation['createdAt'])->format('Y-m-d') : '',
+                            'finalResult' => $graduation['finalResultStatus'] ?? '',
+                            'certificateNumber' => $graduation['certificateNumber'] ?? '',
+                        ];
+                    }, $sections['graduations'] ?? []),
                 ],
                 ],
             ],
             'metadata' => $history['metadata'] ?? [],
         ];
     }
+
+    /**
+     * Preview the student history report template (for testing/development)
+     * This route renders the template directly in the browser with sample data
+     * 
+     * Supports authentication via:
+     * - Bearer token in Authorization header (standard)
+     * - token query parameter (for easy browser testing in dev mode only)
+     */
+    public function previewTemplate(Request $request): \Illuminate\View\View
+    {
+        // Only allow in development mode
+        if (!config('app.debug')) {
+            abort(404);
+        }
+
+        // Get sample student ID from query or use first available student
+        $studentId = $request->get('student_id');
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile || !$profile->organization_id) {
+            abort(403, 'User must be assigned to an organization');
+        }
+
+        // Get current school from middleware context
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        // If no student_id provided, get first student
+        if (!$studentId) {
+            $student = DB::table('students')
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->first();
+            
+            if (!$student) {
+                abort(404, 'No students found. Please provide a student_id parameter.');
+            }
+            $studentId = $student->id;
+        }
+
+        // Get student history data
+        try {
+            $history = $this->historyService->getStudentHistory(
+                $studentId,
+                $profile->organization_id,
+                $currentSchoolId
+            );
+        } catch (\Exception $e) {
+            abort(500, 'Failed to fetch student history: ' . $e->getMessage());
+        }
+
+        // Build report data
+        $reportData = $this->buildPdfReportData($history);
+
+        // Build context for template (similar to PdfReportService)
+        $context = [
+            'student' => $reportData['student'] ?? [],
+            'summary' => $reportData['summary'] ?? [],
+            'sections' => $reportData['sections'] ?? [],
+            'metadata' => $reportData['metadata'] ?? [],
+            'generatedAt' => now()->format('Y-m-d H:i'),
+            'totalRecords' => $reportData['metadata']['totalRecords'] ?? 0,
+            'labels' => [], // Will be populated by template based on language
+            'TABLE_TITLE' => 'Student Lifetime History - Preview',
+            'SCHOOL_NAME' => 'Test School',
+            'PRIMARY_COLOR' => '#0b0b56',
+            'SECONDARY_COLOR' => '#0056b3',
+            'FONT_FAMILY' => 'Inter',
+            'FONT_SIZE' => '12px',
+            'rtl' => false,
+            'show_page_numbers' => true,
+        ];
+
+        // Render the template directly
+        return view('reports.student-history', $context);
+    }
+
 }
 
