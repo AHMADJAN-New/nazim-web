@@ -280,8 +280,8 @@ export default function StudentHistoryPage() {
 
       {/* Export Progress Dialog (same UX as central export buttons) */}
       <ReportProgressDialog
-        open={exportDialogOpen && (exportPdf.isPending || exportPdf.isPolling || exportPdf.isSuccess || exportPdf.isError || 
-          exportExcel.isPending || exportExcel.isPolling || exportExcel.isSuccess || exportExcel.isError)}
+        open={exportDialogOpen && (exportPdf.isPending || exportPdf.isPolling || exportPdf.status !== null || 
+          exportExcel.isPending || exportExcel.isPolling || exportExcel.status !== null)}
         onOpenChange={(open) => {
           setExportDialogOpen(open);
           if (!open) {

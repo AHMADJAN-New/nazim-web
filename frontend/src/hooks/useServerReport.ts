@@ -258,6 +258,7 @@ export function useServerReport(): UseServerReportReturn {
       setState(prev => ({
         ...prev,
         isGenerating: false,
+        status: 'failed',
         error,
       }));
 

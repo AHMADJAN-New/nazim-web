@@ -5,7 +5,9 @@ namespace App\Services\Reports;
 use App\Models\ReportRun;
 use App\Models\ReportTemplate;
 use App\Models\SchoolBranding;
+use App\Services\StudentHistoryService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -19,6 +21,7 @@ class ReportService
         private PdfReportService $pdfService,
         private ExcelReportService $excelService,
         private DateConversionService $dateService,
+        private StudentHistoryService $historyService,
     ) {}
 
     /**
@@ -35,6 +38,11 @@ class ReportService
         ?string $organizationId = null
     ): ReportRun {
         $startTime = microtime(true);
+
+        // CRITICAL: For custom templates like student-history, fetch data from parameters
+        if ($config->templateName === 'student-history' && !empty($config->parameters['student_id'])) {
+            $data = $this->fetchStudentHistoryData($config, $organizationId, $data);
+        }
 
         // Create report run record
         $reportRun = $this->createReportRun($config, $data, $organizationId);
@@ -460,7 +468,7 @@ class ReportService
         // Calculate column widths
         $columnWidths = $this->calculateColumnWidths($columns, $config);
 
-        return [
+        $context = [
             // Branding
             'SCHOOL_NAME' => $branding['school_name'] ?? '',
             'SCHOOL_NAME_EN' => $branding['school_name'] ?? '',
@@ -564,10 +572,33 @@ class ReportService
 
             // Pass through all custom data keys (for custom templates like student-history)
             // This allows templates to access custom data like 'student', 'summary', 'sections', etc.
+            // CRITICAL: Explicitly add student history data if present
+            'student' => $data['student'] ?? [],
+            'summary' => $data['summary'] ?? [],
+            'sections' => $data['sections'] ?? [],
+            'metadata' => $data['metadata'] ?? [],
+            'generatedAt' => $data['generatedAt'] ?? now()->toISOString(),
+            'labels' => $data['labels'] ?? [],
+
+            // Also pass through any other custom data keys (excluding columns/rows)
             ...array_filter($data, function ($key) {
-                return !in_array($key, ['columns', 'rows']);
+                return !in_array($key, ['columns', 'rows', 'student', 'summary', 'sections', 'metadata', 'generatedAt', 'labels']);
             }, ARRAY_FILTER_USE_KEY),
         ];
+
+        // Debug: Log context data for student-history template
+        if ($templateName === 'student-history') {
+            \Log::debug("Student history context built", [
+                'has_student' => !empty($context['student']),
+                'has_summary' => !empty($context['summary']),
+                'has_sections' => !empty($context['sections']),
+                'student_name' => $context['student']['full_name'] ?? 'N/A',
+                'context_keys' => array_keys($context),
+                'data_keys' => array_keys($data),
+            ]);
+        }
+
+        return $context;
     }
 
     /**
@@ -657,5 +688,292 @@ class ReportService
     public function getDateService(): DateConversionService
     {
         return $this->dateService;
+    }
+
+    /**
+     * Fetch student history data for student-history template
+     * This method is called when template_name is 'student-history' and parameters.student_id is provided
+     */
+    private function fetchStudentHistoryData(ReportConfig $config, ?string $organizationId, array $data): array
+    {
+        $studentId = $config->parameters['student_id'] ?? null;
+        if (!$studentId) {
+            \Log::warning('Student ID not provided in parameters for student-history template');
+            return $data;
+        }
+
+        if (!$organizationId) {
+            // Try to get organization from authenticated user
+            $user = Auth::user();
+            if ($user) {
+                $profile = DB::table('profiles')->where('id', $user->id)->first();
+                $organizationId = $profile->organization_id ?? null;
+            }
+        }
+
+        if (!$organizationId) {
+            \Log::warning('Organization ID not available for student history data fetch');
+            return $data;
+        }
+
+        // Get current school ID from branding_id (branding_id is the school_id)
+        $schoolId = $config->brandingId;
+
+        try {
+            \Log::debug("Fetching student history data", [
+                'student_id' => $studentId,
+                'organization_id' => $organizationId,
+                'school_id' => $schoolId,
+                'sections_filter' => $config->parameters['sections'] ?? null,
+            ]);
+
+            // Prepare filters (sections filter if provided)
+            $filters = [];
+            if (!empty($config->parameters['sections']) && is_array($config->parameters['sections'])) {
+                $filters['sections'] = $config->parameters['sections'];
+            }
+
+            // Fetch student history using StudentHistoryService
+            $history = $this->historyService->getStudentHistory(
+                $studentId,
+                $organizationId,
+                $schoolId,
+                $filters
+            );
+
+            \Log::debug("Student history fetched", [
+                'has_student' => !empty($history['student']),
+                'has_summary' => !empty($history['summary']),
+                'has_sections' => !empty($history['sections']),
+                'sections_keys' => array_keys($history['sections'] ?? []),
+            ]);
+
+            // Format data for template (same structure as StudentHistoryController::buildPdfReportData)
+            $student = $history['student'] ?? [];
+            $summary = $history['summary'] ?? [];
+            $sections = $history['sections'] ?? [];
+            $metadata = $history['metadata'] ?? [];
+
+            // Format student data for template (snake_case for Blade template)
+            $studentData = [
+                'full_name' => $student['fullName'] ?? '',
+                'admission_no' => $student['admissionNumber'] ?? '',
+                'father_name' => $student['fatherName'] ?? '',
+                'current_class' => $student['currentClass']['name'] ?? '',
+                'current_section' => $student['currentClass']['section'] ?? '',
+                'current_academic_year' => $student['currentClass']['academicYear'] ?? '',
+                'birth_date' => isset($student['dateOfBirth']) && $student['dateOfBirth'] ? \Carbon\Carbon::parse($student['dateOfBirth'])->format('Y-m-d') : '',
+                'status' => $student['status'] ?? '',
+                'phone' => $student['phone'] ?? '',
+                'picture_path' => $student['picturePath'] ?? null,
+                'school_name' => $student['schoolName'] ?? '',
+                'organization_name' => $student['organizationName'] ?? '',
+                'student_code' => $student['studentCode'] ?? '',
+                'card_number' => $student['cardNumber'] ?? '',
+                'gender' => $student['gender'] ?? '',
+                'nationality' => $student['nationality'] ?? '',
+                'preferred_language' => $student['preferredLanguage'] ?? '',
+                'home_address' => $student['homeAddress'] ?? '',
+                'previous_school' => $student['previousSchool'] ?? '',
+                'guardian_name' => $student['guardianName'] ?? '',
+                'guardian_relation' => $student['guardianRelation'] ?? '',
+                'guardian_phone' => $student['guardianPhone'] ?? '',
+                'emergency_contact_name' => $student['emergencyContactName'] ?? '',
+                'emergency_contact_phone' => $student['emergencyContactPhone'] ?? '',
+            ];
+
+            // Format summary data
+            $summaryData = [
+                'academic_years' => $summary['totalAcademicYears'] ?? 0,
+                'attendance_rate' => round($summary['attendanceRate'] ?? 0, 2),
+                'exam_average' => round($summary['averageExamScore'] ?? 0, 2),
+                'total_fees_paid' => $summary['totalFeesPaid'] ?? 0,
+                'library_loans' => $summary['totalLibraryLoans'] ?? 0,
+                'courses_completed' => $summary['totalCoursesCompleted'] ?? 0,
+            ];
+
+            // Format sections data for template (snake_case keys as expected by template)
+            // Format admissions section
+            $admissionsData = array_map(function ($admission) {
+                return [
+                    'academic_year' => $admission['academicYear']['name'] ?? '',
+                    'class' => $admission['class']['name'] ?? '',
+                    'admission_date' => isset($admission['admissionDate']) && $admission['admissionDate'] ? \Carbon\Carbon::parse($admission['admissionDate'])->format('Y-m-d') : '',
+                    'enrollment_status' => $admission['enrollmentStatus'] ?? '',
+                    'enrollment_type' => $admission['enrollmentType'] ?? '',
+                    'residency_type' => $admission['residencyType']['name'] ?? '',
+                ];
+            }, $sections['admissions'] ?? []);
+
+            // Format attendance section
+            $attendanceSummary = $sections['attendance']['summary'] ?? [];
+            $attendanceData = [
+                'summary' => [
+                    'total_days' => $attendanceSummary['totalDays'] ?? 0,
+                    'present' => $attendanceSummary['present'] ?? 0,
+                    'absent' => $attendanceSummary['absent'] ?? 0,
+                    'late' => $attendanceSummary['late'] ?? 0,
+                    'rate' => round($attendanceSummary['rate'] ?? 0, 2),
+                ],
+                'monthly_breakdown' => array_map(function ($item) {
+                    return [
+                        'month' => $item['month'] ?? '',
+                        'present' => $item['present'] ?? 0,
+                        'absent' => $item['absent'] ?? 0,
+                        'late' => $item['late'] ?? 0,
+                        'rate' => round($item['rate'] ?? 0, 2),
+                    ];
+                }, $sections['attendance']['monthlyBreakdown'] ?? []),
+            ];
+
+            // Format exams section
+            $examsSummary = $sections['exams']['summary'] ?? [];
+            $examsData = [
+                'summary' => [
+                    'total_exams' => $examsSummary['totalExams'] ?? 0,
+                    'average_percentage' => round($examsSummary['averagePercentage'] ?? 0, 2),
+                ],
+                'exams' => array_map(function ($exam) {
+                    $subjectResults = array_map(function ($result) {
+                        return [
+                            'subject_name' => $result['subjectName'] ?? '',
+                            'marks_obtained' => $result['marksObtained'] ?? 0,
+                            'max_marks' => $result['maxMarks'] ?? 0,
+                            'percentage' => round($result['percentage'] ?? 0, 2),
+                            'is_absent' => $result['isAbsent'] ?? false,
+                        ];
+                    }, $exam['subjectResults'] ?? []);
+                    
+                    return [
+                        'exam_name' => $exam['examName'] ?? '',
+                        'class_name' => $exam['className'] ?? '',
+                        'exam_date' => isset($exam['examStartDate']) && $exam['examStartDate'] ? \Carbon\Carbon::parse($exam['examStartDate'])->format('Y-m-d') : '',
+                        'total_marks' => $exam['totalMarks'] ?? 0,
+                        'max_marks' => $exam['maxMarks'] ?? 0,
+                        'percentage' => round($exam['percentage'] ?? 0, 2),
+                        'subject_results' => $subjectResults,
+                    ];
+                }, $sections['exams']['exams'] ?? []),
+            ];
+
+            // Format fees section
+            $feesSummary = $sections['fees']['summary'] ?? [];
+            $feesData = [
+                'summary' => [
+                    'total_assigned' => $feesSummary['totalAssigned'] ?? 0,
+                    'total_paid' => $feesSummary['totalPaid'] ?? 0,
+                    'total_remaining' => $feesSummary['totalRemaining'] ?? 0,
+                ],
+                'assignments' => array_map(function ($assignment) {
+                    $payments = array_map(function ($payment) {
+                        return [
+                            'payment_date' => isset($payment['paymentDate']) && $payment['paymentDate'] ? \Carbon\Carbon::parse($payment['paymentDate'])->format('Y-m-d') : '',
+                            'amount' => $payment['amount'] ?? 0,
+                            'payment_method' => $payment['paymentMethod'] ?? '',
+                            'reference_no' => $payment['referenceNo'] ?? '',
+                        ];
+                    }, $assignment['feePayments'] ?? []);
+                    
+                    return [
+                        'fee_structure' => $assignment['feeStructure']['name'] ?? '',
+                        'academic_year' => $assignment['academicYear']['name'] ?? '',
+                        'assigned_amount' => $assignment['assignedAmount'] ?? 0,
+                        'paid_amount' => $assignment['paidAmount'] ?? 0,
+                        'remaining_amount' => $assignment['remainingAmount'] ?? 0,
+                        'status' => $assignment['status'] ?? '',
+                        'due_date' => isset($assignment['dueDate']) && $assignment['dueDate'] ? \Carbon\Carbon::parse($assignment['dueDate'])->format('Y-m-d') : '',
+                        'payments' => $payments,
+                    ];
+                }, $sections['fees']['assignments'] ?? []),
+            ];
+
+            // Format library section
+            $libraryData = array_map(function ($loan) {
+                return [
+                    'book_title' => $loan['book']['title'] ?? '',
+                    'author' => $loan['book']['author'] ?? '',
+                    'loan_date' => isset($loan['loanDate']) && $loan['loanDate'] ? \Carbon\Carbon::parse($loan['loanDate'])->format('Y-m-d') : '',
+                    'due_date' => isset($loan['dueDate']) && $loan['dueDate'] ? \Carbon\Carbon::parse($loan['dueDate'])->format('Y-m-d') : '',
+                    'return_date' => isset($loan['returnedAt']) && $loan['returnedAt'] ? \Carbon\Carbon::parse($loan['returnedAt'])->format('Y-m-d') : null,
+                    'status' => $loan['status'] ?? '',
+                ];
+            }, $sections['library']['loans'] ?? []);
+
+            // Format ID cards section
+            $idCardsData = array_map(function ($card) {
+                return [
+                    'card_number' => $card['cardNumber'] ?? '',
+                    'academic_year' => $card['academicYear']['name'] ?? '',
+                    'class' => $card['class']['name'] ?? '',
+                    'issued_at' => isset($card['createdAt']) && $card['createdAt'] ? \Carbon\Carbon::parse($card['createdAt'])->format('Y-m-d') : '',
+                    'is_printed' => $card['isPrinted'] ?? false,
+                    'template' => $card['templateName'] ?? ($card['template']['name'] ?? ''),
+                    'fee_paid' => $card['feePaid'] ?? null,
+                ];
+            }, $sections['idCards'] ?? []);
+
+            // Format courses section
+            $coursesData = array_map(function ($course) {
+                return [
+                    'course_name' => $course['course']['name'] ?? '',
+                    'registration_date' => isset($course['registrationDate']) && $course['registrationDate'] ? \Carbon\Carbon::parse($course['registrationDate'])->format('Y-m-d') : '',
+                    'status' => $course['completionStatus'] ?? '',
+                    'completion_date' => isset($course['completionDate']) && $course['completionDate'] ? \Carbon\Carbon::parse($course['completionDate'])->format('Y-m-d') : null,
+                    'grade' => $course['grade'] ?? '',
+                    'certificate_issued' => $course['certificateIssued'] ?? false,
+                ];
+            }, $sections['courses'] ?? []);
+
+            // Format graduations section
+            $graduationsData = array_map(function ($graduation) {
+                return [
+                    'batch_name' => $graduation['batch']['name'] ?? '',
+                    'graduation_date' => isset($graduation['createdAt']) && $graduation['createdAt'] ? \Carbon\Carbon::parse($graduation['createdAt'])->format('Y-m-d') : '',
+                    'final_result' => $graduation['finalResultStatus'] ?? '',
+                    'certificate_number' => $graduation['certificateNumber'] ?? '',
+                ];
+            }, $sections['graduations'] ?? []);
+
+            // Format sections data for template (all in snake_case)
+            $sectionsData = [
+                'admissions' => $admissionsData,
+                'attendance' => $attendanceData,
+                'exams' => $examsData,
+                'fees' => $feesData,
+                'library' => $libraryData,
+                'id_cards' => $idCardsData,
+                'courses' => $coursesData,
+                'graduations' => $graduationsData,
+            ];
+
+            // Merge student history data into the data array
+            // This will be passed through to the template via buildContext
+            $mergedData = array_merge($data, [
+                'student' => $studentData,
+                'summary' => $summaryData,
+                'sections' => $sectionsData,
+                'metadata' => $metadata,
+                'generatedAt' => $metadata['generatedAt'] ?? now()->toISOString(),
+                'labels' => [], // Will be populated by template based on language
+            ]);
+
+            \Log::debug("Student history data merged", [
+                'has_student' => !empty($mergedData['student']),
+                'has_summary' => !empty($mergedData['summary']),
+                'has_sections' => !empty($mergedData['sections']),
+                'student_name' => $mergedData['student']['full_name'] ?? 'N/A',
+                'sections_count' => count($mergedData['sections'] ?? []),
+            ]);
+
+            return $mergedData;
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to fetch student history data', [
+                'student_id' => $studentId,
+                'organization_id' => $organizationId,
+                'error' => $e->getMessage(),
+            ]);
+            return $data; // Return original data on error
+        }
     }
 }

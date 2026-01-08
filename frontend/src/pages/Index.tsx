@@ -147,20 +147,13 @@ const Index = () => {
       
       // Check if user is a platform admin (only if not in platform admin session)
       // Only check if permissions are loaded
-      // CRITICAL: Only redirect if user is on the root path (/), not if they're already on a valid route
       if (platformPermissions !== undefined) {
-        const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-        const isOnRootPath = currentPath === '/' || currentPath === '';
+        const isPlatformAdmin = Array.isArray(platformPermissions) && platformPermissions.includes('subscription.admin');
         
-        // Only redirect if on root path (not already on a valid route)
-        if (isOnRootPath) {
-          const isPlatformAdmin = Array.isArray(platformPermissions) && platformPermissions.includes('subscription.admin');
-          
-          if (isPlatformAdmin) {
-            navigate('/platform/dashboard', { replace: true });
-          } else {
-            navigate('/dashboard', { replace: true });
-          }
+        if (isPlatformAdmin) {
+          navigate('/platform/dashboard', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
         }
       }
     }

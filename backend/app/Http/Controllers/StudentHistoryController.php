@@ -332,7 +332,7 @@ class StudentHistoryController extends Controller
      * CRITICAL: This method prepares data for the student-history.blade.php template
      * The template expects specific structure: student, summary, sections, labels, etc.
      */
-    public function buildPdfReportData(array $history): array
+    private function buildPdfReportData(array $history): array
     {
         $student = $history['student'] ?? [];
         $summary = $history['summary'] ?? [];
@@ -558,7 +558,7 @@ class StudentHistoryController extends Controller
     /**
      * Build Excel report data from history
      */
-    public function buildExcelReportData(array $history): array
+    private function buildExcelReportData(array $history): array
     {
         $student = $history['student'] ?? [];
         $summary = $history['summary'] ?? [];

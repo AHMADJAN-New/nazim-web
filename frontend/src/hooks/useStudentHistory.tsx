@@ -364,14 +364,12 @@ export const useExportStudentHistoryPdf = () => {
       options?: StudentHistoryExportRequest;
     }) => {
       // Call the central generateReport function
-      // Note: For custom templates like student-history, we pass minimal columns/rows
-      // The backend will fetch the actual data from parameters.student_id
       await generateReport({
         reportKey: 'student_lifetime_history',
         reportType: 'pdf',
         title: t('studentHistory.lifetimeHistory') || 'Student Lifetime History',
-        columns: [{ key: 'placeholder', label: 'Placeholder' }], // Minimal column for validation
-        rows: [{ placeholder: '' }], // Minimal row for validation
+        columns: [], // Columns are handled by the custom Blade template
+        rows: [],    // Rows are handled by the custom Blade template
         brandingId: options?.brandingId,
         calendarPreference: options?.calendarPreference,
         language: options?.language,
@@ -433,14 +431,12 @@ export const useExportStudentHistoryExcel = () => {
       options?: StudentHistoryExportRequest;
     }) => {
       // Call the central generateReport function
-      // Note: For Excel with multi-sheet structure, we pass minimal columns/rows
-      // The backend will fetch the actual data from parameters.student_id and build sheets
       await generateReport({
         reportKey: 'student_lifetime_history',
         reportType: 'excel',
         title: t('studentHistory.lifetimeHistory') || 'Student Lifetime History',
-        columns: [{ key: 'placeholder', label: 'Placeholder' }], // Minimal column for validation
-        rows: [{ placeholder: '' }], // Minimal row for validation
+        columns: [], // Columns are handled by the custom Blade template
+        rows: [],    // Rows are handled by the custom Blade template
         brandingId: options?.brandingId,
         calendarPreference: options?.calendarPreference,
         language: options?.language,

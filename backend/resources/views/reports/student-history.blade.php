@@ -562,7 +562,7 @@
                 <td>{{ $course['completion_date'] ?? '—' }}</td>
                 <td>{{ $course['status'] ?? '—' }}</td>
                 <td>{{ $course['grade'] ?? '—' }}</td>
-                <td>{{ $course['certificate_issued'] ? '✓' : '✗' }}</td>
+                <td>{{ ($course['certificate_issued'] ?? false) ? '✓' : '✗' }}</td>
             </tr>
             @empty
             <tr>

@@ -896,9 +896,16 @@ class StudentHistoryService
     public function logAccess(string $studentId, string $action, string $section): void
     {
         try {
+            // Jobs (async report generation) run without an authenticated user.
+            // Skip audit logging in that case to avoid DB NOT NULL violation on user_id.
+            $userId = Auth::id();
+            if (!$userId) {
+                return;
+            }
+
             StudentHistoryAuditLog::create([
                 'student_id' => $studentId,
-                'user_id' => Auth::id(),
+                'user_id' => $userId,
                 'action' => $action,
                 'section' => $section,
                 'ip_address' => request()->ip(),
