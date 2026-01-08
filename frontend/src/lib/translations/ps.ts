@@ -5082,6 +5082,11 @@ export const ps: TranslationKeys = {
     approachingLimits: 'تاسو ځینو محدودیتونو ته نږدې یاست.',
     cannotCreateMore: 'تاسو حد ته رسیدلي یاست. د نورو جوړولو لپاره پلان لوړ کړئ.',
     cannotMakeChanges: 'تاسو معلومات لیدلی شئ خو بدلولی یې نشئ. د بشپړ لاسرسي لپاره ګډون نوی کړئ.',
+    // Subscription management page messaging (used by /subscription)
+    subscriptionManagement: 'د ګډون مدیریت',
+    yourSubscriptionStatus: 'ستاسو د ګډون حالت',
+    trialEnded: 'د ازموینې موده پای ته ورسیده',
+    trialEndedDescription: 'ستاسو وړیا ازموینه پای ته ورسیده. د سیسټم کارولو ته دوام ورکولو لپاره، مهرباني وکړئ یو پلان غوره کړئ. ستاسو معلومات خوندي ساتل شوي دي.',
     contactSupport: 'ستاسو لاسرسی بند شوی. مهرباني وکړئ د ملاتړ سره اړیکه ونیسئ.',
     currentPlan: 'اوسنی پلان',
     daysLeftToRenew: 'ورځې پاتې دي.',
@@ -5110,7 +5115,60 @@ export const ps: TranslationKeys = {
     usageWarningMessage: 'تاسو د کارونې محدودیت ته نږدې یاست.',
     used: 'کارول شوی',
     viewFeatures: 'ځانګړتیاوې وګورئ',
-    writeAccessDenied: 'ستاسو ګډون د لیکلو اجازه نلري. مهرباني وکړئ نوی کړئ.'
+    writeAccessDenied: 'ستاسو ګډون د لیکلو اجازه نلري. مهرباني وکړئ نوی کړئ.',
+    
+    // Billing Periods
+    billingPeriod: 'د بیل موده',
+    monthly: 'میاشتنی',
+    quarterly: 'درې میاشتنی',
+    yearly: 'کلنی',
+    custom: 'دودیز',
+    customDays: 'دودیز ورځې',
+    
+    // Fee Types
+    licenseFee: 'د جواز فیس',
+    maintenanceFee: 'د ساتنې فیس',
+    oneTime: 'یو ځلی',
+    recurring: 'تکراري',
+    
+    // Fee Descriptions
+    licenseFeeDescription: 'د سافټویر لاسرسي لپاره یو ځلی تادیه',
+    maintenanceFeeDescription: 'د ملاتړ، تازه معلوماتو او کوربه توب لپاره تکراري تادیه',
+    totalFirstYear: 'ټول (لومړی کال)',
+    thenRecurring: 'بیا تکراري',
+    
+    // Payment Types
+    paymentType: 'د تادیې ډول',
+    licensePayment: 'د جواز تادیه',
+    maintenancePayment: 'د ساتنې تادیه',
+    renewalPayment: 'د نوي کولو تادیه',
+    
+    // Maintenance Invoices
+    maintenanceInvoices: 'د ساتنې رسیدونه',
+    invoiceNumber: 'د رسید شمیره',
+    invoiceStatus: 'د رسید حالت',
+    invoiceDueDate: 'د ورکړې نیټه',
+    invoicePending: 'پاتې',
+    invoiceSent: 'لیږل شوی',
+    invoicePaid: 'تادیه شوی',
+    invoiceOverdue: 'ناوخته',
+    invoiceCancelled: 'لغوه شوی',
+    generateInvoices: 'رسیدونه جوړ کړئ',
+    payMaintenance: 'د ساتنې تادیه',
+    
+    // License Fee Status
+    licensePaid: 'جواز تادیه شوی',
+    licenseUnpaid: 'جواز نه تادیه شوی',
+    licensePending: 'جواز پاتې',
+    payLicense: 'جواز تادیه کړئ',
+    
+    // Fee Summary
+    nextMaintenanceDue: 'راتلونکې ساتنه',
+    lastMaintenancePaid: 'وروستۍ ساتنې تادیه',
+    daysUntilDue: 'ورځې تر ورکړې',
+    daysOverdue: 'ناوخته ورځې',
+    maintenanceOverdue: 'ساتنه ناوخته',
+    maintenanceUpcoming: 'راتلونکې ساتنه'
   },teacherSubjectAssignments: {
     academicYear: 'تعلیمي کال',
     academicYearRequired: 'تعلیمي کال اړین دی',

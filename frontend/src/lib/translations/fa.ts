@@ -5223,6 +5223,11 @@ export const fa: TranslationKeys = {
     approachingLimits: 'شما به برخی از محدودیت‌های استفاده نزدیک می‌شوید.',
     cannotCreateMore: 'شما به حداکثر محدودیت برای این منبع رسیده‌اید. برای ایجاد بیشتر پلان خود را ارتقا دهید.',
     cannotMakeChanges: 'شما می‌توانید داده‌ها را مشاهده کنید اما نمی‌توانید تغییرات ایجاد کنید. برای بازگرداندن دسترسی کامل اشتراک خود را تمدید کنید.',
+    // Subscription management page messaging (used by /subscription)
+    subscriptionManagement: 'مدیریت اشتراک',
+    yourSubscriptionStatus: 'وضعیت اشتراک شما',
+    trialEnded: 'دوره آزمایشی به پایان رسید',
+    trialEndedDescription: 'دوره آزمایشی رایگان شما به پایان رسیده است. برای ادامه استفاده از سیستم، لطفاً یک طرح انتخاب کنید. داده‌های شما به صورت ایمن ذخیره شده‌اند.',
     contactSupport: 'دسترسی حساب شما مسدود شده است. لطفاً با پشتیبانی تماس بگیرید یا اشتراک خود را تمدید کنید.',
     currentPlan: 'پلان فعلی',
     daysLeftToRenew: 'روز مانده تا تمدید.',
@@ -5251,7 +5256,60 @@ export const fa: TranslationKeys = {
     usageWarningMessage: 'شما به محدودیت استفاده برای این منبع نزدیک می‌شوید.',
     used: 'استفاده شده',
     viewFeatures: 'مشاهده ویژگی‌ها',
-    writeAccessDenied: 'اشتراک شما اجازه دسترسی نوشتن را نمی‌دهد. لطفاً برای ایجاد تغییرات تمدید کنید.'
+    writeAccessDenied: 'اشتراک شما اجازه دسترسی نوشتن را نمی‌دهد. لطفاً برای ایجاد تغییرات تمدید کنید.',
+    
+    // Billing Periods
+    billingPeriod: 'دوره صورتحساب',
+    monthly: 'ماهانه',
+    quarterly: 'سه ماهه',
+    yearly: 'سالانه',
+    custom: 'سفارشی',
+    customDays: 'روزهای سفارشی',
+    
+    // Fee Types
+    licenseFee: 'هزینه مجوز',
+    maintenanceFee: 'هزینه نگهداری',
+    oneTime: 'یکبار',
+    recurring: 'تکراری',
+    
+    // Fee Descriptions
+    licenseFeeDescription: 'پرداخت یکباره برای دسترسی به نرم‌افزار',
+    maintenanceFeeDescription: 'پرداخت تکراری برای پشتیبانی، به‌روزرسانی و میزبانی',
+    totalFirstYear: 'مجموع (سال اول)',
+    thenRecurring: 'سپس تکراری',
+    
+    // Payment Types
+    paymentType: 'نوع پرداخت',
+    licensePayment: 'پرداخت مجوز',
+    maintenancePayment: 'پرداخت نگهداری',
+    renewalPayment: 'پرداخت تمدید',
+    
+    // Maintenance Invoices
+    maintenanceInvoices: 'فاکتورهای نگهداری',
+    invoiceNumber: 'شماره فاکتور',
+    invoiceStatus: 'وضعیت فاکتور',
+    invoiceDueDate: 'تاریخ سررسید',
+    invoicePending: 'در انتظار',
+    invoiceSent: 'ارسال شده',
+    invoicePaid: 'پرداخت شده',
+    invoiceOverdue: 'معوق',
+    invoiceCancelled: 'لغو شده',
+    generateInvoices: 'ایجاد فاکتورها',
+    payMaintenance: 'پرداخت نگهداری',
+    
+    // License Fee Status
+    licensePaid: 'مجوز پرداخت شده',
+    licenseUnpaid: 'مجوز پرداخت نشده',
+    licensePending: 'مجوز در انتظار',
+    payLicense: 'پرداخت مجوز',
+    
+    // Fee Summary
+    nextMaintenanceDue: 'نگهداری بعدی',
+    lastMaintenancePaid: 'آخرین پرداخت نگهداری',
+    daysUntilDue: 'روز تا سررسید',
+    daysOverdue: 'روز معوق',
+    maintenanceOverdue: 'نگهداری معوق',
+    maintenanceUpcoming: 'نگهداری آینده'
   },
   teacherSubjectAssignments: {
     academicYear: 'سال تعلیمی',

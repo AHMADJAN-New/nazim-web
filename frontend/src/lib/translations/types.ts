@@ -247,10 +247,7 @@ export interface TranslationKeys {
     weak: string;
     years: string;
     yes: string;
-    checkin: string;
-    addGuest: string;
-    types: string;
-    users: string | {
+    users: {
       fillAllFields: string;
       userCreateFailed: string;
       userCreated: string;
@@ -464,7 +461,6 @@ export interface TranslationKeys {
     back: string;
     next: string;
     previous: string;
-    backToStudents: string;
     submit: string;
     reset: string;
     all: string;
@@ -485,8 +481,6 @@ export interface TranslationKeys {
     signature: string;
     selectLanguage: string;
     notifications: string;
-    searchAndFilters: string;
-    openMenu: string;
     schoolManagement: string;
     mainNavigation: string;
     filterByStatus: string;
@@ -545,19 +539,6 @@ export interface TranslationKeys {
     body: string;
     rtl: string;
     pageSize: string;
-    finish: string;
-    open: string;
-    skip: string;
-    allStatuses: string;
-    allLevels: string;
-    allDepartments: string;
-    unassigned: string;
-    allTypes: string;
-    applyFilters: string;
-    clearAll: string;
-    allYears: string;
-    fromDate: string;
-    toDate: string;
     date: string;
     address: string;
     base: string;
@@ -651,17 +632,12 @@ export interface TranslationKeys {
     studentsImport: string;
     admissions: string;
     studentReports: string;
-    studentHistory: string;
     studentManagement: string;
     staffReports: string;
     staffManagement: string;
-    phoneBook: string;
     attendance: string;
-    markAttendance: string;
     attendanceReports: string;
     attendanceTotalsReport: string;
-    leaveRequests: string;
-    leaveReports: string;
     classes: string;
     exams: string;
     examEnrollment: string;
@@ -681,9 +657,6 @@ export interface TranslationKeys {
     "graduation.batches": string;
     "certificates.templates": string;
     "certificates.issued": string;
-    "idCards.templates": string;
-    "idCards.assignment": string;
-    "idCards.export": string;
     finance: string;
     "finance.dashboard": string;
     "finance.accounts": string;
@@ -693,37 +666,25 @@ export interface TranslationKeys {
     "finance.expenseCategories": string;
     "finance.projects": string;
     "finance.donors": string;
-    "finance.financeDocuments": string;
     "finance.reports": string;
-    "finance.settings": string;
     "finance.fees": string;
     "finance.fees.dashboard": string;
     "finance.fees.structures": string;
     "finance.fees.assignments": string;
     "finance.fees.payments": string;
     "finance.fees.exceptions": string;
-    "finance.fees.reports": string;
     staff: string;
     hostel: string;
-    "hostel.overview": string;
-    "hostel.reports": string;
     library: string;
-    "library.dashboard": string;
     "library.categories": string;
     "library.books": string;
     "library.distribution": string;
     "library.reports": string;
     assets: string;
-    "assets.dashboard": string;
-    "assets.categories": string;
-    "assets.management": string;
-    "assets.assignments": string;
-    "assets.reports": string;
     communication: string;
     reports: string;
     admissionsReport: string;
     settings: string;
-    schoolsManagement: string;
     translations: string;
     authentication: string;
     academicSettings: string;
@@ -733,17 +694,14 @@ export interface TranslationKeys {
     courseDashboard: string;
     courseStudents: string;
     courseAttendance: string;
-    courseCertificates: string;
     certificateTemplates: string;
     courseDocuments: string;
     courseReports: string;
     documentSystem: string;
-    "document-system": string;
     "dms.dashboard": string;
     "dms.incoming": string;
     "dms.outgoing": string;
     "dms.issueLetter": string;
-    "dms.issueLetterNav": string;
     "dms.templates": string;
     "dms.letterheads": string;
     "dms.letterTypes": string;
@@ -751,13 +709,6 @@ export interface TranslationKeys {
     "dms.archive": string;
     "dms.reports": string;
     "dms.settings": string;
-    events: string;
-    "events.all": string;
-    "events.checkin": string;
-    "events.addGuest": string;
-    "events.types": string;
-    "events.users": string;
-    examDocuments: string;
     sections: {
       core: string;
       operations: string;
@@ -771,26 +722,6 @@ export interface TranslationKeys {
 
   // Document Management System
   dms: {
-    incomingDocuments: string;
-    incomingDocumentsDescription: string;
-    addDocument: string;
-    subject: string;
-    searchBySubject: string;
-    senderOrganization: string;
-    searchBySender: string;
-    securityLevel: string;
-    department: string;
-    outgoingDocuments: string;
-    outgoingDocumentsDescription: string;
-    recipientType: string;
-    letterheadsDescription: string;
-    uploadLetterhead: string;
-    searchByName: string;
-    letterType: string;
-    fileType: string;
-    archiveSearch: string;
-    archiveSearchDescription: string;
-    searchPlaceholder: string;
     issueLetter: {
       tabs: {
         issue: string;
@@ -1071,7 +1002,6 @@ export interface TranslationKeys {
   attendancePage: {
     title: string;
     subtitle: string;
-    markAttendance: string;
     classLabel: string;
     dateLabel: string;
     methodLabel: string;
@@ -1123,12 +1053,6 @@ export interface TranslationKeys {
     class: string;
     selectAtLeastOneClass: string;
     studentNotFound: string;
-    markAttendanceDescription: string;
-    selectSession: string;
-    selectSessionPlaceholder: string;
-    currentSession: string;
-    selectSessionForMarking: string;
-    searchSessions: string;
   };
 
   attendanceReports: {
@@ -1283,19 +1207,10 @@ export interface TranslationKeys {
     email: string;
     address: string;
     admissionDate: string;
-    dateOfBirth: string;
     class: string;
     section: string;
     rollNumber: string;
-    status: {
-      label: string;
-      active: string;
-      inactive: string;
-      graduated: string;
-      withdrawn: string;
-      applied: string;
-      admitted: string;
-    };
+    status: string;
     active: string;
     inactive: string;
     graduated: string;
@@ -1305,7 +1220,6 @@ export interface TranslationKeys {
     allClasses: string;
     allSections: string;
     allStatus: string;
-    allGenders: string;
     totalStudents: string;
     enrolledStudents: string;
     studentsList: string;
@@ -1550,316 +1464,7 @@ export interface TranslationKeys {
     studentId: string;
     students: string;
     viewDocumentDescription: string;
-    viewHistory: string;
     willBeUploadedOnSave: string;
-  };
-
-  // Student History
-  studentHistory: {
-    lifetimeHistory: string;
-    description: string;
-    loadError: string;
-    admissionNo: string;
-    class: string;
-    dob: string;
-    phone: string;
-    generatedAt: string;
-    records: string;
-    sections: string;
-    timeline: string;
-    charts: string;
-    fullDetails: string;
-    personalInformation: string;
-    contactInformation: string;
-    locationInformation: string;
-    originLocation: string;
-    currentLocation: string;
-    guardianInformation: string;
-    zaminInformation: string;
-    academicInformation: string;
-    financialInformation: string;
-    systemInformation: string;
-    totalAcademicYears: string;
-    yearsEnrolled: string;
-    currentClass: string;
-    attendanceRate: string;
-    averageScore: string;
-    exams: string;
-    outstandingFees: string;
-    pending: string;
-    cleared: string;
-    libraryBooks: string;
-    totalLoans: string;
-    admissions: string;
-    attendance: string;
-    fees: string;
-    library: string;
-    idCards: string;
-    courses: string;
-    graduations: string;
-    unknownClass: string;
-    current: string;
-    admissionDate: string;
-    academicYear: string;
-    school: string;
-    residencyType: string;
-    shift: string;
-    feePayments: string;
-    libraryLoans: string;
-    events: string;
-    feeTimeline: string;
-    paid: string;
-    remaining: string;
-    present: string;
-    absent: string;
-    late: string;
-    noAttendanceRecords: string;
-    totalExams: string;
-    totalMarks: string;
-    maxPossible: string;
-    noExamRecords: string;
-    totalCards: string;
-    printed: string;
-    pendingPrint: string;
-    feePaid: string;
-    idCardHistory: string;
-    cardNumber: string;
-    template: string;
-    printStatus: string;
-    feeStatus: string;
-    issuedDate: string;
-    unpaid: string;
-    returned: string;
-    currentlyBorrowed: string;
-    overdue: string;
-    returnRate: string;
-    of: string;
-    booksReturned: string;
-    noLibraryRecords: string;
-    totalAssigned: string;
-    totalPaid: string;
-    outstanding: string;
-    totalDiscount: string;
-    paymentProgress: string;
-    feeAssignments: string;
-    feeStructure: string;
-    assigned: string;
-    dueDate: string;
-    status: string;
-    totalCourses: string;
-    completed: string;
-    enrolled: string;
-    dropped: string;
-    certificates: string;
-    noCourseRecords: string;
-    totalGraduations: string;
-    passed: string;
-    conditional: string;
-    failed: string;
-    noGraduationRecords: string;
-    searchTimeline: string;
-    // Summary Cards
-    summary: {
-      academicYears: string;
-      currentClass: string;
-      attendanceRate: string;
-      examAverage: string;
-      feesStatus: string;
-      libraryLoans: string;
-      idCards: string;
-      courses: string;
-      disciplineRecords: string;
-      graduations: string;
-      yearsEnrolled: string;
-      present: string;
-      absent: string;
-      late: string;
-      totalPaid: string;
-      totalDue: string;
-      activeLoans: string;
-      overdue: string;
-      issued: string;
-      completed: string;
-      incidents: string;
-    };
-    // Tabs
-    tabs: {
-      admissions: string;
-      attendance: string;
-      exams: string;
-      fees: string;
-      library: string;
-      idCards: string;
-      courses: string;
-      graduations: string;
-      educationalHistory: string;
-      disciplineRecords: string;
-    };
-    // Timeline
-    timelineView: {
-      title: string;
-      noEvents: string;
-      filterByYear: string;
-      filterByType: string;
-      allYears: string;
-      allTypes: string;
-      showDetails: string;
-      hideDetails: string;
-    };
-    // Event Types
-    eventTypes: {
-      admission: string;
-      attendance: string;
-      exam: string;
-      feePayment: string;
-      libraryLoan: string;
-      idCard: string;
-      course: string;
-      graduation: string;
-      discipline: string;
-      transfer: string;
-    };
-    // Section Labels
-    admissionsSection: {
-      title: string;
-      academicYear: string;
-      class: string;
-      admissionDate: string;
-      enrollmentStatus: string;
-      enrollmentType: string;
-      residencyType: string;
-      room: string;
-      rollNumber: string;
-      noRecords: string;
-    };
-    attendanceSection: {
-      title: string;
-      date: string;
-      status: string;
-      session: string;
-      class: string;
-      academicYear: string;
-      noRecords: string;
-      totalPresent: string;
-      totalAbsent: string;
-      totalLate: string;
-    };
-    examsSection: {
-      title: string;
-      examName: string;
-      examDate: string;
-      subject: string;
-      marks: string;
-      maxMarks: string;
-      percentage: string;
-      grade: string;
-      rank: string;
-      result: string;
-      pass: string;
-      fail: string;
-      absent: string;
-      noRecords: string;
-      totalExams: string;
-      averageScore: string;
-    };
-    feesSection: {
-      title: string;
-      feeType: string;
-      amount: string;
-      dueDate: string;
-      paidAmount: string;
-      paymentDate: string;
-      status: string;
-      balance: string;
-      noRecords: string;
-      totalAssigned: string;
-      totalPaid: string;
-      totalOutstanding: string;
-    };
-    librarySection: {
-      title: string;
-      bookTitle: string;
-      accessionNumber: string;
-      loanDate: string;
-      dueDate: string;
-      returnDate: string;
-      status: string;
-      fine: string;
-      noRecords: string;
-      totalLoans: string;
-      activeLoans: string;
-      overdueLoans: string;
-    };
-    idCardsSection: {
-      title: string;
-      cardNumber: string;
-      template: string;
-      academicYear: string;
-      class: string;
-      issueDate: string;
-      expiryDate: string;
-      status: string;
-      printed: string;
-      feePaid: string;
-      noRecords: string;
-    };
-    coursesSection: {
-      title: string;
-      courseName: string;
-      registrationDate: string;
-      completionDate: string;
-      status: string;
-      grade: string;
-      certificateIssued: string;
-      noRecords: string;
-      totalEnrolled: string;
-      totalCompleted: string;
-    };
-    graduationsSection: {
-      title: string;
-      batchName: string;
-      graduationDate: string;
-      finalResult: string;
-      certificateNumber: string;
-      noRecords: string;
-    };
-    educationalHistorySection: {
-      title: string;
-      institution: string;
-      gradeLevel: string;
-      period: string;
-      achievements: string;
-      notes: string;
-      noRecords: string;
-    };
-    disciplineSection: {
-      title: string;
-      incidentDate: string;
-      incidentType: string;
-      severity: string;
-      actionTaken: string;
-      status: string;
-      resolved: string;
-      pending: string;
-      noRecords: string;
-      totalIncidents: string;
-    };
-    // Charts
-    chartsView: {
-      attendanceTrend: string;
-      academicPerformance: string;
-      feeTimeline: string;
-      noDataAvailable: string;
-    };
-    // Export
-    export: {
-      pdf: string;
-      excel: string;
-      generating: string;
-      success: string;
-      failed: string;
-      noSchoolSelected: string;
-    };
   };
 
   // Admissions
@@ -3627,7 +3232,6 @@ export interface TranslationKeys {
     downloadSuccess: string;
     downloadFailed: string;
     printPreview: string;
-    export: string;
     // Assignment page
     assignment: {
       title: string;
@@ -4425,31 +4029,6 @@ export interface TranslationKeys {
     loading: string;
     organizationRequired: string;
     organizationRequiredMessage: string;
-  };
-
-  onboarding: {
-    welcome: {
-      title: string;
-      description: string;
-    };
-    actions: {
-      takeTour: string;
-      readGuide: string;
-      skip: string;
-    };
-    dontShowAgain: string;
-    tour: {
-      dashboard: string;
-      sidebar: string;
-      users: string;
-      schools: string;
-      academic: string;
-      students: string;
-      staff: string;
-      settings: string;
-      subscription: string;
-      help: string;
-    };
   };
 
   // Validation Messages
@@ -5444,15 +5023,16 @@ export interface TranslationKeys {
     searchPlaceholder: string;
     totalDocuments: string;
     totalAmount: string;
-    documentTypes: string;
-    "documentTypes.invoice": string;
-    "documentTypes.receipt": string;
-    "documentTypes.budget": string;
-    "documentTypes.report": string;
-    "documentTypes.taxDocument": string;
-    "documentTypes.voucher": string;
-    "documentTypes.bankStatement": string;
-    "documentTypes.other": string;
+    documentTypes: {
+      invoice: string;
+      receipt: string;
+      budget: string;
+      report: string;
+      taxDocument: string;
+      voucher: string;
+      bankStatement: string;
+      other: string;
+    };
     startDate: string;
     endDate: string;
     documentDetails: string;
@@ -6181,12 +5761,13 @@ export interface TranslationKeys {
     selectSubject: string;
     classAcademicYear: string;
     selectClass: string;
-    type: string;
-    "type.mcq": string;
-    "type.short": string;
-    "type.descriptive": string;
-    "type.true_false": string;
-    "type.essay": string;
+    type: {
+      mcq: string;
+      short: string;
+      descriptive: string;
+      true_false: string;
+      essay: string;
+    };
     difficulty: {
       easy: string;
       medium: string;
@@ -6212,6 +5793,8 @@ export interface TranslationKeys {
     filterDifficulty: string;
     questionsList: string;
     totalQuestions: string;
+    noQuestions: string;
+    noQuestionsFound: string;
     question: string;
     status: string;
     activate: string;
@@ -6219,12 +5802,6 @@ export interface TranslationKeys {
     class: string;
     academicYear: string;
     classSubject: string;
-    type: string;
-    "type.mcq": string;
-    "type.short": string;
-    "type.descriptive": string;
-    "type.true_false": string;
-    "type.essay": string;
     difficulty: string;
     filterAcademicYear: string;
     filterClass: string;
@@ -6232,6 +5809,7 @@ export interface TranslationKeys {
     selectAcademicYear: string;
     selectAcademicYearFirst: string;
     selectClassFirst: string;
+    type: string;
   };
 
   // Exam Papers
@@ -6484,6 +6062,9 @@ export interface TranslationKeys {
     trialPeriod: string;
     trialEndsIn: string;
     trialEnding: string;
+    // Trial ended (used on /subscription; also referenced by access gating UX)
+    trialEnded: string;
+    trialEndedDescription: string;
     upgradeToKeepAccess: string;
     gracePeriod: string;
     subscriptionExpired: string;
@@ -6493,6 +6074,9 @@ export interface TranslationKeys {
     cannotMakeChanges: string;
     accountBlocked: string;
     contactSupport: string;
+    // Subscription management page headings (used on /subscription)
+    subscriptionManagement: string;
+    yourSubscriptionStatus: string;
     usageLimitsWarning: string;
     approachingLimits: string;
     manageSubscription: string;
@@ -6521,6 +6105,59 @@ export interface TranslationKeys {
     writeAccessDenied: string;
     readAccessDenied: string;
     genericError: string;
+    
+    // Billing Periods
+    billingPeriod: string;
+    monthly: string;
+    quarterly: string;
+    yearly: string;
+    custom: string;
+    customDays: string;
+    
+    // Fee Types
+    licenseFee: string;
+    maintenanceFee: string;
+    oneTime: string;
+    recurring: string;
+    
+    // Fee Descriptions
+    licenseFeeDescription: string;
+    maintenanceFeeDescription: string;
+    totalFirstYear: string;
+    thenRecurring: string;
+    
+    // Payment Types
+    paymentType: string;
+    licensePayment: string;
+    maintenancePayment: string;
+    renewalPayment: string;
+    
+    // Maintenance Invoices
+    maintenanceInvoices: string;
+    invoiceNumber: string;
+    invoiceStatus: string;
+    invoiceDueDate: string;
+    invoicePending: string;
+    invoiceSent: string;
+    invoicePaid: string;
+    invoiceOverdue: string;
+    invoiceCancelled: string;
+    generateInvoices: string;
+    payMaintenance: string;
+    
+    // License Fee Status
+    licensePaid: string;
+    licenseUnpaid: string;
+    licensePending: string;
+    payLicense: string;
+    
+    // Fee Summary
+    nextMaintenanceDue: string;
+    lastMaintenancePaid: string;
+    daysUntilDue: string;
+    daysOverdue: string;
+    maintenanceOverdue: string;
+    maintenanceUpcoming: string;
   };
 
   // Landing Page
@@ -6727,7 +6364,6 @@ export interface TranslationKeys {
     };
     nav: {
       features: string;
-      finance: string;
       pricing: string;
       reviews: string;
       contact: string;
