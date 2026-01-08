@@ -102,13 +102,18 @@ class SubscriptionService
         float $amountPaid = 0,
         int $additionalSchools = 0,
         ?string $performedBy = null,
-        ?string $notes = null
+        ?string $notes = null,
+        bool $licensePaid = false,
+        ?string $licensePaymentId = null
     ): OrganizationSubscription {
         $plan = SubscriptionPlan::findOrFail($planId);
         $currentSubscription = $this->getCurrentSubscription($organizationId);
 
         $startsAt = now();
-        $expiresAt = Carbon::now()->addYear();
+        
+        // Calculate expiry based on billing period
+        $billingPeriodDays = $plan->getBillingPeriodDays();
+        $expiresAt = Carbon::now()->addDays($billingPeriodDays);
 
         // Determine action type
         $action = SubscriptionHistory::ACTION_ACTIVATED;
@@ -121,9 +126,13 @@ class SubscriptionService
 
             if ($currentSubscription->plan_id !== $planId) {
                 $currentPlan = $currentSubscription->plan;
-                if ($currentPlan && $plan->price_yearly_afn > $currentPlan->price_yearly_afn) {
+                // Compare total costs (license + maintenance) for upgrade/downgrade determination
+                $newTotalCost = $plan->getTotalInitialCost($currency, $additionalSchools);
+                $currentTotalCost = $currentPlan ? $currentPlan->getTotalInitialCost($currency, $currentSubscription->additional_schools ?? 0) : 0;
+                
+                if ($currentPlan && $newTotalCost > $currentTotalCost) {
                     $action = SubscriptionHistory::ACTION_UPGRADED;
-                } elseif ($currentPlan && $plan->price_yearly_afn < $currentPlan->price_yearly_afn) {
+                } elseif ($currentPlan && $newTotalCost < $currentTotalCost) {
                     $action = SubscriptionHistory::ACTION_DOWNGRADED;
                 }
             } elseif (in_array($currentSubscription->status, [
@@ -139,6 +148,9 @@ class SubscriptionService
             $currentSubscription->delete();
         }
 
+        // Calculate next maintenance due date
+        $nextMaintenanceDueAt = Carbon::now()->addDays($billingPeriodDays);
+
         $subscription = OrganizationSubscription::create([
             'organization_id' => $organizationId,
             'plan_id' => $planId,
@@ -149,6 +161,12 @@ class SubscriptionService
             'amount_paid' => $amountPaid,
             'additional_schools' => $additionalSchools,
             'notes' => $notes,
+            // New billing fields
+            'billing_period' => $plan->billing_period ?? 'yearly',
+            'next_maintenance_due_at' => $nextMaintenanceDueAt,
+            'last_maintenance_paid_at' => $startsAt,
+            'license_paid_at' => $licensePaid ? $startsAt : null,
+            'license_payment_id' => $licensePaymentId,
         ]);
 
         SubscriptionHistory::log(
@@ -551,6 +569,8 @@ class SubscriptionService
 
     /**
      * Calculate price for a plan with addons and discount
+     * 
+     * @deprecated Use calculatePriceWithFees() for new fee separation model
      */
     public function calculatePrice(
         string $planId,
@@ -593,6 +613,138 @@ class SubscriptionService
             'discount_amount' => $discountAmount,
             'discount_info' => $discountInfo,
             'total' => $total,
+        ];
+    }
+
+    /**
+     * Calculate price with separate license and maintenance fees
+     * 
+     * This is the new fee separation model:
+     * - License fee: One-time payment
+     * - Maintenance fee: Recurring based on billing period
+     */
+    public function calculatePriceWithFees(
+        string $planId,
+        int $additionalSchools = 0,
+        ?string $discountCode = null,
+        string $currency = 'AFN',
+        ?string $organizationId = null,
+        bool $includeLicenseFee = true
+    ): array {
+        $plan = SubscriptionPlan::findOrFail($planId);
+
+        // License fee (one-time)
+        $licenseFee = $includeLicenseFee ? $plan->getLicenseFee($currency) : 0;
+        
+        // Maintenance fee (recurring per billing period)
+        $maintenanceFee = $plan->getMaintenanceFee($currency);
+        $perSchoolMaintenanceFee = $plan->getPerSchoolMaintenanceFee($currency);
+        $schoolsMaintenanceFee = $additionalSchools * $perSchoolMaintenanceFee;
+        $totalMaintenanceFee = $maintenanceFee + $schoolsMaintenanceFee;
+        
+        // Subtotal (license + maintenance for first period)
+        $subtotal = $licenseFee + $totalMaintenanceFee;
+
+        $discountAmount = 0;
+        $discountInfo = null;
+
+        if ($discountCode && $organizationId) {
+            $code = DiscountCode::where('code', strtoupper($discountCode))->first();
+            if ($code && $code->canBeUsedByOrganization($organizationId) && $code->appliesToPlan($planId)) {
+                // Apply discount to maintenance fee only (license is one-time)
+                $discountAmount = $code->calculateDiscount($totalMaintenanceFee, $currency);
+                $discountInfo = [
+                    'code' => $code->code,
+                    'type' => $code->discount_type,
+                    'value' => $code->discount_value,
+                    'applied_to' => 'maintenance_fee',
+                ];
+            }
+        }
+
+        $total = $subtotal - $discountAmount;
+
+        return [
+            'plan_id' => $planId,
+            'plan_name' => $plan->name,
+            'currency' => $currency,
+            'billing_period' => $plan->billing_period ?? 'yearly',
+            'billing_period_label' => $plan->getBillingPeriodLabel(),
+            'billing_period_days' => $plan->getBillingPeriodDays(),
+            
+            // License fee breakdown
+            'license_fee' => $licenseFee,
+            'license_fee_included' => $includeLicenseFee,
+            
+            // Maintenance fee breakdown
+            'maintenance_fee' => $maintenanceFee,
+            'per_school_maintenance_fee' => $perSchoolMaintenanceFee,
+            'additional_schools' => $additionalSchools,
+            'schools_maintenance_fee' => $schoolsMaintenanceFee,
+            'total_maintenance_fee' => $totalMaintenanceFee,
+            
+            // Totals
+            'subtotal' => $subtotal,
+            'discount_amount' => $discountAmount,
+            'discount_info' => $discountInfo,
+            'total' => $total,
+            
+            // Legacy fields for backward compatibility
+            'base_price' => $plan->getPrice($currency),
+            'schools_price' => $additionalSchools * $plan->getPerSchoolPrice($currency),
+        ];
+    }
+
+    /**
+     * Calculate renewal price (maintenance fee only, no license fee)
+     */
+    public function calculateRenewalPrice(
+        string $planId,
+        int $additionalSchools = 0,
+        ?string $discountCode = null,
+        string $currency = 'AFN',
+        ?string $organizationId = null
+    ): array {
+        // Renewal doesn't include license fee
+        return $this->calculatePriceWithFees(
+            $planId,
+            $additionalSchools,
+            $discountCode,
+            $currency,
+            $organizationId,
+            false // Don't include license fee
+        );
+    }
+
+    /**
+     * Get fee breakdown for a plan
+     */
+    public function getPlanFeeBreakdown(string $planId, string $currency = 'AFN'): array
+    {
+        $plan = SubscriptionPlan::findOrFail($planId);
+        
+        return [
+            'plan_id' => $planId,
+            'plan_name' => $plan->name,
+            'currency' => $currency,
+            'billing_period' => $plan->billing_period ?? 'yearly',
+            'billing_period_label' => $plan->getBillingPeriodLabel(),
+            'billing_period_days' => $plan->getBillingPeriodDays(),
+            'custom_billing_days' => $plan->custom_billing_days,
+            
+            'license_fee' => $plan->getLicenseFee($currency),
+            'has_license_fee' => $plan->hasLicenseFee(),
+            
+            'maintenance_fee' => $plan->getMaintenanceFee($currency),
+            'per_school_maintenance_fee' => $plan->getPerSchoolMaintenanceFee($currency),
+            'has_maintenance_fee' => $plan->hasMaintenanceFee(),
+            
+            // Monthly equivalent (for display)
+            'monthly_equivalent' => $plan->getMaintenanceFeeForPeriod($currency, 'monthly'),
+            
+            // Legacy fields
+            'price_yearly' => $plan->getPrice($currency),
+            'per_school_price' => $plan->getPerSchoolPrice($currency),
         ];
     }
 

@@ -13,6 +13,8 @@ import SubscriptionAdminDashboard from './pages/admin/SubscriptionAdminDashboard
 import PlansManagement from './pages/admin/PlansManagement';
 import RenewalReviewPage from './pages/admin/RenewalReviewPage';
 import PlatformSettings from './pages/admin/PlatformSettings';
+import MaintenanceFeesManagement from './pages/admin/MaintenanceFeesManagement';
+import LicenseFeesManagement from './pages/admin/LicenseFeesManagement';
 import { PlatformAdminDashboard } from './pages/PlatformAdminDashboard';
 import { PlatformAdminLogin } from './pages/PlatformAdminLogin';
 import { PlatformPermissionGroupsManagement } from './pages/PlatformPermissionGroupsManagement';
@@ -171,6 +173,16 @@ export function PlatformAdminApp() {
               <Route path="renewals/:renewalId" element={<RenewalReviewPage />} />
               <Route path="pending" element={<SubscriptionAdminDashboard />} />
               <Route path="admins" element={<PlatformAdminDashboard />} />
+              <Route path="maintenance-fees" element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <MaintenanceFeesManagement />
+                </Suspense>
+              } />
+              <Route path="license-fees" element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <LicenseFeesManagement />
+                </Suspense>
+              } />
               <Route path="permission-groups" element={<PlatformPermissionGroupsManagement />} />
               {/* CRITICAL: More specific routes must come before less specific ones */}
               <Route path="settings/translations" element={

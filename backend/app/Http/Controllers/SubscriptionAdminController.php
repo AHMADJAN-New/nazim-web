@@ -91,8 +91,24 @@ class SubscriptionAdminController extends Controller
             'name' => $plan->name,
             'slug' => $plan->slug,
             'description' => $plan->description,
+            // Legacy pricing fields (for backward compatibility)
             'price_yearly_afn' => $plan->price_yearly_afn,
             'price_yearly_usd' => $plan->price_yearly_usd,
+            // New fee separation fields
+            'billing_period' => $plan->billing_period ?? 'yearly',
+            'billing_period_label' => $plan->getBillingPeriodLabel(),
+            'billing_period_days' => $plan->getBillingPeriodDays(),
+            'custom_billing_days' => $plan->custom_billing_days,
+            'license_fee_afn' => $plan->license_fee_afn ?? 0,
+            'license_fee_usd' => $plan->license_fee_usd ?? 0,
+            'maintenance_fee_afn' => $plan->maintenance_fee_afn ?? $plan->price_yearly_afn ?? 0,
+            'maintenance_fee_usd' => $plan->maintenance_fee_usd ?? $plan->price_yearly_usd ?? 0,
+            'has_license_fee' => $plan->hasLicenseFee(),
+            'has_maintenance_fee' => $plan->hasMaintenanceFee(),
+            // Total fees (for display convenience)
+            'total_fee_afn' => ($plan->license_fee_afn ?? 0) + ($plan->maintenance_fee_afn ?? $plan->price_yearly_afn ?? 0),
+            'total_fee_usd' => ($plan->license_fee_usd ?? 0) + ($plan->maintenance_fee_usd ?? $plan->price_yearly_usd ?? 0),
+            // Other plan fields
             'is_active' => $plan->is_active,
             'is_default' => $plan->is_default,
             'is_custom' => $plan->is_custom,
@@ -261,8 +277,17 @@ class SubscriptionAdminController extends Controller
             'name' => 'required|string|max:100',
             'slug' => 'required|string|max:50|unique:subscription_plans,slug',
             'description' => 'nullable|string',
+            // Legacy pricing (still required for backward compatibility)
             'price_yearly_afn' => 'required|numeric|min:0',
             'price_yearly_usd' => 'required|numeric|min:0',
+            // New fee separation fields
+            'billing_period' => 'nullable|in:monthly,quarterly,yearly,custom',
+            'custom_billing_days' => 'nullable|integer|min:1|max:730',
+            'license_fee_afn' => 'nullable|numeric|min:0',
+            'license_fee_usd' => 'nullable|numeric|min:0',
+            'maintenance_fee_afn' => 'nullable|numeric|min:0',
+            'maintenance_fee_usd' => 'nullable|numeric|min:0',
+            // Other plan fields
             'trial_days' => 'integer|min:0',
             'grace_period_days' => 'integer|min:0',
             'readonly_period_days' => 'integer|min:0',
@@ -286,6 +311,15 @@ class SubscriptionAdminController extends Controller
                 'description' => $request->description,
                 'price_yearly_afn' => $request->price_yearly_afn,
                 'price_yearly_usd' => $request->price_yearly_usd,
+                // New fee separation fields
+                'billing_period' => $request->billing_period ?? 'yearly',
+                'custom_billing_days' => $request->custom_billing_days,
+                'license_fee_afn' => $request->license_fee_afn ?? 0,
+                'license_fee_usd' => $request->license_fee_usd ?? 0,
+                // If maintenance fees not provided, use legacy price_yearly as maintenance fee
+                'maintenance_fee_afn' => $request->maintenance_fee_afn ?? $request->price_yearly_afn,
+                'maintenance_fee_usd' => $request->maintenance_fee_usd ?? $request->price_yearly_usd,
+                // Other plan fields
                 'trial_days' => $request->trial_days ?? 0,
                 'grace_period_days' => $request->grace_period_days ?? 14,
                 'readonly_period_days' => $request->readonly_period_days ?? 60,
@@ -339,8 +373,17 @@ class SubscriptionAdminController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'string|max:100',
             'description' => 'nullable|string',
+            // Legacy pricing
             'price_yearly_afn' => 'numeric|min:0',
             'price_yearly_usd' => 'numeric|min:0',
+            // New fee separation fields
+            'billing_period' => 'nullable|in:monthly,quarterly,yearly,custom',
+            'custom_billing_days' => 'nullable|integer|min:1|max:730',
+            'license_fee_afn' => 'nullable|numeric|min:0',
+            'license_fee_usd' => 'nullable|numeric|min:0',
+            'maintenance_fee_afn' => 'nullable|numeric|min:0',
+            'maintenance_fee_usd' => 'nullable|numeric|min:0',
+            // Other plan fields
             'is_active' => 'boolean',
             'trial_days' => 'integer|min:0',
             'grace_period_days' => 'integer|min:0',
@@ -361,6 +404,11 @@ class SubscriptionAdminController extends Controller
         try {
             $plan->update($request->only([
                 'name', 'description', 'price_yearly_afn', 'price_yearly_usd',
+                // New fee separation fields
+                'billing_period', 'custom_billing_days',
+                'license_fee_afn', 'license_fee_usd',
+                'maintenance_fee_afn', 'maintenance_fee_usd',
+                // Other plan fields
                 'is_active', 'trial_days', 'grace_period_days', 'readonly_period_days',
                 'max_schools', 'per_school_price_afn', 'per_school_price_usd', 'sort_order',
             ]));
@@ -1708,5 +1756,343 @@ class SubscriptionAdminController extends Controller
             'data' => $processed,
             'message' => 'Status transitions processed',
         ]);
+    }
+
+    // =====================================================
+    // MAINTENANCE FEES (PLATFORM ADMIN)
+    // =====================================================
+
+    /**
+     * Get all maintenance fees overview (platform-wide)
+     */
+    public function listMaintenanceFees(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            $maintenanceFeeService = app(\App\Services\Subscription\MaintenanceFeeService::class);
+
+            // Get all subscriptions with maintenance info
+            $subscriptions = OrganizationSubscription::with(['plan', 'organization'])
+                ->whereNull('deleted_at')
+                ->whereIn('status', [
+                    OrganizationSubscription::STATUS_ACTIVE,
+                    OrganizationSubscription::STATUS_GRACE_PERIOD,
+                    OrganizationSubscription::STATUS_TRIAL,
+                ])
+                ->orderBy('next_maintenance_due_at')
+                ->paginate($request->per_page ?? 20);
+
+            $subscriptions->getCollection()->transform(function ($subscription) use ($maintenanceFeeService) {
+                $currency = $subscription->currency ?? 'AFN';
+                return [
+                    'subscription_id' => $subscription->id,
+                    'organization_id' => $subscription->organization_id,
+                    'organization_name' => $subscription->organization?->name,
+                    'plan_name' => $subscription->plan?->name,
+                    'status' => $subscription->status,
+                    'billing_period' => $subscription->billing_period,
+                    'billing_period_label' => $subscription->getBillingPeriodLabel(),
+                    'next_maintenance_due_at' => $subscription->next_maintenance_due_at?->toDateString(),
+                    'last_maintenance_paid_at' => $subscription->last_maintenance_paid_at?->toDateString(),
+                    'is_overdue' => $subscription->isMaintenanceOverdue(),
+                    'days_until_due' => $subscription->daysUntilMaintenanceDue(),
+                    'days_overdue' => $subscription->daysMaintenanceOverdue(),
+                    'maintenance_amount' => $maintenanceFeeService->calculateMaintenanceAmount($subscription, $currency),
+                    'currency' => $currency,
+                ];
+            });
+
+            return response()->json($subscriptions);
+        } catch (\Exception $e) {
+            \Log::error('Failed to list maintenance fees: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to list maintenance fees'], 500);
+        }
+    }
+
+    /**
+     * Get overdue maintenance fees (platform-wide)
+     */
+    public function listOverdueMaintenanceFees(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            $maintenanceFeeService = app(\App\Services\Subscription\MaintenanceFeeService::class);
+            $overdue = $maintenanceFeeService->getOverdueMaintenance();
+
+            return response()->json([
+                'data' => $overdue,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to list overdue maintenance fees: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to list overdue maintenance fees'], 500);
+        }
+    }
+
+    /**
+     * Generate maintenance invoices for due subscriptions
+     */
+    public function generateMaintenanceInvoices(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $validator = Validator::make($request->all(), [
+            'days_before_due' => 'integer|min:1|max:90',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 422);
+        }
+
+        try {
+            $maintenanceFeeService = app(\App\Services\Subscription\MaintenanceFeeService::class);
+            $daysBeforeDue = $request->days_before_due ?? 30;
+            
+            $invoices = $maintenanceFeeService->generateInvoices($daysBeforeDue);
+
+            return response()->json([
+                'data' => [
+                    'generated_count' => $invoices->count(),
+                    'invoices' => $invoices->map(function ($invoice) {
+                        return [
+                            'id' => $invoice->id,
+                            'invoice_number' => $invoice->invoice_number,
+                            'organization_id' => $invoice->organization_id,
+                            'amount' => $invoice->amount,
+                            'currency' => $invoice->currency,
+                            'due_date' => $invoice->due_date?->toDateString(),
+                        ];
+                    }),
+                ],
+                'message' => "Generated {$invoices->count()} maintenance invoice(s)",
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to generate maintenance invoices: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to generate invoices: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * List all maintenance invoices (platform-wide)
+     */
+    public function listMaintenanceInvoices(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            $query = \App\Models\MaintenanceInvoice::with(['organization', 'subscription.plan'])
+                ->orderBy('due_date', 'desc');
+
+            // Filter by status
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+
+            // Filter by organization
+            if ($request->has('organization_id')) {
+                $query->where('organization_id', $request->organization_id);
+            }
+
+            // Filter by overdue
+            if ($request->boolean('overdue')) {
+                $query->overdue();
+            }
+
+            // Filter by due soon
+            if ($request->has('due_within_days')) {
+                $query->dueSoon($request->due_within_days);
+            }
+
+            $invoices = $query->paginate($request->per_page ?? 20);
+
+            $invoices->getCollection()->transform(function ($invoice) {
+                return [
+                    'id' => $invoice->id,
+                    'invoice_number' => $invoice->invoice_number,
+                    'organization_id' => $invoice->organization_id,
+                    'organization_name' => $invoice->organization?->name,
+                    'subscription_id' => $invoice->subscription_id,
+                    'plan_name' => $invoice->subscription?->plan?->name,
+                    'amount' => $invoice->amount,
+                    'currency' => $invoice->currency,
+                    'billing_period' => $invoice->billing_period,
+                    'billing_period_label' => $invoice->getBillingPeriodLabel(),
+                    'period_start' => $invoice->period_start?->toDateString(),
+                    'period_end' => $invoice->period_end?->toDateString(),
+                    'due_date' => $invoice->due_date?->toDateString(),
+                    'status' => $invoice->status,
+                    'status_label' => $invoice->getStatusLabel(),
+                    'is_overdue' => $invoice->isOverdue(),
+                    'days_until_due' => $invoice->daysUntilDue(),
+                    'days_overdue' => $invoice->daysOverdue(),
+                    'generated_at' => $invoice->generated_at?->toISOString(),
+                    'paid_at' => $invoice->paid_at?->toISOString(),
+                ];
+            });
+
+            return response()->json($invoices);
+        } catch (\Exception $e) {
+            \Log::error('Failed to list maintenance invoices: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to list maintenance invoices'], 500);
+        }
+    }
+
+    /**
+     * Confirm a maintenance fee payment (by platform admin)
+     */
+    public function confirmMaintenancePayment(Request $request, string $paymentId)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $user = $request->user();
+
+        try {
+            $payment = PaymentRecord::findOrFail($paymentId);
+
+            if ($payment->payment_type !== PaymentRecord::TYPE_MAINTENANCE) {
+                return response()->json(['error' => 'Payment is not a maintenance fee payment'], 400);
+            }
+
+            if (!$payment->isPending()) {
+                return response()->json(['error' => 'Payment is not pending'], 400);
+            }
+
+            $maintenanceFeeService = app(\App\Services\Subscription\MaintenanceFeeService::class);
+            $confirmedPayment = $maintenanceFeeService->confirmMaintenancePayment($payment, $user->id);
+
+            return response()->json([
+                'data' => $confirmedPayment,
+                'message' => 'Maintenance payment confirmed successfully',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to confirm maintenance payment: ' . $e->getMessage(), [
+                'payment_id' => $paymentId,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to confirm payment: ' . $e->getMessage()], 500);
+        }
+    }
+
+    // =====================================================
+    // LICENSE FEES (PLATFORM ADMIN)
+    // =====================================================
+
+    /**
+     * Get all unpaid license fees (platform-wide)
+     */
+    public function listUnpaidLicenseFees(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            $licenseFeeService = app(\App\Services\Subscription\LicenseFeeService::class);
+            $unpaid = $licenseFeeService->getUnpaidLicenseFees();
+
+            return response()->json([
+                'data' => $unpaid,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to list unpaid license fees: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to list unpaid license fees'], 500);
+        }
+    }
+
+    /**
+     * Confirm a license fee payment (by platform admin)
+     */
+    public function confirmLicensePayment(Request $request, string $paymentId)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $user = $request->user();
+
+        try {
+            $payment = PaymentRecord::findOrFail($paymentId);
+
+            if ($payment->payment_type !== PaymentRecord::TYPE_LICENSE) {
+                return response()->json(['error' => 'Payment is not a license fee payment'], 400);
+            }
+
+            if (!$payment->isPending()) {
+                return response()->json(['error' => 'Payment is not pending'], 400);
+            }
+
+            $licenseFeeService = app(\App\Services\Subscription\LicenseFeeService::class);
+            $confirmedPayment = $licenseFeeService->confirmLicensePayment($payment, $user->id);
+
+            return response()->json([
+                'data' => $confirmedPayment,
+                'message' => 'License payment confirmed successfully',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to confirm license payment: ' . $e->getMessage(), [
+                'payment_id' => $paymentId,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to confirm payment: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * List all license fee payments (platform-wide)
+     */
+    public function listLicensePayments(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            $query = PaymentRecord::with(['organization', 'subscription.plan'])
+                ->licensePayments()
+                ->orderBy('payment_date', 'desc');
+
+            // Filter by status
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+
+            // Filter by organization
+            if ($request->has('organization_id')) {
+                $query->where('organization_id', $request->organization_id);
+            }
+
+            $payments = $query->paginate($request->per_page ?? 20);
+
+            $payments->getCollection()->transform(function ($payment) {
+                return [
+                    'id' => $payment->id,
+                    'organization_id' => $payment->organization_id,
+                    'organization_name' => $payment->organization?->name,
+                    'subscription_id' => $payment->subscription_id,
+                    'plan_name' => $payment->subscription?->plan?->name,
+                    'amount' => $payment->amount,
+                    'currency' => $payment->currency,
+                    'payment_method' => $payment->payment_method,
+                    'payment_reference' => $payment->payment_reference,
+                    'payment_date' => $payment->payment_date?->toDateString(),
+                    'status' => $payment->status,
+                    'payment_type' => $payment->payment_type,
+                    'confirmed_at' => $payment->confirmed_at?->toISOString(),
+                    'notes' => $payment->notes,
+                ];
+            });
+
+            return response()->json($payments);
+        } catch (\Exception $e) {
+            \Log::error('Failed to list license payments: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to list license payments'], 500);
+        }
     }
 }

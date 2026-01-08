@@ -150,6 +150,8 @@ export const EventUsersPage = lazy(() => import('@/pages/events/EventUsersPage')
 export const SubscriptionPage = lazy(() => import('@/pages/subscription/SubscriptionPage').then(module => ({ default: module.default })));
 export const PlansPage = lazy(() => import('@/pages/subscription/PlansPage').then(module => ({ default: module.default })));
 export const RenewPage = lazy(() => import('@/pages/subscription/RenewPage').then(module => ({ default: module.default })));
+export const MaintenanceFeesPage = lazy(() => import('@/pages/subscription/MaintenanceFeesPage').then(module => ({ default: module.default })));
+export const LicenseFeesPage = lazy(() => import('@/pages/subscription/LicenseFeesPage').then(module => ({ default: module.default })));
 
 // Subscription admin pages
 export const SubscriptionAdminDashboard = lazy(() => import('@/platform/pages/admin/SubscriptionAdminDashboard').then(module => ({ default: module.default })));
@@ -163,6 +165,8 @@ export const MaintenanceHistory = lazy(() => import('@/platform/pages/admin/Main
 export const TranslationsManagement = lazy(() => import('@/platform/pages/admin/TranslationsManagement').then(module => ({ default: module.default })));
 export const RenewalReviewPage = lazy(() => import('@/pages/subscription/admin/RenewalReviewPage').then(module => ({ default: module.default })));
 export const DiscountCodesManagement = lazy(() => import('@/pages/subscription/admin/DiscountCodesManagement').then(module => ({ default: module.default })));
+export const MaintenanceFeesManagement = lazy(() => import('@/platform/pages/admin/MaintenanceFeesManagement').then(module => ({ default: module.default })));
+export const LicenseFeesManagement = lazy(() => import('@/platform/pages/admin/LicenseFeesManagement').then(module => ({ default: module.default })));
 
 // Re-export loading components for backward compatibility
 export { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';

@@ -92,6 +92,8 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\HelpCenterCategoryController;
 use App\Http\Controllers\HelpCenterArticleController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\MaintenanceFeeController;
+use App\Http\Controllers\LicenseFeeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -1235,7 +1237,11 @@ Route::post('/contact', [ContactMessageController::class, 'store']);
 
 // Authenticated subscription routes (require organization context)
 Route::middleware(['auth:sanctum', 'organization'])->prefix('subscription')->group(function () {
-    // Current subscription status
+    // Current subscription status (lite version - no permission required, for all users)
+    // CRITICAL: This endpoint is used for frontend gating and must be accessible to ALL authenticated users
+    Route::get('/status-lite', [SubscriptionController::class, 'statusLite']);
+    
+    // Current subscription status (full version - requires subscription.read permission)
     Route::get('/status', [SubscriptionController::class, 'status']);
     Route::get('/usage', [SubscriptionController::class, 'usage']);
     Route::get('/features', [SubscriptionController::class, 'features']);
@@ -1254,6 +1260,23 @@ Route::middleware(['auth:sanctum', 'organization'])->prefix('subscription')->gro
     
     // History
     Route::get('/history', [SubscriptionController::class, 'subscriptionHistory']);
+    
+    // Maintenance Fees (recurring payments)
+    Route::prefix('maintenance-fees')->group(function () {
+        Route::get('/', [MaintenanceFeeController::class, 'status']);
+        Route::get('/upcoming', [MaintenanceFeeController::class, 'upcoming']);
+        Route::get('/invoices', [MaintenanceFeeController::class, 'invoices']);
+        Route::get('/invoices/{id}', [MaintenanceFeeController::class, 'showInvoice']);
+        Route::post('/pay', [MaintenanceFeeController::class, 'submitPayment']);
+        Route::get('/payment-history', [MaintenanceFeeController::class, 'paymentHistory']);
+    });
+    
+    // License Fees (one-time payments)
+    Route::prefix('license-fees')->group(function () {
+        Route::get('/', [LicenseFeeController::class, 'status']);
+        Route::post('/pay', [LicenseFeeController::class, 'submitPayment']);
+        Route::get('/payment-history', [LicenseFeeController::class, 'paymentHistory']);
+    });
 });
 
 // Platform Admin routes (requires subscription.admin permission - GLOBAL, not organization-scoped)
@@ -1326,6 +1349,22 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     
     // System Operations
     Route::post('/process-transitions', [SubscriptionAdminController::class, 'processStatusTransitions']);
+    
+    // Maintenance Fees (Platform Admin)
+    Route::prefix('maintenance-fees')->group(function () {
+        Route::get('/', [SubscriptionAdminController::class, 'listMaintenanceFees']);
+        Route::get('/overdue', [SubscriptionAdminController::class, 'listOverdueMaintenanceFees']);
+        Route::get('/invoices', [SubscriptionAdminController::class, 'listMaintenanceInvoices']);
+        Route::post('/generate-invoices', [SubscriptionAdminController::class, 'generateMaintenanceInvoices']);
+        Route::post('/payments/{paymentId}/confirm', [SubscriptionAdminController::class, 'confirmMaintenancePayment']);
+    });
+    
+    // License Fees (Platform Admin)
+    Route::prefix('license-fees')->group(function () {
+        Route::get('/unpaid', [SubscriptionAdminController::class, 'listUnpaidLicenseFees']);
+        Route::get('/payments', [SubscriptionAdminController::class, 'listLicensePayments']);
+        Route::post('/payments/{paymentId}/confirm', [SubscriptionAdminController::class, 'confirmLicensePayment']);
+    });
     
     // Platform admin permissions (global, not organization-scoped)
     Route::get('/permissions/platform-admin', [PermissionController::class, 'platformAdminPermissions']);

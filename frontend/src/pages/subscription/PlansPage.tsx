@@ -57,30 +57,34 @@ export default function PlansPage() {
           <div>
             <h4 className="font-medium">What happens when my subscription expires?</h4>
             <p className="text-muted-foreground text-sm mt-1">
-              After your subscription expires, you have a 14-day grace period with full access. 
-              After that, your account enters a 2-month read-only mode where you can view but not edit data. 
-              After the read-only period, your account will be blocked until renewal.
+              After your subscription expires, you have a 14-day grace period with full access to all features. 
+              During this grace period, you can continue using the system normally while you renew your subscription. 
+              After the grace period ends, your account enters a 60-day (2-month) read-only mode where you can view 
+              but not edit data. After the read-only period ends, your account will be completely blocked until renewal.
             </p>
           </div>
           <div>
             <h4 className="font-medium">How do I pay for my subscription?</h4>
             <p className="text-muted-foreground text-sm mt-1">
               We accept manual payments including bank transfer, cash, check, and mobile money. 
-              After submitting your payment details, our team will verify and activate your subscription.
+              After submitting your payment details through the renewal request form, our team will verify 
+              and activate your subscription. You will receive a confirmation once your payment is processed.
             </p>
           </div>
           <div>
             <h4 className="font-medium">Can I add more schools later?</h4>
             <p className="text-muted-foreground text-sm mt-1">
               Yes! Enterprise plan supports multiple schools. You can add additional schools as add-ons 
-              to your subscription at any time.
+              to your subscription at any time. Additional schools are billed at a per-school rate and 
+              will be added to your current subscription period.
             </p>
           </div>
           <div>
             <h4 className="font-medium">Can I upgrade my plan?</h4>
             <p className="text-muted-foreground text-sm mt-1">
               Yes, you can upgrade to a higher plan at any time. The price difference will be calculated 
-              based on your remaining subscription period.
+              based on your remaining subscription period, and you will only pay the prorated difference 
+              for the time remaining in your current billing cycle.
             </p>
           </div>
         </CardContent>

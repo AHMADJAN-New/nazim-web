@@ -163,6 +163,8 @@ import {
   SubscriptionPage,
   PlansPage,
   RenewPage,
+  MaintenanceFeesPage,
+  LicenseFeesPage,
   SubscriptionAdminDashboard,
   PendingActionsPage,
   AllSubscriptionsPage,
@@ -170,6 +172,8 @@ import {
   OrganizationSubscriptionDetail,
   RenewalReviewPage,
   DiscountCodesManagement,
+  MaintenanceFeesManagement,
+  LicenseFeesManagement,
   PlatformSettings,
   TranslationsManagement,
   HelpCenterManagement,
@@ -335,6 +339,16 @@ const App = () => (
                     <Route path="discount-codes" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <DiscountCodesManagement />
+                      </Suspense>
+                    } />
+                    <Route path="maintenance-fees" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <MaintenanceFeesManagement />
+                      </Suspense>
+                    } />
+                    <Route path="license-fees" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <LicenseFeesManagement />
                       </Suspense>
                     } />
                     {/* CRITICAL: More specific routes must come before less specific ones */}
@@ -1456,27 +1470,32 @@ const App = () => (
                       </PermissionRoute>
                     } />
 
-                    {/* Subscription routes - Only accessible to admin and organization_admin */}
+                    {/* Subscription routes - Accessible to ALL authenticated users (needed for expired subscriptions) */}
+                    {/* CRITICAL: These routes must NOT require subscription.read permission because users with expired subscriptions need to access them */}
                     <Route path="/subscription" element={
-                      <PermissionRoute permission="subscription.read">
-                        <Suspense fallback={<PageSkeleton />}>
-                          <SubscriptionPage />
-                        </Suspense>
-                      </PermissionRoute>
+                      <Suspense fallback={<PageSkeleton />}>
+                        <SubscriptionPage />
+                      </Suspense>
                     } />
                     <Route path="/subscription/plans" element={
-                      <PermissionRoute permission="subscription.read">
-                        <Suspense fallback={<PageSkeleton />}>
-                          <PlansPage />
-                        </Suspense>
-                      </PermissionRoute>
+                      <Suspense fallback={<PageSkeleton />}>
+                        <PlansPage />
+                      </Suspense>
                     } />
                     <Route path="/subscription/renew" element={
-                      <PermissionRoute permission="subscription.read">
-                        <Suspense fallback={<PageSkeleton />}>
-                          <RenewPage />
-                        </Suspense>
-                      </PermissionRoute>
+                      <Suspense fallback={<PageSkeleton />}>
+                        <RenewPage />
+                      </Suspense>
+                    } />
+                    <Route path="/subscription/maintenance-fees" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <MaintenanceFeesPage />
+                      </Suspense>
+                    } />
+                    <Route path="/subscription/license-fees" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <LicenseFeesPage />
+                      </Suspense>
                     } />
 
                   {/* Catch-all route */}

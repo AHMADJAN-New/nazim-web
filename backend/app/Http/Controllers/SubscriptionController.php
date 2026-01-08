@@ -61,8 +61,24 @@ class SubscriptionController extends Controller
                     'name' => $plan->name,
                     'slug' => $plan->slug,
                     'description' => $plan->description,
+                    // Legacy pricing fields (for backward compatibility)
                     'price_yearly_afn' => $plan->price_yearly_afn,
                     'price_yearly_usd' => $plan->price_yearly_usd,
+                    // New fee separation fields
+                    'billing_period' => $plan->billing_period ?? 'yearly',
+                    'billing_period_label' => $plan->getBillingPeriodLabel(),
+                    'billing_period_days' => $plan->getBillingPeriodDays(),
+                    'custom_billing_days' => $plan->custom_billing_days,
+                    'license_fee_afn' => $plan->license_fee_afn ?? 0,
+                    'license_fee_usd' => $plan->license_fee_usd ?? 0,
+                    'maintenance_fee_afn' => $plan->maintenance_fee_afn ?? $plan->price_yearly_afn ?? 0,
+                    'maintenance_fee_usd' => $plan->maintenance_fee_usd ?? $plan->price_yearly_usd ?? 0,
+                    'has_license_fee' => $plan->hasLicenseFee(),
+                    'has_maintenance_fee' => $plan->hasMaintenanceFee(),
+                    // Total fees (for display convenience)
+                    'total_fee_afn' => ($plan->license_fee_afn ?? 0) + ($plan->maintenance_fee_afn ?? $plan->price_yearly_afn ?? 0),
+                    'total_fee_usd' => ($plan->license_fee_usd ?? 0) + ($plan->maintenance_fee_usd ?? $plan->price_yearly_usd ?? 0),
+                    // Other plan fields
                     'is_active' => $plan->is_active,
                     'is_default' => $plan->is_default,
                     'is_custom' => $plan->is_custom,
@@ -77,19 +93,81 @@ class SubscriptionController extends Controller
                     'limits' => $plan->limits->mapWithKeys(function ($limit) {
                         return [$limit->resource_key => $limit->limit_value];
                     }),
-                    'created_at' => $plan->created_at->toISOString(),
-                    'updated_at' => $plan->updated_at->toISOString(),
+                    'created_at' => $plan->created_at?->toISOString(),
+                    'updated_at' => $plan->updated_at?->toISOString(),
                     'deleted_at' => $plan->deleted_at?->toISOString(),
-                    'created_at' => $plan->created_at,
-                    'updated_at' => $plan->updated_at,
-                    'deleted_at' => $plan->deleted_at,
                 ];
             }),
         ]);
     }
 
     /**
-     * Get current subscription status
+     * Get current subscription status (lite version - no permission required)
+     * 
+     * CRITICAL: This endpoint is used for frontend gating and must be accessible to ALL authenticated users.
+     * It returns only the minimal information needed for access control decisions.
+     * No sensitive subscription details (plan, pricing, etc.) are exposed.
+     */
+    public function statusLite(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        $organizationId = $profile->organization_id;
+        $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
+
+        if (!$subscription) {
+            return response()->json([
+                'data' => [
+                    'status' => 'none',
+                    'access_level' => 'none',
+                    'can_read' => false,
+                    'can_write' => false,
+                    'trial_ends_at' => null,
+                    'grace_period_ends_at' => null,
+                    'readonly_period_ends_at' => null,
+                    'message' => 'No active subscription',
+                ],
+            ]);
+        }
+
+        $accessLevel = $this->featureGateService->getAccessLevel($organizationId);
+        $canRead = $this->featureGateService->canRead($organizationId);
+        $canWrite = $this->featureGateService->canWrite($organizationId);
+
+        // Determine message based on status
+        $message = match ($subscription->status) {
+            OrganizationSubscription::STATUS_TRIAL => "Trial period - {$subscription->trialDaysLeft()} days left",
+            OrganizationSubscription::STATUS_ACTIVE => "Active subscription",
+            OrganizationSubscription::STATUS_PENDING_RENEWAL => "Subscription expired - please renew",
+            OrganizationSubscription::STATUS_GRACE_PERIOD => "Grace period - please renew to continue",
+            OrganizationSubscription::STATUS_READONLY => "Read-only mode - please renew to regain full access",
+            OrganizationSubscription::STATUS_EXPIRED => "Subscription expired - please renew",
+            OrganizationSubscription::STATUS_SUSPENDED => "Account suspended: " . ($subscription->suspension_reason ?? 'Contact support'),
+            OrganizationSubscription::STATUS_CANCELLED => "Subscription cancelled",
+            default => "Unknown status",
+        };
+
+        return response()->json([
+            'data' => [
+                'status' => $subscription->status,
+                'access_level' => $accessLevel,
+                'can_read' => $canRead,
+                'can_write' => $canWrite,
+                'trial_ends_at' => $subscription->trial_ends_at?->toISOString(),
+                'grace_period_ends_at' => $subscription->grace_period_ends_at?->toISOString(),
+                'readonly_period_ends_at' => $subscription->readonly_period_ends_at?->toISOString(),
+                'message' => $message,
+            ],
+        ]);
+    }
+
+    /**
+     * Get current subscription status (full version - requires subscription.read permission)
      */
     public function status(Request $request)
     {

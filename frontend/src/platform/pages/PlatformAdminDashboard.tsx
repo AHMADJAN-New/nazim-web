@@ -224,9 +224,10 @@ export function PlatformAdminDashboard() {
                       <div className="flex-1">
                         <div className="h-4 w-full overflow-hidden rounded-full bg-muted">
                           <div
-                            className="h-full bg-primary"
+                            className="h-full"
                             style={{
                               width: `${((count as number) / Math.max(stats.totalOrganizations, 1)) * 100}%`,
+                              backgroundColor: '#f59e0b', // amber-500 - vibrant yellow/amber color
                             }}
                           />
                         </div>

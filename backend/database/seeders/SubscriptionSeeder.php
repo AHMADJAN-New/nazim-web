@@ -128,6 +128,14 @@ class SubscriptionSeeder extends Seeder
                 'name' => 'Trial',
                 'slug' => 'trial',
                 'description' => '7-day free trial with full features but limited counts',
+                // New fee separation structure
+                'billing_period' => 'yearly',
+                'license_fee_afn' => 0,
+                'license_fee_usd' => 0,
+                'maintenance_fee_afn' => 0,
+                'maintenance_fee_usd' => 0,
+                'custom_billing_days' => null,
+                // Legacy pricing (auto-calculated from maintenance_fee for yearly)
                 'price_yearly_afn' => 0,
                 'price_yearly_usd' => 0,
                 'is_default' => true,
@@ -159,6 +167,14 @@ class SubscriptionSeeder extends Seeder
                 'name' => 'Starter',
                 'slug' => 'starter',
                 'description' => 'For small madrasas with up to 50 students',
+                // New fee separation structure
+                'billing_period' => 'yearly',
+                'license_fee_afn' => 0,
+                'license_fee_usd' => 0,
+                'maintenance_fee_afn' => 5000,
+                'maintenance_fee_usd' => 60,
+                'custom_billing_days' => null,
+                // Legacy pricing (auto-calculated from maintenance_fee for yearly)
                 'price_yearly_afn' => 5000,
                 'price_yearly_usd' => 60,
                 'is_default' => false,
@@ -190,6 +206,14 @@ class SubscriptionSeeder extends Seeder
                 'name' => 'Basic',
                 'slug' => 'basic',
                 'description' => 'For small schools with up to 200 students',
+                // New fee separation structure
+                'billing_period' => 'yearly',
+                'license_fee_afn' => 0,
+                'license_fee_usd' => 0,
+                'maintenance_fee_afn' => 15000,
+                'maintenance_fee_usd' => 180,
+                'custom_billing_days' => null,
+                // Legacy pricing (auto-calculated from maintenance_fee for yearly)
                 'price_yearly_afn' => 15000,
                 'price_yearly_usd' => 180,
                 'is_default' => false,
@@ -221,6 +245,14 @@ class SubscriptionSeeder extends Seeder
                 'name' => 'Pro',
                 'slug' => 'pro',
                 'description' => 'For medium schools with up to 1000 students',
+                // New fee separation structure
+                'billing_period' => 'yearly',
+                'license_fee_afn' => 0,
+                'license_fee_usd' => 0,
+                'maintenance_fee_afn' => 35000,
+                'maintenance_fee_usd' => 420,
+                'custom_billing_days' => null,
+                // Legacy pricing (auto-calculated from maintenance_fee for yearly)
                 'price_yearly_afn' => 35000,
                 'price_yearly_usd' => 420,
                 'is_default' => false,
@@ -252,6 +284,14 @@ class SubscriptionSeeder extends Seeder
                 'name' => 'Enterprise',
                 'slug' => 'enterprise',
                 'description' => 'For large schools and multi-school organizations',
+                // New fee separation structure
+                'billing_period' => 'yearly',
+                'license_fee_afn' => 0,
+                'license_fee_usd' => 0,
+                'maintenance_fee_afn' => 75000,
+                'maintenance_fee_usd' => 900,
+                'custom_billing_days' => null,
+                // Legacy pricing (auto-calculated from maintenance_fee for yearly)
                 'price_yearly_afn' => 75000,
                 'price_yearly_usd' => 900,
                 'is_default' => false,

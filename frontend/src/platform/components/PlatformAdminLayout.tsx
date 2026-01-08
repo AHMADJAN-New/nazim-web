@@ -17,6 +17,8 @@ import {
   Languages,
   ChevronDown,
   ChevronRight,
+  DollarSign,
+  Lock,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -106,6 +108,18 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       href: '/platform/discount-codes', 
       icon: Ticket,
       description: 'Manage discount codes'
+    },
+    { 
+      name: 'Maintenance Fees', 
+      href: '/platform/maintenance-fees', 
+      icon: RefreshCw,
+      description: 'Manage maintenance fees across all organizations'
+    },
+    { 
+      name: 'License Fees', 
+      href: '/platform/license-fees', 
+      icon: Lock,
+      description: 'Manage license fee payments across all organizations'
     },
     { 
       name: 'Settings', 

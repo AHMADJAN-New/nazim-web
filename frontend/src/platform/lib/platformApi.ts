@@ -68,6 +68,35 @@ export const platformApi = {
     recalculateUsage: async (organizationId: string) => {
       return apiClient.post(`/platform/organizations/${organizationId}/recalculate-usage`);
     },
+    submitLicensePayment: async (organizationId: string, data: {
+      subscription_id: string;
+      amount: number;
+      currency: 'AFN' | 'USD';
+      payment_method: string;
+      payment_reference?: string;
+      payment_date: string;
+      notes?: string;
+    }) => {
+      return apiClient.post<{ data: SubscriptionApi.PaymentRecord }>(
+        `/platform/organizations/${organizationId}/license-payment`,
+        data
+      );
+    },
+    submitMaintenancePayment: async (organizationId: string, data: {
+      subscription_id: string;
+      invoice_id?: string;
+      amount: number;
+      currency: 'AFN' | 'USD';
+      payment_method: string;
+      payment_reference?: string;
+      payment_date: string;
+      notes?: string;
+    }) => {
+      return apiClient.post<{ data: SubscriptionApi.PaymentRecord }>(
+        `/platform/organizations/${organizationId}/maintenance-payment`,
+        data
+      );
+    },
   },
 
   // Payments
@@ -553,6 +582,103 @@ export const platformApi = {
       const formData = new FormData();
       formData.append('backup_file', file);
       return apiClient.post('/platform/backups/upload-restore', formData, { headers: {} });
+    },
+  },
+
+  // Maintenance Fees (Platform Admin)
+  maintenanceFees: {
+    list: async (params?: { 
+      billing_period?: string; 
+      status?: string; 
+      page?: number; 
+      per_page?: number;
+    }) => {
+      return apiClient.get<{
+        data: Array<{
+          organization_id: string;
+          organization_name: string;
+          subscription_id: string;
+          billing_period: SubscriptionApi.BillingPeriod;
+          next_due_date: string | null;
+          last_paid_date: string | null;
+          is_overdue: boolean;
+          days_until_due: number | null;
+          days_overdue: number;
+          amount: number;
+          currency: 'AFN' | 'USD';
+        }>;
+        current_page: number;
+        last_page: number;
+        total: number;
+      }>('/platform/maintenance-fees', params);
+    },
+    overdue: async () => {
+      return apiClient.get<{
+        data: Array<{
+          organization_id: string;
+          organization_name: string;
+          subscription_id: string;
+          billing_period: SubscriptionApi.BillingPeriod;
+          next_due_date: string | null;
+          last_paid_date: string | null;
+          is_overdue: boolean;
+          days_overdue: number;
+          amount: number;
+          currency: 'AFN' | 'USD';
+        }>;
+      }>('/platform/maintenance-fees/overdue');
+    },
+    invoices: async (params?: {
+      organization_id?: string;
+      status?: string;
+      page?: number;
+      per_page?: number;
+    }) => {
+      return apiClient.get<{
+        data: SubscriptionApi.MaintenanceInvoice[];
+        current_page: number;
+        last_page: number;
+        total: number;
+      }>('/platform/maintenance-fees/invoices', params);
+    },
+    generateInvoices: async (data?: {
+      organization_ids?: string[];
+      billing_period?: SubscriptionApi.BillingPeriod;
+    }) => {
+      return apiClient.post<{
+        data: {
+          generated: number;
+          skipped: number;
+          invoices: SubscriptionApi.MaintenanceInvoice[];
+        };
+      }>('/platform/maintenance-fees/generate-invoices', data);
+    },
+    confirmPayment: async (paymentId: string) => {
+      return apiClient.post(`/platform/maintenance-fees/payments/${paymentId}/confirm`);
+    },
+  },
+
+  // License Fees (Platform Admin)
+  licenseFees: {
+    unpaid: async (params?: {
+      page?: number;
+      per_page?: number;
+    }) => {
+      return apiClient.get<{
+        data: Array<{
+          organization_id: string;
+          organization_name: string;
+          subscription_id: string;
+          license_paid: boolean;
+          license_paid_at: string | null;
+          license_pending: boolean;
+          license_amount: number;
+          currency: 'AFN' | 'USD';
+        }>;
+        current_page: number;
+        last_page: number;
+        total: number;
+      }>('/platform/license-fees/unpaid', params);
     },
   },
 
