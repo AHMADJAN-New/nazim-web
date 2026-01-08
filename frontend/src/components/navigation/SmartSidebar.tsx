@@ -75,8 +75,35 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { useCurrentOrganization } from "@/hooks/useOrganizations";
 import { useHasPermissionAndFeature, useUserPermissions } from "@/hooks/usePermissions";
 import { useProfile } from "@/hooks/useProfiles";
+import { useSubscriptionGateStatus, type SubscriptionGateStatus } from "@/hooks/useSubscription";
 import { useUserRole } from "@/hooks/useUserRole";
 import type { UserRole } from "@/types/auth";
+
+/**
+ * Helper function to determine if subscription access is blocked
+ * CRITICAL: This is the single source of truth for subscription access gating (shared with ProtectedRoute)
+ */
+function isSubscriptionBlocked(gateStatus: SubscriptionGateStatus | null): boolean {
+  if (!gateStatus) return false;
+  
+  const { status, accessLevel, trialEndsAt } = gateStatus;
+  
+  // Check if trial is expired (trial_ends_at is in the past and status is 'trial')
+  const isTrialExpired = status === 'trial' && 
+    trialEndsAt && 
+    trialEndsAt < new Date();
+  
+  // Blocked when:
+  // - status is suspended, expired, or cancelled
+  // - accessLevel is 'blocked' or 'none'
+  // - trial has expired
+  return status === 'suspended' || 
+    status === 'expired' || 
+    status === 'cancelled' ||
+    isTrialExpired ||
+    accessLevel === 'blocked' || 
+    accessLevel === 'none';
+}
 
 interface NavigationChild {
   title: string;
@@ -172,6 +199,16 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const role = roleFromAuth || roleFromHook;
   const { data: currentOrg } = useCurrentOrganization();
   const { data: permissions, isLoading: permissionsLoading } = useUserPermissions();
+  // CRITICAL: Use the lite gate status hook (no permission required) for access gating
+  const { data: gateStatus, isLoading: gateStatusLoading } = useSubscriptionGateStatus();
+  const location = useLocation();
+  
+  // CRITICAL: Check if subscription is blocked (expired, suspended, trial ended, etc.)
+  // When blocked, sidebar should show NO navigation items
+  const subscriptionBlocked = isSubscriptionBlocked(gateStatus);
+  
+  // Check if user is on the subscription page (allowed even when blocked)
+  const isOnSubscriptionPage = location.pathname.startsWith('/subscription');
   const hasSettingsPermission = useHasPermissionAndFeature('settings.read');
   const hasHelpCenterPermission = useHasPermissionAndFeature('help_center.read');
   const hasBuildingsPermission = useHasPermissionAndFeature('buildings.read');
@@ -286,7 +323,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   // Phone Book permission - user needs at least one of these permissions
   const hasPhoneBookPermission = hasStudentsPermission || hasStaffPermission || hasDonorsPermission || hasEventGuestsPermission;
 
-  const location = useLocation();
+  // NOTE: 'location' is already declared above at line 177 - do not redeclare
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [navigationContext, setNavigationContext] = useState<NavigationContext>({
     currentModule: 'dashboard',
@@ -317,6 +354,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
   // Context-aware navigation items - computed with useMemo to avoid hook order issues
   const allNavigationItems = useMemo((): NavigationItem[] => {
+    // CRITICAL: When subscription is blocked and user is NOT on subscription page,
+    // show NO navigation items. This forces them to stay on the subscription page.
+    if (subscriptionBlocked && !isOnSubscriptionPage) {
+      return [];
+    }
+    
     // CRITICAL: Event users should only see event-related navigation
     if (isEventUser) {
       const eventItems: NavigationItem[] = [];
@@ -1336,14 +1379,10 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasExamTypesPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasExamDocumentsPermission, hasIdCardsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission, hasDmsPermission, hasDmsIncomingPermission, hasDmsOutgoingPermission, hasDmsTemplatesPermission, hasDmsLetterheadsPermission, hasDmsDepartmentsPermission, hasDmsReportsPermission, hasDmsSettingsPermission, hasDmsArchivePermission]);
+  }, [subscriptionBlocked, isOnSubscriptionPage, hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasExamTypesPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasExamDocumentsPermission, hasIdCardsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission, hasDmsPermission, hasDmsIncomingPermission, hasDmsOutgoingPermission, hasDmsTemplatesPermission, hasDmsLetterheadsPermission, hasDmsDepartmentsPermission, hasDmsReportsPermission, hasDmsSettingsPermission, hasDmsArchivePermission]);
 
-  // Helper function to get navigation items (already filtered by permissions)
-  const getNavigationItems = (context: NavigationContext): NavigationItem[] => {
-    // Items are already filtered by permissions when building allNavigationItems
-    // Just sort by priority (lower number = higher priority)
-    return [...allNavigationItems].sort((a, b) => (a.priority || 999) - (b.priority || 999));
-  };
+  // NOTE: allNavigationItems already handles subscription blocking via subscriptionBlocked check
+  // No additional filtering needed here - the logic is centralized in allNavigationItems useMemo
 
   // Memoize current module to prevent unnecessary updates
   const currentModule = useMemo(() => {
@@ -1429,9 +1468,10 @@ export const SmartSidebar = memo(function SmartSidebar() {
     if (!effectiveRole) {
       return [];
     }
-    const items = getNavigationItems(navigationContext);
-    return items;
-  }, [navigationContext, allNavigationItems, permissionsReady]);
+    // Items are already filtered by permissions and subscription status when building allNavigationItems
+    // Just sort by priority (lower number = higher priority)
+    return [...allNavigationItems].sort((a, b) => (a.priority || 999) - (b.priority || 999));
+  }, [allNavigationItems, permissionsReady, effectiveRole]);
 
   // Group items by category for better organization
   const groupedItems = useMemo(() => {

@@ -292,6 +292,10 @@ export class TourRunner {
           this.isRunning = false;
           this.currentTourId = null;
           this.currentTourDef = null;
+
+          // CRITICAL: Prevent infinite auto-start loops when targets are missing on the current route.
+          // Treat this as a dismissal so the system doesn't keep trying to restart the tour.
+          dismissTour(tourId);
           
           // Cancel callback
           this.options.onCancel?.(tourId);

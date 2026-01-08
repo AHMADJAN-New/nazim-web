@@ -1,5 +1,11 @@
 // API Types for SaaS Subscription System
 
+// Billing period type for fee separation
+export type BillingPeriod = 'monthly' | 'quarterly' | 'yearly' | 'custom';
+
+// Payment type for fee separation
+export type PaymentType = 'license' | 'maintenance' | 'renewal';
+
 export interface SubscriptionPlan {
   id: string;
   name: string;
@@ -7,6 +13,13 @@ export interface SubscriptionPlan {
   description: string | null;
   price_yearly_afn: number;
   price_yearly_usd: number;
+  // New fee separation fields
+  billing_period: BillingPeriod;
+  license_fee_afn: number;
+  license_fee_usd: number;
+  maintenance_fee_afn: number;
+  maintenance_fee_usd: number;
+  custom_billing_days: number | null;
   is_active: boolean;
   is_default: boolean;
   is_custom: boolean;
@@ -41,6 +54,12 @@ export interface OrganizationSubscription {
   amount_paid: number;
   additional_schools: number;
   notes: string | null;
+  // New fee separation fields
+  billing_period: BillingPeriod | null;
+  license_paid_at: string | null;
+  license_payment_id: string | null;
+  next_maintenance_due_at: string | null;
+  last_maintenance_paid_at: string | null;
   plan?: SubscriptionPlan;
   organization?: {
     id: string;
@@ -139,6 +158,10 @@ export interface PriceCalculation {
     value: number;
   } | null;
   total: number;
+  // New fee separation fields
+  license_fee: number;
+  maintenance_fee: number;
+  billing_period: BillingPeriod | null;
 }
 
 export interface DiscountCodeValidation {
@@ -197,6 +220,11 @@ export interface PaymentRecord {
   discount_amount: number;
   notes: string | null;
   receipt_path: string | null;
+  // New fee separation fields
+  payment_type: PaymentType | null;
+  billing_period: BillingPeriod | null;
+  is_recurring: boolean;
+  invoice_number: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -352,4 +380,99 @@ export interface AddFeatureAddonData {
   feature_key: string;
   price_paid: number;
   currency: 'AFN' | 'USD';
+}
+
+// Maintenance Invoice Types
+export type MaintenanceInvoiceStatus = 'pending' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+
+export interface MaintenanceInvoice {
+  id: string;
+  organization_id: string;
+  subscription_id: string;
+  invoice_number: string;
+  amount: number;
+  currency: 'AFN' | 'USD';
+  billing_period: BillingPeriod;
+  period_start: string;
+  period_end: string;
+  due_date: string;
+  status: MaintenanceInvoiceStatus;
+  generated_at: string;
+  sent_at: string | null;
+  paid_at: string | null;
+  cancelled_at: string | null;
+  payment_record_id: string | null;
+  notes: string | null;
+  metadata: Record<string, unknown> | null;
+  organization?: {
+    id: string;
+    name: string;
+  };
+  subscription?: OrganizationSubscription;
+  payment_record?: PaymentRecord;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+// Maintenance Fee Status Response
+export interface MaintenanceFeeStatus {
+  has_subscription: boolean;
+  maintenance_required: boolean;
+  subscription_id?: string;
+  billing_period?: BillingPeriod;
+  billing_period_label?: string;
+  next_due_date?: string | null;
+  last_paid_date?: string | null;
+  is_overdue?: boolean;
+  days_until_due?: number | null;
+  days_overdue?: number;
+  amount?: number;
+  currency?: 'AFN' | 'USD';
+}
+
+// License Fee Status Response
+export interface LicenseFeeStatus {
+  has_subscription: boolean;
+  license_required: boolean;
+  subscription_id?: string;
+  license_paid?: boolean;
+  license_paid_at?: string | null;
+  license_payment_id?: string | null;
+  license_pending?: boolean;
+  license_amount?: number;
+  currency?: 'AFN' | 'USD';
+}
+
+// Maintenance Payment Request
+export interface SubmitMaintenancePaymentData {
+  subscription_id: string;
+  invoice_id?: string;
+  amount: number;
+  currency: 'AFN' | 'USD';
+  payment_method: 'bank_transfer' | 'cash' | 'check' | 'mobile_money' | 'other';
+  payment_reference?: string;
+  payment_date: string;
+  notes?: string;
+}
+
+// License Payment Request
+export interface SubmitLicensePaymentData {
+  subscription_id: string;
+  amount: number;
+  currency: 'AFN' | 'USD';
+  payment_method: 'bank_transfer' | 'cash' | 'check' | 'mobile_money' | 'other';
+  payment_reference?: string;
+  payment_date: string;
+  notes?: string;
+}
+
+// Create Plan Data with new fee fields
+export interface CreatePlanDataWithFees extends CreatePlanData {
+  billing_period?: BillingPeriod;
+  license_fee_afn?: number;
+  license_fee_usd?: number;
+  maintenance_fee_afn?: number;
+  maintenance_fee_usd?: number;
+  custom_billing_days?: number;
 }

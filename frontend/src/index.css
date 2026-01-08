@@ -491,4 +491,21 @@
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
+
+    /* Progress Bar Styles - Vibrant amber/yellow colors (not blue) */
+    [data-radix-progress-root] {
+      background-color: rgb(229, 231, 235) !important; /* gray-200 */
+    }
+
+    .dark [data-radix-progress-root] {
+      background-color: rgb(31, 41, 55) !important; /* gray-800 */
+    }
+
+    [data-radix-progress-indicator] {
+      background-color: rgb(245, 158, 11) !important; /* amber-500 - vibrant yellow/amber, not blue */
+    }
+
+    .dark [data-radix-progress-indicator] {
+      background-color: rgb(251, 191, 36) !important; /* amber-400 - lighter amber for dark mode */
+    }
   }

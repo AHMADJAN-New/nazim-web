@@ -41,12 +41,12 @@ export const appCoreTour: TourDefinition = {
       return true;
     }
     
-    // In development, allow showing tour even if completed (for testing)
-    // This makes it easier to test the tour without resetting localStorage
-    if (import.meta.env.DEV) {
-      console.log('[appCoreTour] Tour is completed, but allowing in development mode for testing');
+    // In development, only allow re-showing the tour when debug mode is enabled.
+    // This prevents “ERP-like” behavior from turning into constant tour popups/blinking.
+    if (import.meta.env.DEV && import.meta.env.VITE_TOUR_DEBUG === 'true') {
+      console.log('[appCoreTour] Tour is completed, but allowing in development because VITE_TOUR_DEBUG=true');
       console.log('[appCoreTour] To permanently reset, run: window.resetTour("appCore")');
-      return true; // Allow in development even if completed
+      return true;
     }
     
     return false;

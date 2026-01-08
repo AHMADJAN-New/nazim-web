@@ -5,13 +5,17 @@
  * Only triggers if no tour is currently running and tour hasn't been dismissed.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTour } from '@/onboarding';
 import { userToursApi } from '@/lib/api/userTours';
 import { useAuth } from './useAuth';
 import { isTourDismissed } from '@/onboarding/dismissedTours';
 import { hasActiveTourState, clearActiveTourState } from '@/onboarding/sessionStorage';
+
+// Cache for route tours (to prevent constant API calls)
+const routeToursCache = new Map<string, { tours: any[]; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Hook to automatically trigger tours for the current route
@@ -20,9 +24,16 @@ export function useRouteTours() {
   const location = useLocation();
   const { startTour, state } = useTour();
   const { user } = useAuth();
+  const lastCheckedRouteRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
+    
+    // CRITICAL: Prevent checking the same route multiple times in quick succession
+    // This prevents constant API calls when component re-renders
+    if (lastCheckedRouteRef.current === location.pathname) {
+      return;
+    }
 
     // Don't trigger if a tour is actually running
     // Check if the active tour is dismissed - if so, it's stale state
@@ -76,26 +87,48 @@ export function useRouteTours() {
           return;
         }
 
-        // Get tours assigned for this route
-        // Gracefully handle database errors - if table doesn't exist, just skip
+        // CRITICAL: Check cache first to prevent constant API calls
+        const cacheKey = location.pathname;
+        const cached = routeToursCache.get(cacheKey);
+        const now = Date.now();
+        
         let tours: any[] = [];
-        try {
-          tours = await userToursApi.toursForRoute(location.pathname);
-        } catch (error: any) {
-          // If it's a database error (table doesn't exist), just log and continue
-          // The tour can still start via auto-start or manual trigger
-          if (error?.message?.includes('does not exist') || error?.message?.includes('Undefined table')) {
-            if (import.meta.env.DEV) {
-              console.warn('[useRouteTours] Database table not found - tours will use localStorage fallback:', error.message);
+        
+        // Use cached data if available and fresh
+        if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+          tours = cached.tours;
+          if (import.meta.env.DEV) {
+            console.log('[useRouteTours] Using cached tours for route:', location.pathname);
+          }
+        } else {
+          // Get tours assigned for this route
+          // Gracefully handle database errors - if table doesn't exist, just skip
+          try {
+            tours = await userToursApi.toursForRoute(location.pathname);
+            // Cache the result
+            routeToursCache.set(cacheKey, { tours, timestamp: now });
+            
+            // Clean up old cache entries (keep only last 50 routes)
+            if (routeToursCache.size > 50) {
+              const firstKey = routeToursCache.keys().next().value;
+              routeToursCache.delete(firstKey);
             }
-            // Return early - don't prevent tour from starting via other means
+          } catch (error: any) {
+            // If it's a database error (table doesn't exist), just log and continue
+            // The tour can still start via auto-start or manual trigger
+            if (error?.message?.includes('does not exist') || error?.message?.includes('Undefined table')) {
+              if (import.meta.env.DEV) {
+                console.warn('[useRouteTours] Database table not found - tours will use localStorage fallback:', error.message);
+              }
+              // Return early - don't prevent tour from starting via other means
+              return;
+            }
+            // For other errors, log but don't prevent tour from starting
+            if (import.meta.env.DEV) {
+              console.warn('[useRouteTours] Failed to check route tours:', error);
+            }
             return;
           }
-          // For other errors, log but don't prevent tour from starting
-          if (import.meta.env.DEV) {
-            console.warn('[useRouteTours] Failed to check route tours:', error);
-          }
-          return;
         }
         
         // Filter to only incomplete and non-dismissed tours
@@ -134,9 +167,19 @@ export function useRouteTours() {
     };
 
     // Check for tours after a short delay (to allow page to render)
-    const timeout = setTimeout(checkAndTriggerTours, 200);
+    const timeout = setTimeout(() => {
+      checkAndTriggerTours();
+      // Mark this route as checked
+      lastCheckedRouteRef.current = location.pathname;
+    }, 200);
     
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      // Reset the ref when route changes (allows checking new routes)
+      if (lastCheckedRouteRef.current !== location.pathname) {
+        lastCheckedRouteRef.current = null;
+      }
+    };
   }, [location.pathname, user, startTour, state.isRunning, state.activeTourId]);
 }
 

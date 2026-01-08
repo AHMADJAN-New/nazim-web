@@ -1,12 +1,34 @@
 // Domain Types for SaaS Subscription System
 
+// Billing period types
+export type BillingPeriod = 'monthly' | 'quarterly' | 'yearly' | 'custom';
+
+// Payment types
+export type PaymentType = 'license' | 'maintenance' | 'renewal';
+
 export interface SubscriptionPlan {
   id: string;
   name: string;
   slug: string;
   description: string | null;
+  // Legacy pricing (for backward compatibility)
   priceYearlyAfn: number;
   priceYearlyUsd: number;
+  // New fee separation fields
+  billingPeriod: BillingPeriod;
+  billingPeriodLabel: string;
+  billingPeriodDays: number;
+  customBillingDays: number | null;
+  licenseFeeAfn: number;
+  licenseFeeUsd: number;
+  maintenanceFeeAfn: number;
+  maintenanceFeeUsd: number;
+  hasLicenseFee: boolean;
+  hasMaintenanceFee: boolean;
+  // Total fees (for display convenience)
+  totalFeeAfn: number;
+  totalFeeUsd: number;
+  // Other plan fields
   isActive: boolean;
   isDefault: boolean;
   isCustom: boolean;
@@ -57,6 +79,15 @@ export interface SubscriptionInfo {
   isTrial: boolean;
   additionalSchools: number;
   totalSchoolsAllowed: number;
+  // New fee tracking fields
+  billingPeriod: BillingPeriod | null;
+  licensePaidAt: Date | null;
+  licensePaymentId: string | null;
+  hasLicensePaid: boolean;
+  nextMaintenanceDueAt: Date | null;
+  lastMaintenancePaidAt: Date | null;
+  isMaintenanceOverdue: boolean;
+  daysUntilMaintenanceDue: number | null;
 }
 
 export interface UsageInfo {
@@ -109,6 +140,10 @@ export interface PriceBreakdown {
     value: number;
   } | null;
   total: number;
+  // New fee separation fields
+  licenseFee: number;
+  maintenanceFee: number;
+  billingPeriod: BillingPeriod | null;
 }
 
 export interface RenewalRequest {
@@ -145,6 +180,11 @@ export interface PaymentRecord {
   confirmedAt: Date | null;
   discountAmount: number;
   notes: string | null;
+  // New fee separation fields
+  paymentType: PaymentType | null;
+  billingPeriod: BillingPeriod | null;
+  isRecurring: boolean;
+  invoiceNumber: string | null;
   createdAt: Date;
 }
 
@@ -209,4 +249,64 @@ export interface UsageCheckResult {
   percentage: number;
   warning: boolean;
   message: string | null;
+}
+
+// Maintenance Invoice
+export interface MaintenanceInvoice {
+  id: string;
+  organizationId: string;
+  subscriptionId: string;
+  invoiceNumber: string;
+  amount: number;
+  currency: 'AFN' | 'USD';
+  billingPeriod: BillingPeriod;
+  periodStart: Date;
+  periodEnd: Date;
+  dueDate: Date;
+  status: 'pending' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  generatedAt: Date;
+  sentAt: Date | null;
+  paidAt: Date | null;
+  cancelledAt: Date | null;
+  paymentRecordId: string | null;
+  notes: string | null;
+  metadata: Record<string, unknown> | null;
+  organization?: {
+    id: string;
+    name: string;
+  };
+  subscription?: SubscriptionInfo;
+  paymentRecord?: PaymentRecord;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+}
+
+// Maintenance Fee Status
+export interface MaintenanceFeeStatus {
+  hasSubscription: boolean;
+  maintenanceRequired: boolean;
+  subscriptionId?: string;
+  billingPeriod?: BillingPeriod;
+  billingPeriodLabel?: string;
+  nextDueDate?: Date | null;
+  lastPaidDate?: Date | null;
+  isOverdue?: boolean;
+  daysUntilDue?: number | null;
+  daysOverdue?: number;
+  amount?: number;
+  currency?: 'AFN' | 'USD';
+}
+
+// License Fee Status
+export interface LicenseFeeStatus {
+  hasSubscription: boolean;
+  licenseRequired: boolean;
+  subscriptionId?: string;
+  licensePaid?: boolean;
+  licensePaidAt?: Date | null;
+  licensePaymentId?: string | null;
+  licensePending?: boolean;
+  licenseAmount?: number;
+  currency?: 'AFN' | 'USD';
 }
