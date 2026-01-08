@@ -566,7 +566,12 @@ class StudentHistoryController extends Controller
 
         // For Excel, we'll create multiple sheets worth of data
         // CRITICAL: ExcelReportService expects sheets under parameters.sheets
+        // CRITICAL: Also include top-level columns and rows (empty arrays) for validation
+        // The actual data is in parameters.sheets, which ExcelReportService will use
         return [
+            // Top-level columns and rows (required for validation, but empty since we use sheets)
+            'columns' => [],
+            'rows' => [],
             'student' => $student,
             'summary' => $summary,
             'parameters' => [

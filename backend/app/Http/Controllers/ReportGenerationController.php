@@ -27,6 +27,18 @@ class ReportGenerationController extends Controller
         // Determine if using a custom template (custom templates fetch their own data)
         $hasCustomTemplate = !empty($request->input('template_name'));
         
+        // Check if using multi-sheet Excel structure (parameters.sheets)
+        // Multi-sheet Excel reports don't need top-level columns/rows
+        $parameters = $request->input('parameters', []);
+        $hasMultiSheetStructure = !empty($parameters['sheets']) || 
+                                 !empty($request->input('parameters.sheets'));
+        
+        // Check if this is a student history report (which fetches its own data)
+        // Student history reports use parameters.student_id and build data server-side
+        $reportKey = $request->input('report_key');
+        $isStudentHistoryReport = $reportKey === 'student_lifetime_history' && 
+                                 !empty($parameters['student_id']);
+        
         // Build validation rules conditionally
         $rules = [
             'report_key' => 'required|string|max:100',
@@ -43,14 +55,20 @@ class ReportGenerationController extends Controller
             'async' => 'nullable|boolean',
         ];
         
-        // Columns and rows are only required when NOT using a custom template
+        // Columns and rows are only required when:
+        // - NOT using a custom template
+        // - NOT using multi-sheet structure
+        // - NOT a student history report (which fetches its own data)
         // Custom templates (like student-history) fetch their own data from parameters
-        if (!$hasCustomTemplate) {
+        // Multi-sheet Excel reports use parameters.sheets instead of top-level columns/rows
+        // Student history reports fetch data server-side using parameters.student_id
+        if (!$hasCustomTemplate && !$hasMultiSheetStructure && !$isStudentHistoryReport) {
             $rules['columns'] = 'required|array';
             $rules['columns.*'] = 'required';
             $rules['rows'] = 'required|array';
         } else {
-            // For custom templates, columns and rows are optional (can be empty arrays)
+            // For custom templates, multi-sheet reports, or student history reports,
+            // columns and rows are optional (can be empty arrays)
             $rules['columns'] = 'nullable|array';
             $rules['rows'] = 'nullable|array';
         }
