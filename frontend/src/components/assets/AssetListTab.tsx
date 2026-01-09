@@ -621,7 +621,7 @@ export default function AssetListTab() {
 
       {/* Filters and Actions */}
       <FilterPanel 
-        title={t('common.filters') || 'Search & Filter'}
+        title={t('events.filters') || 'Search & Filter'}
         defaultOpenDesktop={true}
         defaultOpenMobile={false}
       >

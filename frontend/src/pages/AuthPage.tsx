@@ -131,7 +131,7 @@ export default function AuthPage() {
       const errorMessage = error.message || t('auth.signInFailed') || 'Failed to sign in. Please check your credentials and try again.';
 
       if (errorMessage.includes('credentials') || errorMessage.includes('Invalid')) {
-        toast.error(t('auth.invalidCredentials') || 'Invalid email or password. Please check your credentials and try again.');
+        toast.error(t('toast.invalidCredentials') || 'Invalid email or password. Please check your credentials and try again.');
       } else {
         toast.error(errorMessage);
       }

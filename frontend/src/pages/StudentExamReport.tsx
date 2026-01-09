@@ -195,7 +195,7 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
         <CardHeader className="text-center border-b pb-4">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Award className="h-8 w-8 text-primary" />
-            <CardTitle className="text-3xl">{t('studentReportCard.title')}</CardTitle>
+            <CardTitle className="text-3xl">{t('events.title')}</CardTitle>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2">
             {reportData.exam?.name || selectedExam?.name ? (
@@ -206,7 +206,7 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
             ) : null}
             {reportData.student?.class ? (
               <Badge className="px-3 py-1.5 text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-200 dark:border-green-800">
-                <span className="opacity-70 mr-1">{t('classes.class')}:</span>
+                <span className="opacity-70 mr-1">{t('search.class')}:</span>
                 <span className="font-semibold">
                   {reportData.student?.class}{reportData.student?.section ? ` - ${reportData.student.section}` : ''}
                 </span>
@@ -234,23 +234,23 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
             <div>
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
-                {t('studentReportCard.studentInformation')}
+                {t('courses.studentInformation')}
               </h3>
               <div className="grid md:grid-cols-2 gap-x-8 gap-y-3">
                 <div className="flex items-start gap-2">
-                  <span className="text-sm text-muted-foreground min-w-[120px]">{t('students.fullName')}:</span>
+                  <span className="text-sm text-muted-foreground min-w-[120px]">{t('userManagement.fullName')}:</span>
                   <span className="text-sm font-semibold">
                     {reportData.student?.full_name || (selectedStudent && 'fullName' in selectedStudent ? selectedStudent.fullName : '') || '-'}
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-sm text-muted-foreground min-w-[120px]">{t('studentReportCard.rollNo')}:</span>
+                  <span className="text-sm text-muted-foreground min-w-[120px]">{t('students.rollNo')}:</span>
                   <span className="text-sm font-semibold">
                     {reportData.student?.roll_number || (selectedStudent && 'rollNumber' in selectedStudent ? selectedStudent.rollNumber : null) || '-'}
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-sm text-muted-foreground min-w-[120px]">{t('studentReportCard.fatherName')}:</span>
+                  <span className="text-sm text-muted-foreground min-w-[120px]">{t('examReports.fatherName')}:</span>
                   <span className="text-sm font-semibold">
                     {(selectedStudent && 'fatherName' in selectedStudent ? selectedStudent.fatherName : null) || '-'}
                   </span>
@@ -264,7 +264,7 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-sm text-muted-foreground min-w-[120px]">{t('studentReportCard.admissionNo')}:</span>
+                  <span className="text-sm text-muted-foreground min-w-[120px]">{t('examReports.admissionNo')}:</span>
                   <span className="text-sm font-semibold">
                     {reportData.student?.admission_no || (selectedStudent && 'admissionNumber' in selectedStudent ? selectedStudent.admissionNumber : null) || '-'}
                   </span>
@@ -291,7 +291,7 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
                   <TableHead className="w-12">#</TableHead>
                   <TableHead>{t('studentReportCard.subjectName')}</TableHead>
                   <TableHead className="text-center">{t('studentReportCard.maxMarks')}</TableHead>
-                  <TableHead className="text-center">{t('studentReportCard.marksObtained')}</TableHead>
+                  <TableHead className="text-center">{t('examReports.marksObtained')}</TableHead>
                   <TableHead className="text-center">{t('studentReportCard.percentage')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -398,11 +398,11 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
                 {reportData.summary?.overall_result?.toLowerCase() === 'pass' ? (
                   <Badge variant="default" className="gap-1 text-base px-3 py-1">
                     <TrendingUp className="h-4 w-4" />
-                    {t('examReports.pass')}
+                    {t('events.pass')}
                   </Badge>
                 ) : (
                   <Badge variant="destructive" className="text-base px-3 py-1">
-                    {t('examReports.fail')}
+                    {t('events.fail')}
                   </Badge>
                 )}
               </div>
@@ -618,7 +618,7 @@ export default function StudentExamReport() {
       <div className="container mx-auto py-6">
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <p className="text-muted-foreground">{t('common.noPermission')}</p>
+            <p className="text-muted-foreground">{t('events.noPermission')}</p>
           </CardContent>
         </Card>
       </div>
@@ -628,13 +628,13 @@ export default function StudentExamReport() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <PageHeader
-        title={t('studentReportCard.title')}
+        title={t('events.title')}
         description={t('studentReportCard.selectStudentPrompt')}
         icon={<Award className="h-5 w-5" />}
       />
 
       {/* Selection Panel */}
-      <FilterPanel title={t('studentReportCard.selectStudent')}>
+      <FilterPanel title={t('library.selectStudent')}>
         <div className="grid gap-4 md:grid-cols-3">
             {/* Exam Selection */}
             <div className="space-y-2">
@@ -646,7 +646,7 @@ export default function StudentExamReport() {
                   setSelectedExamId(val);
                 }}
                 placeholder={t('examReports.selectExamPrompt')}
-                searchPlaceholder={t('common.search') || 'Search...'}
+                searchPlaceholder={t('events.search') || 'Search...'}
                 emptyText={t('exams.noExams') || 'No exams'}
                 disabled={examsLoading}
               />
@@ -659,16 +659,16 @@ export default function StudentExamReport() {
 
             {/* Class Selection */}
             <div className="space-y-2">
-              <Label htmlFor="class">{t('classes.class')}</Label>
+              <Label htmlFor="class">{t('search.class')}</Label>
               <Combobox
                 options={classOptions}
                 value={selectedClassId}
                 onValueChange={setSelectedClassId}
-                placeholder={selectedExamId ? t('classes.selectClass') || 'Select class' : t('examReports.selectExamFirst') || 'Select an exam first'}
-                searchPlaceholder={t('common.search') || 'Search...'}
+                placeholder={selectedExamId ? t('events.selectClass') || 'Select class' : t('examReports.selectExamFirst') || 'Select an exam first'}
+                searchPlaceholder={t('events.search') || 'Search...'}
                 emptyText={
                   selectedExamId
-                    ? (examClassesLoading ? t('common.loading') || 'Loading...' : t('classes.noClasses') || 'No classes')
+                    ? (examClassesLoading ? t('events.loading') || 'Loading...' : t('classes.noClasses') || 'No classes')
                     : t('examReports.selectExamFirst') || 'Select an exam first'
                 }
                 disabled={!selectedExamId || examClassesLoading}
@@ -678,7 +678,7 @@ export default function StudentExamReport() {
             {/* Student Selection - Multi-select with checkboxes */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="student">{t('studentReportCard.selectStudent')}</Label>
+                <Label htmlFor="student">{t('library.selectStudent')}</Label>
                 {studentOptions.length > 0 && (
                   <Button
                     variant="ghost"
@@ -686,14 +686,14 @@ export default function StudentExamReport() {
                     onClick={handleSelectAll}
                     className="h-7 text-xs"
                   >
-                    {selectedStudentIds.length === studentOptions.length ? t('common.deselectAll') || 'Deselect All' : t('common.selectAll') || 'Select All'}
+                    {selectedStudentIds.length === studentOptions.length ? t('events.deselectAll') || 'Deselect All' : t('events.selectAll') || 'Select All'}
                   </Button>
                 )}
               </div>
               <div className="max-h-60 overflow-y-auto border rounded-md p-2 space-y-2">
                 {selectedClassId ? (
                   examStudentsLoading ? (
-                    <div className="text-sm text-muted-foreground text-center py-4">{t('common.loading') || 'Loading...'}</div>
+                    <div className="text-sm text-muted-foreground text-center py-4">{t('events.loading') || 'Loading...'}</div>
                   ) : studentOptions.length > 0 ? (
                     studentOptions.map((option, optIdx) => {
                       const isSelected = selectedStudentIds.includes(option.value);
@@ -718,13 +718,13 @@ export default function StudentExamReport() {
                   )
                 ) : (
                   <div className="text-sm text-muted-foreground text-center py-4">
-                    {selectedExamId ? t('classes.selectClassFirst') || 'Select a class first' : t('examReports.selectExamFirst') || 'Select an exam first'}
+                    {selectedExamId ? t('examReports.selectClassFirst') || 'Select a class first' : t('examReports.selectExamFirst') || 'Select an exam first'}
                   </div>
                 )}
               </div>
               {selectedStudentIds.length > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {selectedStudentIds.length} {t('common.selected') || 'selected'}
+                  {selectedStudentIds.length} {t('events.selected') || 'selected'}
                 </p>
               )}
             </div>
@@ -740,17 +740,17 @@ export default function StudentExamReport() {
                 <ReportExportButtons
                   data={reportsData.filter((r): r is StudentReportData => r !== null)}
                   columns={[
-                    { key: 'studentName', label: t('students.fullName') || 'Student Name' },
-                    { key: 'rollNumber', label: t('studentReportCard.rollNo') || 'Roll Number' },
-                    { key: 'className', label: t('classes.class') || 'Class' },
-                    { key: 'subjects', label: t('subjects.subjects') || 'Subjects' },
+                    { key: 'studentName', label: t('userManagement.fullName') || 'Student Name' },
+                    { key: 'rollNumber', label: t('students.rollNo') || 'Roll Number' },
+                    { key: 'className', label: t('search.class') || 'Class' },
+                    { key: 'subjects', label: t('events.subjects') || 'Subjects' },
                     { key: 'totalMarks', label: t('examReports.totalMarks') || 'Total Marks' },
                     { key: 'percentage', label: t('examReports.percentage') || 'Percentage' },
-                    { key: 'grade', label: t('examReports.grade') || 'Grade' },
+                    { key: 'grade', label: t('studentReportCard.grade') || 'Grade' },
                     { key: 'result', label: t('examReports.result') || 'Result' },
                   ]}
                   reportKey="student_report_card"
-                  title={`${t('studentReportCard.title') || 'Student Report Card'} - ${selectedExam?.name || ''}`}
+                  title={`${t('events.title') || 'Student Report Card'} - ${selectedExam?.name || ''}`}
                   transformData={(data) => data.map((report: StudentReportData) => {
                     // Build subjects list
                     const subjectsList = (report.subjects || []).map((s) => {
@@ -787,8 +787,8 @@ export default function StudentExamReport() {
                         return '-';
                       })(),
                       result: report.summary?.overall_result === 'Pass'
-                        ? (t('examReports.pass') || 'Pass')
-                        : (t('examReports.fail') || 'Fail'),
+                        ? (t('events.pass') || 'Pass')
+                        : (t('events.fail') || 'Fail'),
                     };
                   })}
                   buildFiltersSummary={() => {
@@ -815,7 +815,7 @@ export default function StudentExamReport() {
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2 text-destructive">
                   <AlertCircle className="h-5 w-5" />
-                  <p>{t('examReports.studentNotEnrolled') || 'Selected students are not enrolled in the selected exam.'}</p>
+                  <p>{t('leave.studentNotEnrolled') || 'Selected students are not enrolled in the selected exam.'}</p>
                 </div>
               </CardContent>
             </Card>

@@ -169,7 +169,7 @@ export default function FinanceAccounts() {
         >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
+                    <Label htmlFor="name">{t('events.name') || 'Name'} *</Label>
                     <Input
                         id="name"
                         value={formData.name}
@@ -178,7 +178,7 @@ export default function FinanceAccounts() {
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="code">{t('common.code') || 'Code'}</Label>
+                    <Label htmlFor="code">{t('events.code') || 'Code'}</Label>
                     <Input
                         id="code"
                         value={formData.code || ''}
@@ -189,7 +189,7 @@ export default function FinanceAccounts() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="type">{t('common.type') || 'Type'}</Label>
+                    <Label htmlFor="type">{t('events.type') || 'Type'}</Label>
                     <Select
                         value={formData.type}
                         onValueChange={(value: 'cash' | 'fund') => setFormData({ ...formData, type: value })}
@@ -236,7 +236,7 @@ export default function FinanceAccounts() {
                 </div>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="description">{t('common.description') || 'Description'}</Label>
+                <Label htmlFor="description">{t('events.description') || 'Description'}</Label>
                 <Textarea
                     id="description"
                     value={formData.description || ''}
@@ -250,11 +250,11 @@ export default function FinanceAccounts() {
                     checked={formData.isActive}
                     onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
                 />
-                <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
+                <Label htmlFor="isActive">{t('events.active') || 'Active'}</Label>
             </div>
             <DialogFooter>
                 <Button type="submit" disabled={loading || !formData.name.trim()}>
-                    {editAccount ? t('common.update') || 'Update' : t('common.create') || 'Create'}
+                    {editAccount ? t('events.update') || 'Update' : t('events.create') || 'Create'}
                 </Button>
             </DialogFooter>
         </form>
@@ -274,12 +274,12 @@ export default function FinanceAccounts() {
                     <ReportExportButtons
                         data={accounts || []}
                         columns={[
-                            { key: 'name', label: t('common.name'), align: 'left' },
-                            { key: 'code', label: t('common.code'), align: 'left' },
-                            { key: 'type', label: t('common.type'), align: 'left' },
+                            { key: 'name', label: t('events.name'), align: 'left' },
+                            { key: 'code', label: t('events.code'), align: 'left' },
+                            { key: 'type', label: t('events.type'), align: 'left' },
                             { key: 'openingBalance', label: t('finance.openingBalance'), align: 'right' },
                             { key: 'currentBalance', label: t('finance.currentBalance'), align: 'right' },
-                            { key: 'isActive', label: t('common.status'), align: 'center' },
+                            { key: 'isActive', label: t('events.status'), align: 'center' },
                         ]}
                         reportKey="finance_accounts"
                         title={t('finance.accounts') || 'Finance Accounts'}
@@ -290,7 +290,7 @@ export default function FinanceAccounts() {
                                 type: account.type === 'cash' ? t('finance.cash') || 'Cash' : t('finance.fund') || 'Fund',
                                 openingBalance: formatCurrency(account.openingBalance),
                                 currentBalance: formatCurrency(account.currentBalance),
-                                isActive: account.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive',
+                                isActive: account.isActive ? t('events.active') || 'Active' : t('events.inactive') || 'Inactive',
                             }))
                         }
                         templateType="finance_accounts"
@@ -326,13 +326,13 @@ export default function FinanceAccounts() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>{t('common.name') || 'Name'}</TableHead>
-                                <TableHead>{t('common.code') || 'Code'}</TableHead>
-                                <TableHead>{t('common.type') || 'Type'}</TableHead>
+                                <TableHead>{t('events.name') || 'Name'}</TableHead>
+                                <TableHead>{t('events.code') || 'Code'}</TableHead>
+                                <TableHead>{t('events.type') || 'Type'}</TableHead>
                                 <TableHead className="text-right">{t('finance.openingBalance') || 'Opening Balance'}</TableHead>
                                 <TableHead className="text-right">{t('finance.currentBalance') || 'Current Balance'}</TableHead>
-                                <TableHead>{t('common.status') || 'Status'}</TableHead>
-                                <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                                <TableHead>{t('events.status') || 'Status'}</TableHead>
+                                <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -390,7 +390,7 @@ export default function FinanceAccounts() {
                                                     : 'bg-gray-500 hover:bg-gray-600 text-white border-0'
                                             }
                                         >
-                                            {account.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
+                                            {account.isActive ? t('events.active') || 'Active' : t('events.inactive') || 'Inactive'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
@@ -442,15 +442,15 @@ export default function FinanceAccounts() {
             <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('events.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('finance.deleteAccountWarning') || 'Are you sure you want to delete this account? This action cannot be undone.'}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                            {t('common.delete') || 'Delete'}
+                            {t('events.delete') || 'Delete'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -505,19 +505,19 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                         <h3 className="text-lg font-semibold">{t('finance.accountInformation') || 'Account Information'}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <p className="text-sm text-muted-foreground">{t('common.name') || 'Name'}</p>
+                                <p className="text-sm text-muted-foreground">{t('events.name') || 'Name'}</p>
                                 <p className="font-medium">{account.name}</p>
                             </div>
                             {account.code && (
                                 <div>
-                                    <p className="text-sm text-muted-foreground">{t('common.code') || 'Code'}</p>
+                                    <p className="text-sm text-muted-foreground">{t('events.code') || 'Code'}</p>
                                     <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400">
                                         {account.code}
                                     </Badge>
                                 </div>
                             )}
                             <div>
-                                <p className="text-sm text-muted-foreground">{t('common.type') || 'Type'}</p>
+                                <p className="text-sm text-muted-foreground">{t('events.type') || 'Type'}</p>
                                 <Badge 
                                     variant="outline"
                                     className={
@@ -553,7 +553,7 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                                 </Badge>
                             </div>
                             <div>
-                                <p className="text-sm text-muted-foreground">{t('common.status') || 'Status'}</p>
+                                <p className="text-sm text-muted-foreground">{t('events.status') || 'Status'}</p>
                                 <Badge 
                                     variant={account.isActive ? 'default' : 'secondary'}
                                     className={
@@ -562,13 +562,13 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                                             : 'bg-gray-500 hover:bg-gray-600 text-white border-0'
                                     }
                                 >
-                                    {account.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
+                                    {account.isActive ? t('events.active') || 'Active' : t('events.inactive') || 'Inactive'}
                                 </Badge>
                             </div>
                         </div>
                         {account.description && (
                             <div>
-                                <p className="text-sm text-muted-foreground">{t('common.description') || 'Description'}</p>
+                                <p className="text-sm text-muted-foreground">{t('events.description') || 'Description'}</p>
                                 <p className="text-sm">{account.description}</p>
                             </div>
                         )}
@@ -610,13 +610,13 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                     <div>
-                                        <p className="text-muted-foreground">{t('common.date') || 'Date'}</p>
+                                        <p className="text-muted-foreground">{t('events.date') || 'Date'}</p>
                                         <p className="font-medium">
                                             {formatDate(transactions.latestTransaction.date)}
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-muted-foreground">{t('finance.category') || 'Category'}</p>
+                                        <p className="text-muted-foreground">{t('assets.category') || 'Category'}</p>
                                         <p className="font-medium">{transactions.latestTransaction.category}</p>
                                     </div>
                                     {transactions.latestTransaction.referenceNo && (
@@ -632,7 +632,7 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                                 </div>
                                 {transactions.latestTransaction.description && (
                                     <div>
-                                        <p className="text-sm text-muted-foreground">{t('common.description') || 'Description'}</p>
+                                        <p className="text-sm text-muted-foreground">{t('events.description') || 'Description'}</p>
                                         <p className="text-sm">{transactions.latestTransaction.description}</p>
                                     </div>
                                 )}
@@ -719,7 +719,7 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                             }}
                         >
                             <Pencil className="h-4 w-4 mr-2" />
-                            {t('common.edit') || 'Edit'}
+                            {t('events.edit') || 'Edit'}
                         </Button>
                         <Button
                             variant="outline"
@@ -729,7 +729,7 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                             }}
                         >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            {t('common.delete') || 'Delete'}
+                            {t('events.delete') || 'Delete'}
                         </Button>
                     </div>
                 </div>

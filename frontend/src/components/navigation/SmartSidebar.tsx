@@ -376,7 +376,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           children: [
             ...(hasEventsPermission ? [{
               title: "All Events",
-              titleKey: "events.all",
+              titleKey: "subjects.all",
               url: "/events",
               icon: Calendar,
             }] : []),
@@ -588,7 +588,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasIssuedCertificatesPermission ? [{
             title: "Issued Certificates",
-            titleKey: "certificates.issued",
+            titleKey: "status.issued",
             url: "/certificates/issued",
             icon: LucideIcons.Printer,
           }] : []),
@@ -616,7 +616,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasIdCardsExportPermission ? [{
             title: "ID Card Export",
-            titleKey: "idCards.export",
+            titleKey: "events.export",
             url: "/id-cards/export",
             icon: LucideIcons.Download,
           }] : []),
@@ -835,7 +835,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...((hasReportsPermission && hasHostelPermission) ? [{
             title: "Hostel reports",
-            titleKey: "hostel.reports",
+            titleKey: "nav.reports",
             url: "/hostel/reports",
             icon: LucideIcons.BarChart3,
           }] : []),
@@ -875,7 +875,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasLibraryBooksPermission ? [{
             title: "Reports",
-            titleKey: "library.reports",
+            titleKey: "nav.reports",
             url: "/library/reports",
             icon: LucideIcons.BarChart3,
           }] : []),
@@ -933,7 +933,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasFinanceReportsPermission ? [{
             title: "Reports",
-            titleKey: "finance.reports",
+            titleKey: "nav.reports",
             url: "/finance/reports",
             icon: LucideIcons.BarChart3,
           }] : []),
@@ -1057,7 +1057,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasDmsReportsPermission ? [{
             title: "Reports",
-            titleKey: "dms.reports",
+            titleKey: "nav.reports",
             url: "/dms/reports",
             icon: LucideIcons.BarChart3,
           }] : []),
@@ -1079,7 +1079,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
         children: [
           ...(hasEventsPermission ? [{
             title: "All Events",
-            titleKey: "events.all",
+            titleKey: "subjects.all",
             url: "/events",
             icon: Calendar,
           }] : []),
@@ -1131,7 +1131,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           },
           {
             title: "Asset Management",
-            titleKey: "assets.management",
+            titleKey: "students.management",
             url: "/assets",
             icon: Boxes,
           },
@@ -1143,7 +1143,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           },
           {
             title: "Asset Reports",
-            titleKey: "assets.reports",
+            titleKey: "nav.reports",
             url: "/assets/reports",
             icon: LucideIcons.BarChart3,
           },
@@ -1171,7 +1171,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasTeacherSubjectAssignmentsPermission ? [{
             title: "Teacher Subject Assignments",
-            titleKey: "teacherSubjectAssignments.title",
+            titleKey: "events.title",
             url: "/settings/teacher-subject-assignments",
             icon: UserCheck,
           }] : []),
@@ -1187,7 +1187,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
         children: [
           ...(hasTimetablesPermission ? [{
             title: "Timetable Generation",
-            titleKey: "timetable.title",
+            titleKey: "events.title",
             url: "/academic/timetable-generation",
             icon: Calendar,
           }] : []),
@@ -1290,7 +1290,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasGradesPermission ? [{
             title: "Grades Management",
-            titleKey: "grades.management",
+            titleKey: "students.management",
             url: "/settings/grades",
             icon: Trophy,
           }] : []),
@@ -1694,7 +1694,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           {!collapsed && (
             <div>
               <h1 className="text-lg font-bold text-sidebar-foreground">Nazim</h1>
-              <p className="text-xs text-sidebar-foreground/70">{t('common.schoolManagement')}</p>
+              <p className="text-xs text-sidebar-foreground/70">{t('events.schoolManagement')}</p>
             </div>
           )}
         </div>

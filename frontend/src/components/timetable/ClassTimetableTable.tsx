@@ -31,7 +31,7 @@ export function ClassTimetableTable({
 			<table className="min-w-full border">
 				<thead>
 					<tr className="bg-primary text-primary-foreground">
-						<th className="p-2 border">{t('timetable.class') || 'Class'}</th>
+						<th className="p-2 border">{t('search.class') || 'Class'}</th>
 						{dayHeaders.flatMap((day) =>
 							slots.map((s) => (
 								<th key={`${day}-${s.id}`} className="p-2 border">

@@ -628,7 +628,7 @@ export default function IncomingDocuments() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => dmsApi.incoming.delete(id),
     onSuccess: async () => {
-      showToast.success(t('toast.documentDeleted') || 'Incoming document deleted successfully');
+      showToast.success(t('courses.documentDeleted') || 'Incoming document deleted successfully');
       await queryClient.invalidateQueries({ queryKey: ["dms", "incoming"] });
       await queryClient.refetchQueries({ queryKey: ["dms", "incoming"] });
       setIsDeleteDialogOpen(false);
@@ -1308,7 +1308,7 @@ export default function IncomingDocuments() {
       </Dialog>
 
       <FilterPanel
-        title={t('common.filters') || 'Search & Filter'}
+        title={t('events.filters') || 'Search & Filter'}
         footer={
           <div className="flex gap-2">
             <Button
@@ -1316,7 +1316,7 @@ export default function IncomingDocuments() {
               onClick={() => setFilters({ subject: "", sender_org: "", status: "", security_level_key: "", academic_year_id: "", routing_department_id: "" })}
             >
               <X className="h-4 w-4 mr-2" />
-              {t('common.clearFilters') || 'Clear Filters'}
+              {t('events.clearFilters') || 'Clear Filters'}
             </Button>
           </div>
         }
@@ -1339,7 +1339,7 @@ export default function IncomingDocuments() {
             />
           </div>
           <div className="space-y-2">
-            <Label>{t('common.status') || 'Status'}</Label>
+            <Label>{t('events.status') || 'Status'}</Label>
             <Select
               value={filters.status || "all"}
               onValueChange={(value) => setFilters((s) => ({ ...s, status: value === "all" ? "" : value }))}
@@ -1489,15 +1489,15 @@ export default function IncomingDocuments() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+                            <DropdownMenuLabel>{t('events.actions') || 'Actions'}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => openViewDialog(doc)}>
                               <Eye className="h-4 w-4 mr-2" />
-                              {t('common.view') || 'View'}
+                              {t('events.view') || 'View'}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openEditDialog(doc)}>
                               <Edit className="h-4 w-4 mr-2" />
-                              {t('common.edit') || 'Edit'}
+                              {t('events.edit') || 'Edit'}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openUploadDialog(doc.id)}>
                               <Upload className="h-4 w-4 mr-2" />
@@ -1509,7 +1509,7 @@ export default function IncomingDocuments() {
                               className="text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              {t('common.delete') || 'Delete'}
+                              {t('events.delete') || 'Delete'}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

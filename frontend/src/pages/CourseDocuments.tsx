@@ -190,7 +190,7 @@ export function CourseDocuments() {
       />
 
       {/* Filters */}
-      <FilterPanel title={t('common.filter') || 'Filter'}>
+      <FilterPanel title={t('events.filter') || 'Filter'}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>{t('courses.courseName')}</Label>
@@ -239,7 +239,7 @@ export function CourseDocuments() {
             </div>
 
             <div className="space-y-2">
-              <Label>{t('common.search')}</Label>
+              <Label>{t('events.search')}</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -259,7 +259,7 @@ export function CourseDocuments() {
       {/* Documents Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('courses.documents')} ({filteredDocuments.length})</CardTitle>
+          <CardTitle>{t('students.documents')} ({filteredDocuments.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -282,7 +282,7 @@ export function CourseDocuments() {
                     <TableHead>{t('courses.documentType')}</TableHead>
                     <TableHead>{t('courses.size')}</TableHead>
                     <TableHead>{t('courses.uploaded')}</TableHead>
-                    <TableHead className="text-right">{t('common.actions')}</TableHead>
+                    <TableHead className="text-right">{t('events.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -359,7 +359,7 @@ export function CourseDocuments() {
       <Dialog open={isCourseSelectDialogOpen} onOpenChange={setIsCourseSelectDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('courses.selectCourse')}</DialogTitle>
+            <DialogTitle>{t('events.selectCourse')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {courses.map((course) => (
@@ -397,8 +397,8 @@ export function CourseDocuments() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>{t('common.delete')}</AlertDialogAction>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t('events.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -138,7 +138,7 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
               <Label htmlFor="name">Course Name *</Label>
               <Input
                 id="name"
-                placeholder={t('common.courseNameExample')}
+                placeholder={t('events.courseNameExample')}
                 {...register('name', { required: t('courses.courseNameRequired') })}
               />
               {errors.name && <p className="text-sm text-destructive mt-1">{errors.name.message}</p>}

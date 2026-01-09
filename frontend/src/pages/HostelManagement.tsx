@@ -108,12 +108,12 @@ export function HostelManagement() {
     },
     {
       accessorKey: 'buildingName',
-      header: t('hostel.building'),
+      header: t('settings.building'),
       cell: ({ row }) => row.original.buildingName || t('hostel.unassigned'),
     },
     {
       accessorKey: 'staffName',
-      header: t('hostel.warden'),
+      header: t('settings.warden'),
       cell: ({ row }) => row.original.staffName || t('hostel.notAssigned'),
     },
     {
@@ -130,7 +130,7 @@ export function HostelManagement() {
     },
     {
       accessorKey: 'students',
-      header: t('hostel.students'),
+      header: t('table.students'),
       cell: ({ row }) => {
         const occupants = row.original.occupants;
         if (occupants.length === 0) {
@@ -169,11 +169,11 @@ export function HostelManagement() {
 
   const exportCsv = () => {
     const headers = [
-      t('hostel.roomNumber'),
-      t('hostel.building'),
-      t('hostel.warden'),
+      t('settings.roomNumber'),
+      t('settings.building'),
+      t('settings.warden'),
       t('hostel.occupancy'),
-      t('hostel.students'),
+      t('table.students'),
     ];
 
     const rows = filteredRooms.map((room) => [
@@ -219,7 +219,7 @@ export function HostelManagement() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
-        title={t('nav.hostel') || 'Hostel Management'}
+        title={t('students.hostel') || 'Hostel Management'}
         description="Monitor hostel occupancy, room assignments, and warden coverage."
         icon={<BedDouble className="h-5 w-5" />}
         rightSlot={
@@ -282,7 +282,7 @@ export function HostelManagement() {
       </div>
 
       <FilterPanel 
-        title={t('common.filters') || 'Search & Filter'}
+        title={t('events.filters') || 'Search & Filter'}
         defaultOpenDesktop={true}
         defaultOpenMobile={false}
       >

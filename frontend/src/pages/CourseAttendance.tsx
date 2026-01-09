@@ -239,12 +239,12 @@ export default function CourseAttendance() {
       {/* Course Selection */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">{t('courses.selectCourse')}</CardTitle>
+          <CardTitle className="text-lg">{t('events.selectCourse')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Select value={selectedCourseId} onValueChange={(v) => { setSelectedCourseId(v); setSelectedSessionId(null); }}>
             <SelectTrigger className="w-full max-w-md">
-              <SelectValue placeholder={t('common.selectCourse')} />
+              <SelectValue placeholder={t('events.selectCourse')} />
             </SelectTrigger>
             <SelectContent>
               {courses.map((course) => (
@@ -265,12 +265,12 @@ export default function CourseAttendance() {
               <CardTitle className="text-lg">{t('courses.sessions')}</CardTitle>
               <Button size="sm" onClick={() => setIsCreateDialogOpen(true)} className="flex-shrink-0">
                 <Plus className="h-4 w-4" />
-                <span className="ml-2">{t('common.add')}</span>
+                <span className="ml-2">{t('events.add')}</span>
               </Button>
             </CardHeader>
             <CardContent>
               {sessionsLoading ? (
-                <p className="text-muted-foreground">{t('common.loading')}</p>
+                <p className="text-muted-foreground">{t('events.loading')}</p>
               ) : sessions.length === 0 ? (
                 <p className="text-muted-foreground">No sessions yet</p>
               ) : (
@@ -458,7 +458,7 @@ export default function CourseAttendance() {
                         value={barcodeInput}
                         onChange={(e) => setBarcodeInput(e.target.value)}
                         onKeyDown={handleBarcodeScan}
-                        placeholder={t('common.scanCardNumber')}
+                        placeholder={t('events.scanCardNumber')}
                         className="text-lg"
                         autoFocus
                       />

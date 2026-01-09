@@ -221,7 +221,7 @@ export default function ExamPaperTemplates() {
 
   const handleCreate = async (data: ExamPaperTemplateFormData) => {
     if (!organizationId) {
-      showToast.error(t('common.error') || 'Organization required');
+      showToast.error(t('events.error') || 'Organization required');
       return;
     }
 
@@ -350,7 +350,7 @@ export default function ExamPaperTemplates() {
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t('examPapers.selectSchool') || 'Select school'} />
+                    <SelectValue placeholder={t('events.selectSchool') || 'Select school'} />
                   </SelectTrigger>
                   <SelectContent>
                     {(schools || []).map(school => (
@@ -432,7 +432,7 @@ export default function ExamPaperTemplates() {
                   <SelectValue placeholder={
                     !watchedAcademicYearId 
                       ? (t('examPapers.selectAcademicYearFirst') || 'Select academic year first')
-                      : (t('examPapers.selectClass') || 'Select class')
+                      : (t('events.selectClass') || 'Select class')
                   } />
                 </SelectTrigger>
                 <SelectContent>
@@ -472,7 +472,7 @@ export default function ExamPaperTemplates() {
                 <SelectTrigger>
                   <SelectValue placeholder={
                     !watchedClassAcademicYearId 
-                      ? (t('examPapers.selectClassFirst') || 'Select class first')
+                      ? (t('examReports.selectClassFirst') || 'Select class first')
                       : (t('examPapers.selectSubject') || 'Select subject')
                   } />
                 </SelectTrigger>
@@ -531,7 +531,7 @@ export default function ExamPaperTemplates() {
         {/* Title & Language */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label>{t('examPapers.title') || 'Title'} *</Label>
+            <Label>{t('events.title') || 'Title'} *</Label>
             <Input
               {...form.register('title')}
               placeholder={t('examPapers.titlePlaceholder') || 'e.g., Mathematics Final Exam Paper'}
@@ -548,7 +548,7 @@ export default function ExamPaperTemplates() {
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t('examPapers.selectLanguage') || 'Select language'} />
+                    <SelectValue placeholder={t('events.selectLanguage') || 'Select language'} />
                   </SelectTrigger>
                   <SelectContent>
                     {EXAM_PAPER_LANGUAGES.map(lang => (
@@ -679,7 +679,7 @@ export default function ExamPaperTemplates() {
                 />
               )}
             />
-            <Label>{t('examPapers.active') || 'Active'}</Label>
+            <Label>{t('events.active') || 'Active'}</Label>
           </div>
           <div className="flex items-center gap-2">
             <Controller
@@ -704,9 +704,9 @@ export default function ExamPaperTemplates() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">{t('examPapers.title') || 'Exam Papers'}</h1>
+          <h1 className="text-2xl font-semibold">{t('events.title') || 'Exam Papers'}</h1>
           <p className="text-sm text-muted-foreground">
-            {t('examPapers.description') || 'Create and manage exam papers'}
+            {t('events.description') || 'Create and manage exam papers'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -717,15 +717,15 @@ export default function ExamPaperTemplates() {
                 { key: 'title', label: t('examPapers.templateTitle') || 'Title' },
                 { key: 'subject', label: t('examPapers.subject') || 'Subject' },
                 { key: 'exam', label: t('examPapers.exam') || 'Exam' },
-                { key: 'className', label: t('examPapers.class') || 'Class' },
+                { key: 'className', label: t('search.class') || 'Class' },
                 { key: 'language', label: t('examPapers.language') || 'Language' },
                 { key: 'duration', label: t('examPapers.duration') || 'Duration' },
                 { key: 'questionsCount', label: t('examPapers.questions') || 'Questions' },
                 { key: 'totalMarks', label: t('examPapers.marks') || 'Total Marks' },
-                { key: 'status', label: t('examPapers.status') || 'Status' },
+                { key: 'status', label: t('events.status') || 'Status' },
               ]}
               reportKey="exam_paper_templates"
-              title={t('examPapers.title') || 'Exam Papers'}
+              title={t('events.title') || 'Exam Papers'}
               transformData={(data) => data.map((template: ExamPaperTemplate) => ({
                 title: template.title || '-',
                 subject: getSubjectName(template.subjectId),
@@ -735,7 +735,7 @@ export default function ExamPaperTemplates() {
                 duration: `${template.durationMinutes} min`,
                 questionsCount: template.itemsCount ?? template.items?.length ?? 0,
                 totalMarks: template.computedTotalMarks || template.totalMarks || '-',
-                status: template.isActive ? (t('common.active') || 'Active') : (t('common.inactive') || 'Inactive'),
+                status: template.isActive ? (t('events.active') || 'Active') : (t('events.inactive') || 'Inactive'),
               }))}
               buildFiltersSummary={() => {
                 const parts: string[] = [];
@@ -761,7 +761,7 @@ export default function ExamPaperTemplates() {
           {hasCreate && activeTab === 'templates' && (
             <Button onClick={openCreateDialog}>
               <Plus className="h-4 w-4 mr-2" />
-              {t('examPapers.create') || 'Create Template'}
+              {t('events.create') || 'Create Template'}
             </Button>
           )}
         </div>
@@ -782,12 +782,12 @@ export default function ExamPaperTemplates() {
                 {/* Search */}
                 <div className="relative md:col-span-1">
                   <Label className="text-xs font-medium text-muted-foreground mb-2 block">
-                    {t('examPapers.search') || 'Search'}
+                    {t('events.search') || 'Search'}
                   </Label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder={t('examPapers.searchPlaceholder') || 'Search papers...'}
+                      placeholder={t('assets.searchPlaceholder') || 'Search papers...'}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-9"
@@ -798,14 +798,14 @@ export default function ExamPaperTemplates() {
             {/* School Filter */}
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground">
-                {t('examPapers.filterSchool') || 'School'}
+                {t('questionBank.filterSchool') || 'School'}
               </Label>
               <Select value={selectedSchoolId || 'all'} onValueChange={(val) => setSelectedSchoolId(val === 'all' ? undefined : val)}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('examPapers.filterSchool') || 'School'} />
+                  <SelectValue placeholder={t('questionBank.filterSchool') || 'School'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('common.all') || 'All Schools'}</SelectItem>
+                  <SelectItem value="all">{t('subjects.all') || 'All Schools'}</SelectItem>
                   {(schools || []).map(school => (
                     <SelectItem key={school.id} value={school.id}>
                       {school.schoolName}
@@ -818,14 +818,14 @@ export default function ExamPaperTemplates() {
             {/* Subject Filter */}
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground">
-                {t('examPapers.filterSubject') || 'Subject'}
+                {t('questionBank.filterSubject') || 'Subject'}
               </Label>
               <Select value={selectedSubjectId || 'all'} onValueChange={(val) => setSelectedSubjectId(val === 'all' ? undefined : val)}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('examPapers.filterSubject') || 'Subject'} />
+                  <SelectValue placeholder={t('questionBank.filterSubject') || 'Subject'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('common.all') || 'All Subjects'}</SelectItem>
+                  <SelectItem value="all">{t('subjects.all') || 'All Subjects'}</SelectItem>
                   {(subjects || []).map(subject => (
                     <SelectItem key={subject.id} value={subject.id}>
                       {subject.name}
@@ -845,7 +845,7 @@ export default function ExamPaperTemplates() {
                   <SelectValue placeholder={t('examPapers.filterExam') || 'Exam'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('common.all') || 'All Exams'}</SelectItem>
+                  <SelectItem value="all">{t('subjects.all') || 'All Exams'}</SelectItem>
                   {(exams || []).map(exam => (
                     <SelectItem key={exam.id} value={exam.id}>
                       {exam.name}
@@ -892,8 +892,8 @@ export default function ExamPaperTemplates() {
                   <TableHead>{t('examPapers.duration') || 'Duration'}</TableHead>
                   <TableHead>{t('examPapers.questions') || 'Questions'}</TableHead>
                   <TableHead>{t('examPapers.marks') || 'Marks'}</TableHead>
-                  <TableHead>{t('examPapers.status') || 'Status'}</TableHead>
-                  <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                  <TableHead>{t('events.status') || 'Status'}</TableHead>
+                  <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -904,7 +904,7 @@ export default function ExamPaperTemplates() {
                         {template.title}
                         {template.isDefaultForExamSubject && (
                           <Badge variant="default" className="text-xs">
-                            {t('examPapers.default') || 'Default'}
+                            {t('events.default') || 'Default'}
                           </Badge>
                         )}
                       </div>
@@ -931,9 +931,9 @@ export default function ExamPaperTemplates() {
                     </TableCell>
                     <TableCell>
                       {template.isActive ? (
-                        <Badge variant="default">{t('common.active') || 'Active'}</Badge>
+                        <Badge variant="default">{t('events.active') || 'Active'}</Badge>
                       ) : (
-                        <Badge variant="outline">{t('common.inactive') || 'Inactive'}</Badge>
+                        <Badge variant="outline">{t('events.inactive') || 'Inactive'}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -944,7 +944,7 @@ export default function ExamPaperTemplates() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t('events.actions') || 'Actions'}</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           {hasRead && (
                             <>
@@ -953,7 +953,7 @@ export default function ExamPaperTemplates() {
                                 setIsPreviewDialogOpen(true);
                               }}>
                                 <Eye className="h-4 w-4 mr-2" />
-                                {t('examPapers.preview') || 'Preview'}
+                                {t('events.preview') || 'Preview'}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 setSelectedTemplate(template);
@@ -973,13 +973,13 @@ export default function ExamPaperTemplates() {
                           {hasUpdate && (
                             <DropdownMenuItem onClick={() => openEditDialog(template)}>
                               <Pencil className="h-4 w-4 mr-2" />
-                              {t('common.edit') || 'Edit'}
+                              {t('events.edit') || 'Edit'}
                             </DropdownMenuItem>
                           )}
                           {hasCreate && (
                             <DropdownMenuItem onClick={() => handleDuplicate(template)}>
                               <Copy className="h-4 w-4 mr-2" />
-                              {t('common.duplicate') || 'Duplicate'}
+                              {t('events.duplicate') || 'Duplicate'}
                             </DropdownMenuItem>
                           )}
                           {hasDelete && (
@@ -990,7 +990,7 @@ export default function ExamPaperTemplates() {
                                 className="text-destructive"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                {t('common.delete') || 'Delete'}
+                                {t('events.delete') || 'Delete'}
                               </DropdownMenuItem>
                             </>
                           )}
@@ -1018,10 +1018,10 @@ export default function ExamPaperTemplates() {
             <TemplateFormFields />
             <DialogFooter className="mt-4">
               <Button type="button" variant="outline" onClick={() => { setIsCreateDialogOpen(false); resetForm(); }}>
-                {t('common.cancel') || 'Cancel'}
+                {t('events.cancel') || 'Cancel'}
               </Button>
               <Button type="submit" disabled={createTemplate.isPending}>
-                {createTemplate.isPending ? (t('common.creating') || 'Creating...') : (t('common.create') || 'Create')}
+                {createTemplate.isPending ? (t('events.creating') || 'Creating...') : (t('events.create') || 'Create')}
               </Button>
             </DialogFooter>
           </form>
@@ -1041,10 +1041,10 @@ export default function ExamPaperTemplates() {
             <TemplateFormFields isEdit />
             <DialogFooter className="mt-4">
               <Button type="button" variant="outline" onClick={() => { setIsEditDialogOpen(false); resetForm(); }}>
-                {t('common.cancel') || 'Cancel'}
+                {t('events.cancel') || 'Cancel'}
               </Button>
               <Button type="submit" disabled={updateTemplate.isPending}>
-                {updateTemplate.isPending ? (t('common.updating') || 'Updating...') : (t('common.update') || 'Update')}
+                {updateTemplate.isPending ? (t('events.updating') || 'Updating...') : (t('events.update') || 'Update')}
               </Button>
             </DialogFooter>
           </form>
@@ -1055,7 +1055,7 @@ export default function ExamPaperTemplates() {
           <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('examPapers.deleteConfirm') || 'Delete Exam Paper'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('assets.deleteConfirm') || 'Delete Exam Paper'}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('examPapers.deleteConfirmMessage') || 'Are you sure you want to delete this exam paper? This action cannot be undone.'}
               {selectedTemplate && (
@@ -1064,12 +1064,12 @@ export default function ExamPaperTemplates() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDelete} 
               className="bg-destructive text-destructive-foreground"
             >
-              {t('common.delete') || 'Delete'}
+              {t('events.delete') || 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

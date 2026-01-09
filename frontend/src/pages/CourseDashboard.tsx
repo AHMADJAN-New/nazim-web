@@ -143,9 +143,9 @@ export default function CourseDashboard() {
   // Report export columns for attendance
   const attendanceReportColumns = useMemo(() => [
     { key: 'student_name', label: t('courses.student') || 'Student' },
-    { key: 'father_name', label: t('courses.fatherName') || 'Father Name' },
-    { key: 'course_name', label: t('courses.course') || 'Course' },
-    { key: 'status', label: t('courses.status') || 'Status' },
+    { key: 'father_name', label: t('examReports.fatherName') || 'Father Name' },
+    { key: 'course_name', label: t('certificateTemplates.course') || 'Course' },
+    { key: 'status', label: t('events.status') || 'Status' },
     { key: 'registration_date', label: t('courses.registration') || 'Registration' },
     { key: 'attendance_rate', label: t('courses.attendanceRate') || 'Attendance Rate' },
   ], [t]);
@@ -178,7 +178,7 @@ export default function CourseDashboard() {
   // Export functions
   const exportToCsv = () => {
     let csvContent = '';
-    const headers = [t('courses.studentName'), t('courses.fatherName'), t('courses.course'), t('courses.status'), t('courses.registration'), t('courses.completionDate')];
+    const headers = [t('courses.studentName'), t('examReports.fatherName'), t('certificateTemplates.course'), t('events.status'), t('courses.registration'), t('courses.completionDate')];
     csvContent += headers.join(',') + '\n';
 
     courseStudents.forEach((student) => {
@@ -210,7 +210,7 @@ export default function CourseDashboard() {
       : t('courses.allCoursesReport');
 
     const tableBody = [
-      [t('courses.studentName'), t('courses.fatherName'), t('courses.course'), t('courses.status'), t('courses.regDate')],
+      [t('courses.studentName'), t('examReports.fatherName'), t('certificateTemplates.course'), t('events.status'), t('courses.regDate')],
     ];
 
     courseStudents.forEach((student) => {
@@ -232,7 +232,7 @@ export default function CourseDashboard() {
         { text: `${t('courses.generated')} ${format(new Date(), 'MMM d, yyyy HH:mm')}`, style: 'subheader' },
         { text: '\n' },
         {
-          text: `${t('courses.summary')}: ${courseStudents.length} ${t('nav.students') || 'students'}, ${courseStudents.filter((s) => s.status === 'completed').length} ${t('courses.completed')}, ${courseStudents.filter((s) => s.status === 'dropped').length} ${t('courses.dropped')}`,
+          text: `${t('examReports.summary')}: ${courseStudents.length} ${t('table.students') || 'students'}, ${courseStudents.filter((s) => s.status === 'completed').length} ${t('courses.completed')}, ${courseStudents.filter((s) => s.status === 'dropped').length} ${t('courses.dropped')}`,
           style: 'summary',
         },
         { text: '\n\n' },
@@ -277,7 +277,7 @@ export default function CourseDashboard() {
         title={t('courses.courseDashboard')}
         secondaryActions={[
           {
-            label: t('courses.management'),
+            label: t('students.management'),
             onClick: () => navigate('/short-term-courses'),
             icon: <BookOpen className="h-4 w-4" />,
             variant: 'outline',
@@ -301,14 +301,14 @@ export default function CourseDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{overallStats.totalCourses}</div>
             <p className="text-xs text-muted-foreground">
-              {overallStats.activeCourses} {t('courses.active')}, {overallStats.closedCourses} {t('courses.closed')}
+              {overallStats.activeCourses} {t('events.active')}, {overallStats.closedCourses} {t('courses.closed')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t('courses.totalStudents')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('students.totalStudents')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -388,7 +388,7 @@ export default function CourseDashboard() {
         <CardContent>
           <div className="flex gap-4 mb-6">
             <div className="w-64">
-              <Label>{t('courses.selectCourse')}</Label>
+              <Label>{t('events.selectCourse')}</Label>
               <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
                 <SelectTrigger>
                   <SelectValue placeholder={t('courses.allCourses')} />
@@ -424,8 +424,8 @@ export default function CourseDashboard() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('courses.student')}</TableHead>
-                  <TableHead>{t('courses.course')}</TableHead>
-                  <TableHead>{t('courses.status')}</TableHead>
+                  <TableHead>{t('certificateTemplates.course')}</TableHead>
+                  <TableHead>{t('events.status')}</TableHead>
                   <TableHead>{t('courses.registration')}</TableHead>
                   <TableHead>{t('courses.completionDate')}</TableHead>
                   {reportType === 'attendance' && <TableHead>{t('courses.attendanceRate')}</TableHead>}
@@ -525,7 +525,7 @@ export default function CourseDashboard() {
               <CardContent>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{t('common.total')}</span>
+                    <span className="text-muted-foreground">{t('events.total')}</span>
                     <span className="font-medium">{students.length}</span>
                   </div>
                   <div className="flex justify-between text-sm">

@@ -209,14 +209,14 @@ export default function IdCardTemplates() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-2xl">{t('idCards.title') || 'ID Card Templates'}</CardTitle>
+              <CardTitle className="text-2xl">{t('events.title') || 'ID Card Templates'}</CardTitle>
               <p className="text-sm text-muted-foreground mt-1 hidden md:block">
-                {t('idCards.description') || 'Create and manage ID card templates for your organization'}
+                {t('events.description') || 'Create and manage ID card templates for your organization'}
               </p>
             </div>
             <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto">
               <Plus className="h-4 w-4" />
-              <span className="ml-2">{t('idCards.createTemplate') || 'Create Template'}</span>
+              <span className="ml-2">{t('examPapers.createTemplate') || 'Create Template'}</span>
             </Button>
           </div>
         </CardHeader>
@@ -224,12 +224,12 @@ export default function IdCardTemplates() {
 
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <p className="text-muted-foreground">{t('common.loading')}</p>
+              <p className="text-muted-foreground">{t('events.loading')}</p>
             </div>
           ) : templates.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">{t('idCards.noTemplates') || 'No templates yet'}</p>
+              <p className="text-muted-foreground">{t('examPapers.noTemplates') || 'No templates yet'}</p>
               <Button className="mt-4" onClick={() => handleOpenDialog()}>
                 {t('idCards.createFirstTemplate') || 'Create Your First Template'}
               </Button>
@@ -240,11 +240,11 @@ export default function IdCardTemplates() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('idCards.templateName') || 'Template Name'}</TableHead>
-                  <TableHead>{t('idCards.description') || 'Description'}</TableHead>
+                  <TableHead>{t('events.description') || 'Description'}</TableHead>
                   <TableHead>{t('idCards.background') || 'Background'}</TableHead>
-                  <TableHead>{t('idCards.status') || 'Status'}</TableHead>
+                  <TableHead>{t('events.status') || 'Status'}</TableHead>
                   <TableHead>{t('idCards.created') || 'Created'}</TableHead>
-                  <TableHead className="text-right">{t('common.actions')}</TableHead>
+                  <TableHead className="text-right">{t('events.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -256,7 +256,7 @@ export default function IdCardTemplates() {
                         {template.isDefault && (
                           <Badge variant="secondary">
                             <Star className="h-3 w-3 mr-1" />
-                            {t('idCards.default') || 'Default'}
+                            {t('events.default') || 'Default'}
                           </Badge>
                         )}
                       </div>
@@ -272,19 +272,19 @@ export default function IdCardTemplates() {
                             <span className="text-sm">{t('idCards.front') || 'Front'}</span>
                           </div>
                         ) : (
-                          <span className="text-muted-foreground text-sm">{t('idCards.none') || 'None'}</span>
+                          <span className="text-muted-foreground text-sm">{t('events.none') || 'None'}</span>
                         )}
                         {template.backgroundImagePathBack && (
                           <div className="flex items-center gap-1 text-green-600">
                             <Image className="h-4 w-4" />
-                            <span className="text-sm">{t('idCards.back') || 'Back'}</span>
+                            <span className="text-sm">{t('events.back') || 'Back'}</span>
                           </div>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={template.isActive ? 'default' : 'secondary'}>
-                        {template.isActive ? (t('idCards.active') || 'Active') : (t('idCards.inactive') || 'Inactive')}
+                        {template.isActive ? (t('events.active') || 'Active') : (t('events.inactive') || 'Inactive')}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -298,10 +298,10 @@ export default function IdCardTemplates() {
                             variant="outline"
                             onClick={() => handleSetDefault(template.id)}
                             className="flex-shrink-0"
-                            aria-label={t('idCards.setAsDefault') || 'Set as Default'}
+                            aria-label={t('certificateTemplates.setAsDefault') || 'Set as Default'}
                           >
                             <Star className="h-4 w-4" />
-                            <span className="hidden sm:inline ml-2">{t('idCards.setAsDefault') || 'Set as Default'}</span>
+                            <span className="hidden sm:inline ml-2">{t('certificateTemplates.setAsDefault') || 'Set as Default'}</span>
                           </Button>
                         )}
                         <Button
@@ -309,20 +309,20 @@ export default function IdCardTemplates() {
                           variant="outline"
                           onClick={() => handleOpenLayoutEditor(template)}
                           className="flex-shrink-0"
-                          aria-label={t('idCards.editLayout') || 'Edit Layout'}
+                          aria-label={t('certificateTemplates.editLayout') || 'Edit Layout'}
                         >
                           <Layout className="h-4 w-4" />
-                          <span className="hidden sm:inline ml-2">{t('idCards.editLayout') || 'Edit Layout'}</span>
+                          <span className="hidden sm:inline ml-2">{t('certificateTemplates.editLayout') || 'Edit Layout'}</span>
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => handleOpenDialog(template)}
                           className="flex-shrink-0"
-                          aria-label={t('common.edit') || 'Edit'}
+                          aria-label={t('events.edit') || 'Edit'}
                         >
                           <Pencil className="h-4 w-4" />
-                          <span className="hidden sm:inline ml-2">{t('common.edit') || 'Edit'}</span>
+                          <span className="hidden sm:inline ml-2">{t('events.edit') || 'Edit'}</span>
                         </Button>
                         <Button
                           size="sm"
@@ -332,10 +332,10 @@ export default function IdCardTemplates() {
                             setIsDeleteDialogOpen(true);
                           }}
                           className="flex-shrink-0"
-                          aria-label={t('common.delete') || 'Delete'}
+                          aria-label={t('events.delete') || 'Delete'}
                         >
                           <Trash2 className="h-4 w-4" />
-                          <span className="hidden sm:inline ml-2">{t('common.delete') || 'Delete'}</span>
+                          <span className="hidden sm:inline ml-2">{t('events.delete') || 'Delete'}</span>
                         </Button>
                       </div>
                     </TableCell>
@@ -353,7 +353,7 @@ export default function IdCardTemplates() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {selectedTemplate ? (t('idCards.editTemplate') || 'Edit Template') : (t('idCards.createTemplate') || 'Create Template')}
+              {selectedTemplate ? (t('examPapers.editTemplate') || 'Edit Template') : (t('examPapers.createTemplate') || 'Create Template')}
             </DialogTitle>
             <DialogDescription>
               {selectedTemplate 
@@ -373,11 +373,11 @@ export default function IdCardTemplates() {
             </div>
 
             <div className="space-y-2">
-              <Label>{t('idCards.description') || 'Description'}</Label>
+              <Label>{t('events.description') || 'Description'}</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder={t('idCards.descriptionPlaceholder') || 'Description of this template...'}
+                placeholder={t('permissions.descriptionPlaceholder') || 'Description of this template...'}
                 rows={2}
               />
             </div>
@@ -413,28 +413,28 @@ export default function IdCardTemplates() {
                   checked={isDefault}
                   onCheckedChange={setIsDefault}
                 />
-                <Label>{t('idCards.setAsDefault') || 'Set as Default'}</Label>
+                <Label>{t('certificateTemplates.setAsDefault') || 'Set as Default'}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
                   checked={isActive}
                   onCheckedChange={setIsActive}
                 />
-                <Label>{t('idCards.active') || 'Active'}</Label>
+                <Label>{t('events.active') || 'Active'}</Label>
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleCloseDialog}>
-              {t('common.cancel')}
+              {t('events.cancel')}
             </Button>
             <Button
               onClick={handleSave}
               disabled={!name || createTemplate.isPending || updateTemplate.isPending}
             >
               {createTemplate.isPending || updateTemplate.isPending 
-                ? (t('common.saving') || 'Saving...') 
-                : (t('common.save') || 'Save Template')}
+                ? (t('events.saving') || 'Saving...') 
+                : (t('events.save') || 'Save Template')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -445,7 +445,7 @@ export default function IdCardTemplates() {
         <Dialog open={isLayoutEditorOpen} onOpenChange={setIsLayoutEditorOpen}>
           <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{t('idCards.editLayout') || 'Edit Layout'}: {selectedTemplate.name}</DialogTitle>
+              <DialogTitle>{t('certificateTemplates.editLayout') || 'Edit Layout'}: {selectedTemplate.name}</DialogTitle>
               <DialogDescription>
                 {t('idCards.editLayoutDescription') || 'Customize the layout, positioning, and styling of ID card elements. Drag elements to reposition them.'}
               </DialogDescription>
@@ -467,14 +467,14 @@ export default function IdCardTemplates() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('idCards.deleteTemplate') || 'Delete Template'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('certificateTemplates.deleteTemplate') || 'Delete Template'}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('idCards.deleteConfirmation') || 'Are you sure you want to delete this ID card template? This action cannot be undone.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>{t('common.delete')}</AlertDialogAction>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t('events.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -371,7 +371,7 @@ export function CardPreview({
       printWindow.document.write(`
         <html>
           <head>
-            <title>${t('idCards.printPreview')}</title>
+            <title>${t('assets.printPreview')}</title>
             <style>
               body { margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; }
               img { max-width: 100%; height: auto; }
@@ -411,7 +411,7 @@ export function CardPreview({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="front">{t('idCards.front')}</SelectItem>
-                  <SelectItem value="back">{t('idCards.back')}</SelectItem>
+                  <SelectItem value="back">{t('events.back')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -423,7 +423,7 @@ export function CardPreview({
                 disabled={isGenerating}
               >
                 <Download className="h-4 w-4 mr-2" />
-                {t('common.download')}
+                {t('events.download')}
               </Button>
               <Button
                 variant="outline"
@@ -432,7 +432,7 @@ export function CardPreview({
                 disabled={isGenerating || !previewImage}
               >
                 <Printer className="h-4 w-4 mr-2" />
-                {t('common.print')}
+                {t('events.print')}
               </Button>
             </div>
           </div>
@@ -442,7 +442,7 @@ export function CardPreview({
           {isGenerating ? (
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
+              <p className="text-sm text-muted-foreground">{t('events.loading')}</p>
             </div>
           ) : previewImage ? (
             <img

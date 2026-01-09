@@ -64,7 +64,7 @@ export default function PrivacyPolicy() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{t('common.selectLanguage') || 'Select Language'}</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('events.selectLanguage') || 'Select Language'}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {languages.map((lang) => (
                   <DropdownMenuItem
@@ -102,21 +102,21 @@ export default function PrivacyPolicy() {
             </div>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            {t('landing.privacyPolicy.title') || 'Privacy Policy'}
+            {t('privacyPolicy.title') || 'Privacy Policy'}
           </h1>
           <p className="text-muted-foreground">
-            {t('landing.privacyPolicy.lastUpdated') || 'Last Updated: January 2026'}
+            {t('privacyPolicy.lastUpdated') || 'Last Updated: January 2026'}
           </p>
         </div>
 
         {/* Introduction */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>{t('landing.privacyPolicy.introduction.title') || 'Introduction'}</CardTitle>
+            <CardTitle>{t('privacyPolicy.introduction.title') || 'Introduction'}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground leading-relaxed">
-              {t('landing.privacyPolicy.introduction.content') || 'At Nazim School Management System, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform.'}
+              {t('privacyPolicy.introduction.content') || 'At Nazim School Management System, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform.'}
             </p>
           </CardContent>
         </Card>
@@ -126,26 +126,26 @@ export default function PrivacyPolicy() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              {t('landing.privacyPolicy.informationWeCollect.title') || 'Information We Collect'}
+              {t('privacyPolicy.informationWeCollect.title') || 'Information We Collect'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <h3 className="font-semibold mb-2">{t('landing.privacyPolicy.informationWeCollect.personal.title') || 'Personal Information'}</h3>
+              <h3 className="font-semibold mb-2">{t('privacyPolicy.informationWeCollect.personal.title') || 'Personal Information'}</h3>
               <p className="text-sm text-muted-foreground">
-                {t('landing.privacyPolicy.informationWeCollect.personal.content') || 'We collect personal information that you provide to us, such as your name, email address, phone number, and school information when you register for our services.'}
+                {t('privacyPolicy.informationWeCollect.personal.content') || 'We collect personal information that you provide to us, such as your name, email address, phone number, and school information when you register for our services.'}
               </p>
             </div>
             <div>
-              <h3 className="font-semibold mb-2">{t('landing.privacyPolicy.informationWeCollect.usage.title') || 'Usage Information'}</h3>
+              <h3 className="font-semibold mb-2">{t('privacyPolicy.informationWeCollect.usage.title') || 'Usage Information'}</h3>
               <p className="text-sm text-muted-foreground">
-                {t('landing.privacyPolicy.informationWeCollect.usage.content') || 'We automatically collect information about how you use our platform, including pages visited, features used, and time spent on the platform.'}
+                {t('privacyPolicy.informationWeCollect.usage.content') || 'We automatically collect information about how you use our platform, including pages visited, features used, and time spent on the platform.'}
               </p>
             </div>
             <div>
-              <h3 className="font-semibold mb-2">{t('landing.privacyPolicy.informationWeCollect.technical.title') || 'Technical Information'}</h3>
+              <h3 className="font-semibold mb-2">{t('privacyPolicy.informationWeCollect.technical.title') || 'Technical Information'}</h3>
               <p className="text-sm text-muted-foreground">
-                {t('landing.privacyPolicy.informationWeCollect.technical.content') || 'We collect technical information such as IP address, browser type, device information, and operating system for security and performance purposes.'}
+                {t('privacyPolicy.informationWeCollect.technical.content') || 'We collect technical information such as IP address, browser type, device information, and operating system for security and performance purposes.'}
               </p>
             </div>
           </CardContent>
@@ -156,16 +156,16 @@ export default function PrivacyPolicy() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Eye className="h-5 w-5" />
-              {t('landing.privacyPolicy.howWeUse.title') || 'How We Use Your Information'}
+              {t('privacyPolicy.howWeUse.title') || 'How We Use Your Information'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2 text-muted-foreground">
-              <li>• {t('landing.privacyPolicy.howWeUse.provide') || 'To provide, maintain, and improve our services'}</li>
-              <li>• {t('landing.privacyPolicy.howWeUse.communicate') || 'To communicate with you about your account and our services'}</li>
-              <li>• {t('landing.privacyPolicy.howWeUse.security') || 'To ensure the security and integrity of our platform'}</li>
-              <li>• {t('landing.privacyPolicy.howWeUse.support') || 'To provide customer support and respond to your inquiries'}</li>
-              <li>• {t('landing.privacyPolicy.howWeUse.analytics') || 'To analyze usage patterns and improve user experience'}</li>
+              <li>• {t('privacyPolicy.howWeUse.provide') || 'To provide, maintain, and improve our services'}</li>
+              <li>• {t('privacyPolicy.howWeUse.communicate') || 'To communicate with you about your account and our services'}</li>
+              <li>• {t('privacyPolicy.howWeUse.security') || 'To ensure the security and integrity of our platform'}</li>
+              <li>• {t('privacyPolicy.howWeUse.support') || 'To provide customer support and respond to your inquiries'}</li>
+              <li>• {t('privacyPolicy.howWeUse.analytics') || 'To analyze usage patterns and improve user experience'}</li>
             </ul>
           </CardContent>
         </Card>
@@ -175,12 +175,12 @@ export default function PrivacyPolicy() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Lock className="h-5 w-5" />
-              {t('landing.privacyPolicy.dataSecurity.title') || 'Data Security'}
+              {t('privacyPolicy.dataSecurity.title') || 'Data Security'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground leading-relaxed">
-              {t('landing.privacyPolicy.dataSecurity.content') || 'We implement industry-standard security measures to protect your information, including encryption, secure data storage, and access controls. However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.'}
+              {t('privacyPolicy.dataSecurity.content') || 'We implement industry-standard security measures to protect your information, including encryption, secure data storage, and access controls. However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.'}
             </p>
           </CardContent>
         </Card>
@@ -188,11 +188,11 @@ export default function PrivacyPolicy() {
         {/* Data Retention */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>{t('landing.privacyPolicy.dataRetention.title') || 'Data Retention'}</CardTitle>
+            <CardTitle>{t('privacyPolicy.dataRetention.title') || 'Data Retention'}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground leading-relaxed">
-              {t('landing.privacyPolicy.dataRetention.content') || 'We retain your personal information for as long as necessary to provide our services and comply with legal obligations. When you delete your account, we will delete or anonymize your personal information, except where we are required to retain it by law.'}
+              {t('privacyPolicy.dataRetention.content') || 'We retain your personal information for as long as necessary to provide our services and comply with legal obligations. When you delete your account, we will delete or anonymize your personal information, except where we are required to retain it by law.'}
             </p>
           </CardContent>
         </Card>
@@ -200,18 +200,18 @@ export default function PrivacyPolicy() {
         {/* Your Rights */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>{t('landing.privacyPolicy.yourRights.title') || 'Your Rights'}</CardTitle>
+            <CardTitle>{t('privacyPolicy.yourRights.title') || 'Your Rights'}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              {t('landing.privacyPolicy.yourRights.intro') || 'You have the right to:'}
+              {t('privacyPolicy.yourRights.intro') || 'You have the right to:'}
             </p>
             <ul className="space-y-2 text-muted-foreground">
-              <li>• {t('landing.privacyPolicy.yourRights.access') || 'Access your personal information'}</li>
-              <li>• {t('landing.privacyPolicy.yourRights.correct') || 'Correct inaccurate or incomplete information'}</li>
-              <li>• {t('landing.privacyPolicy.yourRights.delete') || 'Request deletion of your personal information'}</li>
-              <li>• {t('landing.privacyPolicy.yourRights.export') || 'Export your data in a portable format'}</li>
-              <li>• {t('landing.privacyPolicy.yourRights.object') || 'Object to processing of your personal information'}</li>
+              <li>• {t('privacyPolicy.yourRights.access') || 'Access your personal information'}</li>
+              <li>• {t('privacyPolicy.yourRights.correct') || 'Correct inaccurate or incomplete information'}</li>
+              <li>• {t('privacyPolicy.yourRights.delete') || 'Request deletion of your personal information'}</li>
+              <li>• {t('privacyPolicy.yourRights.export') || 'Export your data in a portable format'}</li>
+              <li>• {t('privacyPolicy.yourRights.object') || 'Object to processing of your personal information'}</li>
             </ul>
           </CardContent>
         </Card>
@@ -219,11 +219,11 @@ export default function PrivacyPolicy() {
         {/* Contact */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('landing.privacyPolicy.contact.title') || 'Contact Us'}</CardTitle>
+            <CardTitle>{t('privacyPolicy.contact.title') || 'Contact Us'}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground leading-relaxed">
-              {t('landing.privacyPolicy.contact.content') || 'If you have any questions about this Privacy Policy or our data practices, please contact us at support@nazimapp.com or through our contact form.'}
+              {t('privacyPolicy.contact.content') || 'If you have any questions about this Privacy Policy or our data practices, please contact us at support@nazimapp.com or through our contact form.'}
             </p>
           </CardContent>
         </Card>
@@ -242,7 +242,7 @@ export default function PrivacyPolicy() {
                 <span className="text-xl font-bold">Nazim SMS</span>
               </div>
               <p className="text-muted-foreground">
-                {t('landing.footer.tagline') || 'Empowering educational institutions with modern technology solutions for better learning outcomes.'}
+                {t('footer.tagline') || 'Empowering educational institutions with modern technology solutions for better learning outcomes.'}
               </p>
               <div className="flex space-x-4">
                 <Button variant="ghost" size="sm">Facebook</Button>
@@ -253,42 +253,42 @@ export default function PrivacyPolicy() {
 
             {/* Product */}
             <div>
-              <h4 className="font-semibold mb-4">{t('landing.footer.product') || 'Product'}</h4>
+              <h4 className="font-semibold mb-4">{t('footer.product') || 'Product'}</h4>
               <ul className="space-y-2 text-muted-foreground">
-                <li><a href="#features" className="hover:text-foreground transition-colors">{t('landing.footer.features') || 'Features'}</a></li>
-                <li><a href="#pricing" className="hover:text-foreground transition-colors">{t('landing.footer.pricing') || 'Pricing'}</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.security') || 'Security'}</a></li>
+                <li><a href="#features" className="hover:text-foreground transition-colors">{t('footer.features') || 'Features'}</a></li>
+                <li><a href="#pricing" className="hover:text-foreground transition-colors">{t('footer.pricing') || 'Pricing'}</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.security') || 'Security'}</a></li>
               </ul>
             </div>
 
             {/* Support */}
             <div>
-              <h4 className="font-semibold mb-4">{t('landing.footer.support') || 'Support'}</h4>
+              <h4 className="font-semibold mb-4">{t('footer.support') || 'Support'}</h4>
               <ul className="space-y-2 text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.helpCenter') || 'Help Center'}</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.trainingVideos') || 'Training Videos'}</a></li>
-                <li><a href="#contact" className="hover:text-foreground transition-colors">{t('landing.footer.contactSupport') || 'Contact Support'}</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.systemStatus') || 'System Status'}</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.releaseNotes') || 'Release Notes'}</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.helpCenter') || 'Help Center'}</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.trainingVideos') || 'Training Videos'}</a></li>
+                <li><a href="#contact" className="hover:text-foreground transition-colors">{t('footer.contactSupport') || 'Contact Support'}</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.systemStatus') || 'System Status'}</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.releaseNotes') || 'Release Notes'}</a></li>
               </ul>
             </div>
 
             {/* Company */}
             <div>
-              <h4 className="font-semibold mb-4">{t('landing.footer.company') || 'Company'}</h4>
+              <h4 className="font-semibold mb-4">{t('footer.company') || 'Company'}</h4>
               <ul className="space-y-2 text-muted-foreground">
-                <li><Link to="/about" className="hover:text-foreground transition-colors">{t('landing.footer.aboutUs') || 'About Us'}</Link></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.careers') || 'Careers'}</a></li>
-                <li><Link to="/privacy" className="hover:text-foreground transition-colors">{t('landing.footer.privacyPolicy') || 'Privacy Policy'}</Link></li>
-                <li><Link to="/terms" className="hover:text-foreground transition-colors">{t('landing.footer.termsOfService') || 'Terms of Service'}</Link></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.cookiePolicy') || 'Cookie Policy'}</a></li>
+                <li><Link to="/about" className="hover:text-foreground transition-colors">{t('footer.aboutUs') || 'About Us'}</Link></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.careers') || 'Careers'}</a></li>
+                <li><Link to="/privacy" className="hover:text-foreground transition-colors">{t('footer.privacyPolicy') || 'Privacy Policy'}</Link></li>
+                <li><Link to="/terms" className="hover:text-foreground transition-colors">{t('footer.termsOfService') || 'Terms of Service'}</Link></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.cookiePolicy') || 'Cookie Policy'}</a></li>
               </ul>
             </div>
           </div>
 
           <div className="border-t mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-muted-foreground">
-              {t('landing.footer.copyright') || '© 2026 Nazim School Management System. All rights reserved.'}
+              {t('footer.copyright') || '© 2026 Nazim School Management System. All rights reserved.'}
             </p>
             <div className="flex items-center space-x-4 mt-4 md:mt-0">
               <Badge variant="outline" className="flex items-center space-x-1">

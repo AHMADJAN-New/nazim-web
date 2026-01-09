@@ -599,7 +599,7 @@ export function IdCardGenerator({
         <div className="space-y-4">
           {/* Template Selection */}
           <div className="space-y-2">
-            <Label>{t('idCards.selectTemplate')}</Label>
+            <Label>{t('studentReportCard.selectTemplate')}</Label>
             <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
               <SelectTrigger>
                 <SelectValue placeholder={t('idCards.selectTemplatePlaceholder')} />
@@ -612,7 +612,7 @@ export function IdCardGenerator({
                       {template.name}
                       {template.is_default && (
                         <Badge variant="secondary" className="ml-2">
-                          {t('common.default')}
+                          {t('events.default')}
                         </Badge>
                       )}
                     </SelectItem>
@@ -633,8 +633,8 @@ export function IdCardGenerator({
                     onClick={handleSelectAll}
                   >
                     {selectedStudents.length === students.length
-                      ? t('common.deselectAll')
-                      : t('common.selectAll')}
+                      ? t('events.deselectAll')
+                      : t('events.selectAll')}
                   </Button>
                 </div>
                 <div className="max-h-60 overflow-y-auto space-y-2">
@@ -668,7 +668,7 @@ export function IdCardGenerator({
             <Card>
               <CardContent className="pt-6">
                 <div className="space-y-3">
-                  <Label className="text-base font-semibold">{t('idCards.preview')}</Label>
+                  <Label className="text-base font-semibold">{t('events.preview')}</Label>
                   <div className="flex gap-2">
                     <Button
                       variant={previewSide === 'front' ? 'default' : 'outline'}
@@ -724,7 +724,7 @@ export function IdCardGenerator({
                       disabled={!previewStudentId || isGenerating}
                     >
                       <ImageIcon className="h-4 w-4 mr-2" />
-                      {t('idCards.preview')}
+                      {t('events.preview')}
                     </Button>
                   </div>
                 </div>
@@ -735,7 +735,7 @@ export function IdCardGenerator({
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isGenerating}>
-            {t('common.cancel')}
+            {t('events.cancel')}
           </Button>
           <Button
             onClick={handleExportImages}

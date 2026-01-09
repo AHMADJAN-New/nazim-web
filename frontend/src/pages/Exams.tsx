@@ -90,7 +90,7 @@ function ExpandedRowContent({ exam }: ExpandedRowContentProps) {
           <div className="flex-shrink-0 min-w-[200px]">
             <div className="flex items-center gap-2 mb-2">
               <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs font-medium text-muted-foreground">{t('exams.description') || 'Description'}</span>
+              <span className="text-xs font-medium text-muted-foreground">{t('events.description') || 'Description'}</span>
             </div>
             <p className="text-sm leading-relaxed">{exam.description}</p>
           </div>
@@ -105,19 +105,19 @@ function ExpandedRowContent({ exam }: ExpandedRowContentProps) {
             </div>
             <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-muted-foreground">{t('exams.classes') || 'Classes'}:</span>
+                <span className="text-xs text-muted-foreground">{t('nav.classes') || 'Classes'}:</span>
                 <span className="text-sm font-semibold">{summaryReport.totals.classes || 0}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-muted-foreground">{t('exams.subjects') || 'Subjects'}:</span>
+                <span className="text-xs text-muted-foreground">{t('events.subjects') || 'Subjects'}:</span>
                 <span className="text-sm font-semibold">{summaryReport.totals.subjects || 0}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-muted-foreground">{t('exams.students') || 'Students'}:</span>
+                <span className="text-xs text-muted-foreground">{t('table.students') || 'Students'}:</span>
                 <span className="text-sm font-semibold">{summaryReport.totals.enrolledStudents || 0}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-muted-foreground">{t('exams.results') || 'Results'}:</span>
+                <span className="text-xs text-muted-foreground">{t('students.results') || 'Results'}:</span>
                 <span className="text-sm font-semibold">{summaryReport.totals.resultsEntered || 0}</span>
               </div>
               {summaryReport.passFail && (
@@ -145,7 +145,7 @@ function ExpandedRowContent({ exam }: ExpandedRowContentProps) {
           <div className="flex items-center gap-2 mb-2">
             <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-xs font-medium text-muted-foreground">
-              {t('exams.classes') || 'Classes'} ({examClasses?.length || 0})
+              {t('nav.classes') || 'Classes'} ({examClasses?.length || 0})
             </span>
           </div>
           {isLoading ? (
@@ -271,7 +271,7 @@ export function Exams() {
 
   const handleCreate = () => {
     if (!formData.name || !formData.academicYearId) {
-      showToast.error(t('forms.required') || 'Please fill in all required fields');
+      showToast.error(t('events.required') || 'Please fill in all required fields');
       return;
     }
 
@@ -300,7 +300,7 @@ export function Exams() {
 
   const handleUpdate = () => {
     if (!selectedExam || !formData.name || !formData.academicYearId) {
-      showToast.error(t('forms.required') || 'Please fill in all required fields');
+      showToast.error(t('events.required') || 'Please fill in all required fields');
       return;
     }
 
@@ -439,11 +439,11 @@ export function Exams() {
     <div className="container mx-auto p-6 space-y-6">
       <PageHeader
         title={t('exams') || 'Exams'}
-        description={t('exams.management') || 'Create and manage exams for academic years'}
+        description={t('students.management') || 'Create and manage exams for academic years'}
         primaryAction={
           hasCreate
             ? {
-                label: t('exams.create') || 'Create Exam',
+                label: t('events.create') || 'Create Exam',
                 onClick: () => {
                   setFormData(prev => ({
                     ...prev,
@@ -458,12 +458,12 @@ export function Exams() {
       />
 
       {/* Filters */}
-      <FilterPanel title={t('common.filters')}>
+      <FilterPanel title={t('events.filters')}>
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={t('exams.searchPlaceholder') || 'Search exams...'}
+              placeholder={t('assets.searchPlaceholder') || 'Search exams...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -471,10 +471,10 @@ export function Exams() {
           </div>
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ExamStatus | 'all')}>
             <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder={t('exams.filterByStatus') || 'Filter by status'} />
+              <SelectValue placeholder={t('events.filterByStatus') || 'Filter by status'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+              <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
               <SelectItem value="draft">{t('exams.status.draft') || 'Draft'}</SelectItem>
               <SelectItem value="scheduled">{t('exams.status.scheduled') || 'Scheduled'}</SelectItem>
               <SelectItem value="in_progress">{t('exams.status.in_progress') || 'In Progress'}</SelectItem>
@@ -487,7 +487,7 @@ export function Exams() {
               <SelectValue placeholder={t('exams.filterByExamType') || 'Filter by exam type'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+              <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
               {examTypes?.filter(et => et.isActive).map((examType) => (
                 <SelectItem key={examType.id} value={examType.id}>
                   {examType.name}
@@ -500,7 +500,7 @@ export function Exams() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('exams.list') || 'Exams List'}</CardTitle>
+          <CardTitle>{t('grades.list') || 'Exams List'}</CardTitle>
           <CardDescription>
             {t('exams.listDescription') || 'View and manage all exams'}
           </CardDescription>
@@ -521,12 +521,12 @@ export function Exams() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12"></TableHead>
-                  <TableHead>{t('exams.name') || 'Name'}</TableHead>
+                  <TableHead>{t('events.name') || 'Name'}</TableHead>
                   <TableHead>{t('exams.examType') || 'Exam Type'}</TableHead>
                   <TableHead>{t('exams.academicYear') || 'Academic Year'}</TableHead>
-                  <TableHead>{t('exams.status') || 'Status'}</TableHead>
+                  <TableHead>{t('events.status') || 'Status'}</TableHead>
                   <TableHead>{t('exams.period') || 'Period'}</TableHead>
-                  <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                  <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -595,7 +595,7 @@ export function Exams() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t('events.actions') || 'Actions'}</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           
                           {/* Configuration Actions */}
@@ -626,13 +626,13 @@ export function Exams() {
                           {hasViewReports && (
                             <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/reports`)}>
                               <FileText className="h-4 w-4 mr-2" />
-                              {t('exams.reports') || 'Reports'}
+                              {t('nav.reports') || 'Reports'}
                             </DropdownMenuItem>
                           )}
                           {(hasManageAttendance || hasViewAttendanceReports) && (
                             <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/attendance`)}>
                               <UserCheck className="h-4 w-4 mr-2" />
-                              {t('exams.markAttendance') || 'Mark Attendance'}
+                              {t('dashboard.markAttendance') || 'Mark Attendance'}
                             </DropdownMenuItem>
                           )}
                           
@@ -658,7 +658,7 @@ export function Exams() {
                           {canEditExam(exam) && (
                             <DropdownMenuItem onClick={() => openEditDialog(exam)}>
                               <Pencil className="h-4 w-4 mr-2" />
-                              {t('common.edit') || 'Edit'}
+                              {t('events.edit') || 'Edit'}
                             </DropdownMenuItem>
                           )}
                           {canDeleteExam(exam) && (
@@ -667,7 +667,7 @@ export function Exams() {
                               className="text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              {t('common.delete') || 'Delete'}
+                              {t('events.delete') || 'Delete'}
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>
@@ -694,14 +694,14 @@ export function Exams() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('exams.create') || 'Create Exam'}</DialogTitle>
+            <DialogTitle>{t('events.create') || 'Create Exam'}</DialogTitle>
             <DialogDescription>
               {t('exams.createDescription') || 'Create a new exam for an academic year'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="create-name">{t('exams.name') || 'Name'} *</Label>
+              <Label htmlFor="create-name">{t('events.name') || 'Name'} *</Label>
               <Input
                 id="create-name"
                 value={formData.name}
@@ -737,7 +737,7 @@ export function Exams() {
                   <SelectValue placeholder={t('exams.selectExamType') || 'Select exam type (optional)'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
+                  <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
                   {(examTypes || []).filter(et => et.isActive).map((examType) => (
                     <SelectItem key={examType.id} value={examType.id}>
                       {examType.name}
@@ -747,33 +747,33 @@ export function Exams() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="create-description">{t('exams.description') || 'Description'}</Label>
+              <Label htmlFor="create-description">{t('events.description') || 'Description'}</Label>
               <Textarea
                 id="create-description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder={t('exams.descriptionPlaceholder') || 'Optional description'}
+                placeholder={t('permissions.descriptionPlaceholder') || 'Optional description'}
                 rows={3}
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="create-start-date">{t('exams.startDate') || 'Start Date'}</Label>
+                <Label htmlFor="create-start-date">{t('events.startDate') || 'Start Date'}</Label>
                 <CalendarDatePicker date={formData.startDate ? new Date(formData.startDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
               </div>
               <div>
-                <Label htmlFor="create-end-date">{t('exams.endDate') || 'End Date'}</Label>
+                <Label htmlFor="create-end-date">{t('events.endDate') || 'End Date'}</Label>
                 <CalendarDatePicker date={formData.endDate ? new Date(formData.endDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setIsCreateDialogOpen(false); resetForm(); }}>
-              {t('common.cancel') || 'Cancel'}
+              {t('events.cancel') || 'Cancel'}
             </Button>
             <Button onClick={handleCreate} disabled={createExam.isPending}>
               <CheckCircle className="h-4 w-4 mr-2" />
-              {t('common.create') || 'Create'}
+              {t('events.create') || 'Create'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -783,14 +783,14 @@ export function Exams() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('exams.edit') || 'Edit Exam'}</DialogTitle>
+            <DialogTitle>{t('events.edit') || 'Edit Exam'}</DialogTitle>
             <DialogDescription>
               {t('exams.editDescription') || 'Update exam details'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="edit-name">{t('exams.name') || 'Name'} *</Label>
+              <Label htmlFor="edit-name">{t('events.name') || 'Name'} *</Label>
               <Input
                 id="edit-name"
                 value={formData.name}
@@ -826,7 +826,7 @@ export function Exams() {
                   <SelectValue placeholder={t('exams.selectExamType') || 'Select exam type (optional)'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
+                  <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
                   {(examTypes || []).filter(et => et.isActive).map((examType) => (
                     <SelectItem key={examType.id} value={examType.id}>
                       {examType.name}
@@ -836,33 +836,33 @@ export function Exams() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="edit-description">{t('exams.description') || 'Description'}</Label>
+              <Label htmlFor="edit-description">{t('events.description') || 'Description'}</Label>
               <Textarea
                 id="edit-description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder={t('exams.descriptionPlaceholder') || 'Optional description'}
+                placeholder={t('permissions.descriptionPlaceholder') || 'Optional description'}
                 rows={3}
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit-start-date">{t('exams.startDate') || 'Start Date'}</Label>
+                <Label htmlFor="edit-start-date">{t('events.startDate') || 'Start Date'}</Label>
                 <CalendarDatePicker date={formData.startDate ? new Date(formData.startDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
               </div>
               <div>
-                <Label htmlFor="edit-end-date">{t('exams.endDate') || 'End Date'}</Label>
+                <Label htmlFor="edit-end-date">{t('events.endDate') || 'End Date'}</Label>
                 <CalendarDatePicker date={formData.endDate ? new Date(formData.endDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setIsEditDialogOpen(false); resetForm(); }}>
-              {t('common.cancel') || 'Cancel'}
+              {t('events.cancel') || 'Cancel'}
             </Button>
             <Button onClick={handleUpdate} disabled={updateExam.isPending}>
               <CheckCircle className="h-4 w-4 mr-2" />
-              {t('common.update') || 'Update'}
+              {t('events.update') || 'Update'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -890,9 +890,9 @@ export function Exams() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction onClick={handleStatusChange} disabled={updateExamStatus.isPending}>
-              {t('common.confirm') || 'Confirm'}
+              {t('events.confirm') || 'Confirm'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -902,7 +902,7 @@ export function Exams() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('exams.deleteConfirm') || 'Delete Exam'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('assets.deleteConfirm') || 'Delete Exam'}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('exams.deleteConfirmMessage') || 'Are you sure you want to delete this exam? This action cannot be undone.'}
               {examToDelete && (
@@ -911,9 +911,9 @@ export function Exams() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              {t('common.delete') || 'Delete'}
+              {t('events.delete') || 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

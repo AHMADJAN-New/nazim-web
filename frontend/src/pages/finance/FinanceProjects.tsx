@@ -137,7 +137,7 @@ export default function FinanceProjects() {
             className="space-y-4"
         >
             <div className="space-y-2">
-                <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
+                <Label htmlFor="name">{t('events.name') || 'Name'} *</Label>
                 <Input
                     id="name"
                     value={formData.name}
@@ -146,7 +146,7 @@ export default function FinanceProjects() {
                 />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="description">{t('common.description') || 'Description'}</Label>
+                <Label htmlFor="description">{t('events.description') || 'Description'}</Label>
                 <Textarea
                     id="description"
                     value={formData.description || ''}
@@ -156,11 +156,11 @@ export default function FinanceProjects() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="startDate">{t('common.startDate') || 'Start Date'}</Label>
+                    <Label htmlFor="startDate">{t('events.startDate') || 'Start Date'}</Label>
                     <CalendarDatePicker date={formData.startDate || '' ? new Date(formData.startDate || '') : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="endDate">{t('common.endDate') || 'End Date'}</Label>
+                    <Label htmlFor="endDate">{t('events.endDate') || 'End Date'}</Label>
                     <CalendarDatePicker date={formData.endDate || '' ? new Date(formData.endDate || '') : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
             </div>
@@ -175,7 +175,7 @@ export default function FinanceProjects() {
                             <SelectValue placeholder={t('finance.selectCurrency') || 'Select currency'} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
+                            <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
                             {currencies?.map((currency) => (
                                 <SelectItem key={currency.id} value={currency.id}>
                                     {currency.code} - {currency.name}
@@ -203,11 +203,11 @@ export default function FinanceProjects() {
                     checked={formData.isActive}
                     onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
                 />
-                <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
+                <Label htmlFor="isActive">{t('events.active') || 'Active'}</Label>
             </div>
             <DialogFooter>
                 <Button type="submit" disabled={loading || !formData.name.trim()}>
-                    {editProject ? t('common.update') || 'Update' : t('common.create') || 'Create'}
+                    {editProject ? t('events.update') || 'Update' : t('events.create') || 'Create'}
                 </Button>
             </DialogFooter>
         </form>
@@ -233,15 +233,15 @@ export default function FinanceProjects() {
                     <ReportExportButtons
                         data={projects || []}
                         columns={[
-                            { key: 'name', label: t('common.name'), align: 'left' },
-                            { key: 'description', label: t('common.description'), align: 'left' },
-                            { key: 'startDate', label: t('common.startDate'), align: 'left' },
-                            { key: 'endDate', label: t('common.endDate'), align: 'left' },
+                            { key: 'name', label: t('events.name'), align: 'left' },
+                            { key: 'description', label: t('events.description'), align: 'left' },
+                            { key: 'startDate', label: t('events.startDate'), align: 'left' },
+                            { key: 'endDate', label: t('events.endDate'), align: 'left' },
                             { key: 'budgetAmount', label: t('finance.budgetAmount'), align: 'right' },
                             { key: 'totalIncome', label: t('finance.income'), align: 'right' },
                             { key: 'totalExpense', label: t('finance.expense'), align: 'right' },
                             { key: 'balance', label: t('finance.balance'), align: 'right' },
-                            { key: 'isActive', label: t('common.status'), align: 'center' },
+                            { key: 'isActive', label: t('events.status'), align: 'center' },
                         ]}
                         reportKey="finance_projects"
                         title={t('finance.projects') || 'Projects & Funds'}
@@ -255,7 +255,7 @@ export default function FinanceProjects() {
                                 totalIncome: formatCurrency(project.totalIncome),
                                 totalExpense: formatCurrency(project.totalExpense),
                                 balance: formatCurrency(project.totalIncome - project.totalExpense),
-                                isActive: project.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive',
+                                isActive: project.isActive ? t('events.active') || 'Active' : t('events.inactive') || 'Inactive',
                             }))
                         }
                         templateType="finance_projects"
@@ -292,7 +292,7 @@ export default function FinanceProjects() {
                                             <CardTitle className="text-xl font-semibold truncate">{project.name}</CardTitle>
                                         </div>
                                         <Badge variant={project.isActive ? 'default' : 'secondary'} className="flex-shrink-0 ml-2">
-                                            {project.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
+                                            {project.isActive ? t('events.active') || 'Active' : t('events.inactive') || 'Inactive'}
                                         </Badge>
                                     </div>
                                     {project.description && (
@@ -320,7 +320,7 @@ export default function FinanceProjects() {
                                             <Progress value={progress} />
                                             <div className="flex justify-between text-xs text-muted-foreground">
                                                 <span>{formatCurrency(project.totalIncome)}</span>
-                                                <span>{t('finance.of') || 'of'} {formatCurrency(project.budgetAmount!)}</span>
+                                                <span>{t('events.of') || 'of'} {formatCurrency(project.budgetAmount!)}</span>
                                             </div>
                                         </div>
                                     )}
@@ -371,7 +371,7 @@ export default function FinanceProjects() {
                                             onClick={() => openEditDialog(project)}
                                         >
                                             <Pencil className="h-4 w-4 mr-1" />
-                                            {t('common.edit') || 'Edit'}
+                                            {t('events.edit') || 'Edit'}
                                         </Button>
                                         <Button
                                             variant="ghost"
@@ -379,7 +379,7 @@ export default function FinanceProjects() {
                                             onClick={() => setDeleteId(project.id)}
                                         >
                                             <Trash2 className="h-4 w-4 mr-1" />
-                                            {t('common.delete') || 'Delete'}
+                                            {t('events.delete') || 'Delete'}
                                         </Button>
                                     </div>
                                 </CardContent>
@@ -414,15 +414,15 @@ export default function FinanceProjects() {
             <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('events.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('finance.deleteProjectWarning') || 'Are you sure you want to delete this project? This action cannot be undone.'}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                            {t('common.delete') || 'Delete'}
+                            {t('events.delete') || 'Delete'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

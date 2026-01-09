@@ -72,14 +72,14 @@ export function ExamWeightsEditor({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Label>{t('graduation.exams.weights') || 'Exam Weights'}</Label>
+        <Label>{t('toast.graduation.exams.weights') || 'Exam Weights'}</Label>
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={handleDistributeEqually}
         >
-          {t('graduation.exams.equalWeights') || 'Distribute Equally'}
+          {t('toast.graduation.exams.equalWeights') || 'Distribute Equally'}
         </Button>
       </div>
       <div className="space-y-2 border rounded-md p-3">
@@ -107,11 +107,11 @@ export function ExamWeightsEditor({
       </div>
       <div className="flex items-center justify-between text-sm">
         <span className={isValid ? 'text-green-600 dark:text-green-500' : 'text-destructive'}>
-          {t('graduation.exams.totalWeight') || 'Total Weight'}: {totalWeight.toFixed(2)}%
+          {t('toast.graduation.exams.totalWeight') || 'Total Weight'}: {totalWeight.toFixed(2)}%
         </span>
         {!isValid && (
           <span className="text-destructive text-xs">
-            {t('graduation.validation.weightsMustSum100') || 'Weights must sum to 100%'}
+            {t('toast.graduation.validation.weightsMustSum100') || 'Weights must sum to 100%'}
           </span>
         )}
       </div>

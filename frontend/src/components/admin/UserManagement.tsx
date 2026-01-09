@@ -209,7 +209,7 @@ export function UserManagement() {
         await updateUser.mutateAsync(updateData);
       } else {
         if (!data.password) {
-          showToast.error(t('toast.userCreateFailed'));
+          showToast.error(t('events.userCreateFailed'));
           return;
         }
         // Map form data (snake_case) to domain types (camelCase)
@@ -244,7 +244,7 @@ export function UserManagement() {
 
   const handleExport = () => {
     if (!users || users.length === 0) {
-      showToast.error(t('toast.error'));
+      showToast.error(t('events.error'));
       return;
     }
 
@@ -267,7 +267,7 @@ export function UserManagement() {
     a.download = `users-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
-    showToast.success(t('toast.success'));
+    showToast.success(t('events.success'));
   };
 
   // Debug: Log users data if in development (only when data changes, not on every render)

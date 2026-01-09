@@ -86,7 +86,7 @@ export default function Attendance() {
       setSessionDate('');
       setSessionRemarks('');
     } catch (error: any) {
-      showToast.error(error.message || t('common.error'));
+      showToast.error(error.message || t('events.error'));
     }
   };
 
@@ -95,8 +95,8 @@ export default function Attendance() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">{t('attendancePage.title')}</CardTitle>
-          <CardDescription className="text-sm">{t('attendancePage.subtitle')}</CardDescription>
+          <CardTitle className="text-lg">{t('events.title')}</CardTitle>
+          <CardDescription className="text-sm">{t('hostel.subtitle')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="md:col-span-2 space-y-3">
@@ -158,7 +158,7 @@ export default function Attendance() {
                 <SelectValue placeholder={t('attendancePage.schoolLabel')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('common.all')}</SelectItem>
+                <SelectItem value="all">{t('subjects.all')}</SelectItem>
                 {(schools || []).map(school => (
                   <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>
                 ))}
@@ -241,15 +241,15 @@ export default function Attendance() {
             </div>
             {pagination && (
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <div>{t('pagination.showing')} {pagination.current_page} {t('pagination.of')} {pagination.last_page}</div>
+                <div>{t('library.showing')} {pagination.current_page} {t('events.of')} {pagination.last_page}</div>
                 <div className="space-x-2">
-                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>{t('common.previous')}</Button>
-                  <Button variant="outline" size="sm" disabled={page >= (pagination.last_page || 1)} onClick={() => setPage(page + 1)}>{t('common.next')}</Button>
+                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>{t('events.previous')}</Button>
+                  <Button variant="outline" size="sm" disabled={page >= (pagination.last_page || 1)} onClick={() => setPage(page + 1)}>{t('events.next')}</Button>
                   <Select value={String(pageSize)} onValueChange={value => setPageSize(Number(value))}>
                     <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {[10, 25, 50].map(size => (
-                        <SelectItem key={size} value={String(size)}>{size} {t('pagination.perPage') || '/ page'}</SelectItem>
+                        <SelectItem key={size} value={String(size)}>{size} {t('library.perPage') || '/ page'}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

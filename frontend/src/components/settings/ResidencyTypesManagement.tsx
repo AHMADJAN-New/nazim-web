@@ -182,7 +182,7 @@ export function ResidencyTypesManagement() {
       <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <Card>
           <CardContent className="p-6">
-            <div className="text-center">{t('common.loading')}</div>
+            <div className="text-center">{t('events.loading')}</div>
           </CardContent>
         </Card>
       </div>
@@ -218,7 +218,7 @@ export function ResidencyTypesManagement() {
                   name: type.name || '',
                   code: type.code || '',
                   description: type.description || '-',
-                  isActive: type.is_active ? t('common.active') : t('common.inactive'),
+                  isActive: type.is_active ? t('events.active') : t('events.inactive'),
                 }))}
                 buildFiltersSummary={() => {
                   if (searchQuery) return `Search: ${searchQuery}`;
@@ -258,7 +258,7 @@ export function ResidencyTypesManagement() {
                   <TableHead>{t('academic.residencyTypes.code')}</TableHead>
                   <TableHead>{t('academic.residencyTypes.description')}</TableHead>
                   <TableHead>{t('academic.residencyTypes.isActive')}</TableHead>
-                  <TableHead className="text-right">{t('students.actions')}</TableHead>
+                  <TableHead className="text-right">{t('events.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -304,7 +304,7 @@ export function ResidencyTypesManagement() {
                               size="sm"
                               onClick={() => handleDeleteClick(type.id)}
                               className="flex-shrink-0"
-                              aria-label={t('common.delete')}
+                              aria-label={t('events.delete')}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -390,10 +390,10 @@ export function ResidencyTypesManagement() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                {t('common.cancel')}
+                {t('events.cancel')}
               </Button>
               <Button type="submit">
-                {t('common.save')}
+                {t('events.save')}
               </Button>
             </DialogFooter>
           </form>
@@ -404,18 +404,18 @@ export function ResidencyTypesManagement() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('events.delete')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('academic.residencyTypes.deleteConfirm')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('common.delete')}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

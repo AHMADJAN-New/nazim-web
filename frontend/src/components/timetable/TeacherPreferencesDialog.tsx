@@ -160,10 +160,10 @@ export function TeacherPreferencesDialog({ open, onOpenChange, organizationId, a
 							variant="outline" 
 							onClick={() => onOpenChange(false)}
 						>
-							{t('common.cancel') || 'Cancel'}
+							{t('events.cancel') || 'Cancel'}
 						</Button>
 						<Button type="submit" disabled={!teacherId || isPending}>
-							{t('common.save') || 'Save'}
+							{t('events.save') || 'Save'}
 						</Button>
 					</DialogFooter>
 				</form>

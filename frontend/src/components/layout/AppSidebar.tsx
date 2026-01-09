@@ -247,7 +247,7 @@ export function AppSidebar() {
           {!collapsed && (
             <div>
               <h1 className="text-lg font-bold text-sidebar-foreground">Nazim</h1>
-              <p className="text-xs text-sidebar-foreground/70">{t('common.schoolManagement')}</p>
+              <p className="text-xs text-sidebar-foreground/70">{t('events.schoolManagement')}</p>
             </div>
           )}
         </div>
@@ -276,7 +276,7 @@ export function AppSidebar() {
 
       <SidebarContent className="custom-scrollbar">
         <SidebarGroup>
-          <SidebarGroupLabel>{t('common.mainNavigation')}</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('events.mainNavigation')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {filteredItems.map(renderMenuItem)}

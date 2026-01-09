@@ -152,15 +152,15 @@ const CourseStudentReports = () => {
 
   // Report export columns
   const reportColumns = useMemo(() => [
-    { key: 'student_name', label: t('students.name') || 'Student' },
-    { key: 'father_name', label: t('staff.fatherName') || 'Father Name' },
-    { key: 'admission_no', label: t('students.admissionNo') || 'Admission No' },
+    { key: 'student_name', label: t('events.name') || 'Student' },
+    { key: 'father_name', label: t('examReports.fatherName') || 'Father Name' },
+    { key: 'admission_no', label: t('examReports.admissionNo') || 'Admission No' },
     { key: 'guardian_name', label: t('students.guardianName') || 'Guardian Name' },
-    { key: 'guardian_phone', label: t('students.phone') || 'Phone' },
+    { key: 'guardian_phone', label: t('events.phone') || 'Phone' },
     { key: 'birth_year', label: t('students.birthYear') || 'Birth Year' },
     { key: 'age', label: t('students.age') || 'Age' },
     { key: 'registration_date', label: t('courses.registration') || 'Registered' },
-    { key: 'status', label: t('common.statusLabel') || 'Status' },
+    { key: 'status', label: t('events.statusLabel') || 'Status' },
     { key: 'course_name', label: t('courses.courseName') || 'Course' },
   ], [t]);
 
@@ -191,10 +191,10 @@ const CourseStudentReports = () => {
       if (course) filters.push(`${t('courses.courseName') || 'Course'}: ${course.name}`);
     }
     if (statusFilter !== 'all') {
-      filters.push(`${t('common.statusLabel') || 'Status'}: ${statusFilter}`);
+      filters.push(`${t('events.statusLabel') || 'Status'}: ${statusFilter}`);
     }
     if (search) {
-      filters.push(`${t('common.search') || 'Search'}: ${search}`);
+      filters.push(`${t('events.search') || 'Search'}: ${search}`);
     }
     return filters.join(', ');
   }, [selectedCourseId, statusFilter, search, courses, t]);
@@ -246,7 +246,7 @@ const CourseStudentReports = () => {
               />
               <Button variant="outline" onClick={() => refetch()} className="w-full sm:w-auto">
                 <RefreshCw className="h-4 w-4" />
-                <span className="hidden sm:inline ml-2">{t('common.refresh')}</span>
+                <span className="hidden sm:inline ml-2">{t('events.refresh')}</span>
               </Button>
             </div>
           </div>
@@ -282,7 +282,7 @@ const CourseStudentReports = () => {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('common.total')}</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('events.total')}</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -300,7 +300,7 @@ const CourseStudentReports = () => {
             </div>
             {pagination && (
               <div className="text-sm text-muted-foreground">
-                {t('pagination.showing')} {page} {t('pagination.of')} {pagination.last_page}
+                {t('library.showing')} {page} {t('events.of')} {pagination.last_page}
               </div>
             )}
           </div>
@@ -325,7 +325,7 @@ const CourseStudentReports = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>{t('courses.status')}</Label>
+              <Label>{t('events.status')}</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="All statuses" />
@@ -339,7 +339,7 @@ const CourseStudentReports = () => {
               </Select>
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>{t('common.search')}</Label>
+              <Label>{t('events.search')}</Label>
               <Input
                 placeholder="Search by name, admission #, father name, or guardian..."
                 value={search}

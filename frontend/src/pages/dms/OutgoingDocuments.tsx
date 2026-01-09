@@ -592,7 +592,7 @@ export default function OutgoingDocuments() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => dmsApi.outgoing.delete(id),
     onSuccess: async () => {
-      showToast.success(t('toast.documentDeleted') || 'Outgoing document deleted successfully');
+      showToast.success(t('courses.documentDeleted') || 'Outgoing document deleted successfully');
       await queryClient.invalidateQueries({ queryKey: ["dms", "outgoing"] });
       await queryClient.refetchQueries({ queryKey: ["dms", "outgoing"] });
       setIsDeleteDialogOpen(false);
@@ -1054,7 +1054,7 @@ export default function OutgoingDocuments() {
         </Dialog>
 
       <FilterPanel
-        title={t('common.filters') || 'Search & Filter'}
+        title={t('events.filters') || 'Search & Filter'}
         footer={
           <div className="flex gap-2">
             <Button
@@ -1062,7 +1062,7 @@ export default function OutgoingDocuments() {
               onClick={() => setFilters({ subject: "", recipient_type: "", status: "", academic_year_id: "" })}
             >
               <X className="h-4 w-4 mr-2" />
-              {t('common.clearFilters') || 'Clear Filters'}
+              {t('events.clearFilters') || 'Clear Filters'}
             </Button>
           </div>
         }
@@ -1096,7 +1096,7 @@ export default function OutgoingDocuments() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>{t('common.status') || 'Status'}</Label>
+            <Label>{t('events.status') || 'Status'}</Label>
             <Select
               value={filters.status || "all"}
               onValueChange={(value) => setFilters((s) => ({ ...s, status: value === "all" ? "" : value }))}
@@ -1193,11 +1193,11 @@ export default function OutgoingDocuments() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+                            <DropdownMenuLabel>{t('events.actions') || 'Actions'}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => openViewDialog(doc)}>
                               <Eye className="h-4 w-4 mr-2" />
-                              {t('common.view') || 'View'}
+                              {t('events.view') || 'View'}
                             </DropdownMenuItem>
                             {doc.template_id && (
                               <DropdownMenuItem onClick={() => void handleDownloadPdf(doc)}>
@@ -1207,7 +1207,7 @@ export default function OutgoingDocuments() {
                             )}
                             <DropdownMenuItem onClick={() => openEditDialog(doc)}>
                               <Edit className="h-4 w-4 mr-2" />
-                              {t('common.edit') || 'Edit'}
+                              {t('events.edit') || 'Edit'}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openUploadDialog(doc.id)}>
                               <Upload className="h-4 w-4 mr-2" />
@@ -1219,7 +1219,7 @@ export default function OutgoingDocuments() {
                               className="text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              {t('common.delete') || 'Delete'}
+                              {t('events.delete') || 'Delete'}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -1598,19 +1598,19 @@ export default function OutgoingDocuments() {
       }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('events.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('dms.deleteDocumentWarning') || 'Are you sure you want to delete this outgoing document? This action cannot be undone.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground"
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? (t('common.deleting') || 'Deleting...') : (t('common.delete') || 'Delete')}
+              {deleteMutation.isPending ? (t('events.deleting') || 'Deleting...') : (t('events.delete') || 'Delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

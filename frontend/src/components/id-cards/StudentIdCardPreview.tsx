@@ -382,7 +382,7 @@ export function StudentIdCardPreview({
                   onClick={() => setSide('back')}
                   disabled={isLoadingPreview}
                 >
-                  {t('idCards.back') || 'Back'}
+                  {t('events.back') || 'Back'}
                 </Button>
               )}
               <Button
@@ -396,7 +396,7 @@ export function StudentIdCardPreview({
                 ) : (
                   <Eye className="h-4 w-4 mr-2" />
                 )}
-                {t('common.preview') || 'Preview'}
+                {t('events.preview') || 'Preview'}
               </Button>
             </div>
             <div className="flex gap-2">
@@ -411,7 +411,7 @@ export function StudentIdCardPreview({
                 ) : (
                   <Download className="h-4 w-4 mr-2" />
                 )}
-                {t('common.download') || 'Download PNG'}
+                {t('events.download') || 'Download PNG'}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -425,7 +425,7 @@ export function StudentIdCardPreview({
                     ) : (
                       <Download className="h-4 w-4 mr-2" />
                     )}
-                    {t('common.downloadPdf') || 'Download PDF'}
+                    {t('events.downloadPdf') || 'Download PDF'}
                     <ChevronDown className="h-4 w-4 ml-2" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -440,7 +440,7 @@ export function StudentIdCardPreview({
                     <DropdownMenuItem
                       onClick={() => handleDownloadPdf('back')}
                     >
-                      {t('idCards.back') || 'Back Only'}
+                      {t('events.back') || 'Back Only'}
                     </DropdownMenuItem>
                   )}
                   {actualTemplate?.layoutConfigFront?.enabledFields?.length > 0 && 
@@ -484,7 +484,7 @@ export function StudentIdCardPreview({
                 disabled={!previewImageUrl}
               >
                 <Printer className="h-4 w-4 mr-2" />
-                {t('common.print') || 'Print'}
+                {t('events.print') || 'Print'}
               </Button>
             </div>
           </div>
@@ -504,7 +504,7 @@ export function StudentIdCardPreview({
           <div className="flex items-center justify-center py-12 border rounded-lg">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             <span className="ml-2 text-muted-foreground">
-              {t('common.loading') || 'Loading preview...'}
+              {t('events.loading') || 'Loading preview...'}
             </span>
           </div>
         ) : (

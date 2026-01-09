@@ -64,7 +64,7 @@ export default function TermsOfService() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{t('common.selectLanguage') || 'Select Language'}</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('events.selectLanguage') || 'Select Language'}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {languages.map((lang) => (
                   <DropdownMenuItem
@@ -102,21 +102,21 @@ export default function TermsOfService() {
             </div>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            {t('landing.termsOfService.title') || 'Terms of Service'}
+            {t('termsOfService.title') || 'Terms of Service'}
           </h1>
           <p className="text-muted-foreground">
-            {t('landing.termsOfService.lastUpdated') || 'Last Updated: January 2026'}
+            {t('termsOfService.lastUpdated') || 'Last Updated: January 2026'}
           </p>
         </div>
 
         {/* Introduction */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>{t('landing.termsOfService.introduction.title') || 'Introduction'}</CardTitle>
+            <CardTitle>{t('termsOfService.introduction.title') || 'Introduction'}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground leading-relaxed">
-              {t('landing.termsOfService.introduction.content') || 'These Terms of Service ("Terms") govern your access to and use of the Nazim School Management System platform. By using our services, you agree to be bound by these Terms. Please read them carefully.'}
+              {t('termsOfService.introduction.content') || 'These Terms of Service ("Terms") govern your access to and use of the Nazim School Management System platform. By using our services, you agree to be bound by these Terms. Please read them carefully.'}
             </p>
           </CardContent>
         </Card>
@@ -126,12 +126,12 @@ export default function TermsOfService() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5" />
-              {t('landing.termsOfService.acceptance.title') || 'Acceptance of Terms'}
+              {t('termsOfService.acceptance.title') || 'Acceptance of Terms'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground leading-relaxed">
-              {t('landing.termsOfService.acceptance.content') || 'By accessing or using our platform, you acknowledge that you have read, understood, and agree to be bound by these Terms. If you do not agree to these Terms, you may not use our services.'}
+              {t('termsOfService.acceptance.content') || 'By accessing or using our platform, you acknowledge that you have read, understood, and agree to be bound by these Terms. If you do not agree to these Terms, you may not use our services.'}
             </p>
           </CardContent>
         </Card>
@@ -139,17 +139,17 @@ export default function TermsOfService() {
         {/* Account Registration */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>{t('landing.termsOfService.account.title') || 'Account Registration'}</CardTitle>
+            <CardTitle>{t('termsOfService.account.title') || 'Account Registration'}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              {t('landing.termsOfService.account.intro') || 'To use our services, you must:'}
+              {t('termsOfService.account.intro') || 'To use our services, you must:'}
             </p>
             <ul className="space-y-2 text-muted-foreground">
-              <li>• {t('landing.termsOfService.account.accurate') || 'Provide accurate and complete information'}</li>
-              <li>• {t('landing.termsOfService.account.maintain') || 'Maintain the security of your account credentials'}</li>
-              <li>• {t('landing.termsOfService.account.notify') || 'Notify us immediately of any unauthorized access'}</li>
-              <li>• {t('landing.termsOfService.account.responsible') || 'Be responsible for all activities under your account'}</li>
+              <li>• {t('termsOfService.account.accurate') || 'Provide accurate and complete information'}</li>
+              <li>• {t('termsOfService.account.maintain') || 'Maintain the security of your account credentials'}</li>
+              <li>• {t('termsOfService.account.notify') || 'Notify us immediately of any unauthorized access'}</li>
+              <li>• {t('termsOfService.account.responsible') || 'Be responsible for all activities under your account'}</li>
             </ul>
           </CardContent>
         </Card>
@@ -157,25 +157,25 @@ export default function TermsOfService() {
         {/* Use of Services */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>{t('landing.termsOfService.use.title') || 'Use of Services'}</CardTitle>
+            <CardTitle>{t('termsOfService.use.title') || 'Use of Services'}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <h3 className="font-semibold mb-2">{t('landing.termsOfService.use.permitted.title') || 'Permitted Use'}</h3>
+              <h3 className="font-semibold mb-2">{t('termsOfService.use.permitted.title') || 'Permitted Use'}</h3>
               <p className="text-sm text-muted-foreground">
-                {t('landing.termsOfService.use.permitted.content') || 'You may use our services for lawful educational and administrative purposes only. You agree to use the platform in accordance with all applicable laws and regulations.'}
+                {t('termsOfService.use.permitted.content') || 'You may use our services for lawful educational and administrative purposes only. You agree to use the platform in accordance with all applicable laws and regulations.'}
               </p>
             </div>
             <div>
               <h3 className="font-semibold mb-2 flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-destructive" />
-                {t('landing.termsOfService.use.prohibited.title') || 'Prohibited Activities'}
+                {t('termsOfService.use.prohibited.title') || 'Prohibited Activities'}
               </h3>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• {t('landing.termsOfService.use.prohibited.unauthorized') || 'Unauthorized access to other accounts or systems'}</li>
-                <li>• {t('landing.termsOfService.use.prohibited.malicious') || 'Introduction of viruses, malware, or harmful code'}</li>
-                <li>• {t('landing.termsOfService.use.prohibited.interfere') || 'Interference with the platform\'s operation'}</li>
-                <li>• {t('landing.termsOfService.use.prohibited.violate') || 'Violation of any applicable laws or regulations'}</li>
+                <li>• {t('termsOfService.use.prohibited.unauthorized') || 'Unauthorized access to other accounts or systems'}</li>
+                <li>• {t('termsOfService.use.prohibited.malicious') || 'Introduction of viruses, malware, or harmful code'}</li>
+                <li>• {t('termsOfService.use.prohibited.interfere') || 'Interference with the platform\'s operation'}</li>
+                <li>• {t('termsOfService.use.prohibited.violate') || 'Violation of any applicable laws or regulations'}</li>
               </ul>
             </div>
           </CardContent>
@@ -184,14 +184,14 @@ export default function TermsOfService() {
         {/* Subscription and Payment */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>{t('landing.termsOfService.subscription.title') || 'Subscription and Payment'}</CardTitle>
+            <CardTitle>{t('termsOfService.subscription.title') || 'Subscription and Payment'}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              {t('landing.termsOfService.subscription.content') || 'Subscription fees are billed in advance on a monthly or annual basis. All fees are non-refundable except as required by law. We reserve the right to change our pricing with 30 days notice.'}
+              {t('termsOfService.subscription.content') || 'Subscription fees are billed in advance on a monthly or annual basis. All fees are non-refundable except as required by law. We reserve the right to change our pricing with 30 days notice.'}
             </p>
             <p className="text-muted-foreground">
-              {t('landing.termsOfService.subscription.cancellation') || 'You may cancel your subscription at any time. Cancellation will take effect at the end of your current billing period.'}
+              {t('termsOfService.subscription.cancellation') || 'You may cancel your subscription at any time. Cancellation will take effect at the end of your current billing period.'}
             </p>
           </CardContent>
         </Card>
@@ -199,11 +199,11 @@ export default function TermsOfService() {
         {/* Intellectual Property */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>{t('landing.termsOfService.intellectualProperty.title') || 'Intellectual Property'}</CardTitle>
+            <CardTitle>{t('termsOfService.intellectualProperty.title') || 'Intellectual Property'}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground leading-relaxed">
-              {t('landing.termsOfService.intellectualProperty.content') || 'All content, features, and functionality of the platform are owned by Nazim School Management System and are protected by copyright, trademark, and other intellectual property laws. You may not copy, modify, or distribute any part of the platform without our written permission.'}
+              {t('termsOfService.intellectualProperty.content') || 'All content, features, and functionality of the platform are owned by Nazim School Management System and are protected by copyright, trademark, and other intellectual property laws. You may not copy, modify, or distribute any part of the platform without our written permission.'}
             </p>
           </CardContent>
         </Card>
@@ -211,11 +211,11 @@ export default function TermsOfService() {
         {/* Limitation of Liability */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>{t('landing.termsOfService.liability.title') || 'Limitation of Liability'}</CardTitle>
+            <CardTitle>{t('termsOfService.liability.title') || 'Limitation of Liability'}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground leading-relaxed">
-              {t('landing.termsOfService.liability.content') || 'To the maximum extent permitted by law, Nazim School Management System shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform. Our total liability shall not exceed the amount you paid for the services in the 12 months preceding the claim.'}
+              {t('termsOfService.liability.content') || 'To the maximum extent permitted by law, Nazim School Management System shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform. Our total liability shall not exceed the amount you paid for the services in the 12 months preceding the claim.'}
             </p>
           </CardContent>
         </Card>
@@ -223,11 +223,11 @@ export default function TermsOfService() {
         {/* Termination */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>{t('landing.termsOfService.termination.title') || 'Termination'}</CardTitle>
+            <CardTitle>{t('termsOfService.termination.title') || 'Termination'}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground leading-relaxed">
-              {t('landing.termsOfService.termination.content') || 'We reserve the right to suspend or terminate your account at any time for violation of these Terms or for any other reason. Upon termination, your right to use the platform will immediately cease.'}
+              {t('termsOfService.termination.content') || 'We reserve the right to suspend or terminate your account at any time for violation of these Terms or for any other reason. Upon termination, your right to use the platform will immediately cease.'}
             </p>
           </CardContent>
         </Card>
@@ -235,11 +235,11 @@ export default function TermsOfService() {
         {/* Changes to Terms */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>{t('landing.termsOfService.changes.title') || 'Changes to Terms'}</CardTitle>
+            <CardTitle>{t('termsOfService.changes.title') || 'Changes to Terms'}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground leading-relaxed">
-              {t('landing.termsOfService.changes.content') || 'We may modify these Terms at any time. We will notify you of any material changes by email or through the platform. Your continued use of the platform after such changes constitutes acceptance of the modified Terms.'}
+              {t('termsOfService.changes.content') || 'We may modify these Terms at any time. We will notify you of any material changes by email or through the platform. Your continued use of the platform after such changes constitutes acceptance of the modified Terms.'}
             </p>
           </CardContent>
         </Card>
@@ -247,11 +247,11 @@ export default function TermsOfService() {
         {/* Contact */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('landing.termsOfService.contact.title') || 'Contact Us'}</CardTitle>
+            <CardTitle>{t('termsOfService.contact.title') || 'Contact Us'}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground leading-relaxed">
-              {t('landing.termsOfService.contact.content') || 'If you have any questions about these Terms of Service, please contact us at support@nazimapp.com or through our contact form.'}
+              {t('termsOfService.contact.content') || 'If you have any questions about these Terms of Service, please contact us at support@nazimapp.com or through our contact form.'}
             </p>
           </CardContent>
         </Card>
@@ -270,7 +270,7 @@ export default function TermsOfService() {
                 <span className="text-xl font-bold">Nazim SMS</span>
               </div>
               <p className="text-muted-foreground">
-                {t('landing.footer.tagline') || 'Empowering educational institutions with modern technology solutions for better learning outcomes.'}
+                {t('footer.tagline') || 'Empowering educational institutions with modern technology solutions for better learning outcomes.'}
               </p>
               <div className="flex space-x-4">
                 <Button variant="ghost" size="sm">Facebook</Button>
@@ -281,42 +281,42 @@ export default function TermsOfService() {
 
             {/* Product */}
             <div>
-              <h4 className="font-semibold mb-4">{t('landing.footer.product') || 'Product'}</h4>
+              <h4 className="font-semibold mb-4">{t('footer.product') || 'Product'}</h4>
               <ul className="space-y-2 text-muted-foreground">
-                <li><a href="#features" className="hover:text-foreground transition-colors">{t('landing.footer.features') || 'Features'}</a></li>
-                <li><a href="#pricing" className="hover:text-foreground transition-colors">{t('landing.footer.pricing') || 'Pricing'}</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.security') || 'Security'}</a></li>
+                <li><a href="#features" className="hover:text-foreground transition-colors">{t('footer.features') || 'Features'}</a></li>
+                <li><a href="#pricing" className="hover:text-foreground transition-colors">{t('footer.pricing') || 'Pricing'}</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.security') || 'Security'}</a></li>
               </ul>
             </div>
 
             {/* Support */}
             <div>
-              <h4 className="font-semibold mb-4">{t('landing.footer.support') || 'Support'}</h4>
+              <h4 className="font-semibold mb-4">{t('footer.support') || 'Support'}</h4>
               <ul className="space-y-2 text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.helpCenter') || 'Help Center'}</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.trainingVideos') || 'Training Videos'}</a></li>
-                <li><a href="#contact" className="hover:text-foreground transition-colors">{t('landing.footer.contactSupport') || 'Contact Support'}</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.systemStatus') || 'System Status'}</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.releaseNotes') || 'Release Notes'}</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.helpCenter') || 'Help Center'}</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.trainingVideos') || 'Training Videos'}</a></li>
+                <li><a href="#contact" className="hover:text-foreground transition-colors">{t('footer.contactSupport') || 'Contact Support'}</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.systemStatus') || 'System Status'}</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.releaseNotes') || 'Release Notes'}</a></li>
               </ul>
             </div>
 
             {/* Company */}
             <div>
-              <h4 className="font-semibold mb-4">{t('landing.footer.company') || 'Company'}</h4>
+              <h4 className="font-semibold mb-4">{t('footer.company') || 'Company'}</h4>
               <ul className="space-y-2 text-muted-foreground">
-                <li><Link to="/about" className="hover:text-foreground transition-colors">{t('landing.footer.aboutUs') || 'About Us'}</Link></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.careers') || 'Careers'}</a></li>
-                <li><Link to="/privacy" className="hover:text-foreground transition-colors">{t('landing.footer.privacyPolicy') || 'Privacy Policy'}</Link></li>
-                <li><Link to="/terms" className="hover:text-foreground transition-colors">{t('landing.footer.termsOfService') || 'Terms of Service'}</Link></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.cookiePolicy') || 'Cookie Policy'}</a></li>
+                <li><Link to="/about" className="hover:text-foreground transition-colors">{t('footer.aboutUs') || 'About Us'}</Link></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.careers') || 'Careers'}</a></li>
+                <li><Link to="/privacy" className="hover:text-foreground transition-colors">{t('footer.privacyPolicy') || 'Privacy Policy'}</Link></li>
+                <li><Link to="/terms" className="hover:text-foreground transition-colors">{t('footer.termsOfService') || 'Terms of Service'}</Link></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.cookiePolicy') || 'Cookie Policy'}</a></li>
               </ul>
             </div>
           </div>
 
           <div className="border-t mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-muted-foreground">
-              {t('landing.footer.copyright') || '© 2026 Nazim School Management System. All rights reserved.'}
+              {t('footer.copyright') || '© 2026 Nazim School Management System. All rights reserved.'}
             </p>
             <div className="flex items-center space-x-4 mt-4 md:mt-0">
               <Badge variant="outline" className="flex items-center space-x-1">

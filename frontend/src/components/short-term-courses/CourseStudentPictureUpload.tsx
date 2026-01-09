@@ -362,7 +362,7 @@ export function CourseStudentPictureUpload({
                             className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                             form="" // Explicitly detach from any form
                         >
-                            {upload.isPending ? (t('common.uploading') || 'Uploading...') : (t('students.selectPicture') || 'Select Picture')}
+                            {upload.isPending ? (t('events.uploading') || 'Uploading...') : (t('students.selectPicture') || 'Select Picture')}
                         </button>
                     </div>
                     {upload.isPending && (

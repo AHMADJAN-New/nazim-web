@@ -500,7 +500,7 @@ export function HostelReports() {
                 <ReportExportButtons
                   data={wardenCoverage}
                   columns={[
-                    { key: 'warden_name', label: t('hostel.reports.wardenName') || t('hostel.warden') || 'Warden', align: 'left' },
+                    { key: 'warden_name', label: t('hostel.reports.wardenName') || t('settings.warden') || 'Warden', align: 'left' },
                     { key: 'buildings', label: t('hostel.reports.buildingsColumn') || t('hostel.reports.buildings') || 'Buildings', align: 'left' },
                     { key: 'rooms', label: t('hostel.reports.roomsColumn') || t('hostel.reports.rooms') || 'Rooms', align: 'left' },
                     { key: 'students', label: t('hostel.reports.studentsLabel') || t('hostel.reports.students') || 'Boarders', align: 'left' },
@@ -678,7 +678,7 @@ export function HostelReports() {
             </CardHeader>
             <CardContent className="space-y-4">
               <FilterPanel 
-                title={t('common.filters') || 'Search & Filter'}
+                title={t('events.filters') || 'Search & Filter'}
                 defaultOpenDesktop={true}
                 defaultOpenMobile={false}
               >
@@ -877,7 +877,7 @@ export function HostelReports() {
             </CardHeader>
             <CardContent className="space-y-4">
               <FilterPanel 
-                title={t('common.filters') || 'Search & Filter'}
+                title={t('events.filters') || 'Search & Filter'}
                 defaultOpenDesktop={true}
                 defaultOpenMobile={false}
               >

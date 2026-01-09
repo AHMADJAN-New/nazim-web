@@ -46,7 +46,7 @@ export default function LeaveReports() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const statusChips: Array<{ value: LeaveRequest['status']; label: string; color: string }> = [
-    { value: 'approved', label: t('leave.approved'), color: 'bg-emerald-100 text-emerald-700' },
+    { value: 'approved', label: t('status.approved'), color: 'bg-emerald-100 text-emerald-700' },
     { value: 'pending', label: t('leave.pending'), color: 'bg-amber-100 text-amber-800' },
     { value: 'rejected', label: t('leave.rejected'), color: 'bg-rose-100 text-rose-800' },
     { value: 'cancelled', label: t('leave.cancelled'), color: 'bg-slate-100 text-slate-700' },
@@ -237,7 +237,7 @@ export default function LeaveReports() {
           <CardHeader className="pb-2">
             <CardDescription className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              {t('leave.approved')}
+              {t('status.approved')}
             </CardDescription>
             <CardTitle className="text-3xl font-bold text-emerald-600">{totals.approved}</CardTitle>
           </CardHeader>
@@ -266,11 +266,11 @@ export default function LeaveReports() {
       <FilterPanel title={t('leave.reportFilters')} defaultOpenDesktop={true} defaultOpenMobile={false}>
         <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
               <div className="space-y-2">
-                <Label>{t('leave.status')}</Label>
+                <Label>{t('events.status')}</Label>
                 <Select value={statusFilter} onValueChange={val => setStatusFilter(val as any)}>
                   <SelectTrigger><SelectValue placeholder={t('leave.allStatuses')} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t('leave.allStatus')}</SelectItem>
+                    <SelectItem value="all">{t('userManagement.allStatus')}</SelectItem>
                     {statusChips.map(status => (
                       <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
                     ))}
@@ -289,7 +289,7 @@ export default function LeaveReports() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>{t('leave.class')}</Label>
+                <Label>{t('search.class')}</Label>
                 <Select value={classId} onValueChange={setClassId}>
                   <SelectTrigger><SelectValue placeholder={t('leave.anyClass')} /></SelectTrigger>
                   <SelectContent>
@@ -311,11 +311,11 @@ export default function LeaveReports() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>{t('leave.from')}</Label>
+                <Label>{t('events.from')}</Label>
                 <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} placeholder="Select date" />
               </div>
               <div className="space-y-2">
-                <Label>{t('leave.to')}</Label>
+                <Label>{t('events.to')}</Label>
                 <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} placeholder="Select date" />
               </div>
               <div className="space-y-2">
@@ -326,11 +326,11 @@ export default function LeaveReports() {
                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   <Button variant="outline" size="sm" onClick={() => handleQuickRange('today')} className={`flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <CalendarRange className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
-                    <span className="hidden sm:inline">{t('leave.today')}</span>
+                    <span className="hidden sm:inline">{t('events.today')}</span>
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => handleQuickRange('month')} className={`flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <Filter className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
-                    <span className="hidden sm:inline">{t('leave.thisMonth')}</span>
+                    <span className="hidden sm:inline">{t('finance.thisMonth')}</span>
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => handleQuickRange('clear')} className={`flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <RefreshCcw className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
@@ -353,7 +353,7 @@ export default function LeaveReports() {
                     ) : (
                       <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
                     )}
-                    <span className="hidden sm:inline">{t('leave.export') || 'Export'}</span>
+                    <span className="hidden sm:inline">{t('events.export') || 'Export'}</span>
                   </Button>
                 </div>
               </div>
@@ -383,7 +383,7 @@ export default function LeaveReports() {
           </TabsTrigger>
           <TabsTrigger value="approved" className={`flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <CheckCircle2 className="h-4 w-4" />
-            {t('leave.approved')}
+            {t('status.approved')}
             {approvedRequests.length > 0 && (
               <Badge variant="secondary" className={`text-xs ${isRTL ? 'mr-1' : 'ml-1'}`}>
                 {approvedRequests.length}
@@ -432,7 +432,7 @@ export default function LeaveReports() {
                       ) : (
                         <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
                       )}
-                      <span className="hidden sm:inline">{t('leave.export')}</span>
+                      <span className="hidden sm:inline">{t('events.export')}</span>
                     </Button>
                   </div>
                 </div>
@@ -444,20 +444,20 @@ export default function LeaveReports() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('leave.student')}</TableHead>
-                      <TableHead>{t('leave.dates')}</TableHead>
-                      <TableHead>{t('leave.status')}</TableHead>
+                      <TableHead>{t('events.dates')}</TableHead>
+                      <TableHead>{t('events.status')}</TableHead>
                       <TableHead>{t('leave.reason')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading && (
-                      <TableRow><TableCell colSpan={4} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('leave.loading')}</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('events.loading')}</TableCell></TableRow>
                     )}
                     {!isLoading && requests.map(req => (
                       <TableRow key={req.id}>
                         <TableCell>
                           <div className="font-semibold">{req.student?.fullName || t('leave.student')}</div>
-                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('leave.class')}</div>
+                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('search.class')}</div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">{format(req.startDate, 'PP')} → {format(req.endDate, 'PP')}</div>
@@ -478,7 +478,7 @@ export default function LeaveReports() {
                   <span>{t('leave.pageOf', { page, total: pagination.last_page })}</span>
                   <div className="space-x-2">
                     <Button size="sm" variant="outline" onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1}>{t('leave.prev')}</Button>
-                    <Button size="sm" variant="outline" onClick={() => setPage(page + 1)} disabled={page >= (pagination?.last_page || 1)}>{t('leave.next')}</Button>
+                    <Button size="sm" variant="outline" onClick={() => setPage(page + 1)} disabled={page >= (pagination?.last_page || 1)}>{t('events.next')}</Button>
                   </div>
                 </div>
               )}
@@ -513,7 +513,7 @@ export default function LeaveReports() {
                       ) : (
                         <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
                       )}
-                      <span className="hidden sm:inline">{t('leave.export')}</span>
+                      <span className="hidden sm:inline">{t('events.export')}</span>
                     </Button>
                   </div>
                 </div>
@@ -525,19 +525,19 @@ export default function LeaveReports() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('leave.student')}</TableHead>
-                      <TableHead>{t('leave.dates')}</TableHead>
+                      <TableHead>{t('events.dates')}</TableHead>
                       <TableHead>{t('leave.reason')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading && (
-                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('leave.loading')}</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('events.loading')}</TableCell></TableRow>
                     )}
                     {!isLoading && pendingRequests.map(req => (
                       <TableRow key={req.id}>
                         <TableCell>
                           <div className="font-semibold">{req.student?.fullName || t('leave.student')}</div>
-                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('leave.class')}</div>
+                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('search.class')}</div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">{format(req.startDate, 'PP')} → {format(req.endDate, 'PP')}</div>
@@ -582,7 +582,7 @@ export default function LeaveReports() {
                       ) : (
                         <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
                       )}
-                      <span className="hidden sm:inline">{t('leave.export')}</span>
+                      <span className="hidden sm:inline">{t('events.export')}</span>
                     </Button>
                   </div>
                 </div>
@@ -594,19 +594,19 @@ export default function LeaveReports() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('leave.student')}</TableHead>
-                      <TableHead>{t('leave.dates')}</TableHead>
+                      <TableHead>{t('events.dates')}</TableHead>
                       <TableHead>{t('leave.reason')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading && (
-                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('leave.loading')}</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('events.loading')}</TableCell></TableRow>
                     )}
                     {!isLoading && approvedRequests.map(req => (
                       <TableRow key={req.id}>
                         <TableCell>
                           <div className="font-semibold">{req.student?.fullName || t('leave.student')}</div>
-                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('leave.class')}</div>
+                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('search.class')}</div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">{format(req.startDate, 'PP')} → {format(req.endDate, 'PP')}</div>
@@ -651,7 +651,7 @@ export default function LeaveReports() {
                       ) : (
                         <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
                       )}
-                      <span className="hidden sm:inline">{t('leave.export')}</span>
+                      <span className="hidden sm:inline">{t('events.export')}</span>
                     </Button>
                   </div>
                 </div>
@@ -663,19 +663,19 @@ export default function LeaveReports() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('leave.student')}</TableHead>
-                      <TableHead>{t('leave.dates')}</TableHead>
+                      <TableHead>{t('events.dates')}</TableHead>
                       <TableHead>{t('leave.reason')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading && (
-                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('leave.loading')}</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('events.loading')}</TableCell></TableRow>
                     )}
                     {!isLoading && rejectedRequests.map(req => (
                       <TableRow key={req.id}>
                         <TableCell>
                           <div className="font-semibold">{req.student?.fullName || t('leave.student')}</div>
-                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('leave.class')}</div>
+                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('search.class')}</div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">{format(req.startDate, 'PP')} → {format(req.endDate, 'PP')}</div>
@@ -718,7 +718,7 @@ export default function LeaveReports() {
                     ) : (
                       <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
                     )}
-                    <span className="hidden sm:inline">{t('leave.export')}</span>
+                    <span className="hidden sm:inline">{t('events.export')}</span>
                   </Button>
                 </div>
               </div>
@@ -737,7 +737,7 @@ export default function LeaveReports() {
                           <Badge variant="outline" className="text-xs">{group.items.length} {t('leave.leaves')}</Badge>
                         </div>
                         <div className="flex flex-wrap gap-2 text-xs">
-                          <Badge variant="outline" className="bg-emerald-100 text-emerald-700">{t('leave.approved')} {approved}</Badge>
+                          <Badge variant="outline" className="bg-emerald-100 text-emerald-700">{t('status.approved')} {approved}</Badge>
                           <Badge variant="outline" className="bg-amber-100 text-amber-700">{t('leave.pending')} {pending}</Badge>
                           <Badge variant="outline" className="bg-rose-100 text-rose-700">{t('leave.rejected')} {rejected}</Badge>
                         </div>
@@ -783,7 +783,7 @@ export default function LeaveReports() {
                 setShowProgressDialog(false);
                 setIsGenerating(false);
               }} className="w-full">
-                {t('common.close') || 'Close'}
+                {t('events.close') || 'Close'}
               </Button>
             )}
             {reportStatus === 'failed' && (
@@ -791,13 +791,13 @@ export default function LeaveReports() {
                 setShowProgressDialog(false);
                 setIsGenerating(false);
               }} variant="destructive" className="w-full">
-                {t('common.close') || 'Close'}
+                {t('events.close') || 'Close'}
               </Button>
             )}
             {isGenerating && (reportStatus === 'pending' || reportStatus === 'processing') && (
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>{t('leave.generating') || 'Generating...'}</span>
+                <span>{t('studentReportCard.generating') || 'Generating...'}</span>
               </div>
             )}
           </div>

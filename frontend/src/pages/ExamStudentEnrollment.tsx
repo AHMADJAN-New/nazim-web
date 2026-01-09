@@ -352,7 +352,7 @@ export function ExamStudentEnrollment() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    {t('exams.selected') || 'Selected'}
+                    {t('events.selected') || 'Selected'}
                   </p>
                   <p className="text-2xl font-bold mt-1">{stats.selectedCount}</p>
                 </div>
@@ -394,11 +394,11 @@ export function ExamStudentEnrollment() {
                     <SelectContent>
                       {examsLoading ? (
                         <div className="p-2 text-sm text-muted-foreground text-center">
-                          {t('common.loading') || 'Loading...'}
+                          {t('events.loading') || 'Loading...'}
                         </div>
                       ) : !exams || exams.length === 0 ? (
                         <div className="p-2 text-sm text-muted-foreground text-center">
-                          {t('exams.noExamsFound') || 'No exams found'}
+                          {t('studentReportCard.noExamsFound') || 'No exams found'}
                         </div>
                       ) : (
                         exams.map((exam) => (
@@ -414,7 +414,7 @@ export function ExamStudentEnrollment() {
                 {/* Class Selection */}
                 {selectedExam && (
                   <div>
-                    <Label>{t('exams.class') || 'Class'}</Label>
+                    <Label>{t('search.class') || 'Class'}</Label>
                     <Select
                       value={selectedExamClass?.id || ''}
                       onValueChange={(value) => {
@@ -424,12 +424,12 @@ export function ExamStudentEnrollment() {
                       disabled={classesLoading}
                     >
                       <SelectTrigger className="mt-1">
-                        <SelectValue placeholder={t('exams.selectClass') || 'Select class'} />
+                        <SelectValue placeholder={t('events.selectClass') || 'Select class'} />
                       </SelectTrigger>
                       <SelectContent>
                         {classesLoading ? (
                           <div className="p-2 text-sm text-muted-foreground text-center">
-                            {t('common.loading') || 'Loading...'}
+                            {t('events.loading') || 'Loading...'}
                           </div>
                         ) : !examClasses || examClasses.length === 0 ? (
                           <div className="p-2 text-sm text-muted-foreground text-center">
@@ -507,7 +507,7 @@ export function ExamStudentEnrollment() {
                             }}
                             className="flex-shrink-0"
                           >
-                            <span className="text-xs sm:text-sm">{t('exams.selectAll') || 'Select All'}</span>
+                            <span className="text-xs sm:text-sm">{t('events.selectAll') || 'Select All'}</span>
                           </Button>
                         )}
                       </div>
@@ -517,7 +517,7 @@ export function ExamStudentEnrollment() {
                         <div className="relative">
                           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                           <Input
-                            placeholder={t('exams.searchStudents') || 'Search students...'}
+                            placeholder={t('library.searchStudents') || 'Search students...'}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-9"
@@ -582,7 +582,7 @@ export function ExamStudentEnrollment() {
                                     </div>
                                     {student.admissionNo && (
                                       <div className="text-xs text-muted-foreground mt-0.5">
-                                        {t('students.admissionNo') || 'Admission No'}: {student.admissionNo}
+                                        {t('examReports.admissionNo') || 'Admission No'}: {student.admissionNo}
                                       </div>
                                     )}
                                   </label>
@@ -656,7 +656,7 @@ export function ExamStudentEnrollment() {
                                       </div>
                                       {student.admissionNo && (
                                         <div className="text-xs text-muted-foreground truncate">
-                                          {t('students.admissionNo') || 'Admission No'}: {student.admissionNo}
+                                          {t('examReports.admissionNo') || 'Admission No'}: {student.admissionNo}
                                         </div>
                                       )}
                                     </div>
@@ -704,7 +704,7 @@ export function ExamStudentEnrollment() {
                   <CardContent>
                     <div className="flex items-end gap-3">
                       <div className="flex-1">
-                        <Label>{t('exams.selectStudent') || 'Select Student'}</Label>
+                        <Label>{t('library.selectStudent') || 'Select Student'}</Label>
                         <Select
                           value={selectedStudentId}
                           onValueChange={setSelectedStudentId}
@@ -713,14 +713,14 @@ export function ExamStudentEnrollment() {
                           <SelectTrigger className="mt-1">
                             <SelectValue placeholder={
                               admissionsLoading
-                                ? (t('common.loading') || 'Loading...')
+                                ? (t('events.loading') || 'Loading...')
                                 : (t('exams.selectStudentToEnroll') || 'Select a student to enroll')
                             } />
                           </SelectTrigger>
                           <SelectContent>
                             {admissionsLoading ? (
                               <div className="p-2 text-sm text-muted-foreground text-center">
-                                {t('common.loading') || 'Loading students...'}
+                                {t('events.loading') || 'Loading students...'}
                               </div>
                             ) : availableStudents.length === 0 ? (
                               <div className="p-2 text-sm text-muted-foreground text-center">
@@ -754,7 +754,7 @@ export function ExamStudentEnrollment() {
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Users className="h-5 w-5" />
-                      {t('exams.enrolledStudents') || 'Enrolled Students'}
+                      {t('students.enrolledStudents') || 'Enrolled Students'}
                       <Badge variant="secondary" className="ml-1">{stats.totalEnrolled}</Badge>
                     </CardTitle>
                     <CardDescription className="hidden md:block">
@@ -779,10 +779,10 @@ export function ExamStudentEnrollment() {
                             <Table>
                               <TableHeader>
                                 <TableRow>
-                                  <TableHead>{t('students.admissionNo') || 'Admission No'}</TableHead>
-                                  <TableHead>{t('students.name') || 'Name'}</TableHead>
-                                  <TableHead>{t('students.class') || 'Class'}</TableHead>
-                                  <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                                  <TableHead>{t('examReports.admissionNo') || 'Admission No'}</TableHead>
+                                  <TableHead>{t('events.name') || 'Name'}</TableHead>
+                                  <TableHead>{t('search.class') || 'Class'}</TableHead>
+                                  <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -843,12 +843,12 @@ export function ExamStudentEnrollment() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleRemoveStudent} 
               className="bg-destructive text-destructive-foreground"
             >
-              {t('common.remove') || 'Remove'}
+              {t('events.remove') || 'Remove'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -223,7 +223,7 @@ function RolePermissionsCard({ role, allPermissions, onEdit, onDelete, canEdit, 
                   className="flex-shrink-0"
                 >
                   <Edit className="h-4 w-4" />
-                  <span className="hidden sm:inline ml-2">{t('common.edit')}</span>
+                  <span className="hidden sm:inline ml-2">{t('events.edit')}</span>
                 </Button>
               )}
               {canDelete && (
@@ -234,7 +234,7 @@ function RolePermissionsCard({ role, allPermissions, onEdit, onDelete, canEdit, 
                   className="flex-shrink-0"
                 >
                   <Trash2 className="h-4 w-4" />
-                  <span className="hidden sm:inline ml-2">{t('common.delete')}</span>
+                  <span className="hidden sm:inline ml-2">{t('events.delete')}</span>
                 </Button>
               )}
             </>
@@ -247,7 +247,7 @@ function RolePermissionsCard({ role, allPermissions, onEdit, onDelete, canEdit, 
                 className="flex-shrink-0"
               >
                 <X className="h-4 w-4" />
-                <span className="hidden sm:inline ml-2">{t('common.cancel')}</span>
+                <span className="hidden sm:inline ml-2">{t('events.cancel')}</span>
               </Button>
               <Button
                 size="sm"
@@ -256,7 +256,7 @@ function RolePermissionsCard({ role, allPermissions, onEdit, onDelete, canEdit, 
                 className="flex-shrink-0"
               >
                 <Save className="h-4 w-4" />
-                <span className="hidden sm:inline ml-2">{t('common.save')}</span>
+                <span className="hidden sm:inline ml-2">{t('events.save')}</span>
               </Button>
             </>
           )}
@@ -442,10 +442,10 @@ export function PermissionsManagement() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5 hidden sm:inline-flex" />
-                {t('permissions.title') || 'Roles and Permissions'}
+                {t('events.title') || 'Roles and Permissions'}
               </CardTitle>
               <CardDescription className="hidden md:block">
-                {t('permissions.subtitle')?.replace('{orgName}', currentOrg?.name || 'your organization') || 
+                {t('hostel.subtitle')?.replace('{orgName}', currentOrg?.name || 'your organization') || 
                  'user roles and permissions management panel. where the admin can create a new roles for the users and set permission in the role.'}
               </CardDescription>
             </div>
@@ -456,7 +456,7 @@ export function PermissionsManagement() {
                 className="w-full sm:w-auto"
               >
                 <Plus className="h-4 w-4" />
-                <span className="ml-2">{t('roles.createRole') || t('common.add') || 'Add Role'}</span>
+                <span className="ml-2">{t('roles.createRole') || t('events.add') || 'Add Role'}</span>
               </Button>
             )}
           </div>
@@ -467,7 +467,7 @@ export function PermissionsManagement() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('roles.searchPlaceholder') || t('common.search') || 'Search roles...'}
+                placeholder={t('assets.searchPlaceholder') || t('events.search') || 'Search roles...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -520,11 +520,11 @@ export function PermissionsManagement() {
               )}
             </div>
             <div>
-              <Label htmlFor="create-role-description">{t('roles.description') || 'Description'}</Label>
+              <Label htmlFor="create-role-description">{t('events.description') || 'Description'}</Label>
               <Input
                 id="create-role-description"
                 {...register('description')}
-                placeholder={t('roles.descriptionPlaceholder') || 'Optional description'}
+                placeholder={t('permissions.descriptionPlaceholder') || 'Optional description'}
               />
               {errors.description && (
                 <p className="text-sm text-destructive mt-1">{errors.description.message}</p>
@@ -535,10 +535,10 @@ export function PermissionsManagement() {
                 setShowCreateRoleDialog(false);
                 reset();
               }}>
-                {t('common.cancel') || 'Cancel'}
+                {t('events.cancel') || 'Cancel'}
               </Button>
               <Button type="submit" disabled={createRole.isPending}>
-                {createRole.isPending ? (t('common.saving') || 'Saving...') : (t('roles.create') || 'Create')}
+                {createRole.isPending ? (t('events.saving') || 'Saving...') : (t('events.create') || 'Create')}
               </Button>
             </DialogFooter>
           </form>
@@ -568,11 +568,11 @@ export function PermissionsManagement() {
               </p>
             </div>
             <div>
-              <Label htmlFor="edit-role-description">{t('roles.description') || 'Description'}</Label>
+              <Label htmlFor="edit-role-description">{t('events.description') || 'Description'}</Label>
               <Input
                 id="edit-role-description"
                 {...register('description')}
-                placeholder={t('roles.descriptionPlaceholder') || 'Optional description'}
+                placeholder={t('permissions.descriptionPlaceholder') || 'Optional description'}
               />
               {errors.description && (
                 <p className="text-sm text-destructive mt-1">{errors.description.message}</p>
@@ -584,10 +584,10 @@ export function PermissionsManagement() {
                 setSelectedRole(null);
                 reset();
               }}>
-                {t('common.cancel') || 'Cancel'}
+                {t('events.cancel') || 'Cancel'}
               </Button>
               <Button type="submit" disabled={updateRole.isPending}>
-                {updateRole.isPending ? (t('common.saving') || 'Saving...') : (t('common.update') || 'Update')}
+                {updateRole.isPending ? (t('events.saving') || 'Saving...') : (t('events.update') || 'Update')}
               </Button>
             </DialogFooter>
           </form>
@@ -600,7 +600,7 @@ export function PermissionsManagement() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('roles.deleteRole') || 'Delete Role'}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('roles.deleteConfirm')?.replace('{name}', selectedRole?.name || '') || 
+              {t('assets.deleteConfirm')?.replace('{name}', selectedRole?.name || '') || 
                `Are you sure you want to delete "${selectedRole?.name}"? This action cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -609,14 +609,14 @@ export function PermissionsManagement() {
               setShowDeleteRoleDialog(false);
               setSelectedRole(null);
             }}>
-              {t('common.cancel') || 'Cancel'}
+              {t('events.cancel') || 'Cancel'}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={deleteRole.isPending}
             >
-              {deleteRole.isPending ? (t('common.deleting') || 'Deleting...') : (t('common.delete') || 'Delete')}
+              {deleteRole.isPending ? (t('events.deleting') || 'Deleting...') : (t('events.delete') || 'Delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

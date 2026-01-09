@@ -270,12 +270,12 @@ export function PaperPreview({ templateId, open, onOpenChange }: PaperPreviewPro
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleCancelPrint}>
-              {t('common.cancel') || 'Cancel'}
+              {t('events.cancel') || 'Cancel'}
             </Button>
             <Button onClick={handleConfirmPrint} disabled={updatePrintStatus.isPending}>
               {updatePrintStatus.isPending 
-                ? (t('common.saving') || 'Saving...') 
-                : (t('common.confirm') || 'Confirm')}
+                ? (t('events.saving') || 'Saving...') 
+                : (t('events.confirm') || 'Confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>

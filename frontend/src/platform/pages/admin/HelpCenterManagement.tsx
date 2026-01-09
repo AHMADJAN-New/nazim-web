@@ -418,7 +418,7 @@ export default function HelpCenterManagement() {
             {t('helpCenter.title.helpCenterManagement') || 'Help Center Management'}
           </h1>
           <p className="text-muted-foreground">
-            {t('helpCenter.subtitle') || 'Manage help center articles and categories'}
+            {t('hostel.subtitle') || 'Manage help center articles and categories'}
           </p>
         </div>
       </div>
@@ -428,7 +428,7 @@ export default function HelpCenterManagement() {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
         <Input
           type="text"
-          placeholder={t('helpCenter.searchPlaceholder') || 'Search articles and categories...'}
+          placeholder={t('assets.searchPlaceholder') || 'Search articles and categories...'}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"

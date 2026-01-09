@@ -87,13 +87,13 @@ export function CourseDocumentsDialog({
 
   // Document types with translations
   const DOCUMENT_TYPES = [
-    { value: 'syllabus', label: t('shortTermCourses.documentTypes.syllabus') },
-    { value: 'material', label: t('shortTermCourses.documentTypes.material') },
-    { value: 'assignment', label: t('shortTermCourses.documentTypes.assignment') },
-    { value: 'certificate', label: t('shortTermCourses.documentTypes.certificate') },
-    { value: 'attendance', label: t('shortTermCourses.documentTypes.attendance') },
-    { value: 'grade', label: t('shortTermCourses.documentTypes.grade') },
-    { value: 'other', label: t('shortTermCourses.documentTypes.other') },
+    { value: 'syllabus', label: t('courses.documentTypes.syllabus') },
+    { value: 'material', label: t('courses.documentTypes.material') },
+    { value: 'assignment', label: t('courses.documentTypes.assignment') },
+    { value: 'certificate', label: t('courses.documentTypes.certificate') },
+    { value: 'attendance', label: t('courses.documentTypes.attendance') },
+    { value: 'grade', label: t('courses.documentTypes.grade') },
+    { value: 'other', label: t('courses.documentTypes.other') },
   ];
 
   const { data: documents = [], isLoading } = useCourseDocuments({
@@ -183,11 +183,11 @@ export function CourseDocumentsDialog({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>{t('shortTermCourses.documentTitle')} *</Label>
+                    <Label>{t('courses.documentTitle')} *</Label>
                     <Input
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder={t('shortTermCourses.documentTitle')}
+                      placeholder={t('courses.documentTitle')}
                     />
                   </div>
                   <div className="space-y-2">
@@ -208,17 +208,17 @@ export function CourseDocumentsDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>{t('shortTermCourses.documentDescription')}</Label>
+                  <Label>{t('courses.documentDescription')}</Label>
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder={t('common.optional')}
+                    placeholder={t('events.optional')}
                     rows={2}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>{t('common.upload')} *</Label>
+                  <Label>{t('events.upload')} *</Label>
                   <Input
                     ref={fileInputRef}
                     type="file"
@@ -226,7 +226,7 @@ export function CourseDocumentsDialog({
                   />
                   {selectedFile && (
                     <p className="text-sm text-muted-foreground">
-                      {t('common.selected')} {selectedFile.name} ({formatFileSize(selectedFile.size)})
+                      {t('events.selected')} {selectedFile.name} ({formatFileSize(selectedFile.size)})
                     </p>
                   )}
                 </div>
@@ -239,7 +239,7 @@ export function CourseDocumentsDialog({
                       setIsUploadMode(false);
                     }}
                   >
-                    {t('common.cancel')}
+                    {t('events.cancel')}
                   </Button>
                   <Button
                     onClick={handleUpload}
@@ -248,12 +248,12 @@ export function CourseDocumentsDialog({
                     {createDocument.isPending ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        {t('common.uploading')}
+                        {t('events.uploading')}
                       </>
                     ) : (
                       <>
                         <Upload className="h-4 w-4 mr-2" />
-                        {t('common.upload')}
+                        {t('events.upload')}
                       </>
                     )}
                   </Button>
@@ -283,11 +283,11 @@ export function CourseDocumentsDialog({
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>{t('shortTermCourses.documentTitle')}</TableHead>
+                          <TableHead>{t('courses.documentTitle')}</TableHead>
                           <TableHead>{t('shortTermCourses.documentType')}</TableHead>
                           <TableHead>{t('shortTermCourses.size')}</TableHead>
                           <TableHead>{t('shortTermCourses.uploaded')}</TableHead>
-                          <TableHead className="text-right">{t('common.actions')}</TableHead>
+                          <TableHead className="text-right">{t('events.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -362,8 +362,8 @@ export function CourseDocumentsDialog({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>{t('common.delete')}</AlertDialogAction>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t('events.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

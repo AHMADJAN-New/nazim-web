@@ -147,7 +147,7 @@ export default function NotificationsPage() {
                         </Badge>
                         {!notification.read_at && (
                           <Badge variant="secondary" className="text-[11px]">
-                            {t('common.unread') ?? 'Unread'}
+                            {t('events.unread') ?? 'Unread'}
                           </Badge>
                         )}
                       </div>

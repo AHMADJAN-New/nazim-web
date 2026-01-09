@@ -99,7 +99,7 @@ export function ExamReportsPage() {
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-lg font-semibold">{t('exams.notFound') || 'Exam not found'}</h2>
+        <h2 className="text-lg font-semibold">{t('events.notFound') || 'Exam not found'}</h2>
         <Button variant="outline" onClick={() => navigate('/exams')} className="mt-4">
           <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
           {t('exams.backToList') || 'Back to Exams'}
@@ -112,7 +112,7 @@ export function ExamReportsPage() {
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-lg font-semibold">{t('common.noPermission') || 'You do not have permission to view reports'}</h2>
+        <h2 className="text-lg font-semibold">{t('events.noPermission') || 'You do not have permission to view reports'}</h2>
         <Button variant="outline" onClick={() => navigate('/exams')} className="mt-4">
           <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
           {t('exams.backToList') || 'Back to Exams'}
@@ -133,7 +133,7 @@ export function ExamReportsPage() {
             </Button>
           )}
           <div>
-            <h1 className="text-2xl font-bold">{t('exams.reports') || 'Exam Reports'}</h1>
+            <h1 className="text-2xl font-bold">{t('nav.reports') || 'Exam Reports'}</h1>
             <p className="text-muted-foreground">{exam.name}</p>
           </div>
         </div>
@@ -217,7 +217,7 @@ export function ExamReportsPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t('exams.enrolledStudents') || 'Enrolled Students'}
+                {t('students.enrolledStudents') || 'Enrolled Students'}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -280,8 +280,8 @@ export function ExamReportsPage() {
                     <ReportExportButtons
                       data={enrollmentStats.classStats}
                       columns={[
-                        { key: 'className', label: t('exams.class') || 'Class' },
-                        { key: 'section', label: t('common.section') || 'Section' },
+                        { key: 'className', label: t('search.class') || 'Class' },
+                        { key: 'section', label: t('events.section') || 'Section' },
                         { key: 'enrolledCount', label: t('exams.enrolled') || 'Enrolled' },
                         { key: 'availableCount', label: t('exams.available') || 'Available' },
                         { key: 'percentage', label: t('exams.percentage') || 'Percentage' },
@@ -320,7 +320,7 @@ export function ExamReportsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('exams.class') || 'Class'}</TableHead>
+                      <TableHead>{t('search.class') || 'Class'}</TableHead>
                       <TableHead className="text-right">{t('exams.enrolled') || 'Enrolled'}</TableHead>
                       <TableHead className="text-right">{t('exams.available') || 'Available'}</TableHead>
                       <TableHead className="text-right">{t('exams.percentage') || 'Percentage'}</TableHead>
@@ -381,11 +381,11 @@ export function ExamReportsPage() {
                       data={marksProgress.subjectProgress}
                       columns={[
                         { key: 'subjectName', label: t('exams.subject') || 'Subject' },
-                        { key: 'className', label: t('exams.class') || 'Class' },
+                        { key: 'className', label: t('search.class') || 'Class' },
                         { key: 'resultsCount', label: t('exams.entered') || 'Entered' },
-                        { key: 'enrolledCount', label: t('exams.total') || 'Total' },
+                        { key: 'enrolledCount', label: t('events.total') || 'Total' },
                         { key: 'percentage', label: t('exams.percentage') || 'Percentage' },
-                        { key: 'status', label: t('exams.status') || 'Status' },
+                        { key: 'status', label: t('events.status') || 'Status' },
                       ]}
                       reportKey="exam_marks_progress"
                       title={`${t('exams.marksEntryProgress') || 'Marks Entry Progress'} - ${exam?.name || ''}`}
@@ -423,10 +423,10 @@ export function ExamReportsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('exams.subject') || 'Subject'}</TableHead>
-                      <TableHead>{t('exams.class') || 'Class'}</TableHead>
+                      <TableHead>{t('search.class') || 'Class'}</TableHead>
                       <TableHead className="text-right">{t('exams.entered') || 'Entered'}</TableHead>
-                      <TableHead className="text-right">{t('exams.total') || 'Total'}</TableHead>
-                      <TableHead className="text-right">{t('exams.status') || 'Status'}</TableHead>
+                      <TableHead className="text-right">{t('events.total') || 'Total'}</TableHead>
+                      <TableHead className="text-right">{t('events.status') || 'Status'}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

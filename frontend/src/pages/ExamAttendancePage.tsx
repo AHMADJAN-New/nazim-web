@@ -547,7 +547,7 @@ export default function ExamAttendancePage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>{t('exams.class') || 'Class'}</Label>
+              <Label>{t('search.class') || 'Class'}</Label>
               <Select value={selectedClassId} onValueChange={setSelectedClassId}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Classes" />
@@ -726,7 +726,7 @@ export default function ExamAttendancePage() {
                           data={timeslotData.students}
                           columns={[
                             { key: 'studentName', label: t('exams.studentName') || 'Student Name' },
-                            { key: 'fatherName', label: t('exams.fatherName') || 'Father Name' },
+                            { key: 'fatherName', label: t('examReports.fatherName') || 'Father Name' },
                             { key: 'rollNumber', label: t('exams.rollNumbers.rollNumber') || 'Roll Number' },
                             { key: 'admissionNo', label: t('exams.studentCode') || 'Admission No' },
                             { key: 'status', label: t('exams.attendance.status') || 'Status' },
@@ -786,7 +786,7 @@ export default function ExamAttendancePage() {
                             </TableHead>
                           )}
                           <TableHead>{t('exams.studentName') || 'Student Name'}</TableHead>
-                          <TableHead>{t('exams.fatherName') || 'Father Name'}</TableHead>
+                          <TableHead>{t('examReports.fatherName') || 'Father Name'}</TableHead>
                           <TableHead>{t('exams.rollNumbers.rollNumber') || 'Roll Number'}</TableHead>
                           <TableHead>{t('exams.studentCode') || 'Admission No'}</TableHead>
                           <TableHead>{t('exams.attendance.status') || 'Status'}</TableHead>
@@ -1001,7 +1001,7 @@ export default function ExamAttendancePage() {
                         <TableHeader>
                           <TableRow>
                             <TableHead>{t('exams.studentName') || 'Student Name'}</TableHead>
-                            <TableHead>{t('exams.fatherName') || 'Father Name'}</TableHead>
+                            <TableHead>{t('examReports.fatherName') || 'Father Name'}</TableHead>
                             <TableHead>{t('exams.rollNumbers.rollNumber') || 'Roll Number'}</TableHead>
                             <TableHead>{t('exams.studentCode') || 'Admission No'}</TableHead>
                             <TableHead>{t('exams.attendance.status') || 'Status'}</TableHead>
@@ -1133,7 +1133,7 @@ export default function ExamAttendancePage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 setIsAttendanceLocked(false);

@@ -162,7 +162,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
         guardianLabel: 'Guardian',
         studentLabel: 'Student',
         name: 'Full Name',
-        fatherName: t('staff.fatherName'),
+        fatherName: t('examReports.fatherName'),
         idNumber: 'ID Number',
         grandfatherName: t('staff.grandfatherName'),
         birthYear: 'Birth Year',
@@ -211,7 +211,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
         confirmationIntro:
           'The student has been admitted to the following grade:',
         admissionFeeLabel: 'Admission Fee',
-        admissionDateLabel: t('students.admissionDate'),
+        admissionDateLabel: t('studentReportCard.admissionDate'),
         supervisorSignature: 'Supervisor Signature',
         stampLabel: 'Stamp',
         signatureLabel: 'Signature',
@@ -392,7 +392,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
               className="no-print"
             >
               <Printer className="h-4 w-4 mr-2" />
-              {t('common.print') || 'Print'}
+              {t('events.print') || 'Print'}
             </Button>
           </div>
         </DialogHeader>
@@ -450,27 +450,27 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                     </Badge>
                     {student.applyingGrade && (
                       <Badge variant="outline" className="text-sm px-3 py-1">
-                        {t('students.grade') || 'Grade'} {student.applyingGrade}
+                        {t('studentReportCard.grade') || 'Grade'} {student.applyingGrade}
                       </Badge>
                     )}
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     {student.admissionNumber && (
                       <div>
-                        <div className="text-muted-foreground">{t('students.admissionNo') || 'Admission No'}</div>
+                        <div className="text-muted-foreground">{t('examReports.admissionNo') || 'Admission No'}</div>
                         <div className="font-semibold">{student.admissionNumber}</div>
                       </div>
                     )}
                     {student.cardNumber && (
                       <div>
-                        <div className="text-muted-foreground">{t('students.cardNumber') || 'Card Number'}</div>
+                        <div className="text-muted-foreground">{t('attendanceReports.cardNumber') || 'Card Number'}</div>
                         <div className="font-semibold">{student.cardNumber}</div>
                       </div>
                     )}
                     {student.age && (
                       <div>
                         <div className="text-muted-foreground">{t('students.age') || 'Age'}</div>
-                        <div className="font-semibold">{student.age} {t('common.years') || 'years'}</div>
+                        <div className="font-semibold">{student.age} {t('events.years') || 'years'}</div>
                       </div>
                     )}
                     {schoolName && (
@@ -488,22 +488,22 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
           {/* Personal Information and Admission Information - Side by Side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print-grid print-section">
             <InfoSection title={t('students.personalInfo') || 'Personal Information'}>
-              <InfoRow label={t('students.fullName') || 'Full Name'} value={student.fullName} icon={<User className="w-4 h-4" />} />
-              <InfoRow label={t('students.fatherName') || 'Father Name'} value={student.fatherName} icon={<User className="w-4 h-4" />} />
+              <InfoRow label={t('userManagement.fullName') || 'Full Name'} value={student.fullName} icon={<User className="w-4 h-4" />} />
+              <InfoRow label={t('examReports.fatherName') || 'Father Name'} value={student.fatherName} icon={<User className="w-4 h-4" />} />
               <InfoRow label={t('students.grandfatherName') || 'Grandfather Name'} value={student.grandfatherName} icon={<User className="w-4 h-4" />} />
-              <InfoRow label={t('students.motherName') || 'Mother Name'} value={student.motherName} icon={<User className="w-4 h-4" />} />
+              <InfoRow label={t('studentReportCard.motherName') || 'Mother Name'} value={student.motherName} icon={<User className="w-4 h-4" />} />
               <InfoRow label={t('students.gender') || 'Gender'} value={student.gender === 'male' ? t('students.male') : t('students.female')} icon={<User className="w-4 h-4" />} />
               <InfoRow label={t('students.birthYear') || 'Birth Year'} value={student.birthYear} icon={<Calendar className="w-4 h-4" />} />
               <InfoRow label={t('students.birthDate') || 'Birth Date'} value={student.birthDate} icon={<Calendar className="w-4 h-4" />} />
-              <InfoRow label={t('students.age') || 'Age'} value={student.age ? `${student.age} ${t('common.years') || 'years'}` : null} icon={<Calendar className="w-4 h-4" />} />
+              <InfoRow label={t('students.age') || 'Age'} value={student.age ? `${student.age} ${t('events.years') || 'years'}` : null} icon={<Calendar className="w-4 h-4" />} />
               <InfoRow label={t('students.nationality') || 'Nationality'} value={student.nationality} icon={<Shield className="w-4 h-4" />} />
               <InfoRow label={t('students.preferredLanguage') || 'Preferred Language'} value={student.preferredLanguage} icon={<FileText className="w-4 h-4" />} />
               <InfoRow label={t('students.previousSchool') || 'Previous School'} value={student.previousSchool} icon={<School className="w-4 h-4" />} />
             </InfoSection>
 
             <InfoSection title={t('students.admissionInfo') || 'Admission Information'}>
-              <InfoRow label={t('students.admissionNo') || 'Admission Number'} value={student.admissionNumber} icon={<FileText className="w-4 h-4" />} />
-              <InfoRow label={t('students.cardNumber') || 'Card Number'} value={student.cardNumber} icon={<FileText className="w-4 h-4" />} />
+              <InfoRow label={t('examReports.admissionNo') || 'Admission Number'} value={student.admissionNumber} icon={<FileText className="w-4 h-4" />} />
+              <InfoRow label={t('attendanceReports.cardNumber') || 'Card Number'} value={student.cardNumber} icon={<FileText className="w-4 h-4" />} />
               <InfoRow label={t('students.admissionYear') || 'Admission Year'} value={student.admissionYear} icon={<Calendar className="w-4 h-4" />} />
               <InfoRow label={t('students.applyingGrade') || 'Applying Grade'} value={student.applyingGrade} icon={<School className="w-4 h-4" />} />
               <InfoRow label={t('students.school') || 'School'} value={schoolName} icon={<School className="w-4 h-4" />} />
@@ -557,7 +557,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
             <InfoSection title={t('students.guardianInfo') || 'Guardian Information'}>
               <InfoRow label={t('students.guardianName') || 'Guardian Name'} value={student.guardianName} icon={<Users className="w-4 h-4" />} />
               <InfoRow label={t('students.relation') || 'Relation'} value={student.guardianRelation} icon={<Users className="w-4 h-4" />} />
-              <InfoRow label={t('students.phone') || 'Phone'} value={student.guardianPhone} icon={<Phone className="w-4 h-4" />} />
+              <InfoRow label={t('events.phone') || 'Phone'} value={student.guardianPhone} icon={<Phone className="w-4 h-4" />} />
               <InfoRow label={t('students.guardianTazkira') || 'Tazkira'} value={student.guardianTazkira} icon={<FileText className="w-4 h-4" />} />
               {!student.guardianName && !student.guardianPhone && (
                 <div className="text-sm text-muted-foreground py-4 text-center">{t('students.noGuardianInfo') || 'No guardian information recorded'}</div>
@@ -566,8 +566,8 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
 
             {(student.zaminName || student.zaminPhone || student.zaminTazkira || student.zaminAddress) ? (
               <InfoSection title={t('students.guarantorInfo') || 'Guarantor (Zamin) Information'}>
-                <InfoRow label={t('students.name') || 'Name'} value={student.zaminName} icon={<Users className="w-4 h-4" />} />
-                <InfoRow label={t('students.phone') || 'Phone'} value={student.zaminPhone} icon={<Phone className="w-4 h-4" />} />
+                <InfoRow label={t('events.name') || 'Name'} value={student.zaminName} icon={<Users className="w-4 h-4" />} />
+                <InfoRow label={t('events.phone') || 'Phone'} value={student.zaminPhone} icon={<Phone className="w-4 h-4" />} />
                 <InfoRow label={t('students.zaminTazkira') || 'Tazkira'} value={student.zaminTazkira} icon={<FileText className="w-4 h-4" />} />
                 <InfoRow label={t('students.zaminAddress') || 'Address'} value={student.zaminAddress} icon={<MapPin className="w-4 h-4" />} />
               </InfoSection>
@@ -643,7 +643,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                           <span className="font-medium truncate">{doc.file_name}</span>
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          {formatDate(doc.created_at)} • {doc.file_size ? `${(doc.file_size / 1024).toFixed(1)} ${t('common.kb') || 'KB'}` : '—'}
+                          {formatDate(doc.created_at)} • {doc.file_size ? `${(doc.file_size / 1024).toFixed(1)} ${t('events.kb') || 'KB'}` : '—'}
                         </div>
                         {doc.description && (
                           <div className="text-sm text-muted-foreground mt-1">{doc.description}</div>
@@ -688,25 +688,25 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                         {record.start_date && record.end_date && (
                           <div>
                             <span className="font-medium">{t('students.period') || 'Period'}:</span>{' '}
-                            {formatDate(record.start_date)} {t('common.to') || '-'} {formatDate(record.end_date)}
+                            {formatDate(record.start_date)} {t('events.to') || '-'} {formatDate(record.end_date)}
                           </div>
                         )}
                         {record.start_date && !record.end_date && (
                           <div>
-                            <span className="font-medium">{t('students.startDate') || 'Start Date'}:</span>{' '}
+                            <span className="font-medium">{t('events.startDate') || 'Start Date'}:</span>{' '}
                             {formatDate(record.start_date)}
                           </div>
                         )}
                       </div>
                       {record.achievements && (
                         <div className="mt-2 text-sm">
-                          <span className="font-medium">{t('students.achievements') || 'Achievements'}:</span>{' '}
+                          <span className="font-medium">{t('studentReportCard.achievements') || 'Achievements'}:</span>{' '}
                           <span className="text-muted-foreground">{record.achievements}</span>
                         </div>
                       )}
                       {record.notes && (
                         <div className="mt-2 text-sm">
-                          <span className="font-medium">{t('students.notes') || 'Notes'}:</span>{' '}
+                          <span className="font-medium">{t('events.notes') || 'Notes'}:</span>{' '}
                           <span className="text-muted-foreground">{record.notes}</span>
                         </div>
                       )}
@@ -751,7 +751,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                           >
                             {record.severity 
                               ? (t(`students.severity${record.severity.charAt(0).toUpperCase() + record.severity.slice(1)}`) || record.severity)
-                              : (t('common.unknown') || 'Unknown')}
+                              : (t('events.unknown') || 'Unknown')}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2">
@@ -773,7 +773,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                       </div>
                       {record.description && (
                         <div className="text-sm mb-2">
-                          <span className="font-medium">{t('students.description') || 'Description'}:</span>{' '}
+                          <span className="font-medium">{t('events.description') || 'Description'}:</span>{' '}
                           <span className="text-muted-foreground">{record.description}</span>
                         </div>
                       )}
@@ -785,7 +785,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                       )}
                       {record.resolved && record.resolved_date && (
                         <div className="text-xs text-muted-foreground mt-2">
-                          {t('students.resolved') || 'Resolved'} {t('common.on') || 'on'} {formatDate(record.resolved_date)}
+                          {t('students.resolved') || 'Resolved'} {t('events.on') || 'on'} {formatDate(record.resolved_date)}
                         </div>
                       )}
                     </div>

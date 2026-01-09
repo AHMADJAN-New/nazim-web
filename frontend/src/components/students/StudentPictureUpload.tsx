@@ -292,7 +292,7 @@ export function StudentPictureUpload({
                 >
                     {upload.isPending ? (
                         <>
-                            <span className="mr-2">{t('common.uploading') || 'Uploading...'}</span>
+                            <span className="mr-2">{t('events.uploading') || 'Uploading...'}</span>
                         </>
                     ) : (
                         <>
@@ -304,7 +304,7 @@ export function StudentPictureUpload({
                 {/* Show file name or upload status */}
                 {upload.isPending && (
                     <p className="text-xs text-muted-foreground mt-1">
-                        {t('common.uploading') || 'Uploading...'}
+                        {t('events.uploading') || 'Uploading...'}
                     </p>
                 )}
                 {file && !upload.isPending && !studentId && (

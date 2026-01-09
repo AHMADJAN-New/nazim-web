@@ -746,7 +746,7 @@ export function Students() {
               <Badge variant={statusBadge(student.status)} className="shrink-0">
                 {student.status === 'applied' ? t('students.applied') :
                  student.status === 'admitted' ? t('students.admitted') :
-                 student.status === 'active' ? t('students.active') :
+                 student.status === 'active' ? t('events.active') :
                  student.status === 'withdrawn' ? t('students.withdrawn') :
                  student.status}
               </Badge>
@@ -790,7 +790,7 @@ export function Students() {
     },
     {
       id: 'actions',
-      header: () => <div className="text-right">{t('students.actions') || 'Actions'}</div>,
+      header: () => <div className="text-right">{t('events.actions') || 'Actions'}</div>,
       cell: ({ row }) => (
         <div className="text-right">
           <DropdownMenu>
@@ -800,7 +800,7 @@ export function Students() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('events.actions') || 'Actions'}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleView(row.original)}>
                 <Eye className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -830,14 +830,14 @@ export function Students() {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleEdit(row.original)}>
                 <Pencil className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
-                {t('common.edit') || 'Edit'}
+                {t('events.edit') || 'Edit'}
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => handleDelete(row.original)}
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                {t('common.delete') || 'Delete'}
+                {t('events.delete') || 'Delete'}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -867,16 +867,16 @@ export function Students() {
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
         <PageHeader
-          title={t('students.title') || 'Students'}
-          description={t('students.subtitle') || 'Manage admissions with complete Afghan student records'}
+          title={t('events.title') || 'Students'}
+          description={t('hostel.subtitle') || 'Manage admissions with complete Afghan student records'}
           primaryAction={{
-            label: t('students.add') || 'Register Student',
+            label: t('events.add') || 'Register Student',
             onClick: () => setIsCreateOpen(true),
             icon: <Plus className="h-4 w-4" />,
           }}
           secondaryActions={[
             {
-              label: t('studentReport.title') || 'Student Registration Report',
+              label: t('events.title') || 'Student Registration Report',
               href: '/reports/student-registrations',
               icon: <FileText className="h-4 w-4" />,
               variant: 'outline',
@@ -893,7 +893,7 @@ export function Students() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('students.total') || 'Total Students'}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('events.total') || 'Total Students'}</CardTitle>
             <UserRound className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -933,12 +933,12 @@ export function Students() {
         </Card>
       </div>
 
-      <FilterPanel title={t('common.filters')}>
+      <FilterPanel title={t('events.filters')}>
         <div className="flex flex-wrap gap-2 items-center">
           <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={t('students.searchPlaceholder') || 'Search by name, admission number, father name...'}
+              placeholder={t('assets.searchPlaceholder') || 'Search by name, admission number, father name...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 w-full"
@@ -949,7 +949,7 @@ export function Students() {
               <SelectValue placeholder={t('students.school') || 'School'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('students.allSchools') || 'All Schools'}</SelectItem>
+              <SelectItem value="all">{t('leave.allSchools') || 'All Schools'}</SelectItem>
               {schools?.map((school) => (
                 <SelectItem key={school.id} value={school.id}>
                   {school.schoolName}
@@ -962,10 +962,10 @@ export function Students() {
               <SelectValue placeholder={t('students.status.label') || 'Status'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('students.allStatus') || 'All Status'}</SelectItem>
+              <SelectItem value="all">{t('userManagement.allStatus') || 'All Status'}</SelectItem>
               <SelectItem value="applied">{t('students.applied') || 'Applied'}</SelectItem>
               <SelectItem value="admitted">{t('students.admitted') || 'Admitted'}</SelectItem>
-              <SelectItem value="active">{t('students.active') || 'Active'}</SelectItem>
+              <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
               <SelectItem value="withdrawn">{t('students.withdrawn') || 'Withdrawn'}</SelectItem>
             </SelectContent>
           </Select>
@@ -984,7 +984,7 @@ export function Students() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('students.list') || 'Student Registrations'}</CardTitle>
+          <CardTitle>{t('grades.list') || 'Student Registrations'}</CardTitle>
           <CardDescription>{t('students.listDescription') || 'Search, filter and update admissions.'}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -999,12 +999,12 @@ export function Students() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[60px]">{t('students.picture') || 'Picture'}</TableHead>
-                        <TableHead className="hidden sm:table-cell">{t('students.admissionNo') || 'Admission #'}</TableHead>
+                        <TableHead className="hidden sm:table-cell">{t('examReports.admissionNo') || 'Admission #'}</TableHead>
                         <TableHead className="min-w-[200px]">{t('students.student') || 'Student'}</TableHead>
                         <TableHead className="hidden md:table-cell">{t('students.school') || 'School'}</TableHead>
                         <TableHead className="hidden lg:table-cell">{t('students.gender') || 'Gender'}</TableHead>
                         <TableHead className="hidden lg:table-cell">{t('students.applyingGrade') || 'Applying Grade'}</TableHead>
-                        <TableHead className="text-right w-[100px]">{t('students.actions') || 'Actions'}</TableHead>
+                        <TableHead className="text-right w-[100px]">{t('events.actions') || 'Actions'}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1026,7 +1026,7 @@ export function Students() {
                                   <Badge variant={statusBadge(student.status)} className="shrink-0 text-xs">
                                     {student.status === 'applied' ? t('students.applied') :
                                      student.status === 'admitted' ? t('students.admitted') :
-                                     student.status === 'active' ? t('students.active') :
+                                     student.status === 'active' ? t('events.active') :
                                      student.status === 'withdrawn' ? t('students.withdrawn') :
                                      student.status}
                                   </Badge>
@@ -1044,7 +1044,7 @@ export function Students() {
                                 </div>
                                 {/* Show admission number on mobile */}
                                 <div className="text-xs text-muted-foreground sm:hidden">
-                                  {t('students.admissionNo') || 'Admission #'}: {student.admissionNumber}
+                                  {t('examReports.admissionNo') || 'Admission #'}: {student.admissionNumber}
                                 </div>
                               </div>
                             </TableCell>
@@ -1065,7 +1065,7 @@ export function Students() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+                                  <DropdownMenuLabel>{t('events.actions') || 'Actions'}</DropdownMenuLabel>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => handleView(student)}>
                                     <Eye className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -1099,14 +1099,14 @@ export function Students() {
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => handleEdit(student)}>
                                     <Pencil className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                    {t('common.edit') || 'Edit'}
+                                    {t('events.edit') || 'Edit'}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={() => handleDelete(student)}
                                     className="text-destructive focus:text-destructive"
                                   >
                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    {t('common.delete') || 'Delete'}
+                                    {t('events.delete') || 'Delete'}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -1167,8 +1167,8 @@ export function Students() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>{t('common.delete') || 'Delete'}</AlertDialogAction>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>{t('events.delete') || 'Delete'}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

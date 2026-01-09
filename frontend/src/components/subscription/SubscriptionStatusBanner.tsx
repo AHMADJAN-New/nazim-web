@@ -53,7 +53,7 @@ export function SubscriptionStatusBanner({
           icon: Sparkles,
           title: t('subscription.trialPeriod') || 'Trial Period',
           message: status.trialDaysLeft !== undefined && status.trialDaysLeft > 0
-            ? `${t('subscription.trialEndsIn') || 'Trial ends in'} ${status.trialDaysLeft} ${t('common.days') || 'days'}. ${t('subscription.upgradeToKeepAccess') || 'Upgrade to keep full access.'}`
+            ? `${t('subscription.trialEndsIn') || 'Trial ends in'} ${status.trialDaysLeft} ${t('events.days') || 'days'}. ${t('subscription.upgradeToKeepAccess') || 'Upgrade to keep full access.'}`
             : t('subscription.trialEnding') || 'Your trial is ending soon. Upgrade to continue.',
           urgency: status.trialDaysLeft !== undefined && status.trialDaysLeft <= 3 ? 'high' : 'low',
           showUpgrade: true,
@@ -95,7 +95,7 @@ export function SubscriptionStatusBanner({
           variant: 'destructive' as const,
           icon: AlertOctagon,
           title: t('subscription.accountBlocked') || 'Account Blocked',
-          message: t('subscription.contactSupport') || 'Your account access has been blocked. Please contact support or renew your subscription.',
+          message: t('footer.contactSupport') || 'Your account access has been blocked. Please contact support or renew your subscription.',
           urgency: 'critical',
           showUpgrade: true,
           bgClass: 'bg-red-100 border-red-300 dark:bg-red-950 dark:border-red-700',

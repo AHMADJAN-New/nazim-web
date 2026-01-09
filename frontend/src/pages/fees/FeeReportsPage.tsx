@@ -227,21 +227,21 @@ export default function FeeReportsPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
-        title={t('fees.reports') || 'Fee Reports'}
+        title={t('nav.reports') || 'Fee Reports'}
         description={t('fees.reportsDescription') || 'Track fee collection and student payment status'}
         icon={<FileText className="h-5 w-5" />}
         rightSlot={
           <ReportExportButtons
             data={studentFeesData?.data || []}
             columns={[
-              { key: 'firstName', label: t('common.firstName'), align: 'left' },
-              { key: 'lastName', label: t('common.lastName'), align: 'left' },
+              { key: 'firstName', label: t('events.firstName'), align: 'left' },
+              { key: 'lastName', label: t('events.lastName'), align: 'left' },
               { key: 'registrationNumber', label: t('students.registrationNumber'), align: 'left' },
-              { key: 'className', label: t('fees.class'), align: 'left' },
-              { key: 'totalAssigned', label: t('fees.assigned'), align: 'right' },
+              { key: 'className', label: t('search.class'), align: 'left' },
+              { key: 'totalAssigned', label: t('assets.assigned'), align: 'right' },
               { key: 'totalPaid', label: t('fees.paid'), align: 'right' },
               { key: 'totalRemaining', label: t('fees.remaining'), align: 'right' },
-              { key: 'overallStatus', label: t('fees.status'), align: 'center' },
+              { key: 'overallStatus', label: t('events.status'), align: 'center' },
             ]}
             reportKey="fee_student_summary"
             title={t('fees.studentWiseSummary') || 'Student-wise Fee Summary'}
@@ -263,9 +263,9 @@ export default function FeeReportsPage() {
               if (ay) parts.push(`${t('fees.academicYear')}: ${ay.name}`);
               if (filterClassAy) {
                 const cay = classAcademicYears.find(c => c.id === filterClassAy);
-                if (cay) parts.push(`${t('fees.class')}: ${cay.class?.name || filterClassAy}`);
+                if (cay) parts.push(`${t('search.class')}: ${cay.class?.name || filterClassAy}`);
               }
-              if (filterStatus) parts.push(`${t('fees.status')}: ${filterStatus}`);
+              if (filterStatus) parts.push(`${t('events.status')}: ${filterStatus}`);
               return parts.join(' | ');
             }}
             templateType="fee_student_summary"
@@ -274,7 +274,7 @@ export default function FeeReportsPage() {
         }
       />
 
-      <FilterPanel title={t('fees.filters') || 'Filters'}>
+      <FilterPanel title={t('events.filters') || 'Filters'}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="text-sm font-medium mb-2 block">{t('fees.academicYear') || 'Academic Year'}</label>
@@ -299,7 +299,7 @@ export default function FeeReportsPage() {
             </Select>
           </div>
           <div>
-            <label className="text-sm font-medium mb-2 block">{t('fees.class') || 'Class'}</label>
+            <label className="text-sm font-medium mb-2 block">{t('search.class') || 'Class'}</label>
             <Select
               value={filterClassAy || 'all'}
               onValueChange={(val) => {
@@ -308,7 +308,7 @@ export default function FeeReportsPage() {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t('fees.allClasses') || 'All Classes'} />
+                <SelectValue placeholder={t('students.allClasses') || 'All Classes'} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Classes</SelectItem>
@@ -321,7 +321,7 @@ export default function FeeReportsPage() {
             </Select>
           </div>
           <div>
-            <label className="text-sm font-medium mb-2 block">{t('fees.status') || 'Status'}</label>
+            <label className="text-sm font-medium mb-2 block">{t('events.status') || 'Status'}</label>
             <Select
               value={filterStatus || 'all'}
               onValueChange={(val) => {
@@ -590,7 +590,7 @@ export default function FeeReportsPage() {
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder={t('common.search') || 'Search students...'}
+                  placeholder={t('events.search') || 'Search students...'}
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -612,11 +612,11 @@ export default function FeeReportsPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-[250px]">{t('fees.student') || 'Student'}</TableHead>
-                          <TableHead>{t('fees.class') || 'Class'}</TableHead>
-                          <TableHead className="text-right">{t('fees.assigned') || 'Assigned'}</TableHead>
+                          <TableHead>{t('search.class') || 'Class'}</TableHead>
+                          <TableHead className="text-right">{t('assets.assigned') || 'Assigned'}</TableHead>
                           <TableHead className="text-right">{t('fees.paid') || 'Paid'}</TableHead>
                           <TableHead className="text-right">{t('fees.remaining') || 'Remaining'}</TableHead>
-                          <TableHead className="w-[120px]">{t('fees.status') || 'Status'}</TableHead>
+                          <TableHead className="w-[120px]">{t('events.status') || 'Status'}</TableHead>
                           <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                       </TableHeader>
@@ -690,9 +690,9 @@ export default function FeeReportsPage() {
                   {studentFeesData.pagination.lastPage > 1 && (
                     <div className="flex items-center justify-between mt-4 pt-4 border-t">
                       <div className="text-sm text-muted-foreground">
-                        {t('pagination.showing') || 'Showing'} {((currentPage - 1) * studentFeesData.pagination.perPage) + 1} {t('common.to') || 'to'}{' '}
-                        {Math.min(currentPage * studentFeesData.pagination.perPage, studentFeesData.pagination.total)} {t('common.of') || 'of'}{' '}
-                        {studentFeesData.pagination.total} {t('fees.students') || 'students'}
+                        {t('library.showing') || 'Showing'} {((currentPage - 1) * studentFeesData.pagination.perPage) + 1} {t('events.to') || 'to'}{' '}
+                        {Math.min(currentPage * studentFeesData.pagination.perPage, studentFeesData.pagination.total)} {t('events.of') || 'of'}{' '}
+                        {studentFeesData.pagination.total} {t('table.students') || 'students'}
                       </div>
                       <div className="flex gap-2">
                         <Button
@@ -701,7 +701,7 @@ export default function FeeReportsPage() {
                           onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                           disabled={currentPage === 1}
                         >
-                          {t('common.previous') || 'Previous'}
+                          {t('events.previous') || 'Previous'}
                         </Button>
                         <Button
                           variant="outline"
@@ -709,7 +709,7 @@ export default function FeeReportsPage() {
                           onClick={() => setCurrentPage(p => Math.min(studentFeesData.pagination.lastPage, p + 1))}
                           disabled={currentPage >= studentFeesData.pagination.lastPage}
                         >
-                          {t('common.next') || 'Next'}
+                          {t('events.next') || 'Next'}
                         </Button>
                       </div>
                     </div>
@@ -718,7 +718,7 @@ export default function FeeReportsPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-lg font-medium">{t('common.noData') || 'No students found'}</p>
+                  <p className="text-lg font-medium">{t('events.noData') || 'No students found'}</p>
                   <p className="text-sm text-muted-foreground mt-2">
                     {searchQuery ? 'Try adjusting your search filters' : 'No student fee data available for the selected filters'}
                   </p>
@@ -742,8 +742,8 @@ export default function FeeReportsPage() {
                 <ReportExportButtons
                   data={dashboard?.byClass || []}
                   columns={[
-                    { key: 'className', label: t('fees.class'), align: 'left' },
-                    { key: 'studentCount', label: t('fees.students'), align: 'right' },
+                    { key: 'className', label: t('search.class'), align: 'left' },
+                    { key: 'studentCount', label: t('table.students'), align: 'right' },
                     { key: 'totalAssigned', label: t('fees.totalAssigned'), align: 'right' },
                     { key: 'totalPaid', label: t('fees.collected'), align: 'right' },
                     { key: 'totalRemaining', label: t('fees.remaining'), align: 'right' },
@@ -783,8 +783,8 @@ export default function FeeReportsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-[200px]">{t('fees.class') || 'Class'}</TableHead>
-                          <TableHead className="text-right">{t('fees.students') || 'Students'}</TableHead>
+                          <TableHead className="w-[200px]">{t('search.class') || 'Class'}</TableHead>
+                          <TableHead className="text-right">{t('table.students') || 'Students'}</TableHead>
                           <TableHead className="text-right">{t('fees.totalAssigned') || 'Total Assigned'}</TableHead>
                           <TableHead className="text-right">{t('fees.collected') || 'Collected'}</TableHead>
                           <TableHead className="text-right">{t('fees.remaining') || 'Remaining'}</TableHead>
@@ -868,7 +868,7 @@ export default function FeeReportsPage() {
                     <Card>
                       <CardContent className="pt-6">
                         <div className="text-sm font-medium text-muted-foreground mb-1">
-                          {t('fees.totalStudents') || 'Total Students'}
+                          {t('students.totalStudents') || 'Total Students'}
                         </div>
                         <div className="text-2xl font-bold">
                           {dashboard.byClass.reduce((sum, c) => sum + c.studentCount, 0)}
@@ -880,7 +880,7 @@ export default function FeeReportsPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-lg font-medium">{t('common.noData') || 'No class data found'}</p>
+                  <p className="text-lg font-medium">{t('events.noData') || 'No class data found'}</p>
                   <p className="text-sm text-muted-foreground mt-2">
                     {t('fees.noClassData') || 'No class fee data available for the selected filters'}
                   </p>
@@ -910,7 +910,7 @@ export default function FeeReportsPage() {
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="summary">
                     <BarChart3 className="h-4 w-4 mr-2" />
-                    {t('fees.summary') || 'Summary'}
+                    {t('examReports.summary') || 'Summary'}
                   </TabsTrigger>
                   <TabsTrigger value="assignments">
                     <FileText className="h-4 w-4 mr-2" />
@@ -996,7 +996,7 @@ export default function FeeReportsPage() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>{t('fees.status') || 'Status'}</CardTitle>
+                      <CardTitle>{t('events.status') || 'Status'}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center gap-4">
@@ -1037,7 +1037,7 @@ export default function FeeReportsPage() {
                                   <div className="font-medium mb-2">{feeStructureMap.get(assignment.feeStructureId) || t('fees.feeStructure') || 'Fee Structure'}</div>
                                   <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div>
-                                      <span className="text-muted-foreground">{t('fees.assigned') || 'Assigned'}: </span>
+                                      <span className="text-muted-foreground">{t('assets.assigned') || 'Assigned'}: </span>
                                       <span className="font-medium">{formatCurrency(assignment.assignedAmount)}</span>
                                     </div>
                                     <div>
@@ -1106,7 +1106,7 @@ export default function FeeReportsPage() {
                     ) : (
                       <div className="flex flex-col items-center justify-center py-12 text-center">
                         <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                        <p className="text-lg font-medium">{t('common.noData') || 'No assignments found'}</p>
+                        <p className="text-lg font-medium">{t('events.noData') || 'No assignments found'}</p>
                       </div>
                     )}
                   </ScrollArea>
@@ -1153,7 +1153,7 @@ export default function FeeReportsPage() {
                     ) : (
                       <div className="flex flex-col items-center justify-center py-12 text-center">
                         <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
-                        <p className="text-lg font-medium">{t('common.noData') || 'No payments found'}</p>
+                        <p className="text-lg font-medium">{t('events.noData') || 'No payments found'}</p>
                       </div>
                     )}
                   </ScrollArea>
@@ -1170,7 +1170,7 @@ export default function FeeReportsPage() {
                   {selectedClassData.className}
                 </SheetTitle>
                 <SheetDescription>
-                  {t('fees.class') || 'Class'} • {selectedClassData.studentCount} {t('fees.students') || 'students'}
+                  {t('search.class') || 'Class'} • {selectedClassData.studentCount} {t('table.students') || 'students'}
                 </SheetDescription>
               </SheetHeader>
 
@@ -1178,11 +1178,11 @@ export default function FeeReportsPage() {
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="summary">
                     <BarChart3 className="h-4 w-4 mr-2" />
-                    {t('fees.summary') || 'Summary'}
+                    {t('examReports.summary') || 'Summary'}
                   </TabsTrigger>
                   <TabsTrigger value="students">
                     <Users className="h-4 w-4 mr-2" />
-                    {t('fees.students') || 'Students'} ({classStudentsData?.data.length || 0})
+                    {t('table.students') || 'Students'} ({classStudentsData?.data.length || 0})
                   </TabsTrigger>
                 </TabsList>
 
@@ -1238,7 +1238,7 @@ export default function FeeReportsPage() {
                         <Progress value={selectedClassData.collectionPercentage} className="h-3" />
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <span className="text-muted-foreground">{t('fees.students') || 'Students'}: </span>
+                            <span className="text-muted-foreground">{t('table.students') || 'Students'}: </span>
                             <span className="font-medium">{selectedClassData.studentCount}</span>
                           </div>
                           <div>
@@ -1286,7 +1286,7 @@ export default function FeeReportsPage() {
                     ) : (
                       <div className="flex flex-col items-center justify-center py-12 text-center">
                         <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                        <p className="text-lg font-medium">{t('common.noData') || 'No students found'}</p>
+                        <p className="text-lg font-medium">{t('events.noData') || 'No students found'}</p>
                       </div>
                     )}
                   </ScrollArea>
