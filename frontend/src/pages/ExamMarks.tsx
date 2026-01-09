@@ -531,7 +531,7 @@ export function ExamMarks() {
         {selectedSubject && hasUpdate && (
           <Button onClick={handleBulkSave} disabled={!hasChanges || isSaving || bulkSaveResults.isPending}>
             <Save className="h-4 w-4 mr-2" />
-            {isSaving ? t('common.saving') || 'Saving...' : t('common.saveAll') || 'Save All Marks'}
+            {isSaving ? t('events.saving') || 'Saving...' : t('events.saveAll') || 'Save All Marks'}
           </Button>
         )}
       </div>
@@ -563,12 +563,12 @@ export function ExamMarks() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{t('exams.class') || 'Class'}</CardTitle>
+            <CardTitle className="text-base">{t('search.class') || 'Class'}</CardTitle>
           </CardHeader>
           <CardContent>
             <Select value={selectedClassId || ''} onValueChange={setSelectedClassId} disabled={!selectedExamId}>
               <SelectTrigger>
-                <SelectValue placeholder={t('exams.selectClass') || 'Select class'} />
+                <SelectValue placeholder={t('events.selectClass') || 'Select class'} />
               </SelectTrigger>
               <SelectContent>
                 {(examClasses || []).map((examClass) => (

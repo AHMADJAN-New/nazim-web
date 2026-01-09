@@ -20,9 +20,9 @@ import { formatDate } from '@/lib/utils';
 const StatusBadge = ({ status }: { status: string }) => {
   const { t } = useLanguage();
   const variants: Record<string, { variant: 'default' | 'secondary' | 'outline'; label: string }> = {
-    draft: { variant: 'secondary', label: t('graduation.status.draft') || 'Draft' },
-    approved: { variant: 'default', label: t('graduation.status.approved') || 'Approved' },
-    issued: { variant: 'outline', label: t('graduation.status.issued') || 'Issued' },
+    draft: { variant: 'secondary', label: t('toast.graduation.status.draft') || 'Draft' },
+    approved: { variant: 'default', label: t('toast.graduation.status.approved') || 'Approved' },
+    issued: { variant: 'outline', label: t('toast.graduation.status.issued') || 'Issued' },
   };
   const config = variants[status] || variants.draft;
   return <Badge variant={config.variant}>{config.label}</Badge>;
@@ -117,10 +117,10 @@ export default function GraduationDashboard() {
     return (
       <div className="space-y-6 max-w-6xl mx-auto">
         <PageHeader
-          title={t('graduation.dashboard.title') || 'Graduation Dashboard'}
+          title={t('toast.graduation.dashboard.title') || 'Graduation Dashboard'}
           icon={<Award className="h-5 w-5" />}
         />
-        <p className="p-4">{t('common.loading')}</p>
+        <p className="p-4">{t('events.loading')}</p>
       </div>
     );
   }
@@ -131,18 +131,18 @@ export default function GraduationDashboard() {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       <PageHeader
-        title={t('graduation.dashboard.title') || 'Graduation Dashboard'}
+        title={t('toast.graduation.dashboard.title') || 'Graduation Dashboard'}
         icon={<Award className="h-5 w-5" />}
       />
 
       {/* School Selector - Show if multiple schools or no school selected */}
       {schools.length > 1 && (
-        <FilterPanel title={t('common.schoolManagement') || 'School'}>
+        <FilterPanel title={t('events.schoolManagement') || 'School'}>
           <div className="space-y-2">
-            <Label>{t('common.schoolManagement') || 'School'}</Label>
+            <Label>{t('events.schoolManagement') || 'School'}</Label>
             <Select value={schoolId || ''} onValueChange={(val) => setSchoolId(val || undefined)}>
               <SelectTrigger>
-                <SelectValue placeholder={t('common.selectSchool') || 'Select School'} />
+                <SelectValue placeholder={t('events.selectSchool') || 'Select School'} />
               </SelectTrigger>
               <SelectContent>
                 {schools.map((school) => (
@@ -161,19 +161,19 @@ export default function GraduationDashboard() {
         <Card className="border-destructive">
           <CardContent className="pt-6">
             <p className="text-sm text-destructive">
-              {t('common.error') || 'Error'} loading graduation data. {t('common.tryAgain') || 'Please try again later.'}
+              {t('events.error') || 'Error'} loading graduation data. {t('events.tryAgain') || 'Please try again later.'}
             </p>
             {import.meta.env.DEV && batchesError instanceof Error && (
               <p className="text-xs text-muted-foreground mt-2">{batchesError.message}</p>
             )}
             {schools.length === 0 && (
               <p className="text-xs text-muted-foreground mt-2">
-                {t('graduation.dashboard.noSchools') || 'No schools available. Please contact your administrator.'}
+                {t('toast.graduation.dashboard.noSchools') || 'No schools available. Please contact your administrator.'}
               </p>
             )}
             {schools.length > 1 && !schoolId && (
               <p className="text-xs text-muted-foreground mt-2">
-                {t('graduation.dashboard.selectSchool') || 'Please select a school above to view graduation data.'}
+                {t('toast.graduation.dashboard.selectSchool') || 'Please select a school above to view graduation data.'}
               </p>
             )}
           </CardContent>
@@ -185,7 +185,7 @@ export default function GraduationDashboard() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground text-center">
-              {t('graduation.dashboard.selectSchool') || 'Please select a school above to view graduation data.'}
+              {t('toast.graduation.dashboard.selectSchool') || 'Please select a school above to view graduation data.'}
             </p>
           </CardContent>
         </Card>
@@ -197,7 +197,7 @@ export default function GraduationDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">{t('graduation.summary.totalBatches') || 'Total Batches'}</p>
+                <p className="text-sm text-muted-foreground">{t('toast.graduation.summary.totalBatches') || 'Total Batches'}</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
               <Calendar className="h-8 w-8 text-muted-foreground" />
@@ -208,7 +208,7 @@ export default function GraduationDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">{t('graduation.summary.draftBatches') || 'Draft'}</p>
+                <p className="text-sm text-muted-foreground">{t('toast.graduation.summary.draftBatches') || 'Draft'}</p>
                 <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-500">{stats.draft}</p>
               </div>
               <Clock className="h-8 w-8 text-yellow-600 dark:text-yellow-500" />
@@ -219,7 +219,7 @@ export default function GraduationDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">{t('graduation.summary.approvedBatches') || 'Approved'}</p>
+                <p className="text-sm text-muted-foreground">{t('toast.graduation.summary.approvedBatches') || 'Approved'}</p>
                 <p className="text-2xl font-bold text-blue-600 dark:text-blue-500">{stats.approved}</p>
               </div>
               <CheckCircle2 className="h-8 w-8 text-blue-600 dark:text-blue-500" />
@@ -230,7 +230,7 @@ export default function GraduationDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">{t('graduation.summary.issuedBatches') || 'Issued'}</p>
+                <p className="text-sm text-muted-foreground">{t('toast.graduation.summary.issuedBatches') || 'Issued'}</p>
                 <p className="text-2xl font-bold text-green-600 dark:text-green-500">{stats.issued}</p>
               </div>
               <Award className="h-8 w-8 text-green-600 dark:text-green-500" />
@@ -246,7 +246,7 @@ export default function GraduationDashboard() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">{t('graduation.dashboard.currentYearBatches') || 'Current Year Batches'}</p>
+                  <p className="text-sm text-muted-foreground">{t('toast.graduation.dashboard.currentYearBatches') || 'Current Year Batches'}</p>
                   <p className="text-2xl font-bold">{stats.currentYearBatches}</p>
                   <p className="text-xs text-muted-foreground mt-1">{currentAcademicYear.name}</p>
                 </div>
@@ -258,7 +258,7 @@ export default function GraduationDashboard() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">{t('graduation.dashboard.certificatesThisYear') || 'Certificates Issued This Year'}</p>
+                  <p className="text-sm text-muted-foreground">{t('toast.graduation.dashboard.certificatesThisYear') || 'Certificates Issued This Year'}</p>
                   <p className="text-2xl font-bold">{stats.certificatesThisYear}</p>
                   <p className="text-xs text-muted-foreground mt-1">{currentAcademicYear.name}</p>
                 </div>
@@ -272,7 +272,7 @@ export default function GraduationDashboard() {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('graduation.dashboard.quickActions') || 'Quick Actions'}</CardTitle>
+          <CardTitle>{t('toast.graduation.dashboard.quickActions') || 'Quick Actions'}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -280,8 +280,8 @@ export default function GraduationDashboard() {
               <Link to="/graduation/batches?action=create">
                 <Plus className="h-5 w-5" />
                 <div className="text-left">
-                  <div className="font-semibold">{t('graduation.dashboard.createBatch') || 'Create New Batch'}</div>
-                  <div className="text-xs opacity-80">{t('graduation.dashboard.createBatchDesc') || 'Start a new graduation batch'}</div>
+                  <div className="font-semibold">{t('toast.graduation.dashboard.createBatch') || 'Create New Batch'}</div>
+                  <div className="text-xs opacity-80">{t('toast.graduation.dashboard.createBatchDesc') || 'Start a new graduation batch'}</div>
                 </div>
               </Link>
             </Button>
@@ -289,8 +289,8 @@ export default function GraduationDashboard() {
               <Link to="/certificates/templates">
                 <FileText className="h-5 w-5" />
                 <div className="text-left">
-                  <div className="font-semibold">{t('graduation.dashboard.viewTemplates') || 'View Templates'}</div>
-                  <div className="text-xs opacity-80">{t('graduation.dashboard.viewTemplatesDesc') || 'Manage certificate templates'}</div>
+                  <div className="font-semibold">{t('toast.graduation.dashboard.viewTemplates') || 'View Templates'}</div>
+                  <div className="text-xs opacity-80">{t('toast.graduation.dashboard.viewTemplatesDesc') || 'Manage certificate templates'}</div>
                 </div>
               </Link>
             </Button>
@@ -298,8 +298,8 @@ export default function GraduationDashboard() {
               <Link to="/certificates/issued">
                 <Printer className="h-5 w-5" />
                 <div className="text-left">
-                  <div className="font-semibold">{t('graduation.dashboard.issuedCertificates') || 'Issued Certificates'}</div>
-                  <div className="text-xs opacity-80">{t('graduation.dashboard.issuedCertificatesDesc') || 'View all issued certificates'}</div>
+                  <div className="font-semibold">{t('toast.graduation.dashboard.issuedCertificates') || 'Issued Certificates'}</div>
+                  <div className="text-xs opacity-80">{t('toast.graduation.dashboard.issuedCertificatesDesc') || 'View all issued certificates'}</div>
                 </div>
               </Link>
             </Button>
@@ -311,16 +311,16 @@ export default function GraduationDashboard() {
         {/* Recent Batches */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{t('graduation.dashboard.recentBatches') || 'Recent Batches'}</CardTitle>
+            <CardTitle>{t('toast.graduation.dashboard.recentBatches') || 'Recent Batches'}</CardTitle>
             <Button variant="ghost" size="sm" asChild>
               <Link to="/graduation/batches">
-                {t('common.viewAll') || 'View All'} <ArrowRight className="ml-2 h-4 w-4" />
+                {t('events.viewAll') || 'View All'} <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardHeader>
           <CardContent>
             {recentBatches.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">{t('common.noData') || 'No batches found'}</p>
+              <p className="text-sm text-muted-foreground text-center py-4">{t('events.noData') || 'No batches found'}</p>
             ) : (
               <div className="space-y-3">
                 {recentBatches.slice(0, 5).map((batch: any) => (
@@ -339,7 +339,7 @@ export default function GraduationDashboard() {
                       </p>
                       {batch.students_count !== undefined && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          {batch.students_count} {t('graduation.table.students') || 'students'}
+                          {batch.students_count} {t('toast.graduation.table.students') || 'students'}
                         </p>
                       )}
                     </div>
@@ -354,14 +354,14 @@ export default function GraduationDashboard() {
         {/* Pending Approvals */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{t('graduation.dashboard.pendingApprovals') || 'Pending Approvals'}</CardTitle>
+            <CardTitle>{t('toast.graduation.dashboard.pendingApprovals') || 'Pending Approvals'}</CardTitle>
             {pendingApprovals.length > 0 && (
               <Badge variant="secondary">{pendingApprovals.length}</Badge>
             )}
           </CardHeader>
           <CardContent>
             {pendingApprovals.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">{t('graduation.dashboard.noPendingApprovals') || 'No pending approvals'}</p>
+              <p className="text-sm text-muted-foreground text-center py-4">{t('toast.graduation.dashboard.noPendingApprovals') || 'No pending approvals'}</p>
             ) : (
               <div className="space-y-3">
                 {pendingApprovals.slice(0, 5).map((batch: any) => (
@@ -380,7 +380,7 @@ export default function GraduationDashboard() {
                       </p>
                       {batch.students_count !== undefined && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          {batch.students_count} {t('graduation.table.students') || 'students'}
+                          {batch.students_count} {t('toast.graduation.table.students') || 'students'}
                         </p>
                       )}
                     </div>
@@ -397,7 +397,7 @@ export default function GraduationDashboard() {
       {upcomingGraduations.length > 0 && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{t('graduation.dashboard.upcomingGraduations') || 'Upcoming Graduations'}</CardTitle>
+            <CardTitle>{t('toast.graduation.dashboard.upcomingGraduations') || 'Upcoming Graduations'}</CardTitle>
             <Badge variant="outline">{upcomingGraduations.length}</Badge>
           </CardHeader>
           <CardContent>
@@ -418,7 +418,7 @@ export default function GraduationDashboard() {
                     </p>
                     {batch.students_count !== undefined && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        {batch.students_count} {t('graduation.table.students') || 'students'}
+                        {batch.students_count} {t('toast.graduation.table.students') || 'students'}
                       </p>
                     )}
                   </div>

@@ -136,7 +136,7 @@ export function IssuedLettersTable({ onRowClick }: IssuedLettersTableProps) {
           {/* Filters */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <div className="lg:col-span-2">
-              <Label htmlFor="search">{t("common.search") || "Search"}</Label>
+              <Label htmlFor="search">{t("events.search") || "Search"}</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -172,7 +172,7 @@ export function IssuedLettersTable({ onRowClick }: IssuedLettersTableProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("common.all") || "All"}</SelectItem>
+                  <SelectItem value="all">{t("subjects.all") || "All"}</SelectItem>
                   {academicYears.map((ay) => (
                     <SelectItem key={ay.id} value={ay.id}>
                       {ay.name}
@@ -221,7 +221,7 @@ export function IssuedLettersTable({ onRowClick }: IssuedLettersTableProps) {
                         <TableHead>{t("dms.issueLetter.issuedLetters.recipient") || "Recipient"}</TableHead>
                         <TableHead>{t("dms.issueLetter.issuedLetters.issueDate") || "Issue Date"}</TableHead>
                         <TableHead>{t("dms.issueLetter.issuedLetters.security") || "Security"}</TableHead>
-                        <TableHead className="text-right">{t("common.actions") || "Actions"}</TableHead>
+                        <TableHead className="text-right">{t("events.actions") || "Actions"}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -261,7 +261,7 @@ export function IssuedLettersTable({ onRowClick }: IssuedLettersTableProps) {
                               }}
                             >
                               <Eye className="h-4 w-4 mr-2" />
-                              {t("common.view") || "View"}
+                              {t("events.view") || "View"}
                             </Button>
                           </TableCell>
                         </TableRow>

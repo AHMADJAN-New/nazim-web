@@ -70,13 +70,13 @@ const PaginationPrevious = ({
   const { t } = useLanguage()
   return (
     <PaginationLink
-      aria-label={t('common.previousPage')}
+      aria-label={t('events.previousPage')}
       size="default"
       className={cn("gap-1 pl-2.5", className)}
       {...props}
     >
       <ChevronLeft className="h-4 w-4" />
-      <span>{t('common.previous')}</span>
+      <span>{t('events.previous')}</span>
     </PaginationLink>
   )
 }
@@ -89,12 +89,12 @@ const PaginationNext = ({
   const { t } = useLanguage()
   return (
     <PaginationLink
-      aria-label={t('common.nextPage')}
+      aria-label={t('events.nextPage')}
       size="default"
       className={cn("gap-1 pr-2.5", className)}
       {...props}
     >
-      <span>{t('common.next')}</span>
+      <span>{t('events.next')}</span>
       <ChevronRight className="h-4 w-4" />
     </PaginationLink>
   )
@@ -113,7 +113,7 @@ const PaginationEllipsis = ({
       {...props}
     >
       <MoreHorizontal className="h-4 w-4" />
-      <span className="sr-only">{t('common.morePages')}</span>
+      <span className="sr-only">{t('events.morePages')}</span>
     </span>
   )
 }

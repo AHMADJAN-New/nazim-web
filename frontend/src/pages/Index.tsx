@@ -560,7 +560,7 @@ const Index = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{t('common.selectLanguage') || 'Select Language'}</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('events.selectLanguage') || 'Select Language'}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {languages.map((lang) => (
                   <DropdownMenuItem
@@ -1368,7 +1368,7 @@ const Index = () => {
                 <span className="text-xl font-bold">Nazim SMS</span>
               </div>
               <p className="text-muted-foreground">
-                {t('landing.footer.tagline') || 'Empowering educational institutions with modern technology solutions for better learning outcomes.'}
+                {t('footer.tagline') || 'Empowering educational institutions with modern technology solutions for better learning outcomes.'}
               </p>
               <div className="flex space-x-4">
                 <Button variant="ghost" size="sm">Facebook</Button>
@@ -1379,17 +1379,17 @@ const Index = () => {
 
             {/* Product */}
             <div>
-              <h4 className="font-semibold mb-4">{t('landing.footer.product') || 'Product'}</h4>
+              <h4 className="font-semibold mb-4">{t('footer.product') || 'Product'}</h4>
               <ul className="space-y-2 text-muted-foreground">
-                <li><a href="#features" className="hover:text-foreground transition-colors">{t('landing.footer.features') || 'Features'}</a></li>
-                <li><a href="#pricing" className="hover:text-foreground transition-colors">{t('landing.footer.pricing') || 'Pricing'}</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.security') || 'Security'}</a></li>
+                <li><a href="#features" className="hover:text-foreground transition-colors">{t('footer.features') || 'Features'}</a></li>
+                <li><a href="#pricing" className="hover:text-foreground transition-colors">{t('footer.pricing') || 'Pricing'}</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.security') || 'Security'}</a></li>
               </ul>
             </div>
 
             {/* Support */}
             <div>
-              <h4 className="font-semibold mb-4">{t('landing.footer.support') || 'Support'}</h4>
+              <h4 className="font-semibold mb-4">{t('footer.support') || 'Support'}</h4>
               <ul className="space-y-2 text-muted-foreground">
                 <li>
                   <Link 
@@ -1397,25 +1397,25 @@ const Index = () => {
                     className="flex items-center gap-1.5 hover:text-foreground transition-colors group"
                   >
                     <HelpCircle className="h-3.5 w-3.5 group-hover:text-primary transition-colors" />
-                    <span>{t('landing.footer.helpCenter') || 'Help Center'}</span>
+                    <span>{t('footer.helpCenter') || 'Help Center'}</span>
                   </Link>
                 </li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.trainingVideos') || 'Training Videos'}</a></li>
-                <li><a href="#contact" className="hover:text-foreground transition-colors">{t('landing.footer.contactSupport') || 'Contact Support'}</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.systemStatus') || 'System Status'}</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.releaseNotes') || 'Release Notes'}</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.trainingVideos') || 'Training Videos'}</a></li>
+                <li><a href="#contact" className="hover:text-foreground transition-colors">{t('footer.contactSupport') || 'Contact Support'}</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.systemStatus') || 'System Status'}</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.releaseNotes') || 'Release Notes'}</a></li>
               </ul>
             </div>
 
             {/* Company */}
             <div>
-              <h4 className="font-semibold mb-4">{t('landing.footer.company') || 'Company'}</h4>
+              <h4 className="font-semibold mb-4">{t('footer.company') || 'Company'}</h4>
               <ul className="space-y-2 text-muted-foreground">
-                <li><Link to="/about" className="hover:text-foreground transition-colors">{t('landing.footer.aboutUs') || 'About Us'}</Link></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.careers') || 'Careers'}</a></li>
-                <li><Link to="/privacy" className="hover:text-foreground transition-colors">{t('landing.footer.privacyPolicy') || 'Privacy Policy'}</Link></li>
-                <li><Link to="/terms" className="hover:text-foreground transition-colors">{t('landing.footer.termsOfService') || 'Terms of Service'}</Link></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.cookiePolicy') || 'Cookie Policy'}</a></li>
+                <li><Link to="/about" className="hover:text-foreground transition-colors">{t('footer.aboutUs') || 'About Us'}</Link></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.careers') || 'Careers'}</a></li>
+                <li><Link to="/privacy" className="hover:text-foreground transition-colors">{t('footer.privacyPolicy') || 'Privacy Policy'}</Link></li>
+                <li><Link to="/terms" className="hover:text-foreground transition-colors">{t('footer.termsOfService') || 'Terms of Service'}</Link></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">{t('footer.cookiePolicy') || 'Cookie Policy'}</a></li>
               </ul>
             </div>
           </div>

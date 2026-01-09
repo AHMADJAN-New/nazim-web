@@ -287,8 +287,8 @@ export default function LeaveManagement() {
       </head><body>
         <div class="card">
           <div class="row"><div class="label">${t('leave.student')}</div><div class="value">${request.student?.fullName || ''}</div></div>
-          <div class="row"><div class="label">${t('leave.code')}</div><div class="value">${request.student?.studentCode || ''}</div></div>
-          <div class="row"><div class="label">${t('attendancePage.class')}</div><div class="value">${request.className || ''}</div></div>
+          <div class="row"><div class="label">${t('events.code')}</div><div class="value">${request.student?.studentCode || ''}</div></div>
+          <div class="row"><div class="label">${t('search.class')}</div><div class="value">${request.className || ''}</div></div>
           <div class="row"><div class="label">${t('leave.datesLabel')}</div><div class="value">${format(request.startDate, 'PP')} → ${format(request.endDate, 'PP')}</div></div>
           <div class="row"><div class="label">${t('leave.reason')}</div><div class="value">${request.reason}</div></div>
           <div class="qr"><img src="${qrUrl}" alt="QR" /></div>
@@ -422,7 +422,7 @@ export default function LeaveManagement() {
             setSelectedClass(admission.class_id);
             setSelectedStudent(foundStudent.id);
             setFastSearch(''); // Clear search field
-            const className = classOptions.find(c => c.value === admission.class_id)?.label || t('leave.unknown');
+            const className = classOptions.find(c => c.value === admission.class_id)?.label || t('events.unknown');
             showToast.success('leave.studentFound', { name: foundStudent.fullName, class: className });
             
             // Focus on reason field for quick entry after a brief delay
@@ -460,8 +460,8 @@ export default function LeaveManagement() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
       <PageHeader
-        title={t('leave.title')}
-        description={t('leave.subtitle')}
+        title={t('events.title')}
+        description={t('hostel.subtitle')}
         icon={<FileText className="h-5 w-5" />}
       />
 
@@ -497,7 +497,7 @@ export default function LeaveManagement() {
           </TabsTrigger>
           <TabsTrigger value="history" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <Calendar className="h-4 w-4" />
-            {t('leave.history')}
+            {t('assets.history')}
           </TabsTrigger>
         </TabsList>
 
@@ -540,7 +540,7 @@ export default function LeaveManagement() {
 
               <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="class-select">{t('attendancePage.class')} <span className="text-destructive">*</span></Label>
+                <Label htmlFor="class-select">{t('search.class')} <span className="text-destructive">*</span></Label>
                 <Combobox
                   options={classOptions}
                   value={selectedClass}
@@ -563,15 +563,15 @@ export default function LeaveManagement() {
                     options={studentOptionsWithSelected}
                     value={selectedStudent}
                     onValueChange={setSelectedStudent}
-                    placeholder={selectedClass ? t('leave.selectStudentPlaceholder') : t('leave.selectClassFirst')}
-                    searchPlaceholder={t('leave.searchStudentPlaceholder')}
+                    placeholder={selectedClass ? t('leave.selectStudentPlaceholder') : t('examReports.selectClassFirst')}
+                    searchPlaceholder={t('events.searchStudentPlaceholder')}
                     emptyText={selectedClass ? t('leave.noStudentsInClass') : t('leave.selectClassFirstMessage')}
                     disabled={!selectedClass}
                   />
                 </div>
                 {selectedStudent && (
                   <p className="text-xs text-muted-foreground">
-                    {t('leave.selected')} {studentOptionsWithSelected.find(s => s.value === selectedStudent)?.label || t('leave.student')}
+                    {t('events.selected')} {studentOptionsWithSelected.find(s => s.value === selectedStudent)?.label || t('leave.student')}
                   </p>
                 )}
               </div>
@@ -608,11 +608,11 @@ export default function LeaveManagement() {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="start-date">{t('leave.startDate')} <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="start-date">{t('events.startDate')} <span className="text-destructive">*</span></Label>
                     <CalendarDatePicker date={startDate ? new Date(startDate) : undefined} onDateChange={(date) => setStartDate(date ? date.toISOString().split("T")[0] : "")} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="end-date">{t('leave.endDate')} <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="end-date">{t('events.endDate')} <span className="text-destructive">*</span></Label>
                     <CalendarDatePicker date={endDate ? new Date(endDate) : undefined} onDateChange={(date) => setEndDate(date ? date.toISOString().split("T")[0] : "")} />
                   </div>
                 </div>
@@ -660,7 +660,7 @@ export default function LeaveManagement() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="approval-note">{t('leave.approvalNote')} <span className="text-muted-foreground text-xs font-normal">({t('common.optional')})</span></Label>
+                <Label htmlFor="approval-note">{t('leave.approvalNote')} <span className="text-muted-foreground text-xs font-normal">({t('events.optional')})</span></Label>
                 <Textarea 
                   id="approval-note"
                   value={approvalNote} 
@@ -697,7 +697,7 @@ export default function LeaveManagement() {
                   {createLeave.isPending ? (
                     <>
                       <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                      {t('leave.creating')}
+                      {t('events.creating')}
                     </>
                   ) : (
                     <>
@@ -724,11 +724,11 @@ export default function LeaveManagement() {
                   <Input type="number" min={1} max={12} value={filterMonth || ''} onChange={e => setFilterMonth(e.target.value ? Number(e.target.value) : undefined)} className="w-32" dir={isRTL ? 'rtl' : 'ltr'} />
                 </div>
                 <div>
-                  <Label>{t('leave.year')}</Label>
+                  <Label>{t('admissions.year')}</Label>
                   <Input type="number" value={filterYear || ''} onChange={e => setFilterYear(e.target.value ? Number(e.target.value) : undefined)} className="w-32" dir={isRTL ? 'rtl' : 'ltr'} />
                 </div>
                 <div>
-                  <Label>{t('leave.pageSize')}</Label>
+                  <Label>{t('events.pageSize')}</Label>
                   <Input type="number" value={pageSize} onChange={e => setPageSize(Number(e.target.value) || 10)} className="w-28" dir={isRTL ? 'rtl' : 'ltr'} />
                 </div>
               </div>
@@ -737,10 +737,10 @@ export default function LeaveManagement() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('leave.student')}</TableHead>
-                      <TableHead>{t('leave.dates')}</TableHead>
+                      <TableHead>{t('events.dates')}</TableHead>
                       <TableHead>{t('leave.reason')}</TableHead>
-                      <TableHead>{t('leave.status')}</TableHead>
-                      <TableHead className={isRTL ? 'text-left' : 'text-right'}>{t('common.actions')}</TableHead>
+                      <TableHead>{t('events.status')}</TableHead>
+                      <TableHead className={isRTL ? 'text-left' : 'text-right'}>{t('events.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -760,7 +760,7 @@ export default function LeaveManagement() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">{format(request.startDate, 'PP')} → {format(request.endDate, 'PP')}</div>
-                          <div className="text-xs text-slate-500">{request.className || t('attendancePage.class')} / {request.schoolName || t('common.selectSchool')}</div>
+                          <div className="text-xs text-slate-500">{request.className || t('search.class')} / {request.schoolName || t('events.selectSchool')}</div>
                         </TableCell>
                         <TableCell className="max-w-[240px]"><div className="line-clamp-2 text-sm">{request.reason}</div></TableCell>
                         <TableCell>
@@ -771,19 +771,19 @@ export default function LeaveManagement() {
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
                                 <Download className="h-4 w-4" />
-                                <span className="sr-only">{t('common.actions')}</span>
+                                <span className="sr-only">{t('events.actions')}</span>
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
-                              <DropdownMenuLabel>{t('common.actions')}</DropdownMenuLabel>
+                              <DropdownMenuLabel>{t('events.actions')}</DropdownMenuLabel>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleViewHistory(request)}>
                                 <Eye className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                                {t('common.view')}
+                                {t('events.view')}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handlePrint(request)}>
                                 <Printer className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                                {t('common.print')}
+                                {t('events.print')}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
@@ -791,7 +791,7 @@ export default function LeaveManagement() {
                                 disabled={request.status === 'approved'}
                               >
                                 <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                                {t('leave.approved')}
+                                {t('status.approved')}
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 onClick={() => handleReject(request)} 
@@ -819,7 +819,7 @@ export default function LeaveManagement() {
                   <span>{t('leave.pageOf', { page, total: pagination.last_page })}</span>
                   <div className={`${isRTL ? 'space-x-reverse' : ''} space-x-2`}>
                     <Button size="sm" variant="outline" onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1}>{t('leave.prev')}</Button>
-                    <Button size="sm" variant="outline" onClick={() => setPage(page + 1)} disabled={page >= (pagination?.last_page || 1)}>{t('leave.next')}</Button>
+                    <Button size="sm" variant="outline" onClick={() => setPage(page + 1)} disabled={page >= (pagination?.last_page || 1)}>{t('events.next')}</Button>
                   </div>
                 </div>
               )}
@@ -840,7 +840,7 @@ export default function LeaveManagement() {
               {historyStudent?.name || t('leave.studentLeaveHistory')}
             </SheetTitle>
             <SheetDescription>
-              {historyStudent?.code ? `${historyStudent.code} · ${historyStudent.className || t('attendancePage.class')}` : t('leave.viewLeaveTrend')}
+              {historyStudent?.code ? `${historyStudent.code} · ${historyStudent.className || t('search.class')}` : t('leave.viewLeaveTrend')}
             </SheetDescription>
           </SheetHeader>
 
@@ -853,7 +853,7 @@ export default function LeaveManagement() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>{t('leave.approved')}</CardDescription>
+                <CardDescription>{t('status.approved')}</CardDescription>
                 <CardTitle className="text-2xl text-green-600">{historySummary.counts.approved}</CardTitle>
               </CardHeader>
             </Card>

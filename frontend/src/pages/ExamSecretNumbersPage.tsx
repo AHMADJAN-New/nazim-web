@@ -244,7 +244,7 @@ export function ExamSecretNumbersPage() {
     return (
       <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <div className="text-center py-12">
-          <p className="text-muted-foreground">{t('common.noPermission') || 'You do not have permission to view secret numbers'}</p>
+          <p className="text-muted-foreground">{t('events.noPermission') || 'You do not have permission to view secret numbers'}</p>
           <Button variant="link" onClick={() => navigate('/exams')}>
             <ArrowLeft className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">{t('exams.backToList') || 'Back to Exams'}</span>
@@ -405,16 +405,16 @@ export function ExamSecretNumbersPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Class Filter */}
               <div className="space-y-2">
-                <Label>{t('exams.class') || 'Class'}</Label>
+                <Label>{t('search.class') || 'Class'}</Label>
                 <Select
                   value={selectedClassId || 'all'}
                   onValueChange={(v) => setSelectedClassId(v === 'all' ? undefined : v)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t('exams.allClasses') || 'All Classes'} />
+                    <SelectValue placeholder={t('students.allClasses') || 'All Classes'} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t('exams.allClasses') || 'All Classes'}</SelectItem>
+                    <SelectItem value="all">{t('students.allClasses') || 'All Classes'}</SelectItem>
                     {examClasses?.map((ec) => (
                       <SelectItem key={ec.id} value={ec.id}>
                         {ec.classAcademicYear?.class?.name || 'Unknown'}
@@ -522,7 +522,7 @@ export function ExamSecretNumbersPage() {
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('common.search') || 'Search...'}
+                placeholder={t('events.search') || 'Search...'}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
@@ -539,8 +539,8 @@ export function ExamSecretNumbersPage() {
                 <TableHead className="hidden sm:table-cell">{t('exams.rollNumbers.rollNumber') || 'Roll Number'}</TableHead>
                 <TableHead className="hidden md:table-cell">{t('exams.studentCode') || 'Student Code'}</TableHead>
                 <TableHead>{t('exams.studentName') || 'Name'}</TableHead>
-                <TableHead className="hidden lg:table-cell">{t('exams.class') || 'Class'}</TableHead>
-                {hasAssignPermission && <TableHead className="w-24">{t('common.actions') || 'Actions'}</TableHead>}
+                <TableHead className="hidden lg:table-cell">{t('search.class') || 'Class'}</TableHead>
+                {hasAssignPermission && <TableHead className="w-24">{t('events.actions') || 'Actions'}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -660,10 +660,10 @@ export function ExamSecretNumbersPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('exams.studentName') || 'Name'}</TableHead>
-                    <TableHead>{t('exams.class') || 'Class'}</TableHead>
+                    <TableHead>{t('search.class') || 'Class'}</TableHead>
                     <TableHead>{t('exams.secretNumbers.current') || 'Current'}</TableHead>
                     <TableHead>{t('exams.secretNumbers.new') || 'New'}</TableHead>
-                    <TableHead>{t('common.status') || 'Status'}</TableHead>
+                    <TableHead>{t('events.status') || 'Status'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -702,7 +702,7 @@ export function ExamSecretNumbersPage() {
 
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowPreviewDialog(false)} className="w-full sm:w-auto">
-              {t('common.cancel') || 'Cancel'}
+              {t('events.cancel') || 'Cancel'}
             </Button>
             <Button
               onClick={() => {
@@ -733,7 +733,7 @@ export function ExamSecretNumbersPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirm} disabled={confirmMutation.isPending}>
               {t('exams.secretNumbers.confirmOverrideButton') || 'Yes, Override'}
             </AlertDialogAction>
@@ -762,7 +762,7 @@ export function ExamSecretNumbersPage() {
                     <div className="text-sm text-muted-foreground">{t('exams.rollNumbers.rollNumber') || 'Roll Number'}:</div>
                     <div className="font-mono">{lookupResult.student?.examRollNumber || '-'}</div>
 
-                    <div className="text-sm text-muted-foreground">{t('exams.class') || 'Class'}:</div>
+                    <div className="text-sm text-muted-foreground">{t('search.class') || 'Class'}:</div>
                     <div>{lookupResult.student?.className}</div>
                   </div>
                 </div>
@@ -777,7 +777,7 @@ export function ExamSecretNumbersPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowLookupDialog(false)} className="w-full sm:w-auto">
-              {t('common.close') || 'Close'}
+              {t('events.close') || 'Close'}
             </Button>
           </DialogFooter>
         </DialogContent>

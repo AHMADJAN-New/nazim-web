@@ -299,9 +299,9 @@ export function WatermarkManagement({ brandingId, brandingName }: WatermarkManag
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>{t('watermarks.title') || 'Watermarks'}</CardTitle>
+            <CardTitle>{t('events.title') || 'Watermarks'}</CardTitle>
             <CardDescription>
-              {t('watermarks.subtitle') || `Manage watermarks for ${brandingName}`}
+              {t('hostel.subtitle') || `Manage watermarks for ${brandingName}`}
             </CardDescription>
           </div>
           {hasCreatePermission && (
@@ -332,12 +332,12 @@ export function WatermarkManagement({ brandingId, brandingName }: WatermarkManag
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('watermarks.type') || 'Type'}</TableHead>
+                  <TableHead>{t('events.type') || 'Type'}</TableHead>
                   <TableHead>{t('watermarks.content') || 'Content'}</TableHead>
                   <TableHead>{t('watermarks.reportKey') || 'Report'}</TableHead>
-                  <TableHead>{t('watermarks.position') || 'Position'}</TableHead>
-                  <TableHead>{t('watermarks.status') || 'Status'}</TableHead>
-                  <TableHead className="text-right">{t('watermarks.actions') || 'Actions'}</TableHead>
+                  <TableHead>{t('search.position') || 'Position'}</TableHead>
+                  <TableHead>{t('events.status') || 'Status'}</TableHead>
+                  <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -373,8 +373,8 @@ export function WatermarkManagement({ brandingId, brandingName }: WatermarkManag
                     <TableCell>
                       <Badge variant={watermark.isActive ? 'default' : 'secondary'}>
                         {watermark.isActive
-                          ? t('watermarks.active') || 'Active'
-                          : t('watermarks.inactive') || 'Inactive'}
+                          ? t('events.active') || 'Active'
+                          : t('events.inactive') || 'Inactive'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -425,7 +425,7 @@ export function WatermarkManagement({ brandingId, brandingName }: WatermarkManag
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="wm_type">{t('watermarks.type') || 'Type'}</Label>
+                <Label htmlFor="wm_type">{t('events.type') || 'Type'}</Label>
                 <Controller
                   name="wm_type"
                   control={control}
@@ -560,7 +560,7 @@ export function WatermarkManagement({ brandingId, brandingName }: WatermarkManag
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="position">{t('watermarks.position') || 'Position'}</Label>
+                  <Label htmlFor="position">{t('search.position') || 'Position'}</Label>
                   <Controller
                     name="position"
                     control={control}
@@ -591,7 +591,7 @@ export function WatermarkManagement({ brandingId, brandingName }: WatermarkManag
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">{t('watermarks.none') || 'None'}</SelectItem>
+                          <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
                           <SelectItem value="repeat">{t('watermarks.repeat') || 'Repeat'}</SelectItem>
                           <SelectItem value="repeat-x">{t('watermarks.repeatX') || 'Repeat X'}</SelectItem>
                           <SelectItem value="repeat-y">{t('watermarks.repeatY') || 'Repeat Y'}</SelectItem>
@@ -699,7 +699,7 @@ export function WatermarkManagement({ brandingId, brandingName }: WatermarkManag
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="sort_order">{t('watermarks.sortOrder') || 'Sort Order'}</Label>
+                <Label htmlFor="sort_order">{t('examReports.sortOrder') || 'Sort Order'}</Label>
                 <Input
                   id="sort_order"
                   type="number"
@@ -720,17 +720,17 @@ export function WatermarkManagement({ brandingId, brandingName }: WatermarkManag
                     />
                   )}
                 />
-                <Label htmlFor="is_active">{t('watermarks.active') || 'Active'}</Label>
+                <Label htmlFor="is_active">{t('events.active') || 'Active'}</Label>
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                {t('watermarks.cancel') || 'Cancel'}
+                {t('events.cancel') || 'Cancel'}
               </Button>
               <Button type="submit" disabled={createWatermark.isPending || updateWatermark.isPending}>
                 {selectedWatermark
-                  ? t('watermarks.update') || 'Update'
-                  : t('watermarks.create') || 'Create'}
+                  ? t('events.update') || 'Update'
+                  : t('events.create') || 'Create'}
               </Button>
             </DialogFooter>
           </form>
@@ -747,12 +747,12 @@ export function WatermarkManagement({ brandingId, brandingName }: WatermarkManag
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('watermarks.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('watermarks.delete') || 'Delete'}
+              {t('events.delete') || 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

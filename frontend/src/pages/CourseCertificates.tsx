@@ -96,9 +96,9 @@ export default function CourseCertificates() {
 
   // Report export columns
   const reportColumns = useMemo(() => [
-    { key: 'student_name', label: t('students.name') || 'Student' },
-    { key: 'father_name', label: t('students.fatherName') || 'Father Name' },
-    { key: 'admission_no', label: t('students.admissionNo') || 'Admission No' },
+    { key: 'student_name', label: t('events.name') || 'Student' },
+    { key: 'father_name', label: t('examReports.fatherName') || 'Father Name' },
+    { key: 'admission_no', label: t('examReports.admissionNo') || 'Admission No' },
     { key: 'course_name', label: t('courses.courseName') || 'Course' },
     { key: 'certificate_number', label: 'Certificate #' },
     { key: 'issued_date', label: 'Issued Date' },
@@ -124,7 +124,7 @@ export default function CourseCertificates() {
       if (course) filters.push(`${t('courses.courseName') || 'Course'}: ${course.name}`);
     }
     if (search) {
-      filters.push(`${t('common.search') || 'Search'}: ${search}`);
+      filters.push(`${t('events.search') || 'Search'}: ${search}`);
     }
     return filters.join(', ');
   }, [selectedCourseId, search, courses, t]);
@@ -207,7 +207,7 @@ export default function CourseCertificates() {
               </Select>
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>{t('common.search')}</Label>
+              <Label>{t('events.search')}</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -238,13 +238,13 @@ export default function CourseCertificates() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('students.name')}</TableHead>
-                    <TableHead>{t('students.fatherName')}</TableHead>
-                    <TableHead>{t('students.admissionNo')}</TableHead>
+                    <TableHead>{t('events.name')}</TableHead>
+                    <TableHead>{t('examReports.fatherName')}</TableHead>
+                    <TableHead>{t('examReports.admissionNo')}</TableHead>
                     <TableHead className="hidden lg:table-cell">{t('courses.courseName')}</TableHead>
                     <TableHead className="hidden md:table-cell">Certificate #</TableHead>
                     <TableHead className="hidden md:table-cell">Issued Date</TableHead>
-                    <TableHead className="text-right w-[100px]">{t('common.actions')}</TableHead>
+                    <TableHead className="text-right w-[100px]">{t('events.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

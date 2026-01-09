@@ -240,7 +240,7 @@ export default function HelpCenterArticle() {
               disabled={hasMarkedHelpful || hasMarkedNotHelpful}
             >
               <ThumbsUp className="h-4 w-4 mr-2" />
-              {t('helpCenter.yes') || 'Yes'} ({article.helpful_count})
+              {t('events.yes') || 'Yes'} ({article.helpful_count})
             </Button>
             <Button
               variant={hasMarkedNotHelpful ? 'default' : 'outline'}
@@ -248,7 +248,7 @@ export default function HelpCenterArticle() {
               disabled={hasMarkedHelpful || hasMarkedNotHelpful}
             >
               <ThumbsDown className="h-4 w-4 mr-2" />
-              {t('helpCenter.no') || 'No'} ({article.not_helpful_count})
+              {t('events.no') || 'No'} ({article.not_helpful_count})
             </Button>
           </div>
         </CardContent>

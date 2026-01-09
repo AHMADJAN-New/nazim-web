@@ -48,8 +48,8 @@ export function ProfileManagement() {
   const updateProfile = useUpdateProfile();
 
   const profileSchema = z.object({
-    full_name: z.string().min(1, t('profileManagement.fullNameRequired')).max(255, t('profileManagement.fullNameMaxLength')),
-    email: z.string().email(t('profileManagement.invalidEmail')).optional().or(z.literal('')),
+    full_name: z.string().min(1, t('profileManagement.fullNameRequired')).max(255, t('userManagement.fullNameMaxLength')),
+    email: z.string().email(t('forms.invalidEmail')).optional().or(z.literal('')),
     phone: z.string().max(50, t('profileManagement.phoneMaxLength')).optional().or(z.literal('')),
     role: z.string().optional(),
     organization_id: z.string().nullable().optional(),
@@ -143,16 +143,16 @@ export function ProfileManagement() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5 hidden md:inline-flex" />
-                {t('profileManagement.title')}
+                {t('events.title')}
               </CardTitle>
               <CardDescription className="hidden md:block">
-                {t('profileManagement.subtitle')}
+                {t('hostel.subtitle')}
               </CardDescription>
             </div>
             <Button onClick={() => handleOpenDialog()} className="flex-shrink-0">
               <Pencil className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">{t('profileManagement.editMyProfile')}</span>
-              <span className="sm:hidden">{t('profileManagement.edit')}</span>
+              <span className="sm:hidden">{t('events.edit')}</span>
             </Button>
           </div>
         </CardHeader>
@@ -182,7 +182,7 @@ export function ProfileManagement() {
                 </div>
                 <Button variant="outline" onClick={() => handleOpenDialog()} className="flex-shrink-0">
                   <Pencil className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">{t('profileManagement.edit')}</span>
+                  <span className="hidden sm:inline">{t('events.edit')}</span>
                 </Button>
               </div>
             </div>
@@ -197,11 +197,11 @@ export function ProfileManagement() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('profileManagement.name')}</TableHead>
-                        <TableHead className="hidden sm:table-cell">{t('profileManagement.email')}</TableHead>
-                        <TableHead className="hidden md:table-cell">{t('profileManagement.role')}</TableHead>
-                        <TableHead className="hidden lg:table-cell">{t('profileManagement.status')}</TableHead>
-                        <TableHead className="text-right">{t('profileManagement.actions')}</TableHead>
+                        <TableHead>{t('events.name')}</TableHead>
+                        <TableHead className="hidden sm:table-cell">{t('events.email')}</TableHead>
+                        <TableHead className="hidden md:table-cell">{t('userManagement.role')}</TableHead>
+                        <TableHead className="hidden lg:table-cell">{t('events.status')}</TableHead>
+                        <TableHead className="text-right">{t('events.actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -234,7 +234,7 @@ export function ProfileManagement() {
                                         ? 'bg-green-100 text-green-800' 
                                         : 'bg-red-100 text-red-800'
                                     }`}>
-                                      {profile.isActive ? t('profileManagement.active') : t('profileManagement.inactive')}
+                                      {profile.isActive ? t('events.active') : t('events.inactive')}
                                     </span>
                                   </div>
                                 </div>
@@ -252,7 +252,7 @@ export function ProfileManagement() {
                                     ? 'bg-green-100 text-green-800' 
                                     : 'bg-red-100 text-red-800'
                                 }`}>
-                                  {profile.isActive ? t('profileManagement.active') : t('profileManagement.inactive')}
+                                  {profile.isActive ? t('events.active') : t('events.inactive')}
                                 </span>
                               </TableCell>
                               <TableCell className="text-right">
@@ -262,7 +262,7 @@ export function ProfileManagement() {
                                     size="sm"
                                     onClick={() => handleOpenDialog(profile.id)}
                                     className="flex-shrink-0"
-                                    aria-label={t('profileManagement.edit')}
+                                    aria-label={t('events.edit')}
                                   >
                                     <Pencil className="h-4 w-4" />
                                   </Button>
@@ -297,11 +297,11 @@ export function ProfileManagement() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="full_name">{t('profileManagement.fullName')}</Label>
+                <Label htmlFor="full_name">{t('userManagement.fullName')}</Label>
                 <Input
                   id="full_name"
                   {...register('full_name')}
-                  placeholder={t('profileManagement.enterFullName')}
+                  placeholder={t('events.enterFullName')}
                 />
                 {errors.full_name && (
                   <p className="text-sm text-destructive">{errors.full_name.message}</p>
@@ -310,12 +310,12 @@ export function ProfileManagement() {
 
               {!isEditingOwnProfile && (
                 <div className="grid gap-2">
-                  <Label htmlFor="email">{t('profileManagement.email')}</Label>
+                  <Label htmlFor="email">{t('events.email')}</Label>
                   <Input
                     id="email"
                     type="email"
                     {...register('email')}
-                    placeholder={t('profileManagement.enterEmail')}
+                    placeholder={t('auth.enterEmail')}
                   />
                   {errors.email && (
                     <p className="text-sm text-destructive">{errors.email.message}</p>
@@ -324,11 +324,11 @@ export function ProfileManagement() {
               )}
 
               <div className="grid gap-2">
-                <Label htmlFor="phone">{t('profileManagement.phone')}</Label>
+                <Label htmlFor="phone">{t('events.phone')}</Label>
                 <Input
                   id="phone"
                   {...register('phone')}
-                  placeholder={t('profileManagement.enterPhoneNumber')}
+                  placeholder={t('events.enterPhoneNumber')}
                 />
                 {errors.phone && (
                   <p className="text-sm text-destructive">{errors.phone.message}</p>
@@ -338,14 +338,14 @@ export function ProfileManagement() {
               {canEditRole && (
                 <>
                   <div className="grid gap-2">
-                    <Label htmlFor="role">{t('profileManagement.role')}</Label>
+                    <Label htmlFor="role">{t('userManagement.role')}</Label>
                     <Controller
                       name="role"
                       control={control}
                       render={({ field }) => (
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                           <SelectTrigger>
-                            <SelectValue placeholder={t('profileManagement.selectRole')} />
+                            <SelectValue placeholder={t('auth.selectRole')} />
                           </SelectTrigger>
                           <SelectContent>
                             {rolesLoading ? (
@@ -368,7 +368,7 @@ export function ProfileManagement() {
 
                   {!isEditingOwnProfile && (
                     <div className="grid gap-2">
-                      <Label htmlFor="is_active">{t('profileManagement.status')}</Label>
+                      <Label htmlFor="is_active">{t('events.status')}</Label>
                       <Controller
                         name="is_active"
                         control={control}
@@ -381,8 +381,8 @@ export function ProfileManagement() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="true">{t('profileManagement.active')}</SelectItem>
-                              <SelectItem value="false">{t('profileManagement.inactive')}</SelectItem>
+                              <SelectItem value="true">{t('events.active')}</SelectItem>
+                              <SelectItem value="false">{t('events.inactive')}</SelectItem>
                             </SelectContent>
                           </Select>
                         )}
@@ -394,11 +394,11 @@ export function ProfileManagement() {
             </div>
             <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button type="button" variant="outline" onClick={handleCloseDialog} className="w-full sm:w-auto">
-                {t('profileManagement.cancel')}
+                {t('events.cancel')}
               </Button>
               {hasUpdatePermission && (
                 <Button type="submit" disabled={updateProfile.isPending} className="w-full sm:w-auto">
-                  {t('profileManagement.update')}
+                  {t('events.update')}
                 </Button>
               )}
             </DialogFooter>

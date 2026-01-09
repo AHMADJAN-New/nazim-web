@@ -82,8 +82,8 @@ const CourseRow = ({ course, onEdit, onDelete, onClose, onReopen, onViewStudents
   const { t } = useLanguage();
   const tone = statusTone[course.status] || 'bg-muted text-muted-foreground';
   const statusLabels: Record<string, string> = {
-    draft: t('courses.draft'),
-    open: t('courses.open'),
+    draft: t('status.draft'),
+    open: t('common.open'),
     closed: t('courses.closed'),
     completed: t('courses.completed'),
   };
@@ -107,7 +107,7 @@ const CourseRow = ({ course, onEdit, onDelete, onClose, onReopen, onViewStudents
             : '—'
           }
         </div>
-        {course.durationDays && <div className="text-xs text-muted-foreground">{course.durationDays} {t('courses.days')}</div>}
+        {course.durationDays && <div className="text-xs text-muted-foreground">{course.durationDays} {t('events.days')}</div>}
       </TableCell>
       <TableCell>
         <Badge variant="outline" className={tone}>
@@ -118,9 +118,9 @@ const CourseRow = ({ course, onEdit, onDelete, onClose, onReopen, onViewStudents
         <div className="flex justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" aria-label={t('common.actions')}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" aria-label={t('events.actions')}>
                 <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">{t('common.actions')}</span>
+                <span className="sr-only">{t('events.actions')}</span>
               </Button>
             </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -130,7 +130,7 @@ const CourseRow = ({ course, onEdit, onDelete, onClose, onReopen, onViewStudents
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onEdit(course)}>
               <Pencil className="mr-2 h-4 w-4" />
-              {t('common.edit')}
+              {t('events.edit')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             {course.status !== 'closed' && course.status !== 'completed' && (
@@ -148,7 +148,7 @@ const CourseRow = ({ course, onEdit, onDelete, onClose, onReopen, onViewStudents
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onDelete(course)} className="text-destructive">
               <Trash2 className="mr-2 h-4 w-4" />
-              {t('common.delete')}
+              {t('events.delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -266,9 +266,9 @@ const ShortTermCourses = () => {
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-2xl">{t('courses.title')}</CardTitle>
+              <CardTitle className="text-2xl">{t('events.title')}</CardTitle>
               <p className="text-sm text-muted-foreground mt-1 hidden md:block">
-                {t('courses.subtitle')}
+                {t('hostel.subtitle')}
               </p>
             </div>
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
@@ -278,7 +278,7 @@ const ShortTermCourses = () => {
               </Button>
               <Button variant="outline" onClick={() => refetch()} className="w-full sm:w-auto">
                 <RefreshCw className="h-4 w-4" />
-                <span className="hidden sm:inline ml-2">{t('common.refresh')}</span>
+                <span className="hidden sm:inline ml-2">{t('events.refresh')}</span>
               </Button>
             </div>
           </div>
@@ -288,7 +288,7 @@ const ShortTermCourses = () => {
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('courses.open')}</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('common.open')}</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
             <div className="text-2xl font-bold">{summary.open}</div>
@@ -297,7 +297,7 @@ const ShortTermCourses = () => {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('courses.draft')}</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('status.draft')}</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
             <div className="text-2xl font-bold">{summary.draft}</div>
@@ -329,20 +329,20 @@ const ShortTermCourses = () => {
       <Card>
         <CardHeader className="space-y-1 pb-3">
           <CardTitle className="text-lg font-semibold">{t('courses.courseList')}</CardTitle>
-          <p className="text-sm text-muted-foreground hidden md:block">{t('courses.subtitle')}</p>
+          <p className="text-sm text-muted-foreground hidden md:block">{t('hostel.subtitle')}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
-              <Label>{t('courses.status')}</Label>
+              <Label>{t('events.status')}</Label>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger>
                   <SelectValue placeholder={t('courses.allStatuses')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('common.all')}</SelectItem>
-                  <SelectItem value="open">{t('courses.open')}</SelectItem>
-                  <SelectItem value="draft">{t('courses.draft')}</SelectItem>
+                  <SelectItem value="all">{t('subjects.all')}</SelectItem>
+                  <SelectItem value="open">{t('common.open')}</SelectItem>
+                  <SelectItem value="draft">{t('status.draft')}</SelectItem>
                   <SelectItem value="closed">{t('courses.closed')}</SelectItem>
                   <SelectItem value="completed">{t('courses.completed')}</SelectItem>
                 </SelectContent>
@@ -362,7 +362,7 @@ const ShortTermCourses = () => {
                 setDateFrom('');
                 setDateTo('');
               }}>
-                {t('courses.clearFilters')}
+                {t('events.clearFilters')}
               </Button>
             </div>
           </div>
@@ -379,9 +379,9 @@ const ShortTermCourses = () => {
                     <TableRow>
                       <TableHead>{t('courses.courseName')}</TableHead>
                       <TableHead className="hidden md:table-cell">{t('courses.instructorName')}</TableHead>
-                      <TableHead className="hidden md:table-cell">{t('courses.dates')}</TableHead>
-                      <TableHead>{t('courses.status')}</TableHead>
-                      <TableHead className="w-[50px]">{t('common.actions')}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t('events.dates')}</TableHead>
+                      <TableHead>{t('events.status')}</TableHead>
+                      <TableHead className="w-[50px]">{t('events.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -441,17 +441,17 @@ const ShortTermCourses = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('courses.deleteCourse')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('courses.deleteConfirm')} "{courseToDelete?.name}"? This action cannot be undone
+              {t('assets.deleteConfirm')} "{courseToDelete?.name}"? This action cannot be undone
               and will remove all associated student enrollments.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('common.delete')}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -476,7 +476,7 @@ const ShortTermCourses = () => {
             <div className="mt-4 p-4 bg-muted/50 rounded-lg border">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t('courses.totalStudents')}</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t('students.totalStudents')}</p>
                   <p className="text-lg font-semibold">{courseStudents.length}</p>
                 </div>
                 <div>
@@ -492,7 +492,7 @@ const ShortTermCourses = () => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t('courses.certificates')}</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t('studentReportCard.certificates')}</p>
                   <p className="text-lg font-semibold text-purple-600">
                     {courseStudents.filter(s => s.certificateIssued).length}
                   </p>
@@ -569,7 +569,7 @@ const ShortTermCourses = () => {
                           {/* Student Details Grid */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                             <div>
-                              <span className="text-muted-foreground">{t('courses.admissionNo')}</span>
+                              <span className="text-muted-foreground">{t('examReports.admissionNo')}</span>
                               <span className="ml-2 font-medium">{student.admissionNo}</span>
                             </div>
                             {student.registrationDate && (
@@ -590,7 +590,7 @@ const ShortTermCourses = () => {
                             )}
                             {student.grade && (
                               <div>
-                                <span className="text-muted-foreground">{t('courses.grade')}</span>
+                                <span className="text-muted-foreground">{t('studentReportCard.grade')}</span>
                                 <span className="ml-2 font-medium">{student.grade}</span>
                               </div>
                             )}

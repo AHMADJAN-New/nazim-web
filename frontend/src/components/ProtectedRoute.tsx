@@ -120,7 +120,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // NOW we can do early returns after all hooks have been called
   if (isLoading) {
-    return <LoadingSpinner size="lg" text={t('guards.loading')} fullScreen />;
+    return <LoadingSpinner size="lg" text={t('events.loading')} fullScreen />;
   }
 
   // Only allow authenticated users
@@ -139,7 +139,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       return (
         <div className="container mx-auto p-6">
           <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">{t('guards.organizationRequired')}</h2>
+            <h2 className="text-xl font-semibold mb-2">{t('toast.organizationRequired')}</h2>
             <p className="text-muted-foreground">
               {t('guards.organizationRequiredMessage')}
             </p>

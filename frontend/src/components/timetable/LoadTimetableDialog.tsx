@@ -114,7 +114,7 @@ export function LoadTimetableDialog({ open, onOpenChange, organizationId, academ
 					)}
 				</div>
 				<DialogFooter>
-					<Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel') || 'Cancel'}</Button>
+					<Button variant="outline" onClick={() => onOpenChange(false)}>{t('events.cancel') || 'Cancel'}</Button>
 					<Button onClick={handleLoad} disabled={!selectedId}>{t('timetable.load') || 'Load'}</Button>
 				</DialogFooter>
 			</DialogContent>

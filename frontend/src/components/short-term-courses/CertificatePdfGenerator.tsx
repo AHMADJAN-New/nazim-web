@@ -2239,7 +2239,7 @@ export function CertificatePdfGenerator({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Award className="h-5 w-5" />
-            {t('shortTermCourses.generateCertificate')}
+            {t('courses.generateCertificate')}
           </DialogTitle>
         </DialogHeader>
 
@@ -2253,7 +2253,7 @@ export function CertificatePdfGenerator({
                   <p className="font-medium">{studentName}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">{t('shortTermCourses.course')}</Label>
+                  <Label className="text-muted-foreground">{t('certificateTemplates.course')}</Label>
                   <p className="font-medium">{courseName}</p>
                 </div>
                 {certificateData?.student.certificate_number && (
@@ -2276,7 +2276,7 @@ export function CertificatePdfGenerator({
 
           {/* Template Selection */}
           <div className="space-y-2">
-            <Label>{t('certificateTemplates.selectTemplate')}</Label>
+            <Label>{t('studentReportCard.selectTemplate')}</Label>
             <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
               <SelectTrigger>
                 <SelectValue placeholder={t('certificateTemplates.selectTemplatePlaceholder')} />
@@ -2296,7 +2296,7 @@ export function CertificatePdfGenerator({
             </Select>
             {templates.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                {t('certificateTemplates.noTemplatesFound')}
+                {t('examPapers.noTemplatesFound')}
               </p>
             )}
           </div>
@@ -2328,7 +2328,7 @@ export function CertificatePdfGenerator({
               <iframe
                 src={previewUrl}
                 className="w-full h-96"
-                title={t('certificateTemplates.preview')}
+                title={t('events.preview')}
               />
             </div>
           )}
@@ -2336,7 +2336,7 @@ export function CertificatePdfGenerator({
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={handleClose}>
-            {t('common.cancel')}
+            {t('events.cancel')}
           </Button>
           <Button
             variant="outline"
@@ -2348,7 +2348,7 @@ export function CertificatePdfGenerator({
             ) : (
               <Eye className="h-4 w-4 mr-2" />
             )}
-            {t('certificateTemplates.preview')}
+            {t('events.preview')}
           </Button>
           <Button
             variant="outline"
@@ -2360,7 +2360,7 @@ export function CertificatePdfGenerator({
             ) : (
               <ImageIcon className="h-4 w-4 mr-2" />
             )}
-            {t('common.download')} Image
+            {t('events.download')} Image
           </Button>
           <Button
             variant="outline"
@@ -2438,7 +2438,7 @@ export function CertificatePdfGenerator({
             ) : (
               <Printer className="h-4 w-4 mr-2" />
             )}
-            {t('common.print')}
+            {t('events.print')}
           </Button>
           <Button
             onClick={() => handleGeneratePdf(true)}
@@ -2449,7 +2449,7 @@ export function CertificatePdfGenerator({
             ) : (
               <Download className="h-4 w-4 mr-2" />
             )}
-            {t('common.download')} PDF
+            {t('events.download')} PDF
           </Button>
         </DialogFooter>
       </DialogContent>

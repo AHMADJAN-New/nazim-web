@@ -142,7 +142,7 @@ const StudentRow = ({
               ))}
               {studentCourses.length > 2 && (
                 <Badge key={`course-badge-more-${student.id}`} variant="outline" className="text-xs">
-                  +{studentCourses.length - 2} {t('common.more') || 'more'}
+                  +{studentCourses.length - 2} {t('events.more') || 'more'}
                 </Badge>
               )}
             </div>
@@ -181,20 +181,20 @@ const StudentRow = ({
         <div className="flex justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" aria-label={t('common.actions')}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" aria-label={t('events.actions')}>
                 <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">{t('common.actions')}</span>
+                <span className="sr-only">{t('events.actions')}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onViewDetails(student)}>
               <Eye className="mr-2 h-4 w-4" />
-              {t('courses.viewDetails')}
+              {t('events.viewDetails')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onEdit(student)}>
               <Pencil className="mr-2 h-4 w-4" />
-              {t('courses.edit')}
+              {t('events.edit')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             {student.completionStatus === 'enrolled' && (
@@ -225,7 +225,7 @@ const StudentRow = ({
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onDelete(student)} className="text-destructive">
               <Trash2 className="mr-2 h-4 w-4" />
-              {t('courses.delete')}
+              {t('events.delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -316,7 +316,7 @@ const CourseStudents = () => {
 
   const table = useReactTable({
     data: filtered,
-    columns: [{ id: 'name', header: t('students.name'), cell: () => null }],
+    columns: [{ id: 'name', header: t('events.name'), cell: () => null }],
     state: { pagination: paginationState },
     manualPagination: true,
     pageCount: pagination?.last_page ?? 1,
@@ -423,7 +423,7 @@ const CourseStudents = () => {
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               <Button onClick={handleCreate} className="w-full sm:w-auto">
                 <Plus className="h-4 w-4" />
-                <span className="ml-2">{t('courses.addStudent')}</span>
+                <span className="ml-2">{t('dashboard.addStudent')}</span>
               </Button>
               {openCourses.length > 0 && (
                 <>
@@ -439,7 +439,7 @@ const CourseStudents = () => {
               )}
               <Button variant="outline" onClick={() => refetch()} className="w-full sm:w-auto">
                 <RefreshCw className="h-4 w-4" />
-                <span className="hidden sm:inline ml-2">{t('common.refresh')}</span>
+                <span className="hidden sm:inline ml-2">{t('events.refresh')}</span>
               </Button>
             </div>
           </div>
@@ -448,7 +448,7 @@ const CourseStudents = () => {
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('common.total')}</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('events.total')}</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
             <div className="text-2xl font-bold">{summary.total}</div>
@@ -496,7 +496,7 @@ const CourseStudents = () => {
         <CardContent className="space-y-4">
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
-              <Label>{t('courses.course')}</Label>
+              <Label>{t('certificateTemplates.course')}</Label>
               <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
                 <SelectTrigger>
                   <SelectValue placeholder={t('courses.allCourses')} />
@@ -512,13 +512,13 @@ const CourseStudents = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>{t('courses.status')}</Label>
+              <Label>{t('events.status')}</Label>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('courses.all')} />
+                  <SelectValue placeholder={t('subjects.all')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('courses.all')}</SelectItem>
+                  <SelectItem value="all">{t('subjects.all')}</SelectItem>
                   <SelectItem value="enrolled">{t('courses.enrolled')}</SelectItem>
                   <SelectItem value="completed">{t('courses.completed')}</SelectItem>
                   <SelectItem value="dropped">{t('courses.dropped')}</SelectItem>
@@ -527,7 +527,7 @@ const CourseStudents = () => {
               </Select>
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>{t('common.search')}</Label>
+              <Label>{t('events.search')}</Label>
               <Input
                 placeholder={t('courses.nameOrAdmission')}
                 value={search}
@@ -544,10 +544,10 @@ const CourseStudents = () => {
             <div className="flex flex-col items-center justify-center py-10 space-y-2">
               <AlertTriangle className="h-8 w-8 text-destructive" />
               <p className="text-sm text-destructive font-medium">{t('courses.errorLoadingStudents')}</p>
-              <p className="text-xs text-muted-foreground">{error instanceof Error ? error.message : t('common.unexpectedError')}</p>
+              <p className="text-xs text-muted-foreground">{error instanceof Error ? error.message : t('events.unexpectedError')}</p>
               <Button variant="outline" size="sm" onClick={() => refetch()}>
                 <RefreshCw className="mr-2 h-4 w-4" />
-                {t('courses.retry')}
+                {t('events.retry')}
               </Button>
             </div>
           ) : (
@@ -557,17 +557,17 @@ const CourseStudents = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead></TableHead>
-                        <TableHead>{t('students.name')}</TableHead>
-                        <TableHead>{t('students.fatherName')}</TableHead>
-                        <TableHead>{t('students.admissionNo')}</TableHead>
-                      <TableHead className="hidden lg:table-cell">{t('courses.course')}</TableHead>
+                        <TableHead>{t('events.name')}</TableHead>
+                        <TableHead>{t('examReports.fatherName')}</TableHead>
+                        <TableHead>{t('examReports.admissionNo')}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('certificateTemplates.course')}</TableHead>
                       <TableHead className="hidden lg:table-cell">{t('students.guardianName')}</TableHead>
-                      <TableHead className="hidden lg:table-cell">{t('students.phone')}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('events.phone')}</TableHead>
                       <TableHead className="hidden md:table-cell">{t('students.birthYear')}</TableHead>
                       <TableHead className="hidden md:table-cell">{t('students.age')}</TableHead>
                       <TableHead className="hidden md:table-cell">{t('courses.registration')}</TableHead>
-                      <TableHead>{t('courses.status')}</TableHead>
-                      <TableHead className="w-[50px]">{t('common.actions')}</TableHead>
+                      <TableHead>{t('events.status')}</TableHead>
+                      <TableHead className="w-[50px]">{t('events.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -639,16 +639,16 @@ const CourseStudents = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('students.deleteStudent')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('students.deleteConfirm')} "{studentToDelete?.fullName}"? {t('common.unexpectedError')}
+              {t('assets.deleteConfirm')} "{studentToDelete?.fullName}"? {t('events.unexpectedError')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('courses.delete')}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -663,7 +663,7 @@ const CourseStudents = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleCopyConfirm}>{t('courses.copyToMain')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

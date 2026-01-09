@@ -100,7 +100,7 @@ function GradeDialog({ open, onOpenChange, gradeId }: GradeDialogProps) {
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? t('grades.edit') : t('grades.create')}</DialogTitle>
+          <DialogTitle>{isEdit ? t('events.edit') : t('events.create')}</DialogTitle>
           <DialogDescription>
             {isEdit ? t('grades.editDescription') : t('grades.createDescription')}
           </DialogDescription>
@@ -160,7 +160,7 @@ function GradeDialog({ open, onOpenChange, gradeId }: GradeDialogProps) {
             {/* Percentage range */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="minPercentage">{t('grades.minPercentage')}</Label>
+                <Label htmlFor="minPercentage">{t('attendance.minPercentage')}</Label>
                 <Input
                   id="minPercentage"
                   type="number"
@@ -220,10 +220,10 @@ function GradeDialog({ open, onOpenChange, gradeId }: GradeDialogProps) {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose}>
-              {t('common.cancel')}
+              {t('events.cancel')}
             </Button>
             <Button type="submit" disabled={createGrade.isPending || updateGrade.isPending}>
-              {isEdit ? t('common.update') : t('common.create')}
+              {isEdit ? t('events.update') : t('events.create')}
             </Button>
           </DialogFooter>
         </form>
@@ -275,7 +275,7 @@ export default function GradesManagement() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <CardTitle>{t('grades.management')}</CardTitle>
+              <CardTitle>{t('students.management')}</CardTitle>
               <CardDescription className="hidden md:block">{t('grades.managementDescription')}</CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
@@ -292,7 +292,7 @@ export default function GradesManagement() {
                     { key: 'isPass', label: t('grades.isPass') },
                   ]}
                   reportKey="grades"
-                  title={t('grades.management') || 'Grades Report'}
+                  title={t('students.management') || 'Grades Report'}
                   transformData={(data) => data.map((grade) => ({
                     nameEn: grade.nameEn || '',
                     nameAr: grade.nameAr || '',
@@ -311,7 +311,7 @@ export default function GradesManagement() {
               {canCreate && (
                 <Button onClick={handleCreate} className="w-full sm:w-auto">
                   <Plus className="h-4 w-4" />
-                  <span className="ml-2">{t('grades.create')}</span>
+                  <span className="ml-2">{t('events.create')}</span>
                 </Button>
               )}
             </div>
@@ -341,7 +341,7 @@ export default function GradesManagement() {
                   <TableHead>{t('grades.percentageRange')}</TableHead>
                   <TableHead>{t('grades.order')}</TableHead>
                   <TableHead>{t('grades.isPass')}</TableHead>
-                  <TableHead className="text-right">{t('common.actions')}</TableHead>
+                  <TableHead className="text-right">{t('events.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -376,7 +376,7 @@ export default function GradesManagement() {
                             size="icon"
                             onClick={() => handleEdit(grade.id)}
                             className="flex-shrink-0"
-                            aria-label={t('grades.edit')}
+                            aria-label={t('events.edit')}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -387,7 +387,7 @@ export default function GradesManagement() {
                             size="icon"
                             onClick={() => handleDeleteClick(grade.id)}
                             className="flex-shrink-0"
-                            aria-label={t('common.delete')}
+                            aria-label={t('events.delete')}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -412,18 +412,18 @@ export default function GradesManagement() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('grades.deleteConfirm')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('assets.deleteConfirm')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('grades.deleteConfirmMessage')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('common.delete')}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -280,7 +280,7 @@ export default function StudentsImport() {
           `Import contains ${limitWarning.total_rows || result.total_rows} students, but only ${limitWarning.remaining || studentUsage.remaining} slots remaining. Only the first ${Math.min(result.valid_rows, limitWarning.remaining || studentUsage.remaining)} valid rows will be imported.`
         );
       } else {
-        showToast.success('toast.success');
+        showToast.success('events.success');
       }
     } catch (e: any) {
       const message = e instanceof Error ? e.message : String(e);
@@ -404,7 +404,7 @@ export default function StudentsImport() {
                       <SelectValue placeholder={t('students.selectAcademicYear')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">{t('common.none')}</SelectItem>
+                      <SelectItem value="none">{t('events.none')}</SelectItem>
                       {academicYears?.map((y) => (
                         <SelectItem key={y.id} value={y.id}>
                           {y.name}
@@ -466,7 +466,7 @@ export default function StudentsImport() {
                   <Button onClick={onDownloadTemplate} disabled={!canDownload || isDownloading} className="w-full">
                     <Download className="w-4 h-4 mr-2" />
                     <span className="hidden sm:inline">{t('students.downloadTemplate')}</span>
-                    <span className="sm:hidden">{t('students.download') || 'Download'}</span>
+                    <span className="sm:hidden">{t('events.download') || 'Download'}</span>
                   </Button>
                 </div>
 
@@ -492,10 +492,10 @@ export default function StudentsImport() {
                                   onValueChange={(v) => setClassDefault(cayId, { residency_type_id: v === 'none' ? null : v })}
                                 >
                                   <SelectTrigger>
-                                    <SelectValue placeholder={t('common.select')} />
+                                    <SelectValue placeholder={t('events.select')} />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="none">{t('common.none')}</SelectItem>
+                                    <SelectItem value="none">{t('events.none')}</SelectItem>
                                     {(residencyTypes as any[])?.map((rt) => (
                                       <SelectItem key={rt.id} value={rt.id}>
                                         {rt.name}
@@ -512,10 +512,10 @@ export default function StudentsImport() {
                                   onValueChange={(v) => setClassDefault(cayId, { room_id: v === 'none' ? null : v })}
                                 >
                                   <SelectTrigger>
-                                    <SelectValue placeholder={t('common.select')} />
+                                    <SelectValue placeholder={t('events.select')} />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="none">{t('common.none')}</SelectItem>
+                                    <SelectItem value="none">{t('events.none')}</SelectItem>
                                     {(Array.isArray(rooms) ? rooms : (rooms as any)?.data)?.map((room: any) => (
                                       <SelectItem key={room.id} value={room.id}>
                                         {room.roomNumber ?? room.room_number ?? room.name ?? room.id}
@@ -605,7 +605,7 @@ export default function StudentsImport() {
                 >
                   <Upload className="w-4 h-4 mr-2" />
                   <span className="hidden sm:inline">{t('students.importNow')}</span>
-                  <span className="sm:hidden">{t('students.import') || 'Import'}</span>
+                  <span className="sm:hidden">{t('events.import') || 'Import'}</span>
                 </Button>
               </div>
               

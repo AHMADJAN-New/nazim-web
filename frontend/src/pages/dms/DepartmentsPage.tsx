@@ -195,7 +195,7 @@ export default function DepartmentsPage() {
         description="Manage departments and document routing"
         icon={<Building className="h-5 w-5" />}
         primaryAction={{
-          label: t('common.add') || 'Add Department',
+          label: t('events.add') || 'Add Department',
           onClick: () => setIsCreateDialogOpen(true),
           icon: <Plus className="h-4 w-4" />,
         }}
@@ -237,12 +237,12 @@ export default function DepartmentsPage() {
         </Card>
       </div>
 
-      <FilterPanel title={t('common.filters')}>
+      <FilterPanel title={t('events.filters')}>
         <div className="flex flex-wrap gap-3 items-center">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={t('common.search') || 'Search departments...'}
+              placeholder={t('events.search') || 'Search departments...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8"
@@ -261,7 +261,7 @@ export default function DepartmentsPage() {
             buildFiltersSummary={buildFiltersSummary}
             templateType="dms"
             disabled={departmentsExportData.length === 0}
-            errorNoData={t('common.noDataToExport') || 'No data to export'}
+            errorNoData={t('events.noDataToExport') || 'No data to export'}
           />
         </div>
       </FilterPanel>
@@ -292,7 +292,7 @@ export default function DepartmentsPage() {
                   variant="outline"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  {t('common.add') || 'Create First Department'}
+                  {t('events.add') || 'Create First Department'}
                 </Button>
               )}
             </div>
@@ -386,12 +386,12 @@ export default function DepartmentsPage() {
                   setForm({ name: "" });
                 }}
               >
-                {t('common.cancel') || 'Cancel'}
+                {t('events.cancel') || 'Cancel'}
               </Button>
               <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending
-                  ? t('common.creating') || 'Creating...'
-                  : t('common.create') || 'Create Department'}
+                  ? t('events.creating') || 'Creating...'
+                  : t('events.create') || 'Create Department'}
               </Button>
             </DialogFooter>
           </form>
@@ -428,12 +428,12 @@ export default function DepartmentsPage() {
                   setForm({ name: "" });
                 }}
               >
-                {t('common.cancel') || 'Cancel'}
+                {t('events.cancel') || 'Cancel'}
               </Button>
               <Button type="submit" disabled={updateMutation.isPending}>
                 {updateMutation.isPending
-                  ? t('common.updating') || 'Updating...'
-                  : t('common.update') || 'Update Department'}
+                  ? t('events.updating') || 'Updating...'
+                  : t('events.update') || 'Update Department'}
               </Button>
             </DialogFooter>
           </form>

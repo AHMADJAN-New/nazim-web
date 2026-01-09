@@ -194,9 +194,9 @@ export function ExamTypesPage() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <CardTitle>{t('examTypes.title') || 'Exam Types'}</CardTitle>
+              <CardTitle>{t('events.title') || 'Exam Types'}</CardTitle>
               <CardDescription className="hidden md:block">
-                {t('examTypes.description') || 'Manage exam types for your organization'}
+                {t('events.description') || 'Manage exam types for your organization'}
               </CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
@@ -204,20 +204,20 @@ export function ExamTypesPage() {
                 <ReportExportButtons
                   data={filteredExamTypes}
                   columns={[
-                    { key: 'name', label: t('examTypes.name') || 'Name' },
-                    { key: 'code', label: t('examTypes.code') || 'Code' },
-                    { key: 'description', label: t('examTypes.description') || 'Description' },
-                    { key: 'displayOrder', label: t('examTypes.displayOrder') || 'Display Order' },
+                    { key: 'name', label: t('events.name') || 'Name' },
+                    { key: 'code', label: t('events.code') || 'Code' },
+                    { key: 'description', label: t('events.description') || 'Description' },
+                    { key: 'displayOrder', label: t('events.displayOrder') || 'Display Order' },
                     { key: 'isActive', label: t('examTypes.isActive') || 'Active' },
                   ]}
                   reportKey="exam_types"
-                  title={t('examTypes.title') || 'Exam Types Report'}
+                  title={t('events.title') || 'Exam Types Report'}
                   transformData={(data) => data.map((examType) => ({
                     name: examType.name || '',
                     code: examType.code || '',
                     description: examType.description || '',
                     displayOrder: examType.displayOrder || 0,
-                    isActive: examType.isActive ? (t('common.active') || 'Active') : (t('common.inactive') || 'Inactive'),
+                    isActive: examType.isActive ? (t('events.active') || 'Active') : (t('events.inactive') || 'Inactive'),
                   }))}
                   buildFiltersSummary={() => {
                     const filters: string[] = [];
@@ -232,7 +232,7 @@ export function ExamTypesPage() {
               {hasCreate && (
                 <Button onClick={() => setIsCreateDialogOpen(true)} className="w-full sm:w-auto">
                   <Plus className="h-4 w-4" />
-                  <span className="ml-2">{t('examTypes.create') || t('common.add') || 'Add'}</span>
+                  <span className="ml-2">{t('events.create') || t('events.add') || 'Add'}</span>
                 </Button>
               )}
             </div>
@@ -243,7 +243,7 @@ export function ExamTypesPage() {
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('common.search') || 'Search...'}
+                placeholder={t('events.search') || 'Search...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8"
@@ -255,19 +255,19 @@ export function ExamTypesPage() {
             <Table>
               <TableHeader>
               <TableRow>
-                <TableHead>{t('examTypes.name') || 'Name'}</TableHead>
-                <TableHead>{t('examTypes.code') || 'Code'}</TableHead>
-                <TableHead>{t('examTypes.description') || 'Description'}</TableHead>
-                <TableHead>{t('examTypes.displayOrder') || 'Display Order'}</TableHead>
+                <TableHead>{t('events.name') || 'Name'}</TableHead>
+                <TableHead>{t('events.code') || 'Code'}</TableHead>
+                <TableHead>{t('events.description') || 'Description'}</TableHead>
+                <TableHead>{t('events.displayOrder') || 'Display Order'}</TableHead>
                 <TableHead>{t('examTypes.isActive') || 'Active'}</TableHead>
-                <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredExamTypes.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    {t('common.noData') || 'No exam types found'}
+                    {t('events.noData') || 'No exam types found'}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -287,7 +287,7 @@ export function ExamTypesPage() {
                     <TableCell>{examType.displayOrder}</TableCell>
                     <TableCell>
                       <Badge variant={examType.isActive ? 'default' : 'secondary'}>
-                        {examType.isActive ? (t('common.active') || 'Active') : (t('common.inactive') || 'Inactive')}
+                        {examType.isActive ? (t('events.active') || 'Active') : (t('events.inactive') || 'Inactive')}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -298,7 +298,7 @@ export function ExamTypesPage() {
                             size="sm"
                             onClick={() => openEditDialog(examType)}
                             className="flex-shrink-0"
-                            aria-label={t('examTypes.edit') || 'Edit'}
+                            aria-label={t('events.edit') || 'Edit'}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -309,7 +309,7 @@ export function ExamTypesPage() {
                             size="sm"
                             onClick={() => openDeleteDialog(examType)}
                             className="flex-shrink-0"
-                            aria-label={t('common.delete') || 'Delete'}
+                            aria-label={t('events.delete') || 'Delete'}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -329,7 +329,7 @@ export function ExamTypesPage() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('examTypes.create') || 'Create Exam Type'}</DialogTitle>
+            <DialogTitle>{t('events.create') || 'Create Exam Type'}</DialogTitle>
             <DialogDescription>
               {t('examTypes.createDescription') || 'Add a new exam type to your organization'}
             </DialogDescription>
@@ -337,7 +337,7 @@ export function ExamTypesPage() {
           <form onSubmit={handleSubmit(handleCreate)}>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">{t('examTypes.name') || 'Name'} *</Label>
+                <Label htmlFor="name">{t('events.name') || 'Name'} *</Label>
                 <Input
                   id="name"
                   {...register('name')}
@@ -349,7 +349,7 @@ export function ExamTypesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="code">{t('examTypes.code') || 'Code'}</Label>
+                <Label htmlFor="code">{t('events.code') || 'Code'}</Label>
                 <Input
                   id="code"
                   {...register('code')}
@@ -361,11 +361,11 @@ export function ExamTypesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">{t('examTypes.description') || 'Description'}</Label>
+                <Label htmlFor="description">{t('events.description') || 'Description'}</Label>
                 <Textarea
                   id="description"
                   {...register('description')}
-                  placeholder={t('examTypes.descriptionPlaceholder') || 'Optional description'}
+                  placeholder={t('permissions.descriptionPlaceholder') || 'Optional description'}
                   rows={3}
                 />
                 {errors.description && (
@@ -374,7 +374,7 @@ export function ExamTypesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="display_order">{t('examTypes.displayOrder') || 'Display Order'}</Label>
+                <Label htmlFor="display_order">{t('events.displayOrder') || 'Display Order'}</Label>
                 <Input
                   id="display_order"
                   type="number"
@@ -409,10 +409,10 @@ export function ExamTypesPage() {
                   reset();
                 }}
               >
-                {t('common.cancel') || 'Cancel'}
+                {t('events.cancel') || 'Cancel'}
               </Button>
               <Button type="submit" disabled={createExamType.isPending}>
-                {createExamType.isPending ? (t('common.saving') || 'Saving...') : (t('common.save') || 'Save')}
+                {createExamType.isPending ? (t('events.saving') || 'Saving...') : (t('events.save') || 'Save')}
               </Button>
             </DialogFooter>
           </form>
@@ -423,7 +423,7 @@ export function ExamTypesPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('examTypes.edit') || 'Edit Exam Type'}</DialogTitle>
+            <DialogTitle>{t('events.edit') || 'Edit Exam Type'}</DialogTitle>
             <DialogDescription>
               {t('examTypes.editDescription') || 'Update exam type details'}
             </DialogDescription>
@@ -431,7 +431,7 @@ export function ExamTypesPage() {
           <form onSubmit={handleSubmit(handleEdit)}>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-name">{t('examTypes.name') || 'Name'} *</Label>
+                <Label htmlFor="edit-name">{t('events.name') || 'Name'} *</Label>
                 <Input
                   id="edit-name"
                   {...register('name')}
@@ -443,7 +443,7 @@ export function ExamTypesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-code">{t('examTypes.code') || 'Code'}</Label>
+                <Label htmlFor="edit-code">{t('events.code') || 'Code'}</Label>
                 <Input
                   id="edit-code"
                   {...register('code')}
@@ -455,11 +455,11 @@ export function ExamTypesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-description">{t('examTypes.description') || 'Description'}</Label>
+                <Label htmlFor="edit-description">{t('events.description') || 'Description'}</Label>
                 <Textarea
                   id="edit-description"
                   {...register('description')}
-                  placeholder={t('examTypes.descriptionPlaceholder') || 'Optional description'}
+                  placeholder={t('permissions.descriptionPlaceholder') || 'Optional description'}
                   rows={3}
                 />
                 {errors.description && (
@@ -468,7 +468,7 @@ export function ExamTypesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-display_order">{t('examTypes.displayOrder') || 'Display Order'}</Label>
+                <Label htmlFor="edit-display_order">{t('events.displayOrder') || 'Display Order'}</Label>
                 <Input
                   id="edit-display_order"
                   type="number"
@@ -504,10 +504,10 @@ export function ExamTypesPage() {
                   reset();
                 }}
               >
-                {t('common.cancel') || 'Cancel'}
+                {t('events.cancel') || 'Cancel'}
               </Button>
               <Button type="submit" disabled={updateExamType.isPending}>
-                {updateExamType.isPending ? (t('common.saving') || 'Saving...') : (t('common.save') || 'Save')}
+                {updateExamType.isPending ? (t('events.saving') || 'Saving...') : (t('events.save') || 'Save')}
               </Button>
             </DialogFooter>
           </form>
@@ -518,22 +518,22 @@ export function ExamTypesPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('events.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('examTypes.deleteConfirm', { name: examTypeToDelete?.name }) ||
+              {t('assets.deleteConfirm', { name: examTypeToDelete?.name }) ||
                 `Are you sure you want to delete "${examTypeToDelete?.name}"? This action cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setExamTypeToDelete(null)}>
-              {t('common.cancel') || 'Cancel'}
+              {t('events.cancel') || 'Cancel'}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={deleteExamType.isPending}
             >
-              {deleteExamType.isPending ? (t('common.deleting') || 'Deleting...') : (t('common.delete') || 'Delete')}
+              {deleteExamType.isPending ? (t('events.deleting') || 'Deleting...') : (t('events.delete') || 'Delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

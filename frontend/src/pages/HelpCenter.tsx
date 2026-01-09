@@ -111,10 +111,10 @@ export default function HelpCenter() {
       <div className="mb-8">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold truncate">
-            {t('helpCenter.title') || 'Help Center'}
+            {t('events.title') || 'Help Center'}
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground">
-            {t('helpCenter.subtitle') || 'Find answers to your questions and learn how to use Nazim SMS'}
+            {t('hostel.subtitle') || 'Find answers to your questions and learn how to use Nazim SMS'}
           </p>
         </div>
 
@@ -123,7 +123,7 @@ export default function HelpCenter() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             type="text"
-            placeholder={t('helpCenter.searchPlaceholder') || 'Search for help articles...'}
+            placeholder={t('assets.searchPlaceholder') || 'Search for help articles...'}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="pl-10 pr-10 h-12 text-lg"
@@ -171,7 +171,7 @@ export default function HelpCenter() {
               className="text-muted-foreground"
             >
               <X className="h-4 w-4 mr-1" />
-              {t('helpCenter.clearFilters') || 'Clear Filters'}
+              {t('events.clearFilters') || 'Clear Filters'}
             </Button>
           )}
         </div>

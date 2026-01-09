@@ -171,7 +171,7 @@ export const AssignToCourseDialog = memo(function AssignToCourseDialog({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('common.searchStudentPlaceholder')}
+                placeholder={t('events.searchStudentPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"

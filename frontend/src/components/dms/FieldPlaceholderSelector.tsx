@@ -142,7 +142,7 @@ export function FieldPlaceholderSelector({
     return (
       <div className={`space-y-2 ${className}`}>
         <Label>{t('dms.fields.available_fields')}</Label>
-        <div className="text-sm text-muted-foreground">{t('common.loading')}...</div>
+        <div className="text-sm text-muted-foreground">{t('events.loading')}...</div>
       </div>
     );
   }

@@ -300,7 +300,7 @@ export default function AttendanceReports() {
     },
     {
       accessorKey: 'className',
-      header: t('attendanceReports.class') || 'Class',
+      header: t('search.class') || 'Class',
       cell: ({ row }) => <div className="text-sm">{row.original.className}</div>,
     },
     {
@@ -315,7 +315,7 @@ export default function AttendanceReports() {
     },
     {
       accessorKey: 'sessionDate',
-      header: t('attendanceReports.date') || 'Date',
+      header: t('events.date') || 'Date',
       cell: ({ row }) => (
         <div className="text-sm">
           <div>{format(row.original.sessionDate, 'MMM dd, yyyy')}</div>
@@ -371,8 +371,8 @@ export default function AttendanceReports() {
   return (
     <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4">
       <PageHeader
-        title={t('attendanceReports.title') || 'Attendance Reports'}
-        description={t('attendanceReports.subtitle') || 'View and analyze student attendance records'}
+        title={t('events.title') || 'Attendance Reports'}
+        description={t('hostel.subtitle') || 'View and analyze student attendance records'}
         icon={<FileText className="h-5 w-5" />}
         rightSlot={
           <div className="flex gap-2">
@@ -413,13 +413,13 @@ export default function AttendanceReports() {
       />
 
       <FilterPanel
-        title={t('common.filters') || 'Filters'}
+        title={t('events.filters') || 'Filters'}
         footer={
           hasActiveFilters ? (
             <div className="flex justify-end">
               <Button variant="ghost" size="sm" onClick={handleResetFilters}>
                 <X className="h-4 w-4 mr-2" />
-                {t('common.reset') || 'Reset'}
+                {t('events.reset') || 'Reset'}
               </Button>
             </div>
           ) : null
@@ -430,10 +430,10 @@ export default function AttendanceReports() {
             <label className="text-sm font-medium">{t('attendanceReports.student') || 'Student'}</label>
             <Select value={filters.studentId || 'all'} onValueChange={(v) => handleFilterChange('studentId', v)}>
               <SelectTrigger>
-                <SelectValue placeholder={t('attendanceReports.allStudents') || 'All Students'} />
+                <SelectValue placeholder={t('leave.allStudents') || 'All Students'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('attendanceReports.allStudents') || 'All Students'}</SelectItem>
+                <SelectItem value="all">{t('leave.allStudents') || 'All Students'}</SelectItem>
                 {(students || []).map(student => (
                   <SelectItem key={student.id} value={student.id}>
                     {student.fullName} ({student.admissionNumber})
@@ -443,13 +443,13 @@ export default function AttendanceReports() {
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">{t('attendanceReports.class') || 'Class'}</label>
+            <label className="text-sm font-medium">{t('search.class') || 'Class'}</label>
             <Select value={filters.classId || 'all'} onValueChange={(v) => handleFilterChange('classId', v)}>
               <SelectTrigger>
-                <SelectValue placeholder={t('attendanceReports.allClasses') || 'All Classes'} />
+                <SelectValue placeholder={t('students.allClasses') || 'All Classes'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('attendanceReports.allClasses') || 'All Classes'}</SelectItem>
+                <SelectItem value="all">{t('students.allClasses') || 'All Classes'}</SelectItem>
                 {(classes || []).map(cls => (
                   <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
                 ))}
@@ -460,10 +460,10 @@ export default function AttendanceReports() {
             <label className="text-sm font-medium">{t('attendanceReports.school') || 'School'}</label>
             <Select value={filters.schoolId || 'all'} onValueChange={(v) => handleFilterChange('schoolId', v)}>
               <SelectTrigger>
-                <SelectValue placeholder={t('attendanceReports.allSchools') || 'All Schools'} />
+                <SelectValue placeholder={t('leave.allSchools') || 'All Schools'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('attendanceReports.allSchools') || 'All Schools'}</SelectItem>
+                <SelectItem value="all">{t('leave.allSchools') || 'All Schools'}</SelectItem>
                 {(schools || []).map(school => (
                   <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>
                 ))}
@@ -474,10 +474,10 @@ export default function AttendanceReports() {
             <label className="text-sm font-medium">{t('attendancePage.statusHeader') || 'Status'}</label>
             <Select value={filters.status || 'all'} onValueChange={(v) => handleFilterChange('status', v)}>
               <SelectTrigger>
-                <SelectValue placeholder={t('attendanceReports.allStatus') || 'All Status'} />
+                <SelectValue placeholder={t('userManagement.allStatus') || 'All Status'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('attendanceReports.allStatus') || 'All Status'}</SelectItem>
+                <SelectItem value="all">{t('userManagement.allStatus') || 'All Status'}</SelectItem>
                 {getStatusOptions(t).map(option => (
                   <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                 ))}
@@ -485,11 +485,11 @@ export default function AttendanceReports() {
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">{t('attendanceReports.fromDate') || 'From Date'}</label>
+            <label className="text-sm font-medium">{t('library.fromDate') || 'From Date'}</label>
             <CalendarDatePicker date={filters.dateFrom ? new Date(filters.dateFrom) : undefined} onDateChange={(date) => handleFilterChange('dateFrom', date ? date.toISOString().split("T")[0] : "")} />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">{t('attendanceReports.toDate') || 'To Date'}</label>
+            <label className="text-sm font-medium">{t('library.toDate') || 'To Date'}</label>
             <CalendarDatePicker date={filters.dateTo ? new Date(filters.dateTo) : undefined} onDateChange={(date) => handleFilterChange('dateTo', date ? date.toISOString().split("T")[0] : "")} />
           </div>
         </div>
@@ -497,7 +497,7 @@ export default function AttendanceReports() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('attendanceReports.title') || 'Attendance Reports'}</CardTitle>
+          <CardTitle>{t('events.title') || 'Attendance Reports'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoading ? (

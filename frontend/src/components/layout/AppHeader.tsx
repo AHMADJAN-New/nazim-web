@@ -130,7 +130,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
       queryClient.clear();
       
       // Show success message briefly before reload
-      showToast.success(t("common.schoolSwitched"));
+      showToast.success(t("events.schoolSwitched"));
       
       // Hard reload after a short delay to ensure localStorage is updated and toast is visible
       // This ensures all data is refreshed with the new school context
@@ -390,7 +390,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
             >
               <SelectTrigger className="hidden md:flex w-[200px]">
                 <School className="h-4 w-4 mr-2" />
-                <SelectValue placeholder={t("common.selectSchool") || "Select School"} />
+                <SelectValue placeholder={t("events.selectSchool") || "Select School"} />
               </SelectTrigger>
               <SelectContent>
                 {schools.map((s) => (
@@ -416,7 +416,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t('common.selectLanguage')}</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('events.selectLanguage')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {languages.map((lang) => (
                 <DropdownMenuItem

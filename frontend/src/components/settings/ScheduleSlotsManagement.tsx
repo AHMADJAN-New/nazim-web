@@ -348,7 +348,7 @@ export function ScheduleSlotsManagement() {
                 </CardHeader>
                 <CardContent>
                     <FilterPanel
-                        title={t('common.filters') || 'Filters'}
+                        title={t('events.filters') || 'Filters'}
                         defaultOpenDesktop={true}
                         defaultOpenMobile={false}
                     >
@@ -364,7 +364,7 @@ export function ScheduleSlotsManagement() {
                                             <SelectValue placeholder={t('academic.scheduleSlots.selectAcademicYear')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">{t('common.allAcademicYears')}</SelectItem>
+                                            <SelectItem value="all">{t('events.allAcademicYears')}</SelectItem>
                                             {academicYears.map((year) => (
                                                 <SelectItem key={year.id} value={year.id}>
                                                     {year.name}
@@ -397,7 +397,7 @@ export function ScheduleSlotsManagement() {
                                 </div>
                             )}
                             <div>
-                                <Label>{t('common.search') || 'Search'}</Label>
+                                <Label>{t('events.search') || 'Search'}</Label>
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <Input
@@ -413,7 +413,7 @@ export function ScheduleSlotsManagement() {
                 </CardContent>
                 <CardContent className="space-y-4">
                     {isLoading ? (
-                        <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>
+                        <div className="text-center py-8 text-muted-foreground">{t('events.loading')}</div>
                     ) : filteredSlots.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
                             {searchQuery ? t('academic.scheduleSlots.noSlotsFound') : t('academic.scheduleSlots.noSlotsMessage')}
@@ -436,7 +436,7 @@ export function ScheduleSlotsManagement() {
                                             <TableHead>{t('academic.scheduleSlots.school')}</TableHead>
                                             <TableHead>{t('academic.scheduleSlots.sortOrder')}</TableHead>
                                             <TableHead>{t('academic.scheduleSlots.isActive')}</TableHead>
-                                            <TableHead className="text-right">{t('common.actions')}</TableHead>
+                                            <TableHead className="text-right">{t('events.actions')}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -465,7 +465,7 @@ export function ScheduleSlotsManagement() {
                                                             ))}
                                                         </div>
                                                     ) : (
-                                                        <span className="text-muted-foreground">{t('common.all')}</span>
+                                                        <span className="text-muted-foreground">{t('subjects.all')}</span>
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
@@ -526,9 +526,9 @@ export function ScheduleSlotsManagement() {
                                                                             </AlertDialogDescription>
                                                                         </AlertDialogHeader>
                                                                         <AlertDialogFooter>
-                                                                            <AlertDialogCancel onClick={() => setDeletingSlot(null)}>{t('common.cancel')}</AlertDialogCancel>
+                                                                            <AlertDialogCancel onClick={() => setDeletingSlot(null)}>{t('events.cancel')}</AlertDialogCancel>
                                                                             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                                                                                {t('common.delete')}
+                                                                                {t('events.delete')}
                                                                             </AlertDialogAction>
                                                                         </AlertDialogFooter>
                                                                     </AlertDialogContent>
@@ -588,9 +588,9 @@ export function ScheduleSlotsManagement() {
                                                                             </AlertDialogDescription>
                                                                         </AlertDialogHeader>
                                                                         <AlertDialogFooter>
-                                                                            <AlertDialogCancel onClick={() => setDeletingSlot(null)}>{t('common.cancel')}</AlertDialogCancel>
+                                                                            <AlertDialogCancel onClick={() => setDeletingSlot(null)}>{t('events.cancel')}</AlertDialogCancel>
                                                                             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                                                                                {t('common.delete')}
+                                                                                {t('events.delete')}
                                                                             </AlertDialogAction>
                                                                         </AlertDialogFooter>
                                                                     </AlertDialogContent>
@@ -629,12 +629,12 @@ export function ScheduleSlotsManagement() {
                                                                     ))}
                                                                 </div>
                                                             ) : (
-                                                                <span className="text-muted-foreground text-xs">{t('common.all')}</span>
+                                                                <span className="text-muted-foreground text-xs">{t('subjects.all')}</span>
                                                             )}
                                                         </div>
                                                     </div>
                                                     <div>
-                                                        <span className="text-muted-foreground">{t('common.statusLabel')}</span>
+                                                        <span className="text-muted-foreground">{t('events.statusLabel')}</span>
                                                         <div className="mt-1">
                                                             <Badge variant={slot.isActive ? 'default' : 'secondary'}>
                                                                 {slot.isActive ? t('academic.scheduleSlots.active') : t('academic.scheduleSlots.inactive')}
@@ -825,7 +825,7 @@ export function ScheduleSlotsManagement() {
                                                 onValueChange={(value) => field.onChange(value === 'all' ? null : value)}
                                             >
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder={t('common.selectSchool')} />
+                                                    <SelectValue placeholder={t('events.selectSchool')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="all">{t('academic.scheduleSlots.allSchools')}</SelectItem>
@@ -886,10 +886,10 @@ export function ScheduleSlotsManagement() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={closeDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit" disabled={createSlot.isPending || updateSlot.isPending}>
-                                {editingSlot ? t('common.save') : t('common.save')}
+                                {editingSlot ? t('events.save') : t('events.save')}
                             </Button>
                         </DialogFooter>
                     </form>

@@ -149,12 +149,12 @@ export function DataTablePagination<TData>({
           <div className="text-sm text-muted-foreground">
             {from !== null && to !== null ? (
               <>
-                {t('pagination.showing') || 'Showing'} {from} {t('pagination.to') || 'to'} {to} {t('pagination.of') || 'of'}{' '}
+                {t('library.showing') || 'Showing'} {from} {t('events.to') || 'to'} {to} {t('events.of') || 'of'}{' '}
                 {total} {t('pagination.entries') || 'entries'}
               </>
             ) : total > 0 ? (
               <>
-                {t('pagination.total') || 'Total'}: {total} {t('pagination.entries') || 'entries'}
+                {t('events.total') || 'Total'}: {total} {t('pagination.entries') || 'entries'}
               </>
             ) : (
               <>{t('pagination.noEntries') || 'No entries'}</>

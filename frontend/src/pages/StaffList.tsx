@@ -130,7 +130,7 @@ export function StaffList() {
     const [viewingProfile, setViewingProfile] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState(1);
     const steps = [
-        { id: 1, label: t('staff.basicInformation'), icon: User, description: t('staff.basicInformationDescription') },
+        { id: 1, label: t('events.basicInformation'), icon: User, description: t('staff.basicInformationDescription') },
         { id: 2, label: t('staff.personalDetails'), icon: User, description: t('staff.personalDetailsDescription') },
         { id: 3, label: t('staff.contactLocation'), icon: MapPin, description: t('staff.contactLocationDescription') },
         { id: 4, label: t('staff.education'), icon: GraduationCap, description: t('staff.educationDescription') },
@@ -230,7 +230,7 @@ export function StaffList() {
         },
         {
             accessorKey: 'fullName',
-            header: t('staff.name'),
+            header: t('events.name'),
             cell: ({ row }) => <span className="font-medium">{row.original.fullName}</span>,
         },
         {
@@ -244,12 +244,12 @@ export function StaffList() {
         },
         {
             accessorKey: 'employeeId',
-            header: t('staff.employeeId'),
+            header: t('search.employeeId'),
             cell: ({ row }) => row.original.employeeId,
         },
         {
             accessorKey: 'staffType',
-            header: t('staff.type'),
+            header: t('events.type'),
             cell: ({ row }) => {
                 const type = staffTypes?.find(t => t.id === row.original.staffTypeId);
                 return type ? <Badge variant="outline">{type.name}</Badge> : '-';
@@ -257,7 +257,7 @@ export function StaffList() {
         },
         {
             accessorKey: 'status',
-            header: t('staff.status'),
+            header: t('events.status'),
             cell: ({ row }) => {
                 const statusColors: Record<string, string> = {
                     active: 'default',
@@ -283,7 +283,7 @@ export function StaffList() {
         },
         {
             accessorKey: 'contact',
-            header: t('staff.contact'),
+            header: t('events.contact'),
             cell: ({ row }) => (
                 <div className="text-sm">
                     {row.original.email && <div>{row.original.email}</div>}
@@ -293,7 +293,7 @@ export function StaffList() {
         },
         {
             id: 'actions',
-            header: () => <div className="text-right">{t('staff.actions')}</div>,
+            header: () => <div className="text-right">{t('events.actions')}</div>,
             cell: ({ row }) => (
                 <div className="flex justify-end gap-2">
                     <Button
@@ -444,9 +444,9 @@ export function StaffList() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 min-w-0">
                 <div className="min-w-0">
-                    <h1 className="text-xl sm:text-2xl font-bold">{t('staff.management')}</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold">{t('students.management')}</h1>
                     <p className="text-sm sm:text-base text-muted-foreground">
-                        {t('staff.subtitle')}
+                        {t('hostel.subtitle')}
                     </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -466,7 +466,7 @@ export function StaffList() {
                                 e.stopPropagation();
                                 // Ensure profile has organization_id
                                 if (!profile?.organization_id) {
-                                    toast.error(t('common.notAssignedToOrganization'));
+                                    toast.error(t('events.notAssignedToOrganization'));
                                     return;
                                 }
                                 if (import.meta.env.DEV) {
@@ -499,7 +499,7 @@ export function StaffList() {
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">{t('staff.active')}</CardTitle>
+                            <CardTitle className="text-sm font-medium">{t('events.active')}</CardTitle>
                             <Users className="h-4 w-4 text-green-600" />
                         </CardHeader>
                         <CardContent>
@@ -543,7 +543,7 @@ export function StaffList() {
             {/* Filters and Table Card */}
             <Card>
                 <CardHeader>
-                    <CardTitle>{t('staff.list') || 'Staff List'}</CardTitle>
+                    <CardTitle>{t('grades.list') || 'Staff List'}</CardTitle>
                     <CardDescription>{t('staff.listDescription') || 'Search, filter and manage staff members.'}</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -552,7 +552,7 @@ export function StaffList() {
                         <div className="relative flex-1 min-w-0 w-full sm:min-w-[200px] sm:w-auto">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder={t('staff.searchPlaceholder')}
+                                placeholder={t('assets.searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10 w-full min-w-0"
@@ -560,10 +560,10 @@ export function StaffList() {
                         </div>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className="w-full sm:w-[150px] min-w-0">
-                                <SelectValue placeholder={t('staff.status')} />
+                                <SelectValue placeholder={t('events.status')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">{t('staff.allStatus')}</SelectItem>
+                                <SelectItem value="all">{t('userManagement.allStatus')}</SelectItem>
                                 <SelectItem value="active">{t('staff.statusActive')}</SelectItem>
                                 <SelectItem value="inactive">{t('staff.statusInactive')}</SelectItem>
                                 <SelectItem value="on_leave">{t('staff.statusOnLeave')}</SelectItem>
@@ -573,7 +573,7 @@ export function StaffList() {
                         </Select>
                         <Select value={typeFilter} onValueChange={setTypeFilter}>
                             <SelectTrigger className="w-full sm:w-[150px] min-w-0">
-                                <SelectValue placeholder={t('staff.type')} />
+                                <SelectValue placeholder={t('events.type')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">{t('staff.allTypes')}</SelectItem>
@@ -590,7 +590,7 @@ export function StaffList() {
                                 <SelectValue placeholder={t('staff.school')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">{t('staff.allSchools')}</SelectItem>
+                                <SelectItem value="all">{t('leave.allSchools')}</SelectItem>
                                     {schools.map((school) => (
                                         <SelectItem key={school.id} value={school.id}>
                                             {school.schoolName}
@@ -611,7 +611,7 @@ export function StaffList() {
                                 }}
                             >
                                 <X className="w-4 h-4 mr-2" />
-                                {t('staff.clear')}
+                                {t('events.clear')}
                             </Button>
                         )}
                     </div>
@@ -738,7 +738,7 @@ export function StaffList() {
                             }
                             
                             if (!organizationId) {
-                                toast.error(t('common.pleaseSelectOrganization'));
+                                toast.error(t('events.pleaseSelectOrganization'));
                                 return;
                             }
                         } else {
@@ -748,7 +748,7 @@ export function StaffList() {
                             
                             if (!organizationId) {
                                 // This shouldn't happen - backend assigns org on login/register
-                                toast.error(t('common.notAssignedToOrganization'));
+                                toast.error(t('events.notAssignedToOrganization'));
                                 console.error('Profile missing organization_id. Profile:', profile);
                                 return;
                             }
@@ -975,7 +975,7 @@ export function StaffList() {
                                                                 control={control}
                                                                 render={({ field }) => (
                                                                     <Select value={field.value || 'none'} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
-                                                                        <SelectTrigger><SelectValue placeholder={t('staff.selectSchool')} /></SelectTrigger>
+                                                                        <SelectTrigger><SelectValue placeholder={t('events.selectSchool')} /></SelectTrigger>
                                                                         <SelectContent>
                                                                             <SelectItem value="none">{t('staff.noSchool')}</SelectItem>
                                                                             {schools.map((school) => <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>)}
@@ -1024,12 +1024,12 @@ export function StaffList() {
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="first_name">{t('staff.firstName')} *</Label>
+                                                        <Label htmlFor="first_name">{t('events.firstName')} *</Label>
                                                         <Input id="first_name" {...register('first_name')} />
                                                         {errors.first_name && <p className="text-sm text-destructive">{errors.first_name.message}</p>}
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="father_name">{t('staff.fatherName')} *</Label>
+                                                        <Label htmlFor="father_name">{t('examReports.fatherName')} *</Label>
                                                         <Input id="father_name" {...register('father_name')} />
                                                         {errors.father_name && <p className="text-sm text-destructive">{errors.father_name.message}</p>}
                                                     </div>
@@ -1071,7 +1071,7 @@ export function StaffList() {
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="email">{t('staff.email')}</Label>
+                                                        <Label htmlFor="email">{t('events.email')}</Label>
                                                         <Input id="email" type="email" {...register('email')} />
                                                         {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
                                                     </div>
@@ -1198,7 +1198,7 @@ export function StaffList() {
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="position">{t('staff.position')}</Label>
+                                                        <Label htmlFor="position">{t('search.position')}</Label>
                                                         <Input id="position" {...register('position')} />
                                                     </div>
                                                     <div className="grid gap-2">
@@ -1214,7 +1214,7 @@ export function StaffList() {
                                                         <Input id="salary" {...register('salary')} />
                                                     </div>
                                                     <div className="grid gap-2 col-span-2">
-                                                        <Label htmlFor="notes">{t('staff.notes')}</Label>
+                                                        <Label htmlFor="notes">{t('events.notes')}</Label>
                                                         <Textarea id="notes" {...register('notes')} rows={3} placeholder={t('staff.notesPlaceholder')} />
                                                     </div>
                                                 </div>
@@ -1244,11 +1244,11 @@ export function StaffList() {
                                     }}
                                     className="flex-1 sm:flex-initial"
                                 >
-                                    {t('common.cancel')}
+                                    {t('events.cancel')}
                                 </Button>
                                 {currentStep < steps.length ? (
                                     <Button type="button" onClick={() => setCurrentStep(currentStep + 1)} className="flex-1 sm:flex-initial">
-                                        {t('staff.next')}
+                                        {t('events.next')}
                                         <ChevronRight className="h-4 w-4 ml-2" />
                                     </Button>
                                 ) : (
@@ -1257,7 +1257,7 @@ export function StaffList() {
                                         disabled={createStaff.isPending || !staffUsage.canCreate}
                                         className="flex-1 sm:flex-initial"
                                     >
-                                        {createStaff.isPending ? t('staff.creating') : t('staff.addStaff')}
+                                        {createStaff.isPending ? t('events.creating') : t('staff.addStaff')}
                                     </Button>
                                 )}
                             </div>
@@ -1411,7 +1411,7 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <User className="h-5 w-5" />
-                                                    {t('staff.basicInformation')}
+                                                    {t('events.basicInformation')}
                                                 </CardTitle>
                                                 <CardDescription>{t('staff.basicInformationDescription')}</CardDescription>
                                             </CardHeader>
@@ -1448,7 +1448,7 @@ export function StaffList() {
                                                                 control={control}
                                                                 render={({ field }) => (
                                                                     <Select value={field.value || 'none'} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
-                                                                        <SelectTrigger><SelectValue placeholder={t('staff.selectSchool')} /></SelectTrigger>
+                                                                        <SelectTrigger><SelectValue placeholder={t('events.selectSchool')} /></SelectTrigger>
                                                                         <SelectContent>
                                                                             <SelectItem value="none">{t('staff.noSchool')}</SelectItem>
                                                                             {schools.map((school) => <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>)}
@@ -1702,7 +1702,7 @@ export function StaffList() {
                                 {currentStep > 1 && (
                                     <Button type="button" variant="outline" onClick={() => setCurrentStep(currentStep - 1)}>
                                         <ChevronLeft className="h-4 w-4 mr-2" />
-                                        {t('staff.previous')}
+                                        {t('events.previous')}
                                     </Button>
                                 )}
                             </div>
@@ -1717,16 +1717,16 @@ export function StaffList() {
                                         setCurrentStep(1);
                                     }}
                                 >
-                                    {t('common.cancel')}
+                                    {t('events.cancel')}
                                 </Button>
                                 {currentStep < steps.length ? (
                                     <Button type="button" onClick={() => setCurrentStep(currentStep + 1)}>
-                                        {t('staff.next')}
+                                        {t('events.next')}
                                         <ChevronRight className="h-4 w-4 ml-2" />
                                     </Button>
                                 ) : (
                                     <Button type="submit" disabled={updateStaff.isPending}>
-                                        {updateStaff.isPending ? t('staff.updating') : t('staff.updateStaff')}
+                                        {updateStaff.isPending ? t('events.updating') : t('staff.updateStaff')}
                                     </Button>
                                 )}
                             </div>
@@ -1740,18 +1740,18 @@ export function StaffList() {
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('events.delete')}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('staff.deleteConfirmMessage')} {t('staff.deleteConfirmDescription')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDeleteConfirm}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            {t('common.delete')}
+                            {t('events.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

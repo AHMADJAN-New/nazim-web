@@ -104,13 +104,13 @@ export function MultiSectionReportExportButtons({
 
   const generateExcel = async () => {
     if (!school) {
-      showToast.error(t('common.exportErrorNoSchool') || 'School is required for export');
+      showToast.error(t('events.exportErrorNoSchool') || 'School is required for export');
       return;
     }
 
     const sections = await buildSections();
     if (!sections || sections.length === 0) {
-      showToast.error(t('common.exportErrorNoData') || 'No data to export');
+      showToast.error(t('events.exportErrorNoData') || 'No data to export');
       return;
     }
 
@@ -143,14 +143,14 @@ export function MultiSectionReportExportButtons({
       // (PDF remains async because it can be heavier.)
       async: false,
       onComplete: () => {
-        showToast.success(t('common.exportSuccessExcel') || 'Excel report generated successfully');
+        showToast.success(t('events.exportSuccessExcel') || 'Excel report generated successfully');
         setTimeout(() => {
           downloadReport();
         }, 300);
         setShowProgress(false);
       },
       onError: (err) => {
-        showToast.error(err || t('common.exportErrorExcel') || 'Failed to generate Excel report');
+        showToast.error(err || t('events.exportErrorExcel') || 'Failed to generate Excel report');
         setShowProgress(false);
       },
     });
@@ -158,13 +158,13 @@ export function MultiSectionReportExportButtons({
 
   const generatePdf = async (mode: 'download' | 'print') => {
     if (!school) {
-      showToast.error(t('common.exportErrorNoSchool') || 'School is required for export');
+      showToast.error(t('events.exportErrorNoSchool') || 'School is required for export');
       return;
     }
 
     const sections = await buildSections();
     if (!sections || sections.length === 0) {
-      showToast.error(t('common.exportErrorNoData') || 'No data to export');
+      showToast.error(t('events.exportErrorNoData') || 'No data to export');
       return;
     }
 
@@ -194,7 +194,7 @@ export function MultiSectionReportExportButtons({
       onComplete: async (urlFromCallback?: string | null) => {
         try {
           if (mode === 'download') {
-            showToast.success(t('common.exportSuccessPdf') || 'PDF report generated successfully');
+            showToast.success(t('events.exportSuccessPdf') || 'PDF report generated successfully');
             setTimeout(() => {
               downloadReport();
             }, 300);
@@ -257,15 +257,15 @@ export function MultiSectionReportExportButtons({
             }, 800);
           };
 
-          showToast.success(t('common.print') || 'Print');
+          showToast.success(t('events.print') || 'Print');
         } catch (e) {
-          showToast.error(e instanceof Error ? e.message : (t('common.exportErrorPdf') || 'Failed to generate PDF'));
+          showToast.error(e instanceof Error ? e.message : (t('events.exportErrorPdf') || 'Failed to generate PDF'));
         } finally {
           setShowProgress(false);
         }
       },
       onError: (err) => {
-        showToast.error(err || t('common.exportErrorPdf') || 'Failed to generate PDF report');
+        showToast.error(err || t('events.exportErrorPdf') || 'Failed to generate PDF report');
         setShowProgress(false);
       },
     });
@@ -283,7 +283,7 @@ export function MultiSectionReportExportButtons({
             className="flex-shrink-0"
           >
             <Printer className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">{t('common.print') || 'Print'}</span>
+            <span className="hidden sm:inline">{t('events.print') || 'Print'}</span>
             <span className="sm:hidden">Print</span>
           </Button>
         ) : null}
@@ -297,7 +297,7 @@ export function MultiSectionReportExportButtons({
             className="flex-shrink-0"
           >
             <FileSpreadsheet className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">{t('common.exportExcel') || 'Export Excel'}</span>
+            <span className="hidden sm:inline">{t('events.exportExcel') || 'Export Excel'}</span>
             <span className="sm:hidden">Excel</span>
           </Button>
         ) : null}
@@ -311,7 +311,7 @@ export function MultiSectionReportExportButtons({
             className="flex-shrink-0"
           >
             <FileDown className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">{t('common.exportPdf') || 'Export PDF'}</span>
+            <span className="hidden sm:inline">{t('events.exportPdf') || 'Export PDF'}</span>
             <span className="sm:hidden">PDF</span>
           </Button>
         ) : null}

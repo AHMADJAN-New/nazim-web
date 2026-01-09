@@ -709,7 +709,7 @@ export const usePlatformCreateHelpCenterCategory = () => {
       return (response as { data: HelpCenterApi.HelpCenterCategory })?.data || response as HelpCenterApi.HelpCenterCategory;
     },
     onSuccess: () => {
-      showToast.success(t('toast.categoryCreated') || 'Category created successfully');
+      showToast.success(t('library.categoryCreated') || 'Category created successfully');
       void queryClient.invalidateQueries({ queryKey: ['platform-help-center-categories'] });
     },
     onError: (error: Error) => {
@@ -731,7 +731,7 @@ export const usePlatformUpdateHelpCenterCategory = () => {
       return (response as { data: HelpCenterApi.HelpCenterCategory })?.data || response as HelpCenterApi.HelpCenterCategory;
     },
     onSuccess: () => {
-      showToast.success(t('toast.categoryUpdated') || 'Category updated successfully');
+      showToast.success(t('library.categoryUpdated') || 'Category updated successfully');
       void queryClient.invalidateQueries({ queryKey: ['platform-help-center-categories'] });
     },
     onError: (error: Error) => {
@@ -752,7 +752,7 @@ export const usePlatformDeleteHelpCenterCategory = () => {
       await platformApi.helpCenter.categories.delete(id);
     },
     onSuccess: async () => {
-      showToast.success(t('toast.categoryDeleted') || 'Category deleted successfully');
+      showToast.success(t('library.categoryDeleted') || 'Category deleted successfully');
       await queryClient.invalidateQueries({ queryKey: ['platform-help-center-categories'] });
       await queryClient.refetchQueries({ queryKey: ['platform-help-center-categories'] });
     },

@@ -218,9 +218,9 @@ function transformSubjectReportData(report: ClassSubjectReportData, t: (key: str
       result: student.is_absent
         ? (t('examReports.absent') || 'Absent')
         : (student.is_pass === true
-            ? (t('examReports.pass') || 'Pass')
+            ? (t('events.pass') || 'Pass')
             : (student.is_pass === false
-                ? (t('examReports.fail') || 'Fail')
+                ? (t('events.fail') || 'Fail')
                 : '-')),
     };
     return row;
@@ -231,12 +231,12 @@ function transformSubjectReportData(report: ClassSubjectReportData, t: (key: str
 function getExportColumns(report: ClassSubjectReportData, t: (key: string) => string): Array<{ key: string; label: string }> {
   return [
     { key: 'rank', label: t('examReports.rank') || 'Rank' },
-    { key: 'rollNumber', label: t('examReports.rollNumber') || 'Roll Number' },
+    { key: 'rollNumber', label: t('students.rollNumber') || 'Roll Number' },
     { key: 'studentName', label: t('examReports.studentName') || 'Student Name' },
     { key: 'marksObtained', label: t('examReports.obtainedMarks') || 'Obtained Marks' },
     { key: 'totalMarks', label: t('examReports.totalMarks') || 'Total Marks' },
     { key: 'percentage', label: t('examReports.percentage') || 'Percentage' },
-    { key: 'grade', label: t('examReports.grade') || 'Grade' },
+    { key: 'grade', label: t('studentReportCard.grade') || 'Grade' },
     { key: 'result', label: t('examReports.result') || 'Result' },
   ];
 }
@@ -378,17 +378,17 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
     },
     {
       accessorKey: 'roll_number',
-      header: t('examReports.rollNumber'),
+      header: t('students.rollNumber'),
       cell: ({ row }) => row.original.roll_number || '-',
     },
     {
       id: 'admission_no',
-      header: t('students.admissionNo') || 'Admission No',
+      header: t('examReports.admissionNo') || 'Admission No',
       cell: ({ row }) => row.original.admission_no || '-',
     },
     {
       id: 'father_name',
-      header: t('students.fatherName') || 'Father Name',
+      header: t('examReports.fatherName') || 'Father Name',
       cell: ({ row }) => row.original.father_name || '-',
     },
     {
@@ -452,7 +452,7 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
     },
     {
       id: 'grade',
-      header: () => <div className="text-center">{t('examReports.grade')}</div>,
+      header: () => <div className="text-center">{t('studentReportCard.grade')}</div>,
       cell: ({ row }) => {
         const student = row.original;
         return (
@@ -478,12 +478,12 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
             {student.result === 'pass' ? (
               <Badge variant="default" className="gap-1">
                 <TrendingUp className="h-3 w-3" />
-                {t('examReports.pass')}
+                {t('events.pass')}
               </Badge>
             ) : student.result === 'fail' ? (
               <Badge variant="destructive" className="gap-1">
                 <TrendingDown className="h-3 w-3" />
-                {t('examReports.fail')}
+                {t('events.fail')}
               </Badge>
             ) : (
               <Badge variant="outline">{t('examReports.absent')}</Badge>
@@ -553,7 +553,7 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
           <CardContent className="py-4">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="text-center">
-                <p className="text-sm text-muted-foreground">{t('examReports.totalStudents')}</p>
+                <p className="text-sm text-muted-foreground">{t('students.totalStudents')}</p>
                 <p className="text-2xl font-bold">{report.summary.total_students}</p>
               </div>
               <div className="text-center">
@@ -587,7 +587,7 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Award className="h-5 w-5 text-yellow-500" />
-              {t('common.topPerformers') || 'Top Performers'}
+              {t('events.topPerformers') || 'Top Performers'}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -775,7 +775,7 @@ export default function ClassSubjectMarkSheet() {
   }));
 
   const classOptions: ComboboxOption[] = (examClasses || []).map((cls) => {
-    const className = cls.classAcademicYear?.class?.name ?? t('classes.class') ?? 'Class';
+    const className = cls.classAcademicYear?.class?.name ?? t('search.class') ?? 'Class';
     const section = cls.classAcademicYear?.sectionName ? ` - ${cls.classAcademicYear.sectionName}` : '';
     return {
       value: cls.id,
@@ -824,7 +824,7 @@ export default function ClassSubjectMarkSheet() {
 
           if (!subjectReport?.students || subjectReport.students.length === 0) continue;
 
-          const baseClassName = examClass.classAcademicYear?.class?.name ?? t('classes.class') ?? 'Class';
+          const baseClassName = examClass.classAcademicYear?.class?.name ?? t('search.class') ?? 'Class';
           const sectionName = examClass.classAcademicYear?.sectionName ? ` - ${examClass.classAcademicYear.sectionName}` : '';
           const fullClassName = `${baseClassName}${sectionName}`;
           const subjectName = subject.subject?.name ?? subject.classSubject?.subject?.name ?? t('subjects.subject') ?? 'Subject';
@@ -900,7 +900,7 @@ export default function ClassSubjectMarkSheet() {
       <div className="container mx-auto py-6">
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <p className="text-muted-foreground">{t('common.noPermission')}</p>
+            <p className="text-muted-foreground">{t('events.noPermission')}</p>
           </CardContent>
         </Card>
       </div>
@@ -934,7 +934,7 @@ export default function ClassSubjectMarkSheet() {
                   setSelectedSubjectId('');
                 }}
                 placeholder={t('examReports.selectExamPrompt')}
-                searchPlaceholder={t('common.search') || 'Search...'}
+                searchPlaceholder={t('events.search') || 'Search...'}
                 emptyText={t('exams.noExams') || 'No exams'}
                 disabled={examsLoading}
               />
@@ -950,7 +950,7 @@ export default function ClassSubjectMarkSheet() {
             {/* Class Selection - only show in single subject tab */}
             {activeTab === 'single' && (
               <div className="space-y-2">
-                <Label htmlFor="class">{t('examReports.selectClass')}</Label>
+                <Label htmlFor="class">{t('events.selectClass')}</Label>
                 <Combobox
                   options={classOptions}
                   value={selectedClassId}
@@ -959,10 +959,10 @@ export default function ClassSubjectMarkSheet() {
                     setSelectedSubjectId('');
                   }}
                   placeholder={t('examReports.selectClassPrompt')}
-                  searchPlaceholder={t('common.search') || 'Search...'}
+                  searchPlaceholder={t('events.search') || 'Search...'}
                   emptyText={
                     selectedExamId
-                      ? (classesLoading ? t('common.loading') || 'Loading...' : t('classes.noClasses'))
+                      ? (classesLoading ? t('events.loading') || 'Loading...' : t('classes.noClasses'))
                       : t('examReports.selectExamFirst') || 'Select an exam first'
                   }
                   disabled={!selectedExamId || classesLoading}
@@ -979,10 +979,10 @@ export default function ClassSubjectMarkSheet() {
                   value={selectedSubjectId}
                   onValueChange={setSelectedSubjectId}
                   placeholder={t('examReports.selectSubjectPrompt')}
-                  searchPlaceholder={t('common.search') || 'Search...'}
+                  searchPlaceholder={t('events.search') || 'Search...'}
                   emptyText={
                     selectedClassId
-                      ? (subjectsLoading ? t('common.loading') || 'Loading...' : t('subjects.noSubjects'))
+                      ? (subjectsLoading ? t('events.loading') || 'Loading...' : t('subjects.noSubjects'))
                       : t('examReports.selectClassPrompt') || 'Select a class first'
                   }
                   disabled={!selectedClassId || subjectsLoading}
@@ -1114,11 +1114,11 @@ export default function ClassSubjectMarkSheet() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                       <div className="text-center p-4 border rounded-lg">
                         <p className="text-2xl font-bold">{allExamClasses.length}</p>
-                        <p className="text-sm text-muted-foreground">{t('classes.classes') || 'Classes'}</p>
+                        <p className="text-sm text-muted-foreground">{t('nav.classes') || 'Classes'}</p>
                       </div>
                       <div className="text-center p-4 border rounded-lg">
                         <p className="text-2xl font-bold">{allSubjects?.length || 0}</p>
-                        <p className="text-sm text-muted-foreground">{t('subjects.subjects') || 'Subjects'}</p>
+                        <p className="text-sm text-muted-foreground">{t('events.subjects') || 'Subjects'}</p>
                       </div>
                     </div>
                   </div>

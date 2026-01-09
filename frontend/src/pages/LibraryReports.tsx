@@ -701,7 +701,7 @@ export default function LibraryReports() {
                             <CardDescription>All loans within the selected date range</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+                            <FilterPanel title={t('events.filters') || 'Search & Filter'}>
                                 <div className="flex flex-col md:flex-row gap-4 items-end">
                                     <div className="space-y-2">
                                         <Label htmlFor="date-from">From Date</Label>
@@ -1009,7 +1009,7 @@ export default function LibraryReports() {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+                                <FilterPanel title={t('events.filters') || 'Search & Filter'}>
                                     <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
                                         <div className="relative flex-1 w-full sm:max-w-md">
                                             <Label htmlFor="books-search" className="mb-2 block">Search</Label>

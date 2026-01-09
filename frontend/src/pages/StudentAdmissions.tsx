@@ -67,7 +67,7 @@ const uuidOrNull = z.preprocess(
 const getAdmissionSchema = (t: ReturnType<typeof useLanguage>['t']) => z.object({
   organization_id: z.string().uuid().optional(),
   school_id: uuidOrNull,
-  student_id: z.string().uuid({ message: t('admissions.studentRequired') }),
+  student_id: z.string().uuid({ message: t('leave.studentRequired') }),
   academic_year_id: uuidOrNull,
   class_id: uuidOrNull,
   class_academic_year_id: uuidOrNull,
@@ -403,11 +403,11 @@ export function StudentAdmissions() {
                 <Badge variant={statusVariant(admission.enrollmentStatus)} className="shrink-0 text-xs">
                   {admission.enrollmentStatus === 'pending' ? t('admissions.pending') :
                    admission.enrollmentStatus === 'admitted' ? t('admissions.admitted') :
-                   admission.enrollmentStatus === 'active' ? t('admissions.active') :
-                   admission.enrollmentStatus === 'inactive' ? t('admissions.inactive') :
-                   admission.enrollmentStatus === 'suspended' ? t('admissions.suspended') :
+                   admission.enrollmentStatus === 'active' ? t('events.active') :
+                   admission.enrollmentStatus === 'inactive' ? t('events.inactive') :
+                   admission.enrollmentStatus === 'suspended' ? t('students.suspended') :
                    admission.enrollmentStatus === 'withdrawn' ? t('admissions.withdrawn') :
-                   admission.enrollmentStatus === 'graduated' ? t('admissions.graduated') :
+                   admission.enrollmentStatus === 'graduated' ? t('students.graduated') :
                    admission.enrollmentStatus}
                 </Badge>
               )}
@@ -443,14 +443,14 @@ export function StudentAdmissions() {
     },
     {
       accessorKey: 'class',
-      header: t('admissions.class') || 'Class / Shift',
+      header: t('search.class') || 'Class / Shift',
       cell: ({ row }) => {
         const admission = row.original;
         const classInfo = admission.classAcademicYear;
         if (classInfo) {
           return (
             <div className="space-y-1 min-w-0 sm:min-w-[150px]">
-              <div className="font-medium break-words">{admission.class?.name || t('common.unknown')}</div>
+              <div className="font-medium break-words">{admission.class?.name || t('events.unknown')}</div>
               {classInfo.sectionName && (
                 <Badge variant="outline" className="text-xs shrink-0">
                   {classInfo.sectionName}
@@ -489,18 +489,18 @@ export function StudentAdmissions() {
     },
     {
       accessorKey: 'status',
-      header: t('admissions.status') || 'Status',
+      header: t('events.status') || 'Status',
       cell: ({ row }) => {
         const status = row.original.enrollmentStatus;
         return status ? (
           <Badge variant={statusVariant(status)}>
             {status === 'pending' ? t('admissions.pending') :
              status === 'admitted' ? t('admissions.admitted') :
-             status === 'active' ? t('admissions.active') :
-             status === 'inactive' ? t('admissions.inactive') :
-             status === 'suspended' ? t('admissions.suspended') :
+             status === 'active' ? t('events.active') :
+             status === 'inactive' ? t('events.inactive') :
+             status === 'suspended' ? t('students.suspended') :
              status === 'withdrawn' ? t('admissions.withdrawn') :
-             status === 'graduated' ? t('admissions.graduated') :
+             status === 'graduated' ? t('students.graduated') :
              status}
           </Badge>
         ) : '—';
@@ -508,7 +508,7 @@ export function StudentAdmissions() {
     },
     {
       id: 'actions',
-      header: () => <div className="text-right">{t('admissions.actions') || 'Actions'}</div>,
+      header: () => <div className="text-right">{t('events.actions') || 'Actions'}</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-1 flex-wrap">
           {row.original.student_id && (
@@ -525,7 +525,7 @@ export function StudentAdmissions() {
             variant="ghost"
             size="icon"
             onClick={() => handleEdit(row.original)}
-            title={t('common.edit') || 'Edit'}
+            title={t('events.edit') || 'Edit'}
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -533,7 +533,7 @@ export function StudentAdmissions() {
             variant="ghost"
             size="icon"
             onClick={() => handleDelete(row.original)}
-            title={t('common.delete') || 'Delete'}
+            title={t('events.delete') || 'Delete'}
           >
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
@@ -758,10 +758,10 @@ export function StudentAdmissions() {
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
       <PageHeader
-        title={t('admissions.title') || 'Student Admissions'}
-        description={t('admissions.subtitle') || 'Admit registered students into classes with residency and year tracking.'}
+        title={t('events.title') || 'Student Admissions'}
+        description={t('hostel.subtitle') || 'Admit registered students into classes with residency and year tracking.'}
         primaryAction={{
-          label: t('admissions.add') || 'Admit Student',
+          label: t('events.add') || 'Admit Student',
           onClick: handleOpenCreateDialog,
           icon: <Plus className="h-4 w-4" />,
           disabled: isLimitReached,
@@ -851,7 +851,7 @@ export function StudentAdmissions() {
                         {t('admissions.basicInfo') || 'Basic Info'}
                       </TabsTrigger>
                       <TabsTrigger value="academic" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
-                        {t('admissions.academicInfo') || 'Academic'}
+                        {t('students.academicInfo') || 'Academic'}
                       </TabsTrigger>
                       <TabsTrigger value="residency" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
                         {t('admissions.residencyInfo') || 'Residency'}
@@ -877,7 +877,7 @@ export function StudentAdmissions() {
                         disabled={!isEdit && !canCreateAdmission}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={t('admissions.selectSchool') || 'Select school'} />
+                          <SelectValue placeholder={t('events.selectSchool') || 'Select school'} />
                         </SelectTrigger>
                         <SelectContent>
                           {schools?.map((school) => (
@@ -959,7 +959,7 @@ export function StudentAdmissions() {
                     />
                   </div>
                   <div>
-                    <Label>{t('admissions.classSection') || 'Class / Section'}</Label>
+                    <Label>{t('students.classSection') || 'Class / Section'}</Label>
                     <Controller
                       control={control}
                       name="class_academic_year_id"
@@ -992,7 +992,7 @@ export function StudentAdmissions() {
                             {classAcademicYears && classAcademicYears.length > 0 ? (
                               classAcademicYears.map((cay) => (
                                 <SelectItem key={cay.id} value={cay.id}>
-                                  {cay.class?.name || cay.class_id || t('admissions.class') || 'Class'}
+                                  {cay.class?.name || cay.class_id || t('search.class') || 'Class'}
                                   {cay.section_name ? ` - ${cay.section_name}` : ''}
                                   {cay.capacity && cay.current_student_count !== undefined && (
                                     <span className="text-xs text-muted-foreground ml-2">
@@ -1095,11 +1095,11 @@ export function StudentAdmissions() {
                     />
                   </div>
                   <div>
-                    <Label>{t('admissions.admissionDate') || 'Admission Date'}</Label>
+                    <Label>{t('studentReportCard.admissionDate') || 'Admission Date'}</Label>
                     <CalendarFormField 
                       control={control} 
                       name="admission_date" 
-                      label={t('admissions.admissionDate') || 'Admission Date'}
+                      label={t('studentReportCard.admissionDate') || 'Admission Date'}
                       disabled={!isEdit && !canCreateAdmission}
                     />
                   </div>
@@ -1115,16 +1115,16 @@ export function StudentAdmissions() {
                           disabled={!isEdit && !canCreateAdmission}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder={t('admissions.status') || 'Status'} />
+                            <SelectValue placeholder={t('events.status') || 'Status'} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="pending">{t('admissions.pending') || 'Pending'}</SelectItem>
                             <SelectItem value="admitted">{t('admissions.admitted') || 'Admitted'}</SelectItem>
-                            <SelectItem value="active">{t('admissions.active') || 'Active'}</SelectItem>
-                            <SelectItem value="inactive">{t('admissions.inactive') || 'Inactive'}</SelectItem>
-                            <SelectItem value="suspended">{t('admissions.suspended') || 'Suspended'}</SelectItem>
+                            <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
+                            <SelectItem value="inactive">{t('events.inactive') || 'Inactive'}</SelectItem>
+                            <SelectItem value="suspended">{t('students.suspended') || 'Suspended'}</SelectItem>
                             <SelectItem value="withdrawn">{t('admissions.withdrawn') || 'Withdrawn'}</SelectItem>
-                            <SelectItem value="graduated">{t('admissions.graduated') || 'Graduated'}</SelectItem>
+                            <SelectItem value="graduated">{t('students.graduated') || 'Graduated'}</SelectItem>
                           </SelectContent>
                         </Select>
                       )}
@@ -1208,7 +1208,7 @@ export function StudentAdmissions() {
                         }}
                         className="w-full sm:w-auto"
                       >
-                        {t('common.previous') || 'Previous'}
+                        {t('events.previous') || 'Previous'}
                       </Button>
                     )}
                     {activeTab !== 'additional' ? (
@@ -1223,7 +1223,7 @@ export function StudentAdmissions() {
                         }}
                         className="w-full sm:w-auto"
                       >
-                        {t('common.next') || 'Next'}
+                        {t('events.next') || 'Next'}
                       </Button>
                     ) : (
                       <Button 
@@ -1232,7 +1232,7 @@ export function StudentAdmissions() {
                         disabled={(!isEdit && !canCreateAdmission) || updateAdmission.isPending || createAdmission.isPending}
                       >
                         {updateAdmission.isPending || createAdmission.isPending
-                          ? (t('common.saving') || 'Saving...')
+                          ? (t('events.saving') || 'Saving...')
                           : isEdit 
                             ? (t('admissions.updateAdmission') || 'Update admission') 
                             : (t('admissions.admitStudent') || 'Admit student')}
@@ -1278,7 +1278,7 @@ export function StudentAdmissions() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t('admissions.boardersLabel')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('hostel.boardersLabel')}</CardTitle>
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -1293,7 +1293,7 @@ export function StudentAdmissions() {
           <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={t('common.search') || 'Search by student name, admission number, class...'}
+              placeholder={t('events.search') || 'Search by student name, admission number, class...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -1304,7 +1304,7 @@ export function StudentAdmissions() {
               <SelectValue placeholder={t('admissions.school') || 'School'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('admissions.allSchools') || 'All Schools'}</SelectItem>
+              <SelectItem value="all">{t('leave.allSchools') || 'All Schools'}</SelectItem>
               {schools?.map((school) => (
                 <SelectItem key={school.id} value={school.id}>
                   {school.school_name}
@@ -1314,17 +1314,17 @@ export function StudentAdmissions() {
           </Select>
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as AdmissionStatus | 'all')}>
             <SelectTrigger className="w-full sm:w-[150px]">
-              <SelectValue placeholder={t('admissions.status') || 'Status'} />
+              <SelectValue placeholder={t('events.status') || 'Status'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('admissions.allStatus') || 'All Status'}</SelectItem>
+              <SelectItem value="all">{t('userManagement.allStatus') || 'All Status'}</SelectItem>
               <SelectItem value="pending">{t('admissions.pending') || 'Pending'}</SelectItem>
               <SelectItem value="admitted">{t('admissions.admitted') || 'Admitted'}</SelectItem>
-              <SelectItem value="active">{t('admissions.active') || 'Active'}</SelectItem>
-              <SelectItem value="inactive">{t('admissions.inactive') || 'Inactive'}</SelectItem>
-              <SelectItem value="suspended">{t('admissions.suspended') || 'Suspended'}</SelectItem>
+              <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
+              <SelectItem value="inactive">{t('events.inactive') || 'Inactive'}</SelectItem>
+              <SelectItem value="suspended">{t('students.suspended') || 'Suspended'}</SelectItem>
               <SelectItem value="withdrawn">{t('admissions.withdrawn') || 'Withdrawn'}</SelectItem>
-              <SelectItem value="graduated">{t('admissions.graduated') || 'Graduated'}</SelectItem>
+              <SelectItem value="graduated">{t('students.graduated') || 'Graduated'}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={residencyFilter} onValueChange={(value) => setResidencyFilter(value)}>
@@ -1345,7 +1345,7 @@ export function StudentAdmissions() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('admissions.list') || 'Admissions'}</CardTitle>
+          <CardTitle>{t('grades.list') || 'Admissions'}</CardTitle>
           <CardDescription>{t('admissions.listDescription') || 'Overview of class placements and residency tracking.'}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -1357,7 +1357,7 @@ export function StudentAdmissions() {
             <div className="flex flex-col items-center justify-center py-8 space-y-2">
               <p className="text-destructive font-medium">Error loading admissions</p>
               <p className="text-sm text-muted-foreground">
-                {admissionsError instanceof Error ? admissionsError.message : t('common.unexpectedError')}
+                {admissionsError instanceof Error ? admissionsError.message : t('events.unexpectedError')}
               </p>
               <p className="text-xs text-muted-foreground mt-2">
                 Please ensure the migration <code className="bg-muted px-1 rounded">20250205000034_fix_student_admissions_rls_policies.sql</code> has been applied.
@@ -1453,8 +1453,8 @@ export function StudentAdmissions() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>{t('common.delete')}</AlertDialogAction>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>{t('events.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1470,14 +1470,14 @@ export function StudentAdmissions() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={bulkDeactivate.isPending}>
-              {t('common.cancel')}
+              {t('events.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleBulkDeactivate}
               disabled={bulkDeactivate.isPending}
             >
               {bulkDeactivate.isPending 
-                ? (t('common.processing') || 'Processing...') 
+                ? (t('events.processing') || 'Processing...') 
                 : (t('admissions.deactivate') || 'Deactivate')}
             </AlertDialogAction>
           </AlertDialogFooter>

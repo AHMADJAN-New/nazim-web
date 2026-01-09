@@ -21,7 +21,9 @@
     "i18n:remove-specific": "npx --yes tsx scripts/i18n/remove-specific-keys.ts",
     "i18n:check": "node scripts/i18n/check-bad-patterns.js",
     "i18n:check:update-baseline": "node scripts/i18n/check-bad-patterns.js --update-baseline",
-    "i18n:keys:generate": "npx --yes tsx scripts/i18n/generate-translation-keys.ts"
+    "i18n:keys:generate": "npx --yes tsx scripts/i18n/generate-translation-keys.ts",
+    "i18n:find-missing": "npx --yes tsx scripts/i18n/find-and-add-missing-keys.ts",
+    "i18n:add-missing": "npx --yes tsx scripts/i18n/find-and-add-missing-keys.ts --add"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

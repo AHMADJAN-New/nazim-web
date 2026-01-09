@@ -202,10 +202,10 @@ export default function CertificateTemplates() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t('certificateTemplates.title')}</h1>
+        <h1 className="text-2xl font-bold">{t('events.title')}</h1>
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="h-4 w-4 mr-2" />
-          {t('certificateTemplates.createTemplate')}
+          {t('examPapers.createTemplate')}
         </Button>
       </div>
 
@@ -215,7 +215,7 @@ export default function CertificateTemplates() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-muted-foreground">{t('common.loading')}</p>
+            <p className="text-muted-foreground">{t('events.loading')}</p>
           ) : templates.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
@@ -229,11 +229,11 @@ export default function CertificateTemplates() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('certificateTemplates.templateName')}</TableHead>
-                  <TableHead>{t('certificateTemplates.description')}</TableHead>
+                  <TableHead>{t('events.description')}</TableHead>
                   <TableHead>Background</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
-                  <TableHead className="text-right">{t('common.actions')}</TableHead>
+                  <TableHead className="text-right">{t('events.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

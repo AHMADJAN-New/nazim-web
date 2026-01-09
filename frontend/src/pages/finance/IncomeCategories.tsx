@@ -134,11 +134,11 @@ export default function IncomeCategories() {
                     <ReportExportButtons
                         data={categories || []}
                         columns={[
-                            { key: 'name', label: t('common.name'), align: 'left' },
-                            { key: 'code', label: t('common.code'), align: 'left' },
-                            { key: 'description', label: t('common.description'), align: 'left' },
+                            { key: 'name', label: t('events.name'), align: 'left' },
+                            { key: 'code', label: t('events.code'), align: 'left' },
+                            { key: 'description', label: t('events.description'), align: 'left' },
                             { key: 'isRestricted', label: t('finance.restricted'), align: 'center' },
-                            { key: 'isActive', label: t('common.status'), align: 'center' },
+                            { key: 'isActive', label: t('events.status'), align: 'center' },
                         ]}
                         reportKey="income_categories"
                         title={t('finance.incomeCategories') || 'Income Categories'}
@@ -147,8 +147,8 @@ export default function IncomeCategories() {
                                 name: category.name,
                                 code: category.code || '-',
                                 description: category.description || '-',
-                                isRestricted: category.isRestricted ? t('common.yes') || 'Yes' : t('common.no') || 'No',
-                                isActive: category.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive',
+                                isRestricted: category.isRestricted ? t('events.yes') || 'Yes' : t('events.no') || 'No',
+                                isActive: category.isActive ? t('events.active') || 'Active' : t('events.inactive') || 'Inactive',
                             }))
                         }
                         templateType="income_categories"
@@ -174,7 +174,7 @@ export default function IncomeCategories() {
                     >
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
+                                <Label htmlFor="name">{t('events.name') || 'Name'} *</Label>
                                 <Input
                                     id="name"
                                     value={formData.name}
@@ -184,7 +184,7 @@ export default function IncomeCategories() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="code">{t('common.code') || 'Code'}</Label>
+                                <Label htmlFor="code">{t('events.code') || 'Code'}</Label>
                                 <Input
                                     id="code"
                                     value={formData.code || ''}
@@ -194,7 +194,7 @@ export default function IncomeCategories() {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="description">{t('common.description') || 'Description'}</Label>
+                            <Label htmlFor="description">{t('events.description') || 'Description'}</Label>
                             <Textarea
                                 id="description"
                                 value={formData.description || ''}
@@ -219,12 +219,12 @@ export default function IncomeCategories() {
                                     checked={formData.isActive}
                                     onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
                                 />
-                                <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
+                                <Label htmlFor="isActive">{t('events.active') || 'Active'}</Label>
                             </div>
                         </div>
                         <DialogFooter>
                             <Button type="submit" disabled={createCategory.isPending || !formData.name.trim()}>
-                                {t('common.create') || 'Create'}
+                                {t('events.create') || 'Create'}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -247,12 +247,12 @@ export default function IncomeCategories() {
                         <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>{t('common.name') || 'Name'}</TableHead>
-                                <TableHead>{t('common.code') || 'Code'}</TableHead>
-                                <TableHead>{t('common.description') || 'Description'}</TableHead>
+                                <TableHead>{t('events.name') || 'Name'}</TableHead>
+                                <TableHead>{t('events.code') || 'Code'}</TableHead>
+                                <TableHead>{t('events.description') || 'Description'}</TableHead>
                                 <TableHead>{t('finance.restricted') || 'Restricted'}</TableHead>
-                                <TableHead>{t('common.status') || 'Status'}</TableHead>
-                                <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                                <TableHead>{t('events.status') || 'Status'}</TableHead>
+                                <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -263,14 +263,14 @@ export default function IncomeCategories() {
                                     <TableCell className="max-w-xs truncate">{category.description || '-'}</TableCell>
                                     <TableCell>
                                         {category.isRestricted ? (
-                                            <Badge variant="secondary">{t('common.yes') || 'Yes'}</Badge>
+                                            <Badge variant="secondary">{t('events.yes') || 'Yes'}</Badge>
                                         ) : (
                                             <span className="text-muted-foreground">-</span>
                                         )}
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant={category.isActive ? 'default' : 'secondary'}>
-                                            {category.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
+                                            {category.isActive ? t('events.active') || 'Active' : t('events.inactive') || 'Inactive'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -324,7 +324,7 @@ export default function IncomeCategories() {
                     >
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="edit-name">{t('common.name') || 'Name'} *</Label>
+                                <Label htmlFor="edit-name">{t('events.name') || 'Name'} *</Label>
                                 <Input
                                     id="edit-name"
                                     value={formData.name}
@@ -334,7 +334,7 @@ export default function IncomeCategories() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="edit-code">{t('common.code') || 'Code'}</Label>
+                                <Label htmlFor="edit-code">{t('events.code') || 'Code'}</Label>
                                 <Input
                                     id="edit-code"
                                     value={formData.code || ''}
@@ -344,7 +344,7 @@ export default function IncomeCategories() {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="edit-description">{t('common.description') || 'Description'}</Label>
+                            <Label htmlFor="edit-description">{t('events.description') || 'Description'}</Label>
                             <Textarea
                                 id="edit-description"
                                 value={formData.description || ''}
@@ -369,12 +369,12 @@ export default function IncomeCategories() {
                                     checked={formData.isActive}
                                     onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
                                 />
-                                <Label htmlFor="edit-isActive">{t('common.active') || 'Active'}</Label>
+                                <Label htmlFor="edit-isActive">{t('events.active') || 'Active'}</Label>
                             </div>
                         </div>
                         <DialogFooter>
                             <Button type="submit" disabled={updateCategory.isPending || !formData.name.trim()}>
-                                {t('common.update') || 'Update'}
+                                {t('events.update') || 'Update'}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -385,15 +385,15 @@ export default function IncomeCategories() {
             <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('events.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('finance.deleteCategoryWarning') || 'Are you sure you want to delete this category? This action cannot be undone.'}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                            {t('common.delete') || 'Delete'}
+                            {t('events.delete') || 'Delete'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

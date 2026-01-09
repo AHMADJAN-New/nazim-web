@@ -192,7 +192,7 @@ export default function AttendanceTotalsReports() {
 
     const handleGenerateReport = async (variant: 'totals' | 'class_wise' | 'room_wise') => {
         if (!report) {
-            showToast.error(t('attendanceTotalsReport.noDataToExport') || 'No data to export');
+            showToast.error(t('events.noDataToExport') || 'No data to export');
             return;
         }
 
@@ -279,12 +279,12 @@ export default function AttendanceTotalsReports() {
     return (
         <div className="container mx-auto p-4 md:p-6 max-w-7xl space-y-6">
             <PageHeader
-                title={t('attendanceTotalsReport.title') || 'Attendance Totals Report'}
-                description={t('attendanceTotalsReport.subtitle') || 'Analyze attendance performance across classes, rooms, and schools.'}
+                title={t('events.title') || 'Attendance Totals Report'}
+                description={t('hostel.subtitle') || 'Analyze attendance performance across classes, rooms, and schools.'}
                 icon={<Activity className="h-5 w-5" />}
                 secondaryActions={[
                     {
-                        label: t('common.refresh') || 'Refresh',
+                        label: t('events.refresh') || 'Refresh',
                         onClick: () => refetch(),
                         icon: <RefreshCw className="h-4 w-4" />,
                         variant: 'outline',
@@ -377,7 +377,7 @@ export default function AttendanceTotalsReports() {
                 footer={
                     <div className="flex justify-end">
                         <Button variant="ghost" size="sm" onClick={handleResetFilters}>
-                            {t('attendanceTotalsReport.reset') || 'Reset'}
+                            {t('events.reset') || 'Reset'}
                         </Button>
                     </div>
                 }
@@ -393,16 +393,16 @@ export default function AttendanceTotalsReports() {
                                 options={(schools || []).map((school) => ({ label: school.schoolName, value: school.id }))}
                                 value={filters.schoolId || ''}
                                 onValueChange={(value) => handleFilterChange('schoolId', value || undefined)}
-                                placeholder={t('attendanceTotalsReport.allSchools') || 'All schools'}
+                                placeholder={t('leave.allSchools') || 'All schools'}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>{t('attendanceTotalsReport.class') || 'Class / Room'}</Label>
+                            <Label>{t('search.class') || 'Class / Room'}</Label>
                             <Combobox
                                 options={(classes || []).map((classItem) => ({ label: classItem.name, value: classItem.id }))}
                                 value={filters.classId || ''}
                                 onValueChange={(value) => handleFilterChange('classId', value || undefined)}
-                                placeholder={t('attendanceTotalsReport.allClasses') || 'All classes'}
+                                placeholder={t('students.allClasses') || 'All classes'}
                             />
                         </div>
                         <div className="space-y-2">
@@ -425,13 +425,13 @@ export default function AttendanceTotalsReports() {
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label>{t('attendanceTotalsReport.status') || 'Status'}</Label>
+                            <Label>{t('events.status') || 'Status'}</Label>
                             <Select value={filters.status || 'all'} onValueChange={(value) => handleFilterChange('status', value)}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder={t('common.all') || 'All'} />
+                                    <SelectValue placeholder={t('subjects.all') || 'All'} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                                    <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
                                     {Object.entries(attendanceStatusMeta).map(([key, meta]) => (
                                         <SelectItem key={key} value={key}>
                                             {meta.label}
@@ -454,11 +454,11 @@ export default function AttendanceTotalsReports() {
                         {dateRangePreset === 'custom' && (
                             <>
                                 <div className="space-y-2">
-                                    <Label>{t('attendanceTotalsReport.fromDate') || 'From date'}</Label>
+                                    <Label>{t('library.fromDate') || 'From date'}</Label>
                                     <CalendarDatePicker date={filters.dateFrom || '' ? new Date(filters.dateFrom || '') : undefined} onDateChange={(date) => handleFilterChange("dateFrom", date ? date.toISOString().split("T")[0] : "")} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>{t('attendanceTotalsReport.toDate') || 'To date'}</Label>
+                                    <Label>{t('library.toDate') || 'To date'}</Label>
                                     <CalendarDatePicker date={filters.dateTo || '' ? new Date(filters.dateTo || '') : undefined} onDateChange={(date) => handleFilterChange("dateTo", date ? date.toISOString().split("T")[0] : "")} />
                                 </div>
                             </>
@@ -469,7 +469,7 @@ export default function AttendanceTotalsReports() {
 
             {isLoading && (
                 <div className="flex items-center justify-center py-16">
-                    <LoadingSpinner text={t('attendanceTotalsReport.loading') || 'Loading attendance report...'} />
+                    <LoadingSpinner text={t('events.loading') || 'Loading attendance report...'} />
                 </div>
             )}
 
@@ -552,10 +552,10 @@ export default function AttendanceTotalsReports() {
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
-                                                    <TableHead>{t('attendanceTotalsReport.class') || 'Class'}</TableHead>
+                                                    <TableHead>{t('search.class') || 'Class'}</TableHead>
                                                     <TableHead>{t('attendanceTotalsReport.school') || 'School'}</TableHead>
                                                     <TableHead className="text-right">{t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}</TableHead>
-                                                    <TableHead className="text-right">{t('attendanceTotalsReport.present') || 'Present'}</TableHead>
+                                                    <TableHead className="text-right">{t('examReports.present') || 'Present'}</TableHead>
                                                     <TableHead className="text-right">{t('attendanceTotalsReport.absent') || 'Absent'}</TableHead>
                                                     <TableHead className="text-right">{t('attendanceTotalsReport.totalRecords') || 'Records'}</TableHead>
                                                 </TableRow>
@@ -596,7 +596,7 @@ export default function AttendanceTotalsReports() {
                                                 <TableRow>
                                                     <TableHead>{t('attendanceTotalsReport.school') || 'School'}</TableHead>
                                                     <TableHead className="text-right">{t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}</TableHead>
-                                                    <TableHead className="text-right">{t('attendanceTotalsReport.present') || 'Present'}</TableHead>
+                                                    <TableHead className="text-right">{t('examReports.present') || 'Present'}</TableHead>
                                                     <TableHead className="text-right">{t('attendanceTotalsReport.absent') || 'Absent'}</TableHead>
                                                     <TableHead className="text-right">{t('attendanceTotalsReport.totalRecords') || 'Records'}</TableHead>
                                                 </TableRow>
@@ -635,11 +635,11 @@ export default function AttendanceTotalsReports() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>{t('attendanceTotalsReport.date') || 'Date'}</TableHead>
-                                                <TableHead>{t('attendanceTotalsReport.class') || 'Class'}</TableHead>
+                                                <TableHead>{t('events.date') || 'Date'}</TableHead>
+                                                <TableHead>{t('search.class') || 'Class'}</TableHead>
                                                 <TableHead>{t('attendanceTotalsReport.school') || 'School'}</TableHead>
                                                 <TableHead className="text-right">{t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}</TableHead>
-                                                <TableHead className="text-right">{t('attendanceTotalsReport.present') || 'Present'}</TableHead>
+                                                <TableHead className="text-right">{t('examReports.present') || 'Present'}</TableHead>
                                                 <TableHead className="text-right">{t('attendanceTotalsReport.absent') || 'Absent'}</TableHead>
                                                 <TableHead className="text-right">{t('attendanceTotalsReport.totalRecords') || 'Records'}</TableHead>
                                             </TableRow>
@@ -700,11 +700,11 @@ export default function AttendanceTotalsReports() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>{t('attendanceTotalsReport.date') || 'Date'}</TableHead>
+                                                <TableHead>{t('events.date') || 'Date'}</TableHead>
                                                 <TableHead>{t('attendanceTotalsReport.room') || 'Room'}</TableHead>
                                                 <TableHead>{t('attendanceTotalsReport.school') || 'School'}</TableHead>
                                                 <TableHead className="text-right">{t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}</TableHead>
-                                                <TableHead className="text-right">{t('attendanceTotalsReport.present') || 'Present'}</TableHead>
+                                                <TableHead className="text-right">{t('examReports.present') || 'Present'}</TableHead>
                                                 <TableHead className="text-right">{t('attendanceTotalsReport.absent') || 'Absent'}</TableHead>
                                                 <TableHead className="text-right">{t('attendanceTotalsReport.totalRecords') || 'Records'}</TableHead>
                                             </TableRow>

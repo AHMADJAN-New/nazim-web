@@ -134,19 +134,19 @@ export default function CertificateTemplatesPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p>{t('common.loading')}</p>
+            <p>{t('events.loading')}</p>
           ) : templates.length === 0 ? (
             <p className="text-muted-foreground">No templates yet</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('common.title') ?? 'Title'}</TableHead>
+                  <TableHead>{t('events.title') ?? 'Title'}</TableHead>
                   <TableHead>School</TableHead>
                   <TableHead>Background</TableHead>
-                  <TableHead>{t('common.statusLabel') ?? 'Status'}</TableHead>
+                  <TableHead>{t('events.statusLabel') ?? 'Status'}</TableHead>
                   <TableHead>Created</TableHead>
-                  <TableHead className="text-right">{t('common.actions') ?? 'Actions'}</TableHead>
+                  <TableHead className="text-right">{t('events.actions') ?? 'Actions'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -172,7 +172,7 @@ export default function CertificateTemplatesPage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={tpl.is_active ? 'default' : 'secondary'}>
-                        {tpl.is_active ? t('common.active') ?? 'Active' : t('common.inactive') ?? 'Inactive'}
+                        {tpl.is_active ? t('events.active') ?? 'Active' : t('events.inactive') ?? 'Inactive'}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -212,13 +212,13 @@ export default function CertificateTemplatesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('common.create')}</CardTitle>
+          <CardTitle>{t('events.create')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>{t('common.title') ?? 'Title'} *</Label>
+                <Label>{t('events.title') ?? 'Title'} *</Label>
                 <Input
                   value={form.title}
                   onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
@@ -254,7 +254,7 @@ export default function CertificateTemplatesPage() {
                 />
               </div>
               <div className="md:col-span-2">
-                <Label>{t('common.body') ?? 'Body HTML'} (Optional - for backward compatibility)</Label>
+                <Label>{t('events.body') ?? 'Body HTML'} (Optional - for backward compatibility)</Label>
                 <Textarea
                   value={form.body_html}
                   onChange={(e) => setForm((prev) => ({ ...prev, body_html: e.target.value }))}
@@ -266,7 +266,7 @@ export default function CertificateTemplatesPage() {
                 </p>
               </div>
               <div>
-                <Label>{t('common.pageSize') ?? 'Page Size'}</Label>
+                <Label>{t('events.pageSize') ?? 'Page Size'}</Label>
                 <Select
                   value={form.page_size}
                   onValueChange={(val) => setForm((prev) => ({ ...prev, page_size: val as any }))}
@@ -285,7 +285,7 @@ export default function CertificateTemplatesPage() {
                   checked={form.rtl}
                   onCheckedChange={(val) => setForm((prev) => ({ ...prev, rtl: val }))}
                 />
-                <Label>{t('common.rtl') ?? 'RTL'}</Label>
+                <Label>{t('events.rtl') ?? 'RTL'}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
@@ -297,7 +297,7 @@ export default function CertificateTemplatesPage() {
             </div>
             <div className="flex justify-end">
               <Button type="submit" disabled={createTemplate.isPending || !form.title}>
-                {createTemplate.isPending ? 'Saving...' : t('common.save')}
+                {createTemplate.isPending ? 'Saving...' : t('events.save')}
               </Button>
             </div>
           </form>

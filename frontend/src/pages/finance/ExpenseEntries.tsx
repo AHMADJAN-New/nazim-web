@@ -218,7 +218,7 @@ export default function ExpenseEntries() {
             case 'approved':
                 return (
                     <Badge variant="outline" className="bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400">
-                        {t('finance.approved') || 'Approved'}
+                        {t('status.approved') || 'Approved'}
                     </Badge>
                 );
             case 'pending':
@@ -266,7 +266,7 @@ export default function ExpenseEntries() {
                     </Select>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="expenseCategoryId">{t('finance.category') || 'Category'} *</Label>
+                    <Label htmlFor="expenseCategoryId">{t('assets.category') || 'Category'} *</Label>
                     <Select
                         value={formData.expenseCategoryId}
                         onValueChange={(value) => setFormData({ ...formData, expenseCategoryId: value })}
@@ -297,7 +297,7 @@ export default function ExpenseEntries() {
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="date">{t('common.date') || 'Date'} *</Label>
+                    <Label htmlFor="date">{t('events.date') || 'Date'} *</Label>
                     <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
             </div>
@@ -343,7 +343,7 @@ export default function ExpenseEntries() {
                             <SelectValue placeholder={t('finance.selectProject') || 'Select project'} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
+                            <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
                             {activeProjects.map((project) => (
                                 <SelectItem key={project.id} value={project.id}>
                                     {project.name}
@@ -376,7 +376,7 @@ export default function ExpenseEntries() {
                             <SelectItem value="cash">{t('finance.cash') || 'Cash'}</SelectItem>
                             <SelectItem value="bank_transfer">{t('finance.bankTransfer') || 'Bank Transfer'}</SelectItem>
                             <SelectItem value="cheque">{t('finance.cheque') || 'Cheque'}</SelectItem>
-                            <SelectItem value="other">{t('common.other') || 'Other'}</SelectItem>
+                            <SelectItem value="other">{t('events.other') || 'Other'}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -392,7 +392,7 @@ export default function ExpenseEntries() {
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="status">{t('common.status') || 'Status'}</Label>
+                    <Label htmlFor="status">{t('events.status') || 'Status'}</Label>
                     <Select
                         value={formData.status}
                         onValueChange={(value: 'pending' | 'approved' | 'rejected') => setFormData({ ...formData, status: value })}
@@ -401,7 +401,7 @@ export default function ExpenseEntries() {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="approved">{t('finance.approved') || 'Approved'}</SelectItem>
+                            <SelectItem value="approved">{t('status.approved') || 'Approved'}</SelectItem>
                             <SelectItem value="pending">{t('finance.pending') || 'Pending'}</SelectItem>
                             <SelectItem value="rejected">{t('finance.rejected') || 'Rejected'}</SelectItem>
                         </SelectContent>
@@ -409,7 +409,7 @@ export default function ExpenseEntries() {
                 </div>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="description">{t('common.description') || 'Description'}</Label>
+                <Label htmlFor="description">{t('events.description') || 'Description'}</Label>
                 <Textarea
                     id="description"
                     value={formData.description || ''}
@@ -419,7 +419,7 @@ export default function ExpenseEntries() {
             </div>
             <DialogFooter>
                 <Button type="submit" disabled={loading || !formData.accountId || !formData.expenseCategoryId || formData.amount <= 0}>
-                    {editEntry ? t('common.update') || 'Update' : t('common.create') || 'Create'}
+                    {editEntry ? t('events.update') || 'Update' : t('events.create') || 'Create'}
                 </Button>
             </DialogFooter>
         </form>
@@ -440,14 +440,14 @@ export default function ExpenseEntries() {
                     <ReportExportButtons
                         data={filteredEntries}
                         columns={[
-                            { key: 'date', label: t('common.date'), align: 'left' },
-                            { key: 'categoryName', label: t('finance.category'), align: 'left' },
+                            { key: 'date', label: t('events.date'), align: 'left' },
+                            { key: 'categoryName', label: t('assets.category'), align: 'left' },
                             { key: 'accountName', label: t('finance.account'), align: 'left' },
                             { key: 'paidTo', label: t('finance.paidTo'), align: 'left' },
                             { key: 'projectName', label: t('finance.project'), align: 'left' },
                             { key: 'amount', label: t('finance.amount'), align: 'right' },
                             { key: 'paymentMethod', label: t('finance.paymentMethod'), align: 'left' },
-                            { key: 'status', label: t('common.status'), align: 'center' },
+                            { key: 'status', label: t('events.status'), align: 'center' },
                             { key: 'referenceNo', label: t('finance.referenceNo'), align: 'left' },
                         ]}
                         reportKey="expense_entries"
@@ -467,18 +467,18 @@ export default function ExpenseEntries() {
                         }
                         buildFiltersSummary={() => {
                             const parts: string[] = [];
-                            if (dateFrom) parts.push(`${t('common.from')}: ${dateFrom}`);
-                            if (dateTo) parts.push(`${t('common.to')}: ${dateTo}`);
+                            if (dateFrom) parts.push(`${t('events.from')}: ${dateFrom}`);
+                            if (dateTo) parts.push(`${t('events.to')}: ${dateTo}`);
                             if (filterCategory !== 'all') {
                                 const cat = categories?.find(c => c.id === filterCategory);
-                                if (cat) parts.push(`${t('finance.category')}: ${cat.name}`);
+                                if (cat) parts.push(`${t('assets.category')}: ${cat.name}`);
                             }
                             if (filterAccount !== 'all') {
                                 const acc = accounts?.find(a => a.id === filterAccount);
                                 if (acc) parts.push(`${t('finance.account')}: ${acc.name}`);
                             }
-                            if (filterStatus !== 'all') parts.push(`${t('common.status')}: ${filterStatus}`);
-                            if (searchTerm) parts.push(`${t('common.search')}: ${searchTerm}`);
+                            if (filterStatus !== 'all') parts.push(`${t('events.status')}: ${filterStatus}`);
+                            if (searchTerm) parts.push(`${t('events.search')}: ${searchTerm}`);
                             return parts.join(' | ');
                         }}
                         templateType="expense_entries"
@@ -499,16 +499,16 @@ export default function ExpenseEntries() {
                 </DialogContent>
             </Dialog>
 
-            <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+            <FilterPanel title={t('events.filters') || 'Search & Filter'}>
                 <div className="flex flex-wrap gap-4 items-end">
                     <div className="flex-1 min-w-[200px]">
                         <Label className="text-xs text-muted-foreground mb-1 block">
-                            {t('common.search') || 'Search'}
+                            {t('events.search') || 'Search'}
                         </Label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder={t('common.search') || 'Search...'}
+                                placeholder={t('events.search') || 'Search...'}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10"
@@ -518,28 +518,28 @@ export default function ExpenseEntries() {
                     <div className="min-w-[150px]">
                         <Label className="text-xs text-muted-foreground mb-1 block">
                             <Calendar className="inline h-3 w-3 mr-1" />
-                            {t('common.from') || 'From'}
+                            {t('events.from') || 'From'}
                         </Label>
                         <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
                     </div>
                     <div className="min-w-[150px]">
                         <Label className="text-xs text-muted-foreground mb-1 block">
                             <Calendar className="inline h-3 w-3 mr-1" />
-                            {t('common.to') || 'To'}
+                            {t('events.to') || 'To'}
                         </Label>
                         <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
                     </div>
                     <div className="min-w-[140px]">
                         <Label className="text-xs text-muted-foreground mb-1 block">
                             <Filter className="inline h-3 w-3 mr-1" />
-                            {t('finance.category') || 'Category'}
+                            {t('assets.category') || 'Category'}
                         </Label>
                         <Select value={filterCategory} onValueChange={setFilterCategory}>
                             <SelectTrigger>
-                                <SelectValue placeholder={t('common.all') || 'All'} />
+                                <SelectValue placeholder={t('subjects.all') || 'All'} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                                <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
                                 {categories?.map((category) => (
                                     <SelectItem key={category.id} value={category.id}>
                                         {category.name}
@@ -554,10 +554,10 @@ export default function ExpenseEntries() {
                         </Label>
                         <Select value={filterAccount} onValueChange={setFilterAccount}>
                             <SelectTrigger>
-                                <SelectValue placeholder={t('common.all') || 'All'} />
+                                <SelectValue placeholder={t('subjects.all') || 'All'} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                                <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
                                 {accounts?.map((account) => (
                                     <SelectItem key={account.id} value={account.id}>
                                         {account.name}
@@ -568,15 +568,15 @@ export default function ExpenseEntries() {
                     </div>
                     <div className="min-w-[120px]">
                         <Label className="text-xs text-muted-foreground mb-1 block">
-                            {t('common.status') || 'Status'}
+                            {t('events.status') || 'Status'}
                         </Label>
                         <Select value={filterStatus} onValueChange={setFilterStatus}>
                             <SelectTrigger>
-                                <SelectValue placeholder={t('common.all') || 'All'} />
+                                <SelectValue placeholder={t('subjects.all') || 'All'} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
-                                <SelectItem value="approved">{t('finance.approved') || 'Approved'}</SelectItem>
+                                <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                                <SelectItem value="approved">{t('status.approved') || 'Approved'}</SelectItem>
                                 <SelectItem value="pending">{t('finance.pending') || 'Pending'}</SelectItem>
                                 <SelectItem value="rejected">{t('finance.rejected') || 'Rejected'}</SelectItem>
                             </SelectContent>
@@ -585,7 +585,7 @@ export default function ExpenseEntries() {
                     {hasActiveFilters && (
                         <Button variant="outline" size="sm" onClick={clearFilters}>
                             <X className="h-4 w-4 mr-1" />
-                            {t('common.clearFilters') || 'Clear'}
+                            {t('events.clearFilters') || 'Clear'}
                         </Button>
                     )}
                 </div>
@@ -615,14 +615,14 @@ export default function ExpenseEntries() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>{t('common.date') || 'Date'}</TableHead>
-                                <TableHead>{t('finance.category') || 'Category'}</TableHead>
+                                <TableHead>{t('events.date') || 'Date'}</TableHead>
+                                <TableHead>{t('assets.category') || 'Category'}</TableHead>
                                 <TableHead>{t('finance.account') || 'Account'}</TableHead>
                                 <TableHead>{t('finance.paidTo') || 'Paid To'}</TableHead>
                                 <TableHead>{t('finance.project') || 'Project'}</TableHead>
-                                <TableHead>{t('common.status') || 'Status'}</TableHead>
+                                <TableHead>{t('events.status') || 'Status'}</TableHead>
                                 <TableHead className="text-right">{t('finance.amount') || 'Amount'}</TableHead>
-                                <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                                <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -723,15 +723,15 @@ export default function ExpenseEntries() {
             <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('events.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('finance.deleteEntryWarning') || 'Are you sure you want to delete this entry? This action cannot be undone.'}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                            {t('common.delete') || 'Delete'}
+                            {t('events.delete') || 'Delete'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -761,11 +761,11 @@ export default function ExpenseEntries() {
                                             </p>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-muted-foreground">{t('common.date') || 'Date'}</p>
+                                            <p className="text-sm font-medium text-muted-foreground">{t('events.date') || 'Date'}</p>
                                             <p className="text-sm font-medium">{formatDate(viewingEntry.date)}</p>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-muted-foreground">{t('common.status') || 'Status'}</p>
+                                            <p className="text-sm font-medium text-muted-foreground">{t('events.status') || 'Status'}</p>
                                             <div className="mt-1">{getStatusBadge(viewingEntry.status)}</div>
                                         </div>
                                         {viewingEntry.referenceNo && (
@@ -791,7 +791,7 @@ export default function ExpenseEntries() {
                                     </div>
                                     {viewingEntry.description && (
                                         <div>
-                                            <p className="text-sm font-medium text-muted-foreground">{t('common.description') || 'Description'}</p>
+                                            <p className="text-sm font-medium text-muted-foreground">{t('events.description') || 'Description'}</p>
                                             <p className="text-sm mt-1">{viewingEntry.description}</p>
                                         </div>
                                     )}
@@ -849,20 +849,20 @@ export default function ExpenseEntries() {
                                             <h3 className="text-lg font-semibold">{t('finance.categoryInformation') || 'Category Information'}</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
-                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.category') || 'Category'}</p>
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('assets.category') || 'Category'}</p>
                                                     <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 mt-1">
                                                         {viewingEntry.expenseCategory.name}
                                                     </Badge>
                                                 </div>
                                                 {viewingEntry.expenseCategory.code && (
                                                     <div>
-                                                        <p className="text-sm font-medium text-muted-foreground">{t('finance.categoryCode') || 'Category Code'}</p>
+                                                        <p className="text-sm font-medium text-muted-foreground">{t('assets.categoryCode') || 'Category Code'}</p>
                                                         <p className="text-sm font-medium">{viewingEntry.expenseCategory.code}</p>
                                                     </div>
                                                 )}
                                                 {viewingEntry.expenseCategory.description && (
                                                     <div className="col-span-2">
-                                                        <p className="text-sm font-medium text-muted-foreground">{t('common.description') || 'Description'}</p>
+                                                        <p className="text-sm font-medium text-muted-foreground">{t('events.description') || 'Description'}</p>
                                                         <p className="text-sm mt-1">{viewingEntry.expenseCategory.description}</p>
                                                     </div>
                                                 )}
@@ -885,7 +885,7 @@ export default function ExpenseEntries() {
                                                     </Badge>
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-muted-foreground">{t('common.status') || 'Status'}</p>
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('events.status') || 'Status'}</p>
                                                     <Badge variant="outline" className="mt-1 capitalize">
                                                         {viewingEntry.project.status}
                                                     </Badge>
@@ -934,17 +934,17 @@ export default function ExpenseEntries() {
 
                                 {/* Metadata */}
                                 <div className="space-y-4">
-                                    <h3 className="text-lg font-semibold">{t('common.metadata') || 'Metadata'}</h3>
+                                    <h3 className="text-lg font-semibold">{t('events.metadata') || 'Metadata'}</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {viewingEntry.createdAt && (
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">{t('common.createdAt') || 'Created At'}</p>
+                                                <p className="text-sm font-medium text-muted-foreground">{t('events.createdAt') || 'Created At'}</p>
                                                 <p className="text-sm">{formatDate(viewingEntry.createdAt)}</p>
                                             </div>
                                         )}
                                         {viewingEntry.updatedAt && (
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">{t('common.updatedAt') || 'Updated At'}</p>
+                                                <p className="text-sm font-medium text-muted-foreground">{t('events.updatedAt') || 'Updated At'}</p>
                                                 <p className="text-sm">{formatDate(viewingEntry.updatedAt)}</p>
                                             </div>
                                         )}

@@ -265,14 +265,14 @@ const StaffReport = () => {
     },
     {
       accessorKey: 'employeeId',
-      header: t('staff.employeeId'),
+      header: t('search.employeeId'),
       cell: ({ row }) => (
         <div className="font-medium">{row.original.employeeId || '—'}</div>
       ),
     },
     {
       accessorKey: 'fullName',
-      header: t('staff.name'),
+      header: t('events.name'),
       cell: ({ row }) => (
         <div className="font-semibold">{row.original.fullName}</div>
       ),
@@ -286,14 +286,14 @@ const StaffReport = () => {
     },
     {
       accessorKey: 'position',
-      header: t('staff.position'),
+      header: t('search.position'),
       cell: ({ row }) => (
         <div className="text-sm">{row.original.position || '—'}</div>
       ),
     },
     {
       accessorKey: 'status',
-      header: t('staff.status'),
+      header: t('events.status'),
       cell: ({ row }) => (
         <Badge variant={statusBadgeVariant(row.original.status)} className="capitalize">
           {formatStatus(row.original.status)}
@@ -302,7 +302,7 @@ const StaffReport = () => {
     },
     {
       id: 'actions',
-      header: t('staff.actions'),
+      header: t('events.actions'),
       cell: ({ row }) => (
         <Button
           variant="ghost"
@@ -311,7 +311,7 @@ const StaffReport = () => {
           className="h-8 w-8 p-0"
         >
           <Eye className="h-4 w-4" />
-          <span className="sr-only">{t('staff.viewDetails')}</span>
+          <span className="sr-only">{t('events.viewDetails')}</span>
         </Button>
       ),
     },
@@ -353,25 +353,25 @@ const StaffReport = () => {
             data={filteredStaff}
             columns={[
               { key: 'staff_code', label: t('staff.staffCode') || 'Staff Code' },
-              { key: 'employee_id', label: t('staff.employeeId') || 'Employee ID' },
-              { key: 'status', label: t('staff.status') || 'Status' },
-              { key: 'full_name', label: t('staff.fullName') || 'Full Name' },
-              { key: 'first_name', label: t('staff.firstName') || 'First Name' },
-              { key: 'father_name', label: t('staff.fatherName') || 'Father Name' },
+              { key: 'employee_id', label: t('search.employeeId') || 'Employee ID' },
+              { key: 'status', label: t('events.status') || 'Status' },
+              { key: 'full_name', label: t('userManagement.fullName') || 'Full Name' },
+              { key: 'first_name', label: t('events.firstName') || 'First Name' },
+              { key: 'father_name', label: t('examReports.fatherName') || 'Father Name' },
               { key: 'grandfather_name', label: t('staff.grandfatherName') || 'Grandfather Name' },
               { key: 'tazkira_number', label: t('staff.tazkiraNumber') || 'Tazkira Number' },
               { key: 'birth_date', label: t('staff.birthDate') || 'Birth Date' },
               { key: 'birth_year', label: t('staff.birthYear') || 'Birth Year' },
               { key: 'phone_number', label: t('staff.phoneNumber') || 'Phone Number' },
-              { key: 'email', label: t('staff.email') || 'Email' },
+              { key: 'email', label: t('events.email') || 'Email' },
               { key: 'home_address', label: t('staff.homeAddress') || 'Home Address' },
               { key: 'staff_type', label: t('staff.staffType') || 'Staff Type' },
-              { key: 'position', label: t('staff.position') || 'Position' },
+              { key: 'position', label: t('search.position') || 'Position' },
               { key: 'duty', label: t('staff.duty') || 'Duty' },
               { key: 'salary', label: t('staff.salary') || 'Salary', type: 'numeric' },
               { key: 'teaching_section', label: t('staff.teachingSection') || 'Teaching Section' },
               { key: 'school', label: t('staff.school') || 'School' },
-              { key: 'organization', label: t('staff.organization') || 'Organization' },
+              { key: 'organization', label: t('students.organization') || 'Organization' },
               { key: 'origin_location', label: t('staff.originLocation') || 'Origin Location' },
               { key: 'current_location', label: t('staff.currentLocation') || 'Current Location' },
               { key: 'religious_education', label: t('staff.religiousEducation') || 'Religious Education' },
@@ -382,7 +382,7 @@ const StaffReport = () => {
               { key: 'modern_institution', label: t('staff.modernInstitution') || 'Modern Institution' },
               { key: 'modern_graduation_year', label: t('staff.modernGraduationYear') || 'Modern Graduation Year' },
               { key: 'modern_department', label: t('staff.modernDepartment') || 'Modern Department' },
-              { key: 'notes', label: t('staff.notes') || 'Notes' },
+              { key: 'notes', label: t('events.notes') || 'Notes' },
             ]}
             reportKey="staff_list"
             title={t('staff.reportTitle') || 'Staff Report'}
@@ -392,7 +392,7 @@ const StaffReport = () => {
             templateType="staff_list"
             disabled={filteredStaff.length === 0 || isLoading}
             errorNoSchool={t('staff.schoolRequiredForExport') || 'A school is required to export the report.'}
-            errorNoData={t('staff.noDataToExport') || 'No data to export'}
+            errorNoData={t('events.noDataToExport') || 'No data to export'}
             successPdf={t('staff.reportExportedAs') || 'PDF report generated successfully'}
             successExcel={t('staff.reportExportedAs') || 'Excel report generated successfully'}
             errorPdf={t('staff.failedToExport') || 'Failed to generate PDF report'}
@@ -401,7 +401,7 @@ const StaffReport = () => {
         }
       />
 
-      <FilterPanel title={t('staff.filters')}>
+      <FilterPanel title={t('events.filters')}>
         <div className="grid gap-4 md:grid-cols-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -423,10 +423,10 @@ const StaffReport = () => {
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder={t('staff.allSchools')} />
+              <SelectValue placeholder={t('leave.allSchools')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('staff.allSchools')}</SelectItem>
+              <SelectItem value="all">{t('leave.allSchools')}</SelectItem>
               {schools?.map((school) => (
                 <SelectItem key={school.id} value={school.id}>
                   {school.schoolName}
@@ -442,10 +442,10 @@ const StaffReport = () => {
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder={t('staff.allStatus')} />
+              <SelectValue placeholder={t('userManagement.allStatus')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('staff.allStatus')}</SelectItem>
+              <SelectItem value="all">{t('userManagement.allStatus')}</SelectItem>
               <SelectItem value="active">{t('staff.statusActive')}</SelectItem>
               <SelectItem value="inactive">{t('staff.statusInactive')}</SelectItem>
               <SelectItem value="on_leave">{t('staff.statusOnLeave')}</SelectItem>
@@ -478,7 +478,7 @@ const StaffReport = () => {
       {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('staff.management')} ({filteredStaff.length})</CardTitle>
+          <CardTitle>{t('students.management')} ({filteredStaff.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -588,10 +588,10 @@ const StaffReport = () => {
                     <SheetTitle className="text-2xl mb-1">{selectedStaff.fullName}</SheetTitle>
                     <SheetDescription className="text-base">
                       {selectedStaff.staffCode && (
-                        <span className="font-mono font-medium">{t('staff.code')}: {selectedStaff.staffCode}</span>
+                        <span className="font-mono font-medium">{t('events.code')}: {selectedStaff.staffCode}</span>
                       )}
                       {selectedStaff.staffCode && selectedStaff.employeeId && ' • '}
-                      {selectedStaff.employeeId && `${t('staff.employeeId')}: ${selectedStaff.employeeId}`}
+                      {selectedStaff.employeeId && `${t('search.employeeId')}: ${selectedStaff.employeeId}`}
                     </SheetDescription>
                   </div>
                 </div>
@@ -609,15 +609,15 @@ const StaffReport = () => {
                         </div>
                       )}
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">{t('staff.employeeId')}</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('search.employeeId')}</span>
                         <span className="text-sm font-mono font-medium">{selectedStaff.employeeId || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">{t('staff.fullName')}</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('userManagement.fullName')}</span>
                         <span className="text-sm font-medium">{selectedStaff.fullName}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">{t('staff.fatherName')}</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('examReports.fatherName')}</span>
                         <span className="text-sm">{selectedStaff.fatherName || '—'}</span>
                       </div>
                       {selectedStaff.grandfatherName && (
@@ -643,7 +643,7 @@ const StaffReport = () => {
                         </div>
                       )}
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">{t('staff.status')}</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('events.status')}</span>
                         <Badge variant={statusBadgeVariant(selectedStaff.status)} className="capitalize">
                           {formatStatus(selectedStaff.status)}
                         </Badge>
@@ -660,7 +660,7 @@ const StaffReport = () => {
                         <span className="text-sm">{selectedStaff.phoneNumber || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">{t('staff.email')}</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('events.email')}</span>
                         <span className="text-sm">{selectedStaff.email || '—'}</span>
                       </div>
                       <div className="flex items-start justify-between py-2 border-b">
@@ -777,7 +777,7 @@ const StaffReport = () => {
                       <h3 className="text-lg font-semibold">{t('staff.additionalInformation')}</h3>
                       <div className="space-y-3">
                         <div className="flex items-start justify-between py-2 border-b">
-                          <span className="text-sm font-medium text-muted-foreground">{t('staff.notes')}</span>
+                          <span className="text-sm font-medium text-muted-foreground">{t('events.notes')}</span>
                           <span className="text-sm text-right max-w-[60%]">{selectedStaff.notes}</span>
                         </div>
                       </div>
