@@ -72,6 +72,8 @@ import {
   StudentAdmissions,
   StudentReport,
   StudentAdmissionsReport,
+  StudentHistoryPage,
+  StudentHistoryListPage,
   NotificationsPage,
   ShortTermCourses,
   CourseStudents,
@@ -186,6 +188,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SchoolProvider } from "@/contexts/SchoolContext";
 import { AuthProvider } from "@/hooks/useAuth";
+import { appCoreTour } from "@/onboarding";
+import { TourProviderWrapper } from "@/components/TourProviderWrapper";
+import { RouteToursHandler } from "@/components/RouteToursHandler";
 
 // Optimized QueryClient with better caching and performance settings
 const queryClient = new QueryClient({
@@ -863,6 +868,21 @@ const App = () => (
                           <PhoneBook />
                         </Suspense>
                       </AnyPermissionRoute>
+                    } />
+                    {/* Student History routes must come BEFORE /students route to avoid route conflicts */}
+                    <Route path="/students/history" element={
+                      <PermissionRoute permission="students.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <StudentHistoryListPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/students/:studentId/history" element={
+                      <PermissionRoute permission="students.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <StudentHistoryPage />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/students" element={
                       <PermissionRoute permission="students.read">

@@ -3147,7 +3147,8 @@ export const ps: TranslationKeys = {
       operations: 'عملیاتي'
     },
     settings: 'تنظیمات',
-    shortTermCourses: 'لنډمهاله دورې/ کورسونه',
+    schoolsManagement: 'د ښوونځیو مدیریت',
+    shortTermCourses: 'لنډمهاله کورسونه',
     staff: 'کارکوونکي',
     staffManagement: 'د کارکوونکو مدیریت',
     staffReports: 'د کارکوونکو راپورونه',

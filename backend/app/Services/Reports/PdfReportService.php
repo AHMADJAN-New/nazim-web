@@ -56,8 +56,17 @@ class PdfReportService
         $viewName = "reports.{$templateName}";
 
         // Check if view exists
-        if (!View::exists($viewName)) {
+        $viewExists = View::exists($viewName);
+        if (!$viewExists) {
+            \Log::warning("Template not found: {$viewName}, falling back to table_a4_portrait", [
+                'requested_template' => $templateName,
+                'view_name' => $viewName,
+            ]);
             $viewName = 'reports.table_a4_portrait';
+        } else {
+            \Log::debug("Using template: {$viewName}", [
+                'requested_template' => $templateName,
+            ]);
         }
 
         // Log font settings being passed to template
@@ -65,6 +74,7 @@ class PdfReportService
             'font_family' => $context['FONT_FAMILY'] ?? 'N/A',
             'font_size' => $context['FONT_SIZE'] ?? 'N/A',
             'template_name' => $viewName,
+            'template_found' => $viewExists,
         ]);
 
         $html = View::make($viewName, $context)->render();

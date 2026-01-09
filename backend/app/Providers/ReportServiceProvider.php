@@ -8,6 +8,7 @@ use App\Services\Reports\ExcelReportService;
 use App\Services\Reports\PdfReportService;
 use App\Services\Reports\ReportService;
 use App\Services\Storage\FileStorageService;
+use App\Services\StudentHistoryService;
 use Illuminate\Support\ServiceProvider;
 
 class ReportServiceProvider extends ServiceProvider
@@ -47,7 +48,8 @@ class ReportServiceProvider extends ServiceProvider
                 $app->make(BrandingCacheService::class),
                 $app->make(PdfReportService::class),
                 $app->make(ExcelReportService::class),
-                $app->make(DateConversionService::class)
+                $app->make(DateConversionService::class),
+                $app->make(StudentHistoryService::class)
             );
         });
     }

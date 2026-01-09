@@ -406,6 +406,11 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::get('/students/{student}/history/{section}', [StudentHistoryController::class, 'section']);
         Route::post('/students/{student}/history/export/pdf', [StudentHistoryController::class, 'exportPdf']);
         Route::post('/students/{student}/history/export/excel', [StudentHistoryController::class, 'exportExcel']);
+        
+        // Preview route for student history template (development only)
+        // Supports token in query parameter for easy browser testing
+        Route::get('/reports/student-history/preview', [StudentHistoryController::class, 'previewTemplate'])
+            ->middleware(['token.from.query', 'auth:sanctum', 'organization', 'school.context']);
 
         // Student Admissions (core feature)
         Route::get('/student-admissions/stats', [StudentAdmissionController::class, 'stats']);

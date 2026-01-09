@@ -515,7 +515,7 @@ export function SchoolsManagement() {
                                 onClick={() => handleOpenDialog(school.id)}
                                 title={t('events.edit')}
                                 className="flex-shrink-0"
-                                aria-label={t('events.edit')}
+                                aria-label={t('schools.edit')}
                                 data-tour="schools-edit-button"
                               >
                                 <Pencil className="h-4 w-4" />

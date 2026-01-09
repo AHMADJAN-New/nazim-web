@@ -34,6 +34,7 @@ import { useNotificationCount } from "@/hooks/useNotifications";
 import { useSchools } from "@/hooks/useSchools";
 import { authApi, apiClient } from "@/lib/api/client";
 import { showToast } from "@/lib/toast";
+import { useTour } from "@/onboarding";
 
 interface UserProfile {
   full_name: string;
@@ -63,6 +64,9 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const queryClient = useQueryClient();
   const { data: schools = [] } = useSchools(authProfile?.organization_id ?? undefined);
   const { selectedSchoolId, setSelectedSchoolId, hasSchoolsAccessAll } = useSchoolContext();
+  
+  // Tour system
+  const { startTour, isTourCompleted } = useTour();
 
   // Check if user is platform admin (for main app context)
   // Only check if we're NOT on platform routes (we're in main app)
@@ -300,7 +304,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
         </div>
 
         {/* Center Section - Search */}
-        <div className="order-3 w-full sm:order-none sm:flex-1 sm:min-w-[280px] lg:max-w-xl" ref={searchContainerRef}>
+        <div className="order-3 w-full sm:order-none sm:flex-1 sm:min-w-[280px] lg:max-w-xl" ref={searchContainerRef} data-tour="search-container">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
@@ -312,6 +316,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               onFocus={handleSearchFocus}
               onBlur={handleSearchBlur}
               onClick={handleSearchClick}
+              data-tour="search-input"
               onKeyDown={(e) => {
                 // Allow Ctrl+K / Cmd+K to work in search input
                 if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
@@ -510,6 +515,10 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               <DropdownMenuItem onClick={() => navigate('/settings/user')}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => startTour('appCore')}>
+                <Play className="mr-2 h-4 w-4" />
+                <span>{t('onboarding.actions.takeTour') || 'Take App Tour'}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={signOut} className="text-destructive">

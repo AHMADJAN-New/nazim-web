@@ -228,7 +228,7 @@ export function StudentDisciplineRecordsDialog({
                     <TableHead>{t('students.incidentType') || 'Type'}</TableHead>
                     <TableHead>{t('students.severity') || 'Severity'}</TableHead>
                     <TableHead>{t('students.status.label') || 'Status'}</TableHead>
-                    <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
+                    <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
