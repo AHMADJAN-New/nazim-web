@@ -68,3 +68,4 @@ export function hasActiveTourState(): boolean {
   return state.timestamp > fiveMinutesAgo;
 }
 
+
