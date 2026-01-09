@@ -1416,7 +1416,7 @@ export const ps: TranslationKeys = {
     subject: 'مضمون',
     subjectsForClass: 'د ټاکل شوي ټولګي لپاره مضامین ښودل کیږي',
     templateFile: 'د قالب فایل (اختیاري)',
-    templateFileHelp: 'یو دودیز قالب فایل غوره کړئ یا د دې ژبې لپاره اصلي قالب وکاروئ',
+    templateFileHelp: 'یو قالب د فایل غوره کړئ یا د دې ژبې لپاره اصلي قالب وکاروئ',
     templateTitle: 'سرلیک',
     titlePlaceholder: 'مثلاً: د ریاضي وروستۍ ازموینې پاڼه',
     totalMarks: 'ټولې نمرې',
@@ -1803,7 +1803,10 @@ export const ps: TranslationKeys = {
     editTimeSlot: 'د وخت ځای سم کړئ',
     editTimeSlotDescription: 'د ازموینې جلسې جزئیات تازه کړئ',
     deleteTimeSlotConfirm: 'د وخت ځای حذف کړئ',
-    deleteTimeSlotConfirmMessage: 'ایا تاسو ډاډه یاست چې غواړئ د وخت دا ځای حذف کړئ؟'
+    deleteTimeSlotConfirmMessage: 'ایا تاسو ډاډه یاست چې غواړئ د وخت دا ځای حذف کړئ؟',
+    results: 'نتایج',
+    students: 'زده کونکي',
+    total: 'مجموعه'
   },
   examTypes: {
     isActive: 'فعال',
@@ -2141,7 +2144,7 @@ export const ps: TranslationKeys = {
     viewAllAccounts: 'ټول حسابونه وګورئ',
     viewAllIncome: 'ټول عواید وګورئ',
     voucherNoPlaceholder: 'د بل یا واوچر شمېره...',
-    fees: 'fees',
+    fees: 'فیس',
     financeDocuments: 'مالي اسناد',
     manageFinanceDocuments: 'د مالي اسنادو مدیریت',
     uploadDocument: 'سند اپلوډ کړئ',
@@ -2336,7 +2339,7 @@ export const ps: TranslationKeys = {
   guards: {
     accessDenied: 'لاسرسی رد شو',
     checkingPermissions: 'د اجازې چک کول...',
-    loading: 'بارېږي...',
+    loading: 'ترلاسه کیږي....',
     organizationRequiredMessage: 'ستاسو حساب باید یوې ادارې ته ځانګړی شوی وي. مهرباني وکړئ له مدیر سره اړیکه ونیسئ.',
     requiredPermission: 'اړینه اجازه:'
   },
@@ -2684,7 +2687,7 @@ export const ps: TranslationKeys = {
     footer: {
       careers: 'دندې',
       company: 'شرکت',
-      copyright: '© 2026 ناظم د ښوونځي مدیریت سیسټم. ټول حقونه خوندي دي.',
+      copyright: '© 2026 ناظم سیسټم. ټول حقونه خوندي دي.',
       features: 'ځانګړتیاوې',
       pricing: 'بیې',
       product: 'محصول',
@@ -2693,7 +2696,7 @@ export const ps: TranslationKeys = {
       tagline: 'د غوره زده کړې پایلو لپاره تعلیمي ادارې په عصري ټیکنالوژۍ سمبالول.'
     },
     hero: {
-      badge: '🚀 د نړۍ د ۵۰۰+ ښوونځیو لخوا باوري',
+      badge: 'په مختلفو مدارسو کې استفاده شوی',
       startFreeTrial: 'وړیا ازمایښت پیل کړئ',
       subtitle: 'زموږ د هراړخیز اسلامي ښوونځي مدیریت پلیټفارم سره عملیات ساده کړئ، د زده کړې پایلې ښه کړئ او د ټولنې اړیکې پیاوړې کړئ.',
       title: 'خپل',
@@ -2716,7 +2719,7 @@ export const ps: TranslationKeys = {
       sentDescription: 'زموږ ټیم به ژر تر ژره تاسو سره اړیکه ونیسي.'
     },
     pricing: {
-      defaultDescription: 'د عصري ښوونځیو لپاره ډیزاین شوی انعطاف منونکی پلان.',
+      defaultDescription: 'د عصري مدارسو او مکاتبو لپاره ډیزاین شوی انعطاف منونکی پلان.',
       enterprise: {
         description: 'د لویو ادارو لپاره د نامحدود زده کوونکو سره',
         name: 'سوداګریز (Enterprise)'
@@ -3245,7 +3248,17 @@ export const ps: TranslationKeys = {
     nav: {
       reports: 'reports'
     },
-    schoolsManagement: 'schools Management'
+    schoolsManagement: 'schools Management',
+    certificates: {
+      issued: 'صادر شوې شهادتنامه',
+      templates: 'د شهادت نامې قالب'
+    },
+    teacherSubjectAssignments: {
+      title: 'استادانو ته د مظامینو سپارل'
+    },
+    timetable: {
+      title: 'تقسیم اوقات'
+    }
   },
   noArticleFound: 'د دې پاڼې لپاره د مرستې مقاله ونه موندل شوه. د مرستې مرکز خلاصیږي...',
   noDocuments: 'اسناد نشته',
@@ -3298,7 +3311,7 @@ export const ps: TranslationKeys = {
     showing: 'ښودل کیږي',
     to: 'تر',
     total: 'ټول',
-    filtered: 'filtered'
+    filtered: 'فلټر'
   },
   permissions: {
     accessDenied: 'لاسرسی رد شو',
@@ -4217,11 +4230,11 @@ export const ps: TranslationKeys = {
     zaminPhone: 'د ضامن ټیلیفون',
     zaminTazkira: 'د ضامن تذکره',
     isOrphan: 'is Orphan',
-    province: 'province',
-    district: 'district',
-    village: 'village',
-    guardianRelation: 'guardian Relation',
-    studentCode: 'student Code',
+    province: 'ولایت',
+    district: 'ولسوالي',
+    village: 'کلی',
+    guardianRelation: 'له سرپرست سره تعلق',
+    studentCode: 'کوډ',
     validate: 'validate'
   },
   studentHistory: {
@@ -4314,46 +4327,46 @@ export const ps: TranslationKeys = {
     failed: 'ناکامه',
     noGraduationRecords: 'د فراغت کوم ریکارډ ونه موندل شو',
     searchTimeline: 'په مهالوېش کې لټون...',
-    noAdmissions: 'no Admissions',
-    boarder: 'boarder',
-    monthlyBreakdown: 'monthly Breakdown',
-    month: 'month',
+    noAdmissions: 'داخله نشته',
+    boarder: 'لیلیه',
+    monthlyBreakdown: 'میاشتنی',
+    month: 'میاشت',
     rate: 'rate',
     recentRecords: 'recent Records',
-    note: 'note',
-    completionRate: 'completion Rate',
-    courseHistory: 'course History',
-    courseName: 'course Name',
+    note: 'نوټ',
+    completionRate: 'د بشپړېدو درجه',
+    courseHistory: 'د لنډمهاله کورس/ دورې تاریخچه',
+    courseName: 'د دورې/ کورس نوم',
     registrationDate: 'registration Date',
-    certificate: 'certificate',
-    fee: 'fee',
-    completedOn: 'completed On',
-    unknownExam: 'unknown Exam',
+    certificate: 'شهادت نامه',
+    fee: 'فیس',
+    completedOn: 'په بشپړ شوی',
+    unknownExam: 'نامعلوم امتحان',
     subject: 'subject',
-    obtained: 'obtained',
-    maxMarks: 'max Marks',
+    obtained: 'ترلاسه شوی',
+    maxMarks: 'زیاتې نمرې',
     percentage: 'percentage',
     remarks: 'remarks',
     overallProgress: 'overall Progress',
     paymentHistory: 'payment History',
-    feeType: 'fee Type',
-    amount: 'amount',
-    method: 'method',
+    feeType: 'د فیس ډول',
+    amount: 'مقدار',
+    method: 'طریقه',
     reference: 'reference',
     receivedBy: 'received By',
-    noFeeRecords: 'no Fee Records',
-    unknownBatch: 'unknown Batch',
+    noFeeRecords: 'هیڅ د فیس ریکارډ نشته',
+    unknownBatch: 'نامعلوم بیچ',
     recordedOn: 'recorded On',
-    noChartData: 'no Chart Data',
-    attendanceTrend: 'attendance Trend',
-    examPerformance: 'exam Performance',
+    noChartData: 'د چارټ ریکارډونه نشته',
+    attendanceTrend: 'د حاضري کچه',
+    examPerformance: 'په امتحان کې فعالیت',
     subjectAveragePerformance: 'subject Average Performance',
-    averagePercentage: 'average Percentage',
+    averagePercentage: 'اوسط فیصدي',
     subjectPerformanceOverTime: 'subject Performance Over Time',
     printedOn: 'printed On',
-    noIdCardRecords: 'no Id Card Records',
-    author: 'author',
-    noEventsFound: 'no Events Found'
+    noIdCardRecords: 'هیڅ کارت نشته',
+    author: 'جوړونکی',
+    noEventsFound: 'هیڅ غونډه ونه موندل شوه'
   },
   subscription: {
     accountBlocked: 'حساب بند شوی',
@@ -4559,9 +4572,9 @@ export const ps: TranslationKeys = {
     teacherView: 'د استاد لید',
     title: 'د مهالویش جوړول',
     unscheduledNotice: 'دندې مهالویش نشوې',
-    period: 'period',
-    time: 'time',
-    subject: 'subject'
+    period: 'ساعت',
+    time: 'وخت',
+    subject: 'مضمون'
   },
   title: 'پاڼه ونه موندل شوه',
   toast: {
@@ -5080,7 +5093,7 @@ export const ps: TranslationKeys = {
     watermarkDeleteFailed: 'د واټر مارک پاکول ناکام شول',
     watermarkUpdated: 'واټر مارک تازه شو',
     watermarkUpdateFailed: 'د واټر مارک تازه کول ناکام شول',
-    permissionsUpdated: 'permissions Updated',
+    permissionsUpdated: 'اجازې تازه شوې',
     discipline: {
       created: 'created',
       updated: 'updated',
