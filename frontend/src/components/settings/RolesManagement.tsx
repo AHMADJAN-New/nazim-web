@@ -213,7 +213,7 @@ export function RolesManagement() {
 
           {/* Roles Table */}
           {rolesLoading ? (
-            <div className="text-center py-8 text-muted-foreground">{t('events.loading')}</div>
+            <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>
           ) : (
             <div className="rounded-md border overflow-hidden">
               <div className="overflow-x-auto">

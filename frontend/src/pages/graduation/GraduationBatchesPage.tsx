@@ -426,7 +426,7 @@ export default function GraduationBatchesPage() {
     const filters: string[] = [];
     if (schoolId) {
       const school = schools.find(s => s.id === schoolId);
-      if (school) filters.push(`${t('events.schoolManagement') || 'School'}: ${school.schoolName}`);
+      if (school) filters.push(`${t('common.schoolManagement') || 'School'}: ${school.schoolName}`);
     }
     if (academicYearId) {
       const year = academicYears.find(ay => ay.id === academicYearId);
@@ -700,7 +700,7 @@ export default function GraduationBatchesPage() {
             <div className="text-center space-y-4">
               <GraduationCap className="h-12 w-12 mx-auto text-muted-foreground" />
               <div>
-                <h3 className="text-lg font-semibold">{t('events.selectSchool') || 'Select a School'}</h3>
+                <h3 className="text-lg font-semibold">{t('common.selectSchool') || 'Select a School'}</h3>
                 <p className="text-sm text-muted-foreground mt-2">
                   {t('toast.graduation.selectSchoolDescription') || 'Please select a school from the filters above to view graduation batches'}
                 </p>
@@ -1196,10 +1196,10 @@ export default function GraduationBatchesPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <Label>{t('events.schoolManagement')}</Label>
+              <Label>{t('common.schoolManagement')}</Label>
               <Select value={schoolId || ''} onValueChange={(val) => setSchoolId(val || undefined)}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('events.selectSchool')} />
+                  <SelectValue placeholder={t('common.selectSchool')} />
                 </SelectTrigger>
                 <SelectContent>
                   {schools.map((school) => (
@@ -1271,7 +1271,7 @@ export default function GraduationBatchesPage() {
       {isLoading ? (
         <Card>
           <CardContent className="pt-6">
-            <p>{t('events.loading')}</p>
+            <p>{t('common.loading')}</p>
           </CardContent>
         </Card>
       ) : groupedBatches.length === 0 ? (

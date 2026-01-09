@@ -918,7 +918,7 @@ export function IdCardLayoutEditor({
                       <>
                         {!currentImageLoaded && currentImageUrl && (
                           <div className="absolute inset-0 flex items-center justify-center z-0">
-                            <p className="text-muted-foreground">{t('events.loading')}</p>
+                            <p className="text-muted-foreground">{t('common.loading')}</p>
                           </div>
                         )}
                         {currentImageUrl && (
@@ -1501,7 +1501,7 @@ export function IdCardLayoutEditor({
                       <>
                         {!currentImageLoaded && currentImageUrl && (
                           <div className="absolute inset-0 flex items-center justify-center z-0">
-                            <p className="text-muted-foreground">{t('events.loading')}</p>
+                            <p className="text-muted-foreground">{t('common.loading')}</p>
                           </div>
                         )}
                         {currentImageUrl && (

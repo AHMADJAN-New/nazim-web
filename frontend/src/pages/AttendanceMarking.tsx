@@ -399,7 +399,7 @@ export default function AttendanceMarking() {
                   <CommandList>
                     <CommandEmpty>
                       {sessionsLoading 
-                        ? (t('events.loading') || 'Loading...')
+                        ? (t('common.loading') || 'Loading...')
                         : (t('attendancePage.noSessions') || 'No sessions available')}
                     </CommandEmpty>
                     <CommandGroup>

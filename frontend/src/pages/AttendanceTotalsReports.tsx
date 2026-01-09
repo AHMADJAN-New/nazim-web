@@ -469,7 +469,7 @@ export default function AttendanceTotalsReports() {
 
             {isLoading && (
                 <div className="flex items-center justify-center py-16">
-                    <LoadingSpinner text={t('events.loading') || 'Loading attendance report...'} />
+                    <LoadingSpinner text={t('common.loading') || 'Loading attendance report...'} />
                 </div>
             )}
 

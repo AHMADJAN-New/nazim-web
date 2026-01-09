@@ -374,7 +374,7 @@ export default function IdCardAssignment() {
     }
     if (schoolId) {
       const school = schools.find(s => s.id === schoolId);
-      if (school) filters.push(`${t('events.schoolManagement') || 'School'}: ${school.schoolName}`);
+      if (school) filters.push(`${t('common.schoolManagement') || 'School'}: ${school.schoolName}`);
     }
     if (classId) {
       const cls = classes.find(c => c.id === classId);
@@ -801,7 +801,7 @@ export default function IdCardAssignment() {
                 </CardHeader>
                 <CardContent>
               {cardsLoading ? (
-                <div className="text-center py-8">{t('events.loading') || 'Loading...'}</div>
+                <div className="text-center py-8">{t('common.loading') || 'Loading...'}</div>
               ) : (
                 <Tabs defaultValue="all" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">

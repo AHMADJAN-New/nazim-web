@@ -50,7 +50,7 @@ export default function LeaveRequestsDashboard() {
   }, [leaveRequests]);
 
   if (isLoading) {
-    return <LoadingSpinner text={t('events.loading') || 'Loading leave requests data...'} />;
+    return <LoadingSpinner text={t('common.loading') || 'Loading leave requests data...'} />;
   }
 
   return (

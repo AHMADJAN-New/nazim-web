@@ -144,7 +144,7 @@ export function GlobalSearchCommand({
       <CommandList>
         {isLoading && (
           <div className="py-6 text-center text-sm text-muted-foreground">
-            {t('events.loading')}...
+            {t('common.loading')}...
           </div>
         )}
         {!isLoading && !hasResults && localQuery.trim().length >= 2 && (

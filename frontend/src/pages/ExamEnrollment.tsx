@@ -301,14 +301,14 @@ function ExamClassCard({
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder={
                         subjectsLoading 
-                          ? (t('events.loading') || 'Loading...')
+                          ? (t('common.loading') || 'Loading...')
                           : (t('exams.selectSubject') || 'Select subject')
                       } />
                     </SelectTrigger>
                     <SelectContent>
                       {subjectsLoading ? (
                         <div className="p-2 text-sm text-muted-foreground text-center">
-                          {t('events.loading') || 'Loading subjects...'}
+                          {t('common.loading') || 'Loading subjects...'}
                         </div>
                       ) : availableSubjectOptions.length === 0 ? (
                         <div className="p-2 text-sm text-muted-foreground text-center">
@@ -976,14 +976,14 @@ export function ExamEnrollment() {
                             <SelectTrigger className="mt-1">
                               <SelectValue placeholder={
                                 classesLoading || classesLoading2
-                                  ? (t('events.loading') || 'Loading...')
+                                  ? (t('common.loading') || 'Loading...')
                                   : (t('exams.selectClassToAssign') || 'Select a class to assign')
                               } />
                             </SelectTrigger>
                             <SelectContent>
                               {classesLoading || classesLoading2 ? (
                                 <div className="p-2 text-sm text-muted-foreground text-center">
-                                  {t('events.loading') || 'Loading classes...'}
+                                  {t('common.loading') || 'Loading classes...'}
                                 </div>
                               ) : unassignedClasses.length === 0 ? (
                                 <div className="p-2 text-sm text-muted-foreground text-center">

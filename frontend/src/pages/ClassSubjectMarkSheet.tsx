@@ -962,7 +962,7 @@ export default function ClassSubjectMarkSheet() {
                   searchPlaceholder={t('events.search') || 'Search...'}
                   emptyText={
                     selectedExamId
-                      ? (classesLoading ? t('events.loading') || 'Loading...' : t('classes.noClasses'))
+                      ? (classesLoading ? t('common.loading') || 'Loading...' : t('classes.noClasses'))
                       : t('examReports.selectExamFirst') || 'Select an exam first'
                   }
                   disabled={!selectedExamId || classesLoading}
@@ -982,7 +982,7 @@ export default function ClassSubjectMarkSheet() {
                   searchPlaceholder={t('events.search') || 'Search...'}
                   emptyText={
                     selectedClassId
-                      ? (subjectsLoading ? t('events.loading') || 'Loading...' : t('subjects.noSubjects'))
+                      ? (subjectsLoading ? t('common.loading') || 'Loading...' : t('subjects.noSubjects'))
                       : t('examReports.selectClassPrompt') || 'Select a class first'
                   }
                   disabled={!selectedClassId || subjectsLoading}

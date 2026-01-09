@@ -394,7 +394,7 @@ export function ExamStudentEnrollment() {
                     <SelectContent>
                       {examsLoading ? (
                         <div className="p-2 text-sm text-muted-foreground text-center">
-                          {t('events.loading') || 'Loading...'}
+                          {t('common.loading') || 'Loading...'}
                         </div>
                       ) : !exams || exams.length === 0 ? (
                         <div className="p-2 text-sm text-muted-foreground text-center">
@@ -429,7 +429,7 @@ export function ExamStudentEnrollment() {
                       <SelectContent>
                         {classesLoading ? (
                           <div className="p-2 text-sm text-muted-foreground text-center">
-                            {t('events.loading') || 'Loading...'}
+                            {t('common.loading') || 'Loading...'}
                           </div>
                         ) : !examClasses || examClasses.length === 0 ? (
                           <div className="p-2 text-sm text-muted-foreground text-center">
@@ -713,14 +713,14 @@ export function ExamStudentEnrollment() {
                           <SelectTrigger className="mt-1">
                             <SelectValue placeholder={
                               admissionsLoading
-                                ? (t('events.loading') || 'Loading...')
+                                ? (t('common.loading') || 'Loading...')
                                 : (t('exams.selectStudentToEnroll') || 'Select a student to enroll')
                             } />
                           </SelectTrigger>
                           <SelectContent>
                             {admissionsLoading ? (
                               <div className="p-2 text-sm text-muted-foreground text-center">
-                                {t('events.loading') || 'Loading students...'}
+                                {t('common.loading') || 'Loading students...'}
                               </div>
                             ) : availableStudents.length === 0 ? (
                               <div className="p-2 text-sm text-muted-foreground text-center">

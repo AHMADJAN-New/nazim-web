@@ -877,7 +877,7 @@ export function StudentAdmissions() {
                         disabled={!isEdit && !canCreateAdmission}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={t('events.selectSchool') || 'Select school'} />
+                          <SelectValue placeholder={t('common.selectSchool') || 'Select school'} />
                         </SelectTrigger>
                         <SelectContent>
                           {schools?.map((school) => (

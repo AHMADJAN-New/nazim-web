@@ -390,7 +390,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
             >
               <SelectTrigger className="hidden md:flex w-[200px]">
                 <School className="h-4 w-4 mr-2" />
-                <SelectValue placeholder={t("events.selectSchool") || "Select School"} />
+                <SelectValue placeholder={t("common.selectSchool") || "Select School"} />
               </SelectTrigger>
               <SelectContent>
                 {schools.map((s) => (
@@ -416,7 +416,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t('events.selectLanguage')}</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('common.selectLanguage')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {languages.map((lang) => (
                 <DropdownMenuItem

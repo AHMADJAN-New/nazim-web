@@ -58,7 +58,7 @@ export default function AttendanceDashboard() {
   }, [attendanceSessions]);
 
   if (isLoading) {
-    return <LoadingSpinner text={t('events.loading') || 'Loading attendance data...'} />;
+    return <LoadingSpinner text={t('common.loading') || 'Loading attendance data...'} />;
   }
 
   return (

@@ -120,7 +120,7 @@ export default function GraduationDashboard() {
           title={t('toast.graduation.dashboard.title') || 'Graduation Dashboard'}
           icon={<Award className="h-5 w-5" />}
         />
-        <p className="p-4">{t('events.loading')}</p>
+        <p className="p-4">{t('common.loading')}</p>
       </div>
     );
   }
@@ -137,12 +137,12 @@ export default function GraduationDashboard() {
 
       {/* School Selector - Show if multiple schools or no school selected */}
       {schools.length > 1 && (
-        <FilterPanel title={t('events.schoolManagement') || 'School'}>
+        <FilterPanel title={t('common.schoolManagement') || 'School'}>
           <div className="space-y-2">
-            <Label>{t('events.schoolManagement') || 'School'}</Label>
+            <Label>{t('common.schoolManagement') || 'School'}</Label>
             <Select value={schoolId || ''} onValueChange={(val) => setSchoolId(val || undefined)}>
               <SelectTrigger>
-                <SelectValue placeholder={t('events.selectSchool') || 'Select School'} />
+                <SelectValue placeholder={t('common.selectSchool') || 'Select School'} />
               </SelectTrigger>
               <SelectContent>
                 {schools.map((school) => (

@@ -738,7 +738,7 @@ export default function FeeAssignmentsPage() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <p>{t('events.loading')}</p>
+                <p>{t('common.loading')}</p>
               ) : assignmentsByClass.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">{t('events.noData') || 'No data available'}</p>
               ) : (
@@ -855,7 +855,7 @@ export default function FeeAssignmentsPage() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <p>{t('events.loading')}</p>
+                <p>{t('common.loading')}</p>
               ) : assignments.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">{t('events.noData') || 'No data available'}</p>
               ) : (

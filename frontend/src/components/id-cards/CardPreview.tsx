@@ -442,7 +442,7 @@ export function CardPreview({
           {isGenerating ? (
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">{t('events.loading')}</p>
+              <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
             </div>
           ) : previewImage ? (
             <img

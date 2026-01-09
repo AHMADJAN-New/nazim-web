@@ -450,7 +450,7 @@ export default function FeeExceptionsPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p>{t('events.loading')}</p>
+            <p>{t('common.loading')}</p>
           ) : error ? (
             <p className="text-destructive text-center py-8">
               {t('events.error') || 'Error loading data'}: {error instanceof Error ? error.message : String(error)}

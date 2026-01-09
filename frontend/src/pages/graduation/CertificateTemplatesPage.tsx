@@ -134,7 +134,7 @@ export default function CertificateTemplatesPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p>{t('events.loading')}</p>
+            <p>{t('common.loading')}</p>
           ) : templates.length === 0 ? (
             <p className="text-muted-foreground">No templates yet</p>
           ) : (

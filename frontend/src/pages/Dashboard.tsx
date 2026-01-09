@@ -402,37 +402,37 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="finance" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('events.loading') || 'Loading finance dashboard...'} />}>
+            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading finance dashboard...'} />}>
               <FinanceDashboard />
             </Suspense>
           </TabsContent>
 
           <TabsContent value="assets" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('events.loading') || 'Loading assets dashboard...'} />}>
+            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading assets dashboard...'} />}>
               <AssetsDashboard />
             </Suspense>
           </TabsContent>
 
           <TabsContent value="library" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('events.loading') || 'Loading library dashboard...'} />}>
+            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading library dashboard...'} />}>
               <LibraryDashboard />
             </Suspense>
           </TabsContent>
 
           <TabsContent value="attendance" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('events.loading') || 'Loading attendance dashboard...'} />}>
+            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading attendance dashboard...'} />}>
               <AttendanceDashboard />
             </Suspense>
           </TabsContent>
 
           <TabsContent value="leave" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('events.loading') || 'Loading leave requests dashboard...'} />}>
+            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading leave requests dashboard...'} />}>
               <LeaveRequestsDashboard />
             </Suspense>
           </TabsContent>
 
           <TabsContent value="documents" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('events.loading') || 'Loading documents dashboard...'} />}>
+            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading documents dashboard...'} />}>
               <DmsDashboard />
             </Suspense>
           </TabsContent>

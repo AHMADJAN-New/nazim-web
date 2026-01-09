@@ -109,7 +109,7 @@ export default function GraduationBatchDetailPage() {
   if (!id) return null;
 
   if (isLoading) {
-    return <p className="p-4">{t('events.loading')}</p>;
+    return <p className="p-4">{t('common.loading')}</p>;
   }
 
   if (!batch) {

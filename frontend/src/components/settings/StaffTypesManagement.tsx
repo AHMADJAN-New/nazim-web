@@ -198,7 +198,7 @@ export function StaffTypesManagement() {
             <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
                 <Card>
                     <CardContent className="p-6">
-                        <div className="text-center">{t('events.loading')}</div>
+                        <div className="text-center">{t('common.loading')}</div>
                     </CardContent>
                 </Card>
             </div>

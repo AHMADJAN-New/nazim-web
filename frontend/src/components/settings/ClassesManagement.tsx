@@ -598,7 +598,7 @@ export function ClassesManagement() {
             <div className="container mx-auto p-6">
                 <Card>
                     <CardContent className="p-6">
-                        <div className="text-center">{t('events.loading')}</div>
+                        <div className="text-center">{t('common.loading')}</div>
                     </CardContent>
                 </Card>
             </div>
@@ -845,7 +845,7 @@ export function ClassesManagement() {
 
                             {selectedAcademicYearId ? (
                                 yearClassesLoading ? (
-                                    <div className="text-center py-8">{t('events.loading')}</div>
+                                    <div className="text-center py-8">{t('common.loading')}</div>
                                 ) : (
                                     <div className="overflow-x-auto -mx-4 md:mx-0">
                                         <div className="inline-block min-w-full align-middle px-4 md:px-0">

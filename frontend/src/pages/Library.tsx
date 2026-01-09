@@ -297,7 +297,7 @@ export default function Library() {
                   <TableBody>
                     {isLoading && (
                       <TableRow>
-                        <TableCell colSpan={4}>{t('events.loading')}</TableCell>
+                        <TableCell colSpan={4}>{t('common.loading')}</TableCell>
                       </TableRow>
                     )}
                     {!isLoading && (!Array.isArray(books) || books.length === 0) && (

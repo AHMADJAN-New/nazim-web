@@ -189,7 +189,7 @@ function LanguageSwitcherButton() {
 
 export const SmartSidebar = memo(function SmartSidebar() {
   const { state } = useSidebar();
-  const { t, isRTL } = useLanguage();
+  const { t, tUnsafe, isRTL } = useLanguage();
   const { user, profile } = useAuth();
   const { data: currentProfile } = useProfile();
   // Use profile role directly from useAuth (most reliable) instead of useUserRole
@@ -354,6 +354,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
   // Context-aware navigation items - computed with useMemo to avoid hook order issues
   const allNavigationItems = useMemo((): NavigationItem[] => {
+    // Type assertion helper to ensure category types are correct
+    const asNavItem = <T extends NavigationItem>(item: T): T => item;
     // CRITICAL: When subscription is blocked and user is NOT on subscription page,
     // show NO navigation items. This forces them to stay on the subscription page.
     if (subscriptionBlocked && !isOnSubscriptionPage) {
@@ -371,7 +373,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           icon: Calendar,
           badge: null,
           priority: 1,
-          category: 'operations',
+          category: 'operations' as NavigationCategory,
           iconColor: categoryColors.operations,
           children: [
             ...(hasEventsPermission ? [{
@@ -411,15 +413,15 @@ export const SmartSidebar = memo(function SmartSidebar() {
         icon: Home,
         badge: null,
         priority: 0.5,
-        category: 'core',
+        category: 'core' as NavigationCategory,
         iconColor: categoryColors.core,
       },
-      ...((hasStaffPermission || hasStaffReportsPermission) ? [{
+      ...((hasStaffPermission || hasStaffReportsPermission) ? [asNavItem({
         titleKey: "staffManagement",
         icon: Users,
         badge: null,
         priority: 2,
-        category: 'operations',
+        category: 'operations' as NavigationCategory,
         iconColor: categoryColors.operations,
         children: [
           ...(hasStaffPermission ? [{
@@ -435,23 +437,23 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: FileText,
           }] : []),
         ],
-      }] : []),
-      ...(hasPhoneBookPermission ? [{
+      })] : []),
+      ...(hasPhoneBookPermission ? [asNavItem({
         titleKey: "phoneBook",
         url: "/phonebook",
         icon: Phone,
         badge: null,
         priority: 2.1,
-        category: 'operations',
+        category: 'operations' as NavigationCategory,
         iconColor: categoryColors.operations,
-      }] : []),
-      ...(hasAttendanceNavigation ? [{
+      })] : []),
+      ...(hasAttendanceNavigation ? [asNavItem({
         titleKey: "attendance",
         url: "/attendance",
         icon: UserCheck,
         badge: null,
         priority: 2.2,
-        category: 'operations',
+        category: 'operations' as NavigationCategory,
         iconColor: categoryColors.operations,
         children: [
           ...(hasAttendanceSessionsPermission ? [{
@@ -479,13 +481,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: LucideIcons.BarChart3,
           }] : []),
         ],
-      }] : []),
-      ...(hasLeaveRequestsPermission ? [{
+      })] : []),
+      ...(hasLeaveRequestsPermission ? [asNavItem({
         titleKey: "leaveRequests",
         icon: Calendar,
         badge: null,
         priority: 2.3,
-        category: 'operations',
+        category: 'operations' as NavigationCategory,
         iconColor: categoryColors.operations,
         children: [
           {
@@ -501,13 +503,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: LucideIcons.BarChart3,
           },
         ],
-      }] : []),
-      ...((hasShortTermCoursesPermission || hasCourseStudentsPermission || hasCourseReportsPermission || hasCourseAttendancePermission || hasCertificateTemplatesPermission || hasCourseDocumentsPermission) ? [{
+      })] : []),
+      ...((hasShortTermCoursesPermission || hasCourseStudentsPermission || hasCourseReportsPermission || hasCourseAttendancePermission || hasCertificateTemplatesPermission || hasCourseDocumentsPermission) ? [asNavItem({
         titleKey: "shortTermCourses",
         icon: GraduationCap,
         badge: null,
         priority: 4.1,
-        category: 'academic',
+        category: 'academic' as NavigationCategory,
         iconColor: categoryColors.academic,
         children: [
           ...(hasShortTermCoursesPermission ? [{
@@ -559,13 +561,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: LucideIcons.BarChart3,
           }] : []),
         ],
-      }] : []),
-      ...((hasGraduationBatchesPermission || hasCertificateTemplatesPermission || hasIssuedCertificatesPermission) ? [{
+      })] : []),
+      ...((hasGraduationBatchesPermission || hasCertificateTemplatesPermission || hasIssuedCertificatesPermission) ? [asNavItem({
         titleKey: "graduationCertificates",
         icon: LucideIcons.GraduationCap,
         badge: null,
         priority: 4.2,
-        category: 'academic',
+        category: 'academic' as NavigationCategory,
         iconColor: categoryColors.academic,
         children: [
           ...(hasGraduationBatchesPermission ? [{
@@ -593,13 +595,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: LucideIcons.Printer,
           }] : []),
         ],
-      }] : []),
-      ...(hasIdCardsPermission || hasIdCardsExportPermission ? [{
+      })] : []),
+      ...(hasIdCardsPermission || hasIdCardsExportPermission ? [asNavItem({
         titleKey: "idCards",
         icon: LucideIcons.CreditCard,
         badge: null,
         priority: 4.3,
-        category: 'academic',
+        category: 'academic' as NavigationCategory,
         iconColor: categoryColors.academic,
         children: [
           ...(hasIdCardsPermission ? [{
@@ -621,13 +623,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: LucideIcons.Download,
           }] : []),
         ],
-      }] : []),
-      ...((hasStudentsPermission || hasStudentsImportPermission || hasStudentAdmissionsPermission || hasStudentReportsPermission || hasStudentAdmissionsReportPermission) ? [{
+      })] : []),
+      ...((hasStudentsPermission || hasStudentsImportPermission || hasStudentAdmissionsPermission || hasStudentReportsPermission || hasStudentAdmissionsReportPermission) ? [asNavItem({
         titleKey: "studentManagement",
         icon: GraduationCap,
         badge: null,
         priority: 4,
-        category: 'academic',
+        category: 'academic' as NavigationCategory,
         iconColor: categoryColors.academic,
         children: [
           ...(hasStudentsPermission ? [{
@@ -667,13 +669,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: LucideIcons.History,
           }] : []),
         ],
-      }] : []),
-      ...(hasExamsPermission ? [{
+      })] : []),
+      ...(hasExamsPermission ? [asNavItem({
         titleKey: "exams",
         icon: Trophy,
         badge: null,
         priority: 5,
-        category: 'academic',
+        category: 'academic' as NavigationCategory,
         iconColor: categoryColors.academic,
         children: [
           ...(hasExamsPermission ? [{
@@ -808,13 +810,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             ],
           }] : []),
         ],
-      }] : []),
-      ...(hasHostelPermission || hasBuildingsPermission || hasRoomsPermission ? [{
+      })] : []),
+      ...(hasHostelPermission || hasBuildingsPermission || hasRoomsPermission ? [asNavItem({
         titleKey: "hostel",
         icon: BedDouble,
         badge: null,
         priority: 6,
-        category: 'operations',
+        category: 'operations' as NavigationCategory,
         iconColor: categoryColors.operations,
         children: [
           ...(hasHostelPermission ? [{
@@ -840,13 +842,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: LucideIcons.BarChart3,
           }] : []),
         ],
-      }] : []),
-      ...(hasLibraryPermission ? [{
+      })] : []),
+      ...(hasLibraryPermission ? [asNavItem({
         titleKey: "library",
         icon: BookOpen,
         badge: null,
         priority: 7,
-        category: 'operations',
+        category: 'operations' as NavigationCategory,
         iconColor: categoryColors.operations,
         children: [
           ...(hasLibraryBooksPermission ? [{
@@ -880,13 +882,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: LucideIcons.BarChart3,
           }] : []),
         ],
-      }] : []),
-      ...(hasFinancePermission ? [{
+      })] : []),
+      ...(hasFinancePermission ? [asNavItem({
         titleKey: "finance",
         icon: CreditCard,
         badge: null,
         priority: 8,
-        category: 'finance',
+        category: 'finance' as NavigationCategory,
         iconColor: categoryColors.finance,
         children: [
           ...(hasFinanceAccountsPermission ? [{
@@ -946,13 +948,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
               icon: LucideIcons.Settings,
             }] : []),
         ],
-      }] : []),
+      })] : []),
       ...(hasFeesPermission ? [{
         titleKey: "finance.fees",
         icon: LucideIcons.Banknote,
         badge: null,
         priority: 8.1,
-        category: 'finance',
+        category: 'finance' as NavigationCategory,
         iconColor: categoryColors.finance,
         children: [
           {
@@ -993,12 +995,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
           },
         ].filter(Boolean) as NavigationChild[],
       }] : []),
-      ...(hasDmsPermission ? [{
+      ...(hasDmsPermission ? [asNavItem({
         titleKey: "document-system",
         icon: FileText,
         badge: null,
         priority: 7.5,
-        category: 'operations',
+        category: 'operations' as NavigationCategory,
         iconColor: categoryColors.operations,
         children: [
           ...(hasDmsIncomingPermission || hasDmsOutgoingPermission ? [{
@@ -1068,13 +1070,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: Settings,
           }] : []),
         ],
-      }] : []),
-      ...(hasEventsNavigation ? [{
+      })] : []),
+      ...(hasEventsNavigation ? [asNavItem({
         titleKey: "events",
         icon: Calendar,
         badge: null,
         priority: 6.5,
-        category: 'operations',
+        category: 'operations' as NavigationCategory,
         iconColor: categoryColors.operations,
         children: [
           ...(hasEventsPermission ? [{
@@ -1108,13 +1110,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: Shield,
           }] : []),
         ],
-      }] : []),
-      ...(hasAssetsPermission ? [{
+      })] : []),
+      ...(hasAssetsPermission ? [asNavItem({
         titleKey: "assets",
         icon: Boxes,
         badge: null,
         priority: 7.1,
-        category: 'operations',
+        category: 'operations' as NavigationCategory,
         iconColor: categoryColors.operations,
         children: [
           {
@@ -1148,13 +1150,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: LucideIcons.BarChart3,
           },
         ],
-      }] : []),
-      ...((hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission || hasTimetablesPermission) ? [{
+      })] : []),
+      ...((hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission || hasTimetablesPermission) ? [asNavItem({
         titleKey: "academicManagement",
         icon: GraduationCap,
         badge: null,
         priority: 4.5,
-        category: 'academic',
+        category: 'academic' as NavigationCategory,
         iconColor: categoryColors.academic,
         children: [
           ...(hasClassesPermission ? [{
@@ -1171,23 +1173,23 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasTeacherSubjectAssignmentsPermission ? [{
             title: "Teacher Subject Assignments",
-            titleKey: "events.title",
+            titleKey: "teacherSubjectAssignments.title",
             url: "/settings/teacher-subject-assignments",
             icon: UserCheck,
           }] : []),
         ],
-      }] : []),
-      ...((hasTimetablesPermission || hasScheduleSlotsPermission) ? [{
+      })] : []),
+      ...((hasTimetablesPermission || hasScheduleSlotsPermission) ? [asNavItem({
         titleKey: "timetables",
         icon: Calendar,
         badge: null,
         priority: 4.6,
-        category: 'academic',
+        category: 'academic' as NavigationCategory,
         iconColor: categoryColors.academic,
         children: [
           ...(hasTimetablesPermission ? [{
             title: "Timetable Generation",
-            titleKey: "events.title",
+            titleKey: "timetable.title",
             url: "/academic/timetable-generation",
             icon: Calendar,
           }] : []),
@@ -1198,13 +1200,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: Clock,
           }] : []),
         ],
-      }] : []),
+      })] : []),
       {
         titleKey: "settings",
         icon: Settings,
         badge: null,
         priority: 10,
-        category: 'admin',
+        category: 'admin' as NavigationCategory,
         iconColor: categoryColors.admin,
         children: [
           // Only show child items if user has the required permission
@@ -1236,21 +1238,21 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
         ],
       },
-      ...(hasHelpCenterPermission ? [{
+      ...(hasHelpCenterPermission ? [asNavItem({
         titleKey: "helpCenter",
         url: "/help-center",
         icon: HelpCircle,
         badge: null,
         priority: 10.5,
-        category: 'admin',
+        category: 'admin' as NavigationCategory,
         iconColor: categoryColors.admin,
-      }] : []),
+      })] : []),
       {
         titleKey: "academicSettings",
         icon: GraduationCap,
         badge: null,
         priority: 9,
-        category: 'admin',
+        category: 'admin' as NavigationCategory,
         iconColor: categoryColors.admin,
         children: [
           // Only show child items if user has the required permission
@@ -1547,7 +1549,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   };
 
   const renderMenuItem = (item: NavigationItem) => {
-    const label = t(`nav.${item.titleKey}`);
+    const label = tUnsafe(`nav.${item.titleKey}`);
     const iconColorClass = item.iconColor || categoryColors.default;
     const dataTour = getDataTourAttr(item.titleKey);
     // Always show parent items even if they have no children (they might have children that load later)
@@ -1591,7 +1593,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
                             <CollapsibleTrigger asChild>
                               <SidebarMenuButton className={getNavCls({ isActive: isChildActive(child.children) })}>
                                 <child.icon className="h-4 w-4" />
-                                <span className="flex-1">{child.titleKey ? t(`nav.${child.titleKey}`) : child.title}</span>
+                                <span className="flex-1">{child.titleKey ? tUnsafe(`nav.${child.titleKey}`) : child.title}</span>
                                 {isChildExpanded ? (
                                   <ChevronDown className="h-4 w-4" />
                                 ) : (
@@ -1610,7 +1612,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
                                         end={(grandchild.url || '#') === '/'}
                                       >
                                         <grandchild.icon className="h-4 w-4" />
-                                        <span>{grandchild.titleKey ? t(`nav.${grandchild.titleKey}`) : grandchild.title}</span>
+                                        <span>{grandchild.titleKey ? tUnsafe(`nav.${grandchild.titleKey}`) : grandchild.title}</span>
                                       </NavLink>
                                     </SidebarMenuButton>
                                   </SidebarMenuItem>
@@ -1633,7 +1635,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
                             end={(child.url || '#') === '/'}
                           >
                             <child.icon className="h-4 w-4" />
-                            <span>{child.titleKey ? t(`nav.${child.titleKey}`) : child.title}</span>
+                            <span>{child.titleKey ? tUnsafe(`nav.${child.titleKey}`) : child.title}</span>
                             {child.contextual && navigationContext.currentModule.includes('attendance') && (
                               <Star className="h-3 w-3 text-warning ml-auto" />
                             )}
@@ -1694,7 +1696,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           {!collapsed && (
             <div>
               <h1 className="text-lg font-bold text-sidebar-foreground">Nazim</h1>
-              <p className="text-xs text-sidebar-foreground/70">{t('events.schoolManagement')}</p>
+              <p className="text-xs text-sidebar-foreground/70">{tUnsafe('common.schoolManagement')}</p>
             </div>
           )}
         </div>

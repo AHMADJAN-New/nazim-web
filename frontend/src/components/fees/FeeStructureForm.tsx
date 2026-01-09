@@ -176,7 +176,7 @@ export function FeeStructureForm({
                 <FormControl>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder={t('events.selectSchool')} />
+                      <SelectValue placeholder={t('common.selectSchool')} />
                     </SelectTrigger>
                     <SelectContent>
                       {schools.map((s) => (

@@ -717,7 +717,7 @@ export default function ConsolidatedMarkSheet() {
                   onValueChange={setSelectedClassId}
                   placeholder={t('examReports.selectClassPrompt')}
                   searchPlaceholder={t('events.search') || 'Search...'}
-                  emptyText={selectedExamId ? (classesLoading ? t('events.loading') || 'Loading...' : t('classes.noClasses')) : t('examReports.selectExamFirst') || 'Select an exam first'}
+                  emptyText={selectedExamId ? (classesLoading ? t('common.loading') || 'Loading...' : t('classes.noClasses')) : t('examReports.selectExamFirst') || 'Select an exam first'}
                   disabled={!selectedExamId || classesLoading}
                 />
               </div>

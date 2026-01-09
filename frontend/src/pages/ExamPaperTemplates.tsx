@@ -350,7 +350,7 @@ export default function ExamPaperTemplates() {
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t('events.selectSchool') || 'Select school'} />
+                    <SelectValue placeholder={t('common.selectSchool') || 'Select school'} />
                   </SelectTrigger>
                   <SelectContent>
                     {(schools || []).map(school => (
@@ -548,7 +548,7 @@ export default function ExamPaperTemplates() {
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t('events.selectLanguage') || 'Select language'} />
+                    <SelectValue placeholder={t('common.selectLanguage') || 'Select language'} />
                   </SelectTrigger>
                   <SelectContent>
                     {EXAM_PAPER_LANGUAGES.map(lang => (

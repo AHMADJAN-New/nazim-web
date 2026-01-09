@@ -247,7 +247,7 @@ export function AppSidebar() {
           {!collapsed && (
             <div>
               <h1 className="text-lg font-bold text-sidebar-foreground">Nazim</h1>
-              <p className="text-xs text-sidebar-foreground/70">{t('events.schoolManagement')}</p>
+              <p className="text-xs text-sidebar-foreground/70">{t('common.schoolManagement')}</p>
             </div>
           )}
         </div>

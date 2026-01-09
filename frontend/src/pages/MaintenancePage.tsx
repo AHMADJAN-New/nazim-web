@@ -200,7 +200,7 @@ export default function MaintenancePage({
         <Card className="w-full max-w-2xl shadow-2xl border-0">
           <CardContent className="flex flex-col items-center justify-center py-16 space-y-4">
             <LoadingSpinner size="lg" />
-            <p className="text-muted-foreground">{t('events.loading') || 'Loading...'}</p>
+            <p className="text-muted-foreground">{t('common.loading') || 'Loading...'}</p>
           </CardContent>
         </Card>
       </div>

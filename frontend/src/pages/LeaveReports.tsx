@@ -451,7 +451,7 @@ export default function LeaveReports() {
                   </TableHeader>
                   <TableBody>
                     {isLoading && (
-                      <TableRow><TableCell colSpan={4} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('events.loading')}</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('common.loading')}</TableCell></TableRow>
                     )}
                     {!isLoading && requests.map(req => (
                       <TableRow key={req.id}>
@@ -531,7 +531,7 @@ export default function LeaveReports() {
                   </TableHeader>
                   <TableBody>
                     {isLoading && (
-                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('events.loading')}</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('common.loading')}</TableCell></TableRow>
                     )}
                     {!isLoading && pendingRequests.map(req => (
                       <TableRow key={req.id}>
@@ -600,7 +600,7 @@ export default function LeaveReports() {
                   </TableHeader>
                   <TableBody>
                     {isLoading && (
-                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('events.loading')}</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('common.loading')}</TableCell></TableRow>
                     )}
                     {!isLoading && approvedRequests.map(req => (
                       <TableRow key={req.id}>
@@ -669,7 +669,7 @@ export default function LeaveReports() {
                   </TableHeader>
                   <TableBody>
                     {isLoading && (
-                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('events.loading')}</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('common.loading')}</TableCell></TableRow>
                     )}
                     {!isLoading && rejectedRequests.map(req => (
                       <TableRow key={req.id}>

@@ -215,7 +215,7 @@ export default function CertificateTemplates() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-muted-foreground">{t('events.loading')}</p>
+            <p className="text-muted-foreground">{t('common.loading')}</p>
           ) : templates.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />

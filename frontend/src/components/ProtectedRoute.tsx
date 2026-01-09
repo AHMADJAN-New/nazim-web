@@ -137,7 +137,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // NOW we can do early returns after all hooks have been called
   if (isLoading) {
-    return <LoadingSpinner size="lg" text={t('events.loading')} fullScreen />;
+    return <LoadingSpinner size="lg" text={t('common.loading')} fullScreen />;
   }
 
   // Only allow authenticated users

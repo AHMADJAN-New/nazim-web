@@ -649,7 +649,7 @@ export function SubjectsManagement() {
                             </FilterPanel>
 
                             {subjectsLoading ? (
-                                <div className="text-center py-8">{t('events.loading')}</div>
+                                <div className="text-center py-8">{t('common.loading')}</div>
                             ) : filteredSubjects.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
                                     <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-50" />
@@ -795,7 +795,7 @@ export function SubjectsManagement() {
                                     <p>Please select a class to view and manage its subjects</p>
                                 </div>
                             ) : classSubjectTemplatesLoading ? (
-                                <div className="text-center py-8">{t('events.loading')}</div>
+                                <div className="text-center py-8">{t('common.loading')}</div>
                             ) : !classSubjectTemplates || classSubjectTemplates.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
                                     <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-50" />
@@ -979,7 +979,7 @@ export function SubjectsManagement() {
                             ) : classSubjectsLoading ? (
                                 <div className="text-center py-8">
                                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                                    <p className="mt-2 text-muted-foreground">{t('events.loading')}</p>
+                                    <p className="mt-2 text-muted-foreground">{t('common.loading')}</p>
                                 </div>
                             ) : !classSubjects || classSubjects.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">

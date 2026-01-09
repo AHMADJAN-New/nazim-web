@@ -413,7 +413,7 @@ export function ScheduleSlotsManagement() {
                 </CardContent>
                 <CardContent className="space-y-4">
                     {isLoading ? (
-                        <div className="text-center py-8 text-muted-foreground">{t('events.loading')}</div>
+                        <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>
                     ) : filteredSlots.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
                             {searchQuery ? t('academic.scheduleSlots.noSlotsFound') : t('academic.scheduleSlots.noSlotsMessage')}
@@ -825,7 +825,7 @@ export function ScheduleSlotsManagement() {
                                                 onValueChange={(value) => field.onChange(value === 'all' ? null : value)}
                                             >
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder={t('events.selectSchool')} />
+                                                    <SelectValue placeholder={t('common.selectSchool')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="all">{t('academic.scheduleSlots.allSchools')}</SelectItem>

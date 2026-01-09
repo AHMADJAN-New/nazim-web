@@ -270,7 +270,7 @@ export default function CourseAttendance() {
             </CardHeader>
             <CardContent>
               {sessionsLoading ? (
-                <p className="text-muted-foreground">{t('events.loading')}</p>
+                <p className="text-muted-foreground">{t('common.loading')}</p>
               ) : sessions.length === 0 ? (
                 <p className="text-muted-foreground">No sessions yet</p>
               ) : (

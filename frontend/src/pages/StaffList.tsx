@@ -975,7 +975,7 @@ export function StaffList() {
                                                                 control={control}
                                                                 render={({ field }) => (
                                                                     <Select value={field.value || 'none'} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
-                                                                        <SelectTrigger><SelectValue placeholder={t('events.selectSchool')} /></SelectTrigger>
+                                                                        <SelectTrigger><SelectValue placeholder={t('common.selectSchool')} /></SelectTrigger>
                                                                         <SelectContent>
                                                                             <SelectItem value="none">{t('staff.noSchool')}</SelectItem>
                                                                             {schools.map((school) => <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>)}
@@ -1448,7 +1448,7 @@ export function StaffList() {
                                                                 control={control}
                                                                 render={({ field }) => (
                                                                     <Select value={field.value || 'none'} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
-                                                                        <SelectTrigger><SelectValue placeholder={t('events.selectSchool')} /></SelectTrigger>
+                                                                        <SelectTrigger><SelectValue placeholder={t('common.selectSchool')} /></SelectTrigger>
                                                                         <SelectContent>
                                                                             <SelectItem value="none">{t('staff.noSchool')}</SelectItem>
                                                                             {schools.map((school) => <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>)}

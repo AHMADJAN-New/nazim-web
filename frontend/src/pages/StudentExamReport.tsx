@@ -668,7 +668,7 @@ export default function StudentExamReport() {
                 searchPlaceholder={t('events.search') || 'Search...'}
                 emptyText={
                   selectedExamId
-                    ? (examClassesLoading ? t('events.loading') || 'Loading...' : t('classes.noClasses') || 'No classes')
+                    ? (examClassesLoading ? t('common.loading') || 'Loading...' : t('classes.noClasses') || 'No classes')
                     : t('examReports.selectExamFirst') || 'Select an exam first'
                 }
                 disabled={!selectedExamId || examClassesLoading}
@@ -693,7 +693,7 @@ export default function StudentExamReport() {
               <div className="max-h-60 overflow-y-auto border rounded-md p-2 space-y-2">
                 {selectedClassId ? (
                   examStudentsLoading ? (
-                    <div className="text-sm text-muted-foreground text-center py-4">{t('events.loading') || 'Loading...'}</div>
+                    <div className="text-sm text-muted-foreground text-center py-4">{t('common.loading') || 'Loading...'}</div>
                   ) : studentOptions.length > 0 ? (
                     studentOptions.map((option, optIdx) => {
                       const isSelected = selectedStudentIds.includes(option.value);

@@ -760,7 +760,7 @@ export default function LeaveManagement() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">{format(request.startDate, 'PP')} → {format(request.endDate, 'PP')}</div>
-                          <div className="text-xs text-slate-500">{request.className || t('search.class')} / {request.schoolName || t('events.selectSchool')}</div>
+                          <div className="text-xs text-slate-500">{request.className || t('search.class')} / {request.schoolName || t('common.selectSchool')}</div>
                         </TableCell>
                         <TableCell className="max-w-[240px]"><div className="line-clamp-2 text-sm">{request.reason}</div></TableCell>
                         <TableCell>

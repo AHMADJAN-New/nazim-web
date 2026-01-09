@@ -181,7 +181,7 @@ export function InlineSearchDropdown({
         <CommandList>
             {isLoading && (
               <div className="py-6 text-center text-sm text-muted-foreground">
-                {t('events.loading')}...
+                {t('common.loading')}...
               </div>
             )}
             {!isLoading && !hasResults && searchQuery.trim().length >= 2 && (

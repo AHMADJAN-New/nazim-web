@@ -728,7 +728,7 @@ export function QuestionBank() {
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
                   <SelectTrigger id="schoolId">
-                    <SelectValue placeholder={t('events.selectSchool') || 'Select school'} />
+                    <SelectValue placeholder={t('common.selectSchool') || 'Select school'} />
                   </SelectTrigger>
                   <SelectContent>
                     {(schools || [])
@@ -752,7 +752,7 @@ export function QuestionBank() {
               {selectedSchool ? (
                 <Input value={selectedSchool.schoolName} disabled readOnly className="bg-muted" />
               ) : (
-                <Input value={t('events.loading') || 'Loading...'} disabled className="bg-muted" />
+                <Input value={t('common.loading') || 'Loading...'} disabled className="bg-muted" />
               )}
               <input type="hidden" {...form.register('schoolId')} />
             </>

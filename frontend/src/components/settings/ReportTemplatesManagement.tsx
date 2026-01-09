@@ -312,7 +312,7 @@ export function ReportTemplatesManagement() {
                             <Label className="mb-2 block">{t('reportTemplates.filterBySchool')}</Label>
                             <Select value={selectedSchoolId || ''} onValueChange={setSelectedSchoolId}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder={t('events.selectSchool')} />
+                                    <SelectValue placeholder={t('common.selectSchool')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {schools?.map((school) => (
@@ -500,7 +500,7 @@ export function ReportTemplatesManagement() {
                                     render={({ field }) => (
                                         <Select onValueChange={field.onChange} value={field.value || ''}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder={t('events.selectSchool')} />
+                                                <SelectValue placeholder={t('common.selectSchool')} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {schools?.map((school) => (

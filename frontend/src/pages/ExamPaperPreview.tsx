@@ -75,7 +75,7 @@ export function ExamPaperPreview() {
           <div>
             <h1 className="text-2xl font-semibold">{t('events.title') || 'Paper Preview'}</h1>
             <p className="text-sm text-muted-foreground">
-              {template?.title || t('events.loading') || 'Loading...'}
+              {template?.title || t('common.loading') || 'Loading...'}
             </p>
           </div>
         </div>

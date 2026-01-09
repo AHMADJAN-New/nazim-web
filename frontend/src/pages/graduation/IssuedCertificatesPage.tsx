@@ -233,7 +233,7 @@ export default function IssuedCertificatesPage() {
     const filters: string[] = [];
     if (schoolId) {
       const school = schools.find(s => s.id === schoolId);
-      if (school) filters.push(`${t('events.schoolManagement') || 'School'}: ${school.schoolName}`);
+      if (school) filters.push(`${t('common.schoolManagement') || 'School'}: ${school.schoolName}`);
     }
     if (batchId) {
       filters.push(`Batch ID: ${batchId}`);
@@ -268,10 +268,10 @@ export default function IssuedCertificatesPage() {
       <FilterPanel title={t('events.filters') || 'Search & Filter'}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <Label>{t('events.schoolManagement')}</Label>
+            <Label>{t('common.schoolManagement')}</Label>
             <Select value={schoolId || ''} onValueChange={(val) => setSchoolId(val || undefined)}>
               <SelectTrigger>
-                <SelectValue placeholder={t('events.selectSchool')} />
+                <SelectValue placeholder={t('common.selectSchool')} />
               </SelectTrigger>
               <SelectContent>
                 {schools.map((school) => (
@@ -299,7 +299,7 @@ export default function IssuedCertificatesPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p>{t('events.loading')}</p>
+            <p>{t('common.loading')}</p>
           ) : certificates.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <p>{t('events.noData') || 'No certificates found'}</p>

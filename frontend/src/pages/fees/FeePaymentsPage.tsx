@@ -427,7 +427,7 @@ export default function FeePaymentsPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p>{t('events.loading')}</p>
+            <p>{t('common.loading')}</p>
           ) : (
             <>
               <div className="overflow-x-auto">
