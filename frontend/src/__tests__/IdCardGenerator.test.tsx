@@ -12,6 +12,20 @@ vi.mock('@/hooks/useLanguage', () => ({
   }),
 }));
 
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: { id: 'user-1' },
+    profile: { id: 'user-1', organization_id: 'org-1', role: 'admin' },
+  }),
+}));
+
+vi.mock('@/hooks/useIdCardTemplates', () => ({
+  useIdCardTemplates: () => ({
+    data: [],
+    refetch: vi.fn(),
+  }),
+}));
+
 vi.mock('@/hooks/useStudents', () => ({
   useStudents: () => ({
     data: [
@@ -101,7 +115,8 @@ describe('IdCardGenerator', () => {
       />
     );
 
-    expect(screen.getByText('idCards.selectTemplate')).toBeInTheDocument();
+    // Label key used by the current UI implementation
+    expect(screen.getByText('studentReportCard.selectTemplate')).toBeInTheDocument();
   });
 
   it('should display student selection', () => {

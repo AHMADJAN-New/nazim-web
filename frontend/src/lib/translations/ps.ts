@@ -3168,6 +3168,8 @@ export const ps: TranslationKeys = {
     'events.addGuest': 'مېلمه اضافه کړئ',
     'events.types': 'د پیښو ډولونه',
     'events.users': 'د پیښو کارونکي',
+    'events.export': 'د ID کارت صادرات',
+    'students.management': 'مدیریت',
     assets: 'شتمنۍ',
     'assets.dashboard': 'د شتمنیو ډشبورډ',
     'assets.categories': 'د شتمنیو کټګورۍ',

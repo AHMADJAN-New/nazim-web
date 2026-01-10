@@ -1,136 +1,221 @@
 // Import pdfmake-arabic - handle both default and named exports
 import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
-const pdfMake = (pdfMakeModule as any).default || pdfMakeModule;
+let pdfMake: any = (pdfMakeModule as any).default || pdfMakeModule;
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+
+// Helper to get the actual pdfMake instance (handles different build configurations)
+function getPdfMakeInstance() {
+  // First try the imported pdfMake
+  if (pdfMake && typeof pdfMake.createPdf === 'function') {
+    return pdfMake;
+  }
+  // Try window.pdfMake (set during initialization)
+  if (typeof window !== 'undefined' && (window as any).pdfMake && typeof (window as any).pdfMake.createPdf === 'function') {
+    return (window as any).pdfMake;
+  }
+  // Try pdfMakeModule directly
+  if (pdfMakeModule && typeof (pdfMakeModule as any).createPdf === 'function') {
+    return pdfMakeModule;
+  }
+  if ((pdfMakeModule as any).default && typeof (pdfMakeModule as any).default.createPdf === 'function') {
+    return (pdfMakeModule as any).default;
+  }
+  return pdfMake; // Fallback to original
+}
+
+// Get the actual pdfMake instance at module load
+const actualPdfMake = getPdfMakeInstance();
+if (actualPdfMake) {
+  pdfMake = actualPdfMake;
+}
 
 import type { 
   Student,
   StudentEducationalHistory,
   StudentDisciplineRecord,
 } from '@/hooks/useStudents';
-import type { Student } from '@/types/domain/student';
 
-// Initialize pdfmake fonts
-try {
-  if (pdfFonts && typeof pdfFonts === 'object') {
-    // Check if vfs already exists or if we can add it
-    if (!(pdfMake as any).vfs) {
+// Ensure pdfMake is available globally for vfs_fonts (some builds need this)
+if (typeof window !== 'undefined') {
+  (window as any).pdfMake = pdfMake;
+}
+
+// Initialize pdfmake fonts - use a function to ensure it runs when needed
+let vfsInitialized = false;
+
+function ensureVfsInitialized() {
+  // Get the current pdfMake instance (might have changed)
+  const currentPdfMake = getPdfMakeInstance();
+  
+  if (vfsInitialized && currentPdfMake.vfs && Object.keys(currentPdfMake.vfs).length > 0) {
+    return; // Already initialized
+  }
+
+  try {
+    // Initialize VFS - check if it already exists first
+    if (!currentPdfMake.vfs) {
       try {
-        // Try to create vfs property
-        Object.defineProperty(pdfMake, 'vfs', {
-          value: {},
-          writable: true,
-          enumerable: true,
-          configurable: true,
-        });
+        currentPdfMake.vfs = {};
       } catch (e) {
-        // If object is not extensible, try to use existing vfs or skip
-        if ((pdfMake as any).vfs) {
-          // vfs already exists, merge fonts into it
-          Object.assign((pdfMake as any).vfs, pdfFonts);
+        // Object is not extensible, try to use existing vfs or skip
+        if (import.meta.env.DEV) {
+          console.warn('[studentProfilePdf] Could not create vfs, object may not be extensible');
+        }
+        // If we can't create vfs, check if it exists anyway
+        if (currentPdfMake.vfs) {
+          // It exists now, continue
         } else {
-          // Can't add vfs, but pdfmake-arabic should have it initialized
-          console.warn('[studentProfilePdf] Could not create vfs, object may not be extensible. Using existing vfs if available.');
+          throw new Error('Cannot initialize VFS - pdfMake object is not extensible');
         }
       }
     }
     
     // Merge fonts into VFS if vfs exists
-    if ((pdfMake as any).vfs) {
+    if (currentPdfMake.vfs) {
       try {
-        if (pdfFonts && typeof pdfFonts === 'object' && !(pdfFonts as any).vfs) {
-          // pdfFonts is the VFS object directly
-          Object.assign((pdfMake as any).vfs, pdfFonts);
-        } else if ((pdfFonts as any).vfs) {
-          // pdfFonts has a vfs property
-          Object.assign((pdfMake as any).vfs, (pdfFonts as any).vfs);
+        if (pdfFonts && typeof pdfFonts === 'object') {
+          let fontDataToMerge: any = null;
+          
+          // Pattern 1: pdfFonts has a vfs property (older versions)
+          if ((pdfFonts as any).vfs && typeof (pdfFonts as any).vfs === 'object') {
+            fontDataToMerge = (pdfFonts as any).vfs;
+          }
+          // Pattern 2: pdfFonts.pdfMake.vfs (nested structure)
+          else if ((pdfFonts as any).pdfMake && (pdfFonts as any).pdfMake.vfs) {
+            fontDataToMerge = (pdfFonts as any).pdfMake.vfs;
+          }
+          // Pattern 3: pdfFonts is the VFS object directly (newer versions)
+          else {
+            const sourceKeys = Object.keys(pdfFonts as any);
+            // Check if it looks like a VFS object (has font file keys)
+            if (sourceKeys.length > 0) {
+              if (sourceKeys.some(k => k.includes('.ttf') || k.includes('roboto') || k.includes('Roboto'))) {
+                fontDataToMerge = pdfFonts;
+              }
+            }
+          }
+          
+          // Merge font data if we found it
+          if (fontDataToMerge) {
+            const sourceKeys = Object.keys(fontDataToMerge);
+            if (sourceKeys.length > 0) {
+              Object.assign(currentPdfMake.vfs, fontDataToMerge);
+            } else if (import.meta.env.DEV) {
+              console.warn('[studentProfilePdf] pdfFonts object is empty');
+            }
+          } else if (import.meta.env.DEV) {
+            console.warn('[studentProfilePdf] Could not find font data in pdfFonts. Structure:', {
+              hasPdfFonts: !!pdfFonts,
+              pdfFontsKeys: pdfFonts ? Object.keys(pdfFonts as any) : [],
+              hasVfs: !!(pdfFonts as any).vfs,
+              hasPdfMake: !!(pdfFonts as any).pdfMake,
+            });
+          }
+        } else if (import.meta.env.DEV) {
+          console.warn('[studentProfilePdf] pdfFonts is not a valid object:', typeof pdfFonts);
         }
       } catch (e) {
         // VFS might be frozen, but that's okay if fonts are already there
-        console.warn('[studentProfilePdf] Could not merge fonts into vfs, may already be initialized.');
-      }
-    }
-    
-    // Register Roboto fonts from vfs_fonts (default pdfmake fonts)
-    // vfs_fonts typically includes: Roboto-Regular.ttf, Roboto-Medium.ttf, Roboto-Bold.ttf
-    try {
-      if (!(pdfMake as any).fonts) {
-        // Check if object is extensible before adding property
-        if (Object.isExtensible(pdfMake)) {
-          (pdfMake as any).fonts = {};
-        } else {
-          // Object is not extensible, try to use existing fonts or skip
-          if (!(pdfMake as any).fonts) {
-            console.warn('[studentProfilePdf] Cannot add fonts property, object is not extensible. Using existing fonts if available.');
-          }
-        }
-      }
-    } catch (e) {
-      // If fonts property already exists or object is not extensible, continue
-      if (!(pdfMake as any).fonts) {
-        console.warn('[studentProfilePdf] Could not initialize fonts property:', e);
-      }
-    }
-    
-    // Check if Roboto fonts exist in VFS and register them
-    const vfs = (pdfMake as any).vfs;
-    if (vfs) {
-      // Register Roboto if available (vfs_fonts includes these by default)
-      if (vfs['Roboto-Regular.ttf'] || vfs['roboto/Roboto-Regular.ttf']) {
-        (pdfMake as any).fonts['Roboto'] = {
-          normal: vfs['Roboto-Regular.ttf'] ? 'Roboto-Regular.ttf' : 'roboto/Roboto-Regular.ttf',
-          bold: vfs['Roboto-Medium.ttf'] ? 'Roboto-Medium.ttf' : (vfs['Roboto-Bold.ttf'] ? 'Roboto-Bold.ttf' : (vfs['roboto/Roboto-Medium.ttf'] ? 'roboto/Roboto-Medium.ttf' : (vfs['roboto/Roboto-Bold.ttf'] ? 'roboto/Roboto-Bold.ttf' : 'Roboto-Regular.ttf'))),
-          italics: vfs['Roboto-Italic.ttf'] ? 'Roboto-Italic.ttf' : (vfs['roboto/Roboto-Italic.ttf'] ? 'roboto/Roboto-Italic.ttf' : 'Roboto-Regular.ttf'),
-          bolditalics: vfs['Roboto-MediumItalic.ttf'] ? 'Roboto-MediumItalic.ttf' : (vfs['roboto/Roboto-MediumItalic.ttf'] ? 'roboto/Roboto-MediumItalic.ttf' : 'Roboto-Regular.ttf'),
-        };
-      } else {
-        // Fallback: use default Roboto registration if vfs_fonts structure is different
-        // pdfmake's vfs_fonts usually has Roboto registered by default, but pdfmake-arabic might need explicit registration
-        const robotoKeys = Object.keys(vfs).filter(key => key.toLowerCase().includes('roboto'));
-        if (robotoKeys.length > 0) {
-          const regularKey = robotoKeys.find(k => k.toLowerCase().includes('regular')) || robotoKeys[0];
-          const boldKey = robotoKeys.find(k => k.toLowerCase().includes('bold') || k.toLowerCase().includes('medium')) || regularKey;
-          
-          (pdfMake as any).fonts['Roboto'] = {
-            normal: regularKey,
-            bold: boldKey,
-            italics: robotoKeys.find(k => k.toLowerCase().includes('italic')) || regularKey,
-            bolditalics: robotoKeys.find(k => k.toLowerCase().includes('bold') && k.toLowerCase().includes('italic')) || boldKey,
-          };
-        } else {
-          // Last resort: register with default pdfmake font names
-          // pdfmake-arabic should handle this, but ensure Roboto is available
-          (pdfMake as any).fonts['Roboto'] = {
-            normal: 'Roboto-Regular.ttf',
-            bold: 'Roboto-Medium.ttf',
-            italics: 'Roboto-Italic.ttf',
-            bolditalics: 'Roboto-MediumItalic.ttf',
-          };
+        if (import.meta.env.DEV) {
+          console.warn('[studentProfilePdf] Could not merge fonts into vfs, may already be initialized:', e);
         }
       }
     }
-  } else if ((pdfMake as any).vfs) {
-    // Already initialized, ensure fonts are registered
-    if (!(pdfMake as any).fonts) {
-      (pdfMake as any).fonts = {};
+
+    // Register fonts properly - ensure fonts object exists
+    if (!currentPdfMake.fonts) {
+      try {
+        currentPdfMake.fonts = {};
+      } catch (e) {
+        if (import.meta.env.DEV) {
+          console.warn('[studentProfilePdf] Could not create fonts object, may already exist');
+        }
+      }
     }
-    if (!(pdfMake as any).fonts['Roboto']) {
-      const vfs = (pdfMake as any).vfs;
-      const robotoKeys = Object.keys(vfs).filter(key => key.toLowerCase().includes('roboto'));
-      if (robotoKeys.length > 0) {
-        const regularKey = robotoKeys.find(k => k.toLowerCase().includes('regular')) || robotoKeys[0];
-        const boldKey = robotoKeys.find(k => k.toLowerCase().includes('bold') || k.toLowerCase().includes('medium')) || regularKey;
-        (pdfMake as any).fonts['Roboto'] = {
-          normal: regularKey,
-          bold: boldKey,
-          italics: robotoKeys.find(k => k.toLowerCase().includes('italic')) || regularKey,
-          bolditalics: robotoKeys.find(k => k.toLowerCase().includes('bold') && k.toLowerCase().includes('italic')) || boldKey,
+
+    // Check what fonts are available in VFS and register Roboto
+    const vfs = currentPdfMake.vfs || {};
+    const vfsKeys = Object.keys(vfs);
+
+    // Find Roboto font files in VFS
+    const findRobotoFont = (variant: 'regular' | 'bold' | 'italic' | 'bolditalic'): string => {
+      const patterns = {
+        regular: ['roboto', 'regular'],
+        bold: ['roboto', 'bold'],
+        italic: ['roboto', 'italic'],
+        bolditalic: ['roboto', 'bold', 'italic'],
+      };
+      
+      const pattern = patterns[variant];
+      const key = vfsKeys.find(k => {
+        const lower = k.toLowerCase();
+        return pattern.every(p => lower.includes(p));
+      });
+      
+      if (key && vfs[key]) return key;
+      
+      // Fallback: try to find any Roboto font
+      const anyRoboto = vfsKeys.find(k => k.toLowerCase().includes('roboto'));
+      if (anyRoboto) return anyRoboto;
+      
+      // Last resort: use default names
+      return variant === 'regular' ? 'Roboto-Regular.ttf' :
+             variant === 'bold' ? 'Roboto-Medium.ttf' :
+             variant === 'italic' ? 'Roboto-Italic.ttf' :
+             'Roboto-MediumItalic.ttf';
+    };
+
+    // Register Roboto fonts if we have VFS entries
+    if (vfsKeys.length > 0) {
+      const robotoRegular = findRobotoFont('regular');
+      const robotoBold = findRobotoFont('bold');
+      const robotoItalic = findRobotoFont('italic');
+      const robotoBoldItalic = findRobotoFont('bolditalic');
+
+      if (!currentPdfMake.fonts['Roboto']) {
+        currentPdfMake.fonts['Roboto'] = {
+          normal: robotoRegular,
+          bold: robotoBold,
+          italics: robotoItalic,
+          bolditalics: robotoBoldItalic,
+        };
+      }
+    } else {
+      // No fonts in VFS, but still register with default names (pdfmake-arabic should have these)
+      if (!currentPdfMake.fonts['Roboto']) {
+        currentPdfMake.fonts['Roboto'] = {
+          normal: 'Roboto-Regular.ttf',
+          bold: 'Roboto-Medium.ttf',
+          italics: 'Roboto-Italic.ttf',
+          bolditalics: 'Roboto-MediumItalic.ttf',
         };
       }
     }
+
+    // Mark as initialized if we have VFS
+    if (currentPdfMake.vfs && Object.keys(currentPdfMake.vfs).length > 0) {
+      vfsInitialized = true;
+    }
+    
+    // Update the global pdfMake reference
+    pdfMake = currentPdfMake;
+    if (typeof window !== 'undefined') {
+      (window as any).pdfMake = currentPdfMake;
+    }
+  } catch (error) {
+    console.error('[studentProfilePdf] Failed to initialize pdfmake vfs fonts:', error);
+    throw error;
   }
+}
+
+// Try to initialize at module load
+try {
+  ensureVfsInitialized();
 } catch (error) {
-  console.error('[studentProfilePdf] Failed to initialize pdfmake vfs fonts:', error);
+  // Don't fail at module load, will retry when function is called
+  if (import.meta.env.DEV) {
+    console.warn('[studentProfilePdf] Initial VFS initialization failed, will retry when needed:', error);
+  }
 }
 
 // Load and register custom fonts
@@ -165,28 +250,22 @@ async function loadCustomFonts() {
       const boldBase64 = await blobToBase64(boldBlob);
       const titrBoldBase64 = await blobToBase64(titrBoldBlob);
       
-      // Add fonts to VFS (Virtual File System) - required for pdfmake
-      if (!(pdfMake as any).vfs) {
-        try {
-          // Try to create vfs property
-          Object.defineProperty(pdfMake, 'vfs', {
-            value: {},
-            writable: true,
-            enumerable: true,
-            configurable: true,
-          });
-        } catch (e) {
-          // If object is not extensible, skip custom fonts
-          console.warn('[studentProfilePdf] Could not create vfs for custom fonts, using Roboto only');
-          return;
-        }
-      }
+      // Ensure VFS is initialized before adding custom fonts
+      ensureVfsInitialized();
+      
+      // Get the current pdfMake instance
+      const currentPdfMake = getPdfMakeInstance();
       
       // Add custom fonts to VFS
+      if (!currentPdfMake.vfs) {
+        console.warn('[studentProfilePdf] VFS not available for custom fonts, using Roboto only');
+        return;
+      }
+      
       try {
-        (pdfMake as any).vfs['BahijNassim-Regular.ttf'] = regularBase64;
-        (pdfMake as any).vfs['BahijNassim-Bold.ttf'] = boldBase64;
-        (pdfMake as any).vfs['BahijTitr-Bold.ttf'] = titrBoldBase64;
+        currentPdfMake.vfs['BahijNassim-Regular.ttf'] = regularBase64;
+        currentPdfMake.vfs['BahijNassim-Bold.ttf'] = boldBase64;
+        currentPdfMake.vfs['BahijTitr-Bold.ttf'] = titrBoldBase64;
       } catch (e) {
         // VFS might be frozen, skip custom fonts
         console.warn('[studentProfilePdf] Could not add custom fonts to VFS, using Roboto only');
@@ -194,8 +273,11 @@ async function loadCustomFonts() {
       }
       
       // Register fonts with pdfmake (reference VFS paths)
-      (pdfMake as any).fonts = {
-        ...((pdfMake as any).fonts || {}),
+      if (!currentPdfMake.fonts) {
+        currentPdfMake.fonts = {};
+      }
+      currentPdfMake.fonts = {
+        ...(currentPdfMake.fonts || {}),
         'BahijNassim': {
           normal: 'BahijNassim-Regular.ttf',
           bold: 'BahijNassim-Bold.ttf',
@@ -251,7 +333,14 @@ export async function generateStudentProfilePdf({
   educationalHistory = [],
   disciplineRecords = [],
 }: StudentProfilePdfOptions) {
-  if (!(pdfMake as any).vfs) {
+  // Ensure VFS is initialized before proceeding
+  ensureVfsInitialized();
+  
+  // Get the current pdfMake instance
+  const currentPdfMake = getPdfMakeInstance();
+
+  // Verify VFS is available
+  if (!currentPdfMake.vfs || Object.keys(currentPdfMake.vfs).length === 0) {
     throw new Error('PDF fonts (vfs) not initialized. Please check pdfmake configuration.');
   }
 
@@ -1529,7 +1618,12 @@ export async function generateStudentProfilePdf({
   };
 
   // Generate PDF and open print dialog in current tab
-  const pdfDoc = (pdfMake as any).createPdf(docDefinition);
+  // Ensure we have the current pdfMake instance
+  const pdfMakeInstance = getPdfMakeInstance();
+  if (!pdfMakeInstance || typeof pdfMakeInstance.createPdf !== 'function') {
+    throw new Error('pdfMake.createPdf is not available. Please check pdfmake-arabic import.');
+  }
+  const pdfDoc = pdfMakeInstance.createPdf(docDefinition);
   
   // Get PDF blob and create iframe in current page for printing
   pdfDoc.getBlob((blob: Blob) => {

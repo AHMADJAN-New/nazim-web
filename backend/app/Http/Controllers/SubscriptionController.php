@@ -11,7 +11,9 @@ use App\Models\SubscriptionPlan;
 use App\Services\Subscription\FeatureGateService;
 use App\Services\Subscription\SubscriptionService;
 use App\Services\Subscription\UsageTrackingService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -52,10 +54,21 @@ class SubscriptionController extends Controller
      */
     public function plans(Request $request)
     {
-        $plans = $this->subscriptionService->getAvailablePlans();
+        $cacheKey = 'subscription:plans:public:v1';
 
-        return response()->json([
-            'data' => $plans->map(function ($plan) {
+        $data = Cache::remember($cacheKey, now()->addHour(), function () {
+            $plans = SubscriptionPlan::active()
+                ->standard()
+                ->with(['features', 'limits'])
+                ->orderBy('sort_order')
+                ->get();
+
+            return $plans->map(function ($plan) {
+                $enabledFeatures = $plan->features
+                    ->where('is_enabled', true)
+                    ->pluck('feature_key')
+                    ->values();
+
                 return [
                     'id' => $plan->id,
                     'name' => $plan->name,
@@ -89,7 +102,7 @@ class SubscriptionController extends Controller
                     'per_school_price_afn' => $plan->per_school_price_afn,
                     'per_school_price_usd' => $plan->per_school_price_usd,
                     'sort_order' => $plan->sort_order,
-                    'features' => $plan->enabledFeatures()->pluck('feature_key'),
+                    'features' => $enabledFeatures,
                     'limits' => $plan->limits->mapWithKeys(function ($limit) {
                         return [$limit->resource_key => $limit->limit_value];
                     }),
@@ -101,8 +114,10 @@ class SubscriptionController extends Controller
                     'updated_at' => $plan->updated_at?->toISOString(),
                     'deleted_at' => $plan->deleted_at?->toISOString(),
                 ];
-            }),
-        ]);
+            })->values();
+        });
+
+        return response()->json(['data' => $data]);
     }
 
     /**
@@ -230,6 +245,16 @@ class SubscriptionController extends Controller
                     'organization_id' => $profile->organization_id,
                 ]);
                 // Continue with empty warnings array
+            }
+
+            // Filter usage/warnings by enabled features so disabled modules don't show limits
+            try {
+                $usage = $this->featureGateService->filterUsageByFeatures($profile->organization_id, $usage);
+                $warnings = $this->featureGateService->filterWarningsByFeatures($profile->organization_id, $warnings);
+            } catch (\Exception $e) {
+                \Log::warning('Failed to filter usage by features: ' . $e->getMessage(), [
+                    'organization_id' => $profile->organization_id,
+                ]);
             }
 
             return response()->json([
@@ -447,47 +472,88 @@ class SubscriptionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        $renewalRequest = RenewalRequest::find($request->renewal_request_id);
+        try {
+            $paymentRecord = DB::transaction(function () use ($request, $profile) {
+                /** @var RenewalRequest $renewalRequest */
+                $renewalRequest = RenewalRequest::where('id', $request->renewal_request_id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-        if ($renewalRequest->organization_id !== $profile->organization_id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+                if ($renewalRequest->organization_id !== $profile->organization_id) {
+                    throw new \Exception('Unauthorized');
+                }
+
+                if (!$renewalRequest->isPending()) {
+                    throw new \Exception('Renewal request is not pending');
+                }
+
+                // Idempotency: if a pending payment already exists for this request, return it.
+                if ($renewalRequest->payment_record_id) {
+                    $existingPayment = PaymentRecord::where('id', $renewalRequest->payment_record_id)->first();
+                    if ($existingPayment && $existingPayment->isPending()) {
+                        return $existingPayment;
+                    }
+                }
+
+                // Calculate price with discount if applicable
+                $priceInfo = $this->subscriptionService->calculatePrice(
+                    $renewalRequest->requested_plan_id,
+                    $renewalRequest->additional_schools,
+                    $renewalRequest->discountCode?->code,
+                    $request->currency,
+                    $profile->organization_id
+                );
+
+                $expectedTotal = (float) ($priceInfo['total'] ?? 0);
+                $submittedAmount = (float) $request->amount;
+                $tolerance = 0.01;
+
+                if (abs($submittedAmount - $expectedTotal) > $tolerance) {
+                    throw new \Exception("Payment amount does not match expected total. Expected {$expectedTotal} {$request->currency}.");
+                }
+
+                $subscription = $this->subscriptionService->getCurrentSubscription($profile->organization_id);
+                $plan = SubscriptionPlan::findOrFail($renewalRequest->requested_plan_id);
+                if (!$plan->is_active) {
+                    throw new \Exception('Selected plan is not active');
+                }
+
+                $billingDays = $plan->getBillingPeriodDays();
+                $periodStart = Carbon::parse($request->payment_date)->toDateString();
+                $periodEnd = Carbon::parse($request->payment_date)->addDays($billingDays)->toDateString();
+
+                $paymentRecord = PaymentRecord::create([
+                    'organization_id' => $profile->organization_id,
+                    'subscription_id' => $subscription?->id,
+                    'amount' => $submittedAmount,
+                    'currency' => $request->currency,
+                    'payment_method' => $request->payment_method,
+                    'payment_reference' => $request->payment_reference,
+                    'payment_date' => $request->payment_date,
+                    'period_start' => $periodStart,
+                    'period_end' => $periodEnd,
+                    'status' => PaymentRecord::STATUS_PENDING,
+                    'discount_code_id' => $renewalRequest->discount_code_id,
+                    'discount_amount' => $priceInfo['discount_amount'],
+                    'notes' => $request->notes,
+                    // New fee separation fields
+                    'payment_type' => PaymentRecord::TYPE_RENEWAL,
+                    'billing_period' => $plan->billing_period ?? PaymentRecord::BILLING_YEARLY,
+                    'is_recurring' => true,
+                ]);
+
+                $renewalRequest->update(['payment_record_id' => $paymentRecord->id]);
+
+                return $paymentRecord;
+            }, 3);
+
+            return response()->json([
+                'data' => $paymentRecord,
+                'message' => 'Payment submitted successfully. Awaiting confirmation.',
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
         }
-
-        if (!$renewalRequest->isPending()) {
-            return response()->json(['error' => 'Renewal request is not pending'], 400);
-        }
-
-        // Calculate price with discount if applicable
-        $priceInfo = $this->subscriptionService->calculatePrice(
-            $renewalRequest->requested_plan_id,
-            $renewalRequest->additional_schools,
-            $renewalRequest->discountCode?->code,
-            $request->currency,
-            $profile->organization_id
-        );
-
-        $subscription = $this->subscriptionService->getCurrentSubscription($profile->organization_id);
-
-        $paymentRecord = PaymentRecord::create([
-            'organization_id' => $profile->organization_id,
-            'subscription_id' => $subscription?->id,
-            'amount' => $request->amount,
-            'currency' => $request->currency,
-            'payment_method' => $request->payment_method,
-            'payment_reference' => $request->payment_reference,
-            'payment_date' => $request->payment_date,
-            'period_start' => now()->toDateString(),
-            'period_end' => now()->addYear()->toDateString(),
-            'status' => PaymentRecord::STATUS_PENDING,
-            'discount_code_id' => $renewalRequest->discount_code_id,
-            'discount_amount' => $priceInfo['discount_amount'],
-            'notes' => $request->notes,
-        ]);
-
-        return response()->json([
-            'data' => $paymentRecord,
-            'message' => 'Payment submitted successfully. Awaiting confirmation.',
-        ], 201);
     }
 
     /**

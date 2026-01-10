@@ -15,18 +15,18 @@ import IncomeCategories from './IncomeCategories';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useHasPermission } from '@/hooks/usePermissions';
+import { useHasPermission, useHasPermissionAndFeature } from '@/hooks/usePermissions';
 
 
 export default function FinanceSettings() {
     const { t } = useLanguage();
     const location = useLocation();
     
-    // Check permissions
-    const hasCurrenciesPermission = useHasPermission('currencies.read');
+    // Check permissions (currencies and exchange_rates require multi_currency feature)
+    const hasCurrenciesPermission = useHasPermissionAndFeature('currencies.read');
     const hasIncomeCategoriesPermission = useHasPermission('income_categories.read');
     const hasExpenseCategoriesPermission = useHasPermission('expense_categories.read');
-    const hasExchangeRatesPermission = useHasPermission('exchange_rates.read');
+    const hasExchangeRatesPermission = useHasPermissionAndFeature('exchange_rates.read');
 
     // Determine active tab from URL hash or default to first available
     const getDefaultTab = () => {

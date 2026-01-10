@@ -10,6 +10,7 @@ import { useProfile } from '@/hooks/useProfiles';
 import { useReportTemplates } from '@/hooks/useReportTemplates';
 import { useSchool } from '@/hooks/useSchools';
 import { useServerReport } from '@/hooks/useServerReport';
+import { useHasFeature } from '@/hooks/useSubscription';
 import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
 import { showToast } from '@/lib/toast';
 
@@ -97,7 +98,12 @@ export function ReportExportButtons<T extends Record<string, any>>({
   // This ensures reports work correctly when users switch schools
   const effectiveSchoolId = schoolId || selectedSchoolId || profile?.default_school_id;
   const { data: school } = useSchool(effectiveSchoolId || '');
-  const { data: templates } = useReportTemplates(effectiveSchoolId);
+  
+  // Only load report templates if report_templates feature is enabled
+  const hasReportTemplatesFeature = useHasFeature('report_templates');
+  const { data: templates } = useReportTemplates(
+    hasReportTemplatesFeature ? effectiveSchoolId : undefined
+  );
   
   // Report generation hook
   const {
@@ -113,8 +119,10 @@ export function ReportExportButtons<T extends Record<string, any>>({
   
   const [showReportProgress, setShowReportProgress] = useState(false);
 
-  // Find default template for the report type
+  // Find default template for the report type (only if report_templates feature is enabled)
   const defaultTemplate = useMemo(() => {
+    // If feature is disabled, don't use custom templates
+    if (!hasReportTemplatesFeature) return null;
     if (!templates || !templateType) return null;
     return (
       templates.find(
@@ -123,7 +131,7 @@ export function ReportExportButtons<T extends Record<string, any>>({
       templates.find((t) => t.template_type === templateType && t.is_active) ||
       null
     );
-  }, [templates, templateType]);
+  }, [hasReportTemplatesFeature, templates, templateType]);
 
   // Build filters summary
   const filtersSummary = buildFiltersSummary?.() || '';
@@ -151,6 +159,7 @@ export function ReportExportButtons<T extends Record<string, any>>({
         schoolId: school.id,
         schoolName: school.school_name,
         brandingId: school.id,
+        hasReportTemplatesFeature,
         hasTemplate: !!defaultTemplate,
         templateId: defaultTemplate?.id,
         dataCount: data.length,
@@ -166,6 +175,8 @@ export function ReportExportButtons<T extends Record<string, any>>({
       resetReport();
 
       // Generate report using central reporting system
+      // Only use custom template if report_templates feature is enabled and template exists
+      // Otherwise pass null to use default templates
       await generateReport({
         reportKey,
         reportType,
@@ -173,7 +184,7 @@ export function ReportExportButtons<T extends Record<string, any>>({
         columns,
         rows: reportData,
         brandingId: school.id, // School.id IS the branding_id (School = SchoolBranding)
-        reportTemplateId: defaultTemplate?.id,
+        reportTemplateId: hasReportTemplatesFeature && defaultTemplate ? defaultTemplate.id : null,
         parameters: {
           filters_summary: filtersSummary || undefined,
           ...parameters,

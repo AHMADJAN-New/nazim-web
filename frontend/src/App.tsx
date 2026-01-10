@@ -384,7 +384,9 @@ const App = () => (
                   {/* Protected routes with persistent layout */}
                   <Route element={
                     <ProtectedRoute>
-                      <PersistentLayout />
+                      <TourProviderWrapper tours={[appCoreTour]} autoStart={false}>
+                        <PersistentLayout />
+                      </TourProviderWrapper>
                     </ProtectedRoute>
                   }>
                     {/* Dashboard with optimized loading */}

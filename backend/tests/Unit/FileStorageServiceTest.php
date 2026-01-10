@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Services\Storage\FileStorageService;
+use App\Services\Subscription\UsageTrackingService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -16,7 +17,20 @@ class FileStorageServiceTest extends TestCase
         parent::setUp();
         Storage::fake('local');
         Storage::fake('public');
-        $this->service = new FileStorageService();
+
+        $usageTracking = $this->createMock(UsageTrackingService::class);
+        $usageTracking->method('canStoreFile')->willReturn([
+            'allowed' => true,
+            'current' => 0,
+            'limit' => -1,
+            'remaining' => -1,
+            'percentage' => 0,
+            'warning' => false,
+            'message' => null,
+        ]);
+        $usageTracking->method('incrementStorageUsage');
+
+        $this->service = new FileStorageService($usageTracking);
     }
 
     // ==============================================

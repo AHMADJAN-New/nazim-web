@@ -567,6 +567,14 @@ class HelpCenterArticleController extends Controller
     public function show(string $id)
     {
         try {
+            // Validate that $id is a valid UUID (prevent route conflicts with string routes like "context")
+            if (!Str::isUuid($id)) {
+                return response()->json([
+                    'error' => 'Invalid article ID format',
+                    'message' => 'Article ID must be a valid UUID',
+                ], 400);
+            }
+
             $context = $this->getUserContext(request());
             $user = $context['user'];
             $profile = $context['profile'];

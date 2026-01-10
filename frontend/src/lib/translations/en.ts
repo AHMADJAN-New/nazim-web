@@ -3026,6 +3026,8 @@ export const en: TranslationKeys = {
     'events.addGuest': 'Add Guest',
     'events.types': 'Event Types',
     'events.users': 'Event Users',
+    'events.export': 'Export ID Cards',
+    'students.management': 'Management',
     assets: 'Assets',
     'assets.dashboard': 'Assets Dashboard',
     'assets.categories': 'Asset Categories',

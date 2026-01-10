@@ -8,6 +8,7 @@ use App\Models\OrganizationSubscription;
 use App\Models\PlanFeature;
 use App\Models\SubscriptionPlan;
 use App\Services\Subscription\UsageTrackingService;
+use Illuminate\Support\Facades\Cache;
 
 class FeatureGateService
 {
@@ -101,10 +102,16 @@ class FeatureGateService
     private function getMinimumPlanForFeature(string $featureKey): ?array
     {
         $canonical = $this->normalizeFeatureKey($featureKey);
+        static $cache = [];
+
+        if (array_key_exists($canonical, $cache)) {
+            return $cache[$canonical];
+        }
+
         $order = config('subscription_features.plan_order', []);
 
         if (empty($order)) {
-            return null;
+            return $cache[$canonical] = null;
         }
 
         $plans = SubscriptionPlan::whereIn('slug', $order)->get()->keyBy('slug');
@@ -117,11 +124,11 @@ class FeatureGateService
 
             $features = $this->getPlanFeatureKeysWithInheritance($plan);
             if (in_array($canonical, $features, true)) {
-                return ['slug' => $plan->slug, 'name' => $plan->name];
+                return $cache[$canonical] = ['slug' => $plan->slug, 'name' => $plan->name];
             }
         }
 
-        return null;
+        return $cache[$canonical] = null;
     }
 
     private function getLockedFeatures(OrganizationSubscription $subscription): array
@@ -169,8 +176,27 @@ class FeatureGateService
      */
     public function getFeatureAccessStatus(string $organizationId, string $featureKey): array
     {
-        $canonical = $this->normalizeFeatureKey($featureKey);
         $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
+        $enabledFeatures = $this->getEnabledFeatures($organizationId);
+
+        return $this->getFeatureAccessStatusWithContext(
+            $organizationId,
+            $featureKey,
+            $subscription,
+            $enabledFeatures
+        );
+    }
+
+    /**
+     * Internal resolver to avoid repeated DB work when caller already has context.
+     */
+    private function getFeatureAccessStatusWithContext(
+        string $organizationId,
+        string $featureKey,
+        ?OrganizationSubscription $subscription,
+        array $enabledFeatures
+    ): array {
+        $canonical = $this->normalizeFeatureKey($featureKey);
 
         if (!$subscription) {
             return [
@@ -198,7 +224,7 @@ class FeatureGateService
             try {
                 $subscription->load('plan');
             } catch (\Exception $e) {
-                \Log::warning('Failed to load plan relationship in getFeatureAccessStatus: ' . $e->getMessage());
+                \Log::warning('Failed to load plan relationship in feature access resolver: ' . $e->getMessage());
                 return [
                     'allowed' => false,
                     'access_level' => 'none',
@@ -210,7 +236,6 @@ class FeatureGateService
             }
         }
 
-        $enabledFeatures = $this->getEnabledFeatures($organizationId);
         $isEnabled = in_array($canonical, $enabledFeatures, true);
         $lockedFeatures = $this->getLockedFeatures($subscription);
         $isLockedReadonly = in_array($canonical, $lockedFeatures, true);
@@ -289,49 +314,47 @@ class FeatureGateService
      */
     public function getEnabledFeatures(string $organizationId): array
     {
-        $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
-        $enabledFeatures = [];
-        $hasPlanFeatures = false;
+        $cacheKey = "subscription:enabled-features:v1:{$organizationId}";
 
-        // Get plan features
-        if ($subscription) {
-            // Load plan relationship if not already loaded
-            if (!$subscription->relationLoaded('plan')) {
-                $subscription->load('plan');
+        return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($organizationId) {
+            $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
+            $enabledFeatures = [];
+
+            // Get plan features
+            if ($subscription) {
+                // Load plan relationship if not already loaded
+                if (!$subscription->relationLoaded('plan')) {
+                    $subscription->load('plan');
+                }
+
+                if ($subscription->plan) {
+                    $planFeatures = $this->getPlanFeatureKeysWithInheritance($subscription->plan);
+                    $enabledFeatures = array_merge($enabledFeatures, $planFeatures);
+                }
             }
-            
-            if ($subscription->plan) {
-                $planFeatures = $this->getPlanFeatureKeysWithInheritance($subscription->plan);
-                $enabledFeatures = array_merge($enabledFeatures, $planFeatures);
-                // Check if plan has any features assigned (even if disabled)
-                $hasPlanFeatures = $subscription->plan->features()->exists();
+
+            // Get addon features (addons override plan features)
+            $addonFeatures = OrganizationFeatureAddon::where('organization_id', $organizationId)
+                ->where('is_enabled', true)
+                ->whereNull('deleted_at')
+                ->where(function ($q) {
+                    $q->whereNull('expires_at')
+                        ->orWhere('expires_at', '>', now());
+                })
+                ->pluck('feature_key')
+                ->toArray();
+
+            // Addons override plan features - merge and deduplicate
+            $enabledFeatures = array_unique(array_merge($enabledFeatures, $addonFeatures));
+
+            $normalizedFeatures = [];
+            foreach ($enabledFeatures as $featureKey) {
+                $normalizedFeatures = array_merge($normalizedFeatures, $this->getFeatureKeyVariants($featureKey));
             }
-        }
 
-        // Get addon features (addons override plan features)
-        $addonFeatures = OrganizationFeatureAddon::where('organization_id', $organizationId)
-            ->where('is_enabled', true)
-            ->whereNull('deleted_at')
-            ->where(function ($q) {
-                $q->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', now());
-            })
-            ->pluck('feature_key')
-            ->toArray();
-
-        // Addons override plan features - merge and deduplicate
-        $enabledFeatures = array_unique(array_merge($enabledFeatures, $addonFeatures));
-
-        $normalizedFeatures = [];
-        foreach ($enabledFeatures as $featureKey) {
-            $normalizedFeatures = array_merge($normalizedFeatures, $this->getFeatureKeyVariants($featureKey));
-        }
-
-        // CRITICAL: Only return features that are explicitly enabled in the plan or as addons
-        // NO fallback to enable all features - this enforces subscription-based access control
-        // Users must have the feature in their plan or as an addon to access it
-
-        return array_values(array_unique($normalizedFeatures));
+            // CRITICAL: Only return features that are explicitly enabled in the plan or as addons
+            return array_values(array_unique($normalizedFeatures));
+        });
     }
 
     /**
@@ -339,7 +362,21 @@ class FeatureGateService
      */
     public function getAllFeaturesStatus(string $organizationId): array
     {
+        $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
+        if ($subscription && !$subscription->relationLoaded('plan')) {
+            try {
+                $subscription->load('plan');
+            } catch (\Exception $e) {
+                \Log::warning('Failed to load plan relationship in getAllFeaturesStatus: ' . $e->getMessage());
+            }
+        }
+
         $enabledFeatures = $this->getEnabledFeatures($organizationId);
+        $addonsByKey = OrganizationFeatureAddon::where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->get()
+            ->keyBy('feature_key');
+
         $allFeatures = FeatureDefinition::active()
             ->orderBy('category')
             ->orderBy('sort_order')
@@ -348,15 +385,17 @@ class FeatureGateService
         $result = [];
 
         foreach ($allFeatures as $feature) {
-            $isEnabled = in_array($feature->feature_key, $enabledFeatures);
-            $access = $this->getFeatureAccessStatus($organizationId, $feature->feature_key);
+            $isEnabled = in_array($feature->feature_key, $enabledFeatures, true);
+            $access = $this->getFeatureAccessStatusWithContext(
+                $organizationId,
+                $feature->feature_key,
+                $subscription,
+                $enabledFeatures
+            );
             $parentFeature = $this->getFeatureParent($feature->feature_key);
             
             // Check if it's from addon (including disabled addons for display)
-            $addon = OrganizationFeatureAddon::where('organization_id', $organizationId)
-                ->where('feature_key', $feature->feature_key)
-                ->whereNull('deleted_at')
-                ->first();
+            $addon = $addonsByKey->get($feature->feature_key);
             $isAddon = $addon !== null;
 
             $result[] = [
@@ -378,6 +417,116 @@ class FeatureGateService
         }
 
         return $result;
+    }
+
+    /**
+     * Filter usage data to only include limits tied to enabled features.
+     * CRITICAL: storage_gb is always included (no feature required)
+     */
+    public function filterUsageByFeatures(string $organizationId, array $usage): array
+    {
+        $limitFeatureMap = config('subscription_features.limit_feature_map', []);
+        if (empty($limitFeatureMap) || empty($usage)) {
+            return $usage;
+        }
+
+        $enabledFeatures = $this->getEnabledFeatures($organizationId);
+        $enabledSet = array_fill_keys($enabledFeatures, true);
+        $filtered = [];
+
+        foreach ($usage as $resourceKey => $info) {
+            $required = $limitFeatureMap[$resourceKey] ?? null;
+
+            // Always include storage_gb (no feature required)
+            if ($resourceKey === 'storage_gb') {
+                $filtered[$resourceKey] = $info;
+                continue;
+            }
+
+            // If no features are enabled and this resource requires a feature, skip it
+            if (empty($enabledFeatures) && $required !== null) {
+                continue;
+            }
+
+            // If resource requires a feature, check if feature is enabled
+            if ($required !== null) {
+                $requiredFeatures = is_array($required) ? $required : [$required];
+                $hasAny = false;
+
+                foreach ($requiredFeatures as $featureKey) {
+                    if (isset($enabledSet[$featureKey])) {
+                        $hasAny = true;
+                        break;
+                    }
+                }
+
+                if (!$hasAny) {
+                    continue;
+                }
+            }
+
+            // If no feature required or feature is enabled, include it
+            $filtered[$resourceKey] = $info;
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * Filter warnings to only include limits tied to enabled features.
+     */
+    public function filterWarningsByFeatures(string $organizationId, array $warnings): array
+    {
+        $limitFeatureMap = config('subscription_features.limit_feature_map', []);
+        if (empty($limitFeatureMap) || empty($warnings)) {
+            return $warnings;
+        }
+
+        $enabledFeatures = $this->getEnabledFeatures($organizationId);
+        $enabledSet = array_fill_keys($enabledFeatures, true);
+        $filtered = [];
+
+        foreach ($warnings as $warning) {
+            $resourceKey = $warning['resource_key'] ?? null;
+            if (!$resourceKey) {
+                continue;
+            }
+
+            $required = $limitFeatureMap[$resourceKey] ?? null;
+
+            // Always include storage_gb warnings (no feature required)
+            if ($resourceKey === 'storage_gb') {
+                $filtered[] = $warning;
+                continue;
+            }
+
+            // If no features are enabled and this resource requires a feature, skip it
+            if (empty($enabledFeatures) && $required !== null) {
+                continue;
+            }
+
+            // If resource requires a feature, check if feature is enabled
+            if ($required !== null) {
+                $requiredFeatures = is_array($required) ? $required : [$required];
+                $hasAny = false;
+
+                foreach ($requiredFeatures as $featureKey) {
+                    if (isset($enabledSet[$featureKey])) {
+                        $hasAny = true;
+                        break;
+                    }
+                }
+
+                if (!$hasAny) {
+                    continue;
+                }
+            }
+
+            // If no feature required or feature is enabled, include it
+            $filtered[] = $warning;
+        }
+
+        return $filtered;
     }
 
     /**

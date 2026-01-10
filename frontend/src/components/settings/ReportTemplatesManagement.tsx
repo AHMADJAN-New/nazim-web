@@ -46,7 +46,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useHasPermission } from '@/hooks/usePermissions';
+import { useHasPermissionAndFeature } from '@/hooks/usePermissions';
 import { useReportTemplates, useCreateReportTemplate, useUpdateReportTemplate, useDeleteReportTemplate, type ReportTemplate, type CreateReportTemplateData } from '@/hooks/useReportTemplates';
 import { useSchools } from '@/hooks/useSchools';
 import { useWatermarks } from '@/hooks/useWatermarks';
@@ -99,11 +99,11 @@ const TEMPLATE_TYPES = [
 
 export function ReportTemplatesManagement() {
     const { t } = useLanguage();
-    // Allow users with reports.read to create templates (they can see the page)
-    const hasReportsPermission = useHasPermission('reports.read');
-    const hasCreatePermission = useHasPermission('reports.create') || hasReportsPermission;
-    const hasUpdatePermission = useHasPermission('reports.update') || hasReportsPermission;
-    const hasDeletePermission = useHasPermission('reports.delete');
+    // Use report_templates.* permissions with feature checks (report_templates feature required)
+    const hasReportsPermission = useHasPermissionAndFeature('report_templates.read');
+    const hasCreatePermission = useHasPermissionAndFeature('report_templates.create') || hasReportsPermission;
+    const hasUpdatePermission = useHasPermissionAndFeature('report_templates.update') || hasReportsPermission;
+    const hasDeletePermission = useHasPermissionAndFeature('report_templates.delete');
     const { data: schools } = useSchools();
     const [selectedSchoolId, setSelectedSchoolId] = useState<string | undefined>();
     const { data: templates, isLoading } = useReportTemplates(selectedSchoolId);

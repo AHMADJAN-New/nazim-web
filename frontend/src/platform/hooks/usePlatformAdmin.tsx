@@ -300,7 +300,13 @@ export const useUpdatePlatformPlan = () => {
       return mapPlanApiToDomain(response.data);
     },
     onSuccess: () => {
+      // CRITICAL: Invalidate plans cache and features cache
+      // This ensures that when a plan is updated, all organizations using that plan
+      // get updated feature information immediately
       queryClient.invalidateQueries({ queryKey: ['platform-plans'] });
+      queryClient.invalidateQueries({ queryKey: ['subscription-features'] }); // Invalidate all organization feature caches
+      queryClient.invalidateQueries({ queryKey: ['subscription-status'] }); // Invalidate subscription status caches
+      queryClient.invalidateQueries({ queryKey: ['subscription-gate-status'] }); // Invalidate gate status caches
       showToast.success('Plan updated successfully');
     },
     onError: (error: Error) => {

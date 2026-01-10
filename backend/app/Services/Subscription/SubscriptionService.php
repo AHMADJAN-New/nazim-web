@@ -14,10 +14,32 @@ use App\Models\RenewalRequest;
 use App\Models\SubscriptionHistory;
 use App\Models\SubscriptionPlan;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class SubscriptionService
 {
+    /**
+     * Lock the organization row to serialize subscription state changes.
+     */
+    private function lockOrganizationForUpdate(string $organizationId): void
+    {
+        Organization::where('id', $organizationId)->lockForUpdate()->first();
+    }
+
+    /**
+     * Get current subscription row locked for update.
+     * Must be called inside a DB transaction.
+     */
+    private function getCurrentSubscriptionLocked(string $organizationId): ?OrganizationSubscription
+    {
+        return OrganizationSubscription::where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->orderBy('created_at', 'desc')
+            ->lockForUpdate()
+            ->first();
+    }
+
     /**
      * Get the current subscription for an organization
      */
@@ -107,8 +129,53 @@ class SubscriptionService
         bool $licensePaid = false,
         ?string $licensePaymentId = null
     ): OrganizationSubscription {
+        return DB::transaction(function () use (
+            $organizationId,
+            $planId,
+            $currency,
+            $amountPaid,
+            $additionalSchools,
+            $performedBy,
+            $notes,
+            $licensePaid,
+            $licensePaymentId
+        ) {
+            return $this->activateSubscriptionInTransaction(
+                $organizationId,
+                $planId,
+                $currency,
+                $amountPaid,
+                $additionalSchools,
+                $performedBy,
+                $notes,
+                $licensePaid,
+                $licensePaymentId
+            );
+        }, 3);
+    }
+
+    /**
+     * Internal activation implementation.
+     * Must be called inside a DB transaction.
+     */
+    private function activateSubscriptionInTransaction(
+        string $organizationId,
+        string $planId,
+        string $currency = 'AFN',
+        float $amountPaid = 0,
+        int $additionalSchools = 0,
+        ?string $performedBy = null,
+        ?string $notes = null,
+        bool $licensePaid = false,
+        ?string $licensePaymentId = null
+    ): OrganizationSubscription {
+        $this->lockOrganizationForUpdate($organizationId);
+
         $plan = SubscriptionPlan::findOrFail($planId);
-        $currentSubscription = $this->getCurrentSubscription($organizationId);
+        if (!$plan->is_active) {
+            throw new \Exception('Selected plan is not active');
+        }
+        $currentSubscription = $this->getCurrentSubscriptionLocked($organizationId);
 
         $startsAt = now();
         
@@ -199,6 +266,9 @@ class SubscriptionService
             $notes
         );
 
+        // Invalidate org-scoped entitlement caches
+        Cache::forget("subscription:enabled-features:v1:{$organizationId}");
+
         return $subscription;
     }
 
@@ -262,103 +332,111 @@ class SubscriptionService
      */
     public function processSubscriptionStatusTransitions(): array
     {
-        $processed = [
-            'to_grace_period' => 0,
-            'to_readonly' => 0,
-            'to_expired' => 0,
-        ];
+        return DB::transaction(function () {
+            $processed = [
+                'to_grace_period' => 0,
+                'to_readonly' => 0,
+                'to_expired' => 0,
+            ];
 
-        // Trial/Active → Grace Period (expired but within grace period)
-        $toGracePeriod = OrganizationSubscription::whereIn('status', [
-                OrganizationSubscription::STATUS_TRIAL,
-                OrganizationSubscription::STATUS_ACTIVE,
-                OrganizationSubscription::STATUS_PENDING_RENEWAL,
-            ])
-            ->where('expires_at', '<', now())
-            ->whereNull('deleted_at')
-            ->get();
+            // Trial/Active → Grace Period (expired but within grace period)
+            $toGracePeriod = OrganizationSubscription::with('plan')
+                ->whereIn('status', [
+                    OrganizationSubscription::STATUS_TRIAL,
+                    OrganizationSubscription::STATUS_ACTIVE,
+                    OrganizationSubscription::STATUS_PENDING_RENEWAL,
+                ])
+                ->where('expires_at', '<', now())
+                ->whereNull('deleted_at')
+                ->lockForUpdate()
+                ->get();
 
-        foreach ($toGracePeriod as $subscription) {
-            $plan = $subscription->plan;
-            $gracePeriodDays = $plan ? $plan->grace_period_days : 14;
-            
-            $subscription->update([
-                'status' => OrganizationSubscription::STATUS_GRACE_PERIOD,
-                'grace_period_ends_at' => Carbon::now()->addDays($gracePeriodDays),
-            ]);
+            foreach ($toGracePeriod as $subscription) {
+                $oldStatus = $subscription->status;
+                $plan = $subscription->plan;
+                $gracePeriodDays = $plan ? $plan->grace_period_days : 14;
 
-            SubscriptionHistory::log(
-                $subscription->organization_id,
-                SubscriptionHistory::ACTION_GRACE_PERIOD,
-                $subscription->id,
-                null,
-                null,
-                OrganizationSubscription::STATUS_ACTIVE,
-                OrganizationSubscription::STATUS_GRACE_PERIOD,
-                null,
-                "Subscription entered {$gracePeriodDays}-day grace period"
-            );
+                $subscription->update([
+                    'status' => OrganizationSubscription::STATUS_GRACE_PERIOD,
+                    'grace_period_ends_at' => Carbon::now()->addDays($gracePeriodDays),
+                ]);
 
-            $processed['to_grace_period']++;
-        }
+                SubscriptionHistory::log(
+                    $subscription->organization_id,
+                    SubscriptionHistory::ACTION_GRACE_PERIOD,
+                    $subscription->id,
+                    null,
+                    null,
+                    $oldStatus,
+                    OrganizationSubscription::STATUS_GRACE_PERIOD,
+                    null,
+                    "Subscription entered {$gracePeriodDays}-day grace period"
+                );
 
-        // Grace Period → Readonly (grace period ended but within readonly period)
-        $toReadonly = OrganizationSubscription::where('status', OrganizationSubscription::STATUS_GRACE_PERIOD)
-            ->where('grace_period_ends_at', '<', now())
-            ->whereNull('deleted_at')
-            ->get();
+                $processed['to_grace_period']++;
+            }
 
-        foreach ($toReadonly as $subscription) {
-            $plan = $subscription->plan;
-            $readonlyPeriodDays = $plan ? $plan->readonly_period_days : 60;
+            // Grace Period → Readonly (grace period ended but within readonly period)
+            $toReadonly = OrganizationSubscription::with('plan')
+                ->where('status', OrganizationSubscription::STATUS_GRACE_PERIOD)
+                ->where('grace_period_ends_at', '<', now())
+                ->whereNull('deleted_at')
+                ->lockForUpdate()
+                ->get();
 
-            $subscription->update([
-                'status' => OrganizationSubscription::STATUS_READONLY,
-                'readonly_period_ends_at' => Carbon::now()->addDays($readonlyPeriodDays),
-            ]);
+            foreach ($toReadonly as $subscription) {
+                $plan = $subscription->plan;
+                $readonlyPeriodDays = $plan ? $plan->readonly_period_days : 60;
 
-            SubscriptionHistory::log(
-                $subscription->organization_id,
-                SubscriptionHistory::ACTION_READONLY,
-                $subscription->id,
-                null,
-                null,
-                OrganizationSubscription::STATUS_GRACE_PERIOD,
-                OrganizationSubscription::STATUS_READONLY,
-                null,
-                "Subscription entered {$readonlyPeriodDays}-day readonly period"
-            );
+                $subscription->update([
+                    'status' => OrganizationSubscription::STATUS_READONLY,
+                    'readonly_period_ends_at' => Carbon::now()->addDays($readonlyPeriodDays),
+                ]);
 
-            $processed['to_readonly']++;
-        }
+                SubscriptionHistory::log(
+                    $subscription->organization_id,
+                    SubscriptionHistory::ACTION_READONLY,
+                    $subscription->id,
+                    null,
+                    null,
+                    OrganizationSubscription::STATUS_GRACE_PERIOD,
+                    OrganizationSubscription::STATUS_READONLY,
+                    null,
+                    "Subscription entered {$readonlyPeriodDays}-day readonly period"
+                );
 
-        // Readonly → Expired (readonly period ended)
-        $toExpired = OrganizationSubscription::where('status', OrganizationSubscription::STATUS_READONLY)
-            ->where('readonly_period_ends_at', '<', now())
-            ->whereNull('deleted_at')
-            ->get();
+                $processed['to_readonly']++;
+            }
 
-        foreach ($toExpired as $subscription) {
-            $subscription->update([
-                'status' => OrganizationSubscription::STATUS_EXPIRED,
-            ]);
+            // Readonly → Expired (readonly period ended)
+            $toExpired = OrganizationSubscription::where('status', OrganizationSubscription::STATUS_READONLY)
+                ->where('readonly_period_ends_at', '<', now())
+                ->whereNull('deleted_at')
+                ->lockForUpdate()
+                ->get();
 
-            SubscriptionHistory::log(
-                $subscription->organization_id,
-                SubscriptionHistory::ACTION_EXPIRED,
-                $subscription->id,
-                null,
-                null,
-                OrganizationSubscription::STATUS_READONLY,
-                OrganizationSubscription::STATUS_EXPIRED,
-                null,
-                "Subscription expired after readonly period"
-            );
+            foreach ($toExpired as $subscription) {
+                $subscription->update([
+                    'status' => OrganizationSubscription::STATUS_EXPIRED,
+                ]);
 
-            $processed['to_expired']++;
-        }
+                SubscriptionHistory::log(
+                    $subscription->organization_id,
+                    SubscriptionHistory::ACTION_EXPIRED,
+                    $subscription->id,
+                    null,
+                    null,
+                    OrganizationSubscription::STATUS_READONLY,
+                    OrganizationSubscription::STATUS_EXPIRED,
+                    null,
+                    "Subscription expired after readonly period"
+                );
 
-        return $processed;
+                $processed['to_expired']++;
+            }
+
+            return $processed;
+        }, 3);
     }
 
     /**
@@ -375,6 +453,11 @@ class SubscriptionService
         
         if (!$subscription) {
             throw new \Exception('No active subscription found');
+        }
+
+        $plan = SubscriptionPlan::findOrFail($planId);
+        if (!$plan->is_active) {
+            throw new \Exception('Selected plan is not active');
         }
 
         $discountCodeId = null;
@@ -403,59 +486,123 @@ class SubscriptionService
         string $paymentRecordId,
         string $performedBy
     ): OrganizationSubscription {
-        $request = RenewalRequest::findOrFail($requestId);
-        
-        if (!$request->isPending()) {
-            throw new \Exception('Renewal request is not pending');
-        }
+        return DB::transaction(function () use ($requestId, $paymentRecordId, $performedBy) {
+            $request = RenewalRequest::where('id', $requestId)->lockForUpdate()->firstOrFail();
 
-        $paymentRecord = PaymentRecord::findOrFail($paymentRecordId);
-        
-        // Confirm the payment
-        $paymentRecord->update([
-            'status' => PaymentRecord::STATUS_CONFIRMED,
-            'confirmed_by' => $performedBy,
-            'confirmed_at' => now(),
-        ]);
+            // Idempotency: if already approved with this payment, return the linked subscription.
+            if ($request->status === RenewalRequest::STATUS_APPROVED) {
+                if ($request->payment_record_id && $request->payment_record_id !== $paymentRecordId) {
+                    throw new \Exception('Renewal request already approved with a different payment');
+                }
 
-        // Apply discount code if used
-        if ($request->discount_code_id) {
-            $discountCode = DiscountCode::find($request->discount_code_id);
-            if ($discountCode) {
-                $discountCode->incrementUsage();
-                
-                DiscountCodeUsage::create([
-                    'discount_code_id' => $discountCode->id,
-                    'organization_id' => $request->organization_id,
-                    'payment_record_id' => $paymentRecord->id,
-                    'discount_applied' => $paymentRecord->discount_amount,
+                $paymentRecord = PaymentRecord::where('id', $paymentRecordId)->lockForUpdate()->firstOrFail();
+                if ($paymentRecord->subscription_id) {
+                    $existing = OrganizationSubscription::find($paymentRecord->subscription_id);
+                    if ($existing) {
+                        return $existing;
+                    }
+                }
+
+                $current = $this->getCurrentSubscription($request->organization_id);
+                if ($current) {
+                    return $current;
+                }
+            }
+
+            if (!$request->isPending()) {
+                throw new \Exception('Renewal request is not pending');
+            }
+
+            $this->lockOrganizationForUpdate($request->organization_id);
+
+            $paymentRecord = PaymentRecord::where('id', $paymentRecordId)->lockForUpdate()->firstOrFail();
+
+            if ($paymentRecord->organization_id !== $request->organization_id) {
+                throw new \Exception('Payment does not belong to this organization');
+            }
+
+            if ($paymentRecord->isRejected()) {
+                throw new \Exception('Payment was rejected');
+            }
+
+            // Validate payment amount matches expected total (within tolerance)
+            $discountCodeStr = null;
+            if ($request->discount_code_id) {
+                $discountCodeStr = DiscountCode::find($request->discount_code_id)?->code;
+            }
+
+            $priceInfo = $this->calculatePrice(
+                $request->requested_plan_id,
+                $request->additional_schools,
+                $discountCodeStr,
+                $paymentRecord->currency,
+                $request->organization_id
+            );
+
+            $expectedTotal = (float) ($priceInfo['total'] ?? 0);
+            $submittedAmount = (float) $paymentRecord->amount;
+            $tolerance = 0.01;
+
+            if (abs($submittedAmount - $expectedTotal) > $tolerance) {
+                throw new \Exception("Payment amount does not match expected total. Expected {$expectedTotal} {$paymentRecord->currency}.");
+            }
+
+            // Confirm payment (idempotent)
+            if ($paymentRecord->isPending()) {
+                $paymentRecord->update([
+                    'status' => PaymentRecord::STATUS_CONFIRMED,
+                    'confirmed_by' => $performedBy,
+                    'confirmed_at' => now(),
                 ]);
             }
-        }
 
-        // Activate the new subscription
-        $subscription = $this->activateSubscription(
-            $request->organization_id,
-            $request->requested_plan_id,
-            $paymentRecord->currency,
-            $paymentRecord->getNetAmount(),
-            $request->additional_schools,
-            $performedBy,
-            "Renewed via request #{$request->id}"
-        );
+            $currentSubscription = $this->getCurrentSubscriptionLocked($request->organization_id);
 
-        // Update the request
-        $request->update([
-            'status' => RenewalRequest::STATUS_APPROVED,
-            'processed_by' => $performedBy,
-            'processed_at' => now(),
-            'payment_record_id' => $paymentRecord->id,
-        ]);
+            // Apply discount code if used (idempotent per payment record)
+            if ($request->discount_code_id) {
+                $alreadyLogged = DiscountCodeUsage::where('payment_record_id', $paymentRecord->id)->exists();
+                if (!$alreadyLogged) {
+                    $discountCode = DiscountCode::find($request->discount_code_id);
+                    if ($discountCode) {
+                        $discountCode->incrementUsage();
 
-        // Link payment to new subscription
-        $paymentRecord->update(['subscription_id' => $subscription->id]);
+                        DiscountCodeUsage::create([
+                            'discount_code_id' => $discountCode->id,
+                            'organization_id' => $request->organization_id,
+                            'payment_record_id' => $paymentRecord->id,
+                            'discount_applied' => $paymentRecord->discount_amount,
+                        ]);
+                    }
+                }
+            }
 
-        return $subscription;
+            // Activate the new subscription (within the same transaction)
+            $subscription = $this->activateSubscriptionInTransaction(
+                $request->organization_id,
+                $request->requested_plan_id,
+                $paymentRecord->currency,
+                $paymentRecord->amount,
+                $request->additional_schools,
+                $performedBy,
+                "Renewed via request #{$request->id}",
+                // Preserve license payment state across renewals/upgrades
+                !empty($currentSubscription?->license_paid_at),
+                $currentSubscription?->license_payment_id
+            );
+
+            // Update the request
+            $request->update([
+                'status' => RenewalRequest::STATUS_APPROVED,
+                'processed_by' => $performedBy,
+                'processed_at' => now(),
+                'payment_record_id' => $paymentRecord->id,
+            ]);
+
+            // Link payment to new subscription
+            $paymentRecord->update(['subscription_id' => $subscription->id]);
+
+            return $subscription;
+        }, 3);
     }
 
     /**
@@ -594,6 +741,8 @@ class SubscriptionService
             "Added feature addon: {$featureKey}",
             ['feature_key' => $featureKey, 'price_paid' => $pricePaid]
         );
+
+        Cache::forget("subscription:enabled-features:v1:{$organizationId}");
 
         return $addon;
     }

@@ -221,6 +221,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasSecurityMonitoringPermission = useHasPermissionAndFeature('security_monitoring.read');
   const hasBrandingPermission = useHasPermissionAndFeature('school_branding.read');
   const hasReportsPermission = useHasPermissionAndFeature('reports.read');
+  const hasReportTemplatesPermission = useHasPermissionAndFeature('report_templates.read');
   const hasResidencyTypesPermission = useHasPermissionAndFeature('residency_types.read');
   const hasAcademicYearsPermission = useHasPermissionAndFeature('academic_years.read');
   const hasExamTypesPermission = useHasPermissionAndFeature('exam_types.read');
@@ -1262,7 +1263,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/settings/schools",
             icon: School,
           }] : []),
-          ...(hasReportsPermission ? [{
+          ...(hasReportTemplatesPermission ? [{
             title: "Report Templates",
             url: "/settings/report-templates",
             icon: FileText,

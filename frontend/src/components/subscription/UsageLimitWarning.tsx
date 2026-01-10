@@ -61,7 +61,9 @@ export function UsageLimitWarning({
         <span className="flex-1">
           {isBlocked 
             ? (t('subscription.limitReachedCantCreate') || 'Limit reached. Cannot create more.')
-            : `${usage.current}/${usage.limit} ${t('subscription.used') || 'used'} (${Math.round(usage.percentage)}%)`
+            : resourceKey === 'storage_gb'
+              ? `${Number(usage.current).toFixed(2)}/${usage.limit === -1 ? '∞' : Number(usage.limit).toFixed(2)} GB ${t('subscription.used') || 'used'} (${Math.round(usage.percentage)}%)`
+              : `${usage.current}/${usage.limit === -1 ? '∞' : usage.limit}${usage.unit ? ` ${usage.unit}` : ''} ${t('subscription.used') || 'used'} (${Math.round(usage.percentage)}%)`
           }
         </span>
         {showProgress && !isBlocked && (
@@ -154,7 +156,10 @@ export function UsageLimitWarning({
                   ? 'text-amber-700 dark:text-amber-300'
                   : 'text-yellow-700 dark:text-yellow-300'
             )}>
-              {usage.current} / {usage.limit}
+              {resourceKey === 'storage_gb'
+                ? `${Number(usage.current).toFixed(2)} / ${usage.limit === -1 ? '∞' : Number(usage.limit).toFixed(2)} GB`
+                : `${usage.current} / ${usage.limit === -1 ? '∞' : usage.limit}${usage.unit ? ` ${usage.unit}` : ''}`
+              }
             </span>
           </div>
         )}

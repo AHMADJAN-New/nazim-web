@@ -535,7 +535,10 @@ export default function SubscriptionPage() {
                                 item.isWarning && 'text-yellow-700',
                                 item.percentage >= 100 && 'text-red-700'
                               )}>
-                                {item.current.toLocaleString()} / {item.limit.toLocaleString()}
+                                {item.resourceKey === 'storage_gb' 
+                                  ? `${Number(item.current).toFixed(2)} / ${item.limit === -1 ? '∞' : Number(item.limit).toFixed(2)} GB`
+                                  : `${item.current.toLocaleString()} / ${item.limit === -1 ? '∞' : item.limit.toLocaleString()}${item.unit ? ` ${item.unit}` : ''}`
+                                }
                               </div>
                               <div className="text-sm text-muted-foreground">
                                 {item.percentage.toFixed(1)}%

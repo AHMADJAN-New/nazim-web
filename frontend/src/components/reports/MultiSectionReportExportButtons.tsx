@@ -9,6 +9,7 @@ import { useProfile } from '@/hooks/useProfiles';
 import { useReportTemplates } from '@/hooks/useReportTemplates';
 import { useSchool } from '@/hooks/useSchools';
 import { useServerReport } from '@/hooks/useServerReport';
+import { useHasFeature } from '@/hooks/useSubscription';
 import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
 import { showToast } from '@/lib/toast';
 
@@ -63,16 +64,23 @@ export function MultiSectionReportExportButtons({
 
   const effectiveSchoolId = schoolId || selectedSchoolId || profile?.default_school_id;
   const { data: school } = useSchool(effectiveSchoolId || '');
-  const { data: templates } = useReportTemplates(effectiveSchoolId);
+  
+  // Only load report templates if report_templates feature is enabled
+  const hasReportTemplatesFeature = useHasFeature('report_templates');
+  const { data: templates } = useReportTemplates(
+    hasReportTemplatesFeature ? effectiveSchoolId : undefined
+  );
 
   const defaultTemplate = useMemo(() => {
+    // If feature is disabled, don't use custom templates
+    if (!hasReportTemplatesFeature) return null;
     if (!templates || !templateType) return null;
     return (
       templates.find((tpl) => tpl.is_default && tpl.template_type === templateType && tpl.is_active) ||
       templates.find((tpl) => tpl.template_type === templateType && tpl.is_active) ||
       null
     );
-  }, [templates, templateType]);
+  }, [hasReportTemplatesFeature, templates, templateType]);
 
   const {
     generateReport,
@@ -127,7 +135,7 @@ export function MultiSectionReportExportButtons({
       columns: first.columns,
       rows: first.rows,
       brandingId: school.id,
-      reportTemplateId: defaultTemplate?.id,
+      reportTemplateId: hasReportTemplatesFeature && defaultTemplate ? defaultTemplate.id : null,
       parameters: {
         filters_summary: filtersSummary || undefined,
         sheets: sections.map((s) => ({
@@ -180,7 +188,7 @@ export function MultiSectionReportExportButtons({
       columns: first.columns,
       rows: first.rows,
       brandingId: school.id,
-      reportTemplateId: defaultTemplate?.id,
+      reportTemplateId: hasReportTemplatesFeature && defaultTemplate ? defaultTemplate.id : null,
       templateName: 'table_multi_sections',
       parameters: {
         filters_summary: filtersSummary || undefined,

@@ -52,4 +52,26 @@ return [
         'multi_school' => ['dependencies' => []],
         'api_access' => ['dependencies' => []],
     ],
+
+    // Map usage limits to the feature(s) that enable them.
+    // If a feature is not enabled for an organization, its related limits are hidden from usage views.
+    // null means no feature required - the limit is always available
+    'limit_feature_map' => [
+        'students' => 'students',
+        'staff' => 'staff',
+        'classes' => 'classes',
+        'exams' => 'exams',
+        'questions' => 'question_bank',
+        'documents' => 'dms',
+        'report_exports' => 'pdf_reports',
+        'finance_accounts' => 'finance',
+        'income_entries' => 'finance',
+        'expense_entries' => 'finance',
+        'assets' => 'assets',
+        'library_books' => 'library',
+        'events' => 'events',
+        'certificate_templates' => 'graduation',
+        'id_card_templates' => 'id_cards',
+        'storage_gb' => null, // No feature required - storage is always available
+    ],
 ];

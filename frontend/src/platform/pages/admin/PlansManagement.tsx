@@ -59,7 +59,7 @@ import {
   useCreatePlatformPlan,
   useUpdatePlatformPlan,
 } from '@/platform/hooks/usePlatformAdmin';
-import { usePlatformFeatureDefinitions } from '@/platform/hooks/usePlatformAdminComplete';
+import { usePlatformFeatureDefinitions, usePlatformLimitDefinitions } from '@/platform/hooks/usePlatformAdminComplete';
 import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
 
 type BillingPeriod = 'monthly' | 'quarterly' | 'yearly' | 'custom';
@@ -85,6 +85,7 @@ interface PlanFormData {
   sort_order: number;
   is_default: boolean;
   features: Record<string, boolean>;
+  limits: Record<string, number>;
 }
 
 const initialFormData: PlanFormData = {
@@ -106,6 +107,7 @@ const initialFormData: PlanFormData = {
   sort_order: 0,
   is_default: false,
   features: {},
+  limits: {},
 };
 
 export default function PlansManagement() {
@@ -118,6 +120,7 @@ export default function PlansManagement() {
   const { data: permissions, isLoading: permissionsLoading } = usePlatformAdminPermissions();
   const { data: plans, isLoading } = usePlatformPlans();
   const { data: featureDefinitions, isLoading: featuresLoading, error: featuresError } = usePlatformFeatureDefinitions();
+  const { data: limitDefinitions, isLoading: limitsLoading, error: limitsError } = usePlatformLimitDefinitions();
   const createPlan = useCreatePlatformPlan();
   const updatePlan = useUpdatePlatformPlan();
 
@@ -153,7 +156,12 @@ export default function PlansManagement() {
     featureDefinitions?.forEach((feature) => {
       features[feature.feature_key] = false;
     });
-    setFormData({ ...initialFormData, features });
+    // Initialize limits object with all limits set to -1 (unlimited)
+    const limits: Record<string, number> = {};
+    limitDefinitions?.forEach((limit) => {
+      limits[limit.resource_key] = -1; // -1 = unlimited
+    });
+    setFormData({ ...initialFormData, features, limits });
     setEditingPlan(null);
     setIsDialogOpen(true);
   };
@@ -164,6 +172,12 @@ export default function PlansManagement() {
     featureDefinitions?.forEach((feature) => {
       // Check if this feature is enabled in the plan
       features[feature.feature_key] = plan.features?.includes(feature.feature_key) || false;
+    });
+    // Initialize limits object from plan limits
+    const limits: Record<string, number> = {};
+    limitDefinitions?.forEach((limit) => {
+      // Get limit value from plan limits, default to -1 (unlimited) if not set
+      limits[limit.resource_key] = plan.limits?.[limit.resource_key] ?? -1;
     });
     setFormData({
       name: plan.name,
@@ -186,6 +200,7 @@ export default function PlansManagement() {
       sort_order: plan.sortOrder,
       is_default: plan.isDefault,
       features,
+      limits,
     });
     setEditingPlan(plan.id);
     setIsDialogOpen(true);
@@ -193,7 +208,7 @@ export default function PlansManagement() {
 
   const handleSubmit = async () => {
     try {
-      const { features, ...planData } = formData;
+      const { features, limits, ...planData } = formData;
       
       // Auto-calculate price_yearly_* from maintenance_fee_* for backward compatibility
       // Only set if billing_period is yearly (for legacy API compatibility)
@@ -224,6 +239,7 @@ export default function PlansManagement() {
         price_yearly_afn,
         price_yearly_usd,
         features: features || {},
+        limits: limits || {},
       };
       
       if (editingPlan) {
@@ -411,6 +427,15 @@ export default function PlansManagement() {
                   {featureDefinitions && featureDefinitions.length > 0 && (
                     <Badge variant="secondary" className="ml-1">
                       {Object.values(formData.features).filter(Boolean).length}/{featureDefinitions.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="limits" className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Limits
+                  {limitDefinitions && limitDefinitions.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {Object.values(formData.limits).filter((v) => v !== undefined && v !== -1).length}/{limitDefinitions.length}
                     </Badge>
                   )}
                 </TabsTrigger>
@@ -862,6 +887,160 @@ export default function PlansManagement() {
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       Please create feature definitions first
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="limits" className="flex-1 overflow-y-auto px-6 py-4 mt-4 space-y-4">
+                <div className="flex items-center justify-between pb-4 border-b">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Building2 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">Plan Limits</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {limitDefinitions && limitDefinitions.length > 0
+                          ? `Set resource limits for this plan. Use -1 for unlimited.`
+                          : 'No limits available. Please create limit definitions first.'}
+                      </p>
+                    </div>
+                  </div>
+                  {limitDefinitions && !limitsLoading && (
+                    <div className="text-right bg-primary/10 rounded-lg px-4 py-2 border border-primary/20">
+                      <div className="text-2xl font-bold text-primary">
+                        {Object.values(formData.limits).filter((v) => v !== undefined && v !== -1).length}
+                      </div>
+                      <div className="text-xs text-muted-foreground font-medium">
+                        of {limitDefinitions.length} configured
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {limitsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <span className="ml-3 text-sm text-muted-foreground">Loading limits...</span>
+                  </div>
+                ) : limitsError ? (
+                  <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+                    <p className="text-sm font-medium text-destructive">Error loading limits</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {limitsError instanceof Error ? limitsError.message : 'Unknown error occurred'}
+                    </p>
+                  </div>
+                ) : limitDefinitions && limitDefinitions.length > 0 ? (
+                  <div className="space-y-4">
+                    {(() => {
+                      const grouped = limitDefinitions.reduce((acc, limit) => {
+                        const category = limit.category || 'Other';
+                        if (!acc[category]) {
+                          acc[category] = [];
+                        }
+                        acc[category].push(limit);
+                        return acc;
+                      }, {} as Record<string, typeof limitDefinitions>);
+
+                      const sortedCategories = Object.keys(grouped).sort();
+
+                      return (
+                        <div className="space-y-4">
+                          {sortedCategories.map((category) => {
+                            const categoryLimits = grouped[category].sort(
+                              (a, b) => (a.sort_order || 0) - (b.sort_order || 0)
+                            );
+                            const configuredCount = categoryLimits.filter(
+                              (l) => formData.limits[l.resource_key] !== undefined && formData.limits[l.resource_key] !== -1
+                            ).length;
+
+                            return (
+                              <Card key={category} className="overflow-hidden">
+                                <CardHeader className="pb-3">
+                                  <div className="flex items-center justify-between">
+                                    <CardTitle className="text-base capitalize">{category}</CardTitle>
+                                    <Badge variant="outline" className="text-xs">
+                                      {configuredCount} / {categoryLimits.length} configured
+                                    </Badge>
+                                  </div>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                  {categoryLimits.map((limit) => {
+                                    const limitValue = formData.limits[limit.resource_key] ?? -1;
+                                    const isUnlimited = limitValue === -1 || limitValue === undefined;
+                                    const unit = limit.unit === 'count' ? '' : limit.unit.toUpperCase();
+                                    
+                                    return (
+                                      <div
+                                        key={limit.resource_key}
+                                        className={cn(
+                                          'flex items-center justify-between p-3 rounded-lg border transition-all',
+                                          !isUnlimited
+                                            ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-800'
+                                            : 'bg-background border-border hover:border-primary/50'
+                                        )}
+                                      >
+                                        <div className="flex-1 min-w-0 mr-4">
+                                          <div className="flex items-center gap-2">
+                                            <Building2 className={cn(
+                                              'h-4 w-4 flex-shrink-0',
+                                              !isUnlimited ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'
+                                            )} />
+                                            <div className="font-medium text-sm capitalize">
+                                              {limit.name || limit.resource_key.replace(/_/g, ' ')}
+                                            </div>
+                                          </div>
+                                          {limit.description && (
+                                            <p className="text-xs text-muted-foreground ml-6 mt-1">
+                                              {limit.description}
+                                            </p>
+                                          )}
+                                          <p className="text-xs text-muted-foreground ml-6 mt-1">
+                                            Unit: {unit || 'count'} • Reset: {limit.reset_period || 'never'}
+                                          </p>
+                                        </div>
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                          <Input
+                                            type="number"
+                                            value={isUnlimited ? '' : limitValue}
+                                            onChange={(e) => {
+                                              const value = e.target.value === '' ? -1 : parseInt(e.target.value) || -1;
+                                              setFormData({
+                                                ...formData,
+                                                limits: {
+                                                  ...formData.limits,
+                                                  [limit.resource_key]: value,
+                                                },
+                                              });
+                                            }}
+                                            placeholder="Unlimited"
+                                            min={-1}
+                                            className="w-32"
+                                          />
+                                          {limit.unit !== 'count' && (
+                                            <span className="text-xs text-muted-foreground">{unit}</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-muted bg-muted/30 p-12 text-center">
+                    <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                    <p className="text-sm font-medium text-muted-foreground">
+                      No limits available
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Please create limit definitions first
                     </p>
                   </div>
                 )}

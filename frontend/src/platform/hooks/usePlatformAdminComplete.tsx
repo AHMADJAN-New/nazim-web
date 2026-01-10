@@ -684,6 +684,20 @@ export const usePlatformFeatureDefinitions = () => {
 };
 
 /**
+ * Get limit definitions (platform admin)
+ */
+export const usePlatformLimitDefinitions = () => {
+  return useQuery({
+    queryKey: ['platform-limit-definitions'],
+    queryFn: async () => {
+      const response = await platformApi.limitDefinitions();
+      return response.data;
+    },
+    staleTime: 60 * 60 * 1000, // 1 hour
+  });
+};
+
+/**
  * Remove permission group from user (platform admin)
  * Removes all permissions in the group at once
  */

@@ -158,6 +158,9 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
 // These routes allow both authenticated and unauthenticated access
 // The controller handles visibility and permission filtering
 Route::prefix('help-center')->group(function () {
+    // Context-based article lookup (must come before {id} route to avoid conflict)
+    Route::get('/articles/context', [\App\Http\Controllers\HelpCenterArticleController::class, 'getByContext']);
+    
     // Public article access by ID (for frontend routes like /help-center/article/{id})
     Route::get('/articles/{id}', [\App\Http\Controllers\HelpCenterArticleController::class, 'show']);
     
@@ -214,7 +217,13 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     Route::post('/user-tours/{id}/progress', [\App\Http\Controllers\UserTourController::class, 'saveProgress']);
 
     // Users (user management)
-    Route::apiResource('users', UserController::class);
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{user}', [UserController::class, 'show']);
+    Route::middleware(['subscription:write'])->group(function () {
+        Route::post('/users', [UserController::class, 'store'])->middleware('limit:users');
+        Route::put('/users/{user}', [UserController::class, 'update']);
+        Route::delete('/users/{user}', [UserController::class, 'destroy']);
+    });
     Route::post('/users/{id}/reset-password', [UserController::class, 'resetPassword']);
 
     // Schools (school branding)
@@ -1212,7 +1221,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::get('/reports/{id}/status', [\App\Http\Controllers\ReportGenerationController::class, 'status']);
             Route::get('/reports/{id}/download', [\App\Http\Controllers\ReportGenerationController::class, 'download']);
             Route::middleware(['subscription:write'])->group(function () {
-                Route::post('/reports/generate', [\App\Http\Controllers\ReportGenerationController::class, 'generate'])->middleware('limit:reports');
+                Route::post('/reports/generate', [\App\Http\Controllers\ReportGenerationController::class, 'generate'])->middleware('limit:report_exports');
                 Route::delete('/reports/{id}', [\App\Http\Controllers\ReportGenerationController::class, 'destroy']);
             });
         });

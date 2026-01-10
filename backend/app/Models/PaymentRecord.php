@@ -155,7 +155,9 @@ class PaymentRecord extends Model
      */
     public function getNetAmount(): float
     {
-        return (float) $this->amount - (float) $this->discount_amount;
+        // "amount" represents the amount actually paid.
+        // discount_amount is informational (used for reporting / audit) and should NOT be subtracted.
+        return (float) $this->amount;
     }
 
     /**

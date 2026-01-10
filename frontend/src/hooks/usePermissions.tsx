@@ -259,6 +259,34 @@ export const useHasPermission = (permissionName: string): boolean | undefined =>
  * This determines which subscription feature is required for a permission
  */
 const PERMISSION_TO_FEATURE_MAP: Record<string, string | string[]> = {
+  // Core features
+  'students.read': 'students',
+  'students.create': 'students',
+  'students.update': 'students',
+  'students.delete': 'students',
+  'students.import': 'students',
+  'student_admissions.read': 'students',
+  'student_admissions.create': 'students',
+  'student_admissions.update': 'students',
+  'student_admissions.delete': 'students',
+  'staff.read': 'staff',
+  'staff.create': 'staff',
+  'staff.update': 'staff',
+  'staff.delete': 'staff',
+  'staff_types.read': 'staff',
+  'staff_types.create': 'staff',
+  'staff_types.update': 'staff',
+  'staff_types.delete': 'staff',
+  'classes.read': 'classes',
+  'classes.create': 'classes',
+  'classes.update': 'classes',
+  'classes.delete': 'classes',
+  'attendance_sessions.read': 'attendance',
+  'attendance_sessions.create': 'attendance',
+  'attendance_sessions.update': 'attendance',
+  'attendance_sessions.delete': 'attendance',
+  'attendance_sessions.report': 'attendance',
+
   // Hostel feature
   'hostel.read': 'hostel',
   'hostel.create': 'hostel',

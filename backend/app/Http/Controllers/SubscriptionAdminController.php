@@ -22,6 +22,7 @@ use Spatie\Permission\Models\Role;
 use App\Services\Subscription\UsageTrackingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -162,7 +163,7 @@ class SubscriptionAdminController extends Controller
             $revenueThisYear = PaymentRecord::where('status', PaymentRecord::STATUS_CONFIRMED)
                 ->whereNotNull('confirmed_at')
                 ->whereYear('confirmed_at', now()->year)
-                ->select('currency', DB::raw('sum(COALESCE(amount, 0) - COALESCE(discount_amount, 0)) as total'))
+                ->select('currency', DB::raw('sum(COALESCE(amount, 0)) as total'))
                 ->groupBy('currency')
                 ->get()
                 ->pluck('total', 'currency')
@@ -183,7 +184,7 @@ class SubscriptionAdminController extends Controller
                 ->select(
                     'payment_type',
                     'currency',
-                    DB::raw('sum(COALESCE(amount, 0) - COALESCE(discount_amount, 0)) as total')
+                    DB::raw('sum(COALESCE(amount, 0)) as total')
                 )
                 ->groupBy('payment_type', 'currency')
                 ->get()
@@ -384,6 +385,8 @@ class SubscriptionAdminController extends Controller
 
             DB::commit();
 
+            Cache::forget('subscription:plans:public:v1');
+
             return response()->json([
                 'data' => $this->serializePlan($plan->fresh(['features', 'limits'])),
                 'message' => 'Plan created successfully',
@@ -446,13 +449,32 @@ class SubscriptionAdminController extends Controller
                 'max_schools', 'per_school_price_afn', 'per_school_price_usd', 'sort_order',
             ]));
 
-            // Update features
+            // Update features - ensure disabled features are explicitly set to false
             if ($request->has('features')) {
-                foreach ($request->features as $featureKey => $isEnabled) {
+                $requestedFeatures = $request->features;
+                
+                // Get all feature definitions that exist for this plan (or all if updating)
+                $existingPlanFeatures = $plan->features()->pluck('feature_key')->toArray();
+                
+                // Update/create features from request
+                foreach ($requestedFeatures as $featureKey => $isEnabled) {
                     $plan->features()->updateOrCreate(
                         ['feature_key' => $featureKey],
                         ['is_enabled' => (bool) $isEnabled]
                     );
+                }
+                
+                // CRITICAL: For features that exist in the plan but are NOT in the request,
+                // explicitly set them to disabled (false). This handles the case where
+                // a feature was previously enabled but the frontend didn't include it in the update.
+                // Note: We only disable existing plan features, not all feature definitions,
+                // to avoid auto-disabling newly added feature definitions.
+                foreach ($existingPlanFeatures as $featureKey) {
+                    if (!isset($requestedFeatures[$featureKey])) {
+                        // Feature exists in plan but not in request - explicitly disable it
+                        $plan->features()->where('feature_key', $featureKey)
+                            ->update(['is_enabled' => false]);
+                    }
                 }
             }
 
@@ -467,6 +489,8 @@ class SubscriptionAdminController extends Controller
             }
 
             DB::commit();
+
+            Cache::forget('subscription:plans:public:v1');
 
             return response()->json([
                 'data' => $this->serializePlan($plan->fresh(['features', 'limits'])),
@@ -524,6 +548,7 @@ class SubscriptionAdminController extends Controller
         $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
         $status = $this->featureGateService->getSubscriptionStatus($organizationId);
         $usage = $this->usageTrackingService->getAllUsage($organizationId);
+        $usage = $this->featureGateService->filterUsageByFeatures($organizationId, $usage);
         $features = $this->featureGateService->getAllFeaturesStatus($organizationId);
 
         return response()->json([
@@ -738,6 +763,8 @@ class SubscriptionAdminController extends Controller
                 ['feature_key' => $featureKey]
             );
 
+            Cache::forget("subscription:enabled-features:v1:{$organizationId}");
+
             return response()->json([
                 'data' => $currentAddon->fresh(),
                 'message' => 'Feature disabled',
@@ -770,6 +797,8 @@ class SubscriptionAdminController extends Controller
                 "Feature enabled: {$featureKey}",
                 ['feature_key' => $featureKey]
             );
+
+            Cache::forget("subscription:enabled-features:v1:{$organizationId}");
 
             return response()->json([
                 'data' => $addon,
@@ -804,38 +833,75 @@ class SubscriptionAdminController extends Controller
     {
         $this->enforceSubscriptionAdmin($request);
 
-        $payment = PaymentRecord::findOrFail($paymentId);
         $user = $request->user();
 
-        if (!$payment->isPending()) {
-            return response()->json(['error' => 'Payment is not pending'], 400);
-        }
+        try {
+            $result = DB::transaction(function () use ($paymentId, $user) {
+                /** @var PaymentRecord $payment */
+                $payment = PaymentRecord::where('id', $paymentId)->lockForUpdate()->firstOrFail();
 
-        // Find associated renewal request
-        $renewalRequest = RenewalRequest::where('organization_id', $payment->organization_id)
-            ->pending()
-            ->first();
+                // Idempotent: already processed
+                if (!$payment->isPending()) {
+                    return [
+                        'payment' => $payment->fresh(),
+                        'message' => 'Payment already processed',
+                    ];
+                }
 
-        if ($renewalRequest) {
-            // Approve the renewal request
-            $subscription = $this->subscriptionService->approveRenewalRequest(
-                $renewalRequest->id,
-                $paymentId,
-                $user->id
-            );
-        } else {
-            // Just confirm the payment
-            $payment->update([
-                'status' => PaymentRecord::STATUS_CONFIRMED,
-                'confirmed_by' => $user->id,
-                'confirmed_at' => now(),
+                // Prefer an explicitly linked renewal request
+                $renewalRequest = RenewalRequest::where('payment_record_id', $payment->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                // Fallback: if exactly one pending request exists for this org, use it
+                if (!$renewalRequest) {
+                    $pendingForOrg = RenewalRequest::where('organization_id', $payment->organization_id)
+                        ->pending()
+                        ->lockForUpdate()
+                        ->get();
+
+                    if ($pendingForOrg->count() === 1) {
+                        $renewalRequest = $pendingForOrg->first();
+                    } elseif ($pendingForOrg->count() > 1) {
+                        throw new \Exception('Multiple pending renewal requests exist. Please approve from the renewal request screen.');
+                    }
+                }
+
+                if ($renewalRequest) {
+                    // Approve the renewal request (service is idempotent + transactional)
+                    $this->subscriptionService->approveRenewalRequest(
+                        $renewalRequest->id,
+                        $paymentId,
+                        $user->id
+                    );
+                } else {
+                    // Just confirm the payment
+                    $payment->update([
+                        'status' => PaymentRecord::STATUS_CONFIRMED,
+                        'confirmed_by' => $user->id,
+                        'confirmed_at' => now(),
+                    ]);
+                }
+
+                return [
+                    'payment' => $payment->fresh(),
+                    'message' => 'Payment confirmed successfully',
+                ];
+            }, 3);
+
+            return response()->json([
+                'data' => $result['payment'],
+                'message' => $result['message'],
             ]);
-        }
+        } catch (\Exception $e) {
+            \Log::error('Failed to confirm payment: ' . $e->getMessage(), [
+                'payment_id' => $paymentId,
+                'user_id' => $user?->id,
+                'trace' => $e->getTraceAsString(),
+            ]);
 
-        return response()->json([
-            'data' => $payment->fresh(),
-            'message' => 'Payment confirmed successfully',
-        ]);
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
     }
 
     /**
@@ -905,21 +971,40 @@ class SubscriptionAdminController extends Controller
             ->orderBy('requested_at', 'asc')
             ->paginate($request->per_page ?? 20);
 
-        // Ensure plan is loaded for each renewal's subscription
-        $renewals->getCollection()->transform(function ($renewal) {
-            if ($renewal->subscription && !$renewal->subscription->relationLoaded('plan')) {
-                $renewal->subscription->load('plan');
-            }
-            // If subscription doesn't exist, try to get current subscription from organization
-            if (!$renewal->subscription && $renewal->organization_id) {
-                $currentSubscription = $this->subscriptionService->getCurrentSubscription($renewal->organization_id);
-                if ($currentSubscription) {
-                    $currentSubscription->load('plan');
-                    $renewal->setRelation('subscription', $currentSubscription);
+        // If subscription is missing for some renewals, load current subscriptions in bulk (avoid N+1)
+        $collection = $renewals->getCollection();
+        $missingOrgIds = $collection
+            ->filter(fn ($r) => !$r->subscription && !empty($r->organization_id))
+            ->pluck('organization_id')
+            ->unique()
+            ->values();
+
+        if ($missingOrgIds->isNotEmpty()) {
+            $subs = OrganizationSubscription::with('plan')
+                ->whereIn('organization_id', $missingOrgIds->all())
+                ->whereNull('deleted_at')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $currentByOrg = [];
+            foreach ($subs as $sub) {
+                if (!isset($currentByOrg[$sub->organization_id])) {
+                    $currentByOrg[$sub->organization_id] = $sub;
                 }
             }
-            return $renewal;
-        });
+
+            $collection->transform(function ($renewal) use ($currentByOrg) {
+                if ($renewal->subscription && !$renewal->subscription->relationLoaded('plan')) {
+                    $renewal->subscription->load('plan');
+                }
+
+                if (!$renewal->subscription && $renewal->organization_id && isset($currentByOrg[$renewal->organization_id])) {
+                    $renewal->setRelation('subscription', $currentByOrg[$renewal->organization_id]);
+                }
+
+                return $renewal;
+            });
+        }
 
         return response()->json($renewals);
     }
@@ -984,24 +1069,46 @@ class SubscriptionAdminController extends Controller
                 $renewal->organization_id
             );
 
+            $expectedTotal = (float) ($priceInfo['total'] ?? 0);
+            $submittedAmount = (float) $request->amount;
+            $tolerance = 0.01;
+
+            if (abs($submittedAmount - $expectedTotal) > $tolerance) {
+                return response()->json([
+                    'error' => "Payment amount does not match expected total. Expected {$expectedTotal} {$request->currency}.",
+                ], 422);
+            }
+
             $subscription = $this->subscriptionService->getCurrentSubscription($renewal->organization_id);
+            $plan = SubscriptionPlan::findOrFail($renewal->requested_plan_id);
+            if (!$plan->is_active) {
+                return response()->json(['error' => 'Selected plan is not active'], 422);
+            }
+
+            $billingDays = $plan->getBillingPeriodDays();
+            $periodStart = Carbon::parse($request->payment_date)->toDateString();
+            $periodEnd = Carbon::parse($request->payment_date)->addDays($billingDays)->toDateString();
 
             $paymentRecord = PaymentRecord::create([
                 'organization_id' => $renewal->organization_id,
                 'subscription_id' => $subscription?->id,
-                'amount' => $request->amount,
+                'amount' => $submittedAmount,
                 'currency' => $request->currency,
                 'payment_method' => $request->payment_method,
                 'payment_reference' => $request->payment_reference,
                 'payment_date' => $request->payment_date,
-                'period_start' => now()->toDateString(),
-                'period_end' => now()->addYear()->toDateString(),
+                'period_start' => $periodStart,
+                'period_end' => $periodEnd,
                 'status' => PaymentRecord::STATUS_CONFIRMED, // Auto-confirm when created by admin
                 'confirmed_by' => $user->id,
                 'confirmed_at' => now(),
                 'discount_code_id' => $renewal->discount_code_id,
                 'discount_amount' => $priceInfo['discount_amount'],
                 'notes' => $request->notes,
+                // New fee separation fields
+                'payment_type' => PaymentRecord::TYPE_RENEWAL,
+                'billing_period' => $plan->billing_period ?? PaymentRecord::BILLING_YEARLY,
+                'is_recurring' => true,
             ]);
 
             $paymentRecordId = $paymentRecord->id;
@@ -1125,22 +1232,22 @@ class SubscriptionAdminController extends Controller
                 ]);
             }
 
-            // Get user details using User model and profiles
-            $users = collect($userIds)->map(function ($userId) {
-                $user = User::find($userId);
-                if (!$user) {
+            // Load users + profiles in bulk (avoid N+1)
+            $usersById = User::whereIn('id', $userIds)->get()->keyBy('id');
+            $profilesById = DB::table('profiles')
+                ->whereIn('id', $userIds)
+                ->whereNull('deleted_at')
+                ->get()
+                ->keyBy('id');
+
+            $users = collect($userIds)->map(function ($userId) use ($usersById, $profilesById) {
+                $user = $usersById->get($userId);
+                $profile = $profilesById->get($userId);
+
+                if (!$user || !$profile) {
                     return null;
                 }
-                
-                $profile = DB::table('profiles')
-                    ->where('id', $userId)
-                    ->whereNull('deleted_at')
-                    ->first();
-                
-                if (!$profile) {
-                    return null;
-                }
-                
+
                 return [
                     'id' => $user->id,
                     'email' => $user->email,

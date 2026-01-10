@@ -11,6 +11,7 @@ use App\Models\UsageCurrent;
 use App\Models\UsageSnapshot;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class UsageTrackingService
 {
@@ -56,9 +57,14 @@ class UsageTrackingService
     /**
      * Get current usage count for a resource
      */
-    public function getUsage(string $organizationId, string $resourceKey): int
+    public function getUsage(string $organizationId, string $resourceKey): float|int
     {
         try {
+            // Special handling for storage_gb (returns float in GB)
+            if ($resourceKey === 'storage_gb') {
+                return $this->getStorageUsage($organizationId);
+            }
+
             // Check if we need to count from database
             if (isset($this->countQueries[$resourceKey])) {
                 return $this->countFromDatabase($organizationId, $resourceKey);
@@ -113,10 +119,35 @@ class UsageTrackingService
 
     /**
      * Get the effective limit for a resource (considering overrides)
+     * CRITICAL: Checks feature access before returning limit
      */
     public function getLimit(string $organizationId, string $resourceKey): int
     {
         try {
+            // Check if feature is enabled for this resource
+            $limitFeatureMap = config('subscription_features.limit_feature_map', []);
+            $requiredFeature = $limitFeatureMap[$resourceKey] ?? null;
+
+            // If resource requires a feature, check if feature is enabled
+            if ($requiredFeature !== null) {
+                $requiredFeatures = is_array($requiredFeature) ? $requiredFeature : [$requiredFeature];
+                $hasFeature = false;
+
+                // Resolve FeatureGateService from container to avoid circular dependency
+                $featureGateService = app(FeatureGateService::class);
+                foreach ($requiredFeatures as $featureKey) {
+                    if ($featureGateService->hasFeature($organizationId, $featureKey)) {
+                        $hasFeature = true;
+                        break;
+                    }
+                }
+
+                // If feature is not enabled, return -1 (disabled) to indicate feature not available
+                if (!$hasFeature) {
+                    return -1;
+                }
+            }
+
             // Check for organization-specific override first
             $override = OrganizationLimitOverride::where('organization_id', $organizationId)
                 ->where('resource_key', $resourceKey)
@@ -175,15 +206,110 @@ class UsageTrackingService
 
     /**
      * Check if organization can create a new resource
+     * CRITICAL: Checks feature access before limit checks
      */
     public function canCreate(string $organizationId, string $resourceKey): array
     {
         try {
+            // Special handling for storage_gb - use storage-specific logic
+            if ($resourceKey === 'storage_gb') {
+                $currentUsage = $this->getStorageUsage($organizationId);
+                $limit = $this->getLimit($organizationId, $resourceKey);
+
+                if ($limit === -1) {
+                    return [
+                        'allowed' => true,
+                        'current' => $currentUsage,
+                        'limit' => -1,
+                        'remaining' => -1,
+                        'percentage' => 0,
+                        'warning' => false,
+                        'message' => null,
+                    ];
+                }
+
+                if ($limit === 0) {
+                    return [
+                        'allowed' => false,
+                        'current' => $currentUsage,
+                        'limit' => 0,
+                        'remaining' => 0,
+                        'percentage' => 100,
+                        'warning' => false,
+                        'message' => 'Storage is not available on your current plan.',
+                    ];
+                }
+
+                $remaining = max(0, $limit - $currentUsage);
+                $percentage = ($limit > 0) ? round(($currentUsage / $limit) * 100, 1) : 0;
+                
+                $warningThreshold = $this->getWarningThreshold($organizationId, $resourceKey);
+                $isWarning = $percentage >= $warningThreshold && $percentage < 100;
+                $allowed = $currentUsage < $limit;
+
+                $message = null;
+                if (!$allowed) {
+                    $message = "You have reached your storage limit ({$limit} GB). Current usage: {$currentUsage} GB. Please upgrade your plan or delete some files.";
+                } elseif ($isWarning) {
+                    $message = "You are using {$percentage}% of your storage limit ({$currentUsage}/{$limit} GB).";
+                }
+
+                return [
+                    'allowed' => $allowed,
+                    'current' => $currentUsage,
+                    'limit' => $limit,
+                    'remaining' => $remaining,
+                    'percentage' => $percentage,
+                    'warning' => $isWarning,
+                    'message' => $message,
+                ];
+            }
+
+            // Check if feature is enabled for this resource before checking limits
+            $limitFeatureMap = config('subscription_features.limit_feature_map', []);
+            $requiredFeature = $limitFeatureMap[$resourceKey] ?? null;
+
+            // If resource requires a feature, check if feature is enabled
+            // Storage doesn't require a feature (it's always available)
+            if ($requiredFeature !== null) {
+                $requiredFeatures = is_array($requiredFeature) ? $requiredFeature : [$requiredFeature];
+                $hasFeature = false;
+
+                // Resolve FeatureGateService from container to avoid circular dependency
+                $featureGateService = app(FeatureGateService::class);
+                foreach ($requiredFeatures as $featureKey) {
+                    if ($featureGateService->hasFeature($organizationId, $featureKey)) {
+                        $hasFeature = true;
+                        break;
+                    }
+                }
+
+                // If feature is not enabled, return "feature not available" message
+                if (!$hasFeature) {
+                    $definition = \App\Models\FeatureDefinition::where('feature_key', $requiredFeatures[0])->first();
+                    $featureName = $definition?->name ?? $requiredFeatures[0];
+                    
+                    return [
+                        'allowed' => false,
+                        'current' => 0,
+                        'limit' => -1,
+                        'remaining' => 0,
+                        'percentage' => 0,
+                        'warning' => false,
+                        'message' => "This feature ({$featureName}) is not available on your current plan. Please upgrade to access this feature.",
+                    ];
+                }
+            }
+
             $currentUsage = $this->getUsage($organizationId, $resourceKey);
             $limit = $this->getLimit($organizationId, $resourceKey);
 
-            // -1 means unlimited
+            // -1 means unlimited (unlimited access) or disabled (feature not available)
+            // If limit is -1, check if it's because feature is disabled by verifying again
+            // (getLimit returns -1 for both unlimited and disabled, but we already checked feature above)
             if ($limit === -1) {
+                // If we got here, feature is enabled (we would have returned earlier if not)
+                // So -1 means unlimited
                 return [
                     'allowed' => true,
                     'current' => $currentUsage,
@@ -454,11 +580,13 @@ class UsageTrackingService
 
     /**
      * Recalculate all usage counts from database
+     * Updated to include storage recalculation
      */
     public function recalculateUsage(string $organizationId): array
     {
         $recalculated = [];
 
+        // Recalculate database-counted resources
         foreach ($this->countQueries as $resourceKey => $query) {
             $count = $this->countFromDatabase($organizationId, $resourceKey);
             $recalculated[$resourceKey] = $count;
@@ -475,6 +603,22 @@ class UsageTrackingService
                 ]
             );
         }
+
+        // Recalculate storage from disk
+        $storageUsage = $this->calculateStorageUsage($organizationId);
+        $recalculated['storage_gb'] = $storageUsage;
+
+        // Update or create storage usage record
+        UsageCurrent::updateOrCreate(
+            [
+                'organization_id' => $organizationId,
+                'resource_key' => 'storage_gb',
+            ],
+            [
+                'current_count' => (int) ($storageUsage * 10000), // Store with 4 decimal precision
+                'last_calculated_at' => now(),
+            ]
+        );
 
         return $recalculated;
     }
@@ -523,5 +667,201 @@ class UsageTrackingService
         }
 
         return $warnings;
+    }
+
+    // ==============================================
+    // STORAGE USAGE METHODS
+    // ==============================================
+
+    /**
+     * Calculate total storage usage in GB from disk
+     * Scans both private and public disks for organization files
+     */
+    public function calculateStorageUsage(string $organizationId): float
+    {
+        try {
+            $totalBytes = 0;
+            $basePath = "organizations/{$organizationId}";
+
+            // Calculate from private disk
+            try {
+                $privateFiles = Storage::disk('local')->allFiles($basePath);
+                foreach ($privateFiles as $file) {
+                    try {
+                        $size = Storage::disk('local')->size($file);
+                        $totalBytes += $size;
+                    } catch (\Exception $e) {
+                        \Log::warning("Failed to get size for file {$file}: " . $e->getMessage());
+                        // Continue with next file
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::warning("Failed to scan private disk for organization {$organizationId}: " . $e->getMessage());
+            }
+
+            // Calculate from public disk
+            try {
+                $publicFiles = Storage::disk('public')->allFiles($basePath);
+                foreach ($publicFiles as $file) {
+                    try {
+                        $size = Storage::disk('public')->size($file);
+                        $totalBytes += $size;
+                    } catch (\Exception $e) {
+                        \Log::warning("Failed to get size for file {$file}: " . $e->getMessage());
+                        // Continue with next file
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::warning("Failed to scan public disk for organization {$organizationId}: " . $e->getMessage());
+            }
+
+            // Convert bytes to GB (1 GB = 1,073,741,824 bytes)
+            return round($totalBytes / 1073741824, 4);
+        } catch (\Exception $e) {
+            \Log::error("Failed to calculate storage usage for organization {$organizationId}: " . $e->getMessage());
+            return 0.0;
+        }
+    }
+
+    /**
+     * Get storage usage in GB (from cache or calculate from disk)
+     */
+    public function getStorageUsage(string $organizationId): float
+    {
+        try {
+            // Get from usage_current table (cached)
+            $usage = UsageCurrent::where('organization_id', $organizationId)
+                ->where('resource_key', 'storage_gb')
+                ->first();
+
+            if ($usage && $usage->current_count !== null) {
+                // Return cached value (stored as count but represents GB * 10000 for precision)
+                return (float) ($usage->current_count / 10000);
+            }
+
+            // If not cached, calculate from disk
+            $calculatedUsage = $this->calculateStorageUsage($organizationId);
+
+            // Cache the result
+            UsageCurrent::updateOrCreate(
+                [
+                    'organization_id' => $organizationId,
+                    'resource_key' => 'storage_gb',
+                ],
+                [
+                    'current_count' => (int) ($calculatedUsage * 10000), // Store with 4 decimal precision as integer
+                    'last_calculated_at' => now(),
+                ]
+            );
+
+            return $calculatedUsage;
+        } catch (\Exception $e) {
+            \Log::warning("Failed to get storage usage for organization {$organizationId}: " . $e->getMessage());
+            return 0.0;
+        }
+    }
+
+    /**
+     * Increment storage usage by file size in GB
+     */
+    public function incrementStorageUsage(string $organizationId, float $sizeInGB): void
+    {
+        try {
+            $usage = $this->getOrCreateUsageRecord($organizationId, 'storage_gb');
+            
+            // Convert GB to stored integer format (multiply by 10000 for 4 decimal precision)
+            $sizeInStoredFormat = (int) ($sizeInGB * 10000);
+            
+            $usage->incrementCount($sizeInStoredFormat);
+            $usage->update(['last_calculated_at' => now()]);
+        } catch (\Exception $e) {
+            \Log::error("Failed to increment storage usage for organization {$organizationId}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Decrement storage usage by file size in GB
+     */
+    public function decrementStorageUsage(string $organizationId, float $sizeInGB): void
+    {
+        try {
+            $usage = UsageCurrent::where('organization_id', $organizationId)
+                ->where('resource_key', 'storage_gb')
+                ->first();
+
+            if ($usage) {
+                // Convert GB to stored integer format (multiply by 10000 for 4 decimal precision)
+                $sizeInStoredFormat = (int) ($sizeInGB * 10000);
+                
+                $usage->decrementCount($sizeInStoredFormat);
+                $usage->update(['last_calculated_at' => now()]);
+            }
+        } catch (\Exception $e) {
+            \Log::error("Failed to decrement storage usage for organization {$organizationId}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Check if file can be stored (checks storage limit)
+     */
+    public function canStoreFile(string $organizationId, float $fileSizeInGB): array
+    {
+        try {
+            $currentUsage = $this->getStorageUsage($organizationId);
+            $limit = $this->getLimit($organizationId, 'storage_gb');
+
+            // -1 means unlimited
+            if ($limit === -1) {
+                return [
+                    'allowed' => true,
+                    'current' => $currentUsage,
+                    'limit' => -1,
+                    'remaining' => -1,
+                    'new_usage' => $currentUsage + $fileSizeInGB,
+                    'message' => null,
+                ];
+            }
+
+            // 0 means disabled
+            if ($limit === 0) {
+                return [
+                    'allowed' => false,
+                    'current' => $currentUsage,
+                    'limit' => 0,
+                    'remaining' => 0,
+                    'new_usage' => $currentUsage,
+                    'message' => 'Storage is not available on your current plan. Please upgrade your plan to upload files.',
+                ];
+            }
+
+            $newUsage = $currentUsage + $fileSizeInGB;
+            $allowed = $newUsage <= $limit;
+            $remaining = max(0, $limit - $newUsage);
+
+            $message = null;
+            if (!$allowed) {
+                $message = "Uploading this file would exceed your storage limit ({$limit} GB). Current usage: " . round($currentUsage, 2) . " GB. File size: " . round($fileSizeInGB, 2) . " GB. Please upgrade your plan or delete some files.";
+            }
+
+            return [
+                'allowed' => $allowed,
+                'current' => $currentUsage,
+                'limit' => $limit,
+                'remaining' => $remaining,
+                'new_usage' => $newUsage,
+                'message' => $message,
+            ];
+        } catch (\Exception $e) {
+            \Log::error("Failed to check storage limit for organization {$organizationId}: " . $e->getMessage());
+            // Allow on error to prevent blocking
+            return [
+                'allowed' => true,
+                'current' => 0,
+                'limit' => -1,
+                'remaining' => -1,
+                'new_usage' => 0,
+                'message' => null,
+            ];
+        }
     }
 }

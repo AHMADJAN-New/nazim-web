@@ -2885,6 +2885,8 @@ export const fa: TranslationKeys = {
     'events.addGuest': 'افزودن مهمان',
     'events.types': 'انواع رویداد',
     'events.users': 'کاربران رویداد',
+    'events.export': 'صادرات کارت شناسایی',
+    'students.management': 'مدیریت',
     assets: 'دارایی‌ها',
     'assets.dashboard': 'داشبورد دارایی‌ها',
     'assets.categories': 'دسته‌بندی‌های دارایی',

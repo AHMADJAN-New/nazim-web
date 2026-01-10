@@ -207,7 +207,10 @@ export function SubscriptionStatusBanner({
                   />
                 </div>
                 <span className={cn('text-sm font-medium', config.textClass)}>
-                  {warning.current}/{warning.limit === -1 ? '∞' : warning.limit}
+                  {warning.resourceKey === 'storage_gb'
+                    ? `${Number(warning.current).toFixed(2)}/${warning.limit === -1 ? '∞' : Number(warning.limit).toFixed(2)} GB`
+                    : `${warning.current}/${warning.limit === -1 ? '∞' : warning.limit}`
+                  }
                 </span>
                 {warning.isBlocked && (
                   <span className="text-xs font-semibold text-red-600 dark:text-red-400">

@@ -93,6 +93,7 @@ class SubscriptionSeeder extends Seeder
             ['resource_key' => 'classes', 'name' => 'Classes', 'description' => 'Maximum number of classes', 'unit' => 'count', 'category' => 'academic', 'reset_period' => 'never', 'sort_order' => 10],
             ['resource_key' => 'documents', 'name' => 'DMS Documents', 'description' => 'Maximum number of documents', 'unit' => 'count', 'category' => 'documents', 'reset_period' => 'never', 'sort_order' => 20],
             ['resource_key' => 'exams', 'name' => 'Exams', 'description' => 'Maximum number of exams', 'unit' => 'count', 'category' => 'academic', 'reset_period' => 'never', 'sort_order' => 11],
+            ['resource_key' => 'questions', 'name' => 'Exam Questions', 'description' => 'Maximum number of exam questions', 'unit' => 'count', 'category' => 'academic', 'reset_period' => 'never', 'sort_order' => 12],
             ['resource_key' => 'report_exports', 'name' => 'Report Exports per Month', 'description' => 'Monthly limit for report exports', 'unit' => 'count', 'category' => 'reports', 'reset_period' => 'monthly', 'sort_order' => 30],
             ['resource_key' => 'finance_accounts', 'name' => 'Finance Accounts', 'description' => 'Maximum number of finance accounts', 'unit' => 'count', 'category' => 'finance', 'reset_period' => 'never', 'sort_order' => 40],
             ['resource_key' => 'income_entries', 'name' => 'Income Entries', 'description' => 'Maximum number of income entries', 'unit' => 'count', 'category' => 'finance', 'reset_period' => 'never', 'sort_order' => 41],
@@ -251,10 +252,7 @@ class SubscriptionSeeder extends Seeder
                 ],
                 'limits' => [
                     'students' => 250, 'staff' => 50, 'users' => 10, 'schools' => 1, 'classes' => 30,
-                    'documents' => 0, 'exams' => 20, 'report_exports' => 100, 'finance_accounts' => 0,
-                    'income_entries' => 0, 'expense_entries' => 0, 'assets' => 0,
-                    'library_books' => 0, 'events' => 0, 'certificate_templates' => 0,
-                    'id_card_templates' => 0, 'storage_gb' => 5,
+                    'exams' => 20, 'report_exports' => 100, 'storage_gb' => 5,
                 ],
             ],
             [
@@ -321,10 +319,7 @@ class SubscriptionSeeder extends Seeder
                 ],
                 'limits' => [
                     'students' => 600, 'staff' => 120, 'users' => 30, 'schools' => 1, 'classes' => 80,
-                    'documents' => 0, 'exams' => 50, 'report_exports' => 300, 'finance_accounts' => 0,
-                    'income_entries' => 0, 'expense_entries' => 0, 'assets' => 0,
-                    'library_books' => 2000, 'events' => 0, 'certificate_templates' => 0,
-                    'id_card_templates' => 0, 'storage_gb' => 10,
+                    'exams' => 50, 'report_exports' => 300, 'library_books' => 2000, 'storage_gb' => 10,
                 ],
             ],
             [
@@ -378,7 +373,7 @@ class SubscriptionSeeder extends Seeder
                     'custom_id_templates' => true,
                     'finance' => true,
                     'fees' => true,
-                    'multi_currency' => false,
+                    'multi_currency' => true,
                     'dms' => true,
                     'letter_templates' => true,
                     'excel_export' => true,
@@ -535,14 +530,74 @@ class SubscriptionSeeder extends Seeder
     {
         // Default to unlimited for new limits until explicitly configured.
         $defaultLimit = -1;
+        
+        // Get limit-feature mapping from config
+        $limitFeatureMap = config('subscription_features.limit_feature_map', []);
+        
+        // Get enabled features for this plan
+        $enabledFeatures = $plan->features()
+            ->where('is_enabled', true)
+            ->pluck('feature_key')
+            ->toArray();
+        
+        $enabledFeaturesSet = array_fill_keys($enabledFeatures, true);
 
         foreach ($allLimitKeys as $resourceKey) {
+            // Check if this resource requires a feature that is enabled
+            $requiredFeature = $limitFeatureMap[$resourceKey] ?? null;
+            
+            if ($requiredFeature !== null) {
+                $requiredFeatures = is_array($requiredFeature) ? $requiredFeature : [$requiredFeature];
+                $hasRequiredFeature = false;
+
+                foreach ($requiredFeatures as $featureKey) {
+                    if (isset($enabledFeaturesSet[$featureKey])) {
+                        $hasRequiredFeature = true;
+                        break;
+                    }
+                }
+
+                // Skip limits for resources whose features are disabled
+                if (!$hasRequiredFeature) {
+                    continue;
+                }
+            }
+
+            // Only set limit if explicitly configured in limitConfig
+            // If not in config and feature is enabled, use default (unlimited)
+            // If not in config and feature is disabled, skip (already handled above)
             $limitValue = $limitConfig[$resourceKey] ?? $defaultLimit;
 
             PlanLimit::updateOrCreate(
                 ['plan_id' => $plan->id, 'resource_key' => $resourceKey],
                 ['limit_value' => $limitValue, 'warning_threshold' => 80]
             );
+        }
+        
+        // Remove limits for resources whose features are disabled
+        // Get all resource keys that require features not enabled in this plan
+        $disabledResourceKeys = [];
+        foreach ($limitFeatureMap as $resourceKey => $requiredFeature) {
+            $requiredFeatures = is_array($requiredFeature) ? $requiredFeature : [$requiredFeature];
+            $hasRequiredFeature = false;
+
+            foreach ($requiredFeatures as $featureKey) {
+                if (isset($enabledFeaturesSet[$featureKey])) {
+                    $hasRequiredFeature = true;
+                    break;
+                }
+            }
+
+            if (!$hasRequiredFeature) {
+                $disabledResourceKeys[] = $resourceKey;
+            }
+        }
+        
+        // Delete limits for disabled features
+        if (!empty($disabledResourceKeys)) {
+            PlanLimit::where('plan_id', $plan->id)
+                ->whereIn('resource_key', $disabledResourceKeys)
+                ->delete();
         }
     }
 }

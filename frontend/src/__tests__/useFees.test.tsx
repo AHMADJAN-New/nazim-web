@@ -54,8 +54,9 @@ describe('useFeeStructures', () => {
 
     const { result } = renderHook(() => useFeeStructures(), { wrapper });
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.[0]).toMatchObject({ name: 'Grade 1 Monthly Fee', fee_type: 'monthly' });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.error).toBeFalsy();
+    expect(result.current.data?.[0]).toMatchObject({ name: 'Grade 1 Monthly Fee', feeType: 'monthly' });
   });
 });
 

@@ -3146,6 +3146,8 @@ export const ar: TranslationKeys = {
     'events.addGuest': 'إضافة ضيف',
     'events.types': 'أنواع الأحداث',
     'events.users': 'مستخدمي الأحداث',
+    'events.export': 'تصدير بطاقة الهوية',
+    'students.management': 'الإدارة',
     assets: 'الأصول',
     'assets.dashboard': 'لوحة تحكم الأصول',
     'assets.categories': 'فئات الأصول',

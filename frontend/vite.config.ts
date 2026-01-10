@@ -90,5 +90,11 @@ export default defineConfig({
       timeout: 20000, // 20 seconds for mobile
     },
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    css: true,
+  },
 })
 

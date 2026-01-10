@@ -596,7 +596,7 @@ export const useResourceUsage = (resourceKey: string) => {
   
   return {
     ...usage,
-    canCreate: usage.isUnlimited || usage.current < usage.limit,
+    canCreate: usage.isUnlimited || (usage.limit !== -1 && usage.current < usage.limit),
   };
 };
 
