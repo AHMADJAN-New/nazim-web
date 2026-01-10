@@ -71,6 +71,9 @@ use App\Http\Controllers\ExamAttendanceController;
 use App\Http\Controllers\ExamNumberController;
 use App\Http\Controllers\ExamTypeController;
 use App\Http\Controllers\ExamDocumentController;
+use App\Http\Controllers\ExamPaperTemplateController;
+use App\Http\Controllers\ExamPaperTemplateFileController;
+use App\Http\Controllers\ExamPaperPreviewController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\FinanceDocumentController;
 use App\Http\Controllers\GradeController;
@@ -215,7 +218,16 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     Route::post('/users/{id}/reset-password', [UserController::class, 'resetPassword']);
 
     // Schools (school branding)
-    Route::apiResource('schools', SchoolBrandingController::class);
+    Route::get('/schools', [SchoolBrandingController::class, 'index']);
+    Route::get('/schools/{school}', [SchoolBrandingController::class, 'show']);
+    Route::middleware(['subscription:write'])->group(function () {
+        Route::post('/schools', [SchoolBrandingController::class, 'store'])
+            ->middleware(['feature:multi_school', 'limit:schools']);
+        Route::put('/schools/{school}', [SchoolBrandingController::class, 'update']);
+        Route::patch('/schools/{school}', [SchoolBrandingController::class, 'update']);
+        Route::delete('/schools/{school}', [SchoolBrandingController::class, 'destroy'])
+            ->middleware(['feature:multi_school']);
+    });
 
     // Watermarks (for school branding)
     Route::get('/watermarks', [\App\Http\Controllers\WatermarkController::class, 'index']);
@@ -348,15 +360,17 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::delete('/residency-types/{residency_type}', [ResidencyTypeController::class, 'destroy']);
         });
 
-        // Report Templates (core feature)
-        Route::get('/report-templates/school/{schoolId}', [ReportTemplateController::class, 'bySchool']);
-        Route::get('/report-templates/default', [ReportTemplateController::class, 'getDefault']);
-        Route::get('/report-templates', [ReportTemplateController::class, 'index']);
-        Route::get('/report-templates/{report_template}', [ReportTemplateController::class, 'show']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/report-templates', [ReportTemplateController::class, 'store']);
-            Route::put('/report-templates/{report_template}', [ReportTemplateController::class, 'update']);
-            Route::delete('/report-templates/{report_template}', [ReportTemplateController::class, 'destroy']);
+        // Report Templates (requires report_templates feature)
+        Route::middleware(['feature:report_templates'])->group(function () {
+            Route::get('/report-templates/school/{schoolId}', [ReportTemplateController::class, 'bySchool']);
+            Route::get('/report-templates/default', [ReportTemplateController::class, 'getDefault']);
+            Route::get('/report-templates', [ReportTemplateController::class, 'index']);
+            Route::get('/report-templates/{report_template}', [ReportTemplateController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/report-templates', [ReportTemplateController::class, 'store']);
+                Route::put('/report-templates/{report_template}', [ReportTemplateController::class, 'update']);
+                Route::delete('/report-templates/{report_template}', [ReportTemplateController::class, 'destroy']);
+            });
         });
 
         // Staff Documents (core feature)
@@ -503,8 +517,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             });
         });
 
-        // Exam Types (requires exams feature)
-        Route::middleware(['feature:exams'])->group(function () {
+        // Exam Types (requires exams full)
+        Route::middleware(['feature:exams_full'])->group(function () {
             Route::get('/exam-types', [ExamTypeController::class, 'index']);
             Route::get('/exam-types/{exam_type}', [ExamTypeController::class, 'show']);
             Route::middleware(['subscription:write'])->group(function () {
@@ -533,8 +547,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         });
     });
 
-    // Exam Timetable (requires exams feature)
-    Route::middleware(['feature:exams'])->group(function () {
+    // Exam Timetable (requires exams full)
+    Route::middleware(['feature:exams_full'])->group(function () {
         Route::get('/exams/{exam}/times', [ExamTimeController::class, 'index']);
         Route::middleware(['subscription:write'])->group(function () {
             Route::post('/exams/{exam}/times', [ExamTimeController::class, 'store']);
@@ -578,8 +592,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::get('/exams/{exam}/reports/classes/{class}/subjects/{subject}', [ExamReportController::class, 'classSubjectMarkSheet']);
     });
 
-    // Exam Documents (requires exams feature)
-    Route::middleware(['feature:exams'])->group(function () {
+    // Exam Documents (requires exams full)
+    Route::middleware(['feature:exams_full'])->group(function () {
         Route::get('/exam-documents/{id}/download', [ExamDocumentController::class, 'download']);
         Route::get('/exam-documents', [ExamDocumentController::class, 'index']);
         Route::get('/exam-documents/{exam_document}', [ExamDocumentController::class, 'show']);
@@ -602,8 +616,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         });
     });
 
-    // Exam Numbers (Roll Numbers & Secret Numbers) - requires exams feature
-    Route::middleware(['feature:exams'])->group(function () {
+    // Exam Numbers (Roll Numbers & Secret Numbers) - requires exams full
+    Route::middleware(['feature:exams_full'])->group(function () {
         Route::get('/exams/{exam}/students-with-numbers', [ExamNumberController::class, 'studentsWithNumbers']);
         Route::get('/exams/{exam}/roll-numbers/start-from', [ExamNumberController::class, 'rollNumberStartFrom']);
         Route::get('/exams/{exam}/secret-numbers/start-from', [ExamNumberController::class, 'secretNumberStartFrom']);
@@ -621,8 +635,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         });
     });
 
-    // Exam Attendance - requires exams feature
-    Route::middleware(['feature:exams'])->group(function () {
+    // Exam Attendance - requires exams full
+    Route::middleware(['feature:exams_full'])->group(function () {
         Route::get('/exams/{exam}/attendance', [ExamAttendanceController::class, 'index']);
         Route::get('/exams/{exam}/attendance/summary', [ExamAttendanceController::class, 'summary']);
         Route::get('/exams/{exam}/attendance/class/{classId}', [ExamAttendanceController::class, 'byClass']);
@@ -639,8 +653,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         });
     });
 
-    // Exam Questions (requires exams feature)
-    Route::middleware(['feature:exams'])->group(function () {
+    // Exam Questions (requires question bank)
+    Route::middleware(['feature:question_bank'])->group(function () {
         Route::get('/exam/questions', [QuestionController::class, 'index']);
         Route::get('/exam/questions/{question}', [QuestionController::class, 'show']);
         Route::middleware(['subscription:write'])->group(function () {
@@ -649,6 +663,44 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::delete('/exam/questions/{question}', [QuestionController::class, 'destroy']);
             Route::post('/exam/questions/{question}/duplicate', [QuestionController::class, 'duplicate']);
             Route::post('/exam/questions/bulk-update', [QuestionController::class, 'bulkUpdate']);
+        });
+    });
+
+    // Exam Paper Generator (requires exam_paper_generator)
+    Route::middleware(['feature:exam_paper_generator'])->group(function () {
+        Route::get('/exam/paper-templates', [ExamPaperTemplateController::class, 'index']);
+        Route::get('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'show']);
+        Route::get('/exam/paper-templates/{id}/preview', [ExamPaperTemplateController::class, 'preview']);
+        Route::get('/exams/{examId}/paper-stats', [ExamPaperTemplateController::class, 'examPaperStats']);
+        Route::post('/exam/paper-templates/{id}/generate', [ExamPaperTemplateController::class, 'generate']);
+        Route::post('/exam/paper-templates/{id}/generate-html', [ExamPaperTemplateController::class, 'generateHtml']);
+
+        Route::get('/exam/paper-template-files', [ExamPaperTemplateFileController::class, 'index']);
+        Route::get('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'show']);
+        Route::get('/exam/paper-template-files/{id}/preview', [ExamPaperTemplateFileController::class, 'preview']);
+
+        Route::get('/exam/paper-preview/{templateId}/student', [ExamPaperPreviewController::class, 'studentView']);
+        Route::get('/exam/paper-preview/{templateId}/teacher', [ExamPaperPreviewController::class, 'teacherView']);
+        Route::get('/exam-subjects/{examSubjectId}/paper-preview', [ExamPaperPreviewController::class, 'examSubjectPreview']);
+        Route::get('/exam-subjects/{examSubjectId}/available-templates', [ExamPaperPreviewController::class, 'availableTemplates']);
+
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/exam/paper-templates', [ExamPaperTemplateController::class, 'store']);
+            Route::put('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'update']);
+            Route::delete('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'destroy']);
+            Route::post('/exam/paper-templates/{id}/duplicate', [ExamPaperTemplateController::class, 'duplicate']);
+            Route::post('/exam/paper-templates/{id}/items', [ExamPaperTemplateController::class, 'addItem']);
+            Route::put('/exam/paper-templates/{id}/items/{itemId}', [ExamPaperTemplateController::class, 'updateItem']);
+            Route::delete('/exam/paper-templates/{id}/items/{itemId}', [ExamPaperTemplateController::class, 'removeItem']);
+            Route::post('/exam/paper-templates/{id}/reorder', [ExamPaperTemplateController::class, 'reorderItems']);
+            Route::post('/exam/paper-templates/{id}/print-status', [ExamPaperTemplateController::class, 'updatePrintStatus']);
+
+            Route::post('/exam/paper-template-files', [ExamPaperTemplateFileController::class, 'store']);
+            Route::put('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'update']);
+            Route::delete('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'destroy']);
+            Route::post('/exam/paper-template-files/{id}/set-default', [ExamPaperTemplateFileController::class, 'setDefault']);
+
+            Route::post('/exam-subjects/{examSubjectId}/set-default-template', [ExamPaperPreviewController::class, 'setDefaultTemplate']);
         });
     });
 
@@ -661,8 +713,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::delete('/academic-years/{academic_year}', [AcademicYearController::class, 'destroy']);
         });
 
-        // Grades (requires exams feature for grading system)
-        Route::middleware(['feature:exams'])->group(function () {
+        // Grades (requires exam details)
+        Route::middleware(['feature:grades'])->group(function () {
             Route::get('/grades', [GradeController::class, 'index']);
             Route::get('/grades/{grade}', [GradeController::class, 'show']);
             Route::middleware(['subscription:write'])->group(function () {
@@ -707,8 +759,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             });
         });
 
-        // Teacher Subject Assignments (requires subjects feature)
-        Route::middleware(['feature:subjects'])->group(function () {
+        // Teacher Subject Assignments (requires teacher assignments feature)
+        Route::middleware(['feature:teacher_subject_assignments'])->group(function () {
             Route::get('/teacher-subject-assignments', [TeacherSubjectAssignmentController::class, 'index']);
             Route::get('/teacher-subject-assignments/{teacher_subject_assignment}', [TeacherSubjectAssignmentController::class, 'show']);
             Route::middleware(['subscription:write'])->group(function () {

@@ -272,10 +272,10 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string | string[]> = {
   'subjects.delete': 'subjects',
   'subjects.assign': 'subjects',
   'subjects.copy': 'subjects',
-  'teacher_subject_assignments.read': 'subjects',
-  'teacher_subject_assignments.create': 'subjects',
-  'teacher_subject_assignments.update': 'subjects',
-  'teacher_subject_assignments.delete': 'subjects',
+  'teacher_subject_assignments.read': 'teacher_subject_assignments',
+  'teacher_subject_assignments.create': 'teacher_subject_assignments',
+  'teacher_subject_assignments.update': 'teacher_subject_assignments',
+  'teacher_subject_assignments.delete': 'teacher_subject_assignments',
 
   // Exams feature
   'exams.read': 'exams',
@@ -284,7 +284,7 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string | string[]> = {
   'exams.delete': 'exams',
   'exams.assign': 'exams',
   'exams.manage': 'exams',
-  'exams.manage_timetable': 'exams',
+  'exams.manage_timetable': 'exams_full',
   'exams.enroll_students': 'exams',
   'exams.enter_marks': 'exams',
   'exams.view_reports': 'exams',
@@ -292,13 +292,13 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string | string[]> = {
   'exams.view_consolidated_reports': 'exams',
   'exams.view_class_reports': 'exams',
   'exams.view_student_reports': 'exams',
-  'exams.manage_attendance': 'exams',
-  'exams.view_attendance_reports': 'exams',
-  'exams.roll_numbers.read': 'exams',
-  'exams.roll_numbers.assign': 'exams',
-  'exams.secret_numbers.read': 'exams',
-  'exams.secret_numbers.assign': 'exams',
-  'exams.numbers.print': 'exams',
+  'exams.manage_attendance': 'exams_full',
+  'exams.view_attendance_reports': 'exams_full',
+  'exams.roll_numbers.read': 'exams_full',
+  'exams.roll_numbers.assign': 'exams_full',
+  'exams.secret_numbers.read': 'exams_full',
+  'exams.secret_numbers.assign': 'exams_full',
+  'exams.numbers.print': 'exams_full',
   'exam_classes.read': 'exams',
   'exam_classes.create': 'exams',
   'exam_classes.update': 'exams',
@@ -315,30 +315,30 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string | string[]> = {
   'exam_results.create': 'exams',
   'exam_results.update': 'exams',
   'exam_results.delete': 'exams',
-  'exam_times.read': 'exams',
-  'exam_times.create': 'exams',
-  'exam_times.update': 'exams',
-  'exam_times.delete': 'exams',
-  'exam_types.read': 'exams',
-  'exam_types.create': 'exams',
-  'exam_types.update': 'exams',
-  'exam_types.delete': 'exams',
-  'exam_documents.read': 'exams',
-  'exam_documents.create': 'exams',
-  'exam_documents.update': 'exams',
-  'exam_documents.delete': 'exams',
-  'exams.questions.read': 'exams',
-  'exams.questions.create': 'exams',
-  'exams.questions.update': 'exams',
-  'exams.questions.delete': 'exams',
-  'exams.papers.read': 'exams',
-  'exams.papers.create': 'exams',
-  'exams.papers.update': 'exams',
-  'exams.papers.delete': 'exams',
-  'grades.read': 'exams',
-  'grades.create': 'exams',
-  'grades.update': 'exams',
-  'grades.delete': 'exams',
+  'exam_times.read': 'exams_full',
+  'exam_times.create': 'exams_full',
+  'exam_times.update': 'exams_full',
+  'exam_times.delete': 'exams_full',
+  'exam_types.read': 'exams_full',
+  'exam_types.create': 'exams_full',
+  'exam_types.update': 'exams_full',
+  'exam_types.delete': 'exams_full',
+  'exam_documents.read': 'exams_full',
+  'exam_documents.create': 'exams_full',
+  'exam_documents.update': 'exams_full',
+  'exam_documents.delete': 'exams_full',
+  'exams.questions.read': 'question_bank',
+  'exams.questions.create': 'question_bank',
+  'exams.questions.update': 'question_bank',
+  'exams.questions.delete': 'question_bank',
+  'exams.papers.read': 'exam_paper_generator',
+  'exams.papers.create': 'exam_paper_generator',
+  'exams.papers.update': 'exam_paper_generator',
+  'exams.papers.delete': 'exam_paper_generator',
+  'grades.read': 'grades',
+  'grades.create': 'grades',
+  'grades.update': 'grades',
+  'grades.delete': 'grades',
 
   // Timetables feature
   'timetables.read': ['timetables', 'timetable'],
@@ -388,6 +388,12 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string | string[]> = {
   'staff_reports.export': ['pdf_reports', 'reports'],
   'student_reports.read': ['pdf_reports', 'reports'],
   'student_reports.export': ['pdf_reports', 'reports'],
+
+  // Report templates feature
+  'report_templates.read': 'report_templates',
+  'report_templates.create': 'report_templates',
+  'report_templates.update': 'report_templates',
+  'report_templates.delete': 'report_templates',
 
   // Short-term courses feature
   'short_term_courses.read': 'short_courses',
@@ -583,6 +589,68 @@ function getFeatureKeysForPermission(permissionName: string): string[] {
   return Array.isArray(mapped) ? mapped : [mapped];
 }
 
+const READONLY_ACTIONS = new Set([
+  'read',
+  'export',
+  'view',
+  'report',
+  'stats',
+  'download',
+  'print',
+  'search',
+  'lookup',
+  'preview',
+]);
+
+function getPermissionAction(permissionName: string): string {
+  const parts = permissionName.split('.');
+  return parts[parts.length - 1] || permissionName;
+}
+
+function isReadOnlyPermission(permissionName: string): boolean {
+  const action = getPermissionAction(permissionName);
+
+  if (READONLY_ACTIONS.has(action)) {
+    return true;
+  }
+
+  if (action.startsWith('view_')) {
+    return true;
+  }
+
+  if (action.endsWith('_report') || action.endsWith('_reports')) {
+    return true;
+  }
+
+  return false;
+}
+
+function getFeatureAccessLevel(feature: { accessLevel?: string; isAccessible?: boolean; isEnabled?: boolean }): 'full' | 'readonly' | 'none' {
+  if (feature.accessLevel === 'full' || feature.accessLevel === 'readonly' || feature.accessLevel === 'none') {
+    return feature.accessLevel;
+  }
+
+  if (feature.isAccessible) {
+    return 'full';
+  }
+
+  return feature.isEnabled ? 'full' : 'none';
+}
+
+function canUseFeatureForPermission(feature: { accessLevel?: string; isAccessible?: boolean; isEnabled?: boolean }, permissionName: string): boolean {
+  const accessLevel = getFeatureAccessLevel(feature);
+
+  if (accessLevel === 'full') {
+    return true;
+  }
+
+  if (accessLevel === 'readonly') {
+    return isReadOnlyPermission(permissionName);
+  }
+
+  return false;
+}
+
 /**
  * Combined hook that checks both permission AND feature access
  * Returns true only if BOTH conditions are met:
@@ -640,7 +708,7 @@ export const useHasPermissionAndFeature = (permissionName: string): boolean | un
         return false;
       }
       // Has some features, check if our feature is in the list
-      const hasFeature = featuresArray.some((feature) => featureKeys.includes(feature.featureKey) && feature.isEnabled === true);
+      const hasFeature = featuresArray.some((feature) => featureKeys.includes(feature.featureKey) && canUseFeatureForPermission(feature, permissionName));
       return hasFeature && hasPermission;
     }
     // No placeholder data yet, wait
@@ -663,7 +731,7 @@ export const useHasPermissionAndFeature = (permissionName: string): boolean | un
   // Check if the specific feature is enabled
   // CRITICAL: Must check if ANY of the featureKeys are in the enabled features list
   const hasFeature = features.some((feature) => 
-    featureKeys.includes(feature.featureKey) && feature.isEnabled === true
+    featureKeys.includes(feature.featureKey) && canUseFeatureForPermission(feature, permissionName)
   );
   
   // Both must be true - if permission is false, return false immediately
@@ -751,7 +819,7 @@ export const useHasAnyPermissionAndFeature = (permissionNames: string[]): boolea
     if (featureKeys.length === 0) {
       continue;
     }
-    const hasFeature = features.some((feature) => featureKeys.includes(feature.featureKey) && feature.isEnabled);
+    const hasFeature = features.some((feature) => featureKeys.includes(feature.featureKey) && canUseFeatureForPermission(feature, permissionName));
     if (hasFeature) {
       return true;
     }

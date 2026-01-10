@@ -4,7 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Organization;
 use App\Services\Notifications\NotificationService;
-use App\Services\Subscription\UsageTrackingService;
+use App\Services\Subscription\FeatureGateService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 class EnforceUsageLimit
 {
     public function __construct(
-        private UsageTrackingService $usageTrackingService,
+        private FeatureGateService $featureGateService,
         private NotificationService $notificationService
     ) {}
 
@@ -45,7 +45,7 @@ class EnforceUsageLimit
         $organizationId = $profile->organization_id;
 
         // Check usage limit
-        $check = $this->usageTrackingService->canCreate($organizationId, $resourceKey);
+        $check = $this->featureGateService->checkLimit($organizationId, $resourceKey);
 
         if (!$check['allowed']) {
             return response()->json([

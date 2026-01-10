@@ -9,6 +9,7 @@ use App\Models\OrganizationFeatureAddon;
 use App\Models\OrganizationLimitOverride;
 use App\Models\OrganizationSubscription;
 use App\Models\PaymentRecord;
+use App\Models\PlanFeature;
 use App\Models\RenewalRequest;
 use App\Models\SubscriptionHistory;
 use App\Models\SubscriptionPlan;
@@ -119,12 +120,17 @@ class SubscriptionService
         $action = SubscriptionHistory::ACTION_ACTIVATED;
         $fromPlanId = null;
         $fromStatus = null;
+        $lockedFeatures = [];
+        $metadata = $currentSubscription?->metadata ?? [];
 
         if ($currentSubscription) {
             $fromPlanId = $currentSubscription->plan_id;
             $fromStatus = $currentSubscription->status;
 
             if ($currentSubscription->plan_id !== $planId) {
+                if (!$currentSubscription->relationLoaded('plan')) {
+                    $currentSubscription->load('plan');
+                }
                 $currentPlan = $currentSubscription->plan;
                 // Compare total costs (license + maintenance) for upgrade/downgrade determination
                 $newTotalCost = $plan->getTotalInitialCost($currency, $additionalSchools);
@@ -134,6 +140,17 @@ class SubscriptionService
                     $action = SubscriptionHistory::ACTION_UPGRADED;
                 } elseif ($currentPlan && $newTotalCost < $currentTotalCost) {
                     $action = SubscriptionHistory::ACTION_DOWNGRADED;
+                }
+
+                if ($action === SubscriptionHistory::ACTION_DOWNGRADED && $currentPlan) {
+                    $lockedFeatures = $this->getRemovedFeaturesForDowngrade($organizationId, $currentPlan, $plan);
+                    if (!empty($lockedFeatures)) {
+                        $metadata['locked_features'] = $lockedFeatures;
+                        $metadata['locked_at'] = now()->toISOString();
+                        $metadata['locked_reason'] = 'plan_downgrade';
+                    }
+                } else {
+                    unset($metadata['locked_features'], $metadata['locked_at'], $metadata['locked_reason']);
                 }
             } elseif (in_array($currentSubscription->status, [
                 OrganizationSubscription::STATUS_PENDING_RENEWAL,
@@ -161,6 +178,7 @@ class SubscriptionService
             'amount_paid' => $amountPaid,
             'additional_schools' => $additionalSchools,
             'notes' => $notes,
+            'metadata' => !empty($metadata) ? $metadata : null,
             // New billing fields
             'billing_period' => $plan->billing_period ?? 'yearly',
             'next_maintenance_due_at' => $nextMaintenanceDueAt,
@@ -182,6 +200,61 @@ class SubscriptionService
         );
 
         return $subscription;
+    }
+
+    private function getPlanInheritanceChain(string $planSlug): array
+    {
+        $order = config('subscription_features.plan_order', []);
+        $index = array_search($planSlug, $order, true);
+
+        if ($index === false) {
+            return [$planSlug];
+        }
+
+        return array_slice($order, 0, $index + 1);
+    }
+
+    private function getPlanFeatureKeysWithInheritance(SubscriptionPlan $plan): array
+    {
+        $slugs = $this->getPlanInheritanceChain($plan->slug);
+
+        if (count($slugs) === 1) {
+            return $plan->enabledFeatures()->pluck('feature_key')->toArray();
+        }
+
+        $planIds = SubscriptionPlan::whereIn('slug', $slugs)->pluck('id')->toArray();
+
+        return PlanFeature::whereIn('plan_id', $planIds)
+            ->where('is_enabled', true)
+            ->pluck('feature_key')
+            ->toArray();
+    }
+
+    private function getRemovedFeaturesForDowngrade(
+        string $organizationId,
+        SubscriptionPlan $fromPlan,
+        SubscriptionPlan $toPlan
+    ): array {
+        $fromFeatures = $this->getPlanFeatureKeysWithInheritance($fromPlan);
+        $toFeatures = $this->getPlanFeatureKeysWithInheritance($toPlan);
+
+        $removed = array_values(array_diff($fromFeatures, $toFeatures));
+
+        if (empty($removed)) {
+            return [];
+        }
+
+        $addonFeatures = OrganizationFeatureAddon::where('organization_id', $organizationId)
+            ->where('is_enabled', true)
+            ->whereNull('deleted_at')
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->pluck('feature_key')
+            ->toArray();
+
+        return array_values(array_diff($removed, $addonFeatures));
     }
 
     /**

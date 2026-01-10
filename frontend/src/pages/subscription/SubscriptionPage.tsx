@@ -590,32 +590,48 @@ export default function SubscriptionPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-3 md:grid-cols-2">
-                    {categoryFeatures?.map((feature) => (
-                      <div 
-                        key={feature.featureKey}
-                        className={cn(
-                          'flex items-center justify-between p-3 rounded-lg border',
-                          feature.isEnabled ? 'bg-green-50 border-green-200' : 'bg-gray-50'
-                        )}
-                      >
-                        <div>
-                          <div className="font-medium">{feature.name}</div>
-                          {feature.description && (
-                            <div className="text-sm text-muted-foreground">{feature.description}</div>
+                    {categoryFeatures?.map((feature) => {
+                      const isReadonly = feature.accessLevel === 'readonly';
+                      const isFull = feature.accessLevel === 'full';
+
+                      return (
+                        <div 
+                          key={feature.featureKey}
+                          className={cn(
+                            'flex items-center justify-between p-3 rounded-lg border',
+                            isFull
+                              ? 'bg-green-50 border-green-200'
+                              : isReadonly
+                              ? 'bg-yellow-50 border-yellow-200'
+                              : 'bg-gray-50'
                           )}
+                        >
+                          <div>
+                            <div className="font-medium">{feature.name}</div>
+                            {feature.description && (
+                              <div className="text-sm text-muted-foreground">{feature.description}</div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {feature.isAddon && (
+                              <Badge variant="outline" className="text-xs">Add-on</Badge>
+                            )}
+                            {isReadonly && (
+                              <Badge variant="outline" className="text-xs text-yellow-700 border-yellow-300">
+                                Read-only
+                              </Badge>
+                            )}
+                            {isFull ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            ) : isReadonly ? (
+                              <Lock className="h-5 w-5 text-yellow-500" />
+                            ) : (
+                              <XCircle className="h-5 w-5 text-gray-400" />
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {feature.isAddon && (
-                            <Badge variant="outline" className="text-xs">Add-on</Badge>
-                          )}
-                          {feature.isEnabled ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-500" />
-                          ) : (
-                            <XCircle className="h-5 w-5 text-gray-400" />
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>

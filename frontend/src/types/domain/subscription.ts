@@ -119,6 +119,11 @@ export interface FeatureInfo {
   description: string | null;
   category: string;
   isEnabled: boolean;
+  isAccessible: boolean;
+  accessLevel: 'none' | 'readonly' | 'full';
+  missingDependencies: string[];
+  requiredPlan: { slug: string; name: string } | null;
+  parentFeature: string | null;
   isAddon: boolean;
   canPurchaseAddon: boolean;
   addonPriceAfn: number;

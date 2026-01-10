@@ -190,6 +190,8 @@ class ApiClient {
           (subscriptionError as any).accessLevel = error.access_level;
           (subscriptionError as any).resourceKey = error.resource_key;
           (subscriptionError as any).featureKey = error.feature_key;
+          (subscriptionError as any).missingDependencies = error.missing_dependencies;
+          (subscriptionError as any).requiredPlan = error.required_plan;
           (subscriptionError as any).upgradeRequired = error.upgrade_required;
           (subscriptionError as any).current = error.current;
           (subscriptionError as any).limit = error.limit;
@@ -213,6 +215,8 @@ class ApiClient {
                   message: error.message || error.error,
                   resourceKey: error.resource_key,
                   featureKey: error.feature_key,
+                  missingDependencies: error.missing_dependencies,
+                  requiredPlan: error.required_plan,
                   current: error.current,
                   limit: error.limit,
                   subscriptionStatus: error.subscription_status,

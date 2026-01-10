@@ -123,23 +123,26 @@ class UsageTrackingService
                 ->active()
                 ->first();
 
-            if ($override) {
-                return $override->limit_value;
+            $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
+            $plan = $subscription?->plan ?? $this->subscriptionService->getCurrentPlan($organizationId);
+
+            if ($subscription && !$subscription->relationLoaded('plan')) {
+                $subscription->load('plan');
+                $plan = $subscription->plan;
             }
 
-            // Get from plan
-            $plan = $this->subscriptionService->getCurrentPlan($organizationId);
-            
             if (!$plan) {
                 return 0; // No plan = no access
             }
 
-            try {
-                return $plan->getLimit($resourceKey);
-            } catch (\Exception $e) {
-                \Log::warning("Failed to get limit from plan for resource {$resourceKey}: " . $e->getMessage());
-                return -1; // Return unlimited on plan error to allow access
+            $baseLimit = $override ? $override->limit_value : $plan->getLimit($resourceKey);
+
+            if ($resourceKey === 'schools') {
+                $additionalSchools = (int) ($subscription?->additional_schools ?? 0);
+                return OrganizationSubscription::calculateTotalSchoolsAllowed($baseLimit, $additionalSchools);
             }
+
+            return $baseLimit;
         } catch (\Exception $e) {
             \Log::warning("Failed to get limit for resource {$resourceKey} for organization {$organizationId}: " . $e->getMessage());
             return -1; // Return unlimited on error to allow access

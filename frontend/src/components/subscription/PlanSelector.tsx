@@ -1,4 +1,4 @@
-import { Check, Crown, Star, Zap, Building2, Info } from 'lucide-react';
+import { Check, Crown, Star, Zap, Building2, Info, Shield } from 'lucide-react';
 import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -21,23 +21,26 @@ const PLAN_ICONS: Record<string, React.ElementType> = {
   starter: Star,
   basic: Star,
   pro: Crown,
+  complete: Shield,
   enterprise: Building2,
 };
 
 const PLAN_ICON_COLORS: Record<string, string> = {
   trial: 'text-yellow-500', // Bright yellow for trial
   starter: 'text-blue-500', // Blue for starter
-  basic: 'text-green-500', // Green for basic
+  basic: 'text-blue-500', // Legacy alias for starter
   pro: 'text-amber-500', // Amber/gold for pro
+  complete: 'text-emerald-500', // Emerald for complete
   enterprise: 'text-purple-500', // Purple for enterprise
 };
 
 const PLAN_HIGHLIGHTS: Record<string, string[]> = {
   trial: ['7-day free trial', 'Full feature access', 'Limited counts'],
-  starter: ['Up to 50 students', '10 staff members', 'Basic reporting'],
-  basic: ['Up to 200 students', '30 staff members', 'Finance module', 'Library'],
-  pro: ['Up to 1000 students', 'All features', 'Question bank', 'Custom branding'],
-  enterprise: ['Unlimited students', 'Multi-school', 'API access', 'Priority support'],
+  starter: ['Up to 250 students', '10 users', 'Exams Lite', 'Timetable & attendance'],
+  basic: ['Up to 250 students', '10 users', 'Exams Lite', 'Timetable & attendance'],
+  pro: ['Up to 600 students', 'Exams Full', 'Materials + library', 'Short courses'],
+  complete: ['Up to 1200 students', 'Finance + DMS', 'Certificates + cards', 'Report templates'],
+  enterprise: ['Custom limits', 'Multi-branch', 'Multi-currency', 'Integrations'],
 };
 
 export function PlanSelector({ onSelectPlan, currentPlanSlug }: PlanSelectorProps) {

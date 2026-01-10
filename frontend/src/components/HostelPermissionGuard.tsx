@@ -31,7 +31,8 @@ export function HostelPermissionGuard({
   const hasHostelRead = useHasPermission('hostel.read');
   const hasRoomsRead = useHasPermission('rooms.read');
   const hasAdmissionsRead = useHasPermission('student_admissions.read');
-  const hasHostelFeature = !!features?.find((feature) => feature.featureKey === 'hostel')?.isEnabled;
+  const hostelFeature = features?.find((feature) => feature.featureKey === 'hostel');
+  const hasHostelFeature = hostelFeature?.isAccessible ?? hostelFeature?.isEnabled ?? false;
 
   // Show loading state while permissions are being fetched
   const isInitialLoad = isLoading && permissions === undefined;

@@ -93,6 +93,10 @@ class SubscriptionController extends Controller
                     'limits' => $plan->limits->mapWithKeys(function ($limit) {
                         return [$limit->resource_key => $limit->limit_value];
                     }),
+                    'metadata' => $plan->metadata,
+                    'export_level' => $plan->metadata['export_level'] ?? null,
+                    'backup_mode' => $plan->metadata['backup_mode'] ?? null,
+                    'permissions_level' => $plan->metadata['permissions_level'] ?? null,
                     'created_at' => $plan->created_at?->toISOString(),
                     'updated_at' => $plan->updated_at?->toISOString(),
                     'deleted_at' => $plan->deleted_at?->toISOString(),

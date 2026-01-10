@@ -6,6 +6,8 @@ use App\Models\FeatureDefinition;
 use App\Models\OrganizationFeatureAddon;
 use App\Models\OrganizationSubscription;
 use App\Models\PlanFeature;
+use App\Models\SubscriptionPlan;
+use App\Services\Subscription\UsageTrackingService;
 
 class FeatureGateService
 {
@@ -15,7 +17,8 @@ class FeatureGateService
     ];
 
     public function __construct(
-        private SubscriptionService $subscriptionService
+        private SubscriptionService $subscriptionService,
+        private UsageTrackingService $usageTrackingService
     ) {}
 
     private function normalizeFeatureKey(string $featureKey): string
@@ -37,6 +40,226 @@ class FeatureGateService
         return array_values(array_unique(array_merge([$featureKey, $canonical], $aliases)));
     }
 
+    private function getFeatureCatalog(): array
+    {
+        return config('subscription_features.features', []);
+    }
+
+    private function getFeatureMetadata(string $featureKey): array
+    {
+        $canonical = $this->normalizeFeatureKey($featureKey);
+        $catalog = $this->getFeatureCatalog();
+        return $catalog[$canonical] ?? [];
+    }
+
+    private function getFeatureDependencies(string $featureKey): array
+    {
+        $metadata = $this->getFeatureMetadata($featureKey);
+        $dependencies = $metadata['dependencies'] ?? [];
+
+        if (!empty($metadata['parent'])) {
+            $dependencies[] = $metadata['parent'];
+        }
+
+        return $dependencies;
+    }
+
+    private function getFeatureParent(string $featureKey): ?string
+    {
+        $metadata = $this->getFeatureMetadata($featureKey);
+        return $metadata['parent'] ?? null;
+    }
+
+    private function getPlanInheritanceChain(string $planSlug): array
+    {
+        $order = config('subscription_features.plan_order', []);
+        $index = array_search($planSlug, $order, true);
+
+        if ($index === false) {
+            return [$planSlug];
+        }
+
+        return array_slice($order, 0, $index + 1);
+    }
+
+    private function getPlanFeatureKeysWithInheritance(SubscriptionPlan $plan): array
+    {
+        $slugs = $this->getPlanInheritanceChain($plan->slug);
+
+        if (count($slugs) === 1) {
+            return $plan->enabledFeatures()->pluck('feature_key')->toArray();
+        }
+
+        $planIds = SubscriptionPlan::whereIn('slug', $slugs)->pluck('id')->toArray();
+
+        return PlanFeature::whereIn('plan_id', $planIds)
+            ->where('is_enabled', true)
+            ->pluck('feature_key')
+            ->toArray();
+    }
+
+    private function getMinimumPlanForFeature(string $featureKey): ?array
+    {
+        $canonical = $this->normalizeFeatureKey($featureKey);
+        $order = config('subscription_features.plan_order', []);
+
+        if (empty($order)) {
+            return null;
+        }
+
+        $plans = SubscriptionPlan::whereIn('slug', $order)->get()->keyBy('slug');
+
+        foreach ($order as $slug) {
+            $plan = $plans->get($slug);
+            if (!$plan) {
+                continue;
+            }
+
+            $features = $this->getPlanFeatureKeysWithInheritance($plan);
+            if (in_array($canonical, $features, true)) {
+                return ['slug' => $plan->slug, 'name' => $plan->name];
+            }
+        }
+
+        return null;
+    }
+
+    private function getLockedFeatures(OrganizationSubscription $subscription): array
+    {
+        $metadata = $subscription->metadata ?? [];
+        $locked = $metadata['locked_features'] ?? [];
+
+        if (!is_array($locked)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_map([$this, 'normalizeFeatureKey'], $locked)));
+    }
+
+    private function getMissingDependencies(string $featureKey, array $enabledFeatures, array &$visited = []): array
+    {
+        $canonical = $this->normalizeFeatureKey($featureKey);
+
+        if (isset($visited[$canonical])) {
+            return [];
+        }
+
+        $visited[$canonical] = true;
+        $missing = [];
+
+        foreach ($this->getFeatureDependencies($canonical) as $dependency) {
+            $dependencyKey = $this->normalizeFeatureKey($dependency);
+
+            if (!in_array($dependencyKey, $enabledFeatures, true)) {
+                $missing[] = $dependencyKey;
+                continue;
+            }
+
+            $childMissing = $this->getMissingDependencies($dependencyKey, $enabledFeatures, $visited);
+            if (!empty($childMissing)) {
+                $missing = array_merge($missing, $childMissing);
+            }
+        }
+
+        return array_values(array_unique($missing));
+    }
+
+    /**
+     * Resolve feature access with dependency enforcement and downgrade read-only support.
+     */
+    public function getFeatureAccessStatus(string $organizationId, string $featureKey): array
+    {
+        $canonical = $this->normalizeFeatureKey($featureKey);
+        $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
+
+        if (!$subscription) {
+            return [
+                'allowed' => false,
+                'access_level' => 'none',
+                'reason' => 'no_subscription',
+                'feature_key' => $canonical,
+                'missing_dependencies' => [],
+                'required_plan' => null,
+            ];
+        }
+
+        if ($subscription->isBlocked() || $subscription->shouldBeSuspendedForPayment()) {
+            return [
+                'allowed' => false,
+                'access_level' => 'none',
+                'reason' => 'subscription_blocked',
+                'feature_key' => $canonical,
+                'missing_dependencies' => [],
+                'required_plan' => null,
+            ];
+        }
+
+        if (!$subscription->relationLoaded('plan')) {
+            try {
+                $subscription->load('plan');
+            } catch (\Exception $e) {
+                \Log::warning('Failed to load plan relationship in getFeatureAccessStatus: ' . $e->getMessage());
+                return [
+                    'allowed' => false,
+                    'access_level' => 'none',
+                    'reason' => 'plan_not_loaded',
+                    'feature_key' => $canonical,
+                    'missing_dependencies' => [],
+                    'required_plan' => null,
+                ];
+            }
+        }
+
+        $enabledFeatures = $this->getEnabledFeatures($organizationId);
+        $isEnabled = in_array($canonical, $enabledFeatures, true);
+        $lockedFeatures = $this->getLockedFeatures($subscription);
+        $isLockedReadonly = in_array($canonical, $lockedFeatures, true);
+
+        if ($isEnabled) {
+            $missingDependencies = $this->getMissingDependencies($canonical, $enabledFeatures);
+
+            if (!empty($missingDependencies)) {
+                return [
+                    'allowed' => false,
+                    'access_level' => 'none',
+                    'reason' => 'dependency_missing',
+                    'feature_key' => $canonical,
+                    'missing_dependencies' => $missingDependencies,
+                    'required_plan' => $this->getMinimumPlanForFeature($canonical),
+                ];
+            }
+
+            return [
+                'allowed' => true,
+                'access_level' => 'full',
+                'reason' => null,
+                'feature_key' => $canonical,
+                'missing_dependencies' => [],
+                'required_plan' => null,
+            ];
+        }
+
+        if ($isLockedReadonly) {
+            return [
+                'allowed' => true,
+                'access_level' => 'readonly',
+                'reason' => 'locked_readonly',
+                'feature_key' => $canonical,
+                'missing_dependencies' => [],
+                'required_plan' => $this->getMinimumPlanForFeature($canonical),
+            ];
+        }
+
+        return [
+            'allowed' => false,
+            'access_level' => 'none',
+            'reason' => 'feature_not_in_plan',
+            'feature_key' => $canonical,
+            'missing_dependencies' => [],
+            'required_plan' => $this->getMinimumPlanForFeature($canonical),
+        ];
+    }
+
     /**
      * Check if an organization has access to a feature
      * CRITICAL: Only returns true if feature is explicitly enabled in plan or as addon
@@ -44,65 +267,8 @@ class FeatureGateService
      */
     public function hasFeature(string $organizationId, string $featureKey): bool
     {
-        // First check subscription status
-        $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
-        
-        // If no subscription exists, deny access (enforce subscription requirement)
-        if (!$subscription) {
-            return false;
-        }
-
-        // Blocked subscriptions have no feature access
-        if ($subscription->isBlocked()) {
-            return false;
-        }
-
-        // CRITICAL: Check if subscription should be suspended due to payment issues
-        // Maintenance overdue or unpaid license fee blocks all feature access
-        if ($subscription->shouldBeSuspendedForPayment()) {
-            return false;
-        }
-
-        // Load plan relationship if not already loaded
-        try {
-            if (!$subscription->relationLoaded('plan')) {
-                $subscription->load('plan');
-            }
-        } catch (\Exception $e) {
-            // If plan loading fails, deny access (fail secure)
-            \Log::warning('Failed to load plan relationship in hasFeature: ' . $e->getMessage());
-            return false;
-        }
-
-        $featureKeys = $this->getFeatureKeyVariants($featureKey);
-
-        // Check for feature addon first (addons override plan features)
-        $addon = OrganizationFeatureAddon::where('organization_id', $organizationId)
-            ->whereIn('feature_key', $featureKeys)
-            ->where('is_enabled', true)
-            ->whereNull('deleted_at')
-            ->where(function ($q) {
-                $q->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', now());
-            })
-            ->first();
-
-        if ($addon) {
-            return true;
-        }
-
-        // Check if feature is enabled in plan
-        $plan = $subscription->plan;
-        if ($plan && $plan->features()
-            ->whereIn('feature_key', $featureKeys)
-            ->where('is_enabled', true)
-            ->exists()) {
-            return true;
-        }
-
-        // CRITICAL: No fallback - if feature is not in plan and not an addon, deny access
-        // This enforces subscription-based access control
-        return false;
+        $access = $this->getFeatureAccessStatus($organizationId, $featureKey);
+        return $access['allowed'] ?? false;
     }
 
     /**
@@ -135,7 +301,7 @@ class FeatureGateService
             }
             
             if ($subscription->plan) {
-                $planFeatures = $subscription->plan->enabledFeatures()->pluck('feature_key')->toArray();
+                $planFeatures = $this->getPlanFeatureKeysWithInheritance($subscription->plan);
                 $enabledFeatures = array_merge($enabledFeatures, $planFeatures);
                 // Check if plan has any features assigned (even if disabled)
                 $hasPlanFeatures = $subscription->plan->features()->exists();
@@ -183,6 +349,8 @@ class FeatureGateService
 
         foreach ($allFeatures as $feature) {
             $isEnabled = in_array($feature->feature_key, $enabledFeatures);
+            $access = $this->getFeatureAccessStatus($organizationId, $feature->feature_key);
+            $parentFeature = $this->getFeatureParent($feature->feature_key);
             
             // Check if it's from addon (including disabled addons for display)
             $addon = OrganizationFeatureAddon::where('organization_id', $organizationId)
@@ -197,6 +365,11 @@ class FeatureGateService
                 'description' => $feature->description,
                 'category' => $feature->category,
                 'is_enabled' => $isEnabled,
+                'is_accessible' => $access['allowed'] ?? false,
+                'access_level' => $access['access_level'] ?? 'none',
+                'missing_dependencies' => $access['missing_dependencies'] ?? [],
+                'required_plan' => $access['required_plan'] ?? null,
+                'parent_feature' => $parentFeature,
                 'is_addon' => $isAddon,
                 'can_purchase_addon' => $feature->is_addon && !$isEnabled,
                 'addon_price_afn' => $feature->addon_price_yearly_afn,
@@ -231,6 +404,26 @@ class FeatureGateService
                 ];
             })
             ->toArray();
+    }
+
+    /**
+     * Check if a subfeature can be used (maps to its own feature_key and requires parent).
+     */
+    public function canUseSubfeature(string $organizationId, string $featureKey, string $subfeatureKey): array
+    {
+        $access = $this->getFeatureAccessStatus($organizationId, $subfeatureKey);
+        $access['base_feature'] = $this->normalizeFeatureKey($featureKey);
+        $access['subfeature_key'] = $this->normalizeFeatureKey($subfeatureKey);
+
+        return $access;
+    }
+
+    /**
+     * Check usage limits via the central entitlement resolver.
+     */
+    public function checkLimit(string $organizationId, string $resourceKey): array
+    {
+        return $this->usageTrackingService->canCreate($organizationId, $resourceKey);
     }
 
     /**

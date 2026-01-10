@@ -48,17 +48,28 @@ export const usePlatformOrganizationSubscription = (organizationId: string) => {
         }
         
         // Map features to domain types (same format as useOrganizationSubscription)
-        const mappedFeatures = ((subscriptionData?.features || []) as any[]).map((apiFeature: any) => ({
-          featureKey: apiFeature.feature_key || apiFeature.featureKey,
-          name: apiFeature.name,
-          description: apiFeature.description,
-          category: apiFeature.category,
-          isEnabled: apiFeature.is_enabled ?? apiFeature.isEnabled ?? false,
-          isAddon: apiFeature.is_addon ?? apiFeature.isAddon ?? false,
-          canPurchaseAddon: apiFeature.can_purchase_addon ?? apiFeature.canPurchaseAddon ?? false,
-          addonPriceAfn: Number(apiFeature.addon_price_afn || apiFeature.addonPriceAfn || 0),
-          addonPriceUsd: Number(apiFeature.addon_price_usd || apiFeature.addonPriceUsd || 0),
-        }));
+        const mappedFeatures = ((subscriptionData?.features || []) as any[]).map((apiFeature: any) => {
+          const isEnabled = apiFeature.is_enabled ?? apiFeature.isEnabled ?? false;
+          const accessLevel = apiFeature.access_level ?? (isEnabled ? 'full' : 'none');
+          const isAccessible = apiFeature.is_accessible ?? accessLevel !== 'none';
+
+          return {
+            featureKey: apiFeature.feature_key || apiFeature.featureKey,
+            name: apiFeature.name,
+            description: apiFeature.description,
+            category: apiFeature.category,
+            isEnabled,
+            isAccessible,
+            accessLevel,
+            missingDependencies: apiFeature.missing_dependencies ?? apiFeature.missingDependencies ?? [],
+            requiredPlan: apiFeature.required_plan ?? apiFeature.requiredPlan ?? null,
+            parentFeature: apiFeature.parent_feature ?? apiFeature.parentFeature ?? null,
+            isAddon: apiFeature.is_addon ?? apiFeature.isAddon ?? false,
+            canPurchaseAddon: apiFeature.can_purchase_addon ?? apiFeature.canPurchaseAddon ?? false,
+            addonPriceAfn: Number(apiFeature.addon_price_afn || apiFeature.addonPriceAfn || 0),
+            addonPriceUsd: Number(apiFeature.addon_price_usd || apiFeature.addonPriceUsd || 0),
+          };
+        });
         
         // Return the data structure expected by the component
         return {

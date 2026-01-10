@@ -421,12 +421,33 @@ class OrganizationSubscription extends Model
      */
     public function getTotalSchoolsAllowed(): int
     {
+        if (!$this->relationLoaded('plan')) {
+            $this->load('plan');
+        }
+
         $plan = $this->plan;
         if (!$plan) {
             return 1;
         }
 
-        return $plan->max_schools + $this->additional_schools;
+        $baseLimit = $plan->getLimit('schools');
+        return self::calculateTotalSchoolsAllowed($baseLimit, (int) ($this->additional_schools ?? 0));
+    }
+
+    /**
+     * Calculate total schools allowed using plan limit + additional schools.
+     * -1 means unlimited.
+     */
+    public static function calculateTotalSchoolsAllowed(int $baseLimit, int $additionalSchools): int
+    {
+        if ($baseLimit === -1) {
+            return -1;
+        }
+
+        $base = max(0, $baseLimit);
+        $additional = max(0, $additionalSchools);
+
+        return $base + $additional;
     }
 
     /**

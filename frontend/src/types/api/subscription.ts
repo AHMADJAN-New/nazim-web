@@ -137,6 +137,14 @@ export interface FeatureStatus {
   description: string | null;
   category: string;
   is_enabled: boolean;
+  is_accessible?: boolean;
+  access_level?: 'none' | 'readonly' | 'full';
+  missing_dependencies?: string[];
+  required_plan?: {
+    slug: string;
+    name: string;
+  } | null;
+  parent_feature?: string | null;
   is_addon: boolean;
   can_purchase_addon: boolean;
   addon_price_afn: number;

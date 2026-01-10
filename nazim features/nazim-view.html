@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nazim Web — Dark Blue & Light Green View</title>
+
+  <style>
+    /* =========================
+       NAZIM THEME TOKENS
+       ========================= */
+    :root{
+      --bg: #071426;               /* deep navy background */
+      --panel: rgba(255,255,255,.06);
+      --panel-2: rgba(255,255,255,.08);
+      --border: rgba(255,255,255,.12);
+
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.72);
+
+      --blue: #0b2a55;             /* dark blue surface */
+      --blue-2: #0a1f3f;           /* darker */
+      --green: #7CFFB2;            /* light green accent */
+      --green-2:#40E58A;           /* deeper green accent */
+
+      --danger:#ff5c5c;
+      --warning:#ffc857;
+
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --radius: 16px;
+      --radius-sm: 12px;
+      --ring: 0 0 0 4px rgba(124,255,178,.16);
+      --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Noto Sans Arabic", sans-serif;
+    }
+
+    /* =========================
+       GLOBAL
+       ========================= */
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--font);
+      color:var(--text);
+      background:
+        radial-gradient(900px 500px at 15% 10%, rgba(124,255,178,.14), transparent 60%),
+        radial-gradient(700px 480px at 85% 15%, rgba(64,229,138,.12), transparent 55%),
+        radial-gradient(900px 700px at 50% 110%, rgba(11,42,85,.55), transparent 60%),
+        linear-gradient(180deg, #061022, var(--bg));
+    }
+
+    a{color:inherit; text-decoration:none}
+    .wrap{
+      min-height:100%;
+      display:grid;
+      grid-template-columns: 280px 1fr;
+    }
+
+    /* =========================
+       SIDEBAR
+       ========================= */
+    .sidebar{
+      position:sticky;
+      top:0;
+      height:100vh;
+      padding:20px;
+      border-right:1px solid var(--border);
+      background:
+        linear-gradient(180deg, rgba(11,42,85,.85), rgba(6,16,34,.85));
+      backdrop-filter: blur(10px);
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:12px 12px;
+      border-radius:14px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .logo{
+      width:42px; height:42px;
+      border-radius:14px;
+      background:
+        radial-gradient(14px 14px at 30% 30%, rgba(124,255,178,.85), transparent 60%),
+        linear-gradient(135deg, rgba(124,255,178,.35), rgba(11,42,85,.9));
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.12);
+    }
+    .brand h1{
+      margin:0;
+      font-size:16px;
+      letter-spacing:.3px;
+      line-height:1.1;
+    }
+    .brand p{
+      margin:2px 0 0 0;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .nav{
+      margin-top:18px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .nav a{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid transparent;
+      color:var(--muted);
+      background: transparent;
+      transition: .18s ease;
+    }
+    .nav a:hover{
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border-color: rgba(255,255,255,.10);
+    }
+    .nav a.active{
+      background: linear-gradient(135deg, rgba(124,255,178,.16), rgba(255,255,255,.06));
+      border-color: rgba(124,255,178,.26);
+      box-shadow: var(--ring);
+      color: var(--text);
+    }
+    .dot{
+      width:10px; height:10px; border-radius:999px;
+      background: rgba(255,255,255,.18);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.18);
+    }
+    .active .dot{
+      background: var(--green);
+      box-shadow: 0 0 0 6px rgba(124,255,178,.16);
+    }
+
+    .sidebar-footer{
+      position:absolute;
+      bottom:18px;
+      left:20px;
+      right:20px;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+    }
+    .sidebar-footer .row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+    .pill{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(124,255,178,.35);
+      color: var(--green);
+      background: rgba(124,255,178,.08);
+    }
+
+    /* =========================
+       MAIN
+       ========================= */
+    .main{
+      padding:22px;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:14px 16px;
+      border-radius: var(--radius);
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+
+    .search{
+      flex:1;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(6,16,34,.55);
+      max-width: 640px;
+    }
+    .search input{
+      width:100%;
+      border:0;
+      outline:none;
+      background: transparent;
+      color: var(--text);
+      font-size:14px;
+    }
+    .search input::placeholder{color: rgba(255,255,255,.45)}
+
+    .actions{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      cursor:pointer;
+      transition:.18s ease;
+      user-select:none;
+    }
+    .btn:hover{
+      transform: translateY(-1px);
+      border-color: rgba(124,255,178,.28);
+      box-shadow: 0 10px 25px rgba(0,0,0,.25);
+    }
+    .btn.primary{
+      border-color: rgba(124,255,178,.35);
+      background: linear-gradient(135deg, rgba(124,255,178,.18), rgba(255,255,255,.06));
+    }
+    .kbd{
+      font-size:12px;
+      padding:2px 8px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.70);
+      background: rgba(0,0,0,.18);
+    }
+
+    /* =========================
+       CONTENT GRID
+       ========================= */
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:18px;
+      align-items:start;
+    }
+
+    .card{
+      border-radius: var(--radius);
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .card .head{
+      padding:16px 16px 10px 16px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      background:
+        linear-gradient(180deg, rgba(11,42,85,.35), transparent);
+    }
+    .card .head h2{
+      margin:0;
+      font-size:16px;
+      letter-spacing:.2px;
+    }
+    .card .head p{
+      margin:6px 0 0 0;
+      color: var(--muted);
+      font-size:13px;
+      line-height:1.4;
+    }
+    .card .body{ padding:16px; }
+
+    .stats{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:12px;
+    }
+    .stat{
+      padding:14px;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(220px 120px at 30% 20%, rgba(124,255,178,.14), transparent 60%),
+        rgba(6,16,34,.45);
+    }
+    .stat .label{ font-size:12px; color: var(--muted); }
+    .stat .value{ font-size:20px; margin-top:6px; font-weight:700; }
+    .stat .trend{ font-size:12px; margin-top:6px; color: rgba(124,255,178,.90); }
+
+    .table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(6,16,34,.40);
+    }
+    .table th, .table td{
+      padding:12px 12px;
+      font-size:13px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      text-align:left;
+      white-space:nowrap;
+    }
+    .table th{
+      font-size:12px;
+      letter-spacing:.2px;
+      color: rgba(255,255,255,.72);
+      background: rgba(255,255,255,.06);
+    }
+    .table tr:last-child td{border-bottom:0}
+
+    .badge{
+      font-size:12px;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.80);
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .badge.ok{
+      border-color: rgba(124,255,178,.35);
+      background: rgba(124,255,178,.10);
+      color: var(--green);
+    }
+    .badge.warn{
+      border-color: rgba(255,200,87,.35);
+      background: rgba(255,200,87,.10);
+      color: var(--warning);
+    }
+    .badge.danger{
+      border-color: rgba(255,92,92,.35);
+      background: rgba(255,92,92,.10);
+      color: var(--danger);
+    }
+
+    .mini{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .avatar{
+      width:34px; height:34px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background:
+        radial-gradient(14px 14px at 35% 30%, rgba(124,255,178,.75), transparent 60%),
+        linear-gradient(135deg, rgba(255,255,255,.12), rgba(6,16,34,.45));
+    }
+
+    .toggle{
+      width:54px;
+      height:30px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(6,16,34,.45);
+      position:relative;
+      cursor:pointer;
+      transition:.2s ease;
+    }
+    .toggle::after{
+      content:"";
+      width:22px;
+      height:22px;
+      border-radius:999px;
+      position:absolute;
+      top:3px;
+      left:4px;
+      background: rgba(255,255,255,.75);
+      transition:.2s ease;
+      box-shadow: 0 10px 20px rgba(0,0,0,.35);
+    }
+    .toggle.on{
+      border-color: rgba(124,255,178,.35);
+      background: rgba(124,255,178,.12);
+    }
+    .toggle.on::after{
+      left:28px;
+      background: var(--green);
+    }
+
+    /* =========================
+       RESPONSIVE
+       ========================= */
+    @media (max-width: 980px){
+      .wrap{ grid-template-columns: 1fr; }
+      .sidebar{ position:relative; height:auto; }
+      .sidebar-footer{ position:relative; left:0; right:0; bottom:0; margin-top:14px; }
+      .grid{ grid-template-columns: 1fr; }
+      .stats{ grid-template-columns: 1fr; }
+      .search{ max-width: 100%; }
+    }
+    /* =========================
+   LIGHT MODE — NAZIM
+   ========================= */
+
+body.light {
+  background: #F4F7FB;
+  color: #0F172A;
+}
+
+body.light .sidebar {
+  background: linear-gradient(180deg, #0B2A55, #0A1F3F);
+  border-right: none;
+}
+
+body.light .brand,
+body.light .topbar,
+body.light .card {
+  background: #FFFFFF;
+  color: #0F172A;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 10px 25px rgba(15,23,42,.08);
+}
+
+body.light .nav a {
+  color: #CBD5E1;
+}
+
+body.light .nav a.active {
+  background: #DCFCE7;
+  color: #14532D;
+  border-color: #22C55E;
+}
+
+body.light .search {
+  background: #F1F5F9;
+  border-color: #E2E8F0;
+}
+
+body.light .search input {
+  color: #0F172A;
+}
+
+body.light .stat {
+  background: #FFFFFF;
+  border-color: #E2E8F0;
+}
+
+body.light .table {
+  background: #FFFFFF;
+}
+
+body.light .table th {
+  background: #F1F5F9;
+  color: #334155;
+}
+
+body.light .badge.ok {
+  background: #DCFCE7;
+  color: #166534;
+  border-color: #22C55E;
+}
+
+body.light .badge.warn {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+body.light .badge.danger {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+  </style>
+  
+</head>
+
+<body class="light">
+    <div class="wrap">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Nazim Web</h1>
+          <p>Dark Blue • Light Green UI</p>
+        </div>
+      </div>
+
+      <nav class="nav" style="margin-top:16px">
+        <a class="active" href="#" data-nav="dashboard"><span class="dot"></span> Dashboard</a>
+        <a href="#" data-nav="students"><span class="dot"></span> Students</a>
+        <a href="#" data-nav="attendance"><span class="dot"></span> Attendance</a>
+        <a href="#" data-nav="exams"><span class="dot"></span> Exams</a>
+        <a href="#" data-nav="finance"><span class="dot"></span> Finance</a>
+        <a href="#" data-nav="documents"><span class="dot"></span> Documents</a>
+        <a href="#" data-nav="settings"><span class="dot"></span> Settings</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="row">
+          <div class="mini">
+            <div class="avatar" aria-hidden="true"></div>
+            <div>
+              <div style="font-size:13px; font-weight:700;">Admin</div>
+              <div style="font-size:12px; color:var(--muted);">Organization: Main</div>
+            </div>
+          </div>
+          <span class="pill">Online</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <header class="topbar">
+        <div class="search">
+          <span aria-hidden="true">🔎</span>
+          <input id="search" placeholder="Search students, documents, receipts..." />
+          <span class="kbd">Ctrl K</span>
+        </div>
+
+        <div class="btn" id="btnTheme">
+            <span aria-hidden="true">🌓</span>
+            <span>Theme</span>
+          </div>
+          
+          <div class="btn primary" id="btnNew">
+            <span aria-hidden="true">＋</span>
+            <span>New</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="grid">
+        <!-- LEFT: OVERVIEW -->
+        <div class="card">
+          <div class="head">
+            <div>
+              <h2>Overview</h2>
+              <p>
+                A clean “Nazim-style” view page using navy surfaces and light green accents.
+                Replace these cards with real API data later.
+              </p>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span class="badge ok"><span aria-hidden="true">●</span> System Healthy</span>
+            </div>
+          </div>
+
+          <div class="body">
+            <div class="stats">
+              <div class="stat">
+                <div class="label">Students</div>
+                <div class="value" id="statStudents">1,024</div>
+                <div class="trend">+12 this week</div>
+              </div>
+              <div class="stat">
+                <div class="label">Attendance Today</div>
+                <div class="value" id="statAttendance">96%</div>
+                <div class="trend">Stable</div>
+              </div>
+              <div class="stat">
+                <div class="label">Pending Docs</div>
+                <div class="value" id="statDocs">18</div>
+                <div class="trend">-3 since yesterday</div>
+              </div>
+            </div>
+
+            <div style="height:14px"></div>
+
+            <table class="table" aria-label="Recent Activity">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Title</th>
+                  <th>Status</th>
+                  <th>Updated</th>
+                </tr>
+              </thead>
+              <tbody id="activity">
+                <tr>
+                  <td>Attendance</td>
+                  <td>Class 10A — Morning</td>
+                  <td><span class="badge ok">Submitted</span></td>
+                  <td>2 min ago</td>
+                </tr>
+                <tr>
+                  <td>Finance</td>
+                  <td>Receipt #8941</td>
+                  <td><span class="badge warn">Needs Review</span></td>
+                  <td>18 min ago</td>
+                </tr>
+                <tr>
+                  <td>Documents</td>
+                  <td>Incoming Letter — Directorate</td>
+                  <td><span class="badge ok">Referred</span></td>
+                  <td>1 hr ago</td>
+                </tr>
+                <tr>
+                  <td>Exams</td>
+                  <td>Midterm Schedule</td>
+                  <td><span class="badge danger">Draft</span></td>
+                  <td>Yesterday</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- RIGHT: QUICK PANEL -->
+        <aside class="card">
+          <div class="head">
+            <div>
+              <h2>Quick Actions</h2>
+              <p>Buttons + toggles to preview interactions.</p>
+            </div>
+            <span class="badge" id="pageLabel">Dashboard</span>
+          </div>
+
+          <div class="body" style="display:flex; flex-direction:column; gap:12px;">
+            <div class="btn primary" onclick="toast('New student form (demo)')">
+              <span aria-hidden="true">🎓</span> Add Student
+            </div>
+            <div class="btn" onclick="toast('New document upload (demo)')">
+              <span aria-hidden="true">📄</span> Upload Document
+            </div>
+            <div class="btn" onclick="toast('Generate report (demo)')">
+              <span aria-hidden="true">📊</span> Generate Report
+            </div>
+
+            <div style="height:8px"></div>
+
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <div>
+                <div style="font-weight:700; font-size:13px;">Green Highlight Mode</div>
+                <div style="color:var(--muted); font-size:12px;">Makes the UI more “Nazim neon”.</div>
+              </div>
+              <div class="toggle" id="toggleGlow" role="switch" aria-checked="false" tabindex="0"></div>
+            </div>
+
+            <div style="height:8px"></div>
+
+            <div class="card" style="box-shadow:none; border-radius:14px;">
+              <div class="head" style="border-bottom:1px solid rgba(255,255,255,.08); border-radius:14px 14px 0 0;">
+                <div>
+                  <h2 style="font-size:14px;">Notes</h2>
+                  <p style="margin-top:4px;">This is a frontend-only preview page.</p>
+                </div>
+              </div>
+              <div class="body">
+                <ul style="margin:0; padding-left:18px; color:var(--muted); font-size:13px; line-height:1.6;">
+                  <li>Dark blue surfaces for seriousness + trust</li>
+                  <li>Light green accents for success + action</li>
+                  <li>Ready to convert to React/Vue later</li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+        </aside>
+      </section>
+
+      <!-- TOAST -->
+      <div id="toast" style="
+        position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
+        padding:12px 14px; border-radius:14px;
+        border:1px solid rgba(124,255,178,.28);
+        background: rgba(6,16,34,.78);
+        color: rgba(255,255,255,.92);
+        box-shadow: 0 18px 60px rgba(0,0,0,.45);
+        opacity:0; pointer-events:none; transition:.22s ease;
+        backdrop-filter: blur(10px);
+        ">
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Simple nav highlighting + page label
+    const navLinks = document.querySelectorAll('.nav a');
+    const pageLabel = document.getElementById('pageLabel');
+
+    navLinks.forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        navLinks.forEach(x => x.classList.remove('active'));
+        a.classList.add('active');
+        pageLabel.textContent = a.textContent.trim();
+        toast(pageLabel.textContent + " (demo)");
+      });
+    });
+
+ // Theme button: toggles light/dark and remembers choice
+const btnTheme = document.getElementById('btnTheme');
+
+function applyTheme(theme){
+  document.body.classList.toggle('light', theme === 'light');
+  localStorage.setItem('nazim_theme', theme);
+  toast(`Theme: ${theme}`);
+}
+
+btnTheme.addEventListener('click', () => {
+  const isLight = document.body.classList.contains('light');
+  applyTheme(isLight ? 'dark' : 'light');
+});
+
+// Load saved theme (default: dark)
+const savedTheme = localStorage.getItem('nazim_theme') || 'dark';
+applyTheme(savedTheme);
+
+
+    // Toggle glow mode
+    const toggle = document.getElementById('toggleGlow');
+    toggle.addEventListener('click', () => setGlow(!toggle.classList.contains('on')));
+    toggle.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        setGlow(!toggle.classList.contains('on'));
+      }
+    });
+
+    function setGlow(on){
+      toggle.classList.toggle('on', on);
+      toggle.setAttribute('aria-checked', String(on));
+      document.querySelectorAll('.card').forEach(card => {
+        card.style.boxShadow = on ? '0 18px 60px rgba(0,0,0,.45), 0 0 0 4px rgba(124,255,178,.12)' : '0 18px 60px rgba(0,0,0,.45)';
+      });
+      toast(on ? 'Glow: ON' : 'Glow: OFF');
+    }
+
+    // Ctrl+K focus search
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        document.getElementById('search').focus();
+        toast('Search focused');
+      }
+    });
+
+    // New button demo
+    document.getElementById('btnNew').addEventListener('click', () => {
+      toast('New menu (demo) — connect to your modal later');
+    });
+
+    // Toast helper
+    let toastTimer = null;
+    function toast(msg){
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.opacity = '1';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.style.opacity = '0', 1600);
+    }
+    document.body.classList.toggle('light');
+
+  </script>
+</body>
+</html>

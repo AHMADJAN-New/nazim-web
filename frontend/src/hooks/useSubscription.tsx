@@ -99,12 +99,20 @@ function mapWarningsApiToDomain(api: SubscriptionApi.UsageWarning[]): UsageWarni
 }
 
 function mapFeatureApiToDomain(api: SubscriptionApi.FeatureStatus): FeatureInfo {
+  const accessLevel = api.access_level ?? (api.is_enabled ? 'full' : 'none');
+  const isAccessible = api.is_accessible ?? accessLevel !== 'none';
+
   return {
     featureKey: api.feature_key,
     name: api.name,
     description: api.description,
     category: api.category,
     isEnabled: api.is_enabled,
+    isAccessible,
+    accessLevel,
+    missingDependencies: api.missing_dependencies ?? [],
+    requiredPlan: api.required_plan ?? null,
+    parentFeature: api.parent_feature ?? null,
     isAddon: api.is_addon,
     canPurchaseAddon: api.can_purchase_addon,
     addonPriceAfn: Number(api.addon_price_afn),
@@ -551,7 +559,7 @@ export const useHasFeature = (featureKey: string): boolean => {
   if (!features) return false;
   
   const feature = features.find((f) => f.featureKey === featureKey);
-  return feature?.isEnabled ?? false;
+  return feature?.isAccessible ?? feature?.isEnabled ?? false;
 };
 
 /**

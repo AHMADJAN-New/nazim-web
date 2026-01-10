@@ -36,14 +36,28 @@ class EnsureFeatureAccess
 
         $organizationId = $profile->organization_id;
 
-        // Check feature access
-        if (!$this->featureGateService->hasFeature($organizationId, $featureKey)) {
+        $access = $this->featureGateService->getFeatureAccessStatus($organizationId, $featureKey);
+
+        if (!$access['allowed']) {
             return response()->json([
                 'error' => "The '{$featureKey}' feature is not available on your current plan.",
-                'code' => 'FEATURE_NOT_AVAILABLE',
+                'code' => $access['reason'] === 'dependency_missing' ? 'FEATURE_DEPENDENCY_MISSING' : 'FEATURE_NOT_AVAILABLE',
                 'feature_key' => $featureKey,
+                'missing_dependencies' => $access['missing_dependencies'] ?? [],
+                'required_plan' => $access['required_plan'] ?? null,
                 'upgrade_required' => true,
                 'available_addons' => $this->featureGateService->getAvailableAddons($organizationId),
+            ], 402);
+        }
+
+        // If feature is read-only, block write operations
+        if (($access['access_level'] ?? 'full') === 'readonly' && !in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'])) {
+            return response()->json([
+                'error' => "The '{$featureKey}' feature is locked in read-only mode. Please upgrade to edit.",
+                'code' => 'FEATURE_READONLY',
+                'feature_key' => $featureKey,
+                'required_plan' => $access['required_plan'] ?? null,
+                'upgrade_required' => true,
             ], 402);
         }
 
