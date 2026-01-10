@@ -19,7 +19,7 @@ import { PlatformAdminDashboard } from './pages/PlatformAdminDashboard';
 import { PlatformAdminLogin } from './pages/PlatformAdminLogin';
 import { PlatformPermissionGroupsManagement } from './pages/PlatformPermissionGroupsManagement';
 
-import { TranslationsManagement } from '@/components/LazyComponents';
+import { TranslationsManagement, OrganizationRevenueHistory } from '@/components/LazyComponents';
 import { PageSkeleton } from '@/components/ui/loading';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Toaster } from '@/components/ui/sonner';
@@ -173,6 +173,11 @@ export function PlatformAdminApp() {
               <Route path="renewals/:renewalId" element={<RenewalReviewPage />} />
               <Route path="pending" element={<SubscriptionAdminDashboard />} />
               <Route path="admins" element={<PlatformAdminDashboard />} />
+              <Route path="revenue-history" element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <OrganizationRevenueHistory />
+                </Suspense>
+              } />
               <Route path="maintenance-fees" element={
                 <Suspense fallback={<PageSkeleton />}>
                   <MaintenanceFeesManagement />

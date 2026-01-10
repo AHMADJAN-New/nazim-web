@@ -174,6 +174,7 @@ import {
   DiscountCodesManagement,
   MaintenanceFeesManagement,
   LicenseFeesManagement,
+  OrganizationRevenueHistory,
   PlatformSettings,
   TranslationsManagement,
   HelpCenterManagement,
@@ -349,6 +350,11 @@ const App = () => (
                     <Route path="license-fees" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <LicenseFeesManagement />
+                      </Suspense>
+                    } />
+                    <Route path="revenue-history" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <OrganizationRevenueHistory />
                       </Suspense>
                     } />
                     {/* CRITICAL: More specific routes must come before less specific ones */}

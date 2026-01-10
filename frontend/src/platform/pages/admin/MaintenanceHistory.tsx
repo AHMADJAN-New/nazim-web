@@ -144,21 +144,22 @@ export function MaintenanceHistoryContent({
               </p>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Message</TableHead>
-                    <TableHead>Started</TableHead>
-                    <TableHead>Scheduled End</TableHead>
-                    <TableHead>Actual End</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Started By</TableHead>
-                    <TableHead>Ended By</TableHead>
-                    <TableHead>Affected Services</TableHead>
-                  </TableRow>
-                </TableHeader>
+            <div className="rounded-md border overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                <Table className="min-w-[1000px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Message</TableHead>
+                      <TableHead className="hidden md:table-cell">Started</TableHead>
+                      <TableHead className="hidden lg:table-cell">Scheduled End</TableHead>
+                      <TableHead className="hidden lg:table-cell">Actual End</TableHead>
+                      <TableHead className="hidden md:table-cell">Duration</TableHead>
+                      <TableHead className="hidden lg:table-cell">Started By</TableHead>
+                      <TableHead className="hidden lg:table-cell">Ended By</TableHead>
+                      <TableHead className="hidden lg:table-cell">Affected Services</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {maintenanceHistory.map((log) => (
                     <TableRow key={log.id}>
@@ -168,25 +169,25 @@ export function MaintenanceHistoryContent({
                           {log.message || 'No message'}
                         </p>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         {formatDateTime(new Date(log.started_at))}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {log.scheduled_end_at
                           ? formatDateTime(new Date(log.scheduled_end_at))
                           : '-'}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {log.actual_end_at
                           ? formatDateTime(new Date(log.actual_end_at))
                           : '-'}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         {log.duration_minutes !== null
                           ? `${log.duration_minutes} min`
                           : '-'}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {log.started_by ? (
                           <div>
                             <p className="text-sm font-medium">{log.started_by.name}</p>
@@ -196,7 +197,7 @@ export function MaintenanceHistoryContent({
                           '-'
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {log.ended_by ? (
                           <div>
                             <p className="text-sm font-medium">{log.ended_by.name}</p>
@@ -206,7 +207,7 @@ export function MaintenanceHistoryContent({
                           '-'
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {log.affected_services && log.affected_services.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {log.affected_services.map((service, idx) => (
@@ -223,6 +224,7 @@ export function MaintenanceHistoryContent({
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
         </CardContent>
@@ -272,13 +274,13 @@ export default function MaintenanceHistory() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-          <History className="h-8 w-8" />
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
+          <History className="h-6 w-6 sm:h-8 sm:w-8" />
           Maintenance History
         </h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">
           View all maintenance mode events and their details
         </p>
       </div>

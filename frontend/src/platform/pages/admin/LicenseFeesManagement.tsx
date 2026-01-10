@@ -93,13 +93,13 @@ export default function LicenseFeesManagement() {
   const paidCount = unpaidLicenseFees?.filter(fee => fee.license_paid).length || 0;
 
   return (
-    <div className="space-y-6 p-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             {t('subscription.licenseFeesManagement') || 'License Fees Management'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             {t('subscription.licenseFeesManagementDescription') || 'Manage license fee payments across all organizations'}
           </p>
         </div>
@@ -118,7 +118,7 @@ export default function LicenseFeesManagement() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -179,9 +179,9 @@ export default function LicenseFeesManagement() {
                   <TableRow>
                     <TableHead>{t('common.organization') || 'Organization'}</TableHead>
                     <TableHead className="text-right">{t('subscription.licenseFee') || 'License Fee'}</TableHead>
-                    <TableHead>{t('subscription.licensePaidAt') || 'Paid At'}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('subscription.licensePaidAt') || 'Paid At'}</TableHead>
                     <TableHead>{t('subscription.status') || 'Status'}</TableHead>
-                    <TableHead>{t('common.actions') || 'Actions'}</TableHead>
+                    <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -197,13 +197,13 @@ export default function LicenseFeesManagement() {
                           '-'
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         {fee.license_paid_at ? formatDate(new Date(fee.license_paid_at)) : '-'}
                       </TableCell>
                       <TableCell>
                         {getStatusBadge(fee.license_paid, fee.license_pending)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-right">
                         <Button
                           variant="outline"
                           size="sm"
@@ -211,14 +211,17 @@ export default function LicenseFeesManagement() {
                             // Navigate to organization subscription detail
                             window.location.href = `/platform/organizations/${fee.organization_id}/subscription`;
                           }}
+                          className="flex-shrink-0"
                         >
-                          {t('common.view') || 'View'}
+                          <span className="hidden sm:inline">{t('common.view') || 'View'}</span>
+                          <span className="sm:hidden">View</span>
                         </Button>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
         </CardContent>

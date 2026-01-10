@@ -236,19 +236,20 @@ export default function DiscountCodesManagement() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Discount Codes
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Create and manage discount codes for subscriptions
           </p>
         </div>
-        <Button onClick={handleOpenCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Code
+        <Button onClick={handleOpenCreate} size="sm" className="flex-shrink-0">
+          <Plus className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Create Code</span>
+          <span className="sm:hidden">Create</span>
         </Button>
       </div>
 
@@ -258,7 +259,7 @@ export default function DiscountCodesManagement() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -271,7 +272,7 @@ export default function DiscountCodesManagement() {
               </div>
             </div>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -286,7 +287,7 @@ export default function DiscountCodesManagement() {
       </Card>
 
       {/* Statistics */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Codes</CardTitle>
@@ -336,16 +337,20 @@ export default function DiscountCodesManagement() {
             {filteredCodes.length} code(s) found
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Discount</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Usage</TableHead>
-                <TableHead>Valid Period</TableHead>
+        <CardContent className="p-0 sm:p-6">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+              <Table className="min-w-[800px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="hidden md:table-cell">Discount</TableHead>
+                    <TableHead className="hidden lg:table-cell">Plan</TableHead>
+                    <TableHead className="hidden md:table-cell">Usage</TableHead>
+                    <TableHead className="hidden lg:table-cell">Valid Period</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -388,9 +393,16 @@ export default function DiscountCodesManagement() {
                               {code.description}
                             </div>
                           )}
+                          <div className="md:hidden mt-1">
+                            <div className="text-xs font-medium">
+                              {code.discount_type === 'percentage'
+                                ? `${code.discount_value}%`
+                                : `${code.discount_value} ${code.currency || 'AFN'}`}
+                            </div>
+                          </div>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <div className="font-medium">
                           {code.discount_type === 'percentage'
                             ? `${code.discount_value}%`
@@ -402,7 +414,7 @@ export default function DiscountCodesManagement() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {code.applicable_plan_id ? (
                           <Badge variant="outline">
                             {plans?.find((p) => p.id === code.applicable_plan_id)?.name ||
@@ -412,7 +424,7 @@ export default function DiscountCodesManagement() {
                           <span className="text-muted-foreground">All Plans</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <div className="space-y-1">
                           <div className="text-sm">
                             {code.current_uses} / {code.max_uses || '∞'}
@@ -430,7 +442,7 @@ export default function DiscountCodesManagement() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         <div className="text-sm">
                           {code.valid_from ? (
                             <div>From: {formatDate(new Date(code.valid_from))}</div>
@@ -452,7 +464,8 @@ export default function DiscountCodesManagement() {
                               ? 'bg-green-500'
                               : status.label === 'Expired'
                                 ? 'bg-red-500'
-                                : ''
+                                : '',
+                            'text-xs'
                           }
                         >
                           {status.label === 'Active' && (
@@ -470,7 +483,7 @@ export default function DiscountCodesManagement() {
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" aria-label="Actions">
                               <Edit className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -495,6 +508,8 @@ export default function DiscountCodesManagement() {
               )}
             </TableBody>
           </Table>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

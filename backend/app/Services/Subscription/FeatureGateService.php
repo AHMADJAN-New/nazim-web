@@ -57,6 +57,12 @@ class FeatureGateService
             return false;
         }
 
+        // CRITICAL: Check if subscription should be suspended due to payment issues
+        // Maintenance overdue or unpaid license fee blocks all feature access
+        if ($subscription->shouldBeSuspendedForPayment()) {
+            return false;
+        }
+
         // Load plan relationship if not already loaded
         try {
             if (!$subscription->relationLoaded('plan')) {
@@ -229,6 +235,7 @@ class FeatureGateService
 
     /**
      * Check subscription access level
+     * CRITICAL: Maintenance overdue or unpaid license fee will block access
      */
     public function getAccessLevel(string $organizationId): string
     {
@@ -236,6 +243,12 @@ class FeatureGateService
 
         if (!$subscription) {
             return 'none';
+        }
+
+        // CRITICAL: Check if subscription should be suspended due to maintenance/license issues
+        // This takes precedence over other status checks
+        if ($subscription->shouldBeSuspendedForPayment()) {
+            return 'blocked';
         }
 
         if ($subscription->isBlocked()) {
@@ -307,6 +320,7 @@ class FeatureGateService
         $plan = $subscription->plan;
         $accessLevel = $this->getAccessLevel($organizationId);
 
+        // Build message based on status and payment issues
         $message = match ($subscription->status) {
             OrganizationSubscription::STATUS_TRIAL => "Trial period - {$subscription->trialDaysLeft()} days left",
             OrganizationSubscription::STATUS_ACTIVE => "Active subscription",
@@ -318,6 +332,22 @@ class FeatureGateService
             OrganizationSubscription::STATUS_CANCELLED => "Subscription cancelled",
             default => "Unknown status",
         };
+
+        // Override message if payment issues exist (takes precedence)
+        if ($subscription->shouldBeSuspendedForPayment()) {
+            $reasons = [];
+            
+            if ($subscription->isMaintenanceOverdue()) {
+                $daysOverdue = $subscription->daysMaintenanceOverdue();
+                $reasons[] = "Maintenance fee overdue ({$daysOverdue} day(s))";
+            }
+            
+            if ($subscription->isLicenseFeePending()) {
+                $reasons[] = "License fee not paid";
+            }
+            
+            $message = "Account suspended: " . implode(", ", $reasons) . ". Please make payment to restore access.";
+        }
 
         return [
             'status' => $subscription->status,
@@ -340,6 +370,14 @@ class FeatureGateService
             'is_trial' => $subscription->isOnTrial(),
             'additional_schools' => $subscription->additional_schools,
             'total_schools_allowed' => $subscription->getTotalSchoolsAllowed(),
+            // Payment status information
+            'maintenance_overdue' => $subscription->isMaintenanceOverdue(),
+            'maintenance_days_overdue' => $subscription->daysMaintenanceOverdue(),
+            'maintenance_days_until_due' => $subscription->daysUntilMaintenanceDue(),
+            'next_maintenance_due_at' => $subscription->next_maintenance_due_at?->toISOString(),
+            'license_fee_pending' => $subscription->isLicenseFeePending(),
+            'license_fee_required' => $subscription->requiresLicenseFee(),
+            'license_paid_at' => $subscription->license_paid_at?->toISOString(),
         ];
     }
 }

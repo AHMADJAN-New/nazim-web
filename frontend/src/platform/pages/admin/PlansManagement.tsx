@@ -253,19 +253,19 @@ export default function PlansManagement() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Subscription Plans
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Manage available subscription plans
           </p>
         </div>
-        <Button onClick={handleOpenCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Plan
+        <Button onClick={handleOpenCreate} size="sm" className="flex-shrink-0">
+          <Plus className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Add Plan</span>
         </Button>
       </div>
 
@@ -279,20 +279,22 @@ export default function PlansManagement() {
             Click on a plan row to view details, or use the edit button to modify
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Billing</TableHead>
-                <TableHead className="text-right">License (AFN)</TableHead>
-                <TableHead className="text-right">Maintenance (AFN)</TableHead>
-                <TableHead className="text-center">Max Schools</TableHead>
-                <TableHead className="text-center">Features</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+        <CardContent className="p-0 sm:p-6">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+              <Table className="min-w-[800px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead className="hidden md:table-cell">Billing</TableHead>
+                  <TableHead className="hidden lg:table-cell text-right">License (AFN)</TableHead>
+                  <TableHead className="hidden lg:table-cell text-right">Maintenance (AFN)</TableHead>
+                  <TableHead className="hidden md:table-cell text-center">Max Schools</TableHead>
+                  <TableHead className="hidden lg:table-cell text-center">Features</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {plans?.map((plan) => (
                 <TableRow 
@@ -377,6 +379,8 @@ export default function PlansManagement() {
               ))}
             </TableBody>
           </Table>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

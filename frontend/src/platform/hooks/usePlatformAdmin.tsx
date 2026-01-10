@@ -47,6 +47,22 @@ export const usePlatformDashboard = () => {
     queryFn: async () => {
       const response = await platformApi.dashboard();
       
+      // Map revenue by type
+      const revenueByType = response.data.revenue_by_type ? {
+        license: {
+          afn: Number(response.data.revenue_by_type.license?.['AFN'] || 0),
+          usd: Number(response.data.revenue_by_type.license?.['USD'] || 0),
+        },
+        maintenance: {
+          afn: Number(response.data.revenue_by_type.maintenance?.['AFN'] || 0),
+          usd: Number(response.data.revenue_by_type.maintenance?.['USD'] || 0),
+        },
+        renewal: {
+          afn: Number(response.data.revenue_by_type.renewal?.['AFN'] || 0),
+          usd: Number(response.data.revenue_by_type.renewal?.['USD'] || 0),
+        },
+      } : undefined;
+
       return {
         totalOrganizations: response.data.total_organizations,
         totalSchools: response.data.total_schools || 0,
@@ -57,6 +73,7 @@ export const usePlatformDashboard = () => {
           afn: Number(response.data.revenue_this_year['AFN'] || 0),
           usd: Number(response.data.revenue_this_year['USD'] || 0),
         },
+        revenueByType,
         pendingPayments: response.data.pending_payments,
         pendingRenewals: response.data.pending_renewals,
         expiringSoon: response.data.expiring_soon,
@@ -79,6 +96,23 @@ export const usePlatformPlans = () => {
       return response.data.map(mapPlanApiToDomain);
     },
     staleTime: 5 * 60 * 1000,
+  });
+};
+
+/**
+ * Get organization revenue history (platform admin)
+ */
+export const usePlatformOrganizationRevenueHistory = (organizationId: string | null) => {
+  return useQuery({
+    queryKey: ['platform-organization-revenue-history', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return null;
+      const response = await platformApi.subscriptions.getRevenueHistory(organizationId);
+      return response.data;
+    },
+    enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 

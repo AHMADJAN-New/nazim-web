@@ -298,10 +298,60 @@ export interface SubscriptionDashboard {
   subscriptions_by_status: Record<SubscriptionStatus, number>;
   subscriptions_by_plan: Record<string, number>;
   revenue_this_year: Record<string, number>;
+  revenue_by_type?: Record<PaymentType, Record<string, number>>;
   pending_payments: number;
   pending_renewals: number;
   expiring_soon: number;
   recently_expired: number;
+}
+
+// Organization Revenue History Types
+export interface OrganizationRevenueHistory {
+  organization: {
+    id: string;
+    name: string;
+  };
+  total_revenue: Record<string, number>;
+  totals_by_type: Record<PaymentType, {
+    AFN: number;
+    USD: number;
+    count: number;
+  }>;
+  payments_by_year: Record<string, {
+    AFN: number;
+    USD: number;
+    count: number;
+  }>;
+  payments_by_month: Record<string, {
+    AFN: number;
+    USD: number;
+    count: number;
+  }>;
+  payments: OrganizationRevenuePayment[];
+  total_payments: number;
+}
+
+export interface OrganizationRevenuePayment {
+  id: string;
+  subscription_id: string | null;
+  plan_name: string | null;
+  amount: number;
+  currency: 'AFN' | 'USD';
+  discount_amount: number;
+  net_amount: number;
+  payment_method: string;
+  payment_reference: string | null;
+  payment_date: string | null;
+  payment_type: PaymentType;
+  payment_type_label: string;
+  billing_period: BillingPeriod | null;
+  billing_period_label: string;
+  is_recurring: boolean;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+  discount_code: string | null;
+  notes: string | null;
+  invoice_number: string | null;
 }
 
 // Request Types

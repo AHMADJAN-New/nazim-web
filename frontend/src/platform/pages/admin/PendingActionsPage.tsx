@@ -45,11 +45,11 @@ export default function PendingActionsPage() {
   const [viewingSubscriptionOrgId, setViewingSubscriptionOrgId] = useState<string | null>(null);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Pending Actions</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold">Pending Actions</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">
           Review and process pending payments and renewal requests
         </p>
       </div>
@@ -71,49 +71,57 @@ export default function PendingActionsPage() {
               Manual payments awaiting confirmation
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0 sm:p-6">
             {isPaymentsLoading ? (
-              <div className="flex items-center justify-center py-8">
+              <div className="flex items-center justify-center py-8 px-4 sm:px-0">
                 <LoadingSpinner />
               </div>
             ) : !pendingPayments?.data?.length ? (
-              <div className="py-8 text-center text-muted-foreground">
+              <div className="py-8 text-center text-muted-foreground px-4 sm:px-0">
                 No pending payments
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Organization</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Payment Method</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                  <Table className="min-w-[700px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Organization</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead className="hidden md:table-cell">Payment Method</TableHead>
+                        <TableHead className="hidden lg:table-cell">Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
                 <TableBody>
                   {(pendingPayments.data || []).map((payment: any) => (
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium">
-                        {payment.organization_name || payment.organization_id}
+                        <div>
+                          {payment.organization_name || payment.organization_id}
+                          <div className="md:hidden mt-1 text-xs text-muted-foreground">
+                            {payment.payment_method?.replace('_', ' ') || 'N/A'}
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell>
                         {payment.amount?.toLocaleString()} {payment.currency}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         {payment.payment_method?.replace('_', ' ') || 'N/A'}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="hidden lg:table-cell text-muted-foreground">
                         {formatDate(new Date(payment.created_at))}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{payment.status}</Badge>
+                        <Badge variant="outline" className="text-xs">{payment.status}</Badge>
                       </TableCell>
-                      <TableCell>
-                        <Button size="sm" variant="outline" asChild>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="outline" asChild className="flex-shrink-0">
                           <Link to={`/platform/payments/${payment.id}`}>
-                            Review
+                            <span className="hidden sm:inline">Review</span>
+                            <span className="sm:hidden">View</span>
                           </Link>
                         </Button>
                       </TableCell>
@@ -141,26 +149,28 @@ export default function PendingActionsPage() {
               Renewal requests awaiting processing
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0 sm:p-6">
             {isRenewalsLoading ? (
-              <div className="flex items-center justify-center py-8">
+              <div className="flex items-center justify-center py-8 px-4 sm:px-0">
                 <LoadingSpinner />
               </div>
             ) : !pendingRenewals?.data?.length ? (
-              <div className="py-8 text-center text-muted-foreground">
+              <div className="py-8 text-center text-muted-foreground px-4 sm:px-0">
                 No pending renewals
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Organization</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Current Plan</TableHead>
-                    <TableHead>Requested Plan</TableHead>
-                    <TableHead>Requested Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                  <Table className="min-w-[800px]">
+                    <TableHeader>
+                    <TableRow>
+                      <TableHead>Organization</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="hidden lg:table-cell">Current Plan</TableHead>
+                      <TableHead className="hidden lg:table-cell">Requested Plan</TableHead>
+                      <TableHead className="hidden md:table-cell">Requested Date</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
                 </TableHeader>
                 <TableBody>
                   {(pendingRenewals.data || []).map((renewal: any) => (
@@ -209,7 +219,8 @@ export default function PendingActionsPage() {
                           className={cn(
                             renewal.status === 'approved' && 'bg-green-500',
                             renewal.status === 'rejected' && 'bg-red-500',
-                            renewal.status === 'pending' && 'bg-yellow-500'
+                            renewal.status === 'pending' && 'bg-yellow-500',
+                            'text-xs'
                           )}
                         >
                           {renewal.status === 'approved' ? 'Approved' :
@@ -217,7 +228,7 @@ export default function PendingActionsPage() {
                            'Pending'}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         <div className="space-y-0.5">
                           <div className="font-medium">
                             {renewal.subscription?.plan?.name || 
@@ -235,7 +246,7 @@ export default function PendingActionsPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         <div className="space-y-0.5">
                           <div className="font-medium">
                             {renewal.requested_plan?.name || 'N/A'}
@@ -249,16 +260,17 @@ export default function PendingActionsPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="hidden md:table-cell text-muted-foreground">
                         {renewal.requested_at 
                           ? formatDate(new Date(renewal.requested_at))
                           : formatDate(new Date(renewal.created_at))}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button size="sm" variant="outline" asChild>
+                      <TableCell className="text-right">
+                        <div className="flex items-center gap-2 justify-end">
+                          <Button size="sm" variant="outline" asChild className="flex-shrink-0">
                             <Link to={`/platform/renewals/${renewal.id}`}>
-                              Review
+                              <span className="hidden sm:inline">Review</span>
+                              <span className="sm:hidden">View</span>
                             </Link>
                           </Button>
                           {renewal.organization_id && (
@@ -266,6 +278,7 @@ export default function PendingActionsPage() {
                               size="sm"
                               variant="ghost"
                               onClick={() => setViewingOrganizationId(renewal.organization_id)}
+                              aria-label="View organization"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -276,6 +289,8 @@ export default function PendingActionsPage() {
                   ))}
                 </TableBody>
               </Table>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

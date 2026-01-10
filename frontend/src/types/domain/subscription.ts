@@ -234,6 +234,10 @@ export interface SubscriptionDashboardStats {
     afn: number;
     usd: number;
   };
+  revenueByType?: Record<PaymentType, {
+    afn: number;
+    usd: number;
+  }>;
   pendingPayments: number;
   pendingRenewals: number;
   expiringSoon: number;

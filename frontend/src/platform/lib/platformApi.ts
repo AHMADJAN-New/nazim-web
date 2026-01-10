@@ -50,6 +50,9 @@ export const platformApi = {
         }
       }>(`/platform/organizations/${organizationId}/subscription`);
     },
+    getRevenueHistory: async (organizationId: string) => {
+      return apiClient.get<{ data: SubscriptionApi.OrganizationRevenueHistory }>(`/platform/organizations/${organizationId}/revenue-history`);
+    },
     activate: async (organizationId: string, data: SubscriptionApi.ActivateSubscriptionData) => {
       return apiClient.post<{ data: SubscriptionApi.OrganizationSubscription }>(`/platform/organizations/${organizationId}/activate`, data);
     },

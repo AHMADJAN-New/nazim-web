@@ -122,6 +122,12 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       description: 'Manage license fee payments across all organizations'
     },
     { 
+      name: 'Revenue History', 
+      href: '/platform/revenue-history', 
+      icon: DollarSign,
+      description: 'View organization revenue history and breakdown'
+    },
+    { 
       name: 'Settings', 
       href: '/platform/settings', 
       icon: Settings,
@@ -343,9 +349,9 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto overflow-x-auto p-4 lg:p-6">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
           {/* Debug: Log when children render */}
-          <div className="min-w-0 w-full">
+          <div className="min-w-0 w-full h-full">
             {children}
           </div>
         </main>

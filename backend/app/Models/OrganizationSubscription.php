@@ -355,6 +355,26 @@ class OrganizationSubscription extends Model
     }
 
     /**
+     * Check if subscription should be suspended due to payment issues
+     * CRITICAL: This checks maintenance overdue and unpaid license fees
+     * Returns true if maintenance is overdue OR license fee is unpaid
+     */
+    public function shouldBeSuspendedForPayment(): bool
+    {
+        // Check if maintenance is overdue
+        if ($this->isMaintenanceOverdue()) {
+            return true;
+        }
+
+        // Check if license fee is required but not paid
+        if ($this->isLicenseFeePending()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Check if in grace period
      */
     public function isInGracePeriod(): bool

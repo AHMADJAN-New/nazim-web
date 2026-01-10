@@ -11,6 +11,8 @@ class Profile extends Model
 
     protected $connection = 'pgsql';
     protected $table = 'profiles';
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     protected $fillable = [
         'id',

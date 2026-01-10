@@ -176,6 +176,38 @@ class SubscriptionAdminController extends Controller
                 $revenueThisYear['USD'] = 0;
             }
 
+            // Revenue breakdown by payment type this year
+            $revenueByType = PaymentRecord::where('status', PaymentRecord::STATUS_CONFIRMED)
+                ->whereNotNull('confirmed_at')
+                ->whereYear('confirmed_at', now()->year)
+                ->select(
+                    'payment_type',
+                    'currency',
+                    DB::raw('sum(COALESCE(amount, 0) - COALESCE(discount_amount, 0)) as total')
+                )
+                ->groupBy('payment_type', 'currency')
+                ->get()
+                ->groupBy('payment_type')
+                ->map(function ($group) {
+                    return $group->pluck('total', 'currency')->toArray();
+                })
+                ->toArray();
+
+            // Ensure all payment types have default values
+            $paymentTypes = [PaymentRecord::TYPE_LICENSE, PaymentRecord::TYPE_MAINTENANCE, PaymentRecord::TYPE_RENEWAL];
+            foreach ($paymentTypes as $type) {
+                if (!isset($revenueByType[$type])) {
+                    $revenueByType[$type] = ['AFN' => 0, 'USD' => 0];
+                } else {
+                    if (!isset($revenueByType[$type]['AFN'])) {
+                        $revenueByType[$type]['AFN'] = 0;
+                    }
+                    if (!isset($revenueByType[$type]['USD'])) {
+                        $revenueByType[$type]['USD'] = 0;
+                    }
+                }
+            }
+
             // Pending payments
             $pendingPayments = PaymentRecord::pending()->count();
 
@@ -222,6 +254,7 @@ class SubscriptionAdminController extends Controller
                     'subscriptions_by_status' => $subscriptionsByStatus,
                     'subscriptions_by_plan' => $subscriptionsByPlan,
                     'revenue_this_year' => $revenueThisYear,
+                    'revenue_by_type' => $revenueByType,
                     'pending_payments' => $pendingPayments,
                     'pending_renewals' => $pendingRenewals,
                     'expiring_soon' => $expiringSoon,
@@ -2093,6 +2126,118 @@ class SubscriptionAdminController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
             return response()->json(['error' => 'Failed to list license payments'], 500);
+        }
+    }
+
+    /**
+     * Get organization revenue history with breakdown
+     */
+    public function getOrganizationRevenueHistory(Request $request, string $organizationId)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            $organization = Organization::find($organizationId);
+            if (!$organization) {
+                return response()->json(['error' => 'Organization not found'], 404);
+            }
+
+            // Get all confirmed payments for this organization
+            $payments = PaymentRecord::where('organization_id', $organizationId)
+                ->where('status', PaymentRecord::STATUS_CONFIRMED)
+                ->whereNotNull('confirmed_at')
+                ->with(['subscription.plan', 'discountCode', 'confirmedByUser'])
+                ->orderBy('confirmed_at', 'desc')
+                ->get();
+
+            // Calculate totals by payment type
+            $totalsByType = [
+                PaymentRecord::TYPE_LICENSE => ['AFN' => 0, 'USD' => 0, 'count' => 0],
+                PaymentRecord::TYPE_MAINTENANCE => ['AFN' => 0, 'USD' => 0, 'count' => 0],
+                PaymentRecord::TYPE_RENEWAL => ['AFN' => 0, 'USD' => 0, 'count' => 0],
+            ];
+
+            $totalRevenue = ['AFN' => 0, 'USD' => 0];
+            $paymentsByYear = [];
+            $paymentsByMonth = [];
+
+            foreach ($payments as $payment) {
+                $netAmount = $payment->getNetAmount();
+                $currency = $payment->currency;
+                $paymentType = $payment->payment_type ?? PaymentRecord::TYPE_RENEWAL;
+                $confirmedAt = $payment->confirmed_at;
+
+                // Update totals by type
+                if (isset($totalsByType[$paymentType])) {
+                    $totalsByType[$paymentType][$currency] += $netAmount;
+                    $totalsByType[$paymentType]['count']++;
+                }
+
+                // Update total revenue
+                $totalRevenue[$currency] += $netAmount;
+
+                // Group by year
+                $year = $confirmedAt->format('Y');
+                if (!isset($paymentsByYear[$year])) {
+                    $paymentsByYear[$year] = ['AFN' => 0, 'USD' => 0, 'count' => 0];
+                }
+                $paymentsByYear[$year][$currency] += $netAmount;
+                $paymentsByYear[$year]['count']++;
+
+                // Group by month
+                $monthKey = $confirmedAt->format('Y-m');
+                if (!isset($paymentsByMonth[$monthKey])) {
+                    $paymentsByMonth[$monthKey] = ['AFN' => 0, 'USD' => 0, 'count' => 0];
+                }
+                $paymentsByMonth[$monthKey][$currency] += $netAmount;
+                $paymentsByMonth[$monthKey]['count']++;
+            }
+
+            // Transform payments for response
+            $paymentList = $payments->map(function ($payment) {
+                return [
+                    'id' => $payment->id,
+                    'subscription_id' => $payment->subscription_id,
+                    'plan_name' => $payment->subscription?->plan?->name,
+                    'amount' => (float) $payment->amount,
+                    'currency' => $payment->currency,
+                    'discount_amount' => (float) $payment->discount_amount,
+                    'net_amount' => $payment->getNetAmount(),
+                    'payment_method' => $payment->payment_method,
+                    'payment_reference' => $payment->payment_reference,
+                    'payment_date' => $payment->payment_date?->toDateString(),
+                    'payment_type' => $payment->payment_type ?? PaymentRecord::TYPE_RENEWAL,
+                    'payment_type_label' => $payment->getPaymentTypeLabel(),
+                    'billing_period' => $payment->billing_period,
+                    'billing_period_label' => $payment->getBillingPeriodLabel(),
+                    'is_recurring' => $payment->is_recurring,
+                    'confirmed_at' => $payment->confirmed_at?->toISOString(),
+                    'confirmed_by' => $payment->confirmedByUser?->email,
+                    'discount_code' => $payment->discountCode?->code,
+                    'notes' => $payment->notes,
+                    'invoice_number' => $payment->invoice_number,
+                ];
+            });
+
+            return response()->json([
+                'data' => [
+                    'organization' => [
+                        'id' => $organization->id,
+                        'name' => $organization->name,
+                    ],
+                    'total_revenue' => $totalRevenue,
+                    'totals_by_type' => $totalsByType,
+                    'payments_by_year' => $paymentsByYear,
+                    'payments_by_month' => $paymentsByMonth,
+                    'payments' => $paymentList,
+                    'total_payments' => $payments->count(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to get organization revenue history: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to get organization revenue history'], 500);
         }
     }
 }

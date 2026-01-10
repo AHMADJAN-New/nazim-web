@@ -135,33 +135,19 @@ class SubscriptionController extends Controller
             ]);
         }
 
-        $accessLevel = $this->featureGateService->getAccessLevel($organizationId);
-        $canRead = $this->featureGateService->canRead($organizationId);
-        $canWrite = $this->featureGateService->canWrite($organizationId);
-
-        // Determine message based on status
-        $message = match ($subscription->status) {
-            OrganizationSubscription::STATUS_TRIAL => "Trial period - {$subscription->trialDaysLeft()} days left",
-            OrganizationSubscription::STATUS_ACTIVE => "Active subscription",
-            OrganizationSubscription::STATUS_PENDING_RENEWAL => "Subscription expired - please renew",
-            OrganizationSubscription::STATUS_GRACE_PERIOD => "Grace period - please renew to continue",
-            OrganizationSubscription::STATUS_READONLY => "Read-only mode - please renew to regain full access",
-            OrganizationSubscription::STATUS_EXPIRED => "Subscription expired - please renew",
-            OrganizationSubscription::STATUS_SUSPENDED => "Account suspended: " . ($subscription->suspension_reason ?? 'Contact support'),
-            OrganizationSubscription::STATUS_CANCELLED => "Subscription cancelled",
-            default => "Unknown status",
-        };
-
+        // Use FeatureGateService to get status (includes payment suspension logic)
+        $statusInfo = $this->featureGateService->getSubscriptionStatus($organizationId);
+        
         return response()->json([
             'data' => [
-                'status' => $subscription->status,
-                'access_level' => $accessLevel,
-                'can_read' => $canRead,
-                'can_write' => $canWrite,
-                'trial_ends_at' => $subscription->trial_ends_at?->toISOString(),
-                'grace_period_ends_at' => $subscription->grace_period_ends_at?->toISOString(),
-                'readonly_period_ends_at' => $subscription->readonly_period_ends_at?->toISOString(),
-                'message' => $message,
+                'status' => $statusInfo['status'],
+                'access_level' => $statusInfo['access_level'],
+                'can_read' => $statusInfo['can_read'],
+                'can_write' => $statusInfo['can_write'],
+                'trial_ends_at' => $statusInfo['trial_ends_at'],
+                'grace_period_ends_at' => $statusInfo['grace_period_ends_at'],
+                'readonly_period_ends_at' => $statusInfo['readonly_period_ends_at'],
+                'message' => $statusInfo['message'],
             ],
         ]);
     }

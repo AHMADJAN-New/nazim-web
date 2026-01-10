@@ -182,17 +182,17 @@ export default function MaintenanceFeesManagement() {
   };
 
   return (
-    <div className="space-y-6 p-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             {t('subscription.maintenanceFeesManagement') || 'Maintenance Fees Management'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             {t('subscription.maintenanceFeesManagementDescription') || 'Manage maintenance fees across all organizations'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -246,7 +246,7 @@ export default function MaintenanceFeesManagement() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -293,35 +293,43 @@ export default function MaintenanceFeesManagement() {
             {t('subscription.maintenanceFeesListDescription') || 'List of all organizations with maintenance fees'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6">
           {feesLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            <div className="text-center py-8 text-muted-foreground px-4 sm:px-0">Loading...</div>
           ) : !maintenanceFees || maintenanceFees.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-muted-foreground px-4 sm:px-0">
               {t('subscription.noMaintenanceFees') || 'No maintenance fees found'}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('common.organization') || 'Organization'}</TableHead>
-                    <TableHead>{t('subscription.billingPeriod') || 'Billing Period'}</TableHead>
-                    <TableHead>{t('subscription.nextMaintenanceDue') || 'Next Due Date'}</TableHead>
-                    <TableHead>{t('subscription.lastMaintenancePaid') || 'Last Paid'}</TableHead>
-                    <TableHead className="text-right">{t('common.amount') || 'Amount'}</TableHead>
-                    <TableHead>{t('subscription.status') || 'Status'}</TableHead>
-                    <TableHead>{t('common.actions') || 'Actions'}</TableHead>
-                  </TableRow>
-                </TableHeader>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                <Table className="min-w-[800px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('common.organization') || 'Organization'}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t('subscription.billingPeriod') || 'Billing Period'}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('subscription.nextMaintenanceDue') || 'Next Due Date'}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('subscription.lastMaintenancePaid') || 'Last Paid'}</TableHead>
+                      <TableHead className="text-right">{t('common.amount') || 'Amount'}</TableHead>
+                      <TableHead>{t('subscription.status') || 'Status'}</TableHead>
+                      <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {maintenanceFees.map((fee) => (
                     <TableRow key={fee.subscription_id}>
-                      <TableCell className="font-medium">{fee.organization_name}</TableCell>
-                      <TableCell>
+                      <TableCell className="font-medium">
+                        <div>
+                          {fee.organization_name}
+                          <div className="md:hidden mt-1">
+                            <Badge variant="outline" className="text-xs">{fee.billing_period}</Badge>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <Badge variant="outline">{fee.billing_period}</Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {fee.next_due_date ? formatDate(new Date(fee.next_due_date)) : '-'}
                         {fee.days_until_due !== null && (
                           <div className="text-xs text-muted-foreground">
@@ -329,7 +337,7 @@ export default function MaintenanceFeesManagement() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {fee.last_paid_date ? formatDate(new Date(fee.last_paid_date)) : '-'}
                       </TableCell>
                       <TableCell className="text-right">
@@ -338,7 +346,7 @@ export default function MaintenanceFeesManagement() {
                       <TableCell>
                         {getStatusBadge(fee.is_overdue, fee.days_until_due)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-right">
                         <Button
                           variant="outline"
                           size="sm"
@@ -346,14 +354,17 @@ export default function MaintenanceFeesManagement() {
                             // Navigate to organization subscription detail
                             window.location.href = `/platform/organizations/${fee.organization_id}/subscription`;
                           }}
+                          className="flex-shrink-0"
                         >
-                          {t('common.view') || 'View'}
+                          <span className="hidden sm:inline">{t('common.view') || 'View'}</span>
+                          <span className="sm:hidden">View</span>
                         </Button>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
         </CardContent>
@@ -370,35 +381,43 @@ export default function MaintenanceFeesManagement() {
             {t('subscription.invoicesListDescription') || 'All generated maintenance invoices'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6">
           {invoicesLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            <div className="text-center py-8 text-muted-foreground px-4 sm:px-0">Loading...</div>
           ) : !invoicesData || invoicesData.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-muted-foreground px-4 sm:px-0">
               {t('subscription.noInvoices') || 'No invoices found'}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('subscription.invoiceNumber') || 'Invoice #'}</TableHead>
-                    <TableHead>{t('common.organization') || 'Organization'}</TableHead>
-                    <TableHead>{t('subscription.billingPeriod') || 'Billing Period'}</TableHead>
-                    <TableHead>{t('subscription.invoiceDueDate') || 'Due Date'}</TableHead>
-                    <TableHead className="text-right">{t('common.amount') || 'Amount'}</TableHead>
-                    <TableHead>{t('subscription.invoiceStatus') || 'Status'}</TableHead>
-                  </TableRow>
-                </TableHeader>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                <Table className="min-w-[700px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('subscription.invoiceNumber') || 'Invoice #'}</TableHead>
+                      <TableHead>{t('common.organization') || 'Organization'}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t('subscription.billingPeriod') || 'Billing Period'}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('subscription.invoiceDueDate') || 'Due Date'}</TableHead>
+                      <TableHead className="text-right">{t('common.amount') || 'Amount'}</TableHead>
+                      <TableHead>{t('subscription.invoiceStatus') || 'Status'}</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {invoicesData.map((invoice) => (
                     <TableRow key={invoice.id}>
-                      <TableCell className="font-mono">{invoice.invoice_number}</TableCell>
-                      <TableCell>{invoice.organization?.name || '-'}</TableCell>
+                      <TableCell className="font-mono text-xs sm:text-sm">{invoice.invoice_number}</TableCell>
                       <TableCell>
+                        <div>
+                          {invoice.organization?.name || '-'}
+                          <div className="md:hidden mt-1">
+                            <Badge variant="outline" className="text-xs">{invoice.billing_period}</Badge>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <Badge variant="outline">{invoice.billing_period}</Badge>
                       </TableCell>
-                      <TableCell>{formatDate(new Date(invoice.due_date))}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{formatDate(new Date(invoice.due_date))}</TableCell>
                       <TableCell className="text-right">
                         {invoice.amount ? `${invoice.amount.toLocaleString()} ${invoice.currency}` : '-'}
                       </TableCell>
@@ -407,6 +426,7 @@ export default function MaintenanceFeesManagement() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
         </CardContent>

@@ -151,6 +151,20 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
     Route::get('/permissions/user', [PermissionController::class, 'userPermissions']);
 });
 
+// Public Help Center routes (accessible without authentication for public articles)
+// These routes allow both authenticated and unauthenticated access
+// The controller handles visibility and permission filtering
+Route::prefix('help-center')->group(function () {
+    // Public article access by ID (for frontend routes like /help-center/article/{id})
+    Route::get('/articles/{id}', [\App\Http\Controllers\HelpCenterArticleController::class, 'show']);
+    
+    // Slug-based public routes (under /s prefix to avoid conflicts)
+    Route::prefix('s')->group(function () {
+        Route::get('/{categorySlug}', [\App\Http\Controllers\HelpCenterArticleController::class, 'showCategoryBySlug']);
+        Route::get('/{categorySlug}/{articleSlug}', [\App\Http\Controllers\HelpCenterArticleController::class, 'showBySlug']);
+    });
+});
+
 // Protected routes (organization context is mandatory everywhere)
 // All routes require subscription:read for basic access (allows read during grace/readonly periods)
 Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(function () {
@@ -255,7 +269,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::get('/articles/featured', [HelpCenterArticleController::class, 'featured']);
         Route::get('/articles/popular', [HelpCenterArticleController::class, 'popular']);
         Route::get('/articles/context', [HelpCenterArticleController::class, 'getByContext']); // Contextual help
-        Route::get('/articles/{id}', [HelpCenterArticleController::class, 'show']); // Keep for admin CRUD - redirects to slug if accessed
+        // Note: GET /articles/{id} is moved to public routes above to allow unauthenticated access for public articles
         Route::post('/articles/{id}/helpful', [HelpCenterArticleController::class, 'markHelpful']);
         Route::post('/articles/{id}/not-helpful', [HelpCenterArticleController::class, 'markNotHelpful']);
         Route::middleware(['subscription:write'])->group(function () {
@@ -265,12 +279,6 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::post('/articles/{id}/publish', [HelpCenterArticleController::class, 'publish']);
             Route::post('/articles/{id}/unpublish', [HelpCenterArticleController::class, 'unpublish']);
             Route::post('/articles/{id}/archive', [HelpCenterArticleController::class, 'archive']);
-        });
-
-        // Slug-based public routes (under /s prefix to avoid conflicts)
-        Route::prefix('s')->group(function () {
-            Route::get('/{categorySlug}', [HelpCenterArticleController::class, 'showCategoryBySlug']);
-            Route::get('/{categorySlug}/{articleSlug}', [HelpCenterArticleController::class, 'showBySlug']);
         });
     });
 
@@ -1293,6 +1301,7 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     // Organization subscriptions
     Route::get('/subscriptions', [SubscriptionAdminController::class, 'listSubscriptions']);
     Route::get('/organizations/{organizationId}/subscription', [SubscriptionAdminController::class, 'getOrganizationSubscription']);
+    Route::get('/organizations/{organizationId}/revenue-history', [SubscriptionAdminController::class, 'getOrganizationRevenueHistory']);
     Route::post('/organizations/{organizationId}/activate', [SubscriptionAdminController::class, 'activateSubscription']);
     Route::post('/organizations/{organizationId}/suspend', [SubscriptionAdminController::class, 'suspendSubscription']);
     Route::post('/organizations/{organizationId}/limit-override', [SubscriptionAdminController::class, 'addLimitOverride']);
@@ -1433,6 +1442,7 @@ Route::middleware(['auth:sanctum', 'organization'])->prefix('admin/subscription'
     // Organization subscriptions
     Route::get('/subscriptions', [SubscriptionAdminController::class, 'listSubscriptions']);
     Route::get('/organizations/{organizationId}/subscription', [SubscriptionAdminController::class, 'getOrganizationSubscription']);
+    Route::get('/organizations/{organizationId}/revenue-history', [SubscriptionAdminController::class, 'getOrganizationRevenueHistory']);
     Route::post('/organizations/{organizationId}/activate', [SubscriptionAdminController::class, 'activateSubscription']);
     Route::post('/organizations/{organizationId}/suspend', [SubscriptionAdminController::class, 'suspendSubscription']);
     Route::post('/organizations/{organizationId}/limit-override', [SubscriptionAdminController::class, 'addLimitOverride']);

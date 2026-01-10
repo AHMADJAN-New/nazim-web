@@ -50,20 +50,91 @@ class HelpCenterArticleController extends Controller
      */
     private function loadSafeArticleRelations(HelpCenterArticle $article): void
     {
-        $relations = ['category'];
+        // Load category (only if not soft-deleted)
+        if ($article->category_id) {
+            try {
+                $category = HelpCenterCategory::whereNull('deleted_at')
+                    ->find($article->category_id);
+                $article->setRelation('category', $category);
+            } catch (\Exception $e) {
+                Log::warning('Failed to load category for article ' . $article->id . ': ' . $e->getMessage());
+                $article->setRelation('category', null);
+            }
+        } else {
+            $article->setRelation('category', null);
+        }
 
+        // Load author only if valid UUID
         if ($article->author_id && Str::isUuid($article->author_id)) {
-            $relations[] = 'author';
-        }
-        if ($article->created_by && Str::isUuid($article->created_by)) {
-            $relations[] = 'creator';
-        }
-        if ($article->updated_by && Str::isUuid($article->updated_by)) {
-            $relations[] = 'updater';
+            try {
+                $author = DB::table('profiles')->where('id', $article->author_id)->first();
+                if ($author) {
+                    // Convert stdClass to a simple object for JSON serialization
+                    $article->setRelation('author', (object) [
+                        'id' => $author->id,
+                        'full_name' => $author->full_name ?? null,
+                        'email' => $author->email ?? null,
+                    ]);
+                } else {
+                    $article->setRelation('author', null);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to load author for article ' . $article->id . ': ' . $e->getMessage());
+                $article->setRelation('author', null);
+            }
+        } else {
+            $article->setRelation('author', null);
         }
 
-        $article->load($relations);
-        $article->setAttribute('related_articles', $article->relatedArticles());
+        // Load creator only if valid UUID
+        if ($article->created_by && Str::isUuid($article->created_by)) {
+            try {
+                $creator = DB::table('profiles')->where('id', $article->created_by)->first();
+                if ($creator) {
+                    $article->setRelation('creator', (object) [
+                        'id' => $creator->id,
+                        'full_name' => $creator->full_name ?? null,
+                        'email' => $creator->email ?? null,
+                    ]);
+                } else {
+                    $article->setRelation('creator', null);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to load creator for article ' . $article->id . ': ' . $e->getMessage());
+                $article->setRelation('creator', null);
+            }
+        } else {
+            $article->setRelation('creator', null);
+        }
+
+        // Load updater only if valid UUID
+        if ($article->updated_by && Str::isUuid($article->updated_by)) {
+            try {
+                $updater = DB::table('profiles')->where('id', $article->updated_by)->first();
+                if ($updater) {
+                    $article->setRelation('updater', (object) [
+                        'id' => $updater->id,
+                        'full_name' => $updater->full_name ?? null,
+                        'email' => $updater->email ?? null,
+                    ]);
+                } else {
+                    $article->setRelation('updater', null);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to load updater for article ' . $article->id . ': ' . $e->getMessage());
+                $article->setRelation('updater', null);
+            }
+        } else {
+            $article->setRelation('updater', null);
+        }
+
+        // Load related articles
+        try {
+            $article->setAttribute('related_articles', $article->relatedArticles());
+        } catch (\Exception $e) {
+            Log::warning('Failed to load related articles for article ' . $article->id . ': ' . $e->getMessage());
+            $article->setAttribute('related_articles', collect([]));
+        }
     }
 
     /**
@@ -317,58 +388,99 @@ class HelpCenterArticleController extends Controller
             $hasStaffPermission = $context['has_staff_permission'];
 
             // Find category
-            $category = HelpCenterCategory::where('slug', $categorySlug)
-                ->where(function ($q) use ($organizationId) {
-                    if ($organizationId) {
-                        $q->where('organization_id', $organizationId)
-                            ->orWhereNull('organization_id');
-                    } else {
-                        $q->whereNull('organization_id');
-                    }
-                })
-                ->first();
+            // For unauthenticated users, allow any category (public articles can be in any category)
+            // For authenticated users, filter by organization
+            $categoryQuery = HelpCenterCategory::where('slug', $categorySlug)
+                ->whereNull('deleted_at');
+            
+            if ($user && $organizationId) {
+                $categoryQuery->where(function ($q) use ($organizationId) {
+                    $q->where('organization_id', $organizationId)
+                        ->orWhereNull('organization_id');
+                });
+            } elseif ($user) {
+                $categoryQuery->whereNull('organization_id');
+            }
+            // For unauthenticated users, don't filter by organization (allow all categories)
+            
+            $category = $categoryQuery->first();
 
             if (!$category) {
                 return response()->json(['error' => 'Category not found'], 404);
             }
 
-            // Find article
+            // Find article (don't eager load relations - we'll load them safely later)
             $query = HelpCenterArticle::whereNull('deleted_at')
                 ->where('slug', $articleSlug)
-                ->where('category_id', $category->id)
-                ->with(['category', 'author', 'creator', 'updater']);
+                ->where('category_id', $category->id);
 
-            // Apply organization scope
-            if ($organizationId) {
-                $query->forOrganization($organizationId);
+            // For unauthenticated users, only show published public articles with no context_key
+            // These should be accessible regardless of organization
+            if (!$user) {
+                $query->where('visibility', 'public')
+                      ->where(function ($q) {
+                          $q->whereNull('context_key')
+                            ->orWhere('context_key', '');
+                      })
+                      ->published();
+                // Public articles can be global (organization_id = NULL) or from any organization
+                // Don't filter by organization for public articles
             } else {
-                $query->whereNull('organization_id');
-            }
+                // Apply organization scope for authenticated users
+                if ($organizationId) {
+                    $query->forOrganization($organizationId);
+                } else {
+                    $query->whereNull('organization_id');
+                }
 
-            // Apply visibility filter
-            $query->visibleTo($user, $hasStaffPermission);
+                // Apply visibility filter
+                $query->visibleTo($user, $hasStaffPermission);
 
-            // Apply permission-based filtering
-            $this->applyPermissionFilter($query, $user, $organizationId);
+                // Apply permission-based filtering
+                $this->applyPermissionFilter($query, $user, $organizationId);
 
-            // Check if user can see drafts
-            if (!$this->canSeeDrafts($user)) {
-                $query->published();
+                // Check if user can see drafts
+                if (!$this->canSeeDrafts($user)) {
+                    $query->published();
+                }
             }
 
             $article = $query->first();
 
             if (!$article) {
+                // Log why article wasn't found for debugging
+                if (!$user) {
+                    Log::debug('Public article not found', [
+                        'category_slug' => $categorySlug,
+                        'article_slug' => $articleSlug,
+                        'category_id' => $category->id ?? null,
+                        'reason' => 'Article may not be public, published, or has context_key',
+                    ]);
+                }
                 return response()->json(['error' => 'Article not found'], 404);
             }
 
-            // Increment view count with throttling
-            $sessionId = $request->session()->getId() ?? null;
-            $userId = $profile->id ?? null;
-            $article->incrementViewCount($userId, $sessionId);
-            $article->refresh();
-
+            // Load relations safely (handles invalid UUIDs and soft-deleted categories)
             $this->loadSafeArticleRelations($article);
+
+            // Increment view count with throttling (safely handle null profile and session)
+            try {
+                $sessionId = null;
+                if ($request->hasSession()) {
+                    try {
+                        $sessionId = $request->session()->getId();
+                    } catch (\Exception $e) {
+                        // Session not available, continue without session tracking
+                        Log::debug('Session not available for view count tracking in showBySlug: ' . $e->getMessage());
+                    }
+                }
+                $userId = $profile ? ($profile->id ?? null) : null;
+                $article->incrementViewCount($userId, $sessionId);
+                $article->refresh();
+            } catch (\Exception $e) {
+                // Log but don't fail the request if view count increment fails
+                Log::warning('Failed to increment view count for article ' . $article->id . ' in showBySlug: ' . $e->getMessage());
+            }
 
             return response()->json($article);
         } catch (\Exception $e) {
@@ -461,80 +573,155 @@ class HelpCenterArticleController extends Controller
             $organizationId = $context['organization_id'];
             $hasStaffPermission = $context['has_staff_permission'];
 
+            // Build query without eager loading relations that might have invalid UUIDs
+            // We'll load them safely later using loadSafeArticleRelations
+            $query = HelpCenterArticle::whereNull('deleted_at');
+
+            // For unauthenticated users, only show published public articles with no context_key
+            // These should be accessible regardless of organization
             if (!$user) {
-                return response()->json(['error' => 'Unauthenticated'], 401);
-            }
-
-            // Check permission
-            try {
-                if (!$user->hasPermissionTo('help_center.read')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
+                $query->where('visibility', 'public')
+                      ->where(function ($q) {
+                          $q->whereNull('context_key')
+                            ->orWhere('context_key', '');
+                      })
+                      ->published();
+                // Public articles can be global (organization_id = NULL) or from any organization
+                // Don't filter by organization for public articles
+            } else {
+                // Apply organization scope for authenticated users
+                if ($organizationId) {
+                    $query->forOrganization($organizationId);
+                } else {
+                    $query->whereNull('organization_id');
                 }
-            } catch (\Exception $e) {
-                Log::warning("Permission check failed for help_center.read: " . $e->getMessage());
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
 
-            $query = HelpCenterArticle::whereNull('deleted_at')
-                ->with(['category', 'author', 'creator', 'updater']);
+                // Apply visibility filter
+                $query->visibleTo($user, $hasStaffPermission);
 
-            // Apply organization scope
-            if ($organizationId) {
-                $query->forOrganization($organizationId);
-            } else {
-                $query->whereNull('organization_id');
-            }
+                // Apply permission-based filtering
+                $this->applyPermissionFilter($query, $user, $organizationId);
 
-            // Apply visibility filter
-            $query->visibleTo($user, $hasStaffPermission);
+                // Check permission for authenticated users
+                try {
+                    if (!$user->hasPermissionTo('help_center.read')) {
+                        // Even without permission, allow access to public articles with no context_key
+                        $query->where(function ($q) {
+                            $q->where('visibility', 'public')
+                              ->where(function ($subQ) {
+                                  $subQ->whereNull('context_key')
+                                       ->orWhere('context_key', '');
+                              });
+                        });
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("Permission check failed for help_center.read: " . $e->getMessage());
+                    // On permission check failure, only allow public articles with no context_key
+                    $query->where(function ($q) {
+                        $q->where('visibility', 'public')
+                          ->where(function ($subQ) {
+                              $subQ->whereNull('context_key')
+                                   ->orWhere('context_key', '');
+                          });
+                    });
+                }
 
-            // Apply permission-based filtering
-            $this->applyPermissionFilter($query, $user, $organizationId);
-
-            // Admins can see drafts
-            if ($this->canSeeDrafts($user)) {
-                // Show all statuses
-            } else {
-                $query->published();
+                // Admins can see drafts
+                if ($this->canSeeDrafts($user)) {
+                    // Show all statuses
+                } else {
+                    $query->published();
+                }
             }
 
             $article = $query->find($id);
 
             if (!$article) {
+                // For unauthenticated users, check if article exists but doesn't meet public criteria
+                if (!$user) {
+                    // Try to find the article without filters to see why it's blocked
+                    $rawArticle = HelpCenterArticle::whereNull('deleted_at')->find($id);
+                    if ($rawArticle) {
+                        $issues = [];
+                        if ($rawArticle->visibility !== 'public') {
+                            $issues[] = "visibility is '{$rawArticle->visibility}' (needs 'public')";
+                        }
+                        if ($rawArticle->status !== 'published') {
+                            $issues[] = "status is '{$rawArticle->status}' (needs 'published')";
+                        }
+                        if (!empty($rawArticle->context_key)) {
+                            $issues[] = "context_key is set to '{$rawArticle->context_key}' (needs to be NULL or empty)";
+                        }
+                        if ($rawArticle->published_at && $rawArticle->published_at->isFuture()) {
+                            $issues[] = "published_at is in the future";
+                        }
+                        
+                        Log::debug('Public article blocked', [
+                            'article_id' => $id,
+                            'issues' => $issues,
+                            'article_data' => [
+                                'visibility' => $rawArticle->visibility,
+                                'status' => $rawArticle->status,
+                                'context_key' => $rawArticle->context_key,
+                                'published_at' => $rawArticle->published_at?->toIso8601String(),
+                            ],
+                        ]);
+                        
+                        return response()->json([
+                            'error' => 'Article not accessible',
+                            'message' => 'This article is not publicly accessible. ' . implode(', ', $issues),
+                            'issues' => $issues,
+                        ], 403);
+                    }
+                    
+                    Log::debug('Article not found by ID', [
+                        'article_id' => $id,
+                    ]);
+                }
                 return response()->json(['error' => 'Article not found'], 404);
             }
 
-            // Load category if not already loaded
-            if (!$article->relationLoaded('category')) {
-                $article->load('category');
-            }
+            // Load relations safely (handles invalid UUIDs)
+            $this->loadSafeArticleRelations($article);
 
             // Canonical URL redirect: If accessed via ID, redirect to slug URL
             // Check if request wants JSON (API call) or HTML (browser navigation)
             if (request()->wantsJson() || request()->expectsJson()) {
                 // For API calls, include canonical URL in response
-                if ($article->category) {
+                if ($article->category && $article->category->slug && $article->slug) {
                     $article->canonical_url = "/help-center/s/{$article->category->slug}/{$article->slug}";
                 }
             } else {
                 // For browser requests, redirect to canonical slug URL
-                if ($article->category) {
+                if ($article->category && $article->category->slug && $article->slug) {
                     return redirect("/help-center/s/{$article->category->slug}/{$article->slug}", 301);
                 }
             }
 
-            // Increment view count with throttling
-            $sessionId = request()->session()->getId() ?? null;
-            $userId = $profile->id ?? null;
-            $article->incrementViewCount($userId, $sessionId);
-            $article->refresh();
-
-            $this->loadSafeArticleRelations($article);
+            // Increment view count with throttling (safely handle null profile and session)
+            try {
+                $sessionId = null;
+                if (request()->hasSession()) {
+                    try {
+                        $sessionId = request()->session()->getId();
+                    } catch (\Exception $e) {
+                        // Session not available, continue without session tracking
+                        Log::debug('Session not available for view count tracking: ' . $e->getMessage());
+                    }
+                }
+                $userId = $profile ? ($profile->id ?? null) : null;
+                $article->incrementViewCount($userId, $sessionId);
+                $article->refresh();
+            } catch (\Exception $e) {
+                // Log but don't fail the request if view count increment fails
+                Log::warning('Failed to increment view count for article ' . $id . ': ' . $e->getMessage());
+            }
 
             return response()->json($article);
         } catch (\Exception $e) {
             Log::error('HelpCenterArticleController::show error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'article_id' => $id,
             ]);
             return response()->json(['error' => 'Failed to fetch article'], 500);
         }
@@ -971,9 +1158,24 @@ class HelpCenterArticleController extends Controller
     {
         try {
             $user = request()->user();
-            $profile = DB::table('profiles')->where('id', $user->id)->first();
-            $sessionId = request()->session()->getId() ?? null;
-            $userId = $profile->id ?? null;
+            $profile = null;
+            $sessionId = null;
+            $userId = null;
+
+            if ($user) {
+                $profile = DB::table('profiles')->where('id', $user->id)->first();
+                $userId = $profile ? ($profile->id ?? null) : null;
+            }
+
+            // Safely get session ID (API routes may not have sessions)
+            try {
+                if (request()->hasSession()) {
+                    $sessionId = request()->session()->getId();
+                }
+            } catch (\Exception $e) {
+                // Session not available, continue without session tracking
+                Log::debug('Session not available for markHelpful: ' . $e->getMessage());
+            }
 
             $query = HelpCenterArticle::whereNull('deleted_at')
                 ->where('status', 'published');
@@ -1014,7 +1216,10 @@ class HelpCenterArticleController extends Controller
                 'not_helpful_count' => $article->not_helpful_count,
             ]);
         } catch (\Exception $e) {
-            Log::error('HelpCenterArticleController::markHelpful error: ' . $e->getMessage());
+            Log::error('HelpCenterArticleController::markHelpful error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'article_id' => $id,
+            ]);
             return response()->json(['error' => 'Failed to mark article as helpful'], 500);
         }
     }
@@ -1026,9 +1231,24 @@ class HelpCenterArticleController extends Controller
     {
         try {
             $user = request()->user();
-            $profile = DB::table('profiles')->where('id', $user->id)->first();
-            $sessionId = request()->session()->getId() ?? null;
-            $userId = $profile->id ?? null;
+            $profile = null;
+            $sessionId = null;
+            $userId = null;
+
+            if ($user) {
+                $profile = DB::table('profiles')->where('id', $user->id)->first();
+                $userId = $profile ? ($profile->id ?? null) : null;
+            }
+
+            // Safely get session ID (API routes may not have sessions)
+            try {
+                if (request()->hasSession()) {
+                    $sessionId = request()->session()->getId();
+                }
+            } catch (\Exception $e) {
+                // Session not available, continue without session tracking
+                Log::debug('Session not available for markNotHelpful: ' . $e->getMessage());
+            }
 
             $query = HelpCenterArticle::whereNull('deleted_at')
                 ->where('status', 'published');
@@ -1069,7 +1289,10 @@ class HelpCenterArticleController extends Controller
                 'not_helpful_count' => $article->not_helpful_count,
             ]);
         } catch (\Exception $e) {
-            Log::error('HelpCenterArticleController::markNotHelpful error: ' . $e->getMessage());
+            Log::error('HelpCenterArticleController::markNotHelpful error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'article_id' => $id,
+            ]);
             return response()->json(['error' => 'Failed to mark article as not helpful'], 500);
         }
     }
@@ -1312,7 +1535,8 @@ class HelpCenterArticleController extends Controller
                       ->orWhere(function ($subQ) {
                           $subQ->whereNotNull('author_id')
                                ->whereRaw("author_id::text != '0'")
-                               ->whereRaw("author_id::text != '00000000-0000-0000-0000-000000000000'");
+                               ->whereRaw("author_id::text != '00000000-0000-0000-0000-000000000000'")
+                               ->whereRaw("author_id::text ~* ?", ['^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$']);
                       });
                 })
                 ->with(['category' => function ($q) {
