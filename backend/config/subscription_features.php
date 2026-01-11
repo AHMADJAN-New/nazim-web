@@ -74,4 +74,82 @@ return [
         'id_card_templates' => 'id_cards',
         'storage_gb' => null, // No feature required - storage is always available
     ],
+
+    // Map entity types (Laravel model classes) to feature keys for subscription checks
+    // Used by notification system to filter notifications based on subscription
+    // null means no feature required - notifications are always allowed
+    'entity_type_feature_map' => [
+        // Students
+        'App\Models\Student' => 'students',
+        'App\Models\StudentAdmission' => 'students',
+        
+        // Staff
+        'App\Models\Staff' => 'staff',
+        
+        // Classes
+        'App\Models\Class' => 'classes',
+        'App\Models\ClassAcademicYear' => 'classes',
+        'App\Models\ClassSubject' => 'classes',
+        'App\Models\ClassSubjectTemplate' => 'classes',
+        
+        // Attendance
+        'App\Models\AttendanceSession' => 'attendance',
+        'App\Models\AttendanceRecord' => 'attendance',
+        'App\Models\ExamAttendanceSession' => 'attendance',
+        'App\Models\ExamAttendanceRecord' => 'attendance',
+        
+        // Exams
+        'App\Models\Exam' => 'exams',
+        'App\Models\ExamPaper' => 'exams',
+        'App\Models\ExamQuestion' => 'question_bank',
+        'App\Models\ExamResult' => 'exams',
+        'App\Models\Grade' => 'grades',
+        
+        // Subjects
+        'App\Models\Subject' => 'subjects',
+        'App\Models\TeacherSubjectAssignment' => 'teacher_subject_assignments',
+        
+        // Library
+        'App\Models\LibraryBook' => 'library',
+        'App\Models\LibraryLoan' => 'library',
+        
+        // Finance
+        'App\Models\FinanceAccount' => 'finance',
+        'App\Models\FinanceDocument' => 'finance',
+        'App\Models\IncomeEntry' => 'finance',
+        'App\Models\ExpenseEntry' => 'finance',
+        'App\Models\FeeStructure' => 'fees',
+        'App\Models\FeeAssignment' => 'fees',
+        'App\Models\FeePayment' => 'fees',
+        
+        // Assets
+        'App\Models\Asset' => 'assets',
+        'App\Models\AssetCategory' => 'assets',
+        'App\Models\AssetAssignment' => 'assets',
+        'App\Models\AssetMaintenance' => 'assets',
+        
+        // DMS
+        'App\Models\IncomingDocument' => 'dms',
+        'App\Models\OutgoingDocument' => 'dms',
+        'App\Models\DocumentTemplate' => 'letter_templates',
+        'App\Models\DocumentLetterhead' => 'letter_templates',
+        
+        // Events
+        'App\Models\Event' => 'events',
+        'App\Models\EventType' => 'events',
+        
+        // Short Courses
+        'App\Models\ShortTermCourse' => 'short_courses',
+        
+        // Certificates
+        'App\Models\CertificateTemplate' => 'graduation',
+        'App\Models\Certificate' => 'graduation',
+        
+        // ID Cards
+        'App\Models\IdCardTemplate' => 'id_cards',
+        
+        // System/Subscription - always allowed (no feature check)
+        'App\Models\OrganizationSubscription' => null,
+        'App\Models\SubscriptionPlan' => null,
+    ],
 ];

@@ -371,8 +371,8 @@ export default function AttendanceReports() {
   return (
     <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4">
       <PageHeader
-        title={t('events.title') || 'Attendance Reports'}
-        description={t('hostel.subtitle') || 'View and analyze student attendance records'}
+        title={t('nav.attendanceReports') || 'Attendance Reports'}
+        description={t('attendanceReports.subtitle') || 'View and analyze student attendance records'}
         icon={<FileText className="h-5 w-5" />}
         rightSlot={
           <div className="flex gap-2">
@@ -497,7 +497,7 @@ export default function AttendanceReports() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('events.title') || 'Attendance Reports'}</CardTitle>
+          <CardTitle>{t('nav.attendanceReports') || 'Attendance Reports'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoading ? (

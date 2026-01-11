@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useNotificationHandler } from "@/hooks/useNotificationHandler";
 import { useNotifications, useNotificationActions } from "@/hooks/useNotifications";
+import { getNotificationIcon } from "@/lib/notificationIcons";
 import { formatDateTime } from "@/lib/utils";
 import type { NotificationItem } from "@/types/notification";
 
@@ -108,7 +109,9 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
               </div>
             )}
 
-            {notifications.map((notification, index) => (
+            {notifications.map((notification, index) => {
+              const Icon = getNotificationIcon(notification);
+              return (
               <div
                 key={notification.id}
                 className={`rounded-lg border ${notification.read_at ? 'bg-background' : 'bg-muted'} p-3 transition hover:border-primary/40 cursor-pointer`}
@@ -117,6 +120,7 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       <p className="font-medium leading-tight">{notification.title}</p>
                       <Badge variant={levelVariant(notification.level)} className="text-[11px]">
                         {notification.level || 'info'}
@@ -149,7 +153,8 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
                 </div>
                 {index < notifications.length - 1 && <Separator className="mt-3" />}
               </div>
-            ))}
+            );
+            })}
           </div>
         </ScrollArea>
       </SheetContent>

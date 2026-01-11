@@ -305,15 +305,15 @@ export function PhoneBook() {
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       {/* Header */}
       <PageHeader
-        title={t('events.title') || 'Phone Book'}
-        description={t('hostel.subtitle') || 'View and search all phone numbers from students, staff, donors, and guests'}
+        title={t('nav.phoneBook') || 'Phone Book'}
+        description={t('phoneBook.allEntriesDescription') || 'View and search all phone numbers from students, staff, donors, and guests'}
         icon={<Phone className="h-5 w-5" />}
         rightSlot={
           <ReportExportButtons
             data={entries}
             columns={exportColumns}
             reportKey="phonebook"
-            title={t('events.title') || 'Phone Book'}
+            title={t('nav.phoneBook') || 'Phone Book'}
             transformData={transformDataForExport}
             buildFiltersSummary={buildFiltersSummary}
             schoolId={selectedSchoolId}

@@ -194,7 +194,7 @@ export function ExamTypesPage() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <CardTitle>{t('events.title') || 'Exam Types'}</CardTitle>
+              <CardTitle>{t('nav.examManagement') || 'Exam Types'}</CardTitle>
               <CardDescription className="hidden md:block">
                 {t('events.description') || 'Manage exam types for your organization'}
               </CardDescription>
@@ -211,7 +211,7 @@ export function ExamTypesPage() {
                     { key: 'isActive', label: t('examTypes.isActive') || 'Active' },
                   ]}
                   reportKey="exam_types"
-                  title={t('events.title') || 'Exam Types Report'}
+                  title={t('nav.examManagement') || 'Exam Types Report'}
                   transformData={(data) => data.map((examType) => ({
                     name: examType.name || '',
                     code: examType.code || '',

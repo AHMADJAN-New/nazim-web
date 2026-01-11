@@ -336,9 +336,9 @@ export function OrganizationsManagement() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              {t('events.title')}
+              {t('organizations.title')}
             </CardTitle>
-            <CardDescription>{t('hostel.subtitle')}</CardDescription>
+            <CardDescription>{t('organizations.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <LoadingSpinner size="lg" text={t('organizations.loadingOrganizations')} />
@@ -356,9 +356,9 @@ export function OrganizationsManagement() {
             <div>
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <Building2 className="h-5 w-5 hidden sm:inline-flex" />
-                {t('events.title')}
+                {t('organizations.title')}
               </CardTitle>
-              <CardDescription className="hidden md:block text-sm mt-1">{t('hostel.subtitle')}</CardDescription>
+              <CardDescription className="hidden md:block text-sm mt-1">{t('organizations.subtitle')}</CardDescription>
             </div>
             {canCreateOrganization && (
               <Button onClick={() => handleOpenDialog()} size="sm" className="flex-shrink-0" aria-label={t('organizations.addOrganization')}>

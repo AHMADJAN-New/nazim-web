@@ -202,7 +202,7 @@ export default function CertificateTemplates() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t('events.title')}</h1>
+        <h1 className="text-2xl font-bold">{t('certificateTemplates.title')}</h1>
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="h-4 w-4 mr-2" />
           {t('examPapers.createTemplate')}

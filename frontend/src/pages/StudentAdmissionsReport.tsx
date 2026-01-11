@@ -216,7 +216,7 @@ const StudentAdmissionsReport = () => {
         description={t('admissions.reportSubtitle') || 'Analyze admissions performance across schools and years.'}
         icon={<BarChart3 className="h-5 w-5" />}
         primaryAction={{
-          label: t('grades.list') || 'Admissions',
+          label: t('admissions.list') || 'Admissions',
           href: '/admissions',
           icon: <UserCheck className="h-4 w-4" />,
         }}

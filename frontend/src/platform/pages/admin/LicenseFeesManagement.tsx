@@ -221,7 +221,6 @@ export default function LicenseFeesManagement() {
                   ))}
                 </TableBody>
               </Table>
-              </div>
             </div>
           )}
         </CardContent>

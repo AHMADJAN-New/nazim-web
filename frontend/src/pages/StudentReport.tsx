@@ -436,8 +436,8 @@ const StudentReport = () => {
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
       <PageHeader
-        title={t('events.title') || 'Student Registration Report'}
-        description={t('hostel.subtitle') || 'View and export student registration data with detailed information'}
+        title={t('nav.studentReports') || 'Student Registration Report'}
+        description={t('students.subtitle') || 'View and export student registration data with detailed information'}
         icon={<User className="h-5 w-5" />}
         rightSlot={
           <ReportExportButtons
@@ -467,7 +467,7 @@ const StudentReport = () => {
               { key: 'emergency_contact', label: t('studentReport.emergencyContact') || 'Emergency Contact' },
             ]}
             reportKey="student_list"
-            title={t('events.title') || 'Students Report'}
+            title={t('nav.studentReports') || 'Students Report'}
             transformData={transformStudentData}
             buildFiltersSummary={buildFiltersSummary}
             schoolId={currentSchoolId}

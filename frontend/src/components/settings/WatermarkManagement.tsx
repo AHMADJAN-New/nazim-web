@@ -299,9 +299,9 @@ export function WatermarkManagement({ brandingId, brandingName }: WatermarkManag
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>{t('events.title') || 'Watermarks'}</CardTitle>
+            <CardTitle>{t('watermark.title') || 'Watermarks'}</CardTitle>
             <CardDescription>
-              {t('hostel.subtitle') || `Manage watermarks for ${brandingName}`}
+              {t('watermark.subtitle') || `Manage watermarks for ${brandingName}`}
             </CardDescription>
           </div>
           {hasCreatePermission && (

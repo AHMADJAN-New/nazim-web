@@ -509,6 +509,72 @@ export const platformApi = {
       } }>('/platform/contact-messages/stats');
     },
   },
+  planRequests: {
+    list: async (params?: { search?: string; page?: number; per_page?: number }) => {
+      return apiClient.get<{
+        data: Array<{
+          id: string;
+          requested_plan_id?: string | null;
+          organization_name: string;
+          school_name: string;
+          school_page_url?: string | null;
+          contact_name: string;
+          contact_email: string;
+          contact_phone?: string | null;
+          contact_whatsapp?: string | null;
+          contact_position?: string | null;
+          number_of_schools?: number | null;
+          student_count?: number | null;
+          staff_count?: number | null;
+          city?: string | null;
+          country?: string | null;
+          message?: string | null;
+          created_at: string;
+          updated_at: string;
+          requested_plan?: {
+            id: string;
+            name: string;
+            slug: string;
+          } | null;
+        }>;
+        pagination: {
+          current_page: number;
+          last_page: number;
+          per_page: number;
+          total: number;
+        };
+      }>('/platform/plan-requests', params);
+    },
+    get: async (id: string) => {
+      return apiClient.get<{
+        data: {
+          id: string;
+          requested_plan_id?: string | null;
+          organization_name: string;
+          school_name: string;
+          school_page_url?: string | null;
+          contact_name: string;
+          contact_email: string;
+          contact_phone?: string | null;
+          contact_whatsapp?: string | null;
+          contact_position?: string | null;
+          number_of_schools?: number | null;
+          student_count?: number | null;
+          staff_count?: number | null;
+          city?: string | null;
+          country?: string | null;
+          message?: string | null;
+          created_at: string;
+          updated_at: string;
+          requested_plan?: {
+            id: string;
+            name: string;
+            slug: string;
+          } | null;
+        };
+      }>(`/platform/plan-requests/${id}`);
+    },
+  },
 
   // Generic request method for custom endpoints
   request: async function<T = any>(endpoint: string, options?: { method?: string; body?: string | object; params?: Record<string, string> }) {

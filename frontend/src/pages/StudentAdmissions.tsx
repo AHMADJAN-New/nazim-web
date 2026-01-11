@@ -758,8 +758,8 @@ export function StudentAdmissions() {
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
       <PageHeader
-        title={t('events.title') || 'Student Admissions'}
-        description={t('hostel.subtitle') || 'Admit registered students into classes with residency and year tracking.'}
+        title={t('nav.admissions') || 'Student Admissions'}
+        description={t('admissions.listDescription') || 'Overview of class placements and residency tracking.'}
         primaryAction={{
           label: t('events.add') || 'Admit Student',
           onClick: handleOpenCreateDialog,
@@ -1345,7 +1345,7 @@ export function StudentAdmissions() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('grades.list') || 'Admissions'}</CardTitle>
+          <CardTitle>{t('admissions.list') || 'Admissions'}</CardTitle>
           <CardDescription>{t('admissions.listDescription') || 'Overview of class placements and residency tracking.'}</CardDescription>
         </CardHeader>
         <CardContent>

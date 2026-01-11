@@ -1,7 +1,9 @@
 import { ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 
+import { EnterpriseContactDialog } from '@/components/subscription/EnterpriseContactDialog';
 import { PlanSelector } from '@/components/subscription/PlanSelector';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,8 +15,17 @@ export default function PlansPage() {
   const navigate = useNavigate();
   const { t: _t, isRTL } = useLanguage();
   const { data: status } = useSubscriptionStatus();
+  const [isEnterpriseDialogOpen, setIsEnterpriseDialogOpen] = useState(false);
+  const [selectedEnterprisePlan, setSelectedEnterprisePlan] = useState<SubscriptionPlan | null>(null);
 
   const handleSelectPlan = (plan: SubscriptionPlan, additionalSchools: number) => {
+    // Enterprise plan opens contact dialog instead of navigating
+    if (plan.slug === 'enterprise') {
+      setSelectedEnterprisePlan(plan);
+      setIsEnterpriseDialogOpen(true);
+      return;
+    }
+
     // Navigate to renewal page with selected plan
     navigate(`/subscription/renew?plan=${plan.id}&schools=${additionalSchools}`);
   };
@@ -89,6 +100,15 @@ export default function PlansPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Enterprise Contact Dialog */}
+      {selectedEnterprisePlan && (
+        <EnterpriseContactDialog
+          open={isEnterpriseDialogOpen}
+          onOpenChange={setIsEnterpriseDialogOpen}
+          plan={selectedEnterprisePlan}
+        />
+      )}
     </div>
   );
 }

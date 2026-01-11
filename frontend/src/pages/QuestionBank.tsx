@@ -1091,7 +1091,7 @@ export function QuestionBank() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">{t('events.title') || 'Question Bank'}</h1>
+          <h1 className="text-2xl font-semibold">{t('nav.questionBank') || 'Question Bank'}</h1>
           <p className="text-sm text-muted-foreground">
             {t('events.description') || 'Create and manage exam questions'}
           </p>
@@ -1123,7 +1123,7 @@ export function QuestionBank() {
                 { key: 'correctAnswer', label: t('questionBank.correctAnswer') || 'Correct Answer' },
               ]}
               reportKey="question_bank"
-              title={t('events.title') || 'Question Bank'}
+              title={t('nav.questionBank') || 'Question Bank'}
               transformData={(data) => data.map((q: Question) => ({
                 questionText: q.text || '-',
                 type: typeConfig[q.type]?.label || q.type,

@@ -462,8 +462,8 @@ export function TeacherSubjectAssignments() {
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
             <PageHeader
-                title={t('events.title') || 'Teacher Subject Assignments'}
-                description={t('hostel.subtitle') || 'Assign teachers to subjects for specific classes'}
+                title={t('teacherSubjectAssignments.title') || 'Teacher Subject Assignments'}
+                description={t('teacherSubjectAssignments.subtitle') || 'Assign teachers to subjects for specific classes'}
                 icon={<BookOpen className="h-5 w-5" />}
                 primaryAction={hasCreatePermission ? {
                     label: t('teacherSubjectAssignments.createAssignment') || 'Create Assignment',
@@ -473,8 +473,8 @@ export function TeacherSubjectAssignments() {
             />
             <Card>
                 <CardHeader>
-                    <CardTitle>{t('events.title')}</CardTitle>
-                    <CardDescription className="hidden md:block">{t('hostel.subtitle')}</CardDescription>
+                    <CardTitle>{t('teacherSubjectAssignments.title')}</CardTitle>
+                    <CardDescription className="hidden md:block">{t('teacherSubjectAssignments.subtitle')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {/* Filters */}
@@ -567,7 +567,7 @@ export function TeacherSubjectAssignments() {
                                     { key: 'status', label: t('events.status') },
                                 ]}
                                 reportKey="teacher_assignments"
-                                title={t('events.title') || 'Teacher Assignments Report'}
+                                title={t('teacherSubjectAssignments.title') || 'Teacher Assignments Report'}
                                 transformData={(data) => data.map((assignment) => {
                                     const teacherFullName = assignment.teacher ? [
                                         assignment.teacher.first_name,
@@ -762,7 +762,7 @@ export function TeacherSubjectAssignments() {
                     <DialogHeader>
                         <DialogTitle>{t('permissions.createDialogTitle')}</DialogTitle>
                         <DialogDescription>
-                            {t('hostel.subtitle')}
+                            {t('teacherSubjectAssignments.subtitle')}
                         </DialogDescription>
                     </DialogHeader>
 

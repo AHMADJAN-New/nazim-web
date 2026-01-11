@@ -238,7 +238,7 @@ export default function MaintenancePage({
             
             <div className="space-y-3">
               <CardTitle className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                {t('events.title') || 'System Under Maintenance'}
+                {t('maintenance.title') || 'System Under Maintenance'}
               </CardTitle>
               <CardDescription className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
                 {displayMessage}

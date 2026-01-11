@@ -432,7 +432,7 @@ export default function LibraryBooks() {
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
             <PageHeader
                 title={t('library.books')}
-                description={t('hostel.subtitle')}
+                description={t('library.subtitle')}
                 icon={<BookOpen className="h-5 w-5" />}
                 primaryAction={
                     hasCreatePermission

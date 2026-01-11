@@ -418,7 +418,7 @@ export default function HelpCenterManagement() {
             {t('helpCenter.title.helpCenterManagement') || 'Help Center Management'}
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1">
-            {t('hostel.subtitle') || 'Manage help center articles and categories'}
+            {t('helpCenter.subtitle') || 'Manage help center articles and categories'}
           </p>
         </div>
       </div>

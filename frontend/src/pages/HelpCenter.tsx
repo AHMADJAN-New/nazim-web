@@ -111,10 +111,10 @@ export default function HelpCenter() {
       <div className="mb-8">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold truncate">
-            {t('events.title') || 'Help Center'}
+            {t('nav.helpCenter') || 'Help Center'}
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground">
-            {t('hostel.subtitle') || 'Find answers to your questions and learn how to use Nazim SMS'}
+            {t('helpCenter.subtitle') || 'Find answers to your questions and learn how to use Nazim SMS'}
           </p>
         </div>
 

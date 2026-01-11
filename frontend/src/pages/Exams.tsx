@@ -500,7 +500,7 @@ export function Exams() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('grades.list') || 'Exams List'}</CardTitle>
+          <CardTitle>{t('exams.list') || 'Exams List'}</CardTitle>
           <CardDescription>
             {t('exams.listDescription') || 'View and manage all exams'}
           </CardDescription>

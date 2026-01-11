@@ -112,10 +112,10 @@ export default function ResetPasswordPage() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2">
             <Shield className="h-6 w-6" />
-            {t('events.title') || 'Reset Password'}
+            {t('nav.authentication') || 'Reset Password'}
           </CardTitle>
           <CardDescription className="text-center">
-            {t('hostel.subtitle') || 'Create a new secure password for your account'}
+            {t('resetPassword.subtitle') || 'Create a new secure password for your account'}
           </CardDescription>
         </CardHeader>
         <CardContent>

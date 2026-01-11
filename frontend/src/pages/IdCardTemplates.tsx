@@ -209,7 +209,7 @@ export default function IdCardTemplates() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-2xl">{t('events.title') || 'ID Card Templates'}</CardTitle>
+              <CardTitle className="text-2xl">{t('nav.idCards.templates') || 'ID Card Templates'}</CardTitle>
               <p className="text-sm text-muted-foreground mt-1 hidden md:block">
                 {t('events.description') || 'Create and manage ID card templates for your organization'}
               </p>

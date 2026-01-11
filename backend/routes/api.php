@@ -1413,6 +1413,10 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::put('/discount-codes/{id}', [SubscriptionAdminController::class, 'updateDiscountCode']);
     Route::delete('/discount-codes/{id}', [SubscriptionAdminController::class, 'deleteDiscountCode']);
     
+    // Plan requests (Enterprise contact requests)
+    Route::get('/plan-requests', [\App\Http\Controllers\LandingController::class, 'listPlanRequests']);
+    Route::get('/plan-requests/{id}', [\App\Http\Controllers\LandingController::class, 'getPlanRequest']);
+    
     // Feature & Limit Definitions
     Route::get('/feature-definitions', [SubscriptionAdminController::class, 'listFeatureDefinitions']);
     Route::get('/limit-definitions', [SubscriptionAdminController::class, 'listLimitDefinitions']);

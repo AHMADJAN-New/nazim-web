@@ -244,7 +244,7 @@ export default function GraduationCertificateTemplates() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <PageHeader
-        title={t('events.title') || 'Graduation Certificate Templates'}
+        title={t('nav.graduationCertificates') || 'Graduation Certificate Templates'}
         icon={<FileText className="h-5 w-5" />}
         primaryAction={{
           label: t('examPapers.createTemplate') || 'Create Template',

@@ -266,9 +266,9 @@ const ShortTermCourses = () => {
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-2xl">{t('events.title')}</CardTitle>
+              <CardTitle className="text-2xl">{t('nav.shortTermCourses')}</CardTitle>
               <p className="text-sm text-muted-foreground mt-1 hidden md:block">
-                {t('hostel.subtitle')}
+                {t('shortTermCourses.subtitle')}
               </p>
             </div>
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
@@ -329,7 +329,7 @@ const ShortTermCourses = () => {
       <Card>
         <CardHeader className="space-y-1 pb-3">
           <CardTitle className="text-lg font-semibold">{t('courses.courseList')}</CardTitle>
-          <p className="text-sm text-muted-foreground hidden md:block">{t('hostel.subtitle')}</p>
+          <p className="text-sm text-muted-foreground hidden md:block">{t('shortTermCourses.subtitle')}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">

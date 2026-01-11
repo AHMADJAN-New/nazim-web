@@ -130,8 +130,8 @@ export default function Library() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('events.title')}
-        description={t('hostel.subtitle')}
+        title={t('nav.library')}
+        description={t('library.dashboardDescription')}
         icon={<BookOpen className="h-5 w-5" />}
       />
 

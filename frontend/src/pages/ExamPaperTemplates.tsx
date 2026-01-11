@@ -531,7 +531,7 @@ export default function ExamPaperTemplates() {
         {/* Title & Language */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label>{t('events.title') || 'Title'} *</Label>
+            <Label>{t('certificateTemplates.templateName') || 'Title'} *</Label>
             <Input
               {...form.register('title')}
               placeholder={t('examPapers.titlePlaceholder') || 'e.g., Mathematics Final Exam Paper'}
@@ -704,7 +704,7 @@ export default function ExamPaperTemplates() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">{t('events.title') || 'Exam Papers'}</h1>
+          <h1 className="text-2xl font-semibold">{t('nav.examPapers') || 'Exam Papers'}</h1>
           <p className="text-sm text-muted-foreground">
             {t('events.description') || 'Create and manage exam papers'}
           </p>
@@ -725,7 +725,7 @@ export default function ExamPaperTemplates() {
                 { key: 'status', label: t('events.status') || 'Status' },
               ]}
               reportKey="exam_paper_templates"
-              title={t('events.title') || 'Exam Papers'}
+              title={t('nav.examPapers') || 'Exam Papers'}
               transformData={(data) => data.map((template: ExamPaperTemplate) => ({
                 title: template.title || '-',
                 subject: getSubjectName(template.subjectId),

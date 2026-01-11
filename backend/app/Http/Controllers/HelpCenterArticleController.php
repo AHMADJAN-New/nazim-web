@@ -15,10 +15,28 @@ class HelpCenterArticleController extends Controller
 {
     /**
      * Get user's organization context and permission checks
+     * Works for both authenticated routes (middleware sets user) and public routes (manual auth)
      */
     private function getUserContext(Request $request)
     {
         $user = $request->user();
+        
+        // For public routes, manually authenticate if token is present
+        // This allows public routes to work for both authenticated and unauthenticated users
+        if (!$user) {
+            try {
+                // Check if Authorization header is present
+                $token = $request->bearerToken();
+                if ($token) {
+                    // Use Sanctum guard to manually authenticate
+                    $user = \Laravel\Sanctum\PersonalAccessToken::findToken($token)?->tokenable;
+                }
+            } catch (\Exception $e) {
+                // Token invalid or user not found - continue as unauthenticated
+                Log::debug('Failed to authenticate user from token in public route: ' . $e->getMessage());
+            }
+        }
+        
         $profile = null;
         $organizationId = null;
         $hasStaffPermission = false;
@@ -645,47 +663,92 @@ class HelpCenterArticleController extends Controller
             $article = $query->find($id);
 
             if (!$article) {
-                // For unauthenticated users, check if article exists but doesn't meet public criteria
-                if (!$user) {
-                    // Try to find the article without filters to see why it's blocked
-                    $rawArticle = HelpCenterArticle::whereNull('deleted_at')->find($id);
-                    if ($rawArticle) {
-                        $issues = [];
-                        if ($rawArticle->visibility !== 'public') {
-                            $issues[] = "visibility is '{$rawArticle->visibility}' (needs 'public')";
+                // Check if article exists but doesn't meet access criteria
+                $rawArticle = HelpCenterArticle::whereNull('deleted_at')->find($id);
+                if ($rawArticle) {
+                    $issues = [];
+                    
+                    // Check organization scope
+                    if ($user && $organizationId) {
+                        if ($rawArticle->organization_id && $rawArticle->organization_id !== $organizationId) {
+                            $issues[] = "article belongs to different organization";
                         }
+                    } elseif ($user && !$organizationId) {
+                        if ($rawArticle->organization_id) {
+                            $issues[] = "article belongs to an organization, but user has no organization";
+                        }
+                    }
+                    
+                    // Check visibility
+                    if (!$user) {
+                        if ($rawArticle->visibility !== 'public') {
+                            $issues[] = "visibility is '{$rawArticle->visibility}' (needs 'public' for unauthenticated users)";
+                        }
+                    } else {
+                        if ($rawArticle->visibility === 'staff_only' && !$hasStaffPermission) {
+                            $issues[] = "visibility is 'staff_only' but user doesn't have staff permission";
+                        }
+                    }
+                    
+                    // Check status
+                    if (!$user || !$this->canSeeDrafts($user)) {
                         if ($rawArticle->status !== 'published') {
                             $issues[] = "status is '{$rawArticle->status}' (needs 'published')";
-                        }
-                        if (!empty($rawArticle->context_key)) {
-                            $issues[] = "context_key is set to '{$rawArticle->context_key}' (needs to be NULL or empty)";
                         }
                         if ($rawArticle->published_at && $rawArticle->published_at->isFuture()) {
                             $issues[] = "published_at is in the future";
                         }
-                        
-                        Log::debug('Public article blocked', [
-                            'article_id' => $id,
-                            'issues' => $issues,
-                            'article_data' => [
-                                'visibility' => $rawArticle->visibility,
-                                'status' => $rawArticle->status,
-                                'context_key' => $rawArticle->context_key,
-                                'published_at' => $rawArticle->published_at?->toIso8601String(),
-                            ],
-                        ]);
-                        
+                    }
+                    
+                    // Check context_key (for users without permission or unauthenticated)
+                    if (!$user) {
+                        if (!empty($rawArticle->context_key)) {
+                            $issues[] = "context_key is set to '{$rawArticle->context_key}' (needs to be NULL or empty for public access)";
+                        }
+                    } else {
+                        try {
+                            $hasPermission = $user->hasPermissionTo('help_center.read');
+                            if (!$hasPermission && !empty($rawArticle->context_key)) {
+                                $issues[] = "context_key is set to '{$rawArticle->context_key}' and user doesn't have help_center.read permission";
+                            }
+                        } catch (\Exception $e) {
+                            // Permission check failed, treat as no permission
+                            if (!empty($rawArticle->context_key)) {
+                                $issues[] = "context_key is set to '{$rawArticle->context_key}' and permission check failed";
+                            }
+                        }
+                    }
+                    
+                    Log::debug('Article blocked', [
+                        'article_id' => $id,
+                        'user_id' => $user?->id,
+                        'organization_id' => $organizationId,
+                        'issues' => $issues,
+                        'article_data' => [
+                            'organization_id' => $rawArticle->organization_id,
+                            'visibility' => $rawArticle->visibility,
+                            'status' => $rawArticle->status,
+                            'context_key' => $rawArticle->context_key,
+                            'published_at' => $rawArticle->published_at?->toIso8601String(),
+                        ],
+                    ]);
+                    
+                    // For unauthenticated users, return 403 with details
+                    // For authenticated users, return 404 (don't leak information about article existence)
+                    if (!$user) {
                         return response()->json([
                             'error' => 'Article not accessible',
                             'message' => 'This article is not publicly accessible. ' . implode(', ', $issues),
                             'issues' => $issues,
                         ], 403);
                     }
-                    
-                    Log::debug('Article not found by ID', [
-                        'article_id' => $id,
-                    ]);
                 }
+                
+                Log::debug('Article not found by ID', [
+                    'article_id' => $id,
+                    'user_id' => $user?->id,
+                ]);
+                
                 return response()->json(['error' => 'Article not found'], 404);
             }
 
@@ -1311,13 +1374,18 @@ class HelpCenterArticleController extends Controller
     public function featured(Request $request)
     {
         try {
+            // Validate limit parameter
+            $validated = $request->validate([
+                'limit' => 'nullable|integer|min:1|max:20',
+            ]);
+
             $context = $this->getUserContext($request);
             $user = $context['user'];
             $profile = $context['profile'];
             $organizationId = $context['organization_id'];
             $hasStaffPermission = $context['has_staff_permission'];
 
-            $limit = min((int)($request->input('limit', 5)), 20);
+            $limit = min((int)($validated['limit'] ?? 5), 20);
             $query = HelpCenterArticle::whereNull('deleted_at')
                 ->published()
                 ->featured()
@@ -1336,14 +1404,47 @@ class HelpCenterArticleController extends Controller
             // Apply permission-based filtering
             $this->applyPermissionFilter($query, $user, $organizationId);
 
+            // Check permission for authenticated users
+            if ($user) {
+                try {
+                    if (!$user->hasPermissionTo('help_center.read')) {
+                        // Even without permission, allow access to public articles with no context_key
+                        $query->where(function ($q) {
+                            $q->where('visibility', 'public')
+                              ->where(function ($subQ) {
+                                  $subQ->whereNull('context_key')
+                                       ->orWhere('context_key', '');
+                              });
+                        });
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("Permission check failed for help_center.read: " . $e->getMessage());
+                    // On permission check failure, only allow public articles with no context_key
+                    $query->where(function ($q) {
+                        $q->where('visibility', 'public')
+                          ->where(function ($subQ) {
+                              $subQ->whereNull('context_key')
+                                   ->orWhere('context_key', '');
+                          });
+                    });
+                }
+            }
+
             $articles = $query->orderBy('order')
                 ->orderBy('published_at', 'desc')
                 ->limit($limit)
                 ->get();
 
             return response()->json($articles);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'error' => 'Validation failed',
+                'details' => $e->errors(),
+            ], 400);
         } catch (\Exception $e) {
-            Log::error('HelpCenterArticleController::featured error: ' . $e->getMessage());
+            Log::error('HelpCenterArticleController::featured error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json(['error' => 'Failed to fetch featured articles'], 500);
         }
     }
@@ -1354,13 +1455,18 @@ class HelpCenterArticleController extends Controller
     public function popular(Request $request)
     {
         try {
+            // Validate limit parameter
+            $validated = $request->validate([
+                'limit' => 'nullable|integer|min:1|max:20',
+            ]);
+
             $context = $this->getUserContext($request);
             $user = $context['user'];
             $profile = $context['profile'];
             $organizationId = $context['organization_id'];
             $hasStaffPermission = $context['has_staff_permission'];
 
-            $limit = min((int)($request->input('limit', 10)), 20);
+            $limit = min((int)($validated['limit'] ?? 10), 20);
             $query = HelpCenterArticle::whereNull('deleted_at')
                 ->published()
                 ->with(['category']);
@@ -1378,13 +1484,46 @@ class HelpCenterArticleController extends Controller
             // Apply permission-based filtering
             $this->applyPermissionFilter($query, $user, $organizationId);
 
+            // Check permission for authenticated users
+            if ($user) {
+                try {
+                    if (!$user->hasPermissionTo('help_center.read')) {
+                        // Even without permission, allow access to public articles with no context_key
+                        $query->where(function ($q) {
+                            $q->where('visibility', 'public')
+                              ->where(function ($subQ) {
+                                  $subQ->whereNull('context_key')
+                                       ->orWhere('context_key', '');
+                              });
+                        });
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("Permission check failed for help_center.read: " . $e->getMessage());
+                    // On permission check failure, only allow public articles with no context_key
+                    $query->where(function ($q) {
+                        $q->where('visibility', 'public')
+                          ->where(function ($subQ) {
+                              $subQ->whereNull('context_key')
+                                   ->orWhere('context_key', '');
+                          });
+                    });
+                }
+            }
+
             $articles = $query->orderBy('view_count', 'desc')
                 ->limit($limit)
                 ->get();
 
             return response()->json($articles);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'error' => 'Validation failed',
+                'details' => $e->errors(),
+            ], 400);
         } catch (\Exception $e) {
-            Log::error('HelpCenterArticleController::popular error: ' . $e->getMessage());
+            Log::error('HelpCenterArticleController::popular error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json(['error' => 'Failed to fetch popular articles'], 500);
         }
     }

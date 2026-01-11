@@ -18,11 +18,12 @@ export default function PrivacyPolicy() {
   const { t, language, setLanguage } = useLanguage();
 
   // Language options
+  // Arabic temporarily hidden until translations are complete
   const languages = [
     { code: 'en' as const, name: 'English', flag: '🇺🇸', nativeName: 'English' },
     { code: 'ps' as const, name: 'Pashto', flag: '🇦🇫', nativeName: 'پښتو' },
     { code: 'fa' as const, name: 'Farsi', flag: '🇮🇷', nativeName: 'فارسی' },
-    { code: 'ar' as const, name: 'Arabic', flag: '🇸🇦', nativeName: 'العربية' },
+    // { code: 'ar' as const, name: 'Arabic', flag: '🇸🇦', nativeName: 'العربية' },
   ];
 
   return (

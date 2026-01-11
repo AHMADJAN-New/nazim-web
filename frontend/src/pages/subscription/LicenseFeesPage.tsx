@@ -4,6 +4,7 @@ import {
   DollarSign,
   AlertTriangle,
   Info,
+  CreditCard,
 } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { 

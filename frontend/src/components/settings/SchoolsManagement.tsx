@@ -393,9 +393,9 @@ export function SchoolsManagement() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <SchoolIcon className="h-5 w-5 hidden sm:inline-flex" />
-              {t('events.title')}
+              {t('schools.title')}
             </CardTitle>
-            <CardDescription className="hidden md:block">{t('hostel.subtitle')}</CardDescription>
+            <CardDescription className="hidden md:block">{t('schools.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <LoadingSpinner size="lg" text={t('schools.loadingSchools')} />
@@ -413,9 +413,9 @@ export function SchoolsManagement() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <SchoolIcon className="h-5 w-5 hidden sm:inline-flex" />
-                {t('events.title')}
+                {t('schools.title')}
               </CardTitle>
-              <CardDescription className="hidden md:block">{t('hostel.subtitle')}</CardDescription>
+              <CardDescription className="hidden md:block">{t('schools.subtitle')}</CardDescription>
             </div>
             {hasCreatePermission && (
               <Button 

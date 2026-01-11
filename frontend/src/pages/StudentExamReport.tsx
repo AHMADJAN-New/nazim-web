@@ -195,7 +195,7 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
         <CardHeader className="text-center border-b pb-4">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Award className="h-8 w-8 text-primary" />
-            <CardTitle className="text-3xl">{t('events.title')}</CardTitle>
+            <CardTitle className="text-3xl">{t('nav.studentReportCard')}</CardTitle>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2">
             {reportData.exam?.name || selectedExam?.name ? (
@@ -628,7 +628,7 @@ export default function StudentExamReport() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <PageHeader
-        title={t('events.title')}
+        title={t('nav.examReports')}
         description={t('studentReportCard.selectStudentPrompt')}
         icon={<Award className="h-5 w-5" />}
       />
@@ -750,7 +750,7 @@ export default function StudentExamReport() {
                     { key: 'result', label: t('examReports.result') || 'Result' },
                   ]}
                   reportKey="student_report_card"
-                  title={`${t('events.title') || 'Student Report Card'} - ${selectedExam?.name || ''}`}
+                  title={`${t('nav.studentReportCard') || 'Student Report Card'} - ${selectedExam?.name || ''}`}
                   transformData={(data) => data.map((report: StudentReportData) => {
                     // Build subjects list
                     const subjectsList = (report.subjects || []).map((s) => {

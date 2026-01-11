@@ -94,41 +94,43 @@ export default function PendingActionsPage() {
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
-                <TableBody>
-                  {(pendingPayments.data || []).map((payment: any) => (
-                    <TableRow key={payment.id}>
-                      <TableCell className="font-medium">
-                        <div>
-                          {payment.organization_name || payment.organization_id}
-                          <div className="md:hidden mt-1 text-xs text-muted-foreground">
+                    <TableBody>
+                      {(pendingPayments.data || []).map((payment: any) => (
+                        <TableRow key={payment.id}>
+                          <TableCell className="font-medium">
+                            <div>
+                              {payment.organization_name || payment.organization_id}
+                              <div className="md:hidden mt-1 text-xs text-muted-foreground">
+                                {payment.payment_method?.replace('_', ' ') || 'N/A'}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {payment.amount?.toLocaleString()} {payment.currency}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
                             {payment.payment_method?.replace('_', ' ') || 'N/A'}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {payment.amount?.toLocaleString()} {payment.currency}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {payment.payment_method?.replace('_', ' ') || 'N/A'}
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell text-muted-foreground">
-                        {formatDate(new Date(payment.created_at))}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">{payment.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" variant="outline" asChild className="flex-shrink-0">
-                          <Link to={`/platform/payments/${payment.id}`}>
-                            <span className="hidden sm:inline">Review</span>
-                            <span className="sm:hidden">View</span>
-                          </Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-muted-foreground">
+                            {formatDate(new Date(payment.created_at))}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">{payment.status}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" variant="outline" asChild className="flex-shrink-0">
+                              <Link to={`/platform/payments/${payment.id}`}>
+                                <span className="hidden sm:inline">Review</span>
+                                <span className="sm:hidden">View</span>
+                              </Link>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -1136,7 +1136,7 @@ placeholder="All rooms"
 ### pages/Index.tsx
 ```
 placeholder="john@school.edu"
-placeholder="+92-300-1234567"
+placeholder="+93-701234567"
 placeholder="Nazim"
 ```
 

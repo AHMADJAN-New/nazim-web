@@ -157,11 +157,13 @@ interface DbRecentTask {
 // Language Switcher Component
 function LanguageSwitcherButton() {
   const { language, setLanguage } = useLanguage();
+  // Filter out Arabic since translations are not complete
   const languages = [
     { code: 'en' as const, name: 'English', flag: '🇺🇸' },
     { code: 'ps' as const, name: 'پښتو', flag: '🇦🇫' },
     { code: 'fa' as const, name: 'فارسی', flag: '🇮🇷' },
-    { code: 'ar' as const, name: 'العربية', flag: '🇸🇦' },
+    // Arabic temporarily hidden until translations are complete
+    // { code: 'ar' as const, name: 'العربية', flag: '🇸🇦' },
   ];
 
   return (
@@ -1691,13 +1693,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
       {/* Logo Section */}
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
-            <School className="h-5 w-5 text-sidebar-primary-foreground" />
-          </div>
+          <img
+            src="/nazim_logo.jpg"
+            alt="Nazim Logo"
+            className="w-12 h-12 rounded-lg object-contain ring-2 ring-sidebar-border bg-sidebar-primary/10 p-1.5 flex-shrink-0"
+          />
           {!collapsed && (
-            <div>
-              <h1 className="text-lg font-bold text-sidebar-foreground">Nazim</h1>
-              <p className="text-xs text-sidebar-foreground/70">{tUnsafe('common.schoolManagement')}</p>
+            <div className="flex-1 min-w-0">
+              <h1 
+                className="text-lg font-bold text-sidebar-foreground"
+                style={{ fontFamily: "'Bahij Nassim', 'Noto Sans Arabic', 'Amiri', serif" }}
+              >
+                {tUnsafe('common.schoolManagement') || 'ناظم – د دیني مدارسو د اداري چارو د مدیریت سیستم'}
+              </h1>
             </div>
           )}
         </div>

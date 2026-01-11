@@ -143,10 +143,10 @@ export function ProfileManagement() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5 hidden md:inline-flex" />
-                {t('events.title')}
+                {t('staff.personalInformation')}
               </CardTitle>
               <CardDescription className="hidden md:block">
-                {t('hostel.subtitle')}
+                {t('staff.profileSubtitle')}
               </CardDescription>
             </div>
             <Button onClick={() => handleOpenDialog()} className="flex-shrink-0">

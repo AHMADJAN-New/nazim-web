@@ -73,7 +73,7 @@ export function ExamPaperPreview() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-semibold">{t('events.title') || 'Paper Preview'}</h1>
+            <h1 className="text-2xl font-semibold">{t('examPaperPreview.title') || 'Paper Preview'}</h1>
             <p className="text-sm text-muted-foreground">
               {template?.title || t('common.loading') || 'Loading...'}
             </p>

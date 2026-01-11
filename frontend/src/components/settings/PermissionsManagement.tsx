@@ -442,10 +442,10 @@ export function PermissionsManagement() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5 hidden sm:inline-flex" />
-                {t('events.title') || 'Roles and Permissions'}
+                {t('permissions.title') || 'Roles and Permissions'}
               </CardTitle>
               <CardDescription className="hidden md:block">
-                {t('hostel.subtitle')?.replace('{orgName}', currentOrg?.name || 'your organization') || 
+                {t('permissions.subtitle')?.replace('{orgName}', currentOrg?.name || 'your organization') || 
                  'user roles and permissions management panel. where the admin can create a new roles for the users and set permission in the role.'}
               </CardDescription>
             </div>

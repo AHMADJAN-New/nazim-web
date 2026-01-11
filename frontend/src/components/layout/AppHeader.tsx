@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, School, Shield, Play } from "lucide-react";
+import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, Shield, Play } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -181,11 +181,13 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
 
   const unreadNotifications = unreadCount?.count ?? 0;
 
+  // Filter out Arabic since translations are not complete
   const languages = [
     { code: "en" as const, name: "English", flag: "🇺🇸" },
     { code: "ps" as const, name: "پښتو", flag: "🇦🇫" },
     { code: "fa" as const, name: "فارسی", flag: "🇮🇷" },
-    { code: "ar" as const, name: "العربية", flag: "🇸🇦" }
+    // Arabic temporarily hidden until translations are complete
+    // { code: "ar" as const, name: "العربية", flag: "🇸🇦" }
   ];
 
   const toggleTheme = () => {
@@ -389,7 +391,11 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               disabled={updateMySchool.isPending && !hasSchoolsAccessAll}
             >
               <SelectTrigger className="hidden md:flex w-[200px]">
-                <School className="h-4 w-4 mr-2" />
+                <img
+                  src="/nazim_logo.jpg"
+                  alt="Nazim"
+                  className="h-4 w-4 mr-2 object-contain"
+                />
                 <SelectValue placeholder={t("common.selectSchool") || "Select School"} />
               </SelectTrigger>
               <SelectContent>

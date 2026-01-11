@@ -444,9 +444,9 @@ export function StaffList() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 min-w-0">
                 <div className="min-w-0">
-                    <h1 className="text-xl sm:text-2xl font-bold">{t('students.management')}</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold">{t('staff.management')}</h1>
                     <p className="text-sm sm:text-base text-muted-foreground">
-                        {t('hostel.subtitle')}
+                        {t('staff.subtitle')}
                     </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -543,7 +543,7 @@ export function StaffList() {
             {/* Filters and Table Card */}
             <Card>
                 <CardHeader>
-                    <CardTitle>{t('grades.list') || 'Staff List'}</CardTitle>
+                    <CardTitle>{t('staff.list') || 'Staff List'}</CardTitle>
                     <CardDescription>{t('staff.listDescription') || 'Search, filter and manage staff members.'}</CardDescription>
                 </CardHeader>
                 <CardContent>

@@ -95,8 +95,8 @@ export default function Attendance() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">{t('events.title')}</CardTitle>
-          <CardDescription className="text-sm">{t('hostel.subtitle')}</CardDescription>
+          <CardTitle className="text-lg">{t('nav.attendance')}</CardTitle>
+          <CardDescription className="text-sm">{t('attendancePage.markAttendanceDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="md:col-span-2 space-y-3">

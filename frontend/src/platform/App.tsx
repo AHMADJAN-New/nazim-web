@@ -11,6 +11,7 @@ import MaintenanceHistory from './pages/admin/MaintenanceHistory';
 import OrganizationSubscriptionDetail from './pages/admin/OrganizationSubscriptionDetail';
 import SubscriptionAdminDashboard from './pages/admin/SubscriptionAdminDashboard';
 import PlansManagement from './pages/admin/PlansManagement';
+import PlanRequestsPage from './pages/admin/PlanRequestsPage';
 import RenewalReviewPage from './pages/admin/RenewalReviewPage';
 import PlatformSettings from './pages/admin/PlatformSettings';
 import MaintenanceFeesManagement from './pages/admin/MaintenanceFeesManagement';
@@ -169,6 +170,7 @@ export function PlatformAdminApp() {
               <Route path="organizations" element={<PlatformAdminDashboard />} />
               <Route path="subscriptions" element={<SubscriptionAdminDashboard />} />
               <Route path="plans" element={<PlansManagement />} />
+              <Route path="plan-requests" element={<PlanRequestsPage />} />
               <Route path="discount-codes" element={<DiscountCodesManagement />} />
               <Route path="renewals/:renewalId" element={<RenewalReviewPage />} />
               <Route path="pending" element={<SubscriptionAdminDashboard />} />

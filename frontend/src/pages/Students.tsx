@@ -867,8 +867,8 @@ export function Students() {
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
         <PageHeader
-          title={t('events.title') || 'Students'}
-          description={t('hostel.subtitle') || 'Manage admissions with complete Afghan student records'}
+          title={t('nav.students') || 'Students'}
+          description={t('students.listDescription') || 'Search, filter and update admissions.'}
           primaryAction={{
             label: t('events.add') || 'Register Student',
             onClick: () => setIsCreateOpen(true),
@@ -876,7 +876,7 @@ export function Students() {
           }}
           secondaryActions={[
             {
-              label: t('events.title') || 'Student Registration Report',
+              label: t('nav.students') || 'Student Registration Report',
               href: '/reports/student-registrations',
               icon: <FileText className="h-4 w-4" />,
               variant: 'outline',
@@ -984,7 +984,7 @@ export function Students() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('grades.list') || 'Student Registrations'}</CardTitle>
+          <CardTitle>{t('students.list') || 'Student Registrations'}</CardTitle>
           <CardDescription>{t('students.listDescription') || 'Search, filter and update admissions.'}</CardDescription>
         </CardHeader>
         <CardContent>

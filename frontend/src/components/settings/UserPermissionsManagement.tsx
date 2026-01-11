@@ -311,10 +311,10 @@ export function UserPermissionsManagement() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5 hidden md:inline-flex" />
-            {t('events.title')}
+            {t('userPermissions.title')}
           </CardTitle>
           <CardDescription className="hidden md:block">
-            {t('hostel.subtitle')}
+            {t('userPermissions.subtitle')}
           </CardDescription>
         </CardHeader>
         <CardContent>

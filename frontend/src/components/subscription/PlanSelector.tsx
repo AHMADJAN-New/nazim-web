@@ -83,7 +83,9 @@ export function PlanSelector({ onSelectPlan, currentPlanSlug }: PlanSelectorProp
   // Filter out trial plan from selection (it's automatic)
   const selectablePlans = plans.filter((p) => p.slug !== 'trial');
 
-  const formatPrice = (amount: number) => {
+  const formatPrice = (amount: number, planSlug?: string) => {
+    // Enterprise plan shows "Contact Us" instead of "Free"
+    if (planSlug === 'enterprise' && amount === 0) return 'Contact Us';
     if (amount === 0) return 'Free';
     return new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'fa-AF', {
       style: 'currency',
@@ -107,7 +109,7 @@ export function PlanSelector({ onSelectPlan, currentPlanSlug }: PlanSelectorProp
   const getSchoolsPrice = (plan: SubscriptionPlan) => {
     const price = currency === 'USD' ? plan.perSchoolPriceUsd : plan.perSchoolPriceAfn;
     if (price === 0 || plan.maxSchools <= 1) return null;
-    return formatPrice(price);
+    return formatPrice(price, plan.slug);
   };
 
   // Get billing period label for maintenance fees
@@ -177,7 +179,7 @@ export function PlanSelector({ onSelectPlan, currentPlanSlug }: PlanSelectorProp
                   {/* License Fee (One-time) */}
                   {plan.hasLicenseFee && (
                     <div className="flex items-center gap-2">
-                      <span className="text-2xl font-bold">{formatPrice(getLicenseFee(plan))}</span>
+                      <span className="text-2xl font-bold">{formatPrice(getLicenseFee(plan), plan.slug)}</span>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -199,7 +201,7 @@ export function PlanSelector({ onSelectPlan, currentPlanSlug }: PlanSelectorProp
                     <div className="flex items-center gap-2">
                       <span className={cn("font-bold", plan.hasLicenseFee ? "text-xl" : "text-2xl")}>
                         {plan.hasLicenseFee && "+ "}
-                        {formatPrice(getMaintenanceFee(plan))}
+                        {formatPrice(getMaintenanceFee(plan), plan.slug)}
                       </span>
                       <TooltipProvider>
                         <Tooltip>
@@ -221,10 +223,10 @@ export function PlanSelector({ onSelectPlan, currentPlanSlug }: PlanSelectorProp
                   {plan.hasLicenseFee && plan.hasMaintenanceFee && (
                     <div className="pt-2 border-t mt-2">
                       <p className="text-sm text-muted-foreground">
-                        First year total: <span className="font-semibold">{formatPrice(getTotalFee(plan))}</span>
+                        First year total: <span className="font-semibold">{formatPrice(getTotalFee(plan), plan.slug)}</span>
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Then {formatPrice(getMaintenanceFee(plan))}{getBillingPeriodSuffix(plan)}
+                        Then {formatPrice(getMaintenanceFee(plan), plan.slug)}{getBillingPeriodSuffix(plan)}
                       </p>
                     </div>
                   )}
@@ -232,7 +234,7 @@ export function PlanSelector({ onSelectPlan, currentPlanSlug }: PlanSelectorProp
                   {/* Legacy display for plans without fee separation */}
                   {!plan.hasLicenseFee && !plan.hasMaintenanceFee && (
                     <>
-                      <span className="text-3xl font-bold">{formatPrice(currency === 'USD' ? plan.priceYearlyUsd : plan.priceYearlyAfn)}</span>
+                      <span className="text-3xl font-bold">{formatPrice(currency === 'USD' ? plan.priceYearlyUsd : plan.priceYearlyAfn, plan.slug)}</span>
                       {plan.priceYearlyAfn > 0 && (
                         <span className="text-muted-foreground">/year</span>
                       )}

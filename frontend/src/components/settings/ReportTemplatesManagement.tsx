@@ -292,9 +292,9 @@ export function ReportTemplatesManagement() {
                         <div>
                             <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
                                 <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
-                                {t('events.title')}
+                                {t('reportTemplates.title')}
                             </CardTitle>
-                            <CardDescription className="mt-1">{t('hostel.subtitle')}</CardDescription>
+                            <CardDescription className="mt-1">{t('reportTemplates.subtitle')}</CardDescription>
                         </div>
                         {hasCreatePermission && (
                             <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto">
@@ -812,7 +812,7 @@ export function ReportTemplatesManagement() {
 
                             {/* Watermark Selection */}
                             <div className="grid gap-2">
-                                <Label htmlFor="watermark_id">{t('events.title') || 'Watermark'} ({t('events.optional') || 'Optional'})</Label>
+                                <Label htmlFor="watermark_id">{t('watermarks.title') || 'Watermark'} ({t('common.optional') || 'Optional'})</Label>
                                 <p className="text-sm text-muted-foreground">
                                     {t('reportTemplates.watermarkDescription') || 'Select a watermark to display on this report template. If not selected, the default watermark from branding will be used.'}
                                 </p>

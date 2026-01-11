@@ -279,8 +279,8 @@ export default function AttendanceTotalsReports() {
     return (
         <div className="container mx-auto p-4 md:p-6 max-w-7xl space-y-6">
             <PageHeader
-                title={t('events.title') || 'Attendance Totals Report'}
-                description={t('hostel.subtitle') || 'Analyze attendance performance across classes, rooms, and schools.'}
+                title={t('nav.attendanceTotalsReport') || 'Attendance Totals Report'}
+                description={t('attendanceTotalsReport.subtitle') || 'Analyze attendance performance across classes, rooms, and schools.'}
                 icon={<Activity className="h-5 w-5" />}
                 secondaryActions={[
                     {

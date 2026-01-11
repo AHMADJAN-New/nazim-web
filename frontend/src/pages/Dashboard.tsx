@@ -19,7 +19,6 @@ import {
   ClipboardList,
   MessageSquare,
   BarChart3,
-  PieChart,
   Activity,
   Target,
   Gift,
@@ -36,9 +35,6 @@ import {
 import { useMemo, useEffect, useState, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
-  PieChart as RechartsPieChart, 
-  Pie,
-  Cell, 
   ResponsiveContainer, 
   BarChart, 
   Bar, 
@@ -271,10 +267,6 @@ export default function Dashboard() {
     onClick: string;
   }>) : [];
 
-  const genderDistribution = dashboardStats && canSeeStudents ? [
-    { name: t('students.male') || "Male", value: dashboardStats.studentGender.male, color: "#2563eb" },
-    { name: t('students.female') || "Female", value: dashboardStats.studentGender.female, color: "#dc2626" }
-  ] : [];
 
   if (statsLoading || roleLoading) {
     return (
@@ -314,8 +306,8 @@ export default function Dashboard() {
           </div>
           <div className="hidden md:flex items-center gap-2 text-primary-foreground/80">
             <Calendar className="h-5 w-5" />
-            <span className="hidden lg:inline">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-            <span className="lg:hidden">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            <span className="hidden lg:inline">{formatDate(new Date())}</span>
+            <span className="lg:hidden">{formatDate(new Date())}</span>
           </div>
         </div>
       </div>
@@ -386,51 +378,6 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Gender Distribution - Pie Chart */}
-        {canSeeStudents && dashboardStats && (dashboardStats.studentGender.male > 0 || dashboardStats.studentGender.female > 0) && (
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/students")}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <PieChart className="h-5 w-5 text-secondary" />
-                {t('dashboard.genderDistribution') || 'Gender Distribution'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={{
-                  male: {
-                    label: "Male",
-                    color: "hsl(221.2 83.2% 53.3%)",
-                  },
-                  female: {
-                    label: "Female",
-                    color: "hsl(0 72.2% 50.6%)",
-                  },
-                }}
-                className="mx-auto aspect-square max-h-[150px] sm:max-h-[180px] md:max-h-[200px] lg:max-h-[250px] w-full"
-              >
-                <RechartsPieChart>
-                  <Pie
-                    data={genderDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {genderDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <ChartLegend content={<ChartLegendContent />} />
-                </RechartsPieChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       {/* Quick Actions & Recent Activity Section */}

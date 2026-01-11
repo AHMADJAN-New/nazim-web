@@ -254,7 +254,7 @@ class StudentAdmissionController extends Controller
                 $admission,
                 $user,
                 [
-                    'title' => '✅ Admission Created',
+                    'title' => 'Admission Created',
                     'body' => "{$studentName} has been successfully admitted to {$className} for {$academicYearName}.",
                     'url' => "/admissions",
                     'exclude_actor' => false, // Include the creator so they see confirmation
@@ -343,7 +343,7 @@ class StudentAdmissionController extends Controller
                         $admission,
                         $user,
                         [
-                            'title' => '✅ Admission Approved',
+                            'title' => 'Admission Approved',
                             'body' => "{$studentName}'s admission to {$className} has been approved and is now active.",
                             'url' => "/admissions",
                             'exclude_actor' => false, // Include the approver so they see confirmation
@@ -355,7 +355,7 @@ class StudentAdmissionController extends Controller
                         $admission,
                         $user,
                         [
-                            'title' => '⚠️ Admission Rejected',
+                            'title' => 'Admission Rejected',
                             'body' => "{$studentName}'s admission to {$className} has been rejected or deactivated.",
                             'url' => "/admissions",
                             'exclude_actor' => false, // Include the rejector so they see confirmation

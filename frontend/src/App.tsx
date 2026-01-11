@@ -175,6 +175,7 @@ import {
   MaintenanceFeesManagement,
   LicenseFeesManagement,
   OrganizationRevenueHistory,
+  PlanRequestsPage,
   PlatformSettings,
   TranslationsManagement,
   HelpCenterManagement,
@@ -320,6 +321,11 @@ const App = () => (
                     <Route path="plans" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <PlansManagement />
+                      </Suspense>
+                    } />
+                    <Route path="plan-requests" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <PlanRequestsPage />
                       </Suspense>
                     } />
                     <Route path="pending" element={

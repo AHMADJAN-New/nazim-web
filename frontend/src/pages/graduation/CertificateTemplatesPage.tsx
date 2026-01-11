@@ -141,7 +141,7 @@ export default function CertificateTemplatesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('events.title') ?? 'Title'}</TableHead>
+                  <TableHead>{t('certificateTemplates.templateName') || 'Title'}</TableHead>
                   <TableHead>School</TableHead>
                   <TableHead>Background</TableHead>
                   <TableHead>{t('events.statusLabel') ?? 'Status'}</TableHead>
@@ -218,7 +218,7 @@ export default function CertificateTemplatesPage() {
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>{t('events.title') ?? 'Title'} *</Label>
+                <Label>{t('certificateTemplates.templateName') || 'Title'} *</Label>
                 <Input
                   value={form.title}
                   onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}

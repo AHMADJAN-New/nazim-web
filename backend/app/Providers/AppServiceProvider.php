@@ -21,7 +21,10 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(NotificationService::class, function ($app) {
-            return new NotificationService($app->make(NotificationRuleRegistry::class));
+            return new NotificationService(
+                $app->make(NotificationRuleRegistry::class),
+                $app->make(\App\Services\Subscription\FeatureGateService::class)
+            );
         });
     }
 

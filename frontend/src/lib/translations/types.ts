@@ -4847,6 +4847,7 @@ export const TRANSLATION_KEYS = [
     applyFilters: string;
     clearAll: string;
     allYears: string;
+    amount: string;
     fromDate: string;
     toDate: string;
     date: string;
@@ -10812,6 +10813,76 @@ export const TRANSLATION_KEYS = [
     writeAccessDenied: string;
     readAccessDenied: string;
     genericError: string;
+    
+    // Subscription Management
+    subscriptionManagement: string;
+    yourSubscriptionStatus: string;
+    
+    // License Fees
+    licenseFee: string;
+    licenseFeeDescription: string;
+    licenseFeeStatus: string;
+    licenseUnpaid: string;
+    licenseUnpaidDescription: string;
+    licensePaymentHistory: string;
+    payLicense: string;
+    status: string;
+    viewLicenseHistory: string;
+    
+    // Maintenance Fees
+    maintenanceFee: string;
+    maintenanceFeeDescription: string;
+    maintenanceFees: string;
+    maintenanceFeeStatus: string;
+    nextMaintenanceDue: string;
+    noMaintenanceDue: string;
+    daysUntilDue: string;
+    lastPaid: string;
+    lastMaintenancePaid: string;
+    billingPeriod: string;
+    viewMaintenanceInvoices: string;
+    maintenanceInvoices: string;
+    maintenanceInvoicesDescription: string;
+    paymentHistory: string;
+    maintenancePaymentHistory: string;
+    noInvoices: string;
+    noPaymentHistory: string;
+    
+    // Enterprise Contact Form
+    enterpriseContact: {
+      title: string;
+      description: string;
+      organizationName: string;
+      organizationNamePlaceholder: string;
+      schoolName: string;
+      schoolNamePlaceholder: string;
+      contactName: string;
+      contactNamePlaceholder: string;
+      contactEmail: string;
+      contactEmailPlaceholder: string;
+      contactPhone: string;
+      contactPhonePlaceholder: string;
+      contactWhatsApp: string;
+      contactWhatsAppPlaceholder: string;
+      contactPosition: string;
+      contactPositionPlaceholder: string;
+      numberOfSchools: string;
+      numberOfSchoolsPlaceholder: string;
+      studentCount: string;
+      studentCountPlaceholder: string;
+      staffCount: string;
+      staffCountPlaceholder: string;
+      city: string;
+      cityPlaceholder: string;
+      country: string;
+      countryPlaceholder: string;
+      organizationNeeds: string;
+      organizationNeedsPlaceholder: string;
+      submit: string;
+      submitting: string;
+      submitted: string;
+      submitFailed: string;
+    };
   };
 
   // Landing Page

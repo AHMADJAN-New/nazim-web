@@ -290,7 +290,7 @@ class StudentController extends Controller
                 $student,
                 $user,
                 [
-                    'title' => '👤 New Student Registered',
+                    'title' => 'New Student Registered',
                     'body' => "Student '{$studentName}' (Admission No: {$admissionNo}) has been registered.",
                     'url' => "/students/{$student->id}",
                 ]

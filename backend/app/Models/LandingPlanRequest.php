@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 class LandingPlanRequest extends Model
@@ -25,6 +26,7 @@ class LandingPlanRequest extends Model
         'contact_name',
         'contact_email',
         'contact_phone',
+        'contact_whatsapp',
         'contact_position',
         'number_of_schools',
         'student_count',
@@ -51,5 +53,13 @@ class LandingPlanRequest extends Model
                 $model->id = (string) Str::uuid();
             }
         });
+    }
+
+    /**
+     * Get the requested plan
+     */
+    public function requestedPlan(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\SubscriptionPlan::class, 'requested_plan_id');
     }
 }

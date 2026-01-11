@@ -13,7 +13,7 @@ export default function NotFound() {
       <Card className="w-full max-w-md text-center">
         <CardContent className="pt-6">
           <div className="text-6xl font-bold text-muted-foreground mb-4">404</div>
-          <h1 className="text-2xl font-bold mb-2">{t('events.title') || 'Page Not Found'}</h1>
+          <h1 className="text-2xl font-bold mb-2">{t('notFound.title') || 'Page Not Found'}</h1>
           <p className="text-muted-foreground mb-6">
             {t('notFound.message') || 'The page you are looking for does not exist.'}
           </p>

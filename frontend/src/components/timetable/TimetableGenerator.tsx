@@ -707,7 +707,7 @@ export function TimetableGenerator() {
 		<div className="space-y-6">
 			<Card>
 				<CardHeader>
-					<CardTitle>{t('events.title') || 'Timetable Generation'}</CardTitle>
+					<CardTitle>{t('nav.timetable.title') || 'Timetable Generation'}</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					{/* Academic Year Selector */}
@@ -857,7 +857,7 @@ export function TimetableGenerator() {
 										{ key: 'subject', label: t('timetable.subject') || 'Subject' },
 									]}
 									reportKey="timetable"
-									title={t('events.title') || 'Timetable Export'}
+									title={t('nav.timetable.title') || 'Timetable Export'}
 									transformData={(data) => {
 										const days = allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList);
 										const rows: Array<Record<string, any>> = [];

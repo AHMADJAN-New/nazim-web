@@ -182,10 +182,10 @@ export function RolesManagement() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5 hidden md:inline-flex" />
-                {t('events.title')}
+                {t('roles.title')}
               </CardTitle>
               <CardDescription className="hidden md:block">
-                {t('hostel.subtitle')}
+                {t('roles.subtitle')}
               </CardDescription>
             </div>
             {hasCreatePermission && (
