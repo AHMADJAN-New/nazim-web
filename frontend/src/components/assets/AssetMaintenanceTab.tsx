@@ -491,11 +491,9 @@ export default function AssetMaintenanceTab() {
                 </Select>
               </div>
               <div>
-                <Label>Performed On</Label>
                 <CalendarFormField control={control} name="performedOn" label="Performed On" />
               </div>
               <div>
-                <Label>Next Due Date</Label>
                 <CalendarFormField control={control} name="nextDueDate" label="Next Due Date" />
               </div>
               <div>

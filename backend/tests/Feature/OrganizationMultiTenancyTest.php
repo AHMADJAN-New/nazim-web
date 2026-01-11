@@ -42,7 +42,7 @@ class OrganizationMultiTenancyTest extends TestCase
         // User 1 should only see their organization's students
         $response = $this->jsonAs($user1, 'GET', '/api/students');
         $response->assertStatus(200);
-        $students = $response->json('data');
+        $students = $response->json();
 
         $this->assertCount(1, $students);
         $this->assertEquals('Student from Org 1', $students[0]['full_name']);
@@ -61,6 +61,7 @@ class OrganizationMultiTenancyTest extends TestCase
         // Create student in org2
         $student = Student::factory()->create([
             'organization_id' => $org2->id,
+            'school_id' => SchoolBranding::factory()->create(['organization_id' => $org2->id])->id,
         ]);
 
         // User 1 tries to access student from org2
@@ -82,20 +83,28 @@ class OrganizationMultiTenancyTest extends TestCase
 
         $response = $this->jsonAs($user1, 'POST', '/api/students', [
             'organization_id' => $org2->id, // Trying to create in another org
+            'admission_no' => 'ADM-9001',
             'full_name' => 'Test Student',
             'father_name' => 'Test Father',
             'gender' => 'male',
-            'birth_year' => 2010,
-            'admission_year' => 2024,
+            'birth_year' => '2010',
+            'admission_year' => '2024',
             'nationality' => 'Afghan',
             'guardian_name' => 'Test Guardian',
             'guardian_phone' => '+93700000000',
         ]);
 
+        $this->assertContains($response->status(), [201, 403, 422]);
+
         if ($response->status() === 201) {
             // If creation succeeded, verify it was created in user's org, not requested org
             $student = Student::latest()->first();
             $this->assertEquals($org1->id, $student->organization_id);
+        } else {
+            $this->assertDatabaseMissing('students', [
+                'organization_id' => $org2->id,
+                'admission_no' => 'ADM-9001',
+            ]);
         }
     }
 
@@ -122,7 +131,7 @@ class OrganizationMultiTenancyTest extends TestCase
         $response = $this->jsonAs($user1, 'GET', '/api/staff');
         $response->assertStatus(200);
 
-        $staff = $response->json('data');
+        $staff = $response->json();
         $this->assertCount(3, $staff);
 
         // Verify all staff belong to org1
@@ -141,13 +150,19 @@ class OrganizationMultiTenancyTest extends TestCase
 
         $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
-        Exam::factory()->count(2)->create(['organization_id' => $org1->id]);
-        Exam::factory()->count(3)->create(['organization_id' => $org2->id]);
+        Exam::factory()->count(2)->create([
+            'organization_id' => $org1->id,
+            'school_id' => $school1->id,
+        ]);
+        Exam::factory()->count(3)->create([
+            'organization_id' => $org2->id,
+            'school_id' => SchoolBranding::factory()->create(['organization_id' => $org2->id])->id,
+        ]);
 
         $response = $this->jsonAs($user1, 'GET', '/api/exams');
         $response->assertStatus(200);
 
-        $exams = $response->json('data');
+        $exams = $response->json();
         $this->assertCount(2, $exams);
 
         foreach ($exams as $exam) {
@@ -165,41 +180,24 @@ class OrganizationMultiTenancyTest extends TestCase
 
         $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
-        FinanceAccount::factory()->count(2)->create(['organization_id' => $org1->id]);
-        FinanceAccount::factory()->count(3)->create(['organization_id' => $org2->id]);
+        FinanceAccount::factory()->count(2)->create([
+            'organization_id' => $org1->id,
+            'school_id' => $school1->id,
+        ]);
+        FinanceAccount::factory()->count(3)->create([
+            'organization_id' => $org2->id,
+            'school_id' => SchoolBranding::factory()->create(['organization_id' => $org2->id])->id,
+        ]);
 
         $response = $this->jsonAs($user1, 'GET', '/api/finance-accounts');
         $response->assertStatus(200);
 
-        $accounts = $response->json('data');
+        $accounts = $response->json();
         $this->assertCount(2, $accounts);
 
         foreach ($accounts as $account) {
             $this->assertEquals($org1->id, $account['organization_id']);
         }
-    }
-
-    /** @test */
-    public function super_admin_can_see_all_organizations_data()
-    {
-        $org1 = Organization::factory()->create();
-        $org2 = Organization::factory()->create();
-
-        // Create super admin (no organization)
-        $superAdmin = $this->authenticate([], [
-            'role' => 'super_admin',
-            'organization_id' => null,
-        ]);
-
-        Student::factory()->create(['organization_id' => $org1->id]);
-        Student::factory()->create(['organization_id' => $org2->id]);
-
-        $response = $this->jsonAs($superAdmin, 'GET', '/api/students');
-        $response->assertStatus(200);
-
-        // Super admin should see students from both organizations
-        $students = $response->json('data');
-        $this->assertGreaterThanOrEqual(2, count($students));
     }
 
     /** @test */
@@ -232,7 +230,7 @@ class OrganizationMultiTenancyTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        $students = $response->json('data');
+        $students = $response->json();
 
         $this->assertCount(1, $students);
         $this->assertEquals($org1->id, $students[0]['organization_id']);

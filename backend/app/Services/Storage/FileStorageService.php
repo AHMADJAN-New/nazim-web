@@ -2,6 +2,7 @@
 
 namespace App\Services\Storage;
 
+use App\Services\Storage\ImageCompressionService;
 use App\Services\Subscription\UsageTrackingService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -26,7 +27,8 @@ class FileStorageService
     private const DISK_PUBLIC = 'public';
 
     public function __construct(
-        private UsageTrackingService $usageTrackingService
+        private UsageTrackingService $usageTrackingService,
+        private ImageCompressionService $imageCompressionService
     ) {}
 
     // Resource type paths
@@ -891,10 +893,36 @@ class FileStorageService
      */
     private function storeFile(UploadedFile $file, string $path, string $disk): string
     {
+        // Compress images before storing
+        if ($this->isImage($file)) {
+            try {
+                $compressed = $this->imageCompressionService->compressImage($file);
+                if ($compressed) {
+                    $file = $compressed;
+                }
+            } catch (\Exception $e) {
+                // Log error but continue with original file
+                \Log::warning("ImageCompressionService: Failed to compress image, using original", [
+                    'filename' => $file->getClientOriginalName(),
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         $extension = strtolower($file->getClientOriginalExtension());
         $filename = Str::uuid() . '.' . $extension;
 
         return Storage::disk($disk)->putFileAs($path, $file, $filename);
+    }
+
+    /**
+     * Check if file is an image
+     */
+    private function isImage(UploadedFile $file): bool
+    {
+        $mimeType = $file->getMimeType();
+        return str_starts_with($mimeType, 'image/') && 
+               in_array(strtolower($file->getClientOriginalExtension()), $this->getAllowedImageExtensions());
     }
 
     /**

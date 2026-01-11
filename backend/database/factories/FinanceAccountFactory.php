@@ -20,18 +20,15 @@ class FinanceAccountFactory extends Factory
         return [
             'id' => (string) Str::uuid(),
             'organization_id' => $organization,
-            'school_id' => function (array $attributes) {
-                return SchoolBranding::factory()->create([
-                    'organization_id' => $attributes['organization_id']
-                ])->id;
-            },
+            'school_id' => SchoolBranding::factory()->for($organization),
             'name' => fake()->randomElement(['Cash Box', 'Bank Account', 'Petty Cash']),
             'type' => fake()->randomElement(['cash', 'fund']),
             'current_balance' => fake()->numberBetween(0, 100000),
             'opening_balance' => 0,
             'currency_id' => function (array $attributes) {
                 return Currency::factory()->create([
-                    'organization_id' => $attributes['organization_id']
+                    'organization_id' => $attributes['organization_id'],
+                    'school_id' => $attributes['school_id'],
                 ])->id;
             },
             'description' => fake()->sentence(),

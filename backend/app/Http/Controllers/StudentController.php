@@ -3,10 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Student;
+use App\Models\StudentDocument;
+use App\Models\StudentEducationalHistory;
+use App\Models\StudentDisciplineRecord;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
 use App\Services\Notifications\NotificationService;
 use App\Services\Storage\FileStorageService;
+use App\Services\Reports\PdfReportService;
+use App\Services\Reports\ReportConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -16,7 +21,8 @@ class StudentController extends Controller
 {
     public function __construct(
         private FileStorageService $fileStorageService,
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private PdfReportService $pdfReportService
     ) {}
 
     /**
@@ -1026,6 +1032,274 @@ class StudentController extends Controller
                 'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
             ], 500);
         }
+    }
+
+    /**
+     * Print student profile as PDF
+     */
+    public function printProfile(Request $request, string $studentId)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission
+        try {
+            if (!$user->hasPermissionTo('students.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for students.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        // Fetch student
+        $student = Student::with(['organization', 'school'])
+            ->whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($studentId);
+
+        if (!$student) {
+            return response()->json(['error' => 'Student not found'], 404);
+        }
+
+        try {
+            // Fetch educational history
+            $educationalHistory = StudentEducationalHistory::where('student_id', $studentId)
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->orderBy('start_date', 'desc')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'school_name' => $item->school_name ?? '—',
+                        'start_date' => $item->start_date ? \Carbon\Carbon::parse($item->start_date)->format('Y-m-d') : '—',
+                        'end_date' => $item->end_date ? \Carbon\Carbon::parse($item->end_date)->format('Y-m-d') : '—',
+                        'grade' => $item->grade ?? '—',
+                        'description' => $item->description ?? '—',
+                    ];
+                })
+                ->toArray();
+
+            // Fetch discipline records
+            $disciplineRecords = StudentDisciplineRecord::where('student_id', $studentId)
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->orderBy('incident_date', 'desc')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'incident_date' => $item->incident_date ? \Carbon\Carbon::parse($item->incident_date)->format('Y-m-d') : '—',
+                        'incident_type' => $item->incident_type ?? '—',
+                        'severity' => $item->severity ?? 'minor',
+                        'action_taken' => $item->action_taken ?? '—',
+                        'description' => $item->description ?? null,
+                        'resolved' => $item->resolved ?? false,
+                        'resolved_date' => $item->resolved_date ? \Carbon\Carbon::parse($item->resolved_date)->format('Y-m-d') : null,
+                    ];
+                })
+                ->toArray();
+
+            // Fetch documents
+            $documents = StudentDocument::where('student_id', $studentId)
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($item) {
+                    $size = $item->file_size ?? 0;
+                    $sizeFormatted = $size > 0 ? $this->formatBytes($size) : '—';
+                    return [
+                        'document_type' => $item->document_type ?? '—',
+                        'file_name' => $item->file_name ?? '—',
+                        'uploaded_at' => $item->created_at ? $item->created_at->format('Y-m-d') : '—',
+                        'file_size' => $sizeFormatted,
+                        'description' => $item->description ?? null,
+                    ];
+                })
+                ->toArray();
+
+            // Build student picture URL (convert to base64 for PDF embedding)
+            $picturePath = null;
+            if ($student->picture_path && $this->fileStorageService->fileExists($student->picture_path)) {
+                try {
+                    $pictureContent = Storage::disk('local')->get($student->picture_path);
+                    $mimeType = $this->fileStorageService->getMimeTypeFromExtension($student->picture_path);
+                    $picturePath = 'data:' . $mimeType . ';base64,' . base64_encode($pictureContent);
+                } catch (\Exception $e) {
+                    Log::warning("Failed to load student picture for PDF: " . $e->getMessage());
+                }
+            }
+
+            // Build guardian picture URL (if it's already a URL, keep it; otherwise convert to base64)
+            $guardianPicturePath = null;
+            if ($student->guardian_picture_path) {
+                if (str_starts_with($student->guardian_picture_path, 'http')) {
+                    $guardianPicturePath = $student->guardian_picture_path;
+                } else {
+                    // Try to load from storage if it's a path
+                    try {
+                        if ($this->fileStorageService->fileExists($student->guardian_picture_path)) {
+                            $guardianContent = Storage::disk('local')->get($student->guardian_picture_path);
+                            $guardianMimeType = $this->fileStorageService->getMimeTypeFromExtension($student->guardian_picture_path);
+                            $guardianPicturePath = 'data:' . $guardianMimeType . ';base64,' . base64_encode($guardianContent);
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning("Failed to load guardian picture for PDF: " . $e->getMessage());
+                    }
+                }
+            }
+
+            // Build report data
+            $reportData = $this->buildProfileReportData($student, $educationalHistory, $disciplineRecords, $documents, $picturePath, $guardianPicturePath);
+
+            // Create report config
+            $config = ReportConfig::fromArray([
+                'report_key' => 'student_profile',
+                'report_type' => 'pdf',
+                'branding_id' => $currentSchoolId,
+                'title' => 'Student Profile - ' . ($student->full_name ?? 'Unknown'),
+                'calendar_preference' => $request->get('calendar_preference', 'jalali'),
+                'language' => $request->get('language', 'ps'),
+                'template_name' => 'student-profile',
+            ]);
+
+            // Generate PDF
+            $result = $this->pdfReportService->generate(
+                $config,
+                $reportData,
+                null, // progress callback
+                $profile->organization_id,
+                $currentSchoolId
+            );
+
+            // Get PDF file content
+            $pdfPath = $result['path'];
+            $pdfContent = Storage::disk('local')->get($pdfPath);
+
+            // Return PDF as download
+            return response($pdfContent, 200)
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', 'inline; filename="' . $result['filename'] . '"')
+                ->header('Cache-Control', 'private, max-age=0');
+
+        } catch (\Exception $e) {
+            Log::error("Error generating student profile PDF: " . $e->getMessage(), [
+                'student_id' => $studentId,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Build report data for student profile
+     */
+    private function buildProfileReportData($student, array $educationalHistory, array $disciplineRecords, array $documents, ?string $picturePath, ?string $guardianPicturePath): array
+    {
+        // Get current class information
+        $currentClass = null;
+        $currentSection = null;
+        $currentAcademicYear = null;
+        
+        // Try to get current admission
+        $currentAdmission = DB::table('student_admissions')
+            ->where('student_id', $student->id)
+            ->where('organization_id', $student->organization_id)
+            ->where('school_id', $student->school_id)
+            ->whereNull('deleted_at')
+            ->where('status', 'active')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if ($currentAdmission) {
+            $class = DB::table('classes')->where('id', $currentAdmission->class_id)->first();
+            $currentClass = $class->name ?? null;
+            
+            $classAcademicYear = DB::table('class_academic_years')
+                ->where('id', $currentAdmission->class_academic_year_id)
+                ->first();
+            if ($classAcademicYear) {
+                $academicYear = DB::table('academic_years')->where('id', $classAcademicYear->academic_year_id)->first();
+                $currentAcademicYear = $academicYear->name ?? null;
+            }
+        }
+
+        $studentData = [
+            'full_name' => $student->full_name ?? '—',
+            'father_name' => $student->father_name ?? '—',
+            'grandfather_name' => $student->grandfather_name ?? '—',
+            'mother_name' => $student->mother_name ?? '—',
+            'birth_date' => $student->birth_date ? $student->birth_date->format('Y-m-d') : '—',
+            'gender' => $student->gender ?? '—',
+            'admission_no' => $student->admission_no ?? '—',
+            'student_code' => $student->student_code ?? '—',
+            'card_number' => $student->card_number ?? '—',
+            'status' => $student->student_status ?? '—',
+            'current_class' => $currentClass ?? '—',
+            'current_section' => $currentSection ?? null,
+            'current_academic_year' => $currentAcademicYear ?? null,
+            'phone' => $student->guardian_phone ?? null,
+            'guardian_phone' => $student->guardian_phone ?? '—',
+            'guardian_name' => $student->guardian_name ?? '—',
+            'guardian_relation' => $student->guardian_relation ?? null,
+            'home_address' => $student->home_address ?? '—',
+            'nationality' => $student->nationality ?? '—',
+            'preferred_language' => $student->preferred_language ?? '—',
+            'picture_path' => $picturePath,
+            'guardian_picture_path' => $guardianPicturePath,
+            'school_name' => $student->school->school_name ?? '—',
+            'organization_name' => $student->organization->name ?? '—',
+        ];
+
+        return [
+            'columns' => [
+                ['key' => 'field', 'label' => 'Field'],
+                ['key' => 'value', 'label' => 'Value'],
+            ],
+            'rows' => [
+                ['field' => 'Full Name', 'value' => $studentData['full_name']],
+                ['field' => 'Admission No', 'value' => $studentData['admission_no']],
+            ],
+            'student' => $studentData,
+            'sections' => [
+                'educational_history' => $educationalHistory,
+                'discipline_records' => $disciplineRecords,
+                'documents' => $documents,
+            ],
+            'generatedAt' => now()->format('Y-m-d H:i'),
+            'labels' => [],
+        ];
+    }
+
+    /**
+     * Format bytes to human-readable format
+     */
+    private function formatBytes(int $bytes): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $unitIndex = 0;
+        $size = $bytes;
+
+        while ($size >= 1024 && $unitIndex < count($units) - 1) {
+            $size /= 1024;
+            $unitIndex++;
+        }
+
+        return round($size, 2) . ' ' . $units[$unitIndex];
     }
 }
 

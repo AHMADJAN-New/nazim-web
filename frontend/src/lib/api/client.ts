@@ -1732,6 +1732,12 @@ export const studentsApi = {
       headers: {}, // Let browser set Content-Type with boundary
     });
   },
+
+  printProfile: async (studentId: string) => {
+    return apiClient.get(`/students/${studentId}/print-profile`, {
+      responseType: 'blob',
+    });
+  },
 };
 
 // Student Import (Excel templates + bulk import)

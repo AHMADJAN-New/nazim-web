@@ -434,6 +434,9 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::post('/student-discipline-records/{id}/resolve', [StudentDisciplineRecordController::class, 'resolve']);
         });
 
+        // Student Profile Print
+        Route::get('/students/{student}/print-profile', [StudentController::class, 'printProfile']);
+
         // Student Lifetime History (core feature)
         Route::get('/students/{student}/history', [StudentHistoryController::class, 'index']);
         Route::get('/students/{student}/history/{section}', [StudentHistoryController::class, 'section']);

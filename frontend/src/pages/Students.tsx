@@ -22,6 +22,7 @@ import {
   useUpdateStudent,
   useStudentEducationalHistory,
   useStudentDisciplineRecords,
+  usePrintStudentProfile,
 } from '@/hooks/useStudents';
 import type { Student } from '@/types/domain/student';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
@@ -55,7 +56,7 @@ import StudentProfileView from '@/components/students/StudentProfileView';
 import { StudentDocumentsDialog } from '@/components/students/StudentDocumentsDialog';
 import { StudentEducationalHistoryDialog } from '@/components/students/StudentEducationalHistoryDialog';
 import { StudentDisciplineRecordsDialog } from '@/components/students/StudentDisciplineRecordsDialog';
-import { generateStudentProfilePdf } from '@/lib/studentProfilePdf';
+import { usePrintStudentProfile } from '@/hooks/useStudents';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 
@@ -311,6 +312,7 @@ export function Students() {
   const updateStudent = useUpdateStudent();
   const deleteStudent = useDeleteStudent();
   const pictureUpload = useStudentPictureUpload();
+  const printProfile = usePrintStudentProfile();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -647,40 +649,7 @@ export function Students() {
 
   const handlePrint = async (student: Student) => {
     try {
-      // Get school name
-      const schoolName = schools?.find(s => s.id === student.schoolId)?.school_name || student.school?.schoolName || null;
-
-      // Get student picture URL
-      let pictureUrl: string | null = null;
-      if (student.picturePath && student.organizationId) {
-        // Construct URL from Laravel API storage path
-        const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
-        const schoolPath = student.schoolId ? `${student.schoolId}/` : '';
-        const path = `${student.organizationId}/${schoolPath}${student.id}/picture/${student.picturePath}`;
-        // Laravel typically serves files from /storage/ path
-        pictureUrl = `${baseUrl.replace('/api', '')}/storage/student-files/${path}`;
-      }
-
-      // Get guardian picture URL
-      let guardianPictureUrl: string | null = null;
-      if (student.guardianPicturePath?.startsWith('http')) {
-        guardianPictureUrl = student.guardianPicturePath;
-      }
-
-      // TODO: Migrate to Laravel API endpoints for educational history and discipline records
-      // For now, return empty arrays until endpoints are implemented
-      const educationalHistory: any[] = [];
-      const disciplineRecords: any[] = [];
-
-      await generateStudentProfilePdf({
-        student,
-        schoolName,
-        pictureUrl,
-        guardianPictureUrl,
-        isRTL,
-        educationalHistory,
-        disciplineRecords,
-      });
+      await printProfile.mutateAsync(student.id);
     } catch (error) {
       console.error('Error generating student profile PDF:', error);
       toast.error('Failed to generate student profile PDF.');

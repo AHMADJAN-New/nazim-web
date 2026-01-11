@@ -30,12 +30,13 @@ class AttendanceSessionFactory extends Factory
             'class_id' => ClassModel::factory()->for($organization),
             'academic_year_id' => function (array $attributes) {
                 return AcademicYear::factory()->create([
-                    'organization_id' => $attributes['organization_id']
+                    'organization_id' => $attributes['organization_id'],
+                    'school_id' => $attributes['school_id'],
                 ])->id;
             },
             'created_by' => User::factory(),
             'session_date' => now(),
-            'method' => 'daily',
+            'method' => 'manual',
             'status' => 'open',
         ];
     }

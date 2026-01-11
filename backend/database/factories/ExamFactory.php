@@ -48,7 +48,7 @@ class ExamFactory extends Factory
     public function ongoing(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'ongoing',
+            'status' => 'in_progress',
             'start_date' => now()->subDays(2),
             'end_date' => now()->addDays(5),
         ]);

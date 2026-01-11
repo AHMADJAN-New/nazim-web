@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Currency;
 use App\Models\Organization;
+use App\Models\SchoolBranding;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -13,15 +14,19 @@ class CurrencyFactory extends Factory
 
     public function definition(): array
     {
+        $organization = Organization::factory();
+        $code = fake()->unique()->currencyCode();
+
         return [
             'id' => (string) Str::uuid(),
-            'organization_id' => Organization::factory(),
-            'name' => fake()->currencyCode(),
-            'code' => fake()->unique()->currencyCode(),
-            'symbol' => '$',
-            'is_default' => false,
-            'exchange_rate' => 1.0,
+            'organization_id' => $organization,
+            'school_id' => SchoolBranding::factory()->for($organization),
+            'name' => $code,
+            'code' => $code,
+            'symbol' => fake()->randomElement(['$', 'AFN', 'EUR']),
+            'decimal_places' => 2,
+            'is_base' => false,
+            'is_active' => true,
         ];
     }
 }
-

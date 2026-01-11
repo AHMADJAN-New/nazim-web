@@ -130,7 +130,7 @@ class AuthenticationTest extends TestCase
     {
         $user = $this->authenticate();
 
-        $response = $this->jsonAs($user, 'POST', '/api/logout');
+        $response = $this->jsonAs($user, 'POST', '/api/auth/logout');
 
         $response->assertStatus(200)
             ->assertJson(['message' => 'Logged out successfully']);
@@ -141,16 +141,16 @@ class AuthenticationTest extends TestCase
     {
         $user = $this->authenticate();
 
-        $response = $this->jsonAs($user, 'GET', '/api/profiles/me');
+        $response = $this->jsonAs($user, 'GET', '/api/auth/profile');
 
         $response->assertStatus(200)
-            ->assertJsonStructure(['data' => ['id', 'email', 'full_name', 'role', 'organization_id']]);
+            ->assertJsonStructure(['id', 'email', 'full_name', 'role', 'organization_id']);
     }
 
     /** @test */
     public function unauthenticated_user_cannot_access_protected_routes()
     {
-        $response = $this->getJson('/api/profiles/me');
+        $response = $this->getJson('/api/auth/profile');
 
         $response->assertStatus(401);
     }
@@ -192,22 +192,13 @@ class AuthenticationTest extends TestCase
 
         $this->actingAsUser($user);
 
-        // This route might not exist or be different. Checking api.php earlier didn't show change-password?
-        // But let's assume it's standard or exists.
-        // Actually, routes/api.php had `Route::post('/users/{id}/reset-password', ...)`?
-        // Let's assume `/api/change-password` exists or fix it if 404.
-        // I'll leave it as is for now, but update login call below.
-        
-        $response = $this->jsonAs($user, 'POST', '/api/change-password', [
+        $response = $this->jsonAs($user, 'POST', '/api/auth/change-password', [
             'current_password' => 'oldpassword',
             'new_password' => 'newpassword123',
             'new_password_confirmation' => 'newpassword123',
         ]);
-
-        // If this 404s, I'll need to check routes.
-        
-        // $response->assertStatus(200)
-        //    ->assertJson(['message' => 'Password changed successfully']);
+        $response->assertStatus(200)
+            ->assertJson(['message' => 'Password changed successfully']);
 
         // Verify new password works
         $loginResponse = $this->postJson('/api/auth/login', [
@@ -215,7 +206,7 @@ class AuthenticationTest extends TestCase
             'password' => 'newpassword123',
         ]);
 
-        // $loginResponse->assertStatus(200);
+        $loginResponse->assertStatus(200);
     }
 
     /** @test */
@@ -227,14 +218,14 @@ class AuthenticationTest extends TestCase
 
         $this->actingAsUser($user);
 
-        $response = $this->jsonAs($user, 'POST', '/api/change-password', [
+        $response = $this->jsonAs($user, 'POST', '/api/auth/change-password', [
             'current_password' => 'wrongpassword',
             'new_password' => 'newpassword123',
             'new_password_confirmation' => 'newpassword123',
         ]);
 
-        // $response->assertStatus(422)
-        //    ->assertJsonValidationErrors(['current_password']);
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['current_password']);
     }
 
     /** @test */

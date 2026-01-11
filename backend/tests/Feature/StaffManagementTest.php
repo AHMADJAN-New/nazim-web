@@ -29,12 +29,10 @@ class StaffManagementTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'data' => [
-                    '*' => ['id', 'full_name', 'staff_code', 'employment_status'],
-                ],
+                '*' => ['id', 'first_name', 'father_name', 'staff_code', 'status'],
             ]);
 
-        $this->assertCount(5, $response->json('data'));
+        $this->assertCount(5, $response->json());
     }
 
     /** @test */
@@ -42,35 +40,35 @@ class StaffManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
-        $staffType = StaffType::factory()->create(['organization_id' => $organization->id]);
+        $staffType = StaffType::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
 
         $staffData = [
-            'full_name' => 'Mohammad Ali',
+            'employee_id' => 'EMP-1001',
+            'first_name' => 'Mohammad',
             'father_name' => 'Ali Ahmad',
+            'grandfather_name' => 'Hassan',
             'email' => 'mohammad@example.com',
-            'phone' => '+93700123456',
-            'gender' => 'male',
+            'phone_number' => '+93700123456',
             'birth_date' => '1990-01-15',
-            'age' => 34,
-            'nationality' => 'Afghan',
             'tazkira_number' => '1234567890',
             'staff_type_id' => $staffType->id,
-            'hire_date' => now()->toDateString(),
-            'employment_status' => 'active',
-            'salary' => 25000,
-            'qualification' => 'bachelors',
-            'experience_years' => 5,
-            'address' => 'Kabul, Afghanistan',
+            'status' => 'active',
+            'salary' => '25000',
+            'home_address' => 'Kabul, Afghanistan',
         ];
 
         $response = $this->jsonAs($user, 'POST', '/api/staff', $staffData);
 
         $response->assertStatus(201)
-            ->assertJsonFragment(['full_name' => 'Mohammad Ali']);
+            ->assertJsonFragment(['first_name' => 'Mohammad']);
 
         $this->assertDatabaseHas('staff', [
-            'full_name' => 'Mohammad Ali',
+            'first_name' => 'Mohammad',
             'email' => 'mohammad@example.com',
         ]);
     }
@@ -85,26 +83,24 @@ class StaffManagementTest extends TestCase
         $staff = Staff::factory()->create([
             'organization_id' => $organization->id,
             'school_id' => $school->id,
-            'full_name' => 'Original Name',
+            'first_name' => 'Original',
         ]);
 
         $response = $this->jsonAs($user, 'PUT', "/api/staff/{$staff->id}", [
-            'full_name' => 'Updated Name',
+            'first_name' => 'Updated',
             'father_name' => $staff->father_name,
             'email' => $staff->email,
-            'phone' => '+93700999888',
-            'gender' => $staff->gender,
+            'phone_number' => '+93700999888',
             'birth_date' => $staff->birth_date,
-            'nationality' => $staff->nationality,
-            'employment_status' => $staff->employment_status,
+            'status' => $staff->status,
         ]);
 
         $response->assertStatus(200);
 
         $this->assertDatabaseHas('staff', [
             'id' => $staff->id,
-            'full_name' => 'Updated Name',
-            'phone' => '+93700999888',
+            'first_name' => 'Updated',
+            'phone_number' => '+93700999888',
         ]);
     }
 
@@ -122,7 +118,7 @@ class StaffManagementTest extends TestCase
 
         $response = $this->jsonAs($user, 'DELETE', "/api/staff/{$staff->id}");
 
-        $response->assertStatus(200);
+        $response->assertStatus(204);
 
         $this->assertSoftDeleted('staff', ['id' => $staff->id]);
     }
@@ -137,7 +133,7 @@ class StaffManagementTest extends TestCase
         Staff::factory()->count(3)->create([
             'organization_id' => $organization->id,
             'school_id' => $school->id,
-            'employment_status' => 'active',
+            'status' => 'active',
         ]);
 
         Staff::factory()->count(2)->inactive()->create([
@@ -150,7 +146,7 @@ class StaffManagementTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        $staff = $response->json('data');
+        $staff = $response->json();
 
         $this->assertCount(3, $staff);
     }
@@ -160,20 +156,22 @@ class StaffManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
-        $staffType = StaffType::factory()->create(['organization_id' => $organization->id]);
+        $staffType = StaffType::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
 
         $response = $this->jsonAs($user, 'POST', '/api/staff', [
-            'full_name' => 'Test Staff',
+            'employee_id' => 'EMP-2001',
+            'first_name' => 'Test',
             'father_name' => 'Test Father',
             'email' => 'test@example.com',
-            'phone' => '+93700000000',
-            'gender' => 'male',
+            'phone_number' => '+93700000000',
             'birth_date' => '1990-01-01',
-            'nationality' => 'Afghan',
             'staff_type_id' => $staffType->id,
-            'hire_date' => now()->toDateString(),
-            'employment_status' => 'active',
+            'status' => 'active',
         ]);
 
         $response->assertStatus(201);
@@ -192,7 +190,10 @@ class StaffManagementTest extends TestCase
 
         $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
-        $staffOrg2 = Staff::factory()->create(['organization_id' => $org2->id]);
+        $staffOrg2 = Staff::factory()->create([
+            'organization_id' => $org2->id,
+            'school_id' => SchoolBranding::factory()->create(['organization_id' => $org2->id])->id,
+        ]);
 
         $response = $this->jsonAs($user1, 'GET', "/api/staff/{$staffOrg2->id}");
 
@@ -212,7 +213,7 @@ class StaffManagementTest extends TestCase
             ['organization_id' => $organization->id, 'default_school_id' => $school1->id],
             $organization,
             $school1,
-            false // Don't give schools.access_all permission
+            false
         );
 
         // Staff belongs to school2
@@ -221,9 +222,11 @@ class StaffManagementTest extends TestCase
             'school_id' => $school2->id,
         ]);
 
-        $response = $this->jsonAs($user, 'GET', "/api/staff/{$staffSchool2->id}");
+        $response = $this->jsonAs($user, 'GET', "/api/staff/{$staffSchool2->id}", [
+            'school_id' => $school2->id,
+        ]);
 
-        $this->assertContains($response->status(), [403, 404]);
+        $response->assertStatus(403);
     }
 
     /** @test */
@@ -239,7 +242,7 @@ class StaffManagementTest extends TestCase
             ['organization_id' => $organization->id],
             $organization,
             $school1,
-            true // Give schools.access_all permission
+            true
         );
 
         // Staff in different schools
@@ -253,11 +256,13 @@ class StaffManagementTest extends TestCase
             'school_id' => $school2->id,
         ]);
 
-        $response = $this->jsonAs($user, 'GET', '/api/staff');
+        $response = $this->jsonAs($user, 'GET', '/api/staff', [
+            'school_id' => $school2->id,
+        ]);
 
         $response->assertStatus(200);
-        $staff = $response->json('data');
+        $staff = $response->json();
 
-        $this->assertGreaterThanOrEqual(2, count($staff));
+        $this->assertCount(1, $staff);
     }
 }

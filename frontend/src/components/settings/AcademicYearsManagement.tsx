@@ -477,19 +477,13 @@ export function AcademicYearsManagement() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="start_date">
-                    {t('academic.academicYears.startDate')} *
-                  </Label>
-                  <CalendarFormField control={control} name="start_date" label={t('academic.academicYears.startDate') + ' *'} />
+                  <CalendarFormField control={control} name="start_date" label={t('academic.academicYears.startDate') + ' *'} required />
                   {errors.start_date && (
                     <p className="text-sm text-destructive">{errors.start_date.message}</p>
                   )}
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="end_date">
-                    {t('academic.academicYears.endDate')} *
-                  </Label>
-                  <CalendarFormField control={control} name="end_date" label={t('academic.academicYears.endDate') + ' *'} />
+                  <CalendarFormField control={control} name="end_date" label={t('academic.academicYears.endDate') + ' *'} required />
                   {errors.end_date && (
                     <p className="text-sm text-destructive">{errors.end_date.message}</p>
                   )}

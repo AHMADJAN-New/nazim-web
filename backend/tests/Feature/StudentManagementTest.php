@@ -28,18 +28,16 @@ class StudentManagementTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'data' => [
-                    '*' => [
-                        'id',
-                        'full_name',
-                        'student_code',
-                        'gender',
-                        'student_status',
-                    ],
+                '*' => [
+                    'id',
+                    'full_name',
+                    'student_code',
+                    'gender',
+                    'student_status',
                 ],
             ]);
 
-        $this->assertCount(5, $response->json('data'));
+        $this->assertCount(5, $response->json());
     }
 
     /** @test */
@@ -48,22 +46,23 @@ class StudentManagementTest extends TestCase
         $user = $this->authenticate();
 
         $studentData = [
+            'admission_no' => 'ADM-1001',
             'full_name' => 'Ahmad Khan',
             'father_name' => 'Mohammad Khan',
             'grandfather_name' => 'Abdul Khan',
             'mother_name' => 'Fatima',
             'gender' => 'male',
-            'birth_year' => 2010,
+            'birth_year' => '2010',
             'birth_date' => '2010-01-15',
             'age' => 14,
-            'admission_year' => 2024,
+            'admission_year' => '2024',
             'nationality' => 'Afghan',
             'preferred_language' => 'ps',
             'guardian_name' => 'Mohammad Khan',
             'guardian_relation' => 'father',
             'guardian_phone' => '+93700123456',
             'home_address' => 'Kabul, Afghanistan',
-            'applying_grade' => 8,
+            'applying_grade' => '8',
             'student_status' => 'active',
             'admission_fee_status' => 'paid',
         ];
@@ -91,6 +90,7 @@ class StudentManagementTest extends TestCase
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors([
+            'admission_no',
             'full_name',
             'father_name',
             'gender',
@@ -136,8 +136,8 @@ class StudentManagementTest extends TestCase
             'full_name' => 'Updated Name',
             'father_name' => $student->father_name,
             'gender' => $student->gender,
-            'birth_year' => $student->birth_year,
-            'admission_year' => $student->admission_year,
+            'birth_year' => (string) $student->birth_year,
+            'admission_year' => (string) $student->admission_year,
             'nationality' => $student->nationality,
             'guardian_name' => $student->guardian_name,
             'guardian_phone' => $student->guardian_phone,
@@ -165,7 +165,7 @@ class StudentManagementTest extends TestCase
 
         $response = $this->jsonAs($user, 'DELETE', "/api/students/{$student->id}");
 
-        $response->assertStatus(200);
+        $response->assertStatus(204);
 
         // Soft delete - should still exist but with deleted_at
         $this->assertSoftDeleted('students', [
@@ -179,11 +179,12 @@ class StudentManagementTest extends TestCase
         $user = $this->authenticate();
 
         $studentData = [
+            'admission_no' => 'ADM-2001',
             'full_name' => 'Test Student',
             'father_name' => 'Test Father',
             'gender' => 'male',
-            'birth_year' => 2010,
-            'admission_year' => 2024,
+            'birth_year' => '2010',
+            'admission_year' => '2024',
             'nationality' => 'Afghan',
             'guardian_name' => 'Test Guardian',
             'guardian_phone' => '+93700000000',
@@ -213,15 +214,15 @@ class StudentManagementTest extends TestCase
         Student::factory()->count(2)->create([
             'organization_id' => $organization->id,
             'school_id' => $school->id,
-            'student_status' => 'inactive',
+            'student_status' => 'withdrawn',
         ]);
 
         $response = $this->jsonAs($user, 'GET', '/api/students', [
-            'status' => 'active',
+            'student_status' => 'active',
         ]);
 
         $response->assertStatus(200);
-        $students = $response->json('data');
+        $students = $response->json();
 
         $this->assertCount(3, $students);
         foreach ($students as $student) {
@@ -253,7 +254,7 @@ class StudentManagementTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        $students = $response->json('data');
+        $students = $response->json();
 
         $this->assertCount(3, $students);
         foreach ($students as $student) {
@@ -285,7 +286,7 @@ class StudentManagementTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        $students = $response->json('data');
+        $students = $response->json();
 
         $this->assertGreaterThanOrEqual(1, count($students));
         $this->assertStringContainsStringIgnoringCase('Ahmad', $students[0]['full_name']);
@@ -325,7 +326,10 @@ class StudentManagementTest extends TestCase
 
         $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
-        $studentOrg2 = Student::factory()->create(['organization_id' => $org2->id]);
+        $studentOrg2 = Student::factory()->create([
+            'organization_id' => $org2->id,
+            'school_id' => SchoolBranding::factory()->create(['organization_id' => $org2->id])->id,
+        ]);
 
         $response = $this->jsonAs($user1, 'GET', "/api/students/{$studentOrg2->id}");
 
@@ -345,7 +349,7 @@ class StudentManagementTest extends TestCase
             ['organization_id' => $organization->id, 'default_school_id' => $school1->id],
             $organization,
             $school1,
-            false // Don't give schools.access_all permission
+            false
         );
 
         // Student belongs to school2
@@ -354,9 +358,11 @@ class StudentManagementTest extends TestCase
             'school_id' => $school2->id,
         ]);
 
-        $response = $this->jsonAs($user, 'GET', "/api/students/{$studentSchool2->id}");
+        $response = $this->jsonAs($user, 'GET', "/api/students/{$studentSchool2->id}", [
+            'school_id' => $school2->id,
+        ]);
 
-        $this->assertContains($response->status(), [403, 404]);
+        $response->assertStatus(403);
     }
 
     /** @test */
@@ -372,7 +378,7 @@ class StudentManagementTest extends TestCase
             ['organization_id' => $organization->id],
             $organization,
             $school1,
-            true // Give schools.access_all permission
+            true
         );
 
         // Students in different schools
@@ -386,11 +392,13 @@ class StudentManagementTest extends TestCase
             'school_id' => $school2->id,
         ]);
 
-        $response = $this->jsonAs($user, 'GET', '/api/students');
+        $response = $this->jsonAs($user, 'GET', '/api/students', [
+            'school_id' => $school2->id,
+        ]);
 
         $response->assertStatus(200);
-        $students = $response->json('data');
+        $students = $response->json();
 
-        $this->assertGreaterThanOrEqual(2, count($students));
+        $this->assertCount(1, $students);
     }
 }

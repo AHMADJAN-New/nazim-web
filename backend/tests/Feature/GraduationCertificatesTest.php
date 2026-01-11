@@ -11,9 +11,8 @@ use App\Models\IssuedCertificate;
 use App\Models\Organization;
 use App\Models\SchoolBranding;
 use App\Models\Student;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class GraduationCertificatesTest extends TestCase
@@ -26,7 +25,7 @@ class GraduationCertificatesTest extends TestCase
     public function test_verify_endpoint_returns_not_found_for_invalid_hash(): void
     {
         $response = $this->getJson('/api/verify/certificate/not-a-real-hash');
-        $response->assertStatus(404);
+        $response->assertStatus(400);
         $response->assertJsonStructure(['status', 'message']);
         $response->assertJson(['status' => 'invalid']);
     }
@@ -45,9 +44,18 @@ class GraduationCertificatesTest extends TestCase
      */
     public function test_graduation_batch_list_requires_permission(): void
     {
-        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $user = $this->createUser(
+            [],
+            ['organization_id' => $organization->id],
+            $organization,
+            $school,
+            null,
+            ['withRole' => false]
+        );
 
-        $response = $this->actingAs($user)->getJson('/api/graduation/batches');
+        $response = $this->actingAsUser($user)->getJson('/api/graduation/batches');
 
         $response->assertStatus(403);
         $response->assertJson(['error' => 'This action is unauthorized']);
@@ -62,32 +70,38 @@ class GraduationCertificatesTest extends TestCase
         // Setup: Create organization, school, exam, and graduation batch
         $org = Organization::factory()->create();
         $school = SchoolBranding::factory()->create(['organization_id' => $org->id]);
-        $academicYear = AcademicYear::factory()->create(['organization_id' => $org->id]);
-        $class = ClassModel::factory()->create(['organization_id' => $org->id]);
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $org->id,
+            'school_id' => $school->id,
+        ]);
+        $class = ClassModel::factory()->create([
+            'organization_id' => $org->id,
+            'school_id' => $school->id,
+        ]);
 
         $exam = Exam::factory()->create([
             'organization_id' => $org->id,
+            'school_id' => $school->id,
             'academic_year_id' => $academicYear->id,
             'status' => Exam::STATUS_COMPLETED,
         ]);
 
-        $batch = GraduationBatch::factory()->create([
+        GraduationBatch::create([
             'organization_id' => $org->id,
             'school_id' => $school->id,
             'academic_year_id' => $academicYear->id,
             'class_id' => $class->id,
             'exam_id' => $exam->id,
+            'graduation_date' => now()->toDateString(),
+            'created_by' => (string) Str::uuid(),
         ]);
 
-        $user = User::factory()->create();
-        Permission::create(['name' => 'exams.update', 'guard_name' => 'web']);
-        $user->givePermissionTo('exams.update');
+        $user = $this->authenticate([], ['organization_id' => $org->id], $org, $school);
 
         // Attempt to change exam status from completed to in_progress
-        $response = $this->actingAs($user)
-            ->postJson("/api/exams/{$exam->id}/status", [
-                'status' => Exam::STATUS_IN_PROGRESS,
-            ]);
+        $response = $this->jsonAs($user, 'POST', "/api/exams/{$exam->id}/status", [
+            'status' => Exam::STATUS_IN_PROGRESS,
+        ]);
 
         $response->assertStatus(422);
         $response->assertJsonFragment([
@@ -103,22 +117,30 @@ class GraduationCertificatesTest extends TestCase
         $org = Organization::factory()->create();
         $school = SchoolBranding::factory()->create(['organization_id' => $org->id]);
         $student = Student::factory()->create(['organization_id' => $org->id, 'school_id' => $school->id]);
-        $template = CertificateTemplate::factory()->create([
+        $template = CertificateTemplate::create([
             'organization_id' => $org->id,
             'school_id' => $school->id,
+            'name' => 'Graduation Template',
+            'layout_config' => CertificateTemplate::getDefaultLayout(),
+            'is_default' => true,
+            'is_active' => true,
         ]);
 
-        $certificate = IssuedCertificate::factory()->create([
+        $verificationHash = hash('sha256', 'revoked-certificate');
+        IssuedCertificate::create([
             'organization_id' => $org->id,
             'school_id' => $school->id,
             'template_id' => $template->id,
             'student_id' => $student->id,
-            'verification_hash' => 'test-hash-123',
+            'certificate_no' => 'NZM-GRAD-2024-0002',
+            'verification_hash' => $verificationHash,
+            'issued_by' => (string) Str::uuid(),
+            'issued_at' => now(),
             'revoked_at' => now(),
             'revoke_reason' => 'Test revocation',
         ]);
 
-        $response = $this->getJson('/api/verify/certificate/test-hash-123');
+        $response = $this->getJson("/api/verify/certificate/{$verificationHash}");
 
         $response->assertStatus(200);
         $response->assertJson(['status' => 'revoked']);
@@ -145,22 +167,29 @@ class GraduationCertificatesTest extends TestCase
             'school_id' => $school->id,
             'full_name' => 'John Doe',
         ]);
-        $template = CertificateTemplate::factory()->create([
+        $template = CertificateTemplate::create([
             'organization_id' => $org->id,
             'school_id' => $school->id,
+            'name' => 'Graduation Template',
+            'layout_config' => CertificateTemplate::getDefaultLayout(),
+            'is_default' => true,
+            'is_active' => true,
         ]);
 
-        $certificate = IssuedCertificate::factory()->create([
+        $verificationHash = hash('sha256', 'valid-certificate');
+        IssuedCertificate::create([
             'organization_id' => $org->id,
             'school_id' => $school->id,
             'template_id' => $template->id,
             'student_id' => $student->id,
             'certificate_no' => 'NZM-GRAD-2024-0001',
-            'verification_hash' => 'valid-hash-456',
+            'verification_hash' => $verificationHash,
+            'issued_by' => (string) Str::uuid(),
+            'issued_at' => now(),
             'revoked_at' => null,
         ]);
 
-        $response = $this->getJson('/api/verify/certificate/valid-hash-456');
+        $response = $this->getJson("/api/verify/certificate/{$verificationHash}");
 
         $response->assertStatus(200);
         $response->assertJson([
@@ -169,6 +198,6 @@ class GraduationCertificatesTest extends TestCase
             'school_name' => 'Test School',
             'certificate_no' => 'NZM-GRAD-2024-0001',
         ]);
-        $response->assertJsonMissing(['revoked_at']);
+        $response->assertJson(['revoked_at' => null]);
     }
 }

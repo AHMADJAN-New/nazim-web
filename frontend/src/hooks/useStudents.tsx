@@ -306,6 +306,25 @@ export const useUploadStudentDocument = () => {
   });
 };
 
+export const usePrintStudentProfile = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (studentId: string) => {
+      const response = await studentsApi.printProfile(studentId);
+      // Open PDF in new window
+      const blob = new Blob([response], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      // Clean up URL after a delay
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to generate student profile PDF.');
+    },
+  });
+};
+
 export const useDeleteStudentDocument = () => {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
