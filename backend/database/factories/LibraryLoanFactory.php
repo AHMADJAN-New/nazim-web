@@ -2,9 +2,11 @@
 
 namespace Database\Factories;
 
-use App\Models\LibraryLoan;
+use App\Models\LibraryBook;
 use App\Models\LibraryCopy;
+use App\Models\LibraryLoan;
 use App\Models\Student;
+use App\Models\Organization;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -14,18 +16,21 @@ class LibraryLoanFactory extends Factory
 
     public function definition(): array
     {
-        $borrowedDate = fake()->dateTimeBetween('-30 days', 'now');
+        $organization = Organization::factory();
+        $book = LibraryBook::factory()->create(['organization_id' => $organization->id]);
+        $copy = LibraryCopy::factory()->create(['book_id' => $book->id]);
+        $loanDate = fake()->dateTimeBetween('-30 days', 'now');
 
         return [
             'id' => (string) Str::uuid(),
-            'library_copy_id' => LibraryCopy::factory(),
-            'student_id' => Student::factory(),
-            'borrowed_date' => $borrowedDate,
-            'due_date' => (clone $borrowedDate)->modify('+14 days'),
-            'returned_date' => null,
-            'status' => 'borrowed',
-            'fine_amount' => 0,
-            'remarks' => fake()->optional()->sentence(),
+            'organization_id' => $organization->id,
+            'book_id' => $book->id,
+            'book_copy_id' => $copy->id,
+            'student_id' => Student::factory()->state(['organization_id' => $organization->id]),
+            'loan_date' => $loanDate,
+            'due_date' => (clone $loanDate)->modify('+14 days'),
+            'returned_at' => null,
+            'notes' => fake()->optional()->sentence(),
         ];
     }
 
@@ -33,8 +38,7 @@ class LibraryLoanFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'status' => 'returned',
-                'returned_date' => now(),
+                'returned_at' => now(),
             ];
         });
     }
@@ -44,8 +48,6 @@ class LibraryLoanFactory extends Factory
         return $this->state(function (array $attributes) {
             return [
                 'due_date' => now()->subDays(5),
-                'status' => 'overdue',
-                'fine_amount' => 50,
             ];
         });
     }

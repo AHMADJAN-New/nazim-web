@@ -42,6 +42,22 @@ abstract class TestCase extends BaseTestCase
         return $user;
     }
 
+    protected function createUser(array $attributes = [])
+    {
+        return User::factory()->create($attributes);
+    }
+
+    protected function actingAsUser($user)
+    {
+        Sanctum::actingAs($user);
+        return $this;
+    }
+
+    protected function jsonAs($user, $method, $uri, array $data = [], array $headers = [])
+    {
+        return $this->actingAs($user)->json($method, $uri, $data, $headers);
+    }
+
     protected function getUserOrganization($user)
     {
         return $user->profile->organization;

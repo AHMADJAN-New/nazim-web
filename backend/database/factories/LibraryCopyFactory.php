@@ -15,12 +15,10 @@ class LibraryCopyFactory extends Factory
     {
         return [
             'id' => (string) Str::uuid(),
-            'library_book_id' => LibraryBook::factory(),
-            'copy_number' => fake()->unique()->numerify('COPY-####'),
-            'barcode' => fake()->unique()->ean13(),
+            'book_id' => LibraryBook::factory(),
+            'copy_code' => fake()->unique()->numerify('COPY-####'),
             'status' => 'available',
-            'condition' => fake()->randomElement(['excellent', 'good', 'fair', 'poor']),
-            'location' => fake()->randomElement(['Shelf A1', 'Shelf B2', 'Shelf C3']),
+            'acquired_at' => now(),
         ];
     }
 

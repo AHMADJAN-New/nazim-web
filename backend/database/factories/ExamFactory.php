@@ -4,7 +4,9 @@ namespace Database\Factories;
 
 use App\Models\AcademicYear;
 use App\Models\Exam;
+use App\Models\ExamType;
 use App\Models\Organization;
+use App\Models\SchoolBranding;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -19,12 +21,26 @@ class ExamFactory extends Factory
         return [
             'id' => (string) Str::uuid(),
             'organization_id' => $organization,
-            'academic_year_id' => AcademicYear::factory()->for($organization),
-            'exam_name' => fake()->randomElement(['Midterm', 'Final', 'Quiz']) . ' ' . fake()->word(),
-            'exam_type' => fake()->randomElement(['midterm', 'final', 'quiz', 'monthly']),
+            'school_id' => function (array $attributes) {
+                return SchoolBranding::factory()->create([
+                    'organization_id' => $attributes['organization_id']
+                ])->id;
+            },
+            'academic_year_id' => function (array $attributes) {
+                return AcademicYear::factory()->create([
+                    'organization_id' => $attributes['organization_id'],
+                    'school_id' => $attributes['school_id']
+                ])->id;
+            },
+            'exam_type_id' => function (array $attributes) {
+                return ExamType::factory()->create([
+                    'organization_id' => $attributes['organization_id']
+                ])->id;
+            },
+            'name' => fake()->randomElement(['Midterm', 'Final', 'Quiz']) . ' ' . fake()->word(),
             'start_date' => now()->addDays(7),
             'end_date' => now()->addDays(14),
-            'status' => 'scheduled',
+            'status' => 'draft',
             'description' => fake()->sentence(),
         ];
     }

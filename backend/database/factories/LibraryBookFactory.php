@@ -23,11 +23,9 @@ class LibraryBookFactory extends Factory
             'title' => fake()->sentence(3),
             'author' => fake()->name(),
             'isbn' => fake()->isbn13(),
-            'publisher' => fake()->company(),
-            'publication_year' => fake()->numberBetween(1990, 2024),
-            'language' => fake()->randomElement(['English', 'Arabic', 'Pashto', 'Farsi']),
-            'pages' => fake()->numberBetween(100, 1000),
             'description' => fake()->paragraph(),
+            'price' => fake()->randomFloat(2, 10, 100),
+            'default_loan_days' => 14,
         ];
     }
 }
