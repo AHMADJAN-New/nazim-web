@@ -86,6 +86,11 @@ const buildLocation = (province?: string | null, district?: string | null, villa
   return parts.length ? parts.join(', ') : '—';
 };
 
+const buildLocationFromObject = (location?: { province: string | null; district: string | null; village: string | null } | null) => {
+  if (!location) return '—';
+  return buildLocation(location.province, location.district, location.village);
+};
+
 const StaffReport = () => {
   const { t, isRTL } = useLanguage();
   const { data: profile } = useProfile();
@@ -169,28 +174,34 @@ const StaffReport = () => {
         father_name: member.fatherName || '—',
         grandfather_name: member.grandfatherName || '—',
         tazkira_number: member.tazkiraNumber || '—',
-        birth_date: member.birthDate ? new Date(member.birthDate).toISOString().split('T')[0] : '—',
+        birth_date: member.birthDate
+          ? new Date(member.birthDate).toISOString().split('T')[0]
+          : member.dateOfBirth
+            ? member.dateOfBirth.toISOString().split('T')[0]
+            : '—',
         birth_year: member.birthYear || '—',
         phone_number: member.phoneNumber || '—',
         email: member.email || '—',
         home_address: member.homeAddress || '—',
-        staff_type: member.staffType?.name || member.staffType || '—',
+        staff_type: member.staffTypeRelation?.name || member.staffType || '—',
         position: member.position || '—',
         duty: member.duty || '—',
         salary: member.salary || '—',
         teaching_section: member.teachingSection || '—',
-        school: schools?.find(s => s.id === member.schoolId)?.schoolName || '—',
+        school: member.school?.schoolName || schools?.find(s => s.id === member.schoolId)?.schoolName || '—',
         organization: member.organization?.name || '—',
-        origin_location: buildLocation(member.originProvince, member.originDistrict, member.originVillage),
-        current_location: buildLocation(member.currentProvince, member.currentDistrict, member.currentVillage),
-        religious_education: member.religiousEducation || '—',
-        religious_institution: member.religiousUniversity || '—',
-        religious_graduation_year: member.religiousGraduationYear || '—',
-        religious_department: member.religiousDepartment || '—',
-        modern_education: member.modernEducation || '—',
-        modern_institution: member.modernSchoolUniversity || '—',
-        modern_graduation_year: member.modernGraduationYear || '—',
-        modern_department: member.modernDepartment || '—',
+        origin_location: buildLocationFromObject(member.originLocation),
+        current_location: buildLocationFromObject(member.currentLocation),
+
+        // IMPORTANT: Export education fields as plain strings (not nested objects)
+        religious_education: member.religiousEducation?.level || '—',
+        religious_institution: member.religiousEducation?.institution || '—',
+        religious_graduation_year: member.religiousEducation?.graduationYear || '—',
+        religious_department: member.religiousEducation?.department || '—',
+        modern_education: member.modernEducation?.level || '—',
+        modern_institution: member.modernEducation?.institution || '—',
+        modern_graduation_year: member.modernEducation?.graduationYear || '—',
+        modern_department: member.modernEducation?.department || '—',
         notes: member.notes || '—',
       };
     });

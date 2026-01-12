@@ -6,6 +6,7 @@ import App from './App.tsx'
 import './index.css'
 // DISABLED: Console replacer causes infinite logging loop
 // import './lib/console-replacer' // Initialize logging system
+
 import { RootBootstrap } from './RootBootstrap';
 
 import { DatePreferenceProvider } from '@/hooks/useDatePreference';

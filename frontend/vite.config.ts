@@ -14,67 +14,30 @@ export default defineConfig({
     },
   },
   build: {
+    // Use emptyOutDir: false to avoid permission issues with existing files
+    // The build will overwrite files it can, and skip files it can't
+    emptyOutDir: false,
     commonjsOptions: {
       include: [/pdfmake-arabic/, /pdfmake/, /node_modules/],
       transformMixedEsModules: true,
     },
     rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          // Split pdfmake into its own chunk
-          if (id.includes('pdfmake') || id.includes('pdfmake-arabic')) {
-            return 'pdfmake';
-          }
-          
-          // Split large vendor libraries into separate chunks
-          if (id.includes('node_modules')) {
-            // React and React DOM
-            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
-              return 'react-vendor';
-            }
-            
-            // React Router
-            if (id.includes('react-router')) {
-              return 'router';
-            }
-            
-            // TanStack Query
-            if (id.includes('@tanstack')) {
-              return 'tanstack';
-            }
-            
-            // Recharts (large charting library)
-            if (id.includes('recharts')) {
-              return 'charts';
-            }
-            
-            // Radix UI components
-            if (id.includes('@radix-ui')) {
-              return 'radix-ui';
-            }
-            
-            // Date libraries
-            if (id.includes('date-fns') || id.includes('dayjs') || id.includes('moment')) {
-              return 'date-utils';
-            }
-            
-            // Other large libraries
-            if (id.includes('shepherd.js')) {
-              return 'shepherd';
-            }
-            
-            if (id.includes('jszip') || id.includes('xlsx')) {
-              return 'file-utils';
-            }
-            
-            // All other node_modules go into vendor chunk
-            return 'vendor';
-          }
-        },
+      /**
+       * CRITICAL: Avoid aggressive manual chunking.
+       * This project previously hit runtime init errors like:
+       * - "Cannot access '<var>' before initialization"
+       *
+       * Those are often caused by circular chunk dependencies created by manualChunks.
+       * Let Rollup/Vite decide chunk boundaries automatically for stable runtime ordering.
+       */
+      onwarn(warning, warn) {
+        // Keep logs clean for node_modules circular deps (usually harmless)
+        if (warning.code === 'CIRCULAR_DEPENDENCY' && warning.ids?.some(id => id.includes('node_modules'))) {
+          return;
+        }
+        warn(warning);
       },
     },
-    // Increase chunk size warning limit (we're splitting manually)
-    chunkSizeWarningLimit: 1000,
   },
   optimizeDeps: {
     include: [
@@ -84,6 +47,7 @@ export default defineConfig({
       'recharts',
       'jszip',
       'shepherd.js',
+      'date-fns', // Pre-bundle date-fns to avoid circular dependency issues
     ],
     exclude: [
       'pdfmake-arabic',
@@ -93,10 +57,8 @@ export default defineConfig({
       // Handle CommonJS modules
       target: 'es2020',
     },
-    // Force re-optimization when dependencies change
-    // Set to true to force re-optimization (useful when cache issues occur)
-    // After restarting dev server, set back to false for better performance
-    force: true, // Temporarily set to true to fix cache issues
+    // Don't force re-optimization by default
+    force: false,
   },
   server: {
     port: 5173,

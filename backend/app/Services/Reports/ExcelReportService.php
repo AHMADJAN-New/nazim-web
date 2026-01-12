@@ -34,6 +34,36 @@ use PhpOffice\PhpSpreadsheet\Worksheet\HeaderFooter;
  */
 class ExcelReportService
 {
+    /**
+     * PhpSpreadsheet cannot bind arrays/objects to a cell; convert to a safe scalar.
+     *
+     * @return string|int|float|bool
+     */
+    private function normalizeSpreadsheetValue(mixed $value): string|int|float|bool
+    {
+        // Match PDF behavior for empty cells
+        if ($value === null || $value === '') {
+            return '—';
+        }
+
+        // Preserve numeric/bool types where possible (Excel treats them correctly)
+        if (is_int($value) || is_float($value) || is_bool($value)) {
+            return $value;
+        }
+
+        // Date objects -> string
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d H:i');
+        }
+
+        // Arrays/objects -> JSON string (RTL-safe, readable, no escaping noise)
+        if (is_array($value) || is_object($value)) {
+            return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '—';
+        }
+
+        // Fallback: stringify
+        return (string) $value;
+    }
     public function __construct(
         private FileStorageService $fileStorageService
     ) {}
@@ -495,10 +525,8 @@ class ExcelReportService
                     $value = $row[$key] ?? (isset($row[$colIndex - 2]) ? $row[$colIndex - 2] : '');
                 }
 
-                // Show "—" for empty/null values (matches PDF behavior)
-                if ($value === null || $value === '') {
-                    $value = '—';
-                }
+                // Normalize to spreadsheet-safe scalar; PhpSpreadsheet cannot bind arrays/objects.
+                $value = $this->normalizeSpreadsheetValue($value);
 
                 $sheet->getCell("{$colLetter}{$currentRow}")->setValue($value);
                 $colIndex++;
@@ -586,7 +614,8 @@ class ExcelReportService
                     }
                 }
                 
-                $sheet->getCell("{$colLetter}{$totalsRow}")->setValue($value);
+                // Totals row can also contain arrays if caller passes computed structures
+                $sheet->getCell("{$colLetter}{$totalsRow}")->setValue($this->normalizeSpreadsheetValue($value));
                 $colIndex++;
             }
             

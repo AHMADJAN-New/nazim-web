@@ -129,6 +129,16 @@ class PdfReportService
                 'disable-web-security', // Allow loading fonts from data URLs
             ]); // Required for Linux environments without proper sandbox support (no -- prefix, Browsershot adds it)
 
+        // Set Chrome/Chromium path if puppeteer is installed
+        // Browsershot will use the Chrome from puppeteer if available
+        $chromePath = $this->findChromePath();
+        if ($chromePath) {
+            \Log::info("Using Chrome path: {$chromePath}");
+            $browsershot->setChromePath($chromePath);
+        } else {
+            \Log::warning("Chrome not found, Browsershot will try to find it automatically");
+        }
+
         // Set orientation
         if ($orientation === 'landscape') {
             $browsershot->landscape();
@@ -264,6 +274,81 @@ class PdfReportService
 </body>
 </html>
 HTML;
+    }
+
+    /**
+     * Find Chrome/Chromium executable path
+     * Checks puppeteer cache first, then system paths
+     * 
+     * Priority:
+     * 1. Environment variable PUPPETEER_CHROME_PATH
+     * 2. /home/nazim/.cache/puppeteer (where it was installed)
+     * 3. Other possible cache directories
+     * 4. System-installed Chrome/Chromium
+     */
+    private function findChromePath(): ?string
+    {
+        // Check environment variable first (allows override)
+        // Use env() helper for Laravel, fallback to getenv() for CLI
+        $envChromePath = env('PUPPETEER_CHROME_PATH') ?: getenv('PUPPETEER_CHROME_PATH');
+        if ($envChromePath && is_file($envChromePath) && is_executable($envChromePath)) {
+            \Log::info("Using Chrome from PUPPETEER_CHROME_PATH: {$envChromePath}");
+            return $envChromePath;
+        }
+        
+        // Check multiple possible locations for puppeteer cache
+        $possibleCacheDirs = [
+            '/home/nazim/.cache/puppeteer',  // User home directory (where it was installed)
+            '/var/www/.cache/puppeteer',      // Web server directory
+            getenv('HOME') . '/.cache/puppeteer' ?: null,
+            '/root/.cache/puppeteer',         // Root user
+        ];
+        
+        // Filter out null values and non-existent directories
+        $possibleCacheDirs = array_filter($possibleCacheDirs, function($dir) {
+            return $dir !== null && is_dir($dir);
+        });
+        
+        // Look for chrome-headless-shell in puppeteer cache
+        $chromePaths = [];
+        
+        foreach ($possibleCacheDirs as $puppeteerCache) {
+            // Try chrome-headless-shell first (newer, lighter)
+            $chromePaths[] = $puppeteerCache . '/chrome-headless-shell/linux-*/chrome-headless-shell-linux64/chrome-headless-shell';
+            // Fallback to full Chrome
+            $chromePaths[] = $puppeteerCache . '/chrome/linux-*/chrome-linux64/chrome';
+        }
+        
+        // Add system paths
+        $chromePaths = array_merge($chromePaths, [
+            '/usr/bin/google-chrome',
+            '/usr/bin/chromium',
+            '/usr/bin/chromium-browser',
+            '/snap/bin/chromium',
+            '/usr/bin/google-chrome-stable',
+        ]);
+
+        foreach ($chromePaths as $pattern) {
+            $matches = glob($pattern);
+            if (!empty($matches)) {
+                // Sort matches to get the latest version first
+                rsort($matches);
+                foreach ($matches as $chromePath) {
+                    if (is_file($chromePath) && is_executable($chromePath)) {
+                        \Log::info("Found Chrome at: {$chromePath}");
+                        return $chromePath;
+                    }
+                }
+            }
+        }
+
+        \Log::warning("Chrome not found in any of the checked paths", [
+            'checked_paths' => $chromePaths,
+            'possible_cache_dirs' => array_values($possibleCacheDirs),
+            'env_chrome_path' => $envChromePath,
+        ]);
+
+        return null;
     }
 
     /**
