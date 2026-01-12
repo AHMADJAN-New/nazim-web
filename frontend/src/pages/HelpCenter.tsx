@@ -15,7 +15,6 @@ import {
   X,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
-import ReactMarkdown from 'react-markdown';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';

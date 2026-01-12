@@ -6,14 +6,81 @@ export type Language = 'en' | 'ps' | 'fa' | 'ar';
 // Re-export TranslationKeys type for convenience
 export type { TranslationKeys } from './translations/types';
 
-// Import translations from separate files
-import { ar } from './translations/ar';
-import { en } from './translations/en';
-import { fa } from './translations/fa';
-import { ps } from './translations/ps';
+// Lazy load translations to reduce initial bundle size (3.3 MB total)
+// Only load the active language + English (fallback)
+let translationsCache: Record<Language, any> | null = null;
+let loadedLanguages: Set<Language> = new Set();
+let loadingPromises: Map<Language, Promise<any>> = new Map();
 
-// Translation dictionary
-export const translations = { en, ps, fa, ar };
+// Load translation file dynamically
+export async function loadTranslation(lang: Language): Promise<any> {
+  if (loadedLanguages.has(lang) && translationsCache?.[lang]) {
+    return translationsCache[lang];
+  }
+
+  // If already loading, return the existing promise
+  if (loadingPromises.has(lang)) {
+    return loadingPromises.get(lang)!;
+  }
+
+  const loadPromise = (async () => {
+    let translation: any;
+    switch (lang) {
+      case 'en':
+        translation = (await import('./translations/en')).en;
+        break;
+      case 'ps':
+        translation = (await import('./translations/ps')).ps;
+        break;
+      case 'fa':
+        translation = (await import('./translations/fa')).fa;
+        break;
+      case 'ar':
+        translation = (await import('./translations/ar')).ar;
+        break;
+      default:
+        translation = (await import('./translations/en')).en;
+    }
+
+    if (!translationsCache) {
+      translationsCache = {} as Record<Language, any>;
+    }
+    translationsCache[lang] = translation;
+    loadedLanguages.add(lang);
+    loadingPromises.delete(lang);
+    return translation;
+  })();
+
+  loadingPromises.set(lang, loadPromise);
+  return loadPromise;
+}
+
+// Initialize with English (always needed as fallback) - load synchronously
+// Import English immediately since it's always needed as fallback
+import { en } from './translations/en';
+
+let translations: Record<Language, any> = {
+  en: en, // English loaded immediately
+  ps: null,
+  fa: null,
+  ar: null,
+};
+
+// Initialize cache with English
+if (!translationsCache) {
+  translationsCache = {} as Record<Language, any>;
+}
+translationsCache.en = en;
+loadedLanguages.add('en');
+
+// Synchronous access (may return English if language not loaded yet)
+function getTranslationsSync(lang: Language): Record<string, any> {
+  if (translationsCache?.[lang]) {
+    return translationsCache[lang];
+  }
+  // Return English as fallback if language not loaded
+  return translationsCache?.en || {};
+}
 
 // RTL languages
 export const RTL_LANGUAGES: Language[] = ['ar', 'ps', 'fa'];
@@ -53,9 +120,19 @@ function humanizeKeyLastSegment(key: string): string {
 // Get translation function
 export function t(key: string, lang: Language = 'en', params?: Record<string, string | number>): string {
   // Always default to English if language is not available
-  const safeLang = lang && translations[lang] ? lang : 'en';
+  const safeLang = lang && ['en', 'ps', 'fa', 'ar'].includes(lang) ? lang : 'en';
   const keys = key.split('.');
-  let value: unknown = translations[safeLang];
+  
+  // Get translations (may trigger lazy load)
+  const langTranslations = getTranslationsSync(safeLang);
+  let value: unknown = langTranslations;
+  
+  // If language not loaded yet, trigger async load (but continue with English)
+  if (!loadedLanguages.has(safeLang) && safeLang !== 'en') {
+    loadTranslation(safeLang).catch(() => {
+      // Silently fail - will use English fallback
+    });
+  }
 
   // Try to get translation from requested language
   for (let i = 0; i < keys.length; i++) {
@@ -86,7 +163,8 @@ export function t(key: string, lang: Language = 'en', params?: Record<string, st
 
   // If translation not found, try English fallback
   if (typeof value !== 'string' && safeLang !== 'en') {
-    value = translations.en;
+    const enTranslations = getTranslationsSync('en');
+    value = enTranslations;
     for (let i = 0; i < keys.length; i++) {
       if (typeof value !== 'object' || value === null) {
         value = undefined;

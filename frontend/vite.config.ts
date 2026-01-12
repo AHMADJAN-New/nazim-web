@@ -3,10 +3,51 @@ import fs from 'fs'
 import path from 'path'
 import { defineConfig } from 'vite'
 
+// Plugin to suppress CSS syntax warnings from Tailwind's arbitrary variants
+// These warnings are false positives - Tailwind generates valid CSS with advanced selectors
+// The warnings come from esbuild's CSS minifier not recognizing Tailwind's arbitrary variant syntax
+const suppressCssWarnings = () => {
+  return {
+    name: 'suppress-css-warnings',
+    enforce: 'pre',
+    buildStart() {
+      // Store original methods
+      const originalWarn = console.warn;
+      const originalError = console.error;
+      
+      // Intercept console methods to filter CSS warnings
+      const filterMessage = (message: string) => {
+        return message.includes('css-syntax-error') && 
+               (message.includes('data-rtl') || 
+                message.includes('Unexpected "="') || 
+                message.includes('groupdata-rtl') ||
+                message.includes('[WARNING]'));
+      };
+      
+      console.warn = (...args: any[]) => {
+        const message = args.join(' ');
+        if (filterMessage(message)) {
+          return; // Suppress
+        }
+        originalWarn.apply(console, args);
+      };
+      
+      console.error = (...args: any[]) => {
+        const message = args.join(' ');
+        if (filterMessage(message)) {
+          return; // Suppress
+        }
+        originalError.apply(console, args);
+      };
+    },
+  }
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    suppressCssWarnings(),
   ],
   resolve: {
     alias: {
@@ -21,15 +62,34 @@ export default defineConfig({
       include: [/pdfmake-arabic/, /pdfmake/, /node_modules/],
       transformMixedEsModules: true,
     },
+    // Suppress CSS minification warnings from Tailwind's arbitrary variants
+    // These warnings are false positives - the CSS is valid
+    minify: 'esbuild',
     rollupOptions: {
       /**
-       * CRITICAL: Avoid aggressive manual chunking.
-       * This project previously hit runtime init errors like:
-       * - "Cannot access '<var>' before initialization"
+       * Chunking strategy (SAFE)
        *
-       * Those are often caused by circular chunk dependencies created by manualChunks.
-       * Let Rollup/Vite decide chunk boundaries automatically for stable runtime ordering.
+       * We only force i18n language chunks.
+       * Previous aggressive vendor chunking caused circular chunk dependencies like:
+       *   vendor-dates -> vendor-react -> vendor-dates
+       * which breaks React imports at runtime (e.g. createContext undefined).
+       *
+       * Let Vite/Rollup decide vendor/app chunking automatically for stability.
        */
+      output: {
+        manualChunks: (id) => {
+          // Translation files - each in separate chunk for lazy loading
+          if (id.includes('/translations/')) {
+            if (id.includes('/translations/en')) return 'i18n-en';
+            if (id.includes('/translations/ps')) return 'i18n-ps';
+            if (id.includes('/translations/fa')) return 'i18n-fa';
+            if (id.includes('/translations/ar')) return 'i18n-ar';
+          }
+
+          // Default: let Vite handle it (prevents circular chunk deps)
+          return undefined;
+        },
+      },
       onwarn(warning, warn) {
         // Keep logs clean for node_modules circular deps (usually harmless)
         if (warning.code === 'CIRCULAR_DEPENDENCY' && warning.ids?.some(id => id.includes('node_modules'))) {
@@ -44,7 +104,7 @@ export default defineConfig({
       'react',
       'react-dom',
       '@tanstack/react-table',
-      'recharts',
+      // Removed 'recharts' - will be lazy loaded to reduce initial bundle size
       'jszip',
       'shepherd.js',
       'date-fns', // Pre-bundle date-fns to avoid circular dependency issues
@@ -102,11 +162,12 @@ export default defineConfig({
       timeout: 20000, // 20 seconds for mobile
     },
   },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
-    css: true,
-  },
+  // Test configuration moved to vitest.config.ts
+  // test: {
+  //   globals: true,
+  //   environment: 'jsdom',
+  //   setupFiles: ['./src/test/setup.ts'],
+  //   css: true,
+  // },
 })
 

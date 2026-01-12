@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,16 @@ import {
 import { LogIn, UserPlus, Rocket, Mail } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
+import { HeroSection } from './index/HeroSection';
+import { StatsSection } from './index/StatsSection';
+import { ContactSection } from './index/ContactSection';
+import { ContactModal } from './index/ContactModal';
+import { Separator } from '@/components/ui/separator';
+import { LoadingSpinner } from '@/components/ui/loading';
+
+// Lazy load heavy sections for code splitting
+const LazyFeaturesGrid = lazy(() => import('./index/FeaturesGrid').then((m) => ({ default: m.FeaturesGrid })));
+const LazyPricingSection = lazy(() => import('./index/PricingSection').then((m) => ({ default: m.PricingSection })));
 
 interface ContactFormData {
   first_name: string;
@@ -26,13 +36,10 @@ interface ContactFormData {
   message: string;
 }
 
-/**
- * Temporary Index page - displays the Nazim features HTML file
- * This will be replaced with the proper Index page when it's completed
- */
 const Index = () => {
   const navigate = useNavigate();
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
+  const [contactInfoModalOpen, setContactInfoModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -80,7 +87,6 @@ const Index = () => {
   };
 
   const handleRegister = () => {
-    // Register also shows contact form as requested
     setContactDialogOpen(true);
   };
 
@@ -96,10 +102,12 @@ const Index = () => {
                 src="/nazim_logo.jpg"
                 alt="Nazim Logo"
                 className="w-10 h-10 rounded-lg object-contain ring-2 ring-white/20 bg-white/20 p-1"
+                loading="eager"
               />
-              <span 
+              <span
                 className="text-xl font-bold text-[#0b0b56] hidden sm:inline"
                 style={{ fontFamily: "'Bahij Nassim', 'Noto Sans Arabic', 'Amiri', serif" }}
+                dir="rtl"
               >
                 ناظم – د دیني مدارسو د اداري چارو د مدیریت سیستم
               </span>
@@ -139,21 +147,54 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Features HTML Content */}
-      <div style={{ width: '100%', minHeight: 'calc(100vh - 4rem)', margin: 0, padding: 0, overflow: 'auto' }}>
-        <iframe
-          src="/nazim-features.html"
-          style={{
-            width: '100%',
-            minHeight: 'calc(100vh - 4rem)',
-            border: 'none',
-            margin: 0,
-            padding: 0,
-            display: 'block',
-          }}
-          title="Nazim Features"
-        />
+      {/* Main Content */}
+      <div className="w-full min-h-[calc(100vh-4rem)] bg-white">
+        {/* Gold top border */}
+        <div className="h-1.5 bg-gradient-to-r from-[#c9a44d] to-[#f0e6b3] rounded-t-sm" />
+
+        {/* Hero Section */}
+        <HeroSection />
+
+        {/* Stats Section */}
+        <StatsSection />
+
+        {/* Divider */}
+        <div className="px-6">
+          <Separator className="bg-gradient-to-r from-transparent via-[#c9a44d] to-transparent opacity-70 h-0.5" />
+        </div>
+
+        {/* Features Grid - Lazy loaded */}
+        <Suspense
+          fallback={
+            <div className="px-6 py-6">
+              <div className="flex items-center justify-center min-h-[400px]">
+                <LoadingSpinner />
+              </div>
+            </div>
+          }
+        >
+          <LazyFeaturesGrid />
+        </Suspense>
+
+        {/* Pricing Section - Lazy loaded */}
+        <Suspense
+          fallback={
+            <div className="px-6 py-6">
+              <div className="flex items-center justify-center min-h-[400px]">
+                <LoadingSpinner />
+              </div>
+            </div>
+          }
+        >
+          <LazyPricingSection />
+        </Suspense>
+
+        {/* Contact Section */}
+        <ContactSection onContactClick={() => setContactInfoModalOpen(true)} />
       </div>
+
+      {/* Contact Info Modal */}
+      <ContactModal open={contactInfoModalOpen} onOpenChange={setContactInfoModalOpen} />
 
       {/* Contact Form Dialog */}
       <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>

@@ -4082,15 +4082,6 @@ export const en: TranslationKeys = {
     severitySevere: 'Severe',
     sheet: 'Sheet',
     stamp: 'Stamp',
-    status: {
-      label: 'Status',
-      active: 'Active',
-      inactive: 'Inactive',
-      graduated: 'Graduated',
-      withdrawn: 'Withdrawn',
-      applied: 'Applied',
-      admitted: 'Admitted'
-    },
     student: 'Student',
     studentDocuments: 'Student Documents',
     studentFields: 'Student fields',
@@ -4352,7 +4343,7 @@ export const en: TranslationKeys = {
     maintenancePaymentHistory: 'Maintenance Payment History',
     noInvoices: 'No invoices found',
     noPaymentHistory: 'No payment history found',
-    
+
     // Enterprise Contact Form
     enterpriseContact: {
       title: 'Contact Us for Enterprise Plan',

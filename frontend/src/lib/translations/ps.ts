@@ -3258,9 +3258,9 @@ export const ps: TranslationKeys = {
     status: {
       issued: 'issued'
     },
-      nav: {
-        reports: 'reports'
-      },
+    nav: {
+      reports: 'reports'
+    },
     certificates: {
       issued: 'صادر شوې شهادتنامه',
       templates: 'د شهادت نامې قالب'
@@ -4214,15 +4214,6 @@ export const ps: TranslationKeys = {
     severitySevere: 'سخت',
     sheet: 'شیټ',
     stamp: 'مهر',
-    status: {
-      label: 'حالت',
-      active: 'فعال',
-      inactive: 'غیرفعال',
-      graduated: 'فارغ شوی',
-      withdrawn: 'منسحب',
-      applied: 'غوښتونکی',
-      admitted: 'شامل شوی'
-    },
     student: 'زده کوونکی',
     studentDocuments: 'د زده کوونکي اسناد',
     studentFields: 'د زده کوونکي برخې',
@@ -4484,7 +4475,7 @@ export const ps: TranslationKeys = {
     maintenancePaymentHistory: 'د ساتنې د تادیاتو تاریخ',
     noInvoices: 'هیڅ رسید ونه موندل شو',
     noPaymentHistory: 'د تادیاتو تاریخ ونه موندل شو',
-    
+
     // Enterprise Contact Form
     enterpriseContact: {
       title: 'د سوداګریز پلان لپاره موږ سره اړیکه ونیسئ',

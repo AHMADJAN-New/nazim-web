@@ -1,7 +1,7 @@
 // Nazim School Management System - Language Hook
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-import { Language, t, isRTL, getDirection, getFontClass } from '@/lib/i18n';
+import { Language, t, isRTL, getDirection, getFontClass, loadTranslation } from '@/lib/i18n';
 import type { TranslationKey } from '@/lib/translations/keys.generated';
 
 interface LanguageContextType {
@@ -42,8 +42,26 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     if (['en', 'ps', 'fa', 'ar'].includes(lang)) {
       setLanguageState(lang);
       localStorage.setItem('nazim-language', lang);
+      // Pre-load the new language translation
+      loadTranslation(lang).catch(() => {
+        // Silently fail - will use English fallback
+      });
     }
   };
+
+  // Load the initial language translation on mount (if not English)
+  // English is already loaded synchronously in i18n.ts
+  useEffect(() => {
+    if (language !== 'en') {
+      // Delay loading by 100ms to prioritize initial render
+      const timer = setTimeout(() => {
+        loadTranslation(language).catch(() => {
+          // Silently fail - English is already loaded as fallback
+        });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, []); // Only on mount
 
   // Translation function bound to current language
   const translate = (key: TranslationKey, params?: Record<string, string | number>) => {

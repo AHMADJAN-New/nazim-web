@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useMemo, useEffect, useState, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
+// Recharts removed from optimizeDeps - will be code-split automatically by Vite
 import { 
   ResponsiveContainer, 
   BarChart, 

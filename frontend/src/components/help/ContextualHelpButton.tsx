@@ -1,7 +1,9 @@
 import { HelpCircle } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+// Lazy load react-markdown to reduce initial bundle size (351 KB)
+const ReactMarkdown = lazy(() => import('react-markdown'));
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -133,7 +135,9 @@ export function ContextualHelpButton({
                       className="help-content"
                     />
                   ) : (
-                    <ReactMarkdown>{article.content}</ReactMarkdown>
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <ReactMarkdown>{article.content}</ReactMarkdown>
+                    </Suspense>
                   )}
                 </div>
 

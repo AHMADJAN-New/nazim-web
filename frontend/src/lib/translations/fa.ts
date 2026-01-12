@@ -3942,15 +3942,6 @@ export const fa: TranslationKeys = {
     severitySevere: 'شدید',
     sheet: 'شیت',
     stamp: 'مهر',
-    status: {
-      label: 'وضعیت',
-      active: 'فعال',
-      inactive: 'غیرفعال',
-      graduated: 'فارغ‌التحصیل',
-      withdrawn: 'انصراف داده',
-      applied: 'درخواست شده',
-      admitted: 'شامل شده'
-    },
     student: 'شاگرد',
     studentDocuments: 'اسناد شاگرد',
     studentFields: 'فیلدهای شاگرد',
@@ -4212,7 +4203,7 @@ export const fa: TranslationKeys = {
     maintenancePaymentHistory: 'تاریخچه پرداخت نگهداری',
     noInvoices: 'فاکتوری یافت نشد',
     noPaymentHistory: 'تاریخچه پرداختی یافت نشد',
-    
+
     // Enterprise Contact Form
     enterpriseContact: {
       title: 'برای پلان سازمانی با ما تماس بگیرید',
