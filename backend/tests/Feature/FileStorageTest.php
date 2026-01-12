@@ -32,6 +32,7 @@ class FileStorageTest extends TestCase
         
         // Create test organization
         $this->organization = Organization::factory()->create();
+        $this->ensureActiveSubscription($this->organization, 'enterprise');
         
         // Create test profile
         $this->profile = Profile::factory()->create([
@@ -91,7 +92,7 @@ class FileStorageTest extends TestCase
         );
 
         Storage::disk('local')->assertExists($path);
-        $this->assertStringContains("students/{$student->id}/documents/birth_certificate/", $path);
+        $this->assertStringContainsString("students/{$student->id}/documents/birth_certificate/", $path);
     }
 
     // ==============================================
@@ -119,7 +120,7 @@ class FileStorageTest extends TestCase
         
         // Verify public URL can be generated
         $url = $this->fileStorageService->getPublicUrl($path);
-        $this->assertStringContains('/storage/', $url);
+        $this->assertStringContainsString('/storage/', $url);
     }
 
     public function test_staff_document_upload_creates_private_file(): void
@@ -143,7 +144,7 @@ class FileStorageTest extends TestCase
         
         // Verify private download URL
         $url = $this->fileStorageService->getPrivateDownloadUrl($path);
-        $this->assertStringContains('/api/storage/download/', $url);
+        $this->assertStringContainsString('/api/storage/download/', $url);
     }
 
     // ==============================================
@@ -164,7 +165,7 @@ class FileStorageTest extends TestCase
         );
 
         // Verify path includes school_id
-        $this->assertStringContains("organizations/{$this->organization->id}/schools/{$this->schoolId}/dms/incoming/{$documentId}/files/", $path);
+        $this->assertStringContainsString("organizations/{$this->organization->id}/schools/{$this->schoolId}/dms/incoming/{$documentId}/files/", $path);
         Storage::disk('local')->assertExists($path);
     }
 
@@ -185,7 +186,7 @@ class FileStorageTest extends TestCase
             'front'
         );
 
-        $this->assertStringContains("templates/id-cards/{$templateId}/background_front.png", $path);
+        $this->assertStringContainsString("templates/id-cards/{$templateId}/background_front.png", $path);
         Storage::disk('local')->assertExists($path);
     }
 
@@ -201,7 +202,7 @@ class FileStorageTest extends TestCase
             $templateId
         );
 
-        $this->assertStringContains("templates/certificates/{$templateId}/background.jpg", $path);
+        $this->assertStringContainsString("templates/certificates/{$templateId}/background.jpg", $path);
         Storage::disk('local')->assertExists($path);
     }
 
@@ -223,7 +224,7 @@ class FileStorageTest extends TestCase
             $reportKey
         );
 
-        $this->assertStringContains("organizations/{$this->organization->id}/schools/{$this->schoolId}/reports/{$reportKey}/", $path);
+        $this->assertStringContainsString("organizations/{$this->organization->id}/schools/{$this->schoolId}/reports/{$reportKey}/", $path);
         Storage::disk('local')->assertExists($path);
         $this->assertEquals($content, Storage::disk('local')->get($path));
     }
@@ -268,6 +269,8 @@ class FileStorageTest extends TestCase
     {
         $org1 = Organization::factory()->create();
         $org2 = Organization::factory()->create();
+        $this->ensureActiveSubscription($org1, 'enterprise');
+        $this->ensureActiveSubscription($org2, 'enterprise');
 
         $file1 = UploadedFile::fake()->image('photo1.jpg');
         $file2 = UploadedFile::fake()->image('photo2.jpg');
@@ -276,8 +279,8 @@ class FileStorageTest extends TestCase
         $path2 = $this->fileStorageService->storeStudentPicture($file2, $org2->id, 'student-2', 'school-2');
 
         // Verify paths are different
-        $this->assertStringContains($org1->id, $path1);
-        $this->assertStringContains($org2->id, $path2);
+        $this->assertStringContainsString($org1->id, $path1);
+        $this->assertStringContainsString($org2->id, $path2);
         $this->assertNotEquals($path1, $path2);
     }
 
@@ -297,8 +300,7 @@ class FileStorageTest extends TestCase
         $path2 = $this->fileStorageService->storeStudentPicture($file2, $this->organization->id, 'student-2', $school2->id);
 
         // Verify paths include different school IDs
-        $this->assertStringContains($school1->id, $path1);
-        $this->assertStringContains($school2->id, $path2);
+        $this->assertStringContainsString($school1->id, $path1);
+        $this->assertStringContainsString($school2->id, $path2);
     }
 }
-

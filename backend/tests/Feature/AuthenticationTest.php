@@ -33,7 +33,7 @@ class AuthenticationTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->postJson('/api/login', [
+        $response = $this->postJson('/api/auth/login', [
             'email' => 'test@example.com',
             'password' => 'password123',
         ]);
@@ -67,7 +67,7 @@ class AuthenticationTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->postJson('/api/login', [
+        $response = $this->postJson('/api/auth/login', [
             'email' => 'test@example.com',
             'password' => 'wrongpassword',
         ]);
@@ -79,7 +79,7 @@ class AuthenticationTest extends TestCase
     /** @test */
     public function user_cannot_login_with_nonexistent_email()
     {
-        $response = $this->postJson('/api/login', [
+        $response = $this->postJson('/api/auth/login', [
             'email' => 'nonexistent@example.com',
             'password' => 'password123',
         ]);
@@ -107,7 +107,7 @@ class AuthenticationTest extends TestCase
             'is_active' => false,
         ]);
 
-        $response = $this->postJson('/api/login', [
+        $response = $this->postJson('/api/auth/login', [
             'email' => 'test@example.com',
             'password' => 'password123',
         ]);
@@ -119,7 +119,7 @@ class AuthenticationTest extends TestCase
     /** @test */
     public function login_requires_email_and_password()
     {
-        $response = $this->postJson('/api/login', []);
+        $response = $this->postJson('/api/auth/login', []);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['email', 'password']);
@@ -130,7 +130,7 @@ class AuthenticationTest extends TestCase
     {
         $user = $this->authenticate();
 
-        $response = $this->jsonAs($user, 'POST', '/api/logout');
+        $response = $this->jsonAs($user, 'POST', '/api/auth/logout');
 
         $response->assertStatus(200)
             ->assertJson(['message' => 'Logged out successfully']);
@@ -141,7 +141,7 @@ class AuthenticationTest extends TestCase
     {
         $user = $this->authenticate();
 
-        $response = $this->jsonAs($user, 'GET', '/api/profile');
+        $response = $this->jsonAs($user, 'GET', '/api/auth/profile');
 
         $response->assertStatus(200)
             ->assertJsonStructure(['id', 'email', 'full_name', 'role', 'organization_id']);
@@ -150,7 +150,7 @@ class AuthenticationTest extends TestCase
     /** @test */
     public function unauthenticated_user_cannot_access_protected_routes()
     {
-        $response = $this->getJson('/api/profile');
+        $response = $this->getJson('/api/auth/profile');
 
         $response->assertStatus(401);
     }
@@ -160,7 +160,7 @@ class AuthenticationTest extends TestCase
     {
         $user = $this->authenticate();
 
-        $response = $this->jsonAs($user, 'PATCH', '/api/profile', [
+        $response = $this->jsonAs($user, 'PATCH', "/api/profiles/{$user->id}", [
             'full_name' => 'Updated Name',
             'phone' => '+93700123456',
         ]);
@@ -192,17 +192,16 @@ class AuthenticationTest extends TestCase
 
         $this->actingAsUser($user);
 
-        $response = $this->jsonAs($user, 'POST', '/api/change-password', [
+        $response = $this->jsonAs($user, 'POST', '/api/auth/change-password', [
             'current_password' => 'oldpassword',
             'new_password' => 'newpassword123',
             'new_password_confirmation' => 'newpassword123',
         ]);
-
         $response->assertStatus(200)
             ->assertJson(['message' => 'Password changed successfully']);
 
         // Verify new password works
-        $loginResponse = $this->postJson('/api/login', [
+        $loginResponse = $this->postJson('/api/auth/login', [
             'email' => $user->email,
             'password' => 'newpassword123',
         ]);
@@ -219,7 +218,7 @@ class AuthenticationTest extends TestCase
 
         $this->actingAsUser($user);
 
-        $response = $this->jsonAs($user, 'POST', '/api/change-password', [
+        $response = $this->jsonAs($user, 'POST', '/api/auth/change-password', [
             'current_password' => 'wrongpassword',
             'new_password' => 'newpassword123',
             'new_password_confirmation' => 'newpassword123',
@@ -252,7 +251,7 @@ class AuthenticationTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->postJson('/api/login', [
+        $response = $this->postJson('/api/auth/login', [
             'email' => 'test@example.com',
             'password' => 'password123',
         ]);

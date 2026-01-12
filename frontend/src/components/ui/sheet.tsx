@@ -3,6 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { X } from "lucide-react"
 import * as React from "react"
 
+import { useLanguage } from "@/hooks/useLanguage"
 import { cn } from "@/lib/utils"
 
 const Sheet = SheetPrimitive.Root
@@ -54,50 +55,61 @@ interface SheetContentProps
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => (
-  <SheetPortal>
-    <SheetOverlay />
-    <SheetPrimitive.Content
-      ref={ref}
-      className={cn(sheetVariants({ side }), className)}
-      {...props}
-    >
-      {children}
-      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-        <X className="h-4 w-4" />
-        <span className="sr-only">Close</span>
-      </SheetPrimitive.Close>
-    </SheetPrimitive.Content>
-  </SheetPortal>
-))
+>(({ side = "right", className, children, ...props }, ref) => {
+  const { isRTL } = useLanguage();
+  return (
+    <SheetPortal>
+      <SheetOverlay />
+      <SheetPrimitive.Content
+        ref={ref}
+        dir={isRTL ? "rtl" : "ltr"}
+        data-rtl={isRTL ? "true" : undefined}
+        className={cn("group", sheetVariants({ side }), className)}
+        {...props}
+      >
+        {children}
+        <SheetPrimitive.Close
+          className="absolute top-4 right-4 group-[data-rtl=true]:right-auto group-[data-rtl=true]:left-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary"
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </SheetPrimitive.Close>
+      </SheetPrimitive.Content>
+    </SheetPortal>
+  );
+})
 SheetContent.displayName = SheetPrimitive.Content.displayName
 
 const SheetHeader = ({
   className,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={cn(
-      "flex flex-col space-y-2 text-center sm:text-left",
-      className
-    )}
-    {...props}
-  />
-)
+}: React.HTMLAttributes<HTMLDivElement>) => {
+  return (
+    <div
+      className={cn(
+        "flex flex-col space-y-2 text-left items-start group-[data-rtl=true]:text-right group-[data-rtl=true]:items-end",
+        className
+      )}
+      {...props}
+    />
+  );
+}
 SheetHeader.displayName = "SheetHeader"
 
 const SheetFooter = ({
   className,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
-      className
-    )}
-    {...props}
-  />
-)
+}: React.HTMLAttributes<HTMLDivElement>) => {
+  return (
+    <div
+      className={cn(
+        "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 group-[data-rtl=true]:sm:flex-row-reverse group-[data-rtl=true]:sm:justify-start group-[data-rtl=true]:sm:space-x-reverse",
+        className
+      )}
+      {...props}
+    />
+  );
+}
 SheetFooter.displayName = "SheetFooter"
 
 const SheetTitle = React.forwardRef<
@@ -106,7 +118,7 @@ const SheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Title
     ref={ref}
-    className={cn("text-lg font-semibold text-foreground", className)}
+    className={cn("text-lg font-semibold text-foreground text-left group-[data-rtl=true]:text-right", className)}
     {...props}
   />
 ))
@@ -118,7 +130,7 @@ const SheetDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Description
     ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
+    className={cn("text-sm text-muted-foreground text-left group-[data-rtl=true]:text-right", className)}
     {...props}
   />
 ))
@@ -128,4 +140,3 @@ export {
   Sheet, SheetClose,
   SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetOverlay, SheetPortal, SheetTitle, SheetTrigger
 }
-

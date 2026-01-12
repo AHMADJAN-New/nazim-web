@@ -21,31 +21,39 @@ class FinanceModuleTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
-        FinanceAccount::factory()->count(5)->create(['organization_id' => $organization->id]);
+        FinanceAccount::factory()->count(5)->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
 
         $response = $this->jsonAs($user, 'GET', '/api/finance-accounts');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'data' => [
-                    '*' => ['id', 'account_name', 'account_type', 'balance', 'currency'],
-                ],
+                '*' => ['id', 'name', 'type', 'current_balance', 'currency_id'],
             ]);
 
-        $this->assertCount(5, $response->json('data'));
+        $this->assertCount(5, $response->json());
     }
 
     /** @test */
     public function user_can_create_finance_account()
     {
         $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+        $currency = \App\Models\Currency::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
 
         $accountData = [
-            'account_name' => 'Main Cash Box',
-            'account_type' => 'cash',
-            'balance' => 50000,
-            'currency' => 'AFN',
+            'name' => 'Main Cash Box',
+            'type' => 'cash',
+            'opening_balance' => 50000,
+            'currency_id' => $currency->id,
             'description' => 'Main cash collection',
             'is_active' => true,
         ];
@@ -53,11 +61,11 @@ class FinanceModuleTest extends TestCase
         $response = $this->jsonAs($user, 'POST', '/api/finance-accounts', $accountData);
 
         $response->assertStatus(201)
-            ->assertJsonFragment(['account_name' => 'Main Cash Box']);
+            ->assertJsonFragment(['name' => 'Main Cash Box']);
 
         $this->assertDatabaseHas('finance_accounts', [
-            'account_name' => 'Main Cash Box',
-            'balance' => 50000,
+            'name' => 'Main Cash Box',
+            'opening_balance' => 50000,
         ]);
     }
 
@@ -66,25 +74,27 @@ class FinanceModuleTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         $account = FinanceAccount::factory()->create([
             'organization_id' => $organization->id,
-            'account_name' => 'Original Name',
+            'school_id' => $school->id,
+            'name' => 'Original Name',
         ]);
 
         $response = $this->jsonAs($user, 'PUT', "/api/finance-accounts/{$account->id}", [
-            'account_name' => 'Updated Name',
-            'account_type' => $account->account_type,
-            'balance' => 75000,
-            'currency' => $account->currency,
+            'name' => 'Updated Name',
+            'type' => $account->type,
+            'opening_balance' => 75000,
+            'currency_id' => $account->currency_id,
         ]);
 
         $response->assertStatus(200);
 
         $this->assertDatabaseHas('finance_accounts', [
             'id' => $account->id,
-            'account_name' => 'Updated Name',
-            'balance' => 75000,
+            'name' => 'Updated Name',
+            'opening_balance' => 75000,
         ]);
     }
 
@@ -93,12 +103,16 @@ class FinanceModuleTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
-        $account = FinanceAccount::factory()->create(['organization_id' => $organization->id]);
+        $account = FinanceAccount::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
 
         $response = $this->jsonAs($user, 'DELETE', "/api/finance-accounts/{$account->id}");
 
-        $response->assertStatus(200);
+        $response->assertStatus(204);
 
         $this->assertSoftDeleted('finance_accounts', ['id' => $account->id]);
     }
@@ -108,22 +122,25 @@ class FinanceModuleTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         FinanceAccount::factory()->count(3)->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
             'is_active' => true,
         ]);
 
         FinanceAccount::factory()->count(2)->inactive()->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
         ]);
 
         $response = $this->jsonAs($user, 'GET', '/api/finance-accounts', [
-            'is_active' => 'true',
+            'is_active' => true,
         ]);
 
         $response->assertStatus(200);
-        $accounts = $response->json('data');
+        $accounts = $response->json();
 
         $this->assertCount(3, $accounts);
     }
@@ -138,7 +155,10 @@ class FinanceModuleTest extends TestCase
 
         $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
-        $accountOrg2 = FinanceAccount::factory()->create(['organization_id' => $org2->id]);
+        $accountOrg2 = FinanceAccount::factory()->create([
+            'organization_id' => $org2->id,
+            'school_id' => SchoolBranding::factory()->create(['organization_id' => $org2->id])->id,
+        ]);
 
         $response = $this->jsonAs($user1, 'GET', "/api/finance-accounts/{$accountOrg2->id}");
 
@@ -149,19 +169,22 @@ class FinanceModuleTest extends TestCase
     public function account_balance_is_numeric_and_positive()
     {
         $user = $this->authenticate();
-
-        $response = $this->jsonAs($user, 'POST', '/api/finance-accounts', [
-            'account_name' => 'Test Account',
-            'account_type' => 'cash',
-            'balance' => -1000, // Negative balance
-            'currency' => 'AFN',
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+        $currency = \App\Models\Currency::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
         ]);
 
-        // Should either reject or accept based on business rules
-        // If negative balances are not allowed, should get validation error
-        if ($response->status() === 422) {
-            $response->assertJsonValidationErrors(['balance']);
-        }
+        $response = $this->jsonAs($user, 'POST', '/api/finance-accounts', [
+            'name' => 'Test Account',
+            'type' => 'cash',
+            'opening_balance' => -1000,
+            'currency_id' => $currency->id,
+        ]);
+
+        $response->assertStatus(400);
+        $this->assertArrayHasKey('opening_balance', $response->json('details'));
     }
 
     /** @test */
@@ -169,24 +192,40 @@ class FinanceModuleTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $currencyAfn = \App\Models\Currency::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'code' => 'AFN',
+        ]);
+        $currencyUsd = \App\Models\Currency::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'code' => 'USD',
+        ]);
 
         $accountAFN = FinanceAccount::factory()->create([
             'organization_id' => $organization->id,
-            'currency' => 'AFN',
+            'school_id' => $school->id,
+            'currency_id' => $currencyAfn->id,
         ]);
 
         $accountUSD = FinanceAccount::factory()->create([
             'organization_id' => $organization->id,
-            'currency' => 'USD',
+            'school_id' => $school->id,
+            'currency_id' => $currencyUsd->id,
         ]);
 
         $response = $this->jsonAs($user, 'GET', '/api/finance-accounts');
 
         $response->assertStatus(200);
-        $accounts = $response->json('data');
+        $accounts = $response->json();
 
-        $currencies = array_column($accounts, 'currency');
-        $this->assertContains('AFN', $currencies);
-        $this->assertContains('USD', $currencies);
+        $currencyCodes = array_map(function ($account) {
+            return $account['currency']['code'] ?? null;
+        }, $accounts);
+        $this->assertContains('AFN', $currencyCodes);
+        $this->assertContains('USD', $currencyCodes);
     }
 }

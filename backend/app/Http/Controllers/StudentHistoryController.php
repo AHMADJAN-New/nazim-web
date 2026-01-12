@@ -223,6 +223,9 @@ class StudentHistoryController extends Controller
                 'calendar_preference' => $request->get('calendar_preference', 'jalali'),
                 'language' => $request->get('language', 'ps'),
                 'template_name' => 'student-history', // Must match student-history.blade.php file name
+                'parameters' => [
+                    'student_id' => $studentId, // CRITICAL: Pass student_id so ReportService can fetch data if needed
+                ],
             ]);
 
             // Generate report
@@ -340,31 +343,70 @@ class StudentHistoryController extends Controller
         $metadata = $history['metadata'] ?? [];
 
         // Format student data for template (snake_case for Blade template)
+        // CRITICAL: Include ALL fields from student history to match UI display
         $studentData = [
+            // Basic Information
             'full_name' => $student['fullName'] ?? '',
+            'first_name' => $student['firstName'] ?? '',
+            'last_name' => $student['lastName'] ?? '',
             'admission_no' => $student['admissionNumber'] ?? '',
             'father_name' => $student['fatherName'] ?? '',
-            'current_class' => $student['currentClass']['name'] ?? '',
-            'current_section' => $student['currentClass']['section'] ?? '',
-            'current_academic_year' => $student['currentClass']['academicYear'] ?? '',
-            'birth_date' => isset($student['dateOfBirth']) && $student['dateOfBirth'] ? \Carbon\Carbon::parse($student['dateOfBirth'])->format('Y-m-d') : '',
-            'status' => $student['status'] ?? '',
-            'phone' => $student['phone'] ?? '',
-            'picture_path' => $student['picturePath'] ?? null,
-            'school_name' => $student['schoolName'] ?? '',
-            'organization_name' => $student['organizationName'] ?? '',
-            'student_code' => $student['studentCode'] ?? '',
-            'card_number' => $student['cardNumber'] ?? '',
+            'grandfather_name' => $student['grandfatherName'] ?? '',
+            'mother_name' => $student['motherName'] ?? '',
             'gender' => $student['gender'] ?? '',
+            'birth_date' => isset($student['dateOfBirth']) && $student['dateOfBirth'] ? \Carbon\Carbon::parse($student['dateOfBirth'])->format('Y-m-d') : '',
+            'birth_year' => $student['birthYear'] ?? '',
+            'age' => $student['age'] ?? '',
             'nationality' => $student['nationality'] ?? '',
             'preferred_language' => $student['preferredLanguage'] ?? '',
+            'is_orphan' => $student['isOrphan'] ?? false,
+            
+            // Contact Information
+            'phone' => $student['phone'] ?? '',
             'home_address' => $student['homeAddress'] ?? '',
-            'previous_school' => $student['previousSchool'] ?? '',
+            'emergency_contact_name' => $student['emergencyContactName'] ?? '',
+            'emergency_contact_phone' => $student['emergencyContactPhone'] ?? '',
+            
+            // Location Information
+            'orig_province' => $student['origProvince'] ?? '',
+            'orig_district' => $student['origDistrict'] ?? '',
+            'orig_village' => $student['origVillage'] ?? '',
+            'curr_province' => $student['currProvince'] ?? '',
+            'curr_district' => $student['currDistrict'] ?? '',
+            'curr_village' => $student['currVillage'] ?? '',
+            
+            // Guardian Information
             'guardian_name' => $student['guardianName'] ?? '',
             'guardian_relation' => $student['guardianRelation'] ?? '',
             'guardian_phone' => $student['guardianPhone'] ?? '',
-            'emergency_contact_name' => $student['emergencyContactName'] ?? '',
-            'emergency_contact_phone' => $student['emergencyContactPhone'] ?? '',
+            'guardian_tazkira' => $student['guardianTazkira'] ?? '',
+            
+            // Guarantor (Zamin) Information
+            'zamin_name' => $student['zaminName'] ?? '',
+            'zamin_phone' => $student['zaminPhone'] ?? '',
+            'zamin_tazkira' => $student['zaminTazkira'] ?? '',
+            'zamin_address' => $student['zaminAddress'] ?? '',
+            
+            // Academic Information
+            'current_class' => $student['currentClass']['name'] ?? '',
+            'current_section' => $student['currentClass']['section'] ?? '',
+            'current_academic_year' => $student['currentClass']['academicYear'] ?? '',
+            'admission_year' => $student['admissionYear'] ?? '',
+            'applying_grade' => $student['applyingGrade'] ?? '',
+            'admission_fee_status' => $student['admissionFeeStatus'] ?? '',
+            
+            // Financial Information
+            'family_income' => $student['familyIncome'] ?? '',
+            
+            // System Information
+            'status' => $student['status'] ?? '',
+            'student_code' => $student['studentCode'] ?? '',
+            'card_number' => $student['cardNumber'] ?? '',
+            'picture_path' => $student['picturePath'] ?? null,
+            'school_name' => $student['schoolName'] ?? '',
+            'organization_name' => $student['organizationName'] ?? '',
+            'created_at' => isset($student['createdAt']) && $student['createdAt'] ? \Carbon\Carbon::parse($student['createdAt'])->format('Y-m-d H:i:s') : '',
+            'previous_school' => $student['previousSchool'] ?? '',
         ];
 
         // Format summary data for template
@@ -584,10 +626,66 @@ class StudentHistoryController extends Controller
                         ['key' => 'value', 'label' => 'Value'],
                     ],
                     'rows' => [
+                        // Personal Information
                         ['field' => 'Full Name', 'value' => $student['fullName'] ?? ''],
-                        ['field' => 'Admission Number', 'value' => $student['admissionNumber'] ?? ''],
+                        ['field' => 'First Name', 'value' => $student['firstName'] ?? ''],
+                        ['field' => 'Last Name', 'value' => $student['lastName'] ?? ''],
                         ['field' => 'Father Name', 'value' => $student['fatherName'] ?? ''],
+                        ['field' => 'Grandfather Name', 'value' => $student['grandfatherName'] ?? ''],
+                        ['field' => 'Mother Name', 'value' => $student['motherName'] ?? ''],
+                        ['field' => 'Gender', 'value' => $student['gender'] ?? ''],
+                        ['field' => 'Date of Birth', 'value' => $student['dateOfBirth'] ?? ''],
+                        ['field' => 'Birth Year', 'value' => (string) ($student['birthYear'] ?? '')],
+                        ['field' => 'Age', 'value' => (string) ($student['age'] ?? '')],
+                        ['field' => 'Nationality', 'value' => $student['nationality'] ?? ''],
+                        ['field' => 'Preferred Language', 'value' => $student['preferredLanguage'] ?? ''],
+                        ['field' => 'Is Orphan', 'value' => ($student['isOrphan'] ?? false) ? 'Yes' : 'No'],
+                        
+                        // Contact Information
+                        ['field' => 'Phone', 'value' => $student['phone'] ?? ''],
+                        ['field' => 'Home Address', 'value' => $student['homeAddress'] ?? ''],
+                        ['field' => 'Emergency Contact Name', 'value' => $student['emergencyContactName'] ?? ''],
+                        ['field' => 'Emergency Contact Phone', 'value' => $student['emergencyContactPhone'] ?? ''],
+                        
+                        // Location Information
+                        ['field' => 'Origin Province', 'value' => $student['origProvince'] ?? ''],
+                        ['field' => 'Origin District', 'value' => $student['origDistrict'] ?? ''],
+                        ['field' => 'Origin Village', 'value' => $student['origVillage'] ?? ''],
+                        ['field' => 'Current Province', 'value' => $student['currProvince'] ?? ''],
+                        ['field' => 'Current District', 'value' => $student['currDistrict'] ?? ''],
+                        ['field' => 'Current Village', 'value' => $student['currVillage'] ?? ''],
+                        
+                        // Guardian Information
+                        ['field' => 'Guardian Name', 'value' => $student['guardianName'] ?? ''],
+                        ['field' => 'Guardian Relation', 'value' => $student['guardianRelation'] ?? ''],
+                        ['field' => 'Guardian Phone', 'value' => $student['guardianPhone'] ?? ''],
+                        ['field' => 'Guardian Tazkira', 'value' => $student['guardianTazkira'] ?? ''],
+                        
+                        // Guarantor Information
+                        ['field' => 'Guarantor Name', 'value' => $student['zaminName'] ?? ''],
+                        ['field' => 'Guarantor Phone', 'value' => $student['zaminPhone'] ?? ''],
+                        ['field' => 'Guarantor Tazkira', 'value' => $student['zaminTazkira'] ?? ''],
+                        ['field' => 'Guarantor Address', 'value' => $student['zaminAddress'] ?? ''],
+                        
+                        // Academic Information
+                        ['field' => 'Admission Number', 'value' => $student['admissionNumber'] ?? ''],
+                        ['field' => 'Admission Year', 'value' => (string) ($student['admissionYear'] ?? '')],
+                        ['field' => 'Applying Grade', 'value' => $student['applyingGrade'] ?? ''],
+                        ['field' => 'Admission Fee Status', 'value' => $student['admissionFeeStatus'] ?? ''],
+                        
+                        // Financial Information
+                        ['field' => 'Family Income / Support', 'value' => (string) ($student['familyIncome'] ?? '')],
+                        
+                        // System Information
                         ['field' => 'Status', 'value' => $student['status'] ?? ''],
+                        ['field' => 'Student Code', 'value' => $student['studentCode'] ?? ''],
+                        ['field' => 'Card Number', 'value' => $student['cardNumber'] ?? ''],
+                        ['field' => 'School Name', 'value' => $student['schoolName'] ?? ''],
+                        ['field' => 'Organization Name', 'value' => $student['organizationName'] ?? ''],
+                        ['field' => 'Previous School', 'value' => $student['previousSchool'] ?? ''],
+                        ['field' => 'Created At', 'value' => $student['createdAt'] ?? ''],
+                        
+                        // Summary Statistics
                         ['field' => 'Total Academic Years', 'value' => (string) ($summary['totalAcademicYears'] ?? 0)],
                         ['field' => 'Attendance Rate', 'value' => ($summary['attendanceRate'] ?? 0) . '%'],
                         ['field' => 'Average Exam Score', 'value' => ($summary['averageExamScore'] ?? 0) . '%'],

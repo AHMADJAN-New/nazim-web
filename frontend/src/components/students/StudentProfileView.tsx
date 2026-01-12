@@ -34,8 +34,8 @@ import {
   useStudentDocuments,
   useStudentEducationalHistory,
   useStudentDisciplineRecords,
+  usePrintStudentProfile,
 } from '@/hooks/useStudents';
-import { generateStudentProfilePdf } from '@/lib/studentProfilePdf';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import type { Student } from '@/types/domain/student';
 
@@ -93,6 +93,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
   const { data: documents } = useStudentDocuments(open ? student?.id : undefined);
   const { data: educationalHistory } = useStudentEducationalHistory(open ? student?.id : undefined);
   const { data: disciplineRecords } = useStudentDisciplineRecords(open ? student?.id : undefined);
+  const printProfile = usePrintStudentProfile();
 
   const printText = isRTL
     ? {
@@ -356,19 +357,9 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
     if (!student) return;
     
     try {
-      await generateStudentProfilePdf({
-        student,
-        schoolName,
-        pictureUrl,
-        guardianPictureUrl,
-        isRTL,
-        educationalHistory: educationalHistory || [],
-        disciplineRecords: disciplineRecords || [],
-      });
+      await printProfile.mutateAsync(student.id);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      // Fallback to window.print if PDF generation fails
-      window.print();
     }
   };
 

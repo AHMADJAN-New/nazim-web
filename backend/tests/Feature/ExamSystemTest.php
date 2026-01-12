@@ -18,19 +18,21 @@ class ExamSystemTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
-        Exam::factory()->count(5)->create(['organization_id' => $organization->id]);
+        Exam::factory()->count(5)->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
 
         $response = $this->jsonAs($user, 'GET', '/api/exams');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'data' => [
-                    '*' => ['id', 'exam_name', 'exam_type', 'status', 'start_date', 'end_date'],
-                ],
+                '*' => ['id', 'name', 'exam_type_id', 'status', 'start_date', 'end_date'],
             ]);
 
-        $this->assertCount(5, $response->json('data'));
+        $this->assertCount(5, $response->json());
     }
 
     /** @test */
@@ -38,29 +40,30 @@ class ExamSystemTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         $academicYear = AcademicYear::factory()->current()->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
         ]);
 
         $examData = [
-            'exam_name' => 'Midterm Exam 2024',
-            'exam_type' => 'midterm',
+            'name' => 'Midterm Exam 2024',
             'academic_year_id' => $academicYear->id,
             'start_date' => now()->addDays(7)->toDateString(),
             'end_date' => now()->addDays(14)->toDateString(),
-            'status' => 'scheduled',
+            'status' => 'draft',
             'description' => 'Midterm examination for all classes',
         ];
 
         $response = $this->jsonAs($user, 'POST', '/api/exams', $examData);
 
         $response->assertStatus(201)
-            ->assertJsonFragment(['exam_name' => 'Midterm Exam 2024']);
+            ->assertJsonFragment(['name' => 'Midterm Exam 2024']);
 
         $this->assertDatabaseHas('exams', [
-            'exam_name' => 'Midterm Exam 2024',
-            'exam_type' => 'midterm',
+            'name' => 'Midterm Exam 2024',
+            'academic_year_id' => $academicYear->id,
         ]);
     }
 
@@ -69,27 +72,29 @@ class ExamSystemTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         $exam = Exam::factory()->create([
             'organization_id' => $organization->id,
-            'exam_name' => 'Original Exam',
+            'school_id' => $school->id,
+            'name' => 'Original Exam',
+            'status' => Exam::STATUS_DRAFT,
         ]);
 
         $response = $this->jsonAs($user, 'PUT', "/api/exams/{$exam->id}", [
-            'exam_name' => 'Updated Exam',
-            'exam_type' => $exam->exam_type,
+            'name' => 'Updated Exam',
             'academic_year_id' => $exam->academic_year_id,
             'start_date' => $exam->start_date,
             'end_date' => $exam->end_date,
-            'status' => 'ongoing',
+            'status' => Exam::STATUS_SCHEDULED,
         ]);
 
         $response->assertStatus(200);
 
         $this->assertDatabaseHas('exams', [
             'id' => $exam->id,
-            'exam_name' => 'Updated Exam',
-            'status' => 'ongoing',
+            'name' => 'Updated Exam',
+            'status' => Exam::STATUS_SCHEDULED,
         ]);
     }
 
@@ -98,51 +103,66 @@ class ExamSystemTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         Exam::factory()->count(3)->create([
             'organization_id' => $organization->id,
-            'status' => 'scheduled',
+            'school_id' => $school->id,
+            'status' => 'draft',
         ]);
 
         Exam::factory()->count(2)->ongoing()->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
         ]);
 
         $response = $this->jsonAs($user, 'GET', '/api/exams', [
-            'status' => 'scheduled',
+            'status' => 'draft',
         ]);
 
         $response->assertStatus(200);
-        $exams = $response->json('data');
+        $exams = $response->json();
 
         $this->assertCount(3, $exams);
         foreach ($exams as $exam) {
-            $this->assertEquals('scheduled', $exam['status']);
+            $this->assertEquals('draft', $exam['status']);
         }
     }
 
     /** @test */
-    public function user_can_filter_exams_by_type()
+    public function user_can_filter_exams_by_academic_year()
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $year1 = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $year2 = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
 
         Exam::factory()->count(2)->create([
             'organization_id' => $organization->id,
-            'exam_type' => 'midterm',
+            'school_id' => $school->id,
+            'academic_year_id' => $year1->id,
         ]);
 
         Exam::factory()->count(3)->create([
             'organization_id' => $organization->id,
-            'exam_type' => 'final',
+            'school_id' => $school->id,
+            'academic_year_id' => $year2->id,
         ]);
 
         $response = $this->jsonAs($user, 'GET', '/api/exams', [
-            'type' => 'midterm',
+            'academic_year_id' => $year1->id,
         ]);
 
         $response->assertStatus(200);
-        $exams = $response->json('data');
+        $exams = $response->json();
 
         $this->assertCount(2, $exams);
     }
@@ -157,7 +177,10 @@ class ExamSystemTest extends TestCase
 
         $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
-        $examOrg2 = Exam::factory()->create(['organization_id' => $org2->id]);
+        $examOrg2 = Exam::factory()->create([
+            'organization_id' => $org2->id,
+            'school_id' => SchoolBranding::factory()->create(['organization_id' => $org2->id])->id,
+        ]);
 
         $response = $this->jsonAs($user1, 'GET', "/api/exams/{$examOrg2->id}");
 
@@ -169,25 +192,22 @@ class ExamSystemTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         $academicYear = AcademicYear::factory()->current()->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
         ]);
 
         // End date before start date should fail
         $response = $this->jsonAs($user, 'POST', '/api/exams', [
-            'exam_name' => 'Invalid Exam',
-            'exam_type' => 'midterm',
+            'name' => 'Invalid Exam',
             'academic_year_id' => $academicYear->id,
             'start_date' => now()->addDays(14)->toDateString(),
             'end_date' => now()->addDays(7)->toDateString(),
-            'status' => 'scheduled',
+            'status' => 'draft',
         ]);
 
-        // Should return validation error (or could be accepted by backend)
-        // This depends on backend validation rules
-        if ($response->status() === 422) {
-            $response->assertJsonValidationErrors(['end_date']);
-        }
+        $response->assertStatus(422);
     }
 }

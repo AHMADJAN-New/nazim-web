@@ -42,29 +42,43 @@ class LibraryManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
-        $category = LibraryCategory::factory()->create(['organization_id' => $organization->id]);
+        $category = LibraryCategory::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $currency = \App\Models\Currency::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $account = \App\Models\FinanceAccount::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'currency_id' => $currency->id,
+        ]);
 
         $bookData = [
             'title' => 'Quran Tafsir',
             'author' => 'Ibn Kathir',
             'isbn' => '1234567890',
+            'book_number' => 'BOOK-1001',
             'category_id' => $category->id,
-            'publisher' => 'Darussalam',
-            'publication_year' => 2020,
-            'language' => 'Arabic',
+            'price' => 250,
+            'currency_id' => $currency->id,
+            'finance_account_id' => $account->id,
         ];
 
         $response = $this->jsonAs($user, 'POST', '/api/library-books', $bookData);
 
-        if ($response->status() === 201) {
+        if (in_array($response->status(), [200, 201], true)) {
             $this->assertDatabaseHas('library_books', [
                 'title' => 'Quran Tafsir',
                 'author' => 'Ibn Kathir',
             ]);
         }
 
-        $this->assertContains($response->status(), [201, 404, 422]);
+        $this->assertContains($response->status(), [200, 201, 404, 422]);
     }
 
     /** @test */
@@ -72,13 +86,17 @@ class LibraryManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
-        LibraryBook::factory()->count(5)->create(['organization_id' => $organization->id]);
+        LibraryBook::factory()->count(5)->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
 
         $response = $this->jsonAs($user, 'GET', '/api/library-books');
 
         if ($response->status() === 200) {
-            $books = $response->json('data');
+            $books = $response->json();
             $this->assertCount(5, $books);
         }
 
@@ -95,13 +113,19 @@ class LibraryManagementTest extends TestCase
 
         $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1, $school1);
 
-        LibraryBook::factory()->count(3)->create(['organization_id' => $org1->id]);
-        LibraryBook::factory()->count(2)->create(['organization_id' => $org2->id]);
+        LibraryBook::factory()->count(3)->create([
+            'organization_id' => $org1->id,
+            'school_id' => $school1->id,
+        ]);
+        LibraryBook::factory()->count(2)->create([
+            'organization_id' => $org2->id,
+            'school_id' => SchoolBranding::factory()->create(['organization_id' => $org2->id])->id,
+        ]);
 
         $response = $this->jsonAs($user1, 'GET', '/api/library-books');
 
         if ($response->status() === 200) {
-            $books = $response->json('data');
+            $books = $response->json();
             $this->assertCount(3, $books);
 
             foreach ($books as $book) {
@@ -119,9 +143,13 @@ class LibraryManagementTest extends TestCase
         $organization = $this->getUserOrganization($user);
         $school = $this->getUserSchool($user);
 
-        $book = LibraryBook::factory()->create(['organization_id' => $organization->id]);
+        $book = LibraryBook::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
         $copy = LibraryCopy::factory()->create([
-            'library_book_id' => $book->id,
+            'book_id' => $book->id,
+            'school_id' => $school->id,
             'status' => 'available',
         ]);
         $student = Student::factory()->create([
@@ -130,11 +158,11 @@ class LibraryManagementTest extends TestCase
         ]);
 
         $loanData = [
-            'library_copy_id' => $copy->id,
+            'book_id' => $book->id,
+            'book_copy_id' => $copy->id,
             'student_id' => $student->id,
-            'borrowed_date' => now()->toDateString(),
+            'loan_date' => now()->toDateString(),
             'due_date' => now()->addDays(14)->toDateString(),
-            'status' => 'borrowed',
         ];
 
         $response = $this->jsonAs($user, 'POST', '/api/library-loans', $loanData);
@@ -142,7 +170,7 @@ class LibraryManagementTest extends TestCase
         if ($response->status() === 201) {
             $this->assertDatabaseHas('library_loans', [
                 'student_id' => $student->id,
-                'status' => 'borrowed',
+                'returned_at' => null,
             ]);
         }
 
@@ -156,28 +184,36 @@ class LibraryManagementTest extends TestCase
         $organization = $this->getUserOrganization($user);
         $school = $this->getUserSchool($user);
 
-        $book = LibraryBook::factory()->create(['organization_id' => $organization->id]);
-        $copy = LibraryCopy::factory()->create(['library_book_id' => $book->id]);
+        $book = LibraryBook::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $copy = LibraryCopy::factory()->create([
+            'book_id' => $book->id,
+            'school_id' => $school->id,
+        ]);
         $student = Student::factory()->create([
             'organization_id' => $organization->id,
             'school_id' => $school->id,
         ]);
 
         $loan = LibraryLoan::factory()->create([
-            'library_copy_id' => $copy->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'book_id' => $book->id,
+            'book_copy_id' => $copy->id,
             'student_id' => $student->id,
-            'status' => 'borrowed',
+            'returned_at' => null,
         ]);
 
-        $response = $this->jsonAs($user, 'PUT', "/api/library-loans/{$loan->id}", [
-            'status' => 'returned',
-            'returned_date' => now()->toDateString(),
+        $response = $this->jsonAs($user, 'POST', "/api/library-loans/{$loan->id}/return", [
+            'returned_at' => now()->toDateString(),
         ]);
 
         if ($response->status() === 200) {
             $this->assertDatabaseHas('library_loans', [
                 'id' => $loan->id,
-                'status' => 'returned',
+                'returned_at' => now()->toDateString(),
             ]);
         }
 
@@ -189,14 +225,17 @@ class LibraryManagementTest extends TestCase
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
 
         LibraryBook::factory()->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
             'title' => 'Sahih Bukhari',
         ]);
 
         LibraryBook::factory()->create([
             'organization_id' => $organization->id,
+            'school_id' => $school->id,
             'title' => 'Sahih Muslim',
         ]);
 
@@ -205,7 +244,7 @@ class LibraryManagementTest extends TestCase
         ]);
 
         if ($response->status() === 200) {
-            $books = $response->json('data');
+            $books = $response->json();
             $this->assertGreaterThanOrEqual(1, count($books));
             $this->assertStringContainsStringIgnoringCase('Bukhari', $books[0]['title']);
         }

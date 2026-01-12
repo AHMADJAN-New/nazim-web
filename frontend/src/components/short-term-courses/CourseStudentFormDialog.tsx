@@ -395,8 +395,7 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
                 </div>
 
                 <div>
-                  <Label htmlFor="birthDate">Birth Date</Label>
-                  <CalendarFormField control={control} name="birthDate" label="Birth Year" />
+                  <CalendarFormField control={control} name="birthDate" label="Birth Date" />
                 </div>
 
                 <div>

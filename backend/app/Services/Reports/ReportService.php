@@ -471,6 +471,13 @@ class ReportService
         // Auto-select template if not specified
         $templateName = $config->autoSelectTemplate(count($columns));
 
+        // CRITICAL: Student history report must use Bahij Nassim (RTL-friendly) regardless of branding defaults
+        if ($templateName === 'student-history') {
+            $layout['font_family'] = 'Bahij Nassim';
+            // Slightly smaller default to fit more student fields
+            $layout['font_size'] = $layout['font_size'] ?? '11px';
+        }
+
         // Calculate column widths
         $columnWidths = $this->calculateColumnWidths($columns, $config);
 
@@ -761,31 +768,70 @@ class ReportService
             $metadata = $history['metadata'] ?? [];
 
             // Format student data for template (snake_case for Blade template)
+            // CRITICAL: Include ALL fields from student history to match UI display
             $studentData = [
+                // Basic Information
                 'full_name' => $student['fullName'] ?? '',
+                'first_name' => $student['firstName'] ?? '',
+                'last_name' => $student['lastName'] ?? '',
                 'admission_no' => $student['admissionNumber'] ?? '',
                 'father_name' => $student['fatherName'] ?? '',
-                'current_class' => $student['currentClass']['name'] ?? '',
-                'current_section' => $student['currentClass']['section'] ?? '',
-                'current_academic_year' => $student['currentClass']['academicYear'] ?? '',
-                'birth_date' => isset($student['dateOfBirth']) && $student['dateOfBirth'] ? \Carbon\Carbon::parse($student['dateOfBirth'])->format('Y-m-d') : '',
-                'status' => $student['status'] ?? '',
-                'phone' => $student['phone'] ?? '',
-                'picture_path' => $student['picturePath'] ?? null,
-                'school_name' => $student['schoolName'] ?? '',
-                'organization_name' => $student['organizationName'] ?? '',
-                'student_code' => $student['studentCode'] ?? '',
-                'card_number' => $student['cardNumber'] ?? '',
+                'grandfather_name' => $student['grandfatherName'] ?? '',
+                'mother_name' => $student['motherName'] ?? '',
                 'gender' => $student['gender'] ?? '',
+                'birth_date' => isset($student['dateOfBirth']) && $student['dateOfBirth'] ? \Carbon\Carbon::parse($student['dateOfBirth'])->format('Y-m-d') : '',
+                'birth_year' => $student['birthYear'] ?? '',
+                'age' => $student['age'] ?? '',
                 'nationality' => $student['nationality'] ?? '',
                 'preferred_language' => $student['preferredLanguage'] ?? '',
+                'is_orphan' => $student['isOrphan'] ?? false,
+                
+                // Contact Information
+                'phone' => $student['phone'] ?? '',
                 'home_address' => $student['homeAddress'] ?? '',
-                'previous_school' => $student['previousSchool'] ?? '',
+                'emergency_contact_name' => $student['emergencyContactName'] ?? '',
+                'emergency_contact_phone' => $student['emergencyContactPhone'] ?? '',
+                
+                // Location Information
+                'orig_province' => $student['origProvince'] ?? '',
+                'orig_district' => $student['origDistrict'] ?? '',
+                'orig_village' => $student['origVillage'] ?? '',
+                'curr_province' => $student['currProvince'] ?? '',
+                'curr_district' => $student['currDistrict'] ?? '',
+                'curr_village' => $student['currVillage'] ?? '',
+                
+                // Guardian Information
                 'guardian_name' => $student['guardianName'] ?? '',
                 'guardian_relation' => $student['guardianRelation'] ?? '',
                 'guardian_phone' => $student['guardianPhone'] ?? '',
-                'emergency_contact_name' => $student['emergencyContactName'] ?? '',
-                'emergency_contact_phone' => $student['emergencyContactPhone'] ?? '',
+                'guardian_tazkira' => $student['guardianTazkira'] ?? '',
+                
+                // Guarantor (Zamin) Information
+                'zamin_name' => $student['zaminName'] ?? '',
+                'zamin_phone' => $student['zaminPhone'] ?? '',
+                'zamin_tazkira' => $student['zaminTazkira'] ?? '',
+                'zamin_address' => $student['zaminAddress'] ?? '',
+                
+                // Academic Information
+                'current_class' => $student['currentClass']['name'] ?? '',
+                'current_section' => $student['currentClass']['section'] ?? '',
+                'current_academic_year' => $student['currentClass']['academicYear'] ?? '',
+                'admission_year' => $student['admissionYear'] ?? '',
+                'applying_grade' => $student['applyingGrade'] ?? '',
+                'admission_fee_status' => $student['admissionFeeStatus'] ?? '',
+                
+                // Financial Information
+                'family_income' => $student['familyIncome'] ?? '',
+                
+                // System Information
+                'status' => $student['status'] ?? '',
+                'student_code' => $student['studentCode'] ?? '',
+                'card_number' => $student['cardNumber'] ?? '',
+                'picture_path' => $student['picturePath'] ?? null,
+                'school_name' => $student['schoolName'] ?? '',
+                'organization_name' => $student['organizationName'] ?? '',
+                'created_at' => isset($student['createdAt']) && $student['createdAt'] ? \Carbon\Carbon::parse($student['createdAt'])->format('Y-m-d H:i:s') : '',
+                'previous_school' => $student['previousSchool'] ?? '',
             ];
 
             // Format summary data

@@ -566,11 +566,9 @@ export default function AssetAssignmentsTab() {
                 </Select>
               </div>
               <div>
-                <Label>Assigned On</Label>
                 <CalendarFormField control={control} name="assignedOn" label="Assigned On" />
               </div>
               <div>
-                <Label>Expected Return Date</Label>
                 <CalendarFormField control={control} name="expectedReturnDate" label="Expected Return Date" />
               </div>
             </div>

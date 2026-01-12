@@ -44,17 +44,30 @@
 
 {{-- Student Information Card --}}
 <div class="student-info-card">
+    @php
+        // Fix RTL number reversal: wrap numeric-ish content in <span class="ltr">...</span>
+        $rawGeneratedAt = $generatedAt ?? null;
+        $generatedAtDisplay = $rawGeneratedAt ? \Carbon\Carbon::parse($rawGeneratedAt)->format('Y-m-d H:i') : now()->format('Y-m-d H:i');
+
+        $rawCreatedAt = $student['created_at'] ?? ($student['createdAt'] ?? null);
+        $createdAtDisplay = $rawCreatedAt ? \Carbon\Carbon::parse($rawCreatedAt)->format('Y-m-d H:i') : '—';
+
+        $phoneDisplay = $student['guardian_phone'] ?? ($student['phone'] ?? '—');
+    @endphp
+    
+    {{-- Photo (top-right) with text wrapping around --}}
+    <div class="student-photo-wrap">
+        @if(!empty($student['picture_path']))
+            <img src="{{ $student['picture_path'] }}" alt="Student Photo" class="student-photo">
+        @else
+            <div class="no-photo">
+                <span>{{ mb_substr($student['full_name'] ?? 'S', 0, 1) }}</span>
+            </div>
+        @endif
+    </div>
+
     <table class="info-table">
         <tr>
-            <td class="photo-cell" rowspan="4">
-                @if(!empty($student['picture_path']))
-                    <img src="{{ $student['picture_path'] }}" alt="Student Photo" class="student-photo">
-                @else
-                    <div class="no-photo">
-                        <span>{{ mb_substr($student['full_name'] ?? 'S', 0, 1) }}</span>
-                    </div>
-                @endif
-            </td>
             <td class="info-label">{{ $labels['fullName'] ?? 'Full Name' }}:</td>
             <td class="info-value"><strong>{{ $student['full_name'] ?? '—' }}</strong></td>
             <td class="info-label">{{ $labels['admissionNo'] ?? 'Admission No' }}:</td>
@@ -76,7 +89,7 @@
         </tr>
         <tr>
             <td class="info-label">{{ $labels['dob'] ?? 'Date of Birth' }}:</td>
-            <td class="info-value">{{ $student['birth_date'] ?? '—' }}</td>
+            <td class="info-value"><span class="ltr">{{ $student['birth_date'] ?? '—' }}</span></td>
             <td class="info-label">{{ $labels['status'] ?? 'Status' }}:</td>
             <td class="info-value">
                 <span class="status-badge {{ strtolower($student['status'] ?? 'unknown') }}">
@@ -86,58 +99,314 @@
         </tr>
         <tr>
             <td class="info-label">{{ $labels['phone'] ?? 'Phone' }}:</td>
-            <td class="info-value">{{ $student['guardian_phone'] ?? ($student['phone'] ?? '—') }}</td>
+            <td class="info-value"><span class="ltr">{{ $phoneDisplay }}</span></td>
             <td class="info-label">{{ $labels['generatedAt'] ?? 'Generated At' }}:</td>
-            <td class="info-value">{{ $generatedAt ?? now()->format('Y-m-d H:i') }}</td>
+            <td class="info-value"><span class="ltr">{{ $generatedAtDisplay }}</span></td>
         </tr>
-    </table>
-
-    {{-- Extended Details (matches UI "cards/tabs" info) --}}
-    <table class="info-table" style="margin-top: 10px;">
         <tr>
             <td class="info-label">{{ $labels['studentCode'] ?? 'Student Code' }}:</td>
-            <td class="info-value">{{ $student['student_code'] ?? '—' }}</td>
+            <td class="info-value"><span class="ltr">{{ $student['student_code'] ?? ($student['studentCode'] ?? '—') }}</span></td>
             <td class="info-label">{{ $labels['cardNumber'] ?? 'Card Number' }}:</td>
-            <td class="info-value">{{ $student['card_number'] ?? '—' }}</td>
+            <td class="info-value"><span class="ltr">{{ $student['card_number'] ?? ($student['cardNumber'] ?? '—') }}</span></td>
         </tr>
         <tr>
-            <td class="info-label">{{ $labels['school'] ?? 'School' }}:</td>
-            <td class="info-value">{{ $student['school_name'] ?? '—' }}</td>
-            <td class="info-label">{{ $labels['organization'] ?? 'Organization' }}:</td>
-            <td class="info-value">{{ $student['organization_name'] ?? '—' }}</td>
+            <td class="info-label">{{ $labels['firstName'] ?? 'First Name' }}:</td>
+            <td class="info-value">{{ $student['first_name'] ?? ($student['firstName'] ?? '—') }}</td>
+            <td class="info-label">{{ $labels['lastName'] ?? 'Last Name' }}:</td>
+            <td class="info-value">{{ $student['last_name'] ?? ($student['lastName'] ?? '—') }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">{{ $labels['grandfatherName'] ?? 'Grandfather Name' }}:</td>
+            <td class="info-value">{{ $student['grandfather_name'] ?? ($student['grandfatherName'] ?? '—') }}</td>
+            <td class="info-label">{{ $labels['motherName'] ?? 'Mother Name' }}:</td>
+            <td class="info-value">{{ $student['mother_name'] ?? ($student['motherName'] ?? '—') }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">{{ $labels['birthYear'] ?? 'Birth Year' }}:</td>
+            <td class="info-value"><span class="ltr">{{ $student['birth_year'] ?? ($student['birthYear'] ?? '—') }}</span></td>
+            <td class="info-label">{{ $labels['age'] ?? 'Age' }}:</td>
+            <td class="info-value"><span class="ltr">{{ $student['age'] ?? '—' }}</span></td>
+        </tr>
+        <tr>
+            <td class="info-label">{{ $labels['isOrphan'] ?? 'Is Orphan' }}:</td>
+            <td class="info-value">{{ ($student['is_orphan'] ?? ($student['isOrphan'] ?? false)) ? ($labels['yes'] ?? 'Yes') : ($labels['no'] ?? 'No') }}</td>
+            <td class="info-label">{{ $labels['nationality'] ?? 'Nationality' }}:</td>
+            <td class="info-value">{{ $student['nationality'] ?? '—' }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">{{ $labels['preferredLanguage'] ?? 'Preferred Language' }}:</td>
+            <td class="info-value">{{ $student['preferred_language'] ?? ($student['preferredLanguage'] ?? '—') }}</td>
+            <td class="info-label">{{ $labels['address'] ?? 'Address' }}:</td>
+            <td class="info-value">{{ $student['home_address'] ?? ($student['homeAddress'] ?? '—') }}</td>
         </tr>
         <tr>
             <td class="info-label">{{ $labels['guardianName'] ?? 'Guardian' }}:</td>
             <td class="info-value">
-                {{ $student['guardian_name'] ?? '—' }}
-                @if(!empty($student['guardian_relation']))
-                    ({{ $student['guardian_relation'] }})
+                {{ $student['guardian_name'] ?? ($student['guardianName'] ?? '—') }}
+                @if(!empty($student['guardian_relation'] ?? ($student['guardianRelation'] ?? null)))
+                    ({{ $student['guardian_relation'] ?? $student['guardianRelation'] }})
                 @endif
             </td>
             <td class="info-label">{{ $labels['emergencyContact'] ?? 'Emergency Contact' }}:</td>
             <td class="info-value">
-                {{ $student['emergency_contact_name'] ?? '—' }}
-                @if(!empty($student['emergency_contact_phone']))
-                    - {{ $student['emergency_contact_phone'] }}
+                {{ $student['emergency_contact_name'] ?? ($student['emergencyContactName'] ?? '—') }}
+                @if(!empty($student['emergency_contact_phone'] ?? ($student['emergencyContactPhone'] ?? null)))
+                    - <span class="ltr">{{ $student['emergency_contact_phone'] ?? $student['emergencyContactPhone'] }}</span>
                 @endif
             </td>
         </tr>
         <tr>
-            <td class="info-label">{{ $labels['nationality'] ?? 'Nationality' }}:</td>
-            <td class="info-value">{{ $student['nationality'] ?? '—' }}</td>
-            <td class="info-label">{{ $labels['preferredLanguage'] ?? 'Preferred Language' }}:</td>
-            <td class="info-value">{{ $student['preferred_language'] ?? '—' }}</td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['address'] ?? 'Address' }}:</td>
-            <td class="info-value" colspan="3">{{ $student['home_address'] ?? '—' }}</td>
-        </tr>
-        <tr>
+            <td class="info-label">{{ $labels['guardianTazkira'] ?? 'Guardian Tazkira' }}:</td>
+            <td class="info-value"><span class="ltr">{{ $student['guardian_tazkira'] ?? ($student['guardianTazkira'] ?? '—') }}</span></td>
             <td class="info-label">{{ $labels['previousSchool'] ?? 'Previous School' }}:</td>
-            <td class="info-value" colspan="3">{{ $student['previous_school'] ?? '—' }}</td>
+            <td class="info-value">{{ $student['previous_school'] ?? ($student['previousSchool'] ?? '—') }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">{{ $labels['admissionYear'] ?? 'Admission Year' }}:</td>
+            <td class="info-value"><span class="ltr">{{ $student['admission_year'] ?? ($student['admissionYear'] ?? '—') }}</span></td>
+            <td class="info-label">{{ $labels['applyingGrade'] ?? 'Applying Grade' }}:</td>
+            <td class="info-value">{{ $student['applying_grade'] ?? ($student['applyingGrade'] ?? '—') }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">{{ $labels['admissionFeeStatus'] ?? 'Admission Fee Status' }}:</td>
+            <td class="info-value">{{ $student['admission_fee_status'] ?? ($student['admissionFeeStatus'] ?? '—') }}</td>
+            <td class="info-label">{{ $labels['familyIncome'] ?? 'Family Income' }}:</td>
+            <td class="info-value"><span class="ltr">{{ $student['family_income'] ?? ($student['familyIncome'] ?? '—') }}</span></td>
+        </tr>
+        <tr>
+            <td class="info-label">{{ $labels['createdAt'] ?? 'Created At' }}:</td>
+            <td class="info-value"><span class="ltr">{{ $createdAtDisplay }}</span></td>
+            <td class="info-label">{{ $labels['organization'] ?? 'Organization' }}:</td>
+            <td class="info-value">{{ $student['organization_name'] ?? ($student['organizationName'] ?? '—') }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">{{ $labels['school'] ?? 'School' }}:</td>
+            <td class="info-value">{{ $student['school_name'] ?? ($student['schoolName'] ?? '—') }}</td>
+            <td class="info-label"></td>
+            <td class="info-value"></td>
         </tr>
     </table>
+    <div class="clearfix"></div>
 </div>
+
+{{-- Detailed Student Information Sections --}}
+{{-- NOTE: Disabled because you requested ALL student info inside the main card --}}
+@if(false)
+{{-- Personal Information Section --}}
+<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
+    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['personalInfo'] ?? 'Personal Information' }}</h4>
+    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
+        <tbody style="display: table-row-group !important;">
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['fullName'] ?? 'Full Name' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['full_name'] ?? ($student['fullName'] ?? '—') }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['firstName'] ?? 'First Name' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['first_name'] ?? ($student['firstName'] ?? '—') }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['lastName'] ?? 'Last Name' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['last_name'] ?? ($student['lastName'] ?? '—') }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['fatherName'] ?? 'Father Name' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['father_name'] ?? ($student['fatherName'] ?? '—') }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['grandfatherName'] ?? 'Grandfather Name' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['grandfather_name'] ?? ($student['grandfatherName'] ?? '—') }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['motherName'] ?? 'Mother Name' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['mother_name'] ?? ($student['motherName'] ?? '—') }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['gender'] ?? 'Gender' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['gender'] ?? '—' }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['dob'] ?? 'Date of Birth' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['birth_date'] ?? ($student['birthDate'] ?? ($student['dateOfBirth'] ?? '—')) }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['birthYear'] ?? 'Birth Year' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['birth_year'] ?? ($student['birthYear'] ?? '—') }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['age'] ?? 'Age' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['age'] ?? '—' }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['nationality'] ?? 'Nationality' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['nationality'] ?? '—' }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['preferredLanguage'] ?? 'Preferred Language' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['preferred_language'] ?? ($student['preferredLanguage'] ?? '—') }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['isOrphan'] ?? 'Is Orphan' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ ($student['is_orphan'] ?? ($student['isOrphan'] ?? false)) ? ($labels['yes'] ?? 'Yes') : ($labels['no'] ?? 'No') }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+{{-- Contact Information Section --}}
+<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
+    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['contactInfo'] ?? 'Contact Information' }}</h4>
+    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
+        <tbody style="display: table-row-group !important;">
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['phone'] ?? 'Phone' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['phone'] ?? '—' }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['address'] ?? 'Home Address' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['home_address'] ?? ($student['homeAddress'] ?? '—') }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['emergencyContactName'] ?? 'Emergency Contact Name' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['emergency_contact_name'] ?? ($student['emergencyContactName'] ?? '—') }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['emergencyContactPhone'] ?? 'Emergency Contact Phone' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['emergency_contact_phone'] ?? ($student['emergencyContactPhone'] ?? '—') }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+{{-- Location Information Section --}}
+<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
+    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['locationInfo'] ?? 'Location Information' }}</h4>
+    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
+        <tbody style="display: table-row-group !important;">
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td colspan="4" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-weight: bold !important; padding-bottom: 5px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['originLocation'] ?? 'Origin Location' }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['province'] ?? 'Province' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['orig_province'] ?? ($student['origProvince'] ?? '—') }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['district'] ?? 'District' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['orig_district'] ?? ($student['origDistrict'] ?? '—') }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['village'] ?? 'Village' }}:</td>
+            <td class="info-value" colspan="3" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['orig_village'] ?? ($student['origVillage'] ?? '—') }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td colspan="4" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-weight: bold !important; padding-top: 10px !important; padding-bottom: 5px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['currentLocation'] ?? 'Current Location' }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['province'] ?? 'Province' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['curr_province'] ?? ($student['currProvince'] ?? '—') }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['district'] ?? 'District' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['curr_district'] ?? ($student['currDistrict'] ?? '—') }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['village'] ?? 'Village' }}:</td>
+            <td class="info-value" colspan="3" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['curr_village'] ?? ($student['currVillage'] ?? '—') }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+{{-- Guardian Information Section --}}
+<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
+    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['guardianInfo'] ?? 'Guardian Information' }}</h4>
+    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
+        <tbody style="display: table-row-group !important;">
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guardianName'] ?? 'Guardian Name' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['guardian_name'] ?? ($student['guardianName'] ?? '—') }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guardianRelation'] ?? 'Relation' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['guardian_relation'] ?? ($student['guardianRelation'] ?? '—') }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guardianPhone'] ?? 'Guardian Phone' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['guardian_phone'] ?? ($student['guardianPhone'] ?? '—') }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guardianTazkira'] ?? 'Guardian Tazkira' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['guardian_tazkira'] ?? ($student['guardianTazkira'] ?? '—') }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+{{-- Guarantor (Zamin) Information Section --}}
+<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
+    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['guarantorInfo'] ?? 'Guarantor Information' }}</h4>
+    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
+        <tbody style="display: table-row-group !important;">
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guarantorName'] ?? 'Guarantor Name' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['zamin_name'] ?? ($student['zaminName'] ?? '—') }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guarantorPhone'] ?? 'Guarantor Phone' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['zamin_phone'] ?? ($student['zaminPhone'] ?? '—') }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guarantorTazkira'] ?? 'Guarantor Tazkira' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['zamin_tazkira'] ?? ($student['zaminTazkira'] ?? '—') }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guarantorAddress'] ?? 'Guarantor Address' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['zamin_address'] ?? ($student['zaminAddress'] ?? '—') }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+{{-- Academic Information Section --}}
+<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
+    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['academicInfo'] ?? 'Academic Information' }}</h4>
+    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
+        <tbody style="display: table-row-group !important;">
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['admissionYear'] ?? 'Admission Year' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['admission_year'] ?? ($student['admissionYear'] ?? '—') }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['applyingGrade'] ?? 'Applying Grade' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['applying_grade'] ?? ($student['applyingGrade'] ?? '—') }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['admissionFeeStatus'] ?? 'Admission Fee Status' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['admission_fee_status'] ?? ($student['admissionFeeStatus'] ?? '—') }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+{{-- Financial Information Section --}}
+<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
+    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['financialInfo'] ?? 'Financial Information' }}</h4>
+    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
+        <tbody style="display: table-row-group !important;">
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['familyIncome'] ?? 'Family Income / Support' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['family_income'] ?? ($student['familyIncome'] ?? '—') }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+{{-- System Information Section --}}
+<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
+    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['systemInfo'] ?? 'System Information' }}</h4>
+    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
+        <tbody style="display: table-row-group !important;">
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['status'] ?? 'Status' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">
+                <span class="status-badge {{ strtolower($student['status'] ?? 'unknown') }}" style="font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important;">
+                    {{ $student['status'] ?? '—' }}
+                </span>
+            </td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['createdAt'] ?? 'Created At' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['created_at'] ?? ($student['createdAt'] ?? '—') }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['studentCode'] ?? 'Student Code' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['student_code'] ?? ($student['studentCode'] ?? '—') }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['cardNumber'] ?? 'Card Number' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['card_number'] ?? ($student['cardNumber'] ?? '—') }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['school'] ?? 'School' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['school_name'] ?? ($student['schoolName'] ?? '—') }}</td>
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['organization'] ?? 'Organization' }}:</td>
+            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['organization_name'] ?? ($student['organizationName'] ?? '—') }}</td>
+        </tr>
+        <tr style="display: table-row !important; visibility: visible !important;">
+            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['previousSchool'] ?? 'Previous School' }}:</td>
+            <td class="info-value" colspan="3" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['previous_school'] ?? ($student['previousSchool'] ?? '—') }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+@endif
 
 {{-- Summary Cards --}}
 @if(!empty($summary))
@@ -710,6 +979,18 @@
 </div>
 
 <style>
+    /* CRITICAL: Apply Bahij Nassim font to all elements */
+    .student-info-card,
+    .info-table,
+    .info-table td,
+    .info-table th,
+    .info-label,
+    .info-value,
+    .section-title,
+    h4 {
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+    }
+    
     /* Student Info Card Styles */
     .student-info-card {
         margin: 15px 0;
@@ -717,34 +998,45 @@
         background: #f8f9fa;
         border-radius: 8px;
         border: 1px solid #e9ecef;
+        page-break-inside: avoid;
+        overflow: hidden; /* contain float */
     }
     
     .info-table {
         width: 100%;
         border-collapse: collapse;
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+        table-layout: fixed;
     }
     
     .info-table td {
         padding: 6px 10px;
         vertical-align: middle;
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+        font-size: 11px !important;
+        word-break: break-word;
     }
-    
-    .photo-cell {
-        width: 100px;
+
+    /* Photo floats so table wraps around it (RTL: right) */
+    .student-photo-wrap {
+        float: right;
+        width: 96px;
+        margin: 0 0 10px 12px; /* space between photo and text */
         text-align: center;
     }
     
     .student-photo {
-        width: 80px;
-        height: 100px;
+        width: 96px;
+        height: 120px;
         object-fit: cover;
         border-radius: 4px;
         border: 2px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }};
+        background: #fff;
     }
     
     .no-photo {
-        width: 80px;
-        height: 100px;
+        width: 96px;
+        height: 120px;
         background: {{ $PRIMARY_COLOR ?? '#0b0b56' }};
         border-radius: 4px;
         display: flex;
@@ -753,17 +1045,43 @@
         color: #fff;
         font-size: 36px;
         font-weight: bold;
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
     }
     
     .info-label {
         color: #6c757d;
-        font-size: 11px;
-        width: 100px;
+        font-size: 11px !important;
+        width: 140px;
+        font-weight: 600;
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+        white-space: nowrap;
     }
     
     .info-value {
-        font-size: 12px;
+        font-size: 11px !important;
         min-width: 120px;
+        color: #333;
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+    }
+
+    .clearfix { clear: both; }
+
+    /* CRITICAL: Fix RTL number reversal for phone numbers, codes, and timestamps */
+    .ltr {
+        direction: ltr !important;
+        unicode-bidi: isolate !important;
+        text-align: left !important;
+        display: inline-block !important;
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+    }
+    
+    /* Section Headers */
+    h4 {
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+        font-weight: 700 !important;
+        font-size: 12px !important;
+        margin: 0 0 10px 0;
+        color: {{ $PRIMARY_COLOR ?? '#0b0b56' }};
     }
     
     .status-badge {
@@ -773,6 +1091,7 @@
         font-size: 10px;
         font-weight: 600;
         text-transform: uppercase;
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
     }
     
     .status-badge.active, .status-badge.admitted {
@@ -793,6 +1112,7 @@
     /* Summary Section Styles */
     .summary-section {
         margin: 20px 0;
+        page-break-inside: avoid;
     }
     
     .summary-cards {
@@ -812,18 +1132,21 @@
         border-radius: 8px;
         text-align: center;
         border-left: 4px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }};
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
     }
     
     .summary-value {
         font-size: 24px;
         font-weight: bold;
         color: {{ $PRIMARY_COLOR ?? '#0b0b56' }};
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
     }
     
     .summary-label {
         font-size: 10px;
         color: #6c757d;
         margin-top: 4px;
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
     }
     
     /* Section Styles */
@@ -839,6 +1162,7 @@
         margin-bottom: 10px;
         padding-bottom: 5px;
         border-bottom: 2px solid {{ $SECONDARY_COLOR ?? '#0056b3' }};
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
     }
     
     /* Table Cell Styles */
@@ -847,6 +1171,7 @@
         color: #6c757d;
         font-style: italic;
         padding: 20px !important;
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
     }
     
     .present-cell { color: #28a745; font-weight: 600; }
@@ -871,6 +1196,68 @@
         display: flex;
         justify-content: space-around;
         font-size: 12px;
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+    }
+    
+    /* Ensure information sections are visible and properly styled */
+    .info-section {
+        margin-top: 15px;
+        margin-bottom: 15px;
+        padding: 12px;
+        background: #f0f0f0;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        page-break-inside: avoid;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 100% !important;
+        overflow: visible !important;
+    }
+    
+    .info-section h4 {
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+        font-weight: 700 !important;
+        font-size: 12px !important;
+        margin: 0 0 10px 0;
+        padding-bottom: 5px;
+        border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }};
+        color: {{ $PRIMARY_COLOR ?? '#0b0b56' }};
+        display: block !important;
+        visibility: visible !important;
+    }
+    
+    /* Ensure all info sections are always visible */
+    .info-section table {
+        width: 100% !important;
+        display: table !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        border-collapse: collapse !important;
+        margin: 0 !important;
+    }
+    
+    .info-section table tr {
+        display: table-row !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    .info-section table td {
+        display: table-cell !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        padding: 6px 10px !important;
+        vertical-align: middle !important;
+    }
+    
+    /* Force visibility for all info sections - no hiding */
+    div.info-section {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        height: auto !important;
+        min-height: 50px !important;
     }
 </style>
 @endsection

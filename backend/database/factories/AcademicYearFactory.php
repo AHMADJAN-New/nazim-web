@@ -18,6 +18,11 @@ class AcademicYearFactory extends Factory
         return [
             'id' => (string) Str::uuid(),
             'organization_id' => Organization::factory(),
+            'school_id' => function (array $attributes) {
+                return \App\Models\SchoolBranding::factory()->create([
+                    'organization_id' => $attributes['organization_id']
+                ])->id;
+            },
             'name' => "{$year}-" . ($year + 1),
             'start_date' => "{$year}-01-01",
             'end_date' => ($year + 1) . "-12-31",

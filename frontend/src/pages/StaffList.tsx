@@ -41,6 +41,7 @@ import { Link } from 'react-router-dom';
 
 import { useLanguage } from '@/hooks/useLanguage';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
+import { cn } from '@/lib/utils';
 import { StaffProfile } from '@/components/staff/StaffProfile';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { toast } from 'sonner';
@@ -66,7 +67,18 @@ const staffSchema = z.object({
     grandfather_name: z.string().max(100, 'Grandfather name must be 100 characters or less').optional().nullable(),
     tazkira_number: z.string().max(50, 'Tazkira number must be 50 characters or less').optional().nullable(),
     birth_year: z.string().max(10, 'Birth year must be 10 characters or less').optional().nullable(),
-    birth_date: z.string().optional().nullable(),
+    birth_date: z
+        .union([z.date(), z.string()])
+        .nullable()
+        .optional()
+        .transform((val) => {
+            if (!val) return null;
+            if (val instanceof Date) {
+                // Convert Date to ISO string format (YYYY-MM-DD)
+                return val.toISOString().split('T')[0];
+            }
+            return val;
+        }),
     phone_number: z.string().max(20, 'Phone number must be 20 characters or less').optional().nullable(),
     email: z.string().email('Invalid email address').optional().nullable().or(z.literal('')),
     home_address: z.string().max(255, 'Home address must be 255 characters or less').optional().nullable(),
@@ -97,7 +109,7 @@ const staffSchema = z.object({
 type StaffFormData = z.infer<typeof staffSchema>;
 
 export function StaffList() {
-    const { t } = useLanguage();
+    const { t, isRTL } = useLanguage();
     const { data: profile } = useProfile();
     const hasCreatePermission = useHasPermission('staff.create');
     
@@ -318,7 +330,7 @@ export function StaffList() {
                                     grandfather_name: row.original.grandfatherName || null,
                                     tazkira_number: row.original.tazkiraNumber || null,
                                     birth_year: row.original.birthYear || null,
-                                    birth_date: row.original.birthDate || null,
+                                    birth_date: row.original.dateOfBirth || null,
                                     phone_number: row.original.phoneNumber || null,
                                     email: row.original.email || null,
                                     home_address: row.original.homeAddress || null,
@@ -837,7 +849,7 @@ export function StaffList() {
 
                         <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-6 py-4">
                             {/* Step Navigation - Vertical Sidebar (Desktop Only) */}
-                            <div className="hidden md:block border-r pr-6">
+                            <div className={cn("hidden md:block pr-6", isRTL ? "border-l pl-6 pr-0" : "border-r")}>
                                 <div className="flex flex-col">
                                     {steps.map((step, index) => {
                                         const StepIcon = step.icon;
@@ -1047,7 +1059,6 @@ export function StaffList() {
                                                         <Input id="birth_year" {...register('birth_year')} placeholder="e.g., 1990" />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="birth_date">{t('staff.dateOfBirth')}</Label>
                                                         <CalendarFormField control={control} name="birth_date" label={t('staff.dateOfBirth')} />
                                                         <p className="text-xs text-muted-foreground">{t('staff.dateOfBirthHelper')}</p>
                                                     </div>
@@ -1228,7 +1239,11 @@ export function StaffList() {
                             <div className="flex gap-2 w-full sm:w-auto">
                                 {currentStep > 1 && (
                                     <Button type="button" variant="outline" onClick={() => setCurrentStep(currentStep - 1)} className="flex-1 sm:flex-initial">
-                                        <ChevronLeft className="h-4 w-4 mr-2" />
+                                        {isRTL ? (
+                                            <ChevronRight className="h-4 w-4 ml-2" />
+                                        ) : (
+                                            <ChevronLeft className="h-4 w-4 mr-2" />
+                                        )}
                                         Previous
                                     </Button>
                                 )}
@@ -1248,8 +1263,17 @@ export function StaffList() {
                                 </Button>
                                 {currentStep < steps.length ? (
                                     <Button type="button" onClick={() => setCurrentStep(currentStep + 1)} className="flex-1 sm:flex-initial">
-                                        {t('events.next')}
-                                        <ChevronRight className="h-4 w-4 ml-2" />
+                                        {isRTL ? (
+                                            <>
+                                                <ChevronLeft className="h-4 w-4 mr-2" />
+                                                {t('events.next')}
+                                            </>
+                                        ) : (
+                                            <>
+                                                {t('events.next')}
+                                                <ChevronRight className="h-4 w-4 ml-2" />
+                                            </>
+                                        )}
                                     </Button>
                                 ) : (
                                     <Button
@@ -1354,7 +1378,7 @@ export function StaffList() {
 
                         <div className="grid grid-cols-[250px_1fr] gap-6 py-4">
                             {/* Step Navigation - Vertical Sidebar */}
-                            <div className="border-r pr-6">
+                            <div className={cn("pr-6", isRTL ? "border-l pl-6 pr-0" : "border-r")}>
                                 <div className="flex flex-col">
                                     {steps.map((step, index) => {
                                         const StepIcon = step.icon;
@@ -1520,7 +1544,6 @@ export function StaffList() {
                                                         <Input id="edit_birth_year" {...register('birth_year')} placeholder="e.g., 1990" />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_birth_date">Date of Birth</Label>
                                                         <CalendarFormField control={control} name="birth_date" label="Date of Birth" />
                                                         <p className="text-xs text-muted-foreground">Employee must be at least 18 years old</p>
                                                     </div>
@@ -1701,7 +1724,11 @@ export function StaffList() {
                             <div className="flex gap-2">
                                 {currentStep > 1 && (
                                     <Button type="button" variant="outline" onClick={() => setCurrentStep(currentStep - 1)}>
-                                        <ChevronLeft className="h-4 w-4 mr-2" />
+                                        {isRTL ? (
+                                            <ChevronRight className="h-4 w-4 ml-2" />
+                                        ) : (
+                                            <ChevronLeft className="h-4 w-4 mr-2" />
+                                        )}
                                         {t('events.previous')}
                                     </Button>
                                 )}
@@ -1721,8 +1748,17 @@ export function StaffList() {
                                 </Button>
                                 {currentStep < steps.length ? (
                                     <Button type="button" onClick={() => setCurrentStep(currentStep + 1)}>
-                                        {t('events.next')}
-                                        <ChevronRight className="h-4 w-4 ml-2" />
+                                        {isRTL ? (
+                                            <>
+                                                <ChevronLeft className="h-4 w-4 mr-2" />
+                                                {t('events.next')}
+                                            </>
+                                        ) : (
+                                            <>
+                                                {t('events.next')}
+                                                <ChevronRight className="h-4 w-4 ml-2" />
+                                            </>
+                                        )}
                                     </Button>
                                 ) : (
                                     <Button type="submit" disabled={updateStaff.isPending}>

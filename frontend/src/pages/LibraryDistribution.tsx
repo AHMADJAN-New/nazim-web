@@ -788,16 +788,12 @@ export default function LibraryDistribution() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="loan_date">
-                                        Loan Date <span className="text-destructive">*</span>
-                                    </Label>
-                                    <CalendarFormField control={control} name="loan_date" label="Loan Date" />
+                                    <CalendarFormField control={control} name="loan_date" label="Loan Date" required />
                                     {errors.loan_date && (
                                         <p className="text-sm text-destructive mt-1">{errors.loan_date.message}</p>
                                     )}
                                 </div>
                                 <div>
-                                    <Label htmlFor="due_date">Due Date</Label>
                                     <CalendarFormField control={control} name="due_date" label="Due Date" />
                                     {errors.due_date && (
                                         <p className="text-sm text-destructive mt-1">{errors.due_date.message}</p>

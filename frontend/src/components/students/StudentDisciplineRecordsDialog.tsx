@@ -199,7 +199,7 @@ export function StudentDisciplineRecordsDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 group-[data-rtl=true]:flex-row-reverse">
               <AlertTriangle className="h-5 w-5" />
               {t('students.disciplineRecords') || 'Discipline Records'}
             </DialogTitle>
@@ -209,9 +209,9 @@ export function StudentDisciplineRecordsDialog({
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex justify-end group-[data-rtl=true]:justify-start">
               <Button onClick={openAddDialog}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 mr-2 group-[data-rtl=true]:mr-0 group-[data-rtl=true]:ml-2" />
                 {t('students.addDisciplineRecord') || 'Add Record'}
               </Button>
             </div>
@@ -228,7 +228,7 @@ export function StudentDisciplineRecordsDialog({
                     <TableHead>{t('students.incidentType') || 'Type'}</TableHead>
                     <TableHead>{t('students.severity') || 'Severity'}</TableHead>
                     <TableHead>{t('students.status.label') || 'Status'}</TableHead>
-                    <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                    <TableHead className="text-right group-[data-rtl=true]:text-left">{t('common.actions') || 'Actions'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -254,8 +254,8 @@ export function StudentDisciplineRecordsDialog({
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                      <TableCell className="text-right group-[data-rtl=true]:text-left">
+                        <div className="flex justify-end gap-2 group-[data-rtl=true]:justify-start">
                           {!record.resolved && (
                             <Button
                               variant="ghost"
@@ -326,8 +326,7 @@ export function StudentDisciplineRecordsDialog({
             <form onSubmit={handleSubmit(handleSave)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="incident_date">{t('students.incidentDate') || 'Incident Date'} *</Label>
-                <CalendarFormField control={control} name="incident_date" label={t('students.incidentDate') || 'Incident Date'} />
+                <CalendarFormField control={control} name="incident_date" label={t('students.incidentDate') || 'Incident Date'} required />
                 {errors.incident_date && (
                   <p className="text-sm text-destructive mt-1">{errors.incident_date.message}</p>
                 )}

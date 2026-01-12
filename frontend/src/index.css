@@ -256,6 +256,12 @@
       text-align: left;
       direction: rtl;
     }
+
+    /* 
+     * RTL Dialog Fixes - Now handled via Tailwind group-[data-rtl=true]: selectors
+     * in dialog.tsx, alert-dialog.tsx, sheet.tsx, drawer.tsx
+     * This ensures Portal-safe RTL support without CSS conflicts
+     */
   }
 
   @layer base {
