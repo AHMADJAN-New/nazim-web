@@ -695,6 +695,14 @@ class SchoolBrandingController extends Controller
             return response()->noContent(); // 204 No Content
         }
 
+        // Ensure binary is a string (PostgreSQL BYTEA might return a resource)
+        if (is_resource($binary)) {
+            $binary = stream_get_contents($binary);
+        }
+        
+        // Ensure binary is a string (handle any other edge cases)
+        $binary = (string) $binary;
+
         $mimeType = $school->getAttribute($mimeField) ?: 'image/png';
         $filename = $school->getAttribute($filenameField) ?: "{$type}_logo";
         $fileSize = (int)($school->getAttribute($sizeField) ?: strlen($binary));
