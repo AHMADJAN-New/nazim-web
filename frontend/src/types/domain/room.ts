@@ -17,6 +17,7 @@ export interface Room {
     };
     staff?: {
         id: string;
+        duty?: string | null;
         profile?: {
             fullName: string;
         };

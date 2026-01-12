@@ -3,7 +3,7 @@
   /* Bahij Fonts - Local fonts for Arabic text */
   @font-face {
     font-family: 'Bahij Titr';
-    src: url('/fonts/Bahij Titr-Bold.woff') format('woff');
+    src: url('/fonts/Bahij%20Titr-Bold.woff') format('woff');
     font-weight: bold;
     font-style: normal;
     font-display: swap;
@@ -11,7 +11,7 @@
 
   @font-face {
     font-family: 'Bahij Nassim';
-    src: url('/fonts/Bahij Nassim-Regular.woff') format('woff');
+    src: url('/fonts/Bahij%20Nassim-Regular.woff') format('woff');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
@@ -19,7 +19,7 @@
 
   @font-face {
     font-family: 'Bahij Nassim';
-    src: url('/fonts/Bahij Nassim-Bold.woff') format('woff');
+    src: url('/fonts/Bahij%20Nassim-Bold.woff') format('woff');
     font-weight: bold;
     font-style: normal;
     font-display: swap;

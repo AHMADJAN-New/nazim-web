@@ -295,8 +295,8 @@ const CourseStudentReports = () => {
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <CardTitle className="text-lg font-semibold">Student Reports</CardTitle>
-              <p className="text-sm text-muted-foreground">Filter and manage course students.</p>
+              <CardTitle className="text-lg font-semibold">{t('nav.studentReports') || 'Student Reports'}</CardTitle>
+              <p className="text-sm text-muted-foreground">{t('courses.courseReportsDescription') || 'Filter and manage course students.'}</p>
             </div>
             {pagination && (
               <div className="text-sm text-muted-foreground">

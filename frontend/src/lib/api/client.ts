@@ -159,7 +159,33 @@ class ApiClient {
       });
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: response.statusText }));
+        // Check content type before parsing
+        const contentType = response.headers.get('content-type') || '';
+        let error: any = { message: response.statusText };
+        
+        if (contentType.includes('application/json')) {
+          // Try to parse as JSON
+          try {
+            error = await response.json();
+          } catch (e) {
+            // If JSON parsing fails, use status text
+            error = { message: response.statusText };
+          }
+        } else {
+          // If response is HTML (error page), try to extract error message
+          try {
+            const text = await response.text();
+            // Try to extract error message from HTML if it's a PHP error
+            const errorMatch = text.match(/<b>(.*?)<\/b>/i) || text.match(/Fatal error: (.*?)(?:\n|<)/i);
+            if (errorMatch) {
+              error = { message: `Server error: ${errorMatch[1]}` };
+            } else {
+              error = { message: `Server error (${response.status}): ${response.statusText}` };
+            }
+          } catch (e) {
+            error = { message: `Server error (${response.status}): ${response.statusText}` };
+          }
+        }
 
         // Suppress console errors for expected 401 when no token (user not logged in)
         // This is normal behavior, not an error
@@ -313,6 +339,14 @@ class ApiClient {
       // Handle 204 No Content responses (no body)
       if (response.status === 204) {
         return null as T;
+      }
+
+      // Check content type before parsing JSON
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        // If response is not JSON, try to get text and throw meaningful error
+        const text = await response.text();
+        throw new Error(`Expected JSON response but got ${contentType}. Response: ${text.substring(0, 200)}`);
       }
 
       return response.json();

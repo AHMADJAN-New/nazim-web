@@ -174,7 +174,64 @@ export function mapStaffDomainToInsert(domain: Partial<Staff>): StaffApi.StaffIn
  * Convert Domain Staff model to API StaffUpdate payload
  */
 export function mapStaffDomainToUpdate(domain: Partial<Staff>): StaffApi.StaffUpdate {
-  return mapStaffDomainToInsert(domain);
+  const insertData = mapStaffDomainToInsert(domain);
+  
+  // For updates, only include fields that are actually being updated
+  // Don't include staff_type if it's not provided (empty string means not updating)
+  const updateData: StaffApi.StaffUpdate = {};
+  
+  // Only include fields that are explicitly provided (not undefined)
+  if (domain.profileId !== undefined) updateData.profile_id = insertData.profile_id;
+  if (domain.employeeId !== undefined) updateData.employee_id = insertData.employee_id;
+  if (domain.staffCode !== undefined) updateData.staff_code = insertData.staff_code;
+  if (domain.staffTypeId !== undefined) updateData.staff_type_id = insertData.staff_type_id;
+  // Only include staff_type if staffType is explicitly provided (not empty string)
+  if (domain.staffType !== undefined && domain.staffType !== '') {
+    updateData.staff_type = insertData.staff_type;
+  }
+  if (domain.schoolId !== undefined) updateData.school_id = insertData.school_id;
+  if (domain.firstName !== undefined) updateData.first_name = insertData.first_name;
+  if (domain.fatherName !== undefined) updateData.father_name = insertData.father_name;
+  if (domain.grandfatherName !== undefined) updateData.grandfather_name = insertData.grandfather_name;
+  if (domain.tazkiraNumber !== undefined) updateData.tazkira_number = insertData.tazkira_number;
+  if (domain.birthYear !== undefined) updateData.birth_year = insertData.birth_year;
+  if (domain.birthDate !== undefined || domain.dateOfBirth !== undefined) updateData.birth_date = insertData.birth_date;
+  if (domain.phoneNumber !== undefined) updateData.phone_number = insertData.phone_number;
+  if (domain.email !== undefined) updateData.email = insertData.email;
+  if (domain.homeAddress !== undefined || domain.address !== undefined) updateData.home_address = insertData.home_address;
+  if (domain.originLocation !== undefined) {
+    updateData.origin_province = insertData.origin_province;
+    updateData.origin_district = insertData.origin_district;
+    updateData.origin_village = insertData.origin_village;
+  }
+  if (domain.currentLocation !== undefined) {
+    updateData.current_province = insertData.current_province;
+    updateData.current_district = insertData.current_district;
+    updateData.current_village = insertData.current_village;
+  }
+  if (domain.religiousEducation !== undefined) {
+    updateData.religious_education = insertData.religious_education;
+    updateData.religious_university = insertData.religious_university;
+    updateData.religious_graduation_year = insertData.religious_graduation_year;
+    updateData.religious_department = insertData.religious_department;
+  }
+  if (domain.modernEducation !== undefined) {
+    updateData.modern_education = insertData.modern_education;
+    updateData.modern_school_university = insertData.modern_school_university;
+    updateData.modern_graduation_year = insertData.modern_graduation_year;
+    updateData.modern_department = insertData.modern_department;
+  }
+  if (domain.teachingSection !== undefined) updateData.teaching_section = insertData.teaching_section;
+  if (domain.position !== undefined) updateData.position = insertData.position;
+  if (domain.duty !== undefined) updateData.duty = insertData.duty;
+  if (domain.salary !== undefined) updateData.salary = insertData.salary;
+  if (domain.status !== undefined) updateData.status = insertData.status;
+  if (domain.pictureUrl !== undefined) updateData.picture_url = insertData.picture_url;
+  if (domain.documentUrls !== undefined) updateData.document_urls = insertData.document_urls;
+  if (domain.notes !== undefined) updateData.notes = insertData.notes;
+  if (domain.updatedBy !== undefined) updateData.updated_by = insertData.updated_by;
+  
+  return updateData;
 }
 
 /**

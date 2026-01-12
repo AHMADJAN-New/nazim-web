@@ -771,7 +771,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           // Reports Submenu - at the end
           ...((hasExamsReportsPermission || hasExamsViewGradeCardsPermission || hasExamsViewConsolidatedReportsPermission || hasExamsViewClassReportsPermission || hasExamsViewStudentReportsPermission || hasExamsNumbersPrintPermission) ? [{
             title: "Reports",
-            titleKey: "examReports",
+            titleKey: "nav.examReports",
             icon: FileText,
             children: [
               ...(hasExamsReportsPermission ? [{
@@ -830,17 +830,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasBuildingsPermission ? [{
             title: "Buildings Management",
+            titleKey: "nav.buildingsManagement",
             url: "/settings/buildings",
             icon: Building2,
           }] : []),
           ...(hasRoomsPermission ? [{
             title: "Rooms Management",
+            titleKey: "nav.roomsManagement",
             url: "/settings/rooms",
             icon: DoorOpen,
           }] : []),
           ...((hasReportsPermission && hasHostelPermission) ? [{
             title: "Hostel reports",
-            titleKey: "nav.reports",
+            titleKey: "nav.hostel.reports",
             url: "/hostel/reports",
             icon: LucideIcons.BarChart3,
           }] : []),
@@ -880,7 +882,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasLibraryBooksPermission ? [{
             title: "Reports",
-            titleKey: "nav.reports",
+            titleKey: "nav.library.reports",
             url: "/library/reports",
             icon: LucideIcons.BarChart3,
           }] : []),
@@ -1148,7 +1150,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           },
           {
             title: "Asset Reports",
-            titleKey: "nav.reports",
+            titleKey: "nav.assets.reports",
             url: "/assets/reports",
             icon: LucideIcons.BarChart3,
           },

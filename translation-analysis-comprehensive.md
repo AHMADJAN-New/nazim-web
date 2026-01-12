@@ -906,7 +906,7 @@ Placeholder
 **Context:**
 ```
       schoolHint: 'د سازمان پراخو سلاټونو لپاره خالي پریږدئ، یا یو ځانګړی ښوونځی وټاکئ',
-      searchPlaceholder: 'د وخت جدول سلاټونه لټون...',
+      searchPlaceholder: 'تقسیم اوقات  سلاټونه لټون...',
       selectAcademicYear: 'علمی کال وټاکئ',
       selectDaysHint: 'د اونۍ هغه ورځې وټاکئ چې دا سلاټ شتون لري',
 ```

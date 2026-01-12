@@ -1274,7 +1274,7 @@ export default function FinanceReports() {
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
             <PageHeader
-                title={t('nav.reports') || 'Finance Reports'}
+                title={t('nav.finance.reports') || t('finance.reports') || 'Finance Reports'}
                 description={t('finance.reportsDescription') || 'Generate and view financial reports'}
                 icon={<FileText className="h-5 w-5" />}
             />

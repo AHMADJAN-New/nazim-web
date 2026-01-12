@@ -47,7 +47,7 @@ class StoreResidencyTypeRequest extends FormRequest
                 },
             ],
             'description' => 'nullable|string',
-            'is_active' => 'boolean',
+            'is_active' => 'nullable|boolean',
             // Scope is derived from user profile + school.context middleware.
             'organization_id' => 'nullable|uuid|exists:organizations,id',
         ];
@@ -66,6 +66,21 @@ class StoreResidencyTypeRequest extends FormRequest
         if ($this->has('name')) {
             $this->merge([
                 'name' => trim($this->name),
+            ]);
+        }
+        // Ensure is_active is a boolean
+        if ($this->has('is_active')) {
+            $isActive = $this->is_active;
+            if (is_string($isActive)) {
+                $isActive = filter_var($isActive, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            }
+            $this->merge([
+                'is_active' => $isActive !== null ? (bool) $isActive : true,
+            ]);
+        } else {
+            // Default to true if not provided
+            $this->merge([
+                'is_active' => true,
             ]);
         }
     }

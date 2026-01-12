@@ -40,9 +40,11 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useLanguage } from '@/hooks/useLanguage';
+import { formatStaffName } from '@/lib/utils/formatStaffName';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { cn } from '@/lib/utils';
 import { StaffProfile } from '@/components/staff/StaffProfile';
+import { StaffPictureUpload } from '@/components/staff/StaffPictureUpload';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -53,7 +55,7 @@ import { useOrganizations } from '@/hooks/useOrganizations';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
-import { useStaff, useDeleteStaff, useStaffStats, useCreateStaff, useUpdateStaff, useStaffTypes } from '@/hooks/useStaff';
+import { useStaff, useDeleteStaff, useStaffStats, useCreateStaff, useUpdateStaff, useStaffTypes, useUploadStaffPicture } from '@/hooks/useStaff';
 import type { Staff } from '@/types/domain/staff';
 
 const staffSchema = z.object({
@@ -108,6 +110,92 @@ const staffSchema = z.object({
 
 type StaffFormData = z.infer<typeof staffSchema>;
 
+// Component for displaying staff picture in table cell
+function StaffPictureCell({ staff }: { staff: Staff }) {
+  const { t, isRTL } = useLanguage();
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+  
+  useEffect(() => {
+    // Only fetch if pictureUrl exists and is not empty
+    const shouldTryFetch = staff.pictureUrl && staff.pictureUrl.trim() !== '' && staff.id;
+    
+    if (shouldTryFetch) {
+      let currentBlobUrl: string | null = null;
+      
+      const fetchImage = async () => {
+        try {
+          const { apiClient } = await import('@/lib/api/client');
+          const token = apiClient.getToken();
+          const url = `/api/staff/${staff.id}/picture`;
+          
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Accept': 'image/*',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            },
+            credentials: 'include',
+          });
+          
+          if (!response.ok) {
+            if (response.status === 404) {
+              setImageError(true);
+              return;
+            }
+            throw new Error(`Failed to fetch image: ${response.status}`);
+          }
+          
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          currentBlobUrl = blobUrl;
+          setImageUrl(blobUrl);
+          setImageError(false);
+        } catch (error) {
+          if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
+            console.error('Failed to fetch staff picture:', error);
+          }
+          setImageError(true);
+        }
+      };
+      
+      fetchImage();
+      
+      return () => {
+        if (currentBlobUrl) {
+          URL.revokeObjectURL(currentBlobUrl);
+        }
+      };
+    } else {
+      // No picture path, show placeholder immediately
+      setImageUrl(null);
+      setImageError(false);
+    }
+  }, [staff.id, staff.pictureUrl]);
+
+  const formattedName = formatStaffName(
+    staff.firstName,
+    staff.fatherName,
+    staff.grandfatherName,
+    t('staff.sonOf'),
+    isRTL
+  ) || staff.fullName;
+
+  return (
+    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+      {imageUrl && !imageError ? (
+        <img 
+          src={imageUrl} 
+          alt={formattedName} 
+          className="w-full h-full object-cover" 
+        />
+      ) : (
+        <Users className="w-6 h-6 text-muted-foreground" />
+      )}
+    </div>
+  );
+}
+
 export function StaffList() {
     const { t, isRTL } = useLanguage();
     const { data: profile } = useProfile();
@@ -141,6 +229,7 @@ export function StaffList() {
     const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
     const [viewingProfile, setViewingProfile] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState(1);
+    const [selectedPictureFile, setSelectedPictureFile] = useState<File | null>(null);
     const steps = [
         { id: 1, label: t('events.basicInformation'), icon: User, description: t('staff.basicInformationDescription') },
         { id: 2, label: t('staff.personalDetails'), icon: User, description: t('staff.personalDetailsDescription') },
@@ -178,6 +267,7 @@ export function StaffList() {
     const deleteStaff = useDeleteStaff();
     const createStaff = useCreateStaff();
     const updateStaff = useUpdateStaff();
+    const uploadPicture = useUploadStaffPicture();
 
     const formMethods = useForm<StaffFormData>({
         resolver: zodResolver(staffSchema),
@@ -224,26 +314,23 @@ export function StaffList() {
             accessorKey: 'photo',
             header: t('staff.photo'),
             cell: ({ row }) => {
-                const pictureUrl = row.original.pictureUrl 
-                    ? (row.original.pictureUrl.startsWith('http') 
-                        ? row.original.pictureUrl 
-                        : `${import.meta.env.VITE_API_URL || ''}/storage/${row.original.pictureUrl}`)
-                    : null;
-                return (
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden">
-                        {pictureUrl ? (
-                            <img src={pictureUrl} alt={row.original.fullName} className="w-full h-full object-cover" />
-                        ) : (
-                            <Users className="w-6 h-6 text-muted-foreground" />
-                        )}
-                    </div>
-                );
+                return <StaffPictureCell staff={row.original} />;
             },
         },
         {
             accessorKey: 'fullName',
             header: t('events.name'),
-            cell: ({ row }) => <span className="font-medium">{row.original.fullName}</span>,
+            cell: ({ row }) => {
+                const staff = row.original;
+                const formattedName = formatStaffName(
+                    staff.firstName,
+                    staff.fatherName,
+                    staff.grandfatherName,
+                    t('staff.sonOf'),
+                    isRTL
+                );
+                return <span className="font-medium">{formattedName || staff.fullName}</span>;
+            },
         },
         {
             accessorKey: 'staffCode',
@@ -426,16 +513,6 @@ export function StaffList() {
         }
     };
 
-    const getPictureUrl = (staffMember: Staff) => {
-        if (!staffMember.pictureUrl) return null;
-        // Construct URL from Laravel API storage path
-        // Laravel API returns full URLs or paths that can be accessed via /storage/ endpoint
-        const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
-        const schoolPath = staffMember.schoolId ? `${staffMember.schoolId}/` : '';
-        const path = `${staffMember.organizationId}/${schoolPath}${staffMember.id}/picture/${staffMember.pictureUrl}`;
-        // Laravel typically serves files from /storage/ path
-        return `${baseUrl.replace('/api', '')}/storage/staff-files/${path}`;
-    };
 
     if (!hasReadPermission) {
         return (
@@ -715,23 +792,32 @@ export function StaffList() {
                 if (!open) {
                     reset();
                     setCurrentStep(1);
+                    setSelectedPictureFile(null);
                 }
             }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
                     <FormProvider {...formMethods}>
-                      <form onSubmit={handleSubmit(async (data) => {
-                        // Wait for profile to load
-                        if (!profile) {
-                            toast.error(t('staff.pleaseWait'));
+                      <form onSubmit={(e) => {
+                        e.preventDefault();
+                        // Only submit if we're on the last step
+                        if (currentStep !== steps.length) {
+                            // If not on last step, go to next step instead
+                            setCurrentStep(Math.min(currentStep + 1, steps.length));
                             return;
                         }
+                        handleSubmit(async (data) => {
+                            // Wait for profile to load
+                            if (!profile) {
+                                toast.error(t('staff.pleaseWait'));
+                                return;
+                            }
 
-                        // Validation is handled by react-hook-form, but double-check required fields
-                        if (!data.staff_type_id || data.staff_type_id === 'none') {
-                            toast.error(t('staff.pleaseSelectStaffType'));
-                            setCurrentStep(1); // Go back to step 1 to show the error
-                            return;
-                        }
+                            // Validation is handled by react-hook-form, but double-check required fields
+                            if (!data.staff_type_id || data.staff_type_id === 'none') {
+                                toast.error(t('staff.pleaseSelectStaffType'));
+                                setCurrentStep(1); // Go back to step 1 to show the error
+                                return;
+                            }
 
                         // Ensure school_id is null if it's 'none' or empty string
                         const schoolId = data.school_id && data.school_id !== 'none' && data.school_id !== ''
@@ -821,10 +907,23 @@ export function StaffList() {
                         };
 
                         createStaff.mutate(staffData, {
-                            onSuccess: () => {
+                            onSuccess: async (createdStaff) => {
+                                // Upload picture if one was selected
+                                if (selectedPictureFile && createdStaff?.id) {
+                                    try {
+                                        await uploadPicture.mutateAsync({
+                                            staffId: createdStaff.id,
+                                            file: selectedPictureFile,
+                                        });
+                                    } catch (error) {
+                                        console.error('Error uploading picture:', error);
+                                        // Don't fail the whole operation if picture upload fails
+                                    }
+                                }
                                 setIsCreateDialogOpen(false);
                                 reset();
                                 setCurrentStep(1);
+                                setSelectedPictureFile(null);
                                 // Force refetch to show the new staff member immediately
                                 // This ensures it appears even when "all" organizations filter is active
                                 refetchStaff();
@@ -834,7 +933,8 @@ export function StaffList() {
                                 toast.error(error.message || t('staff.failedToCreate'));
                             },
                         });
-                    })}>
+                        })(e);
+                      }}>
                         <DialogHeader>
                             <DialogTitle>{t('staff.createEmployee')}</DialogTitle>
                             <DialogDescription className="hidden md:block">
@@ -950,9 +1050,9 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <User className="h-5 w-5" />
-                                                    Basic Information
+                                                    {t('events.basicInformation')}
                                                 </CardTitle>
-                                                <CardDescription className="hidden md:block">Core employee identification and status information</CardDescription>
+                                                <CardDescription className="hidden md:block">{t('staff.basicInformationDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1029,9 +1129,9 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <User className="h-5 w-5" />
-                                                    Personal Details
+                                                    {t('staff.personalDetails')}
                                                 </CardTitle>
-                                                <CardDescription className="hidden md:block">Personal information and identification</CardDescription>
+                                                <CardDescription className="hidden md:block">{t('staff.personalDetailsDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1063,6 +1163,13 @@ export function StaffList() {
                                                         <p className="text-xs text-muted-foreground">{t('staff.dateOfBirthHelper')}</p>
                                                     </div>
                                                 </div>
+                                                {/* Picture Upload */}
+                                                <div className="mt-4 pt-4 border-t">
+                                                    <StaffPictureUpload
+                                                        onFileSelected={setSelectedPictureFile}
+                                                        allowUploadWithoutStaff={true}
+                                                    />
+                                                </div>
                                             </CardContent>
                                         </Card>
                                     </div>
@@ -1075,9 +1182,9 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <MapPin className="h-5 w-5" />
-                                                    Contact & Location
+                                                    {t('staff.contactLocation')}
                                                 </CardTitle>
-                                                <CardDescription className="hidden md:block">Contact information and addresses</CardDescription>
+                                                <CardDescription className="hidden md:block">{t('staff.contactLocationDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1121,11 +1228,11 @@ export function StaffList() {
                                                                 <Input id="current_province" {...register('current_province')} />
                                                             </div>
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="current_district">District</Label>
+                                                                <Label htmlFor="current_district">{t('staff.district')}</Label>
                                                                 <Input id="current_district" {...register('current_district')} />
                                                             </div>
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="current_village">Village</Label>
+                                                                <Label htmlFor="current_village">{t('staff.village')}</Label>
                                                                 <Input id="current_village" {...register('current_village')} />
                                                             </div>
                                                         </div>
@@ -1143,9 +1250,9 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <GraduationCap className="h-5 w-5" />
-                                                    Education
+                                                    {t('staff.education')}
                                                 </CardTitle>
-                                                <CardDescription className="hidden md:block">Educational background and qualifications</CardDescription>
+                                                <CardDescription className="hidden md:block">{t('staff.educationDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-6">
                                                 <div>
@@ -1170,22 +1277,22 @@ export function StaffList() {
                                                     </div>
                                                 </div>
                                                 <div className="pt-4 border-t">
-                                                    <h4 className="font-medium mb-3">Modern Education</h4>
+                                                    <h4 className="font-medium mb-3">{t('staff.modernEducationSection')}</h4>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="modern_education">Education Level</Label>
+                                                            <Label htmlFor="modern_education">{t('staff.educationLevel')}</Label>
                                                             <Input id="modern_education" {...register('modern_education')} />
                                                         </div>
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="modern_school_university">School/University</Label>
+                                                            <Label htmlFor="modern_school_university">{t('staff.modernSchoolUniversity')}</Label>
                                                             <Input id="modern_school_university" {...register('modern_school_university')} />
                                                         </div>
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="modern_graduation_year">Graduation Year</Label>
+                                                            <Label htmlFor="modern_graduation_year">{t('staff.graduationYear')}</Label>
                                                             <Input id="modern_graduation_year" {...register('modern_graduation_year')} />
                                                         </div>
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="modern_department">Department</Label>
+                                                            <Label htmlFor="modern_department">{t('staff.department')}</Label>
                                                             <Input id="modern_department" {...register('modern_department')} />
                                                         </div>
                                                     </div>
@@ -1202,9 +1309,9 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <Briefcase className="h-5 w-5" />
-                                                    Employment
+                                                    {t('staff.employment')}
                                                 </CardTitle>
-                                                <CardDescription className="hidden md:block">Employment details and position information</CardDescription>
+                                                <CardDescription className="hidden md:block">{t('staff.employmentDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1262,7 +1369,17 @@ export function StaffList() {
                                     {t('events.cancel')}
                                 </Button>
                                 {currentStep < steps.length ? (
-                                    <Button type="button" onClick={() => setCurrentStep(currentStep + 1)} className="flex-1 sm:flex-initial">
+                                    <Button 
+                                        type="button" 
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (currentStep < steps.length) {
+                                                setCurrentStep(currentStep + 1);
+                                            }
+                                        }} 
+                                        className="flex-1 sm:flex-initial"
+                                    >
                                         {isRTL ? (
                                             <>
                                                 <ChevronLeft className="h-4 w-4 mr-2" />
@@ -1298,15 +1415,24 @@ export function StaffList() {
                     setEditingStaff(null);
                     reset();
                     setCurrentStep(1);
+                    setSelectedPictureFile(null);
                 }
             }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <FormProvider {...formMethods}>
-                      <form onSubmit={handleSubmit(async (data) => {
-                        if (!editingStaff || !data.staff_type_id) {
-                            toast.error(t('staff.pleaseSelectStaffType'));
+                      <form onSubmit={(e) => {
+                        e.preventDefault();
+                        // Only submit if we're on the last step
+                        if (currentStep !== steps.length) {
+                            // If not on last step, go to next step instead
+                            setCurrentStep(Math.min(currentStep + 1, steps.length));
                             return;
                         }
+                        handleSubmit(async (data) => {
+                            if (!editingStaff || !data.staff_type_id) {
+                                toast.error(t('staff.pleaseSelectStaffType'));
+                                return;
+                            }
 
                         // Convert form data (snake_case) to domain model (camelCase)
                         const schoolId = data.school_id && data.school_id !== 'none' && data.school_id !== '' ? data.school_id : null;
@@ -1359,16 +1485,30 @@ export function StaffList() {
                         updateStaff.mutate(
                             { id: editingStaff.id, ...staffData },
                             {
-                                onSuccess: () => {
+                                onSuccess: async () => {
+                                    // Upload picture if one was selected
+                                    if (selectedPictureFile && editingStaff.id) {
+                                        try {
+                                            await uploadPicture.mutateAsync({
+                                                staffId: editingStaff.id,
+                                                file: selectedPictureFile,
+                                            });
+                                        } catch (error) {
+                                            console.error('Error uploading picture:', error);
+                                            // Don't fail the whole operation if picture upload fails
+                                        }
+                                    }
                                     setIsEditDialogOpen(false);
                                     setEditingStaff(null);
                                     reset();
                                     setCurrentStep(1);
+                                    setSelectedPictureFile(null);
                                     refetchStaff();
                                 },
                             }
                         );
-                    })}>
+                        })(e);
+                      }}>
                         <DialogHeader>
                             <DialogTitle>{t('staff.editEmployee')}</DialogTitle>
                             <DialogDescription>
@@ -1448,15 +1588,15 @@ export function StaffList() {
                                                         {errors.employee_id && <p className="text-sm text-destructive">{errors.employee_id.message}</p>}
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_staff_type_id">Staff Type *</Label>
+                                                        <Label htmlFor="edit_staff_type_id">{t('staff.staffType')} *</Label>
                                                         <Controller
                                                             name="staff_type_id"
                                                             control={control}
                                                             render={({ field }) => (
                                                                 <Select value={field.value || 'none'} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
-                                                                    <SelectTrigger><SelectValue placeholder="Select staff type" /></SelectTrigger>
+                                                                    <SelectTrigger><SelectValue placeholder={t('staff.selectStaffType')} /></SelectTrigger>
                                                                     <SelectContent>
-                                                                        <SelectItem value="none">Select a type</SelectItem>
+                                                                        <SelectItem value="none">{t('staff.selectStaffTypePlaceholder')}</SelectItem>
                                                                         {staffTypes?.map((type) => <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>)}
                                                                     </SelectContent>
                                                                 </Select>
@@ -1514,39 +1654,48 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <User className="h-5 w-5" />
-                                                    Personal Details
+                                                    {t('staff.personalDetails')}
                                                 </CardTitle>
-                                                <CardDescription>Personal information and identification</CardDescription>
+                                                <CardDescription>{t('staff.personalDetailsDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-3 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_first_name">First Name *</Label>
+                                                        <Label htmlFor="edit_first_name">{t('events.firstName')} *</Label>
                                                         <Input id="edit_first_name" {...register('first_name')} />
                                                         {errors.first_name && <p className="text-sm text-destructive">{errors.first_name.message}</p>}
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_father_name">Father Name *</Label>
+                                                        <Label htmlFor="edit_father_name">{t('examReports.fatherName')} *</Label>
                                                         <Input id="edit_father_name" {...register('father_name')} />
                                                         {errors.father_name && <p className="text-sm text-destructive">{errors.father_name.message}</p>}
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_grandfather_name">Grandfather Name</Label>
+                                                        <Label htmlFor="edit_grandfather_name">{t('staff.grandfatherName')}</Label>
                                                         <Input id="edit_grandfather_name" {...register('grandfather_name')} />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_tazkira_number">Civil ID / Tazkira Number</Label>
+                                                        <Label htmlFor="edit_tazkira_number">{t('staff.civilId')}</Label>
                                                         <Input id="edit_tazkira_number" {...register('tazkira_number')} />
-                                                        <p className="text-xs text-muted-foreground">National identification number (Tazkira)</p>
+                                                        <p className="text-xs text-muted-foreground">{t('staff.civilIdHelper')}</p>
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_birth_year">Birth Year</Label>
+                                                        <Label htmlFor="edit_birth_year">{t('staff.birthYear')}</Label>
                                                         <Input id="edit_birth_year" {...register('birth_year')} placeholder="e.g., 1990" />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <CalendarFormField control={control} name="birth_date" label="Date of Birth" />
-                                                        <p className="text-xs text-muted-foreground">Employee must be at least 18 years old</p>
+                                                        <CalendarFormField control={control} name="birth_date" label={t('staff.dateOfBirth')} />
+                                                        <p className="text-xs text-muted-foreground">{t('staff.dateOfBirthHelper')}</p>
                                                     </div>
+                                                </div>
+                                                {/* Picture Upload */}
+                                                <div className="mt-4 pt-4 border-t">
+                                                    <StaffPictureUpload
+                                                        staffId={editingStaff?.id}
+                                                        currentPictureUrl={editingStaff?.pictureUrl}
+                                                        onFileSelected={setSelectedPictureFile}
+                                                        allowUploadWithoutStaff={false}
+                                                    />
                                                 </div>
                                             </CardContent>
                                         </Card>
@@ -1560,57 +1709,57 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <MapPin className="h-5 w-5" />
-                                                    Contact & Location
+                                                    {t('staff.contactLocation')}
                                                 </CardTitle>
-                                                <CardDescription>Contact information and addresses</CardDescription>
+                                                <CardDescription>{t('staff.contactLocationDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_email">Email Address</Label>
+                                                        <Label htmlFor="edit_email">{t('events.email')}</Label>
                                                         <Input id="edit_email" type="email" {...register('email')} />
                                                         {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_phone_number">Phone Number</Label>
+                                                        <Label htmlFor="edit_phone_number">{t('staff.phoneNumber')}</Label>
                                                         <Input id="edit_phone_number" {...register('phone_number')} />
                                                     </div>
                                                     <div className="grid gap-2 col-span-2">
-                                                        <Label htmlFor="edit_home_address">Home Address</Label>
+                                                        <Label htmlFor="edit_home_address">{t('staff.homeAddress')}</Label>
                                                         <Input id="edit_home_address" {...register('home_address')} />
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                                                     <div>
-                                                        <h4 className="font-medium mb-3">Origin Location</h4>
+                                                        <h4 className="font-medium mb-3">{t('staff.originLocation')}</h4>
                                                         <div className="grid grid-cols-3 gap-2">
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="edit_origin_province">Province</Label>
+                                                                <Label htmlFor="edit_origin_province">{t('staff.province')}</Label>
                                                                 <Input id="edit_origin_province" {...register('origin_province')} />
                                                             </div>
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="edit_origin_district">District</Label>
+                                                                <Label htmlFor="edit_origin_district">{t('staff.district')}</Label>
                                                                 <Input id="edit_origin_district" {...register('origin_district')} />
                                                             </div>
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="edit_origin_village">Village</Label>
+                                                                <Label htmlFor="edit_origin_village">{t('staff.village')}</Label>
                                                                 <Input id="edit_origin_village" {...register('origin_village')} />
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div>
-                                                        <h4 className="font-medium mb-3">Current Location</h4>
+                                                        <h4 className="font-medium mb-3">{t('staff.currentLocation')}</h4>
                                                         <div className="grid grid-cols-3 gap-2">
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="edit_current_province">Province</Label>
+                                                                <Label htmlFor="edit_current_province">{t('staff.province')}</Label>
                                                                 <Input id="edit_current_province" {...register('current_province')} />
                                                             </div>
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="edit_current_district">District</Label>
+                                                                <Label htmlFor="edit_current_district">{t('staff.district')}</Label>
                                                                 <Input id="edit_current_district" {...register('current_district')} />
                                                             </div>
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="edit_current_village">Village</Label>
+                                                                <Label htmlFor="edit_current_village">{t('staff.village')}</Label>
                                                                 <Input id="edit_current_village" {...register('current_village')} />
                                                             </div>
                                                         </div>
@@ -1687,31 +1836,31 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <Briefcase className="h-5 w-5" />
-                                                    Employment
+                                                    {t('staff.employment')}
                                                 </CardTitle>
-                                                <CardDescription>Employment details and position information</CardDescription>
+                                                <CardDescription>{t('staff.employmentDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_position">Position</Label>
+                                                        <Label htmlFor="edit_position">{t('search.position')}</Label>
                                                         <Input id="edit_position" {...register('position')} />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_teaching_section">Teaching Section</Label>
+                                                        <Label htmlFor="edit_teaching_section">{t('staff.teachingSection')}</Label>
                                                         <Input id="edit_teaching_section" {...register('teaching_section')} />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_duty">Duty</Label>
+                                                        <Label htmlFor="edit_duty">{t('staff.duty')}</Label>
                                                         <Input id="edit_duty" {...register('duty')} />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_salary">Salary</Label>
+                                                        <Label htmlFor="edit_salary">{t('staff.salary')}</Label>
                                                         <Input id="edit_salary" {...register('salary')} />
                                                     </div>
                                                     <div className="grid gap-2 col-span-2">
-                                                        <Label htmlFor="edit_notes">Notes</Label>
-                                                        <Textarea id="edit_notes" {...register('notes')} rows={3} placeholder="Additional notes about this staff member..." />
+                                                        <Label htmlFor="edit_notes">{t('events.notes')}</Label>
+                                                        <Textarea id="edit_notes" {...register('notes')} rows={3} placeholder={t('staff.notesPlaceholder')} />
                                                     </div>
                                                 </div>
                                             </CardContent>
@@ -1747,7 +1896,16 @@ export function StaffList() {
                                     {t('events.cancel')}
                                 </Button>
                                 {currentStep < steps.length ? (
-                                    <Button type="button" onClick={() => setCurrentStep(currentStep + 1)}>
+                                    <Button 
+                                        type="button" 
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (currentStep < steps.length) {
+                                                setCurrentStep(currentStep + 1);
+                                            }
+                                        }}
+                                    >
                                         {isRTL ? (
                                             <>
                                                 <ChevronLeft className="h-4 w-4 mr-2" />

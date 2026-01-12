@@ -133,7 +133,7 @@ export function ExamReportsPage() {
             </Button>
           )}
           <div>
-            <h1 className="text-2xl font-bold">{t('nav.reports') || 'Exam Reports'}</h1>
+            <h1 className="text-2xl font-bold">{t('nav.examReports') || 'Exam Reports'}</h1>
             <p className="text-muted-foreground">{exam.name}</p>
           </div>
         </div>

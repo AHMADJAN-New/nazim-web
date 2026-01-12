@@ -1,5 +1,5 @@
 import { Upload, X, FileText, Image as ImageIcon, Download, Trash2, Camera, User, Mail, Phone, MapPin, Calendar, GraduationCap, Briefcase, FileCheck } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import {
   AlertDialog,
@@ -25,7 +25,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
-import { useStaffMember, useStaffDocuments, useUploadStaffPicture, useUploadStaffDocument, useDeleteStaffDocument } from '@/hooks/useStaff';
+import { useStaffMember, useStaffDocuments, useUploadStaffDocument, useDeleteStaffDocument } from '@/hooks/useStaff';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import type { Staff } from '@/types/domain/staff';
 import { Label } from '@/components/ui/label';
@@ -33,6 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/hooks/useLanguage';
+import { formatStaffName } from '@/lib/utils/formatStaffName';
 import { LoadingSpinner } from '@/components/ui/loading';
 
 interface StaffProfileProps {
@@ -41,11 +42,10 @@ interface StaffProfileProps {
 }
 
 export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { data: profile } = useProfile();
   const { data: staff, isLoading } = useStaffMember(staffId);
   const { data: documents, isLoading: documentsLoading } = useStaffDocuments(staffId);
-  const uploadPicture = useUploadStaffPicture();
   const uploadDocument = useUploadStaffDocument();
   const deleteDocument = useDeleteStaffDocument();
 
@@ -53,14 +53,69 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
   const hasDocumentPermission = useHasPermission('staff_documents.read');
 
   const [activeTab, setActiveTab] = useState('assignment');
-  const [isUploadPictureDialogOpen, setIsUploadPictureDialogOpen] = useState(false);
   const [isUploadDocumentDialogOpen, setIsUploadDocumentDialogOpen] = useState(false);
   const [isDeleteDocumentDialogOpen, setIsDeleteDocumentDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
-  const [pictureFile, setPictureFile] = useState<File | null>(null);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [documentType, setDocumentType] = useState('');
   const [documentDescription, setDocumentDescription] = useState('');
+  const [pictureUrl, setPictureUrl] = useState<string | null>(null);
+
+  // Fetch staff picture with authentication headers and convert to blob URL
+  useEffect(() => {
+    // Check if staff has a picture (either picture_url or pictureUrl field)
+    const hasPicture = staff?.picture_url || staff?.pictureUrl;
+    
+    if (!staff?.id || !hasPicture) {
+      setPictureUrl(null);
+      return;
+    }
+
+    let currentBlobUrl: string | null = null;
+
+    const fetchImage = async () => {
+      try {
+        const { apiClient } = await import('@/lib/api/client');
+        const token = apiClient.getToken();
+        const url = `/api/staff/${staff.id}/picture`;
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'image/*',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            setPictureUrl(null);
+            return;
+          }
+          throw new Error(`Failed to fetch image: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        currentBlobUrl = blobUrl;
+        setPictureUrl(blobUrl);
+      } catch (error) {
+        if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
+          console.error('Failed to fetch staff picture:', error);
+        }
+        setPictureUrl(null);
+      }
+    };
+
+    fetchImage();
+
+    return () => {
+      if (currentBlobUrl) {
+        URL.revokeObjectURL(currentBlobUrl);
+      }
+    };
+  }, [staff?.id, staff?.picture_url, staff?.pictureUrl]);
 
   if (isLoading) {
     return (
@@ -109,15 +164,6 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
     }
   };
 
-  const getPictureUrl = () => {
-    if (!staff.picture_url) return null;
-    // Construct URL from Laravel API storage path
-    const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
-    const schoolPath = staff.school_id ? `${staff.school_id}/` : '';
-    const path = `${staff.organization_id}/${schoolPath}${staff.id}/picture/${staff.picture_url}`;
-    return `${baseUrl.replace('/api', '')}/storage/staff-files/${path}`;
-  };
-
   const getDocumentUrl = (document: any) => {
     if (!document.file_path) return null;
     // Construct URL from Laravel API storage path
@@ -125,24 +171,6 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
     return `${baseUrl.replace('/api', '')}/storage/staff-files/${document.file_path}`;
   };
 
-  const handleUploadPicture = async () => {
-    if (!pictureFile || !staff) return;
-
-    uploadPicture.mutate(
-      {
-        staffId: staff.id,
-        organizationId: staff.organizationId,
-        schoolId: staff.schoolId,
-        file: pictureFile,
-      },
-      {
-        onSuccess: () => {
-          setIsUploadPictureDialogOpen(false);
-          setPictureFile(null);
-        },
-      }
-    );
-  };
 
   const handleUploadDocument = async () => {
     if (!documentFile || !staff || !documentType) return;
@@ -178,7 +206,6 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
     });
   };
 
-  const pictureUrl = getPictureUrl();
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose?.()}>
@@ -209,22 +236,21 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                 <Label className="text-muted-foreground text-sm">Photo path</Label>
                 <div className="mt-2">
                   {pictureUrl ? (
-                    <img src={pictureUrl} alt={staff.fullName} className="w-24 h-24 rounded-full object-cover" />
+                    <img 
+                      src={pictureUrl} 
+                      alt={formatStaffName(
+                        staff.firstName,
+                        staff.fatherName,
+                        staff.grandfatherName,
+                        t('staff.sonOf'),
+                        isRTL
+                      ) || staff.fullName} 
+                      className="w-24 h-24 rounded-full object-cover" 
+                    />
                   ) : (
                     <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center">
                       <User className="w-12 h-12 text-muted-foreground" />
                     </div>
-                  )}
-                  {hasUpdatePermission && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="mt-2"
-                      onClick={() => setIsUploadPictureDialogOpen(true)}
-                    >
-                      <Camera className="w-4 h-4 mr-2" />
-                      Upload Photo
-                    </Button>
                   )}
                 </div>
               </div>
@@ -244,7 +270,15 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
             <div className="space-y-4">
               <div>
                 <Label className="text-muted-foreground text-sm">Full name</Label>
-                <p className="font-medium text-primary">{staff.fullName}</p>
+                <p className="font-medium text-primary">
+                  {formatStaffName(
+                    staff.firstName,
+                    staff.fatherName,
+                    staff.grandfatherName,
+                    t('staff.sonOf'),
+                    isRTL
+                  ) || staff.fullName}
+                </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Badge variant={getStatusBadgeVariant(staff.status)}>
@@ -768,40 +802,6 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
           )}
         </TabsContent>
       </Tabs>
-
-      {/* Upload Picture Dialog */}
-      <Dialog open={isUploadPictureDialogOpen} onOpenChange={setIsUploadPictureDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Upload Profile Picture</DialogTitle>
-            <DialogDescription>
-              Select an image file to upload as the profile picture
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="picture">Picture</Label>
-              <Input
-                id="picture"
-                type="file"
-                accept="image/*"
-                onChange={(e) => setPictureFile(e.target.files?.[0] || null)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsUploadPictureDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleUploadPicture}
-              disabled={!pictureFile || uploadPicture.isPending}
-            >
-              {uploadPicture.isPending ? 'Uploading...' : 'Upload'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Upload Document Dialog */}
       <Dialog open={isUploadDocumentDialogOpen} onOpenChange={setIsUploadDocumentDialogOpen}>

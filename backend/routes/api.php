@@ -343,6 +343,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::get('/staff/report/export', [StaffReportController::class, 'export']);
         Route::get('/staff', [StaffController::class, 'index']);
         Route::get('/staff/{staff}', [StaffController::class, 'show']);
+        Route::get('/staff/{id}/picture', [StaffController::class, 'getPicture']);
         Route::middleware(['subscription:write'])->group(function () {
             Route::post('/staff/{id}/picture', [StaffController::class, 'uploadPicture']);
             Route::post('/staff/{id}/document', [StaffController::class, 'uploadDocument']);

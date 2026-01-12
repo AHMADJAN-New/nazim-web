@@ -1,7 +1,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { Eye, User, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FilterPanel } from '@/components/layout/FilterPanel';
@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useSchoolContext } from '@/contexts/SchoolContext';
 import { useLanguage } from '@/hooks/useLanguage';
+import { formatStaffName } from '@/lib/utils/formatStaffName';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useStaff, useStaffTypes } from '@/hooks/useStaff';
@@ -91,6 +92,92 @@ const buildLocationFromObject = (location?: { province: string | null; district:
   return buildLocation(location.province, location.district, location.village);
 };
 
+// Component for displaying staff picture in table cell
+function StaffAvatar({ staffId, pictureUrl: hasPicture, staffName, size = 'sm' }: { staffId: string; pictureUrl?: string | null; staffName: string; size?: 'sm' | 'lg' }) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+  
+  useEffect(() => {
+    // Only fetch if pictureUrl exists and is not empty
+    const shouldTryFetch = hasPicture && hasPicture.trim() !== '' && staffId;
+    
+    if (shouldTryFetch) {
+      let currentBlobUrl: string | null = null;
+      
+      const fetchImage = async () => {
+        try {
+          const { apiClient } = await import('@/lib/api/client');
+          const token = apiClient.getToken();
+          const url = `/api/staff/${staffId}/picture`;
+          
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Accept': 'image/*',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            },
+            credentials: 'include',
+          });
+          
+          if (!response.ok) {
+            if (response.status === 404) {
+              setImageError(true);
+              return;
+            }
+            throw new Error(`Failed to fetch image: ${response.status}`);
+          }
+          
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          currentBlobUrl = blobUrl;
+          setImageUrl(blobUrl);
+          setImageError(false);
+        } catch (error) {
+          if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
+            console.error('Failed to fetch staff picture:', error);
+          }
+          setImageError(true);
+        }
+      };
+      
+      fetchImage();
+      
+      return () => {
+        if (currentBlobUrl) {
+          URL.revokeObjectURL(currentBlobUrl);
+        }
+      };
+    } else {
+      // No picture path, show placeholder immediately
+      setImageUrl(null);
+      setImageError(false);
+    }
+  }, [staffId, hasPicture]);
+
+  const sizeClasses = size === 'lg' 
+    ? 'w-20 h-20' 
+    : 'w-10 h-10';
+  const iconSize = size === 'lg' 
+    ? 'h-10 w-10' 
+    : 'h-5 w-5';
+
+  return (
+    <div className="flex items-center justify-center">
+      {imageUrl && !imageError ? (
+        <img
+          src={imageUrl}
+          alt={staffName}
+          className={`${sizeClasses} rounded-full object-cover border-2 border-border`}
+        />
+      ) : (
+        <div className={`${sizeClasses} rounded-full bg-muted flex items-center justify-center border-2 border-border`}>
+          <User className={`${iconSize} text-muted-foreground`} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 const StaffReport = () => {
   const { t, isRTL } = useLanguage();
   const { data: profile } = useProfile();
@@ -161,7 +248,13 @@ const StaffReport = () => {
   // Transform filtered staff to report format
   const transformStaffData = (staff: Staff[]) => {
     return staff.map((member) => {
-      const fullName = [member.firstName, member.fatherName, member.grandfatherName]
+      const fullName = formatStaffName(
+        member.firstName,
+        member.fatherName,
+        member.grandfatherName,
+        t('staff.sonOf'),
+        isRTL
+      ) || [member.firstName, member.fatherName, member.grandfatherName]
         .filter(Boolean)
         .join(' ');
       
@@ -241,27 +334,17 @@ const StaffReport = () => {
       cell: ({ row }) => {
         const staffMember = row.original;
         return (
-          <div className="flex items-center justify-center">
-            {staffMember.pictureUrl ? (
-              <img
-                src={`/api/staff/${staffMember.id}/picture`}
-                alt={staffMember.fullName}
-                className="w-10 h-10 rounded-full object-cover border-2 border-border"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  if (target.nextElementSibling) {
-                    (target.nextElementSibling as HTMLElement).style.display = 'flex';
-                  }
-                }}
-              />
-            ) : null}
-            <div 
-              className={`w-10 h-10 rounded-full bg-muted flex items-center justify-center border-2 border-border ${staffMember.pictureUrl ? 'hidden' : 'flex'}`}
-            >
-              <User className="h-5 w-5 text-muted-foreground" />
-            </div>
-          </div>
+          <StaffAvatar
+            staffId={staffMember.id}
+            pictureUrl={staffMember.pictureUrl}
+            staffName={formatStaffName(
+              staffMember.firstName,
+              staffMember.fatherName,
+              staffMember.grandfatherName,
+              t('staff.sonOf'),
+              isRTL
+            ) || staffMember.fullName}
+          />
         );
       },
     },
@@ -284,9 +367,17 @@ const StaffReport = () => {
     {
       accessorKey: 'fullName',
       header: t('events.name'),
-      cell: ({ row }) => (
-        <div className="font-semibold">{row.original.fullName}</div>
-      ),
+      cell: ({ row }) => {
+        const staff = row.original;
+        const formattedName = formatStaffName(
+          staff.firstName,
+          staff.fatherName,
+          staff.grandfatherName,
+          t('staff.sonOf'),
+          isRTL
+        );
+        return <div className="font-semibold">{formattedName || staff.fullName}</div>;
+      },
     },
     {
       accessorKey: 'staffType',
@@ -489,7 +580,7 @@ const StaffReport = () => {
       {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('students.management')} ({filteredStaff.length})</CardTitle>
+          <CardTitle>{t('staff.management')} ({filteredStaff.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -575,28 +666,29 @@ const StaffReport = () => {
                 <div className="flex items-start gap-4">
                   {/* Staff Image */}
                   <div className="relative">
-                    {selectedStaff.pictureUrl ? (
-                      <img
-                        src={`/api/staff/${selectedStaff.id}/picture`}
-                        alt={selectedStaff.fullName}
-                        className="w-20 h-20 rounded-full object-cover border-2 border-border"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          if (target.nextElementSibling) {
-                            (target.nextElementSibling as HTMLElement).style.display = 'flex';
-                          }
-                        }}
-                      />
-                    ) : null}
-                    <div 
-                      className={`w-20 h-20 rounded-full bg-muted flex items-center justify-center border-2 border-border ${selectedStaff.pictureUrl ? 'hidden' : 'flex'}`}
-                    >
-                      <User className="h-10 w-10 text-muted-foreground" />
-                    </div>
+                    <StaffAvatar
+                      staffId={selectedStaff.id}
+                      pictureUrl={selectedStaff.pictureUrl}
+                      staffName={formatStaffName(
+                        selectedStaff.firstName,
+                        selectedStaff.fatherName,
+                        selectedStaff.grandfatherName,
+                        t('staff.sonOf'),
+                        isRTL
+                      ) || selectedStaff.fullName}
+                      size="lg"
+                    />
                   </div>
                   <div className="flex-1">
-                    <SheetTitle className="text-2xl mb-1">{selectedStaff.fullName}</SheetTitle>
+                    <SheetTitle className="text-2xl mb-1">
+                      {formatStaffName(
+                        selectedStaff.firstName,
+                        selectedStaff.fatherName,
+                        selectedStaff.grandfatherName,
+                        t('staff.sonOf'),
+                        isRTL
+                      ) || selectedStaff.fullName}
+                    </SheetTitle>
                     <SheetDescription className="text-base">
                       {selectedStaff.staffCode && (
                         <span className="font-mono font-medium">{t('events.code')}: {selectedStaff.staffCode}</span>
@@ -625,7 +717,15 @@ const StaffReport = () => {
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
                         <span className="text-sm font-medium text-muted-foreground">{t('userManagement.fullName')}</span>
-                        <span className="text-sm font-medium">{selectedStaff.fullName}</span>
+                        <span className="text-sm font-medium">
+                          {formatStaffName(
+                            selectedStaff.firstName,
+                            selectedStaff.fatherName,
+                            selectedStaff.grandfatherName,
+                            t('staff.sonOf'),
+                            isRTL
+                          ) || selectedStaff.fullName}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
                         <span className="text-sm font-medium text-muted-foreground">{t('examReports.fatherName')}</span>

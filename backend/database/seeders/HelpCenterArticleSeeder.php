@@ -302,8 +302,8 @@ class HelpCenterArticleSeeder extends Seeder
             [
                 'category_slug' => 'timetables',
                 'slug' => 'creating-timetable',
-                'title' => 'د وخت جدول د جوړولو لارښود',
-                'excerpt' => 'د صنف د وخت جدول د جوړولو او د مضامینو د وختونو د تنظیماتو لارښود',
+                'title' => 'تقسیم اوقات  د جوړولو لارښود',
+                'excerpt' => 'د صنف تقسیم اوقات  د جوړولو او د مضامینو د وختونو د تنظیماتو لارښود',
                 'content' => $this->getCreateTimetableContent(),
                 'is_featured' => true,
                 'order' => 1,
@@ -312,8 +312,8 @@ class HelpCenterArticleSeeder extends Seeder
             [
                 'category_slug' => 'timetables',
                 'slug' => 'managing-timetable-entries',
-                'title' => 'د وخت جدول د داخلونو مدیریت',
-                'excerpt' => 'د وخت جدول د داخلونو بدلون، حذف او تازه کولو لارښود',
+                'title' => 'تقسیم اوقات  د داخلونو مدیریت',
+                'excerpt' => 'تقسیم اوقات  د داخلونو بدلون، حذف او تازه کولو لارښود',
                 'content' => $this->getManageTimetableContent(),
                 'order' => 2,
                 'tags' => ['وخت جدول', 'مدیریت', 'بدلون'],
@@ -933,15 +933,15 @@ class HelpCenterArticleSeeder extends Seeder
 
     protected function getCreateTimetableContent(): string
     {
-        return '<h2>د وخت جدول د جوړولو لارښود</h2>
-        <h3>لومړی مرحله: د وخت جدول بنسټیز معلومات</h3>
+        return '<h2>تقسیم اوقات  د جوړولو لارښود</h2>
+        <h3>لومړی مرحله: تقسیم اوقات  بنسټیز معلومات</h3>
         <ol>
             <li>د "اکاډمیک مدیریت" برخه ته لاړ شئ</li>
-            <li>د "وخت جدولونه" برخه وټاکئ</li>
+            <li>د "وخت تقسیم اوقاتونه" برخه وټاکئ</li>
             <li>د "نوی وخت جدول" تڼۍ کلیک وکړئ</li>
-            <li>د وخت جدول معلومات داخل کړئ:
+            <li>تقسیم اوقات  معلومات داخل کړئ:
                 <ul>
-                    <li>د وخت جدول نوم</li>
+                    <li>تقسیم اوقات  نوم</li>
                     <li>د اکاډمیک کال انتخاب</li>
                     <li>د صنف انتخاب</li>
                 </ul>
@@ -955,7 +955,7 @@ class HelpCenterArticleSeeder extends Seeder
             <li>د "ذخیره کول" تڼۍ کلیک وکړئ</li>
         </ol>
         <h3>دریمه مرحله: د ذخیره کولو</h3>
-        <p>د "ذخیره کول" تڼۍ کلیک وکړئ. د وخت جدول د جوړولو وروسته تاسو کولی شئ هغه بدل کړئ یا چاپ کړئ.</p>';
+        <p>د "ذخیره کول" تڼۍ کلیک وکړئ. تقسیم اوقات  د جوړولو وروسته تاسو کولی شئ هغه بدل کړئ یا چاپ کړئ.</p>';
     }
 
     protected function getManageTimetableContent(): string

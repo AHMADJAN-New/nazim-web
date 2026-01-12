@@ -227,7 +227,7 @@ export default function FeeReportsPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
-        title={t('nav.reports') || 'Fee Reports'}
+        title={t('nav.finance.fees.reports') || t('finance.fees.reports') || 'Fee Reports'}
         description={t('fees.reportsDescription') || 'Track fee collection and student payment status'}
         icon={<FileText className="h-5 w-5" />}
         rightSlot={

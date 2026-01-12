@@ -100,11 +100,16 @@ export const useCreateResidencyType = () => {
 
       // Create residency type via Laravel API
       // Laravel handles duplicate code validation server-side
+      // Ensure is_active is always a boolean
+      const isActive = residencyTypeData.is_active !== undefined 
+        ? Boolean(residencyTypeData.is_active) 
+        : true;
+      
       const data = await residencyTypesApi.create({
         name: trimmedName,
         code: trimmedCode,
         description: residencyTypeData.description || null,
-        is_active: residencyTypeData.is_active !== undefined ? residencyTypeData.is_active : true,
+        is_active: isActive,
         organization_id: organizationId,
       });
 

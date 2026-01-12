@@ -126,10 +126,14 @@ export function RoomsManagement() {
     return roomsToTransform.map((room: Room) => {
       const roomBuilding = buildings?.find((b) => b.id === room.buildingId);
 
+      const staffName = room.staff?.profile?.fullName || t('settings.rooms.noStaffAssigned');
+      const staffDuty = room.staff?.duty;
+      const staffDisplay = staffDuty ? `${staffName} (${staffDuty})` : staffName;
+      
       return {
         room_number: room.roomNumber,
         building_name: roomBuilding?.buildingName || t('settings.rooms.na'),
-        staff_name: room.staff?.profile?.fullName || t('settings.rooms.noStaffAssigned'),
+        staff_name: staffDisplay,
         // Pass date as ISO string - backend DateConversionService will format it based on user's calendar preference
         created_at: room.createdAt instanceof Date 
           ? room.createdAt.toISOString().slice(0, 10) 
@@ -177,9 +181,20 @@ export function RoomsManagement() {
     {
       accessorKey: 'staff',
       header: t('settings.rooms.staffWarden'),
-      cell: ({ row }) => row.original.staff?.profile?.fullName || (
-        <span className="text-muted-foreground">{t('settings.rooms.noStaffAssigned')}</span>
-      ),
+      cell: ({ row }) => {
+        const staff = row.original.staff;
+        if (!staff?.profile?.fullName) {
+          return <span className="text-muted-foreground">{t('settings.rooms.noStaffAssigned')}</span>;
+        }
+        const name = staff.profile.fullName;
+        const duty = staff.duty;
+        return (
+          <div className="flex flex-col">
+            <span className="font-medium">{name}</span>
+            {duty && <span className="text-xs text-muted-foreground">{duty}</span>}
+          </div>
+        );
+      },
     },
     {
       accessorKey: 'createdAt',
