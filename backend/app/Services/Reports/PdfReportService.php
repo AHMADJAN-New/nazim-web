@@ -54,6 +54,7 @@ class PdfReportService
     {
         $templateName = $context['template_name'] ?? 'table_a4_portrait';
         $viewName = "reports.{$templateName}";
+        $templatePath = resource_path("views/reports/{$templateName}.blade.php");
 
         // Check if view exists
         $viewExists = View::exists($viewName);
@@ -75,17 +76,23 @@ class PdfReportService
             'font_size' => $context['FONT_SIZE'] ?? 'N/A',
             'template_name' => $viewName,
             'template_found' => $viewExists,
+            'template_path' => $templatePath,
+            'template_mtime' => (file_exists($templatePath) ? date('c', filemtime($templatePath)) : null),
         ]);
 
         $html = View::make($viewName, $context)->render();
         
-        // Log a snippet of the rendered HTML to verify fonts are included
+        // Log a snippet of the rendered HTML to verify fonts are included and student-history sections are present
         if (config('app.debug')) {
             $fontFaceSnippet = substr($html, strpos($html, '@font-face') ?: 0, 500);
+            $hasStudentInfoMarker = strpos($html, 'NAZIM_STUDENT_HISTORY_DETAILS_MARKER') !== false;
+            $hasPersonalInfoHeading = (strpos($html, 'Personal Information') !== false) || (strpos($html, 'personalInfo') !== false);
             \Log::debug("PdfReportService: Font-face snippet from rendered HTML", [
                 'has_font_face' => strpos($html, '@font-face') !== false,
                 'font_face_snippet' => $fontFaceSnippet ?: 'NOT FOUND',
                 'html_length' => strlen($html),
+                'has_student_history_marker' => $hasStudentInfoMarker,
+                'has_personal_info_heading' => $hasPersonalInfoHeading,
             ]);
         }
         

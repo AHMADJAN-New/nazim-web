@@ -56,7 +56,6 @@ import StudentProfileView from '@/components/students/StudentProfileView';
 import { StudentDocumentsDialog } from '@/components/students/StudentDocumentsDialog';
 import { StudentEducationalHistoryDialog } from '@/components/students/StudentEducationalHistoryDialog';
 import { StudentDisciplineRecordsDialog } from '@/components/students/StudentDisciplineRecordsDialog';
-import { usePrintStudentProfile } from '@/hooks/useStudents';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 
