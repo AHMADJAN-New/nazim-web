@@ -228,6 +228,9 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
 
     // Schools (school branding)
     Route::get('/schools', [SchoolBrandingController::class, 'index']);
+    // Logo endpoint must come before {school} route to avoid route conflicts
+    Route::get('/schools/{school}/logos/{type}', [SchoolBrandingController::class, 'logo'])
+        ->where('type', 'primary|secondary|ministry');
     Route::get('/schools/{school}', [SchoolBrandingController::class, 'show']);
     Route::middleware(['subscription:write'])->group(function () {
         Route::post('/schools', [SchoolBrandingController::class, 'store'])

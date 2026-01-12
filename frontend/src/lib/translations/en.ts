@@ -2320,7 +2320,22 @@ export const en: TranslationKeys = {
     totalRooms: 'Total Rooms',
     unassigned: 'Unassigned',
     warden: 'Warden',
-    overview: 'overview'
+    overview: 'overview',
+    // Hostel Management Page - Overview
+    loadingHostelData: 'Loading hostel data...',
+    loadingHostelOccupancy: 'Loading hostel occupancy and assignments...',
+    monitorOccupancyAssignments: 'Monitor hostel occupancy, room assignments, and warden coverage.',
+    roomsOccupied: 'Rooms occupied',
+    totalRoomsLabel: 'total rooms',
+    studentsInHostel: 'Students in hostel',
+    boardersWaitingForRooms: 'boarders waiting for rooms',
+    buildingsLabel: 'Buildings',
+    acrossHostelNetwork: 'Across the hostel network',
+    wardenCoverageLabel: 'Warden coverage',
+    roomsWithAssignedWardens: 'Rooms with assigned wardens',
+    roomOccupancy: 'Room occupancy',
+    trackStudentsPerRoom: 'Track students per room and warden assignments.',
+    allBuildingsOption: 'All buildings'
   },
   idCards: {
     accountAndCategoryRequired: 'Account and Income Category are required when fee is paid',

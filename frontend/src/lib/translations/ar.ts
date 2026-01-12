@@ -2398,7 +2398,22 @@ export const ar: TranslationKeys = {
     "utilizationColumn": null,
     "warden": "المسؤول",
     "wardenCoverageDescription": null,
-    "overview": "overview"
+    "overview": "overview",
+    // Hostel Management Page - Overview
+    "loadingHostelData": "جارٍ تحميل بيانات السكن الداخلي...",
+    "loadingHostelOccupancy": "جارٍ تحميل إشغال السكن الداخلي والتعيينات...",
+    "monitorOccupancyAssignments": "راقب إشغال السكن الداخلي وتعيينات الغرف وتغطية المسؤولين.",
+    "roomsOccupied": "الغرف المشغولة",
+    "totalRoomsLabel": "إجمالي الغرف",
+    "studentsInHostel": "الطلاب في السكن الداخلي",
+    "boardersWaitingForRooms": "نزلاء في انتظار الغرف",
+    "buildingsLabel": "المباني",
+    "acrossHostelNetwork": "عبر شبكة السكن الداخلي",
+    "wardenCoverageLabel": "تغطية المسؤولين",
+    "roomsWithAssignedWardens": "الغرف مع المسؤولين المعينين",
+    "roomOccupancy": "إشغال الغرف",
+    "trackStudentsPerRoom": "تتبع الطلاب لكل غرفة وتعيينات المسؤولين.",
+    "allBuildingsOption": "جميع المباني"
   },
   "idCards": {
     "accountAndCategoryRequired": "Account and Income Category are required when fee is paid",

@@ -614,6 +614,113 @@ class SchoolBrandingController extends Controller
         // CRITICAL: Return 204 No Content with NO body (not JSON)
         return response()->noContent();
     }
+
+    /**
+     * Get a logo for a school (with HTTP caching)
+     * 
+     * @param string $id School ID
+     * @param string $type Logo type: 'primary', 'secondary', or 'ministry'
+     * @return \Illuminate\Http\Response
+     */
+    public function logo(Request $request, string $id, string $type)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission: school_branding.read (all users)
+        try {
+            if (!$this->userHasPermission($user, 'school_branding.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning("Permission check failed for school_branding.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $school = SchoolBranding::whereNull('deleted_at')->find($id);
+
+        if (!$school) {
+            return response()->json(['error' => 'School not found'], 404);
+        }
+
+        // Check organization access (user's organization only)
+        if ($school->organization_id !== $profile->organization_id) {
+            return response()->json(['error' => 'School not found'], 404);
+        }
+
+        // Map logo types to database fields
+        $logoMap = [
+            'primary' => [
+                'binary' => 'primary_logo_binary',
+                'mime' => 'primary_logo_mime_type',
+                'filename' => 'primary_logo_filename',
+                'size' => 'primary_logo_size',
+            ],
+            'secondary' => [
+                'binary' => 'secondary_logo_binary',
+                'mime' => 'secondary_logo_mime_type',
+                'filename' => 'secondary_logo_filename',
+                'size' => 'secondary_logo_size',
+            ],
+            'ministry' => [
+                'binary' => 'ministry_logo_binary',
+                'mime' => 'ministry_logo_mime_type',
+                'filename' => 'ministry_logo_filename',
+                'size' => 'ministry_logo_size',
+            ],
+        ];
+
+        if (!isset($logoMap[$type])) {
+            return response()->json(['error' => 'Invalid logo type. Must be: primary, secondary, or ministry'], 400);
+        }
+
+        $binaryField = $logoMap[$type]['binary'];
+        $mimeField = $logoMap[$type]['mime'];
+        $filenameField = $logoMap[$type]['filename'];
+        $sizeField = $logoMap[$type]['size'];
+
+        // Get binary data directly from database (bypass hidden attribute)
+        $binary = $school->getAttribute($binaryField);
+
+        if ($binary === null || $binary === '') {
+            return response()->noContent(); // 204 No Content
+        }
+
+        $mimeType = $school->getAttribute($mimeField) ?: 'image/png';
+        $filename = $school->getAttribute($filenameField) ?: "{$type}_logo";
+        $fileSize = (int)($school->getAttribute($sizeField) ?: strlen($binary));
+        $updatedAtTimestamp = $school->updated_at ? $school->updated_at->getTimestamp() : 0;
+
+        // Generate ETag based on school ID, type, updated timestamp, size, filename, and mime type
+        $etag = '"' . sha1($school->id . '|' . $type . '|' . $updatedAtTimestamp . '|' . $fileSize . '|' . $filename . '|' . $mimeType) . '"';
+        
+        // Cache for 7 days, allow stale-while-revalidate for 1 day
+        $cacheControl = 'private, max-age=604800, stale-while-revalidate=86400';
+
+        // Check If-None-Match header for 304 Not Modified
+        if ($request->headers->get('If-None-Match') === $etag) {
+            return response('', 304)
+                ->header('ETag', $etag)
+                ->header('Cache-Control', $cacheControl);
+        }
+
+        // Return logo with proper headers
+        return response($binary, 200)
+            ->header('Content-Type', $mimeType)
+            ->header('Content-Length', (string)$fileSize)
+            ->header('Content-Disposition', 'inline; filename="' . addslashes($filename) . '"')
+            ->header('ETag', $etag)
+            ->header('Cache-Control', $cacheControl);
+    }
 }
 
 

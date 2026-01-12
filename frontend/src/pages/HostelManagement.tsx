@@ -204,12 +204,12 @@ export function HostelManagement() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BedDouble className="h-5 w-5" />
-              Hostel Management
+              {t('hostel.management')}
             </CardTitle>
-            <CardDescription>Loading hostel occupancy and assignments...</CardDescription>
+            <CardDescription>{t('hostel.loadingHostelOccupancy')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <LoadingSpinner size="lg" text="Loading hostel data..." />
+            <LoadingSpinner size="lg" text={t('hostel.loadingHostelData')} />
           </CardContent>
         </Card>
       </div>
@@ -220,7 +220,7 @@ export function HostelManagement() {
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
         title={t('students.hostel') || 'Hostel Management'}
-        description="Monitor hostel occupancy, room assignments, and warden coverage."
+        description={t('hostel.monitorOccupancyAssignments')}
         icon={<BedDouble className="h-5 w-5" />}
         rightSlot={
           <Button onClick={exportCsv} variant="outline" size="sm" disabled={filteredRooms.length === 0} className="flex-shrink-0">
@@ -234,49 +234,49 @@ export function HostelManagement() {
       <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Rooms occupied</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('hostel.roomsOccupied')}</CardTitle>
             <BedDouble className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.occupiedRooms}</div>
             <p className="text-xs text-muted-foreground">
-              {summary.totalRooms} total rooms
+              {summary.totalRooms} {t('hostel.totalRoomsLabel')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Students in hostel</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('hostel.studentsInHostel')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.totalStudentsInRooms}</div>
             <p className="text-xs text-muted-foreground">
-              {summary.unassignedBoarders} boarders waiting for rooms
+              {summary.unassignedBoarders} {t('hostel.boardersWaitingForRooms')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Buildings</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('hostel.buildingsLabel')}</CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.totalBuildings}</div>
-            <p className="text-xs text-muted-foreground">Across the hostel network</p>
+            <p className="text-xs text-muted-foreground">{t('hostel.acrossHostelNetwork')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Warden coverage</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('hostel.wardenCoverageLabel')}</CardTitle>
             <ShieldCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.uniqueWardens}</div>
-            <p className="text-xs text-muted-foreground">Rooms with assigned wardens</p>
+            <p className="text-xs text-muted-foreground">{t('hostel.roomsWithAssignedWardens')}</p>
           </CardContent>
         </Card>
       </div>
@@ -288,13 +288,13 @@ export function HostelManagement() {
       >
         <div className="flex flex-col gap-4 md:flex-row md:items-end">
           <div className="w-full md:w-[200px]">
-            <Label htmlFor="building-filter">Building</Label>
+            <Label htmlFor="building-filter">{t('hostel.building')}</Label>
             <Select value={buildingFilter} onValueChange={setBuildingFilter}>
               <SelectTrigger id="building-filter">
                 <SelectValue placeholder={t('hostel.filterByBuilding')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All buildings</SelectItem>
+                <SelectItem value="all">{t('hostel.allBuildingsOption')}</SelectItem>
                 {buildings.map((building) => (
                   <SelectItem key={building.id} value={building.id}>
                     {building.buildingName}
@@ -304,7 +304,7 @@ export function HostelManagement() {
             </Select>
           </div>
           <div className="flex-1 min-w-0">
-            <Label htmlFor="search">Search</Label>
+            <Label htmlFor="search">{t('common.search') || t('events.searchAndFilters') || 'Search'}</Label>
             <Input
               id="search"
               placeholder={t('hostel.searchRoomsPlaceholder')}
@@ -319,8 +319,8 @@ export function HostelManagement() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <CardTitle>Room occupancy</CardTitle>
-              <CardDescription className="hidden md:block">Track students per room and warden assignments.</CardDescription>
+              <CardTitle>{t('hostel.roomOccupancy')}</CardTitle>
+              <CardDescription className="hidden md:block">{t('hostel.trackStudentsPerRoom')}</CardDescription>
             </div>
           </div>
         </CardHeader>

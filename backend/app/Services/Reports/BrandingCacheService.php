@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Cache;
  */
 class BrandingCacheService
 {
-    private const CACHE_TTL = 3600; // 1 hour
+    private const CACHE_TTL = 604800; // 7 days (604800 seconds) - logos rarely change
 
     /**
      * Get branding data with binary logos

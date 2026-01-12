@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Pencil, Trash2, Search, School as SchoolIcon, Shield, Eye, Droplet } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -50,6 +50,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useSchools, useCreateSchool, useUpdateSchool, useDeleteSchool, type School } from '@/hooks/useSchools';
 import { useHasFeature } from '@/hooks/useSubscription';
+import { schoolsApi } from '@/lib/api/client';
 
 const schoolSchema = z.object({
   school_name: z.string().min(1, 'School name is required').max(255, 'School name must be 255 characters or less'),
@@ -104,14 +105,23 @@ export function SchoolsManagement() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
   const [selectedSchoolForWatermarks, setSelectedSchoolForWatermarks] = useState<string | null>(null);
+  // Logo URLs for details dialog
+  const [detailsPrimaryLogoUrl, setDetailsPrimaryLogoUrl] = useState<string | null>(null);
+  const [detailsSecondaryLogoUrl, setDetailsSecondaryLogoUrl] = useState<string | null>(null);
+  const [detailsMinistryLogoUrl, setDetailsMinistryLogoUrl] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [organizationFilter, setOrganizationFilter] = useState<string>('all');
   const [primaryLogoFile, setPrimaryLogoFile] = useState<File | null>(null);
   const [secondaryLogoFile, setSecondaryLogoFile] = useState<File | null>(null);
   const [ministryLogoFile, setMinistryLogoFile] = useState<File | null>(null);
-  const [existingPrimaryLogo, setExistingPrimaryLogo] = useState<{ binary: string; mimeType: string; filename: string } | null>(null);
-  const [existingSecondaryLogo, setExistingSecondaryLogo] = useState<{ binary: string; mimeType: string; filename: string } | null>(null);
-  const [existingMinistryLogo, setExistingMinistryLogo] = useState<{ binary: string; mimeType: string; filename: string } | null>(null);
+  // Store blob URLs for existing logos (fetched on-demand)
+  const [existingPrimaryLogoUrl, setExistingPrimaryLogoUrl] = useState<string | null>(null);
+  const [existingSecondaryLogoUrl, setExistingSecondaryLogoUrl] = useState<string | null>(null);
+  const [existingMinistryLogoUrl, setExistingMinistryLogoUrl] = useState<string | null>(null);
+  // Store metadata for existing logos
+  const [existingPrimaryLogoMeta, setExistingPrimaryLogoMeta] = useState<{ mimeType: string; filename: string } | null>(null);
+  const [existingSecondaryLogoMeta, setExistingSecondaryLogoMeta] = useState<{ mimeType: string; filename: string } | null>(null);
+  const [existingMinistryLogoMeta, setExistingMinistryLogoMeta] = useState<{ mimeType: string; filename: string } | null>(null);
 
   const {
     register,
@@ -142,6 +152,150 @@ export function SchoolsManagement() {
       is_active: true,
     },
   });
+
+  // Fetch logos on-demand when a school is selected for editing
+  useEffect(() => {
+    if (!selectedSchool) {
+      return;
+    }
+
+    const school = schools?.find((s) => s.id === selectedSchool);
+    if (!school) {
+      return;
+    }
+
+    // Fetch logos only if metadata indicates they exist
+    const fetchLogos = async () => {
+      try {
+        // Primary logo
+        if (school.primaryLogoMimeType) {
+          const url = await schoolsApi.getLogo(selectedSchool, 'primary');
+          if (url) {
+            setExistingPrimaryLogoUrl(url);
+          }
+        }
+
+        // Secondary logo
+        if (school.secondaryLogoMimeType) {
+          const url = await schoolsApi.getLogo(selectedSchool, 'secondary');
+          if (url) {
+            setExistingSecondaryLogoUrl(url);
+          }
+        }
+
+        // Ministry logo
+        if (school.ministryLogoMimeType) {
+          const url = await schoolsApi.getLogo(selectedSchool, 'ministry');
+          if (url) {
+            setExistingMinistryLogoUrl(url);
+          }
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[SchoolsManagement] Error fetching logos:', error);
+        }
+      }
+    };
+
+    fetchLogos();
+
+    // Cleanup function to revoke blob URLs when component unmounts or school changes
+    return () => {
+      if (existingPrimaryLogoUrl) {
+        URL.revokeObjectURL(existingPrimaryLogoUrl);
+      }
+      if (existingSecondaryLogoUrl) {
+        URL.revokeObjectURL(existingSecondaryLogoUrl);
+      }
+      if (existingMinistryLogoUrl) {
+        URL.revokeObjectURL(existingMinistryLogoUrl);
+      }
+    };
+  }, [selectedSchool, schools]);
+
+  // Cleanup blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (existingPrimaryLogoUrl) {
+        URL.revokeObjectURL(existingPrimaryLogoUrl);
+      }
+      if (existingSecondaryLogoUrl) {
+        URL.revokeObjectURL(existingSecondaryLogoUrl);
+      }
+      if (existingMinistryLogoUrl) {
+        URL.revokeObjectURL(existingMinistryLogoUrl);
+      }
+      if (detailsPrimaryLogoUrl) {
+        URL.revokeObjectURL(detailsPrimaryLogoUrl);
+      }
+      if (detailsSecondaryLogoUrl) {
+        URL.revokeObjectURL(detailsSecondaryLogoUrl);
+      }
+      if (detailsMinistryLogoUrl) {
+        URL.revokeObjectURL(detailsMinistryLogoUrl);
+      }
+    };
+  }, []);
+
+  // Fetch logos for details dialog when it opens
+  useEffect(() => {
+    if (!isDetailsDialogOpen || !selectedSchool) {
+      // Clean up when dialog closes
+      if (detailsPrimaryLogoUrl) {
+        URL.revokeObjectURL(detailsPrimaryLogoUrl);
+        setDetailsPrimaryLogoUrl(null);
+      }
+      if (detailsSecondaryLogoUrl) {
+        URL.revokeObjectURL(detailsSecondaryLogoUrl);
+        setDetailsSecondaryLogoUrl(null);
+      }
+      if (detailsMinistryLogoUrl) {
+        URL.revokeObjectURL(detailsMinistryLogoUrl);
+        setDetailsMinistryLogoUrl(null);
+      }
+      return;
+    }
+
+    const school = schools?.find((s) => s.id === selectedSchool);
+    if (!school) {
+      return;
+    }
+
+    // Fetch logos only if metadata indicates they exist
+    const fetchLogos = async () => {
+      try {
+        // Primary logo
+        if (school.primaryLogoMimeType) {
+          const url = await schoolsApi.getLogo(selectedSchool, 'primary');
+          if (url) {
+            setDetailsPrimaryLogoUrl(url);
+          }
+        }
+
+        // Secondary logo
+        if (school.secondaryLogoMimeType) {
+          const url = await schoolsApi.getLogo(selectedSchool, 'secondary');
+          if (url) {
+            setDetailsSecondaryLogoUrl(url);
+          }
+        }
+
+        // Ministry logo
+        if (school.ministryLogoMimeType) {
+          const url = await schoolsApi.getLogo(selectedSchool, 'ministry');
+          if (url) {
+            setDetailsMinistryLogoUrl(url);
+          }
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[SchoolsManagement] Error fetching logos for details:', error);
+        }
+      }
+    };
+
+    fetchLogos();
+  }, [isDetailsDialogOpen, selectedSchool, schools]);
 
   const filteredSchools = schools?.filter((school) => {
     const query = (searchQuery || '').toLowerCase();
@@ -191,22 +345,33 @@ export function SchoolsManagement() {
         });
         setSelectedSchool(schoolId);
         
-        // Store existing logos for preview
-        setExistingPrimaryLogo(school.primaryLogoBinary && school.primaryLogoMimeType ? {
-          binary: school.primaryLogoBinary,
+        // Store metadata for existing logos (binary data is no longer in response)
+        setExistingPrimaryLogoMeta(school.primaryLogoMimeType ? {
           mimeType: school.primaryLogoMimeType,
           filename: school.primaryLogoFilename || 'primary_logo.png',
         } : null);
-        setExistingSecondaryLogo(school.secondaryLogoBinary && school.secondaryLogoMimeType ? {
-          binary: school.secondaryLogoBinary,
+        setExistingSecondaryLogoMeta(school.secondaryLogoMimeType ? {
           mimeType: school.secondaryLogoMimeType,
           filename: school.secondaryLogoFilename || 'secondary_logo.png',
         } : null);
-        setExistingMinistryLogo(school.ministryLogoBinary && school.ministryLogoMimeType ? {
-          binary: school.ministryLogoBinary,
+        setExistingMinistryLogoMeta(school.ministryLogoMimeType ? {
           mimeType: school.ministryLogoMimeType,
           filename: school.ministryLogoFilename || 'ministry_logo.png',
         } : null);
+        
+        // Clear existing blob URLs (will be fetched on-demand)
+        if (existingPrimaryLogoUrl) {
+          URL.revokeObjectURL(existingPrimaryLogoUrl);
+          setExistingPrimaryLogoUrl(null);
+        }
+        if (existingSecondaryLogoUrl) {
+          URL.revokeObjectURL(existingSecondaryLogoUrl);
+          setExistingSecondaryLogoUrl(null);
+        }
+        if (existingMinistryLogoUrl) {
+          URL.revokeObjectURL(existingMinistryLogoUrl);
+          setExistingMinistryLogoUrl(null);
+        }
       }
     } else {
       reset({
@@ -237,6 +402,23 @@ export function SchoolsManagement() {
         is_active: true,
       });
       setSelectedSchool(null);
+      
+      // Clear existing blob URLs
+      if (existingPrimaryLogoUrl) {
+        URL.revokeObjectURL(existingPrimaryLogoUrl);
+        setExistingPrimaryLogoUrl(null);
+      }
+      if (existingSecondaryLogoUrl) {
+        URL.revokeObjectURL(existingSecondaryLogoUrl);
+        setExistingSecondaryLogoUrl(null);
+      }
+      if (existingMinistryLogoUrl) {
+        URL.revokeObjectURL(existingMinistryLogoUrl);
+        setExistingMinistryLogoUrl(null);
+      }
+      setExistingPrimaryLogoMeta(null);
+      setExistingSecondaryLogoMeta(null);
+      setExistingMinistryLogoMeta(null);
     }
     setIsDialogOpen(true);
   };
@@ -247,9 +429,23 @@ export function SchoolsManagement() {
     setPrimaryLogoFile(null);
     setSecondaryLogoFile(null);
     setMinistryLogoFile(null);
-    setExistingPrimaryLogo(null);
-    setExistingSecondaryLogo(null);
-    setExistingMinistryLogo(null);
+    
+    // Clean up blob URLs
+    if (existingPrimaryLogoUrl) {
+      URL.revokeObjectURL(existingPrimaryLogoUrl);
+      setExistingPrimaryLogoUrl(null);
+    }
+    if (existingSecondaryLogoUrl) {
+      URL.revokeObjectURL(existingSecondaryLogoUrl);
+      setExistingSecondaryLogoUrl(null);
+    }
+    if (existingMinistryLogoUrl) {
+      URL.revokeObjectURL(existingMinistryLogoUrl);
+      setExistingMinistryLogoUrl(null);
+    }
+    setExistingPrimaryLogoMeta(null);
+    setExistingSecondaryLogoMeta(null);
+    setExistingMinistryLogoMeta(null);
     reset();
   };
 
@@ -825,7 +1021,10 @@ export function SchoolsManagement() {
                       setPrimaryLogoFile(file || null);
                       // Clear existing logo preview when new file is selected
                       if (file) {
-                        setExistingPrimaryLogo(null);
+                        if (existingPrimaryLogoUrl) {
+                          URL.revokeObjectURL(existingPrimaryLogoUrl);
+                          setExistingPrimaryLogoUrl(null);
+                        }
                       }
                     }}
                   />
@@ -839,11 +1038,11 @@ export function SchoolsManagement() {
                       />
                     </div>
                   )}
-                  {!primaryLogoFile && existingPrimaryLogo && (
+                  {!primaryLogoFile && existingPrimaryLogoUrl && existingPrimaryLogoMeta && (
                     <div className="mt-2">
-                      <p className="text-sm text-muted-foreground mb-2">{existingPrimaryLogo.filename}</p>
+                      <p className="text-sm text-muted-foreground mb-2">{existingPrimaryLogoMeta.filename}</p>
                       <img
-                        src={`data:${existingPrimaryLogo.mimeType};base64,${existingPrimaryLogo.binary}`}
+                        src={existingPrimaryLogoUrl}
                         alt="Primary Logo"
                         className="w-20 h-20 object-contain border rounded"
                       />
@@ -861,7 +1060,10 @@ export function SchoolsManagement() {
                       const file = e.target.files?.[0];
                       setSecondaryLogoFile(file || null);
                       if (file) {
-                        setExistingSecondaryLogo(null);
+                        if (existingSecondaryLogoUrl) {
+                          URL.revokeObjectURL(existingSecondaryLogoUrl);
+                          setExistingSecondaryLogoUrl(null);
+                        }
                       }
                     }}
                   />
@@ -875,11 +1077,11 @@ export function SchoolsManagement() {
                       />
                     </div>
                   )}
-                  {!secondaryLogoFile && existingSecondaryLogo && (
+                  {!secondaryLogoFile && existingSecondaryLogoUrl && existingSecondaryLogoMeta && (
                     <div className="mt-2">
-                      <p className="text-sm text-muted-foreground mb-2">{existingSecondaryLogo.filename}</p>
+                      <p className="text-sm text-muted-foreground mb-2">{existingSecondaryLogoMeta.filename}</p>
                       <img
-                        src={`data:${existingSecondaryLogo.mimeType};base64,${existingSecondaryLogo.binary}`}
+                        src={existingSecondaryLogoUrl}
                         alt="Secondary Logo"
                         className="w-20 h-20 object-contain border rounded"
                       />
@@ -897,7 +1099,10 @@ export function SchoolsManagement() {
                       const file = e.target.files?.[0];
                       setMinistryLogoFile(file || null);
                       if (file) {
-                        setExistingMinistryLogo(null);
+                        if (existingMinistryLogoUrl) {
+                          URL.revokeObjectURL(existingMinistryLogoUrl);
+                          setExistingMinistryLogoUrl(null);
+                        }
                       }
                     }}
                   />
@@ -911,11 +1116,11 @@ export function SchoolsManagement() {
                       />
                     </div>
                   )}
-                  {!ministryLogoFile && existingMinistryLogo && (
+                  {!ministryLogoFile && existingMinistryLogoUrl && existingMinistryLogoMeta && (
                     <div className="mt-2">
-                      <p className="text-sm text-muted-foreground mb-2">{existingMinistryLogo.filename}</p>
+                      <p className="text-sm text-muted-foreground mb-2">{existingMinistryLogoMeta.filename}</p>
                       <img
-                        src={`data:${existingMinistryLogo.mimeType};base64,${existingMinistryLogo.binary}`}
+                        src={existingMinistryLogoUrl}
                         alt="Ministry Logo"
                         className="w-20 h-20 object-contain border rounded"
                       />
@@ -1309,10 +1514,10 @@ export function SchoolsManagement() {
                   {/* Primary Logo */}
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">{t('schools.primaryLogo')}</Label>
-                    {selectedSchoolData.primaryLogoBinary && selectedSchoolData.primaryLogoMimeType ? (
+                    {detailsPrimaryLogoUrl && selectedSchoolData.primaryLogoMimeType ? (
                       <div className="border rounded-lg p-2 bg-muted/50">
                         <img
-                          src={`data:${selectedSchoolData.primaryLogoMimeType};base64,${selectedSchoolData.primaryLogoBinary}`}
+                          src={detailsPrimaryLogoUrl}
                           alt={selectedSchoolData.primaryLogoFilename || 'Primary Logo'}
                           className="w-full h-auto max-h-32 object-contain"
                         />
@@ -1340,10 +1545,10 @@ export function SchoolsManagement() {
                   {/* Secondary Logo */}
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">{t('schools.secondaryLogo')}</Label>
-                    {selectedSchoolData.secondaryLogoBinary && selectedSchoolData.secondaryLogoMimeType ? (
+                    {detailsSecondaryLogoUrl && selectedSchoolData.secondaryLogoMimeType ? (
                       <div className="border rounded-lg p-2 bg-muted/50">
                         <img
-                          src={`data:${selectedSchoolData.secondaryLogoMimeType};base64,${selectedSchoolData.secondaryLogoBinary}`}
+                          src={detailsSecondaryLogoUrl}
                           alt={selectedSchoolData.secondaryLogoFilename || 'Secondary Logo'}
                           className="w-full h-auto max-h-32 object-contain"
                         />
@@ -1371,10 +1576,10 @@ export function SchoolsManagement() {
                   {/* Ministry Logo */}
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">{t('schools.ministryLogo')}</Label>
-                    {selectedSchoolData.ministryLogoBinary && selectedSchoolData.ministryLogoMimeType ? (
+                    {detailsMinistryLogoUrl && selectedSchoolData.ministryLogoMimeType ? (
                       <div className="border rounded-lg p-2 bg-muted/50">
                         <img
-                          src={`data:${selectedSchoolData.ministryLogoMimeType};base64,${selectedSchoolData.ministryLogoBinary}`}
+                          src={detailsMinistryLogoUrl}
                           alt={selectedSchoolData.ministryLogoFilename || 'Ministry Logo'}
                           className="w-full h-auto max-h-32 object-contain"
                         />

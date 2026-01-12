@@ -737,6 +737,25 @@ export const schoolsApi = {
     return apiClient.get(`/schools/${id}`);
   },
 
+  /**
+   * Get a logo for a school (with HTTP caching)
+   * @param id School ID
+   * @param type Logo type: 'primary', 'secondary', or 'ministry'
+   * @returns Blob URL string or null if logo doesn't exist
+   */
+  getLogo: async (id: string, type: 'primary' | 'secondary' | 'ministry'): Promise<string | null> => {
+    try {
+      const { blob } = await apiClient.requestFile(`/schools/${id}/logos/${type}`, { method: 'GET' });
+      return URL.createObjectURL(blob);
+    } catch (error: any) {
+      // 204 No Content means logo doesn't exist
+      if (error?.status === 204 || error?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  },
+
   create: async (data: {
     organization_id: string;
     school_name: string;

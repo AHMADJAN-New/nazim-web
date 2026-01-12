@@ -272,7 +272,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
 
   return (
     <header className="bg-card border-b border-border sticky top-0 z-50 w-full shadow-sm flex-shrink-0" data-tour="app-header">
-      <div className="px-4 py-2 flex flex-wrap items-center gap-3 sm:gap-4">
+      <div className="px-4 py-2 grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] items-center gap-3 sm:gap-4">
         {/* Left Section - Sidebar trigger + Title/Breadcrumb */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <SidebarTrigger />
@@ -306,7 +306,8 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
         </div>
 
         {/* Center Section - Search */}
-        <div className="order-3 w-full sm:order-none sm:flex-1 sm:min-w-[280px] lg:max-w-xl" ref={searchContainerRef} data-tour="search-container">
+        <div className="order-3 w-full sm:order-none sm:flex sm:justify-center" ref={searchContainerRef} data-tour="search-container">
+          <div className="relative w-full sm:max-w-xl">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
@@ -345,6 +346,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               anchorEl={searchInputRef.current}
             />
           </div>
+          </div>
         </div>
 
         {/* Global Search Command Palette */}
@@ -365,7 +367,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
         />
 
         {/* Right Section - Actions & Profile */}
-        <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end w-full sm:w-auto sm:flex-nowrap">
+        <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end w-full sm:w-auto sm:flex-nowrap flex-shrink-0">
           {/* Platform Admin Button */}
           {isPlatformAdmin && (
             <Button

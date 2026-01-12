@@ -2334,7 +2334,22 @@ export const fa: TranslationKeys = {
     totalRooms: 'مجموع اتاق‌ها',
     unassigned: 'بدون اتاق',
     warden: 'نگران / سرپرست',
-    overview: 'overview'
+    overview: 'overview',
+    // Hostel Management Page - Overview
+    loadingHostelData: 'در حال بارگذاری اطلاعات لیلیه...',
+    loadingHostelOccupancy: 'در حال بارگذاری اشغال لیلیه و اختصاصات...',
+    monitorOccupancyAssignments: 'اشغال لیلیه، اختصاص اتاق‌ها و پوشش نگران را نظارت کنید.',
+    roomsOccupied: 'اتاق‌های اشغال شده',
+    totalRoomsLabel: 'مجموع اتاق‌ها',
+    studentsInHostel: 'شاگردان در لیلیه',
+    boardersWaitingForRooms: 'لیلیه‌نشینان در انتظار اتاق',
+    buildingsLabel: 'ساختمان‌ها',
+    acrossHostelNetwork: 'در سراسر شبکه لیلیه',
+    wardenCoverageLabel: 'پوشش نگران',
+    roomsWithAssignedWardens: 'اتاق‌های دارای نگران اختصاص داده شده',
+    roomOccupancy: 'اشغال اتاق',
+    trackStudentsPerRoom: 'شاگردان را برای هر اتاق و اختصاصات نگران پیگیری کنید.',
+    allBuildingsOption: 'همه ساختمان‌ها'
   },
   idCards: {
     accountAndCategoryRequired: 'حساب و دسته‌بندی عایدات هنگام پرداخت فیس الزامی است',
@@ -2918,7 +2933,7 @@ export const fa: TranslationKeys = {
     'finance.financeDocuments': 'اسناد مالی',
     'finance.reports': 'گزارش‌ها',
     'finance.settings': 'تنظیمات',
-    'finance.fees': 'رسوم',
+    'finance.fees': 'فیس',
     'finance.fees.dashboard': 'داشبورد',
     'finance.fees.structures': 'ساختارها',
     'finance.fees.assignments': 'اختصاصات',

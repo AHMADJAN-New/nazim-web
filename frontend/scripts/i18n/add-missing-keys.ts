@@ -286,7 +286,7 @@ const missingKeysData: KeyData[] = [
     key: 'leave.loading',
     namespace: 'leave',
     missingIn: ['fa'],
-    values: { en: 'Loading', ps: 'بارېږي...', fa: 'در حال بارگذاری...', ar: 'جاري التحميل' }
+    values: { en: 'Loading', ps: 'ترلاسه کیږي...', fa: 'در حال بارگذاری...', ar: 'جاري التحميل' }
   },
   {
     key: 'leave.management',

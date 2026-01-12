@@ -81,7 +81,7 @@ export function PersistentLayout() {
         
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar min-w-0">
           {showLoading ? (
-            <div className="flex items-center justify-center h-full">
+            <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
               <LoadingSpinner size="lg" text="Loading permissions..." />
             </div>
           ) : (
