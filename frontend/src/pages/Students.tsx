@@ -59,6 +59,7 @@ import { StudentDisciplineRecordsDialog } from '@/components/students/StudentDis
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
+import { PictureCell } from '@/components/shared/PictureCell';
 
 
 // Helper function to convert StudentFormData to domain Student format
@@ -209,82 +210,16 @@ const statusBadge = (status: Student['status']) => {
 };
 
 // Component for displaying student picture in table cell
+// Uses centralized PictureCell component with image caching
 function StudentPictureCell({ student }: { student: Student }) {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageError, setImageError] = useState(false);
-  
-  useEffect(() => {
-    // Only fetch if picturePath exists and is not empty
-    const hasPicture = student.picturePath && student.picturePath.trim() !== '' && student.id;
-    
-    if (hasPicture) {
-      let currentBlobUrl: string | null = null;
-      
-      const fetchImage = async () => {
-        try {
-          const { apiClient } = await import('@/lib/api/client');
-          const token = apiClient.getToken();
-          const url = `/api/students/${student.id}/picture`;
-          
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'Accept': 'image/*',
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-            },
-            credentials: 'include',
-          });
-          
-          if (!response.ok) {
-            if (response.status === 404) {
-              setImageError(true);
-              return;
-            }
-            throw new Error(`Failed to fetch image: ${response.status}`);
-          }
-          
-          const blob = await response.blob();
-          const blobUrl = URL.createObjectURL(blob);
-          currentBlobUrl = blobUrl;
-          setImageUrl(blobUrl);
-          setImageError(false);
-        } catch (error) {
-          if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
-            console.error('Failed to fetch student picture:', error);
-          }
-          setImageError(true);
-        }
-      };
-      
-      fetchImage();
-      
-      return () => {
-        if (currentBlobUrl) {
-          URL.revokeObjectURL(currentBlobUrl);
-        }
-      };
-    } else {
-      // No picture path, show placeholder immediately
-      setImageUrl(null);
-      setImageError(true);
-    }
-  }, [student.id, student.picturePath]);
-  
   return (
-    <div className="flex items-center justify-center w-12 h-12">
-      {imageUrl && !imageError ? (
-        <img
-          src={imageUrl}
-          alt={student.fullName}
-          className="w-12 h-12 rounded-full object-cover border-2 border-border"
-          onError={() => setImageError(true)}
-        />
-      ) : (
-        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-border">
-          <UserRound className="h-6 w-6 text-muted-foreground" />
-        </div>
-      )}
-    </div>
+    <PictureCell
+      type="student"
+      entityId={student.id}
+      picturePath={student.picturePath}
+      alt={student.fullName}
+      size="md"
+    />
   );
 }
 

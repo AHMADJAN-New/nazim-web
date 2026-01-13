@@ -57,6 +57,7 @@ import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useStaff, useDeleteStaff, useStaffStats, useCreateStaff, useUpdateStaff, useStaffTypes, useUploadStaffPicture } from '@/hooks/useStaff';
 import type { Staff } from '@/types/domain/staff';
+import { PictureCell } from '@/components/shared/PictureCell';
 
 const staffSchema = z.object({
     employee_id: z.string().min(1, 'Employee ID is required').max(50, 'Employee ID must be 50 characters or less'),
@@ -111,68 +112,9 @@ const staffSchema = z.object({
 type StaffFormData = z.infer<typeof staffSchema>;
 
 // Component for displaying staff picture in table cell
+// Uses centralized PictureCell component with image caching
 function StaffPictureCell({ staff }: { staff: Staff }) {
   const { t, isRTL } = useLanguage();
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageError, setImageError] = useState(false);
-  
-  useEffect(() => {
-    // Only fetch if pictureUrl exists and is not empty
-    const shouldTryFetch = staff.pictureUrl && staff.pictureUrl.trim() !== '' && staff.id;
-    
-    if (shouldTryFetch) {
-      let currentBlobUrl: string | null = null;
-      
-      const fetchImage = async () => {
-        try {
-          const { apiClient } = await import('@/lib/api/client');
-          const token = apiClient.getToken();
-          const url = `/api/staff/${staff.id}/picture`;
-          
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'Accept': 'image/*',
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-            },
-            credentials: 'include',
-          });
-          
-          if (!response.ok) {
-            if (response.status === 404) {
-              setImageError(true);
-              return;
-            }
-            throw new Error(`Failed to fetch image: ${response.status}`);
-          }
-          
-          const blob = await response.blob();
-          const blobUrl = URL.createObjectURL(blob);
-          currentBlobUrl = blobUrl;
-          setImageUrl(blobUrl);
-          setImageError(false);
-        } catch (error) {
-          if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
-            console.error('Failed to fetch staff picture:', error);
-          }
-          setImageError(true);
-        }
-      };
-      
-      fetchImage();
-      
-      return () => {
-        if (currentBlobUrl) {
-          URL.revokeObjectURL(currentBlobUrl);
-        }
-      };
-    } else {
-      // No picture path, show placeholder immediately
-      setImageUrl(null);
-      setImageError(false);
-    }
-  }, [staff.id, staff.pictureUrl]);
-
   const formattedName = formatStaffName(
     staff.firstName,
     staff.fatherName,
@@ -182,17 +124,14 @@ function StaffPictureCell({ staff }: { staff: Staff }) {
   ) || staff.fullName;
 
   return (
-    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden">
-      {imageUrl && !imageError ? (
-        <img 
-          src={imageUrl} 
-          alt={formattedName} 
-          className="w-full h-full object-cover" 
-        />
-      ) : (
-        <Users className="w-6 h-6 text-muted-foreground" />
-      )}
-    </div>
+    <PictureCell
+      type="staff"
+      entityId={staff.id}
+      picturePath={staff.pictureUrl}
+      alt={formattedName}
+      size="sm"
+      className="overflow-hidden"
+    />
   );
 }
 

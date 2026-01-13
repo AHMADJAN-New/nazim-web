@@ -7,6 +7,7 @@ import { usePagination } from './usePagination';
 
 import { staffApi, staffTypesApi, staffDocumentsApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
+import { imageCache } from '@/lib/imageCache';
 import {
   mapStaffApiToDomain,
   mapStaffDomainToInsert,
@@ -332,7 +333,11 @@ export const useUploadStaffPicture = () => {
     }) => {
       // Upload picture via Laravel API
       const result = await staffApi.uploadPicture(staffId, file);
-      return result.url;
+      return { url: result.url, pictureUrl: result.url };
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate image cache for this staff member
+      imageCache.invalidateImage('staff', variables.staffId);
     },
   });
 };
