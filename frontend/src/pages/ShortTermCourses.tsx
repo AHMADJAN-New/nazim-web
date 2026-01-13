@@ -459,7 +459,7 @@ const ShortTermCourses = () => {
 
       {/* Students Side Panel */}
       <Sheet open={studentsPanelOpen} onOpenChange={setStudentsPanelOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader className="pb-4 border-b">
             <SheetTitle className="text-xl font-bold">
               {selectedCourseForStudents ? selectedCourseForStudents.name : t('courses.courseStudents')}

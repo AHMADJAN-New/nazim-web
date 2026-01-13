@@ -101,16 +101,11 @@ class EnsureOrganizationAccess
         // This tells Spatie which organization to check permissions in
         // Without this, hasPermissionTo() will always return false for org-scoped permissions
         try {
-            // CRITICAL: Clear permission cache FIRST before setting team context
-            // This ensures Spatie uses fresh data when checking permissions
-            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-            
             // Set team context
+            // NOTE: We don't clear the permission cache here - it should only be cleared when
+            // permissions actually change, not on every request. Spatie automatically clears
+            // the cache when permissions/roles are updated through its models.
             setPermissionsTeamId($organizationId);
-            
-            // CRITICAL: Refresh user model to clear any cached permission data
-            // This ensures Spatie uses fresh data when checking permissions
-            $user->refresh();
 
             Log::debug('Organization context set for permissions', [
                 'user_id' => $user->id,

@@ -55,8 +55,12 @@ interface SheetContentProps
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => {
+>(({ side, className, children, ...props }, ref) => {
   const { isRTL } = useLanguage();
+  // Automatically set side based on RTL if not explicitly provided
+  // In LTR: panels open from right (default)
+  // In RTL: panels open from left
+  const effectiveSide = side ?? (isRTL ? "left" : "right");
   return (
     <SheetPortal>
       <SheetOverlay />
@@ -64,7 +68,7 @@ const SheetContent = React.forwardRef<
         ref={ref}
         dir={isRTL ? "rtl" : "ltr"}
         data-rtl={isRTL ? "true" : undefined}
-        className={cn("group", sheetVariants({ side }), className)}
+        className={cn("group", sheetVariants({ side: effectiveSide }), className)}
         {...props}
       >
         {children}

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { format, addDays, addWeeks } from 'date-fns';
-import { Calendar, CheckCircle2, Download, Eye, FileText, Loader2, Printer, Shield, UserRound, Zap, Search, Scan } from 'lucide-react';
+import { Calendar, CheckCircle2, Download, Eye, FileText, Loader2, Printer, Shield, UserRound, Zap, Search, Scan, X, Clock, MapPin, Building2 } from 'lucide-react';
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -56,12 +56,13 @@ export default function LeaveManagement() {
   const [endTime, setEndTime] = useState<string>('');
   const [reason, setReason] = useState<string>('');
   const [approvalNote, setApprovalNote] = useState<string>('');
-  const [filterMonth, setFilterMonth] = useState<number | undefined>(undefined);
-  const [filterYear, setFilterYear] = useState<number | undefined>(new Date().getFullYear());
   const [historyStudent, setHistoryStudent] = useState<{ id: string; name?: string; code?: string; className?: string | null } | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null);
+  const [requestPanelOpen, setRequestPanelOpen] = useState(false);
   const [fastSearch, setFastSearch] = useState<string>('');
   const [isSearching, setIsSearching] = useState(false);
+  const [panelApprovalNote, setPanelApprovalNote] = useState<string>('');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Get current academic year
@@ -73,6 +74,40 @@ export default function LeaveManagement() {
     profile?.organization_id
   );
 
+  // Initialize filter date to first day of current month, constrained to academic year
+  const getInitialFilterDate = useCallback((): Date => {
+    const now = new Date();
+    let initialDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // If academic year is loaded and current month is outside academic year, use start of academic year
+    if (currentAcademicYear) {
+      const academicStart = new Date(currentAcademicYear.startDate);
+      const academicEnd = new Date(currentAcademicYear.endDate);
+      
+      if (initialDate < academicStart) {
+        initialDate = new Date(academicStart.getFullYear(), academicStart.getMonth(), 1);
+      } else if (initialDate > academicEnd) {
+        initialDate = new Date(academicEnd.getFullYear(), academicEnd.getMonth(), 1);
+      }
+    }
+    
+    return initialDate;
+  }, [currentAcademicYear]);
+
+  const [filterDate, setFilterDate] = useState<Date>(getInitialFilterDate());
+
+  // Reset filter date when academic year changes
+  useEffect(() => {
+    if (currentAcademicYear) {
+      const newDate = getInitialFilterDate();
+      setFilterDate(newDate);
+    }
+  }, [currentAcademicYear?.id, getInitialFilterDate]);
+
+  // Extract month and year from filter date (always has a value)
+  const filterMonth = useMemo(() => filterDate.getMonth() + 1, [filterDate]);
+  const filterYear = useMemo(() => filterDate.getFullYear(), [filterDate]);
+
   const { requests, pagination, page, pageSize, setPage, setPageSize, isLoading } = useLeaveRequests({
     studentId: selectedStudent || undefined,
     classId: selectedClass || undefined,
@@ -83,7 +118,7 @@ export default function LeaveManagement() {
   // Get student admissions with active status and class filter
   const { data: studentAdmissions } = useStudentAdmissions(profile?.organization_id, false, {
     enrollment_status: 'active',
-    class_academic_year_id: selectedClass || undefined,
+    class_id: selectedClass || undefined,
   });
   // Extract students from admissions
   const students: Student[] = useMemo(() => {
@@ -236,8 +271,12 @@ export default function LeaveManagement() {
 
   const handleApprove = async (request: LeaveRequest) => {
     try {
-      await approveLeave.mutateAsync({ id: request.id, note: approvalNote || undefined });
-      setApprovalNote('');
+      await approveLeave.mutateAsync({ id: request.id, note: panelApprovalNote || undefined });
+      setPanelApprovalNote('');
+      if (selectedRequest?.id === request.id) {
+        setRequestPanelOpen(false);
+        setSelectedRequest(null);
+      }
     } catch (error) {
       // Error is handled by the mutation hook
     }
@@ -245,11 +284,21 @@ export default function LeaveManagement() {
 
   const handleReject = async (request: LeaveRequest) => {
     try {
-      await rejectLeave.mutateAsync({ id: request.id, note: approvalNote || undefined });
-      setApprovalNote('');
+      await rejectLeave.mutateAsync({ id: request.id, note: panelApprovalNote || undefined });
+      setPanelApprovalNote('');
+      if (selectedRequest?.id === request.id) {
+        setRequestPanelOpen(false);
+        setSelectedRequest(null);
+      }
     } catch (error) {
       // Error is handled by the mutation hook
     }
+  };
+
+  const handleRowClick = (request: LeaveRequest) => {
+    setSelectedRequest(request);
+    setRequestPanelOpen(true);
+    setPanelApprovalNote('');
   };
 
   const handleViewHistory = (request: LeaveRequest) => {
@@ -276,28 +325,212 @@ export default function LeaveManagement() {
   });
 
   const handlePrint = async (request: LeaveRequest) => {
-    const data = await leaveRequestsApi.printData(request.id) as { scan_url: string };
-    const scanUrl = data.scan_url;
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(scanUrl)}`;
-    const doc = window.open('', '_blank');
-    if (!doc) return;
-    doc.document.write(`
-      <html><head><title>${t('leave.leaveRequest')}</title>
-      <style>body{font-family: Arial;padding:16px;} .card{border:1px solid #e2e8f0;border-radius:12px;padding:16px;} .row{display:flex;justify-content:space-between;margin-bottom:8px;} .label{color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;} .value{font-weight:600;font-size:14px;} .qr{margin-top:16px;text-align:center;}</style>
-      </head><body>
-        <div class="card">
-          <div class="row"><div class="label">${t('leave.student')}</div><div class="value">${request.student?.fullName || ''}</div></div>
-          <div class="row"><div class="label">${t('events.code')}</div><div class="value">${request.student?.studentCode || ''}</div></div>
-          <div class="row"><div class="label">${t('search.class')}</div><div class="value">${request.className || ''}</div></div>
-          <div class="row"><div class="label">${t('leave.datesLabel')}</div><div class="value">${format(request.startDate, 'PP')} → ${format(request.endDate, 'PP')}</div></div>
-          <div class="row"><div class="label">${t('leave.reason')}</div><div class="value">${request.reason}</div></div>
-          <div class="qr"><img src="${qrUrl}" alt="QR" /></div>
-          <p style="text-align:center;color:#475569;font-size:12px">${t('leave.scanToVerify')}</p>
-        </div>
-        <script>window.print(); setTimeout(() => window.close(), 400);</script>
-      </body></html>
-    `);
-    doc.document.close();
+    try {
+      const data = await leaveRequestsApi.printData(request.id) as { scan_url: string };
+      const scanUrl = data.scan_url;
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(scanUrl)}`;
+      
+      // Create a hidden iframe for printing in the same page
+      const printFrame = document.createElement('iframe');
+      printFrame.style.position = 'fixed';
+      printFrame.style.right = '0';
+      printFrame.style.bottom = '0';
+      printFrame.style.width = '0';
+      printFrame.style.height = '0';
+      printFrame.style.border = '0';
+      document.body.appendChild(printFrame);
+      
+      const printDoc = printFrame.contentWindow?.document || printFrame.contentDocument;
+      if (!printDoc) return;
+      
+      // A6 size: 105mm x 148mm (portrait) - perfect for leave slips
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>${t('leave.leaveRequest')}</title>
+            <style>
+              @page {
+                size: A6;
+                margin: 4mm;
+              }
+              @media print {
+                body { margin: 0; padding: 0; }
+                .no-print { display: none; }
+              }
+              body {
+                font-family: Arial, sans-serif;
+                padding: 6mm;
+                margin: 0;
+                width: 97mm;
+                min-height: 140mm;
+              }
+              .header {
+                text-align: center;
+                border-bottom: 2px solid #000;
+                padding-bottom: 4mm;
+                margin-bottom: 5mm;
+              }
+              .header h1 {
+                margin: 0;
+                font-size: 16px;
+                font-weight: bold;
+                text-transform: uppercase;
+              }
+              .card {
+                border: 1px solid #000;
+                border-radius: 4px;
+                padding: 6mm;
+              }
+              .row {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 3mm;
+                font-size: 11px;
+              }
+              .label {
+                color: #666;
+                font-size: 9px;
+                text-transform: uppercase;
+                font-weight: bold;
+                min-width: 35mm;
+              }
+              .value {
+                font-weight: 600;
+                font-size: 11px;
+                text-align: right;
+                flex: 1;
+              }
+              .reason-row {
+                margin-top: 4mm;
+                padding-top: 4mm;
+                border-top: 1px dashed #ccc;
+              }
+              .reason-value {
+                font-size: 10px;
+                line-height: 1.4;
+                margin-top: 2mm;
+              }
+              .qr-section {
+                margin-top: 5mm;
+                text-align: center;
+                padding-top: 5mm;
+                border-top: 1px dashed #ccc;
+              }
+              .qr-section img {
+                width: 40mm;
+                height: 40mm;
+              }
+              .instructions {
+                margin-top: 3mm;
+                font-size: 8px;
+                color: #666;
+                text-align: center;
+                line-height: 1.3;
+              }
+              .status-badge {
+                display: inline-block;
+                padding: 2mm 4mm;
+                border-radius: 3px;
+                font-size: 9px;
+                font-weight: bold;
+                text-transform: uppercase;
+                margin-top: 2mm;
+              }
+              .status-approved {
+                background-color: #10b981;
+                color: white;
+              }
+              .status-pending {
+                background-color: #f59e0b;
+                color: white;
+              }
+              .status-rejected {
+                background-color: #ef4444;
+                color: white;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>${t('leave.leaveRequest')}</h1>
+            </div>
+            <div class="card">
+              <div class="row">
+                <div class="label">${t('leave.student')}:</div>
+                <div class="value">${request.student?.fullName || ''}</div>
+              </div>
+              <div class="row">
+                <div class="label">${t('events.code')}:</div>
+                <div class="value">${request.student?.studentCode || request.student?.admissionNo || ''}</div>
+              </div>
+              <div class="row">
+                <div class="label">${t('search.class')}:</div>
+                <div class="value">${request.className || ''}</div>
+              </div>
+              <div class="row">
+                <div class="label">${t('events.startDate')}:</div>
+                <div class="value">${format(request.startDate, 'dd/MM/yyyy')}</div>
+              </div>
+              <div class="row">
+                <div class="label">${t('events.endDate')}:</div>
+                <div class="value">${format(request.endDate, 'dd/MM/yyyy')}</div>
+              </div>
+              ${request.startTime && request.endTime ? `
+              <div class="row">
+                <div class="label">${t('leave.startTime')} - ${t('leave.endTime')}:</div>
+                <div class="value">${request.startTime} - ${request.endTime}</div>
+              </div>
+              ` : ''}
+              <div class="row reason-row">
+                <div class="label">${t('leave.reason')}:</div>
+                <div class="value"></div>
+              </div>
+              <div class="reason-value">${request.reason}</div>
+              ${request.approvalNote ? `
+              <div class="row" style="margin-top: 3mm;">
+                <div class="label">${t('leave.approvalNote')}:</div>
+                <div class="value"></div>
+              </div>
+              <div class="reason-value">${request.approvalNote}</div>
+              ` : ''}
+              <div class="row" style="margin-top: 3mm;">
+                <div class="label">${t('events.status')}:</div>
+                <div class="value">
+                  <span class="status-badge status-${request.status}">${t('leave.' + request.status)}</span>
+                </div>
+              </div>
+              <div class="qr-section">
+                <img src="${qrUrl}" alt="QR Code" />
+                <div class="instructions">
+                  ${t('leave.scanToVerify')}<br/>
+                  Scan this QR code to verify this leave request
+                </div>
+              </div>
+            </div>
+          </body>
+        </html>
+      `;
+      
+      printDoc.open();
+      printDoc.write(printContent);
+      printDoc.close();
+      
+      // Wait for iframe to load, then print
+      printFrame.onload = () => {
+        setTimeout(() => {
+          printFrame.contentWindow?.focus();
+          printFrame.contentWindow?.print();
+          // Remove iframe after printing
+          setTimeout(() => {
+            document.body.removeChild(printFrame);
+          }, 1000);
+        }, 250);
+      };
+    } catch (error) {
+      showToast.error('leave.couldNotPrint');
+      console.error('Print error:', error);
+    }
   };
 
   const sortedRequests = useMemo(() => {
@@ -719,17 +952,26 @@ export default function LeaveManagement() {
             </CardHeader>
             <CardContent>
               <div className={`flex flex-wrap gap-3 items-end mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div>
-                  <Label>{t('leave.month')}</Label>
-                  <Input type="number" min={1} max={12} value={filterMonth || ''} onChange={e => setFilterMonth(e.target.value ? Number(e.target.value) : undefined)} className="w-32" dir={isRTL ? 'rtl' : 'ltr'} />
-                </div>
-                <div>
-                  <Label>{t('admissions.year')}</Label>
-                  <Input type="number" value={filterYear || ''} onChange={e => setFilterYear(e.target.value ? Number(e.target.value) : undefined)} className="w-32" dir={isRTL ? 'rtl' : 'ltr'} />
-                </div>
-                <div>
-                  <Label>{t('events.pageSize')}</Label>
-                  <Input type="number" value={pageSize} onChange={e => setPageSize(Number(e.target.value) || 10)} className="w-28" dir={isRTL ? 'rtl' : 'ltr'} />
+                <div className="space-y-2">
+                  <Label>{t('leave.month')} & {t('admissions.year')}</Label>
+                  <CalendarDatePicker 
+                    date={filterDate} 
+                    onDateChange={(date) => {
+                      if (date) {
+                        // Set to first day of the selected month for consistent filtering
+                        const firstOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+                        setFilterDate(firstOfMonth);
+                      }
+                    }} 
+                    placeholder={t('leave.selectMonthYear') || 'Select Month & Year'}
+                    minDate={currentAcademicYear?.startDate ? new Date(currentAcademicYear.startDate) : undefined}
+                    maxDate={currentAcademicYear?.endDate ? new Date(currentAcademicYear.endDate) : undefined}
+                  />
+                  {currentAcademicYear && (
+                    <p className="text-xs text-muted-foreground">
+                      {t('leave.showingRequestsFor') || 'Showing requests for'} {format(filterDate, 'MMMM yyyy')} • {currentAcademicYear.name}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="rounded-md border overflow-x-auto">
@@ -750,7 +992,11 @@ export default function LeaveManagement() {
                       </TableRow>
                     ) : sortedRequests.length > 0 ? (
                       sortedRequests.map(request => (
-                      <TableRow key={request.id}>
+                      <TableRow 
+                        key={request.id} 
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleRowClick(request)}
+                      >
                         <TableCell className="space-y-1">
                           <div className="font-semibold flex items-center gap-2">
                             <UserRound className="h-4 w-4 text-slate-500" />
@@ -766,7 +1012,7 @@ export default function LeaveManagement() {
                         <TableCell>
                           <Badge variant="outline" className={statusColors[request.status] || ''}>{t(`leave.${request.status}`)}</Badge>
                         </TableCell>
-                        <TableCell className={`${isRTL ? 'text-left' : 'text-right'}`}>
+                        <TableCell className={`${isRTL ? 'text-left' : 'text-right'}`} onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -777,29 +1023,17 @@ export default function LeaveManagement() {
                             <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
                               <DropdownMenuLabel>{t('events.actions')}</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleViewHistory(request)}>
+                              <DropdownMenuItem onClick={() => handleRowClick(request)}>
                                 <Eye className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                                 {t('events.view')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleViewHistory(request)}>
+                                <Calendar className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                                {t('assets.history')}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handlePrint(request)}>
                                 <Printer className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                                 {t('events.print')}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => handleApprove(request)} 
-                                disabled={request.status === 'approved'}
-                              >
-                                <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                                {t('status.approved')}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleReject(request)} 
-                                disabled={request.status === 'rejected'}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Download className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                                {t('leave.rejected')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -828,11 +1062,248 @@ export default function LeaveManagement() {
         </TabsContent>
       </Tabs>
 
+      {/* Leave Request Details Panel */}
+      <Sheet open={requestPanelOpen} onOpenChange={(open) => { 
+        setRequestPanelOpen(open); 
+        if (!open) {
+          setSelectedRequest(null);
+          setPanelApprovalNote('');
+        }
+      }}>
+        <SheetContent 
+          className="w-full sm:w-[500px] overflow-y-auto"
+        >
+          {selectedRequest && (
+            <>
+              <SheetHeader>
+                <SheetTitle className={`flex items-center gap-2 text-xl ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <FileText className="h-5 w-5 text-slate-500" />
+                  {t('leave.leaveRequest')}
+                </SheetTitle>
+                <SheetDescription>
+                  {selectedRequest.student?.fullName || t('leave.leaveRequest')}
+                </SheetDescription>
+              </SheetHeader>
+
+              <div className="mt-6 space-y-6">
+                {/* Student Information */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <UserRound className="h-4 w-4" />
+                      {t('leave.student')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between items-start">
+                      <span className="text-sm text-muted-foreground">{t('common.name')}:</span>
+                      <span className="text-sm font-semibold text-right">{selectedRequest.student?.fullName || '-'}</span>
+                    </div>
+                    <div className="flex justify-between items-start">
+                      <span className="text-sm text-muted-foreground">{t('events.code')}:</span>
+                      <span className="text-sm font-medium text-right">{selectedRequest.student?.studentCode || selectedRequest.student?.admissionNo || '-'}</span>
+                    </div>
+                    {(selectedRequest.student?.guardianName || selectedRequest.student?.guardianPhone) && (
+                      <div className="pt-2 border-t space-y-2">
+                        {selectedRequest.student?.guardianName && (
+                          <div className="flex justify-between items-start">
+                            <span className="text-sm text-muted-foreground">{t('students.guardian')}:</span>
+                            <span className="text-sm text-right">{selectedRequest.student.guardianName}</span>
+                          </div>
+                        )}
+                        {selectedRequest.student?.guardianPhone && (
+                          <div className="flex justify-between items-start">
+                            <span className="text-sm text-muted-foreground">{t('common.phone')}:</span>
+                            <span className="text-sm text-right">{selectedRequest.student.guardianPhone}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Leave Details */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      {t('events.dates')} & {t('leave.leaveType')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between items-start">
+                      <span className="text-sm text-muted-foreground">{t('events.startDate')}:</span>
+                      <span className="text-sm font-medium text-right">{format(selectedRequest.startDate, 'PP')}</span>
+                    </div>
+                    <div className="flex justify-between items-start">
+                      <span className="text-sm text-muted-foreground">{t('events.endDate')}:</span>
+                      <span className="text-sm font-medium text-right">{format(selectedRequest.endDate, 'PP')}</span>
+                    </div>
+                    {selectedRequest.startTime && selectedRequest.endTime && (
+                      <>
+                        <div className="flex justify-between items-start">
+                          <span className="text-sm text-muted-foreground">{t('leave.startTime')}:</span>
+                          <span className="text-sm font-medium text-right">{selectedRequest.startTime}</span>
+                        </div>
+                        <div className="flex justify-between items-start">
+                          <span className="text-sm text-muted-foreground">{t('leave.endTime')}:</span>
+                          <span className="text-sm font-medium text-right">{selectedRequest.endTime}</span>
+                        </div>
+                      </>
+                    )}
+                    <div className="flex justify-between items-start">
+                      <span className="text-sm text-muted-foreground">{t('leave.leaveType')}:</span>
+                      <Badge variant="outline" className="text-xs">
+                        {t(`leave.${selectedRequest.leaveType === 'full_day' ? 'fullDay' : selectedRequest.leaveType === 'partial_day' ? 'partialDay' : 'timeBound'}`)}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">{t('events.status')}:</span>
+                      <Badge variant="outline" className={statusColors[selectedRequest.status] || ''}>
+                        {t(`leave.${selectedRequest.status}`)}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Class & School */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
+                      {t('search.class')} & {t('common.school')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {selectedRequest.className && (
+                      <div className="flex justify-between items-start">
+                        <span className="text-sm text-muted-foreground">{t('search.class')}:</span>
+                        <span className="text-sm font-medium text-right">{selectedRequest.className}</span>
+                      </div>
+                    )}
+                    {selectedRequest.schoolName && (
+                      <div className="flex justify-between items-start">
+                        <span className="text-sm text-muted-foreground">{t('common.school')}:</span>
+                        <span className="text-sm font-medium text-right">{selectedRequest.schoolName}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Reason */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">{t('leave.reason')}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm whitespace-pre-wrap">{selectedRequest.reason}</p>
+                  </CardContent>
+                </Card>
+
+                {/* Approval Note */}
+                {selectedRequest.approvalNote && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">{t('leave.approvalNote')}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm whitespace-pre-wrap">{selectedRequest.approvalNote}</p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Actions */}
+                {selectedRequest.status === 'pending' && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">{t('events.actions')}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="panel-approval-note">{t('leave.approvalNote')} <span className="text-muted-foreground text-xs font-normal">({t('events.optional')})</span></Label>
+                        <Textarea 
+                          id="panel-approval-note"
+                          value={panelApprovalNote} 
+                          onChange={e => setPanelApprovalNote(e.target.value)} 
+                          placeholder={t('leave.approvalNotePlaceholder')} 
+                          className="min-h-[80px]"
+                          dir={isRTL ? 'rtl' : 'ltr'}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Button 
+                          onClick={() => handleApprove(selectedRequest)} 
+                          disabled={approveLeave.isPending}
+                          className="w-full"
+                          variant="default"
+                        >
+                          {approveLeave.isPending ? (
+                            <>
+                              <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                              {t('events.processing')}
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                              {t('status.approved')}
+                            </>
+                          )}
+                        </Button>
+                        <Button 
+                          onClick={() => handleReject(selectedRequest)} 
+                          disabled={rejectLeave.isPending}
+                          className="w-full"
+                          variant="destructive"
+                        >
+                          {rejectLeave.isPending ? (
+                            <>
+                              <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                              {t('events.processing')}
+                            </>
+                          ) : (
+                            <>
+                              <X className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                              {t('leave.rejected')}
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-2 pb-4">
+                  <Button 
+                    onClick={() => handlePrint(selectedRequest)} 
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Printer className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                    {t('events.print')}
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      handleViewHistory(selectedRequest);
+                      setRequestPanelOpen(false);
+                    }}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Calendar className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                    {t('assets.history')}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Student History Panel */}
       <Sheet open={historyOpen} onOpenChange={(open) => { setHistoryOpen(open); if (!open) setHistoryStudent(null); }}>
         <SheetContent 
-          side={isRTL ? 'right' : 'left'} 
           className="w-full sm:w-[460px]"
-          dir={isRTL ? 'rtl' : 'ltr'}
         >
           <SheetHeader>
             <SheetTitle className={`flex items-center gap-2 text-lg ${isRTL ? 'flex-row-reverse' : ''}`}>

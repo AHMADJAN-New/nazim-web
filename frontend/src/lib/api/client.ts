@@ -1787,9 +1787,7 @@ export const studentsApi = {
   },
 
   printProfile: async (studentId: string) => {
-    return apiClient.get(`/students/${studentId}/print-profile`, {
-      responseType: 'blob',
-    });
+    return apiClient.requestFile(`/students/${studentId}/print-profile`, { method: 'GET' });
   },
 };
 

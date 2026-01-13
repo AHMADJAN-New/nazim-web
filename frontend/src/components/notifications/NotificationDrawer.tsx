@@ -65,7 +65,7 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="w-[420px] p-0">
+        <SheetContent className="w-[420px] p-0">
         <SheetHeader className="px-6 py-4 border-b">
           <div className="flex items-center gap-2">
             <Bell className="h-4 w-4" />

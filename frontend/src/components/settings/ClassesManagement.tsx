@@ -50,7 +50,6 @@ import * as z from 'zod';
 
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterPanel } from '@/components/layout/FilterPanel';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useClasses, useClassAcademicYears, useClassHistory, useCreateClass, useUpdateClass, useDeleteClass, useAssignClassToYear, useUpdateClassYearInstance, useRemoveClassFromYear, useCopyClassesBetweenYears, useBulkAssignClassSections } from '@/hooks/useClasses';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -123,7 +122,6 @@ export function ClassesManagement() {
     const [selectedClass, setSelectedClass] = useState<string | null>(null);
     const [selectedClassInstance, setSelectedClassInstance] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [gradeLevelFilter, setGradeLevelFilter] = useState<string>('all');
     const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | undefined>();
     const [viewingHistoryFor, setViewingHistoryFor] = useState<string | null>(null);
     const [copyFromYearId, setCopyFromYearId] = useState<string | undefined>();
@@ -223,13 +221,8 @@ export function ClassesManagement() {
             (cls.description && cls.description.toLowerCase().includes(query))
         );
 
-        if (gradeLevelFilter !== 'all') {
-            const level = parseInt(gradeLevelFilter);
-            filtered = filtered.filter((cls) => cls.grade_level === level);
-        }
-
         return filtered;
-    }, [classes, searchQuery, gradeLevelFilter]);
+    }, [classes, searchQuery]);
 
     // Define columns for DataTable (base classes tab)
     const baseClassesColumns: ColumnDef<Class>[] = [
@@ -576,14 +569,14 @@ export function ClassesManagement() {
     };
 
     const handleUpdateInstance = (data: AssignClassFormData) => {
-        if (selectedClassInstance && data.class_id && data.academic_year_id) {
+        if (selectedClassInstance) {
             const updateData: Partial<ClassAcademicYear> & { id: string } = {
                 id: selectedClassInstance,
             };
-            if (data.section_name !== undefined) updateData.section_name = data.section_name;
-            if (data.room_id !== undefined) updateData.room_id = data.room_id;
-            if (data.capacity !== undefined) updateData.capacity = data.capacity;
-            if (data.notes !== undefined) updateData.notes = data.notes;
+            if (data.section_name !== undefined) updateData.sectionName = data.section_name || null;
+            if (data.room_id !== undefined) updateData.roomId = data.room_id || null;
+            if (data.capacity !== undefined) updateData.capacity = data.capacity || null;
+            if (data.notes !== undefined) updateData.notes = data.notes || null;
             updateClassInstance.mutate(updateData, {
                 onSuccess: () => {
                     handleCloseAssignDialog();
@@ -636,44 +629,20 @@ export function ClassesManagement() {
 
                         {/* Base Classes Tab */}
                         <TabsContent value="base" className="space-y-4">
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                <FilterPanel
-                                    title={t('events.filters') || 'Filters'}
-                                    defaultOpenDesktop={true}
-                                    defaultOpenMobile={false}
-                                >
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <Label>{t('events.search') || 'Search'}</Label>
-                                            <div className="relative">
-                                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                <Input
-                                                    placeholder={t('academic.classes.searchPlaceholder')}
-                                                    value={searchQuery}
-                                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                                    className="pl-10"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <Label>{t('events.filterByGrade') || 'Grade Level'}</Label>
-                                            <Select value={gradeLevelFilter} onValueChange={setGradeLevelFilter}>
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder={t('events.filterByGrade')} />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">{t('subjects.all')} {t('academic.classes.gradeLevel')}</SelectItem>
-                                                    {Array.from({ length: 13 }, (_, i) => (
-                                                        <SelectItem key={i} value={i.toString()}>
-                                                            {t('academic.classes.gradeLevel')} {i}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                                <div className="flex-1 w-full sm:min-w-[200px] sm:max-w-md">
+                                    <Label className="mb-2 block">{t('events.search') || 'Search'}</Label>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            placeholder={t('academic.classes.searchPlaceholder')}
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="pl-10 w-full"
+                                        />
                                     </div>
-                                </FilterPanel>
-                                <div className="flex items-center gap-2 flex-shrink-0">
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                                     <ReportExportButtons
                                         data={filteredClasses}
                                         columns={[
@@ -695,7 +664,6 @@ export function ClassesManagement() {
                                         buildFiltersSummary={() => {
                                             const filters: string[] = [];
                                             if (searchQuery) filters.push(`Search: ${searchQuery}`);
-                                            if (gradeLevelFilter !== 'all') filters.push(`Grade Level: ${gradeLevelFilter}`);
                                             return filters.length > 0 ? filters.join(' | ') : '';
                                         }}
                                         schoolId={profile?.default_school_id}
@@ -703,7 +671,7 @@ export function ClassesManagement() {
                                         disabled={filteredClasses.length === 0}
                                     />
                                     {hasCreatePermission && (
-                                        <Button onClick={() => handleOpenClassDialog()} className="flex-shrink-0">
+                                        <Button onClick={() => handleOpenClassDialog()} className="flex-shrink-0 whitespace-nowrap">
                                             <Plus className="h-4 w-4 sm:mr-2" />
                                             <span className="hidden sm:inline">{t('academic.classes.addClass')}</span>
                                         </Button>
@@ -771,14 +739,14 @@ export function ClassesManagement() {
 
                         {/* Academic Year Classes Tab */}
                         <TabsContent value="year" className="space-y-4">
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="flex-1 min-w-0">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                                <div className="flex-1 w-full sm:min-w-[200px] sm:max-w-md">
                                     <Label className="mb-2 block">{t('academic.classes.selectAcademicYear')}</Label>
                                     <Select
                                         value={selectedAcademicYearId || ''}
                                         onValueChange={setSelectedAcademicYearId}
                                     >
-                                        <SelectTrigger className="w-full sm:w-[300px]">
+                                        <SelectTrigger className="w-full">
                                             <SelectValue placeholder={t('academic.classes.selectAcademicYear')} />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -790,7 +758,7 @@ export function ClassesManagement() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                                     {selectedAcademicYearId && classAcademicYears && classAcademicYears.length > 0 && (
                                         <ReportExportButtons
                                             data={classAcademicYears}
@@ -824,7 +792,7 @@ export function ClassesManagement() {
                                             onClick={() => handleOpenAssignDialog()}
                                             disabled={!selectedAcademicYearId}
                                             variant="outline"
-                                            className="flex-shrink-0"
+                                            className="flex-shrink-0 whitespace-nowrap"
                                         >
                                             <Plus className="h-4 w-4 sm:mr-2" />
                                             <span className="hidden sm:inline">{t('academic.classes.assignToYear')}</span>
@@ -834,7 +802,7 @@ export function ClassesManagement() {
                                         <Button
                                             onClick={() => handleOpenBulkSectionsDialog()}
                                             disabled={!selectedAcademicYearId}
-                                            className="flex-shrink-0"
+                                            className="flex-shrink-0 whitespace-nowrap"
                                         >
                                             <Users className="h-4 w-4 sm:mr-2" />
                                             <span className="hidden sm:inline">{t('academic.classes.bulkCreateSections')}</span>
@@ -858,7 +826,7 @@ export function ClassesManagement() {
                                                     <TableHead>{t('academic.classes.room')}</TableHead>
                                                     <TableHead>{t('academic.classes.capacity')}</TableHead>
                                                     <TableHead>{t('academic.classes.studentCount')}</TableHead>
-                                                    <TableHead className="text-right">{t('events.actions')}</TableHead>
+                                                    <TableHead className="text-right w-[100px]">{t('events.actions')}</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -884,13 +852,15 @@ export function ClassesManagement() {
                                                             <TableCell>{instance.room?.roomNumber || '-'}</TableCell>
                                                             <TableCell>{instance.capacity || instance.class?.defaultCapacity || '-'}</TableCell>
                                                             <TableCell>{instance.currentStudentCount}</TableCell>
-                                                            <TableCell className="text-right">
-                                                                <div className="flex justify-end gap-2">
+                                                            <TableCell>
+                                                                <div className="flex items-center justify-end gap-2">
                                                                     {hasUpdatePermission && (
                                                                         <Button
                                                                             variant="ghost"
                                                                             size="sm"
                                                                             onClick={() => handleEditInstance(instance)}
+                                                                            className="h-8 w-8 p-0"
+                                                                            title={t('academic.classes.editClass')}
                                                                         >
                                                                             <Pencil className="h-4 w-4" />
                                                                         </Button>
@@ -900,8 +870,10 @@ export function ClassesManagement() {
                                                                             variant="ghost"
                                                                             size="sm"
                                                                             onClick={() => handleRemoveClick(instance.id)}
+                                                                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                                                            title={t('events.delete')}
                                                                         >
-                                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                                            <Trash2 className="h-4 w-4" />
                                                                         </Button>
                                                                     )}
                                                                 </div>
@@ -924,29 +896,49 @@ export function ClassesManagement() {
 
                         {/* Copy Classes Tab */}
                         <TabsContent value="copy" className="space-y-4">
-                            <div className="flex items-center justify-start">
-                                {hasCopyPermission && (
-                                    <Button
-                                        onClick={handleOpenCopyDialog}
-                                        disabled={!selectedAcademicYearId}
-                                        className="flex-shrink-0"
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                                <div className="flex-1 w-full sm:min-w-[200px] sm:max-w-md">
+                                    <Label className="mb-2 block">{t('academic.classes.selectAcademicYear')}</Label>
+                                    <Select
+                                        value={selectedAcademicYearId || ''}
+                                        onValueChange={setSelectedAcademicYearId}
                                     >
-                                        <Copy className="h-4 w-4 sm:mr-2" />
-                                        <span className="hidden sm:inline">{t('academic.classes.copyClasses')}</span>
-                                    </Button>
-                                )}
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder={t('academic.classes.selectAcademicYear')} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {academicYears?.map((year) => (
+                                                <SelectItem key={year.id} value={year.id}>
+                                                    {year.name} {year.is_current && `(${t('academic.academicYears.current')})`}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                                    {hasCopyPermission && (
+                                        <Button
+                                            onClick={handleOpenCopyDialog}
+                                            disabled={!selectedAcademicYearId}
+                                            className="flex-shrink-0 whitespace-nowrap"
+                                        >
+                                            <Copy className="h-4 w-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">{t('academic.classes.copyClasses')}</span>
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
 
                             <Card>
                                 <CardHeader>
                                     <CardTitle>{t('academic.classes.copyBetweenYears')}</CardTitle>
                                     <CardDescription>
-                                        Copy classes from one academic year to another
+                                        {t('academic.classes.copyDescription')}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-sm text-muted-foreground">
-                                        Select an academic year in the "Classes by Academic Year" tab, then use the copy button to copy classes to another year.
+                                        {t('academic.classes.copyInstructions')}
                                     </p>
                                 </CardContent>
                             </Card>
@@ -1119,11 +1111,7 @@ export function ClassesManagement() {
             {/* Assign Class to Year Dialog */}
             <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
                 <DialogContent className="w-[95vw] sm:max-w-2xl">
-                    <form onSubmit={handleSubmitAssign(selectedClassInstance ? (data) => {
-                        if (data.class_id && data.academic_year_id) {
-                            handleUpdateInstance(data as AssignClassFormData & { class_id: string; academic_year_id: string });
-                        }
-                    } : onSubmitAssign)}>
+                    <form onSubmit={handleSubmitAssign(selectedClassInstance ? handleUpdateInstance : onSubmitAssign)}>
                         <DialogHeader>
                             <DialogTitle>
                                 {selectedClassInstance ? t('academic.classes.editClass') : t('academic.classes.assignToYear')}
@@ -1174,6 +1162,7 @@ export function ClassesManagement() {
                                         <Select
                                             value={field.value}
                                             onValueChange={field.onChange}
+                                            disabled={!!selectedClassInstance}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder={t('academic.classes.selectAcademicYear')} />
@@ -1423,7 +1412,7 @@ export function ClassesManagement() {
                         <DialogHeader>
                             <DialogTitle>{t('academic.classes.copyClasses')}</DialogTitle>
                             <DialogDescription>
-                                Copy classes from one academic year to another
+                                {t('academic.classes.copyDescription')}
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">

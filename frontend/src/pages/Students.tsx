@@ -58,6 +58,7 @@ import { StudentEducationalHistoryDialog } from '@/components/students/StudentEd
 import { StudentDisciplineRecordsDialog } from '@/components/students/StudentDisciplineRecordsDialog';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
+import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
 
 
 // Helper function to convert StudentFormData to domain Student format
@@ -362,8 +363,14 @@ export function Students() {
       }
     }
     if (!organizationId) {
+      const errorMessage = t('students.organizationRequired') || 'Organization is required to create a student. Please select an organization.';
+      toast.error(errorMessage);
       if (import.meta.env.DEV) {
-        console.warn('Organization is required to create/update student');
+        console.error('Organization is required to create/update student', {
+          profile,
+          cleanedData,
+          schools,
+        });
       }
       return;
     }
@@ -575,7 +582,13 @@ export function Students() {
             }
             resolve();
           },
-          onError: () => reject()
+          onError: (error) => {
+            if (import.meta.env.DEV) {
+              console.error('Failed to create student:', error);
+            }
+            // Error toast is already shown by useCreateStudent hook
+            reject(error);
+          }
         });
       });
     }
@@ -1160,6 +1173,28 @@ export function Students() {
         open={!!disciplineDialogStudent}
         onOpenChange={(open) => !open && setDisciplineDialogStudent(null)}
         student={disciplineDialogStudent}
+      />
+
+      {/* Report Progress Dialog for Print */}
+      <ReportProgressDialog
+        open={printProfile.isGenerating || printProfile.status !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            printProfile.reset();
+          }
+        }}
+        status={printProfile.status}
+        progress={printProfile.progress}
+        fileName={printProfile.fileName}
+        error={printProfile.error}
+        onDownload={() => {
+          printProfile.downloadReport();
+          // Also open print dialog
+          printProfile.openPrintDialog();
+        }}
+        onClose={() => {
+          printProfile.reset();
+        }}
       />
     </div>
   );

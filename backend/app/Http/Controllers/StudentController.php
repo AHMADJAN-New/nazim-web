@@ -12,6 +12,8 @@ use App\Services\Notifications\NotificationService;
 use App\Services\Storage\FileStorageService;
 use App\Services\Reports\PdfReportService;
 use App\Services\Reports\ReportConfig;
+use App\Services\Reports\BrandingCacheService;
+use App\Services\Reports\DateConversionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -22,7 +24,9 @@ class StudentController extends Controller
     public function __construct(
         private FileStorageService $fileStorageService,
         private NotificationService $notificationService,
-        private PdfReportService $pdfReportService
+        private PdfReportService $pdfReportService,
+        private BrandingCacheService $brandingCache,
+        private DateConversionService $dateService
     ) {}
 
     /**
@@ -890,7 +894,7 @@ class StudentController extends Controller
             $baseQuery = Student::whereNull('deleted_at')
                 ->whereIn('organization_id', $orgIds)
                 ->where('school_id', $currentSchoolId)
-                ->select('id', 'full_name', 'father_name', 'tazkira_number', 'guardian_tazkira', 'card_number', 'admission_no', 'orig_province', 'admission_year', 'created_at');
+                ->select('id', 'full_name', 'father_name', 'guardian_tazkira', 'card_number', 'admission_no', 'orig_province', 'admission_year', 'created_at');
 
             // Exact: name + father_name
             $exactMatches = (clone $baseQuery)
@@ -902,7 +906,7 @@ class StudentController extends Controller
                     'id' => $match->id,
                     'full_name' => $match->full_name ?? null,
                     'father_name' => $match->father_name ?? null,
-                    'tazkira_number' => $match->tazkira_number ?? null,
+                    'tazkira_number' => $match->guardian_tazkira ?? null,
                     'card_number' => $match->card_number ?? null,
                     'admission_no' => $match->admission_no ?? null,
                     'orig_province' => $match->orig_province ?? null,
@@ -915,17 +919,14 @@ class StudentController extends Controller
             // Tazkira number match
             if ($request->tazkira_number) {
                 $tazkiraMatches = (clone $baseQuery)
-                    ->where(function($q) use ($request) {
-                        $q->where('tazkira_number', $request->tazkira_number)
-                          ->orWhere('guardian_tazkira', $request->tazkira_number);
-                    })
+                    ->where('guardian_tazkira', $request->tazkira_number)
                     ->get();
                 foreach ($tazkiraMatches as $match) {
                     $results[] = [
                         'id' => $match->id,
                         'full_name' => $match->full_name ?? null,
                         'father_name' => $match->father_name ?? null,
-                        'tazkira_number' => $match->tazkira_number ?? null,
+                        'tazkira_number' => $match->guardian_tazkira ?? null,
                         'card_number' => $match->card_number ?? null,
                         'admission_no' => $match->admission_no ?? null,
                         'orig_province' => $match->orig_province ?? null,
@@ -946,7 +947,7 @@ class StudentController extends Controller
                         'id' => $match->id,
                         'full_name' => $match->full_name ?? null,
                         'father_name' => $match->father_name ?? null,
-                        'tazkira_number' => $match->tazkira_number ?? null,
+                        'tazkira_number' => $match->guardian_tazkira ?? null,
                         'card_number' => $match->card_number ?? null,
                         'admission_no' => $match->admission_no ?? null,
                         'orig_province' => $match->orig_province ?? null,
@@ -967,7 +968,7 @@ class StudentController extends Controller
                         'id' => $match->id,
                         'full_name' => $match->full_name ?? null,
                         'father_name' => $match->father_name ?? null,
-                        'tazkira_number' => $match->tazkira_number ?? null,
+                        'tazkira_number' => $match->guardian_tazkira ?? null,
                         'card_number' => $match->card_number ?? null,
                         'admission_no' => $match->admission_no ?? null,
                         'orig_province' => $match->orig_province ?? null,
@@ -988,7 +989,7 @@ class StudentController extends Controller
                     'id' => $match->id,
                     'full_name' => $match->full_name ?? null,
                     'father_name' => $match->father_name ?? null,
-                    'tazkira_number' => $match->tazkira_number ?? null,
+                    'tazkira_number' => $match->guardian_tazkira ?? null,
                     'card_number' => $match->card_number ?? null,
                     'admission_no' => $match->admission_no ?? null,
                     'orig_province' => $match->orig_province ?? null,
@@ -1177,10 +1178,91 @@ class StudentController extends Controller
                 'template_name' => 'student-profile',
             ]);
 
+            // Load branding data
+            $branding = $this->brandingCache->getBranding($currentSchoolId);
+            if (!$branding) {
+                Log::warning("Branding not found for school: {$currentSchoolId}");
+                $branding = [];
+            }
+
+            // Load default layout
+            $layout = $this->brandingCache->getDefaultLayout($currentSchoolId);
+            if (!$layout) {
+                $layout = [];
+            }
+
+            // Build context with branding and template data
+            $context = array_merge($reportData, [
+                // Template name (required for PdfReportService)
+                'template_name' => 'student-profile',
+                
+                // Branding data
+                'SCHOOL_NAME' => $branding['school_name'] ?? ($student->school->school_name ?? ''),
+                'SCHOOL_NAME_PASHTO' => $branding['school_name_pashto'] ?? $branding['school_name'] ?? '',
+                'SCHOOL_NAME_ARABIC' => $branding['school_name_arabic'] ?? $branding['school_name'] ?? '',
+                'SCHOOL_ADDRESS' => $branding['school_address'] ?? '',
+                'SCHOOL_PHONE' => $branding['school_phone'] ?? '',
+                'SCHOOL_EMAIL' => $branding['school_email'] ?? '',
+                'SCHOOL_WEBSITE' => $branding['school_website'] ?? '',
+                
+                // Colors and fonts
+                'PRIMARY_COLOR' => $branding['primary_color'] ?? '#0b0b56',
+                'SECONDARY_COLOR' => $branding['secondary_color'] ?? '#0056b3',
+                'ACCENT_COLOR' => $branding['accent_color'] ?? '#ff6b35',
+                'FONT_FAMILY' => $layout['font_family'] ?? $branding['font_family'] ?? 'Bahij Nassim',
+                'FONT_SIZE' => $layout['font_size'] ?? $branding['report_font_size'] ?? '12px',
+                
+                // Logos
+                'PRIMARY_LOGO_URI' => $branding['primary_logo_uri'] ?? null,
+                'SECONDARY_LOGO_URI' => $branding['secondary_logo_uri'] ?? null,
+                'MINISTRY_LOGO_URI' => $branding['ministry_logo_uri'] ?? null,
+                'PRIMARY_LOGO' => $branding['primary_logo_uri'] ?? null,
+                'SECONDARY_LOGO' => $branding['secondary_logo_uri'] ?? null,
+                'show_primary_logo' => $branding['show_primary_logo'] ?? true,
+                'show_secondary_logo' => $branding['show_secondary_logo'] ?? false,
+                'show_ministry_logo' => $branding['show_ministry_logo'] ?? false,
+                'primary_logo_position' => $branding['primary_logo_position'] ?? 'left',
+                'secondary_logo_position' => $branding['secondary_logo_position'] ?? 'right',
+                'ministry_logo_position' => $branding['ministry_logo_position'] ?? 'right',
+                
+                // Report settings
+                'TABLE_TITLE' => 'Student Profile - ' . ($student->full_name ?? 'Unknown'),
+                'show_page_numbers' => $layout['show_page_numbers'] ?? $branding['show_page_numbers'] ?? true,
+                'show_generation_date' => $layout['show_generation_date'] ?? $branding['show_generation_date'] ?? true,
+                
+                // Layout settings
+                'page_size' => $layout['page_size'] ?? 'A4',
+                'orientation' => $layout['orientation'] ?? 'portrait',
+                'margins' => $layout['margins'] ?? '15mm 12mm 18mm 12mm',
+                'rtl' => $layout['rtl'] ?? true,
+                
+                // Date/time
+                'CURRENT_DATETIME' => $this->dateService->formatDate(
+                    now(),
+                    $config->calendarPreference,
+                    'full',
+                    $config->language
+                ) . ' ' . now()->format('H:i'),
+                'CURRENT_DATE' => $this->dateService->formatDate(
+                    now(),
+                    $config->calendarPreference,
+                    'full',
+                    $config->language
+                ),
+                
+                // Watermark (if any)
+                'WATERMARK' => null,
+                
+                // Notes
+                'NOTES_HEADER' => [],
+                'NOTES_BODY' => [],
+                'NOTES_FOOTER' => [],
+            ]);
+
             // Generate PDF
             $result = $this->pdfReportService->generate(
                 $config,
-                $reportData,
+                $context,
                 null, // progress callback
                 $profile->organization_id,
                 $currentSchoolId
@@ -1221,7 +1303,7 @@ class StudentController extends Controller
             ->where('organization_id', $student->organization_id)
             ->where('school_id', $student->school_id)
             ->whereNull('deleted_at')
-            ->where('status', 'active')
+            ->where('enrollment_status', 'active')
             ->orderBy('created_at', 'desc')
             ->first();
 

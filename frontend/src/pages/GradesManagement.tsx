@@ -275,7 +275,7 @@ export default function GradesManagement() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <CardTitle>{t('students.management')}</CardTitle>
+              <CardTitle>{t('nav.grades.management')}</CardTitle>
               <CardDescription className="hidden md:block">{t('grades.managementDescription')}</CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
@@ -292,7 +292,7 @@ export default function GradesManagement() {
                     { key: 'isPass', label: t('grades.isPass') },
                   ]}
                   reportKey="grades"
-                  title={t('students.management') || 'Grades Report'}
+                  title={t('nav.grades.management') || 'Grades Report'}
                   transformData={(data) => data.map((grade) => ({
                     nameEn: grade.nameEn || '',
                     nameAr: grade.nameAr || '',

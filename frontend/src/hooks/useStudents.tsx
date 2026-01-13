@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 import { useAuth } from './useAuth';
 import { usePagination } from './usePagination';
@@ -308,21 +308,112 @@ export const useUploadStudentDocument = () => {
 
 export const usePrintStudentProfile = () => {
   const queryClient = useQueryClient();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState<'pending' | 'processing' | 'completed' | 'failed' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const downloadUrlRef = useRef<string | null>(null);
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: async (studentId: string) => {
-      const response = await studentsApi.printProfile(studentId);
-      // Open PDF in new window
-      const blob = new Blob([response], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      // Clean up URL after a delay
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setIsGenerating(true);
+      setStatus('processing');
+      setProgress(0);
+      setError(null);
+      
+      try {
+        // Simulate progress
+        setProgress(30);
+        
+        const { blob, filename } = await studentsApi.printProfile(studentId);
+        
+        setProgress(90);
+        
+        // Create blob URL
+        const url = URL.createObjectURL(blob);
+        setDownloadUrl(url);
+        downloadUrlRef.current = url;
+        setFileName(filename || `student-profile-${studentId}.pdf`);
+        setProgress(100);
+        setStatus('completed');
+        
+        return { blob, filename, url };
+      } catch (err) {
+        setStatus('failed');
+        setError(err instanceof Error ? err.message : 'Failed to generate PDF');
+        throw err;
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    onSuccess: () => {
+      showToast.success('toast.studentProfileGenerated' || 'Student profile PDF generated successfully');
     },
     onError: (error: Error) => {
-      showToast.error(error.message || 'Failed to generate student profile PDF.');
+      showToast.error(error.message || 'toast.studentProfileGenerationFailed' || 'Failed to generate student profile PDF.');
     },
   });
+
+  const downloadReport = useCallback(() => {
+    const url = downloadUrlRef.current || downloadUrl;
+    const name = fileName || 'student-profile.pdf';
+    
+    if (url) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }, [downloadUrl, fileName]);
+
+  const openPrintDialog = useCallback(() => {
+    const url = downloadUrlRef.current || downloadUrl;
+    if (url) {
+      const printWindow = window.open(url, '_blank');
+      if (printWindow) {
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+            // Clean up URL after printing
+            setTimeout(() => {
+              URL.revokeObjectURL(url);
+              downloadUrlRef.current = null;
+            }, 2000);
+          }, 500);
+        };
+      }
+    }
+  }, [downloadUrl]);
+
+  const reset = useCallback(() => {
+    setIsGenerating(false);
+    setProgress(0);
+    setStatus(null);
+    setError(null);
+    if (downloadUrlRef.current) {
+      URL.revokeObjectURL(downloadUrlRef.current);
+      downloadUrlRef.current = null;
+    }
+    setDownloadUrl(null);
+    setFileName(null);
+  }, []);
+
+  return {
+    ...mutation,
+    isGenerating,
+    progress,
+    status,
+    error,
+    downloadUrl,
+    fileName,
+    downloadReport,
+    openPrintDialog,
+    reset,
+  };
 };
 
 export const useDeleteStudentDocument = () => {

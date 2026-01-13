@@ -107,6 +107,11 @@
     @endif
 
     {{-- Data table (landscape optimized) --}}
+    @php
+        // Ensure COLUMNS is defined, default to empty array if not set
+        $COLUMNS = $COLUMNS ?? [];
+        $ROWS = $ROWS ?? [];
+    @endphp
     <table class="data-table" style="font-size: 9px;">
         <thead>
             <tr>

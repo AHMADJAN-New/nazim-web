@@ -19,7 +19,15 @@ export const studentSchema = z.object({
   gender: z.enum(['male', 'female']),
   birth_year: optionalStringLength(10, 'Birth year'),
   birth_date: optionalStringLength(30, 'Birth date'),
-  age: z.number().min(3, validationMessages.ageMin(3)).max(25, validationMessages.ageMax()).optional().nullable(),
+  age: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined || (typeof val === 'number' && isNaN(val))) {
+        return undefined;
+      }
+      return typeof val === 'string' ? Number(val) : val;
+    },
+    z.number().min(3, validationMessages.ageMin(3)).max(25, validationMessages.ageMax()).optional().nullable()
+  ),
   admission_year: optionalStringLength(10, 'Admission year'),
   orig_province: optionalStringLength(80, 'Province'),
   orig_district: optionalStringLength(80, 'District'),

@@ -37,7 +37,7 @@ class PdfReportService
         $this->reportProgress($progressCallback, 0, 'Starting PDF generation');
 
         // Render HTML
-        $html = $this->renderHtml($context);
+        $html = $this->renderHtml($context, $config);
         $this->reportProgress($progressCallback, 30, 'HTML rendered');
 
         // Generate PDF file
@@ -50,9 +50,10 @@ class PdfReportService
     /**
      * Render HTML from template
      */
-    private function renderHtml(array $context): string
+    private function renderHtml(array $context, ?ReportConfig $config = null): string
     {
-        $templateName = $context['template_name'] ?? 'table_a4_portrait';
+        // Get template name from context first, then from config, then default
+        $templateName = $context['template_name'] ?? $config?->templateName ?? 'table_a4_portrait';
         $viewName = "reports.{$templateName}";
         $templatePath = resource_path("views/reports/{$templateName}.blade.php");
 

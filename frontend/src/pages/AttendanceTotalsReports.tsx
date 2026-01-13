@@ -14,6 +14,9 @@ import {
     Building2,
     Download,
     Loader2,
+    FileDown,
+    FileSpreadsheet,
+    ChevronRight,
 } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 
@@ -48,6 +51,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Progress } from '@/components/ui/progress';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const attendanceStatusMeta = {
     present: { label: 'Present', icon: CheckCircle2, tone: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950' },
@@ -291,74 +305,122 @@ export default function AttendanceTotalsReports() {
                     },
                 ]}
                 rightSlot={
-                    <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" size="sm" onClick={() => {
-                            setReportType('pdf');
-                            handleGenerateReport('totals');
-                        }} disabled={isLoading || !report || isGenerating}>
-                            {isGenerating && reportType === 'pdf' ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="mr-2 h-4 w-4" />
-                            )}
-                            PDF Totals
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => {
-                            setReportType('excel');
-                            handleGenerateReport('totals');
-                        }} disabled={isLoading || !report || isGenerating}>
-                            {isGenerating && reportType === 'excel' ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="mr-2 h-4 w-4" />
-                            )}
-                            Excel Totals
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => {
-                            setReportType('pdf');
-                            handleGenerateReport('class_wise');
-                        }} disabled={isLoading || !report || isGenerating}>
-                            {isGenerating && reportType === 'pdf' ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="mr-2 h-4 w-4" />
-                            )}
-                            PDF Class-wise
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => {
-                            setReportType('excel');
-                            handleGenerateReport('class_wise');
-                        }} disabled={isLoading || !report || isGenerating}>
-                            {isGenerating && reportType === 'excel' ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="mr-2 h-4 w-4" />
-                            )}
-                            Excel Class-wise
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => {
-                            setReportType('pdf');
-                            handleGenerateReport('room_wise');
-                        }} disabled={isLoading || !report || isGenerating}>
-                            {isGenerating && reportType === 'pdf' ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="mr-2 h-4 w-4" />
-                            )}
-                            PDF Room-wise
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => {
-                            setReportType('excel');
-                            handleGenerateReport('room_wise');
-                        }} disabled={isLoading || !report || isGenerating}>
-                            {isGenerating && reportType === 'excel' ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="mr-2 h-4 w-4" />
-                            )}
-                            Excel Room-wise
-                        </Button>
-                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                disabled={isLoading || !report || isGenerating}
+                                className="flex items-center gap-2"
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <span className="hidden sm:inline">{t('attendanceTotalsReport.generating') || 'Generating...'}</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Download className="h-4 w-4" />
+                                        <span className="hidden sm:inline">{t('events.export') || 'Export'}</span>
+                                    </>
+                                )}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel>{t('attendanceTotalsReport.exportOptions') || 'Export Options'}</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            
+                            {/* Totals Reports */}
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <BarChart3 className="mr-2 h-4 w-4" />
+                                    <span>{t('attendanceTotalsReport.totals') || 'Totals'}</span>
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setReportType('pdf');
+                                            handleGenerateReport('totals');
+                                        }}
+                                        disabled={isGenerating}
+                                    >
+                                        <FileDown className="mr-2 h-4 w-4" />
+                                        <span>PDF</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setReportType('excel');
+                                            handleGenerateReport('totals');
+                                        }}
+                                        disabled={isGenerating}
+                                    >
+                                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                        <span>Excel</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+
+                            {/* Class-wise Reports */}
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <GraduationCap className="mr-2 h-4 w-4" />
+                                    <span>{t('attendanceTotalsReport.classWise') || 'Class-wise'}</span>
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setReportType('pdf');
+                                            handleGenerateReport('class_wise');
+                                        }}
+                                        disabled={isGenerating}
+                                    >
+                                        <FileDown className="mr-2 h-4 w-4" />
+                                        <span>PDF</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setReportType('excel');
+                                            handleGenerateReport('class_wise');
+                                        }}
+                                        disabled={isGenerating}
+                                    >
+                                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                        <span>Excel</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+
+                            {/* Room-wise Reports */}
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <Building2 className="mr-2 h-4 w-4" />
+                                    <span>{t('attendanceTotalsReport.roomWise') || 'Room-wise'}</span>
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setReportType('pdf');
+                                            handleGenerateReport('room_wise');
+                                        }}
+                                        disabled={isGenerating}
+                                    >
+                                        <FileDown className="mr-2 h-4 w-4" />
+                                        <span>PDF</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setReportType('excel');
+                                            handleGenerateReport('room_wise');
+                                        }}
+                                        disabled={isGenerating}
+                                    >
+                                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                        <span>Excel</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 }
             />
 

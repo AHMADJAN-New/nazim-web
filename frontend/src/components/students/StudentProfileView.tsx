@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
@@ -366,6 +367,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
   if (!student) return null;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto w-[95vw] md:w-full">
         <DialogHeader>
@@ -804,6 +806,29 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
         )}
       </DialogContent>
     </Dialog>
+    
+    {/* Report Progress Dialog */}
+    <ReportProgressDialog
+      open={printProfile.isGenerating || printProfile.status !== null}
+      onOpenChange={(open) => {
+        if (!open) {
+          printProfile.reset();
+        }
+      }}
+      status={printProfile.status}
+      progress={printProfile.progress}
+      fileName={printProfile.fileName}
+      error={printProfile.error}
+      onDownload={() => {
+        printProfile.downloadReport();
+        // Also open print dialog
+        printProfile.openPrintDialog();
+      }}
+      onClose={() => {
+        printProfile.reset();
+      }}
+    />
+    </>
   );
 });
 

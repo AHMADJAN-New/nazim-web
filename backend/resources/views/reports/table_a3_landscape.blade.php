@@ -108,6 +108,11 @@
     @endif
 
     {{-- Data table (A3 optimized for many columns) --}}
+    @php
+        // Ensure COLUMNS is defined, default to empty array if not set
+        $COLUMNS = $COLUMNS ?? [];
+        $ROWS = $ROWS ?? [];
+    @endphp
     <table class="data-table" style="font-size: 8px;">
         <thead>
             <tr>

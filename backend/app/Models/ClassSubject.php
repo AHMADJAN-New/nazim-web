@@ -24,6 +24,7 @@ class ClassSubject extends Model
         'class_academic_year_id',
         'subject_id',
         'organization_id',
+        'school_id',
         'teacher_id',
         'room_id',
         'credits',

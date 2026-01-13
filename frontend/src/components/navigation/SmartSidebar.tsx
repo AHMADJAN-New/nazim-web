@@ -1416,7 +1416,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasGradesPermission ? [{
             title: "Grades Management",
-            titleKey: "students.management",
+            titleKey: "grades.management",
             url: "/settings/grades",
             icon: Trophy,
           }] : []),

@@ -32,9 +32,9 @@ class EnsurePlatformAdmin
             // This ensures we're checking for global permissions, not organization-scoped ones
             setPermissionsTeamId(null);
             
-            // CRITICAL: Clear permission cache to ensure fresh permission check
-            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-            $user->refresh();
+            // NOTE: We don't clear the permission cache here - it should only be cleared when
+            // permissions actually change, not on every request. Spatie automatically clears
+            // the cache when permissions/roles are updated through its models.
             
             // CRITICAL: Use platform org UUID as team context for global permissions
             // Global permissions are stored with platform org UUID (00000000-0000-0000-0000-000000000000)

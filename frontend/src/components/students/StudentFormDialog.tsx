@@ -42,6 +42,7 @@ import { useHasPermission } from '@/hooks/usePermissions';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
 import { useLanguage } from '@/hooks/useLanguage';
 import { studentSchema, type StudentFormData } from '@/lib/validations';
+import { showToast } from '@/lib/toast';
 import type { Student } from '@/types/domain/student';
 
 export interface StudentFormDialogProps {
@@ -229,6 +230,14 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
     }, [open, student, reset, schools]);
 
     const onSubmit = async (values: StudentFormValues) => {
+        // Check subscription limits for new students
+        if (!isEdit && !studentUsage.canCreate) {
+            const errorMessage = t('students.limitReached') || 
+                `Student limit reached (${studentUsage.current}/${studentUsage.limit}). Please upgrade your plan to create more students.`;
+            showToast.error(errorMessage);
+            return;
+        }
+
         // Duplicate check only for new students (not for updates)
         if (!isEdit) {
             try {
@@ -257,12 +266,28 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
         }
 
         if (onSubmitData) {
-            // Pass the selected picture file to the parent so it can upload after student creation
-            await onSubmitData(values, isEdit, selectedPictureFile);
+            try {
+                // Pass the selected picture file to the parent so it can upload after student creation
+                await onSubmitData(values, isEdit, selectedPictureFile);
+                // Only close dialog and call onSuccess if submission was successful
+                onSuccess?.();
+                setSelectedPictureFile(null);
+                onOpenChange(false);
+            } catch (error) {
+                // Error handling is done in the parent component (onDialogSubmit)
+                // Don't close the dialog if there was an error
+                if (import.meta.env.DEV) {
+                    console.error('Error submitting student form:', error);
+                }
+                // Re-throw to let parent handle it
+                throw error;
+            }
+        } else {
+            // If no onSubmitData, just close the dialog
+            onSuccess?.();
+            setSelectedPictureFile(null);
+            onOpenChange(false);
         }
-        onSuccess?.();
-        setSelectedPictureFile(null);
-        onOpenChange(false);
     };
 
     return (
@@ -304,7 +329,34 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+                <form onSubmit={handleSubmit(onSubmit, (errors) => {
+                    if (import.meta.env.DEV) {
+                        console.error('[StudentFormDialog] Form validation errors:', errors);
+                    }
+                    // Show first validation error to user
+                    const firstError = Object.values(errors)[0];
+                    if (firstError?.message) {
+                        showToast.error(firstError.message);
+                    } else {
+                        showToast.error(t('events.validationError') || 'Please fix form errors before submitting');
+                    }
+                    // Switch to the tab containing the first error
+                    if (firstError) {
+                        const errorField = Object.keys(errors)[0];
+                        // Map field names to tabs
+                        if (['admission_no', 'card_number', 'applying_grade', 'admission_year', 'school_id'].includes(errorField)) {
+                            setActiveTab('admission');
+                        } else if (['full_name', 'father_name', 'grandfather_name', 'mother_name', 'gender', 'birth_year', 'birth_date', 'age', 'preferred_language', 'nationality', 'previous_school'].includes(errorField)) {
+                            setActiveTab('personal');
+                        } else if (['orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district', 'curr_village', 'home_address'].includes(errorField)) {
+                            setActiveTab('address');
+                        } else if (['guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_tazkira', 'zamin_name', 'zamin_phone', 'zamin_tazkira', 'zamin_address'].includes(errorField)) {
+                            setActiveTab('guardian');
+                        } else {
+                            setActiveTab('additional');
+                        }
+                    }
+                })} className="flex flex-col flex-1 min-h-0">
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0 px-4 sm:px-6">
                         <TabsList className="flex w-full gap-1 h-auto mb-3 sm:mb-4 flex-shrink-0 overflow-x-auto pb-1 scrollbar-hide">
                             <TabsTrigger value="admission" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
@@ -428,13 +480,16 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                         <Input placeholder={t('studentReportCard.motherName') || 'Mother name'} {...register('mother_name')} />
                                     </div>
                                     <div>
-                                        <Label>{t('students.gender') || 'Gender'}</Label>
+                                        <Label>
+                                            {t('students.gender') || 'Gender'}
+                                            <span className="text-destructive ml-1">*</span>
+                                        </Label>
                                         <Controller
                                             name="gender"
                                             control={control}
                                             render={({ field }) => (
                                                 <Select value={field.value} onValueChange={field.onChange}>
-                                                    <SelectTrigger>
+                                                    <SelectTrigger className={errors.gender ? 'border-destructive' : ''}>
                                                         <SelectValue placeholder={t('students.selectGender') || 'Select gender'} />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -444,6 +499,9 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                                 </Select>
                                             )}
                                         />
+                                        {errors.gender && (
+                                            <p className="text-sm text-destructive mt-1">{errors.gender.message}</p>
+                                        )}
                                     </div>
                                     <div>
                                         <Label>{t('students.birthYear') || 'Birth Year'}</Label>
@@ -455,7 +513,23 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                     </div>
                                     <div>
                                         <Label>{t('students.age') || 'Age'}</Label>
-                                        <Input type="number" placeholder="15" {...register('age', { valueAsNumber: true })} />
+                                        <Input 
+                                            type="number" 
+                                            placeholder="15" 
+                                            {...register('age', { 
+                                                valueAsNumber: true,
+                                                setValueAs: (value) => {
+                                                    if (value === '' || value === null || value === undefined || isNaN(value)) {
+                                                        return undefined;
+                                                    }
+                                                    return Number(value);
+                                                }
+                                            })} 
+                                            className={errors.age ? 'border-destructive' : ''}
+                                        />
+                                        {errors.age && (
+                                            <p className="text-sm text-destructive mt-1">{errors.age.message}</p>
+                                        )}
                                     </div>
                                     <div>
                                         <Label>{t('students.preferredLanguage') || 'Preferred Language'}</Label>

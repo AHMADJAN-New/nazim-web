@@ -120,6 +120,8 @@ export const TRANSLATION_KEYS = [
   "academic.classes.toYear",
   "academic.classes.viewHistory",
   "academic.classes.yearClasses",
+  "academic.classes.copyDescription",
+  "academic.classes.copyInstructions",
   "academic.residencyTypes.active",
   "academic.residencyTypes.addResidencyType",
   "academic.residencyTypes.code",
@@ -247,6 +249,8 @@ export const TRANSLATION_KEYS = [
   "academic.subjects.useClassRoom",
   "academic.subjects.leaveEmptyForClassRoom",
   "academic.subjects.optionalNotes",
+  "academic.subjects.subjectsAssignedCount",
+  "academic.subjects.subjectsAssignedCountStep2",
   "academic.timetable.day",
   "academic.timetable.days.friday",
   "academic.timetable.days.monday",
@@ -5676,6 +5680,7 @@ export const TRANSLATION_KEYS = [
     allYears: string;
     totalSessions: string;
     studentsMarked: string;
+    totals: string;
     attendanceRate: string;
     attendanceRateHelper: string;
     absences: string;
@@ -5685,6 +5690,7 @@ export const TRANSLATION_KEYS = [
     records: string;
     classBreakdown: string;
     classBreakdownHint: string;
+    classWise: string;
     present: string;
     absent: string;
     totalRecords: string;
@@ -5705,6 +5711,8 @@ export const TRANSLATION_KEYS = [
     noRecentRoomSessions: string;
     generalRoom: string;
     dateRange: string;
+    exportOptions: string;
+    generating: string;
     generatingReport: string;
     noDataToExport: string;
     reportExported: string;
@@ -5714,6 +5722,7 @@ export const TRANSLATION_KEYS = [
     reportReady: string;
     reportStatus: string;
     room: string;
+    roomWise: string;
     schoolRequired: string;
   };
 
@@ -6715,6 +6724,8 @@ export const TRANSLATION_KEYS = [
       copyClasses: string;
       history: string;
       viewHistory: string;
+      copyDescription: string;
+      copyInstructions: string;
       bulkCreateSections: string;
       createSections: string;
       defaultTeacher: string;
