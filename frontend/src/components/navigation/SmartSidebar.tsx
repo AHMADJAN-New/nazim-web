@@ -23,14 +23,14 @@ import {
   ShieldCheck,
   MessageSquare,
   School,
-  Moon,
-  Sun,
-  Languages,
   ChevronDown,
   ChevronRight,
-  Bell,
   Star,
   Target,
+  Search,
+  X,
+  Pin,
+  PinOff,
   UserCog,
   Lock,
   AlertTriangle,
@@ -46,19 +46,20 @@ import {
   Phone,
   HelpCircle
 } from "lucide-react";
-import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, memo, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Sidebar,
   SidebarContent,
@@ -70,6 +71,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useCurrentOrganization } from "@/hooks/useOrganizations";
@@ -154,40 +156,6 @@ interface DbRecentTask {
   context?: string;
 }
 
-// Language Switcher Component
-function LanguageSwitcherButton() {
-  const { language, setLanguage } = useLanguage();
-  // Filter out Arabic since translations are not complete
-  const languages = [
-    { code: 'en' as const, name: 'English', flag: '🇺🇸' },
-    { code: 'ps' as const, name: 'پښتو', flag: '🇦🇫' },
-    { code: 'fa' as const, name: 'فارسی', flag: '🇮🇷' },
-    // Arabic temporarily hidden until translations are complete
-    // { code: 'ar' as const, name: 'العربية', flag: '🇸🇦' },
-  ];
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="flex-1">
-          <Languages className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {languages.map((lang) => (
-          <DropdownMenuItem
-            key={lang.code}
-            onClick={() => setLanguage(lang.code)}
-            className={language === lang.code ? "bg-accent" : ""}
-          >
-            <span className="mr-2">{lang.flag}</span>
-            {lang.name}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
 
 export const SmartSidebar = memo(function SmartSidebar() {
   const { state } = useSidebar();
@@ -327,15 +295,158 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasPhoneBookPermission = hasStudentsPermission || hasStaffPermission || hasDonorsPermission || hasEventGuestsPermission;
 
   // NOTE: 'location' is already declared above at line 177 - do not redeclare
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [expandedItems, setExpandedItems] = useState<string[]>(() => {
+    const saved = localStorage.getItem('sidebar-expanded-items');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [navigationContext, setNavigationContext] = useState<NavigationContext>({
     currentModule: 'dashboard',
     recentTasks: [],
     quickActions: []
   });
-
+  
+  // Search functionality
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  
+  // Favorites/Pinned items - now tracking sub-menu items (children) only
+  // Format: "childTitleKey" or "parentTitleKey:childTitleKey" for nested items
+  const [pinnedItems, setPinnedItems] = useState<string[]>(() => {
+    const saved = localStorage.getItem('sidebar-pinned-items');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  // Recent items tracking - now tracking sub-menu items (children) only
+  const [recentItems, setRecentItems] = useState<Array<{titleKey: string, url: string, timestamp: number, parentTitleKey?: string}>>(() => {
+    const saved = localStorage.getItem('sidebar-recent-items');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  // Collapse/expand state for pinned and recent sections
+  const [isPinnedSectionExpanded, setIsPinnedSectionExpanded] = useState(() => {
+    const saved = localStorage.getItem('sidebar-pinned-expanded');
+    return saved ? JSON.parse(saved) : true; // Default expanded
+  });
+  
+  const [isRecentSectionExpanded, setIsRecentSectionExpanded] = useState(() => {
+    const saved = localStorage.getItem('sidebar-recent-expanded');
+    return saved ? JSON.parse(saved) : true; // Default expanded
+  });
+  
+  // Track last clicked menu item to prevent auto-rearrange on same item
+  const [lastClickedMenuItem, setLastClickedMenuItem] = useState<{titleKey: string, parentTitleKey?: string} | null>(null);
+  
+  // Collapsible state for category sections
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem('sidebar-expanded-categories');
+    return saved ? new Set(JSON.parse(saved)) : new Set(['core', 'operations', 'academic', 'finance', 'admin']); // Default all expanded
+  });
+  
+  const toggleCategory = useCallback((category: string) => {
+    setExpandedCategories(prev => {
+      const updated = new Set(prev);
+      if (updated.has(category)) {
+        updated.delete(category);
+      } else {
+        updated.add(category);
+      }
+      localStorage.setItem('sidebar-expanded-categories', JSON.stringify(Array.from(updated)));
+      return updated;
+    });
+  }, []);
+  
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+  
+  // Save expanded items to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebar-expanded-items', JSON.stringify(expandedItems));
+  }, [expandedItems]);
+  
+  // Save pinned/recent section expanded state
+  useEffect(() => {
+    localStorage.setItem('sidebar-pinned-expanded', JSON.stringify(isPinnedSectionExpanded));
+  }, [isPinnedSectionExpanded]);
+  
+  useEffect(() => {
+    localStorage.setItem('sidebar-recent-expanded', JSON.stringify(isRecentSectionExpanded));
+  }, [isRecentSectionExpanded]);
+  
+  
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + K to focus search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        const searchInput = document.querySelector('[data-sidebar-search]') as HTMLInputElement;
+        searchInput?.focus();
+      }
+      
+      // Escape to clear search
+      if (e.key === 'Escape' && searchQuery) {
+        setSearchQuery('');
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [searchQuery]);
+  
+  // Toggle pin functionality - for sub-menu items only
+  const togglePin = useCallback((titleKey: string, parentTitleKey?: string) => {
+    // Create composite key for nested items, or use titleKey directly for top-level children
+    const pinKey = parentTitleKey ? `${parentTitleKey}:${titleKey}` : titleKey;
+    setPinnedItems(prev => {
+      const updated = prev.includes(pinKey)
+        ? prev.filter(k => k !== pinKey)
+        : [...prev, pinKey];
+      localStorage.setItem('sidebar-pinned-items', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+  
+  // Check if a sub-menu item is pinned
+  const isItemPinned = useCallback((titleKey: string, parentTitleKey?: string) => {
+    const pinKey = parentTitleKey ? `${parentTitleKey}:${titleKey}` : titleKey;
+    return pinnedItems.includes(pinKey);
+  }, [pinnedItems]);
+  
   const collapsed = state === "collapsed";
   const currentPath = location.pathname;
+
+  // Preserve sidebar scroll position (do NOT auto-scroll on route changes)
+  const sidebarScrollRestoredRef = useRef(false);
+  useEffect(() => {
+    if (collapsed) return;
+    if (sidebarScrollRestoredRef.current) return;
+
+    const sidebarContent = document.querySelector('[data-sidebar-content]') as HTMLElement | null;
+    if (!sidebarContent) return;
+
+    const scrollEl =
+      (sidebarContent.closest('[data-radix-scroll-area-viewport]') as HTMLElement | null) || sidebarContent;
+
+    const saved = Number(localStorage.getItem('sidebar-scroll-top') ?? '0');
+    if (!Number.isNaN(saved) && saved > 0) {
+      scrollEl.scrollTop = saved;
+    }
+
+    const onScroll = () => {
+      localStorage.setItem('sidebar-scroll-top', String(scrollEl.scrollTop));
+    };
+    scrollEl.addEventListener('scroll', onScroll, { passive: true });
+    sidebarScrollRestoredRef.current = true;
+
+    return () => {
+      scrollEl.removeEventListener('scroll', onScroll);
+    };
+  }, [collapsed]);
 
   // Permission checks for specific child items
   const hasPermissionsPermission = useHasPermissionAndFeature('permissions.read'); // Assuming this permission exists for permissions management
@@ -701,6 +812,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasExamsTimetablePermission ? [{
             title: "Exam Timetables",
+            titleKey: "examTimetables",
             url: "/exams/timetables",
             icon: Clock,
           }] : []),
@@ -1487,6 +1599,81 @@ export const SmartSidebar = memo(function SmartSidebar() {
     return [...allNavigationItems].sort((a, b) => (a.priority || 999) - (b.priority || 999));
   }, [allNavigationItems, permissionsReady, effectiveRole]);
 
+  // Filter items by search query
+  const filteredBySearch = useMemo(() => {
+    if (!debouncedSearchQuery.trim()) return filteredItems;
+    
+    const query = debouncedSearchQuery.toLowerCase();
+    return filteredItems.filter(item => {
+      const label = tUnsafe(`nav.${item.titleKey}`).toLowerCase();
+      const matchesParent = label.includes(query);
+      
+      // Also check children
+      const matchesChildren = item.children?.some(child => {
+        const childLabel = (child.title || tUnsafe(`nav.${child.titleKey || ''}`)).toLowerCase();
+        return childLabel.includes(query);
+      });
+      
+      return matchesParent || matchesChildren;
+    });
+  }, [debouncedSearchQuery, filteredItems, tUnsafe]);
+  
+  // Get all sub-menu items (children) from all navigation items
+  const allSubMenuItems = useMemo(() => {
+    const items: Array<{
+      titleKey: string;
+      url: string;
+      icon: LucideIcon;
+      parentTitleKey?: string;
+      parentLabel?: string;
+    }> = [];
+    
+    filteredBySearch.forEach(item => {
+      if (item.children) {
+        item.children.forEach(child => {
+          if (child.url && child.titleKey) {
+            items.push({
+              titleKey: child.titleKey,
+              url: child.url,
+              icon: child.icon,
+              parentTitleKey: item.titleKey,
+              parentLabel: tUnsafe(`nav.${item.titleKey}`),
+            });
+          }
+          // Also check nested children
+          if (child.children) {
+            child.children.forEach(grandchild => {
+              if (grandchild.url && grandchild.titleKey) {
+                items.push({
+                  titleKey: grandchild.titleKey,
+                  url: grandchild.url,
+                  icon: grandchild.icon,
+                  parentTitleKey: item.titleKey,
+                  parentLabel: tUnsafe(`nav.${item.titleKey}`),
+                });
+              }
+            });
+          }
+        });
+      }
+    });
+    
+    return items;
+  }, [filteredBySearch, tUnsafe]);
+  
+  // Separate pinned sub-menu items
+  const pinnedItemsList = useMemo(() => {
+    return allSubMenuItems.filter(item => {
+      const pinKey = item.parentTitleKey ? `${item.parentTitleKey}:${item.titleKey}` : item.titleKey;
+      return pinnedItems.includes(pinKey);
+    });
+  }, [allSubMenuItems, pinnedItems]);
+  
+  // Non-pinned items (all top-level items, since we only pin sub-menu items now)
+  const nonPinnedItems = useMemo(() => {
+    return filteredBySearch;
+  }, [filteredBySearch]);
+  
   // Group items by category for better organization
   const groupedItems = useMemo(() => {
     const groups: Record<NavigationCategory, NavigationItem[]> = {
@@ -1497,7 +1684,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
       admin: [],
     };
 
-    filteredItems.forEach(item => {
+    nonPinnedItems.forEach(item => {
       const category = item.category || 'operations';
       if (groups[category]) {
         groups[category].push(item);
@@ -1507,7 +1694,121 @@ export const SmartSidebar = memo(function SmartSidebar() {
     });
 
     return groups;
-  }, [filteredItems]);
+  }, [nonPinnedItems]);
+  
+  // Group pinned items by parent category (for display purposes)
+  const groupedPinnedItems = useMemo(() => {
+    const groups: Record<string, typeof pinnedItemsList> = {};
+    
+    pinnedItemsList.forEach(item => {
+      const parentKey = item.parentTitleKey || 'other';
+      if (!groups[parentKey]) {
+        groups[parentKey] = [];
+      }
+      groups[parentKey].push(item);
+    });
+    
+    return groups;
+  }, [pinnedItemsList]);
+
+  // Auto-collapse other parent menus when navigating to a submenu.
+  // Keeps ONLY the currently active parent (and nested parent, if any) expanded.
+  useEffect(() => {
+    if (collapsed) return;
+
+    const nextExpanded = new Set<string>();
+
+    for (const item of filteredItems) {
+      if (!item.children) continue;
+
+      // Direct child match
+      const directChildMatch = item.children.find((c) => c.url && currentPath.startsWith(c.url));
+      if (directChildMatch) {
+        nextExpanded.add(item.titleKey);
+        continue;
+      }
+
+      // Grandchild match: expand parent + the child group that contains the grandchild
+      for (const child of item.children) {
+        if (!child.children) continue;
+        const grandchildMatch = child.children.find((gc) => gc.url && currentPath.startsWith(gc.url));
+        if (grandchildMatch) {
+          nextExpanded.add(item.titleKey);
+          const childKey = child.url || child.titleKey || child.title;
+          nextExpanded.add(childKey);
+          break;
+        }
+      }
+    }
+
+    setExpandedItems((prev) => {
+      const prevSet = new Set(prev);
+      let changed = prevSet.size !== nextExpanded.size;
+      if (!changed) {
+        for (const key of prevSet) {
+          if (!nextExpanded.has(key)) {
+            changed = true;
+            break;
+          }
+        }
+      }
+      return changed ? Array.from(nextExpanded) : prev;
+    });
+  }, [currentPath, filteredItems, collapsed]);
+
+  // Track recent items on navigation - tracking sub-menu items (children) only
+  // Only update if a different menu item is clicked (not the same one)
+  useEffect(() => {
+    // Find the sub-menu item that matches the current path
+    let foundChild: NavigationChild | null = null;
+    let parentTitleKey: string | undefined = undefined;
+    
+    for (const item of filteredItems) {
+      if (item.children) {
+        // Check direct children
+        const child = item.children.find(c => c.url === location.pathname);
+        if (child) {
+          foundChild = child;
+          parentTitleKey = item.titleKey;
+          break;
+        }
+        
+        // Check nested children (grandchildren)
+        for (const directChild of item.children) {
+          if (directChild.children) {
+            const grandchild = directChild.children.find(gc => gc.url === location.pathname);
+            if (grandchild) {
+              foundChild = grandchild;
+              parentTitleKey = item.titleKey;
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    if (foundChild && foundChild.titleKey) {
+      const childTitleKey = foundChild.titleKey;
+      const currentMenuItem = { titleKey: childTitleKey, parentTitleKey };
+      
+      // Only update if this is a different menu item than the last clicked one
+      const isSameItem = lastClickedMenuItem && 
+        lastClickedMenuItem.titleKey === currentMenuItem.titleKey &&
+        lastClickedMenuItem.parentTitleKey === currentMenuItem.parentTitleKey;
+      
+      if (!isSameItem) {
+        setLastClickedMenuItem(currentMenuItem);
+        setRecentItems(prev => {
+          const updated = [
+            { titleKey: childTitleKey, url: location.pathname, timestamp: Date.now(), parentTitleKey },
+            ...prev.filter(item => !(item.titleKey === childTitleKey && item.parentTitleKey === parentTitleKey))
+          ].slice(0, 5); // Keep only 5 most recent
+          localStorage.setItem('sidebar-recent-items', JSON.stringify(updated));
+          return updated;
+        });
+      }
+    }
+  }, [location.pathname, filteredItems, lastClickedMenuItem]);
 
   // Don't show loading state - always render with available data
   // The sidebar will update when permissions are available, but won't disappear
@@ -1560,37 +1861,69 @@ export const SmartSidebar = memo(function SmartSidebar() {
     return tourMap[titleKey];
   };
 
+
   const renderMenuItem = (item: NavigationItem) => {
     const label = tUnsafe(`nav.${item.titleKey}`);
     const iconColorClass = item.iconColor || categoryColors.default;
     const dataTour = getDataTourAttr(item.titleKey);
+    
     // Always show parent items even if they have no children (they might have children that load later)
     if (item.children) {
       const isExpanded = expandedItems.includes(item.titleKey) || isChildActive(item.children);
+      
+      const menuButton = (
+        <SidebarMenuButton 
+          className={cn(
+            "transition-all duration-200",
+            "hover:bg-sidebar-accent/50",
+            getNavCls({ isActive: isChildActive(item.children) })
+          )}
+        >
+          <item.icon className={`h-4 w-4 ${iconColorClass}`} />
+          {!collapsed && (
+            <>
+              <span className="flex-1">{label}</span>
+              {item.badge && (
+                <Badge variant={item.badge.variant} className="text-xs mr-2">
+                  {item.badge.text}
+                </Badge>
+              )}
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </>
+          )}
+        </SidebarMenuButton>
+      );
 
       return (
         <Collapsible key={item.titleKey} open={isExpanded} onOpenChange={() => toggleExpanded(item.titleKey)}>
           <SidebarMenuItem data-tour={dataTour}>
-            <CollapsibleTrigger asChild>
-              <SidebarMenuButton className={getNavCls({ isActive: isChildActive(item.children) })}>
-                <item.icon className={`h-4 w-4 ${iconColorClass}`} />
-                {!collapsed && (
-                  <>
-                    <span className="flex-1">{label}</span>
+            {collapsed ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <CollapsibleTrigger asChild>
+                      {menuButton}
+                    </CollapsibleTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side={isRTL ? "left" : "right"}>
+                    <p>{label}</p>
                     {item.badge && (
-                      <Badge variant={item.badge.variant} className="text-xs mr-2">
+                      <Badge variant={item.badge.variant} className="ml-2">
                         {item.badge.text}
                       </Badge>
                     )}
-                    {isExpanded ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
-                    )}
-                  </>
-                )}
-              </SidebarMenuButton>
-            </CollapsibleTrigger>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <CollapsibleTrigger asChild>
+                {menuButton}
+              </CollapsibleTrigger>
+            )}
             {!collapsed && (
               <CollapsibleContent>
                 <SidebarMenu className={`${isRTL ? 'mr-4 border-r' : 'ml-4 border-l'} border-sidebar-border`}>
@@ -1599,60 +1932,235 @@ export const SmartSidebar = memo(function SmartSidebar() {
                     if (child.children && child.children.length > 0) {
                       const childKey = child.url || child.titleKey || child.title;
                       const isChildExpanded = expandedItems.includes(childKey) || isChildActive(child.children);
+                      const childIsPinned = child.titleKey ? isItemPinned(child.titleKey, item.titleKey) : false;
+                      const isChildActiveNow = child.url ? isActive(child.url) : isChildActive(child.children);
                       return (
                         <Collapsible key={childKey} open={isChildExpanded} onOpenChange={() => toggleExpanded(childKey)}>
                           <SidebarMenuItem>
-                            <CollapsibleTrigger asChild>
-                              <SidebarMenuButton className={getNavCls({ isActive: isChildActive(child.children) })}>
-                                <child.icon className="h-4 w-4" />
-                                <span className="flex-1">{child.titleKey ? tUnsafe(`nav.${child.titleKey}`) : child.title}</span>
-                                {isChildExpanded ? (
-                                  <ChevronDown className="h-4 w-4" />
-                                ) : (
-                                  <ChevronRight className="h-4 w-4" />
-                                )}
-                              </SidebarMenuButton>
-                            </CollapsibleTrigger>
+                            <div className="group relative">
+                              {child.url ? (
+                                // If child has URL, wrap in NavLink
+                                <CollapsibleTrigger asChild>
+                                  <SidebarMenuButton asChild>
+                                    <NavLink
+                                      to={child.url}
+                                      className={cn(
+                                        "transition-all duration-200",
+                                        getNavCls({ isActive: isChildActiveNow })
+                                      )}
+                                      end={child.url === '/'}
+                                    >
+                                      <child.icon className="h-4 w-4" />
+                                      <span className="flex-1">{child.titleKey ? tUnsafe(`nav.${child.titleKey}`) : child.title}</span>
+                                      {/* Small star indicator for pinned items */}
+                                      {childIsPinned && (
+                                        <Star className={cn(
+                                          "h-3 w-3 text-yellow-500 fill-yellow-500 opacity-100 group-hover:opacity-0 transition-opacity pointer-events-none",
+                                          isRTL ? "mr-1" : "ml-1"
+                                        )} />
+                                      )}
+                                      {isChildExpanded ? (
+                                        <ChevronDown className="h-4 w-4" />
+                                      ) : (
+                                        <ChevronRight className="h-4 w-4" />
+                                      )}
+                                    </NavLink>
+                                  </SidebarMenuButton>
+                                </CollapsibleTrigger>
+                              ) : (
+                                // If child has no URL, just collapsible trigger
+                                <CollapsibleTrigger asChild>
+                                  <SidebarMenuButton className={getNavCls({ isActive: isChildActiveNow })}>
+                                    <child.icon className="h-4 w-4" />
+                                    <span className="flex-1">{child.titleKey ? tUnsafe(`nav.${child.titleKey}`) : child.title}</span>
+                                    {isChildExpanded ? (
+                                      <ChevronDown className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4" />
+                                    )}
+                                  </SidebarMenuButton>
+                                </CollapsibleTrigger>
+                              )}
+                              {/* Pin button - only visible on hover, only if child has URL and titleKey */}
+                              {child.titleKey && child.url && (
+                                <div
+                                  role="button"
+                                  tabIndex={0}
+                                  className={cn(
+                                    "absolute top-1/2 -translate-y-1/2 h-5 w-5 p-0 rounded flex items-center justify-center cursor-pointer transition-all opacity-0 group-hover:opacity-100",
+                                    "hover:bg-sidebar-accent/80 z-10",
+                                    isRTL ? "left-1" : "right-10"
+                                  )}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    togglePin(child.titleKey!, item.titleKey);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      togglePin(child.titleKey!, item.titleKey);
+                                    }
+                                  }}
+                                  aria-label={childIsPinned ? t('nav.unpinItem') : t('nav.pinItem')}
+                                >
+                                  {childIsPinned ? (
+                                    <Pin className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                                  ) : (
+                                    <PinOff className="h-3 w-3 opacity-70" />
+                                  )}
+                                </div>
+                              )}
+                              {/* Small star indicator for pinned items (when no URL, show star indicator) */}
+                              {childIsPinned && !child.url && (
+                                <Star className={cn(
+                                  "absolute top-1/2 -translate-y-1/2 h-3 w-3 text-yellow-500 fill-yellow-500 opacity-100 group-hover:opacity-0 transition-opacity pointer-events-none",
+                                  isRTL ? "left-1" : "right-10"
+                                )} />
+                              )}
+                            </div>
                             <CollapsibleContent>
                               <SidebarMenu className={`${isRTL ? 'mr-4 border-r' : 'ml-4 border-l'} border-sidebar-border`}>
-                                {child.children.map((grandchild: NavigationChild) => (
-                                  <SidebarMenuItem key={grandchild.titleKey || grandchild.url || grandchild.title}>
-                                    <SidebarMenuButton asChild>
-                                      <NavLink
-                                        to={grandchild.url || '#'}
-                                        className={getNavCls({ isActive: isActive(grandchild.url || '#') })}
-                                        end={(grandchild.url || '#') === '/'}
-                                      >
-                                        <grandchild.icon className="h-4 w-4" />
-                                        <span>{grandchild.titleKey ? tUnsafe(`nav.${grandchild.titleKey}`) : grandchild.title}</span>
-                                      </NavLink>
-                                    </SidebarMenuButton>
-                                  </SidebarMenuItem>
-                                ))}
+                                {child.children.map((grandchild: NavigationChild) => {
+                                  const grandchildIsPinned = grandchild.titleKey ? isItemPinned(grandchild.titleKey, item.titleKey) : false;
+                                  const isGrandchildActiveNow = isActive(grandchild.url || '#');
+                                  return (
+                                    <SidebarMenuItem 
+                                      key={grandchild.titleKey || grandchild.url || grandchild.title}
+                                      data-sidebar-menu-item
+                                      data-active={isGrandchildActiveNow}
+                                    >
+                                      <div className="group relative">
+                                        <SidebarMenuButton asChild>
+                                          <NavLink
+                                            to={grandchild.url || '#'}
+                                            className={cn(
+                                              "transition-all duration-200",
+                                              getNavCls({ isActive: isGrandchildActiveNow })
+                                            )}
+                                            end={(grandchild.url || '#') === '/'}
+                                          >
+                                            <grandchild.icon className="h-4 w-4" />
+                                            <span className="flex-1">{grandchild.titleKey ? tUnsafe(`nav.${grandchild.titleKey}`) : grandchild.title}</span>
+                                            {/* Small star indicator for pinned items */}
+                                            {grandchildIsPinned && (
+                                              <Star className={cn(
+                                                "h-3 w-3 text-yellow-500 fill-yellow-500 opacity-100 group-hover:opacity-0 transition-opacity pointer-events-none",
+                                                isRTL ? "mr-1" : "ml-1"
+                                              )} />
+                                            )}
+                                          </NavLink>
+                                        </SidebarMenuButton>
+                                        {/* Pin button - only visible on hover */}
+                                        {grandchild.titleKey && (
+                                          <div
+                                            role="button"
+                                            tabIndex={0}
+                                            className={cn(
+                                              "absolute top-1/2 -translate-y-1/2 h-5 w-5 p-0 rounded flex items-center justify-center cursor-pointer transition-all opacity-0 group-hover:opacity-100",
+                                              "hover:bg-sidebar-accent/80 z-10",
+                                              isRTL ? "left-1" : "right-1"
+                                            )}
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              togglePin(grandchild.titleKey!, item.titleKey);
+                                            }}
+                                            onKeyDown={(e) => {
+                                              if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                togglePin(grandchild.titleKey!, item.titleKey);
+                                              }
+                                            }}
+                                            aria-label={grandchildIsPinned ? t('nav.unpinItem') : t('nav.pinItem')}
+                                          >
+                                            {grandchildIsPinned ? (
+                                              <Pin className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                                            ) : (
+                                              <PinOff className="h-3 w-3 opacity-70" />
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </SidebarMenuItem>
+                                  );
+                                })}
                               </SidebarMenu>
                             </CollapsibleContent>
                           </SidebarMenuItem>
                         </Collapsible>
                       );
                     }
-                    // Regular child item with URL
+                    // Regular child item with URL - NOW WITH PIN FUNCTIONALITY
                     // Use titleKey as primary key to avoid duplicate keys when multiple items share the same URL
                     const childDataTour = child.titleKey ? getDataTourAttr(child.titleKey) : undefined;
+                    const childIsPinned = child.titleKey ? isItemPinned(child.titleKey, item.titleKey) : false;
+                    const isChildActiveNow = isActive(child.url || '#');
                     return (
-                      <SidebarMenuItem key={child.titleKey || child.url || child.title} data-tour={childDataTour}>
-                        <SidebarMenuButton asChild>
-                          <NavLink
-                            to={child.url || '#'}
-                            className={getNavCls({ isActive: isActive(child.url || '#') })}
-                            end={(child.url || '#') === '/'}
-                          >
-                            <child.icon className="h-4 w-4" />
-                            <span>{child.titleKey ? tUnsafe(`nav.${child.titleKey}`) : child.title}</span>
-                            {child.contextual && navigationContext.currentModule.includes('attendance') && (
-                              <Star className="h-3 w-3 text-warning ml-auto" />
-                            )}
-                          </NavLink>
-                        </SidebarMenuButton>
+                      <SidebarMenuItem 
+                        key={child.titleKey || child.url || child.title} 
+                        data-tour={childDataTour}
+                        data-sidebar-menu-item
+                        data-active={isChildActiveNow}
+                      >
+                        <div className="group relative">
+                          <SidebarMenuButton asChild>
+                            <NavLink
+                              to={child.url || '#'}
+                              className={cn(
+                                "transition-all duration-200",
+                                getNavCls({ isActive: isChildActiveNow })
+                              )}
+                              end={(child.url || '#') === '/'}
+                            >
+                              <child.icon className="h-4 w-4" />
+                              <span className="flex-1">{child.titleKey ? tUnsafe(`nav.${child.titleKey}`) : child.title}</span>
+                              {child.contextual && navigationContext.currentModule.includes('attendance') && (
+                                <Star className="h-3 w-3 text-warning" />
+                              )}
+                              {/* Small star indicator for pinned items */}
+                              {childIsPinned && (
+                                <Star className={cn(
+                                  "h-3 w-3 text-yellow-500 fill-yellow-500 opacity-100 group-hover:opacity-0 transition-opacity pointer-events-none",
+                                  isRTL ? "mr-1" : "ml-1"
+                                )} />
+                              )}
+                            </NavLink>
+                          </SidebarMenuButton>
+                          {/* Pin button - only visible on hover */}
+                          {child.titleKey && (
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              className={cn(
+                                "absolute top-1/2 -translate-y-1/2 h-5 w-5 p-0 rounded flex items-center justify-center cursor-pointer transition-all opacity-0 group-hover:opacity-100",
+                                "hover:bg-sidebar-accent/80 z-10",
+                                isRTL ? "left-1" : "right-1"
+                              )}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                togglePin(child.titleKey!, item.titleKey);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  togglePin(child.titleKey!, item.titleKey);
+                                }
+                              }}
+                              aria-label={childIsPinned ? t('nav.unpinItem') : t('nav.pinItem')}
+                            >
+                              {childIsPinned ? (
+                                <Pin className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                              ) : (
+                                <PinOff className="h-3 w-3 opacity-70" />
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </SidebarMenuItem>
                     );
                   })}
@@ -1664,26 +2172,59 @@ export const SmartSidebar = memo(function SmartSidebar() {
       );
     }
 
+    const isItemActiveNow = isActive(item.url || '/');
     return (
-      <SidebarMenuItem key={item.url} data-tour={dataTour}>
-        <SidebarMenuButton asChild>
-          <NavLink
-            to={item.url || '/'}
-            className={getNavCls({ isActive: isActive(item.url || '/') })}
-          >
-            <item.icon className={`h-4 w-4 ${iconColorClass}`} />
-            {!collapsed && (
-              <>
-                <span className="flex-1">{label}</span>
+      <SidebarMenuItem 
+        key={item.url} 
+        data-tour={dataTour}
+        data-sidebar-menu-item
+        data-active={isItemActiveNow}
+      >
+        {collapsed ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <SidebarMenuButton asChild>
+                  <NavLink
+                    to={item.url || '/'}
+                    className={getNavCls({ isActive: isItemActiveNow })}
+                  >
+                    <item.icon className={`h-4 w-4 ${iconColorClass}`} />
+                  </NavLink>
+                </SidebarMenuButton>
+              </TooltipTrigger>
+              <TooltipContent side={isRTL ? "left" : "right"}>
+                <p>{label}</p>
                 {item.badge && (
-                  <Badge variant={item.badge.variant} className="text-xs">
+                  <Badge variant={item.badge.variant} className="ml-2">
                     {item.badge.text}
                   </Badge>
                 )}
-              </>
-            )}
-          </NavLink>
-        </SidebarMenuButton>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <SidebarMenuButton 
+            asChild
+          >
+            <NavLink
+              to={item.url || '/'}
+              className={cn(
+                "transition-all duration-200",
+                "hover:bg-sidebar-accent/50",
+                getNavCls({ isActive: isItemActiveNow })
+              )}
+            >
+              <item.icon className={`h-4 w-4 ${iconColorClass}`} />
+              <span className="flex-1">{label}</span>
+              {item.badge && (
+                <Badge variant={item.badge.variant} className="text-xs mr-2">
+                  {item.badge.text}
+                </Badge>
+              )}
+            </NavLink>
+          </SidebarMenuButton>
+        )}
       </SidebarMenuItem>
     );
   };
@@ -1752,7 +2293,175 @@ export const SmartSidebar = memo(function SmartSidebar() {
         </div>
       )}
 
-      <SidebarContent className="custom-scrollbar">
+      <SidebarContent className="custom-scrollbar" data-sidebar-content>
+        {/* Search Bar */}
+        {!collapsed && (
+          <div className="p-2 border-b border-sidebar-border">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-sidebar-foreground/50" />
+              <Input
+                type="text"
+                placeholder={t('nav.searchPlaceholder')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                data-sidebar-search
+                className="pl-8 h-8 text-sm bg-sidebar-accent/30 border-sidebar-border focus:bg-sidebar-accent/50"
+                aria-label={t('nav.searchPlaceholder')}
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                  onClick={() => setSearchQuery('')}
+                  aria-label={t('nav.clearSearch')}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+            {searchQuery && (
+              <p className="text-xs text-sidebar-foreground/50 mt-1 px-2">
+                {t('nav.keyboardShortcut', { key: navigator.platform.includes('Mac') ? '⌘K' : 'Ctrl+K' })}
+              </p>
+            )}
+          </div>
+        )}
+        
+        {/* Pinned Items Section - Separate and Better Design with Collapse/Expand */}
+        {!collapsed && pinnedItemsList.length > 0 && !searchQuery && (
+          <SidebarGroup className="bg-yellow-500/10 border-y border-yellow-500/20">
+            <Collapsible open={isPinnedSectionExpanded} onOpenChange={setIsPinnedSectionExpanded}>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-yellow-600 dark:text-yellow-400 cursor-pointer hover:bg-yellow-500/10 rounded transition-colors">
+                  <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                  <span>{t('nav.favorites')}</span>
+                  <span className="ml-auto text-yellow-600/70 dark:text-yellow-400/70 text-xs font-normal">
+                    ({Math.min(pinnedItemsList.length, 10)})
+                  </span>
+                  {isPinnedSectionExpanded ? (
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  )}
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent className="px-2 pb-2">
+                  <div className="space-y-1.5 max-h-[240px] overflow-y-auto pr-1 custom-scrollbar">
+                    {pinnedItemsList.slice(0, 10).map(item => {
+                      const label = tUnsafe(`nav.${item.titleKey}`);
+                      const pinKey = item.parentTitleKey ? `${item.parentTitleKey}:${item.titleKey}` : item.titleKey;
+                      const isPinnedItemActive = isActive(item.url);
+                      return (
+                        <NavLink
+                          key={pinKey}
+                          to={item.url}
+                          data-sidebar-menu-item
+                          data-active={isPinnedItemActive}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm",
+                            "bg-yellow-500/5 hover:bg-yellow-500/15 border border-yellow-500/20 hover:border-yellow-500/30",
+                            "transition-all group relative",
+                            isPinnedItemActive && "bg-yellow-500/20 border-yellow-500/40 shadow-sm"
+                          )}
+                        >
+                      <item.icon className="h-5 w-5 flex-shrink-0 text-yellow-600 dark:text-yellow-400" />
+                      <span className="flex-1 truncate font-medium text-sm">{label}</span>
+                      {item.parentLabel && (
+                        <span className="text-xs text-sidebar-foreground/50 truncate max-w-[80px]">
+                          {item.parentLabel}
+                        </span>
+                      )}
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        className="h-5 w-5 p-0 hover:bg-yellow-500/20 rounded flex items-center justify-center cursor-pointer flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          togglePin(item.titleKey, item.parentTitleKey);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            togglePin(item.titleKey, item.parentTitleKey);
+                          }
+                        }}
+                        aria-label={t('nav.unpinItem')}
+                      >
+                        <X className="h-4 w-4 opacity-60 hover:opacity-100 text-yellow-600 dark:text-yellow-400" />
+                      </div>
+                    </NavLink>
+                  );
+                    })}
+                  </div>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+        )}
+        
+        {/* Recent Items Section - Separate and Better Design with Collapse/Expand */}
+        {!collapsed && recentItems.length > 0 && !searchQuery && (
+          <SidebarGroup className="bg-blue-500/10 border-y border-blue-500/20">
+            <Collapsible open={isRecentSectionExpanded} onOpenChange={setIsRecentSectionExpanded}>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-blue-600 dark:text-blue-400 cursor-pointer hover:bg-blue-500/10 rounded transition-colors">
+                  <Clock className="h-4 w-4 text-blue-500" />
+                  <span>{t('nav.recent')}</span>
+                  <span className="ml-auto text-blue-600/70 dark:text-blue-400/70 text-xs font-normal">
+                    ({Math.min(recentItems.length, 5)})
+                  </span>
+                  {isRecentSectionExpanded ? (
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  )}
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent className="px-2 pb-2">
+                  <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
+                    {recentItems.slice(0, 5).map((recentItem) => {
+                      const subMenuItem = allSubMenuItems.find(i => 
+                        i.titleKey === recentItem.titleKey && 
+                        i.parentTitleKey === recentItem.parentTitleKey
+                      );
+                      if (!subMenuItem) return null;
+                      const label = tUnsafe(`nav.${recentItem.titleKey}`);
+                      const isRecentItemActive = isActive(recentItem.url);
+                      return (
+                        <NavLink
+                          key={`${recentItem.titleKey}-${recentItem.parentTitleKey || 'none'}`}
+                          to={recentItem.url}
+                          data-sidebar-menu-item
+                          data-active={isRecentItemActive}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm",
+                            "bg-blue-500/5 hover:bg-blue-500/15 border border-blue-500/20 hover:border-blue-500/30",
+                            "transition-all",
+                            isRecentItemActive && "bg-blue-500/20 border-blue-500/40 shadow-sm"
+                          )}
+                        >
+                      <subMenuItem.icon className="h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                      <span className="flex-1 truncate font-medium text-sm">{label}</span>
+                      {recentItem.parentTitleKey && (
+                        <span className="text-xs text-sidebar-foreground/50 truncate max-w-[80px]">
+                          {tUnsafe(`nav.${recentItem.parentTitleKey}`)}
+                        </span>
+                      )}
+                    </NavLink>
+                    );
+                  })}
+                  </div>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+        )}
+        
         {/* Recent Tasks (Contextual) */}
         {!collapsed && navigationContext.recentTasks.length > 0 && (
           <SidebarGroup>
@@ -1780,92 +2489,140 @@ export const SmartSidebar = memo(function SmartSidebar() {
           </SidebarGroup>
         )}
 
+        {/* No Results Message */}
+        {debouncedSearchQuery && filteredBySearch.length === 0 && (
+          <div className="p-4 text-center">
+            <p className="text-sm text-sidebar-foreground/50">{t('nav.noResults')}</p>
+          </div>
+        )}
+        
         {/* Main Navigation - Grouped by Category */}
         {/* Core Section */}
         {groupedItems.core.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
-              {t('nav.sections.core')}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {groupedItems.core.map(renderMenuItem)}
-              </SidebarMenu>
-            </SidebarGroupContent>
+          <SidebarGroup className="mb-2">
+            <Collapsible open={expandedCategories.has('core')} onOpenChange={() => toggleCategory('core')}>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2 cursor-pointer hover:text-sidebar-foreground/80 transition-colors flex items-center gap-2">
+                  {expandedCategories.has('core') ? (
+                    <ChevronDown className="h-3 w-3" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3" />
+                  )}
+                  <span>{t('nav.sections.core')}</span>
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu className="space-y-1">
+                    {groupedItems.core.map(item => renderMenuItem(item))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
           </SidebarGroup>
         )}
 
         {/* Operations Section */}
         {groupedItems.operations.length > 0 && (
-          <SidebarGroup data-tour="sidebar-operations">
-            <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
-              {t('nav.sections.operations')}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {groupedItems.operations.map(renderMenuItem)}
-              </SidebarMenu>
-            </SidebarGroupContent>
+          <SidebarGroup data-tour="sidebar-operations" className="mb-2">
+            <Collapsible open={expandedCategories.has('operations')} onOpenChange={() => toggleCategory('operations')}>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2 cursor-pointer hover:text-sidebar-foreground/80 transition-colors flex items-center gap-2">
+                  {expandedCategories.has('operations') ? (
+                    <ChevronDown className="h-3 w-3" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3" />
+                  )}
+                  <span>{t('nav.sections.operations')}</span>
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu className="space-y-1">
+                    {groupedItems.operations.map(item => renderMenuItem(item))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
           </SidebarGroup>
         )}
 
         {/* Academic Section */}
         {groupedItems.academic.length > 0 && (
-          <SidebarGroup data-tour="sidebar-academic-section">
-            <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
-              {t('nav.sections.academic')}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {groupedItems.academic.map(renderMenuItem)}
-              </SidebarMenu>
-            </SidebarGroupContent>
+          <SidebarGroup data-tour="sidebar-academic-section" className="mb-2">
+            <Collapsible open={expandedCategories.has('academic')} onOpenChange={() => toggleCategory('academic')}>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2 cursor-pointer hover:text-sidebar-foreground/80 transition-colors flex items-center gap-2">
+                  {expandedCategories.has('academic') ? (
+                    <ChevronDown className="h-3 w-3" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3" />
+                  )}
+                  <span>{t('nav.sections.academic')}</span>
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu className="space-y-1">
+                    {groupedItems.academic.map(item => renderMenuItem(item))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
           </SidebarGroup>
         )}
 
         {/* Finance Section */}
         {groupedItems.finance.length > 0 && (
-          <SidebarGroup data-tour="sidebar-finance-section">
-            <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
-              {t('nav.sections.finance')}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {groupedItems.finance.map(renderMenuItem)}
-              </SidebarMenu>
-            </SidebarGroupContent>
+          <SidebarGroup data-tour="sidebar-finance-section" className="mb-2">
+            <Collapsible open={expandedCategories.has('finance')} onOpenChange={() => toggleCategory('finance')}>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2 cursor-pointer hover:text-sidebar-foreground/80 transition-colors flex items-center gap-2">
+                  {expandedCategories.has('finance') ? (
+                    <ChevronDown className="h-3 w-3" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3" />
+                  )}
+                  <span>{t('nav.sections.finance')}</span>
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu className="space-y-1">
+                    {groupedItems.finance.map(item => renderMenuItem(item))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
           </SidebarGroup>
         )}
 
         {/* Admin Section */}
         {groupedItems.admin.length > 0 && (
-          <SidebarGroup data-tour="sidebar-admin-section">
-            <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
-              {t('nav.sections.admin')}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {groupedItems.admin.map(renderMenuItem)}
-              </SidebarMenu>
-            </SidebarGroupContent>
+          <SidebarGroup data-tour="sidebar-admin-section" className="mb-2">
+            <Collapsible open={expandedCategories.has('admin')} onOpenChange={() => toggleCategory('admin')}>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2 cursor-pointer hover:text-sidebar-foreground/80 transition-colors flex items-center gap-2">
+                  {expandedCategories.has('admin') ? (
+                    <ChevronDown className="h-3 w-3" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3" />
+                  )}
+                  <span>{t('nav.sections.admin')}</span>
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu className="space-y-1">
+                    {groupedItems.admin.map(item => renderMenuItem(item))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
           </SidebarGroup>
         )}
       </SidebarContent>
 
-      {/* Quick Actions */}
-      {!collapsed && (
-        <div className="p-4 border-t border-sidebar-border mt-auto">
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" className="flex-1">
-              <Sun className="h-4 w-4" />
-            </Button>
-            <LanguageSwitcherButton />
-            <Button variant="ghost" size="sm" className="flex-1">
-              <Bell className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
     </Sidebar>
   );
 });
