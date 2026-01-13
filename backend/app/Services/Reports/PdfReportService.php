@@ -129,11 +129,13 @@ class PdfReportService
                 'mm'
             )
             ->waitUntilNetworkIdle()
+            ->setDelay(2000) // Wait 2 seconds for fonts to load from base64 data URLs
             ->timeout(120)
             ->addChromiumArguments([
                 'no-sandbox',
                 'disable-setuid-sandbox',
                 'disable-web-security', // Allow loading fonts from data URLs
+                'disable-features=FontLoading', // Disable font loading restrictions
             ]); // Required for Linux environments without proper sandbox support (no -- prefix, Browsershot adds it)
 
         // Set Chrome/Chromium path if puppeteer is installed

@@ -593,7 +593,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasIssuedCertificatesPermission ? [{
             title: "Issued Certificates",
-            titleKey: "status.issued",
+            titleKey: "certificates.issued",
             url: "/certificates/issued",
             icon: LucideIcons.Printer,
           }] : []),
@@ -771,7 +771,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           // Reports Submenu - at the end
           ...((hasExamsReportsPermission || hasExamsViewGradeCardsPermission || hasExamsViewConsolidatedReportsPermission || hasExamsViewClassReportsPermission || hasExamsViewStudentReportsPermission || hasExamsNumbersPrintPermission) ? [{
             title: "Reports",
-            titleKey: "nav.examReports",
+            titleKey: "examReports",
             icon: FileText,
             children: [
               ...(hasExamsReportsPermission ? [{
@@ -830,19 +830,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasBuildingsPermission ? [{
             title: "Buildings Management",
-            titleKey: "nav.buildingsManagement",
+            titleKey: "buildingsManagement",
             url: "/settings/buildings",
             icon: Building2,
           }] : []),
           ...(hasRoomsPermission ? [{
             title: "Rooms Management",
-            titleKey: "nav.roomsManagement",
+            titleKey: "roomsManagement",
             url: "/settings/rooms",
             icon: DoorOpen,
           }] : []),
           ...((hasReportsPermission && hasHostelPermission) ? [{
             title: "Hostel reports",
-            titleKey: "nav.hostel.reports",
+            titleKey: "hostel.reports",
             url: "/hostel/reports",
             icon: LucideIcons.BarChart3,
           }] : []),
@@ -882,7 +882,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasLibraryBooksPermission ? [{
             title: "Reports",
-            titleKey: "nav.library.reports",
+            titleKey: "library.reports",
             url: "/library/reports",
             icon: LucideIcons.BarChart3,
           }] : []),
@@ -940,7 +940,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasFinanceReportsPermission ? [{
             title: "Reports",
-            titleKey: "nav.reports",
+            titleKey: "finance.reports",
             url: "/finance/reports",
             icon: LucideIcons.BarChart3,
           }] : []),
@@ -1064,7 +1064,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasDmsReportsPermission ? [{
             title: "Reports",
-            titleKey: "nav.reports",
+            titleKey: "dms.reports",
             url: "/dms/reports",
             icon: LucideIcons.BarChart3,
           }] : []),
@@ -1086,7 +1086,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
         children: [
           ...(hasEventsPermission ? [{
             title: "All Events",
-            titleKey: "subjects.all",
+            titleKey: "events.all",
             url: "/events",
             icon: Calendar,
           }] : []),
@@ -1150,7 +1150,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           },
           {
             title: "Asset Reports",
-            titleKey: "nav.assets.reports",
+            titleKey: "assets.reports",
             url: "/assets/reports",
             icon: LucideIcons.BarChart3,
           },
@@ -1218,26 +1218,31 @@ export const SmartSidebar = memo(function SmartSidebar() {
           // Organizations Management moved to Subscription Admin page
           ...(hasProfilesPermission ? [{
             title: "Profile Management",
+            titleKey: "profileManagement",
             url: "/settings/profile",
             icon: Users,
           }] : []),
           ...(hasPermissionsPermission ? [{
             title: "Permissions Management",
+            titleKey: "permissionsManagement",
             url: "/settings/permissions",
             icon: Shield,
           }] : []),
           ...(hasRolesPermission ? [{
             title: "Roles Management",
+            titleKey: "rolesManagement",
             url: "/settings/roles",
             icon: Shield,
           }] : []),
           ...(hasPermissionsPermission ? [{
             title: "User Permissions",
+            titleKey: "userPermissions",
             url: "/settings/user-permissions",
             icon: User,
           }] : []),
           ...(hasUsersPermission ? [{
             title: "User Management",
+            titleKey: "userManagement",
             url: "/admin/users",
             icon: Users,
           }] : []),
@@ -1269,6 +1274,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasReportTemplatesPermission ? [{
             title: "Report Templates",
+            titleKey: "reportTemplates",
             url: "/settings/report-templates",
             icon: FileText,
           }] : []),
@@ -1292,6 +1298,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasStaffTypesPermission ? [{
             title: "Staff Types",
+            titleKey: "staffTypes",
             url: "/settings/staff-types",
             icon: Users,
           }] : []),

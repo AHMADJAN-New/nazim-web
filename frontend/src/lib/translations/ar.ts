@@ -3193,7 +3193,14 @@ export const ar: TranslationKeys = {
     consolidatedMarkSheet: 'ورقة العلامات الموحدة',
     classSubjectMarkSheet: 'ورقة علامات الفصل والموضوع',
     studentReportCard: 'بطاقة تقرير الطالب',
-    examNumberReports: 'تقارير الأرقام'
+    examNumberReports: 'تقارير الأرقام',
+    profileManagement: 'إدارة الملف الشخصي',
+    permissionsManagement: 'إدارة الصلاحيات',
+    rolesManagement: 'إدارة الأدوار',
+    userPermissions: 'صلاحيات المستخدم',
+    userManagement: 'إدارة المستخدمين',
+    reportTemplates: 'قوالب التقارير',
+    staffTypes: 'أنواع الموظفين'
   },
   "noArticleFound": null,
   "noDocuments": null,

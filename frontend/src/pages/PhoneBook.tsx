@@ -112,7 +112,9 @@ export function PhoneBook() {
               className="text-primary hover:underline flex items-center gap-2 whitespace-nowrap"
             >
               <Phone className="h-4 w-4 flex-shrink-0" />
-              <span className="min-w-[120px]">{phone}</span>
+              <span className="min-w-[120px]" dir="ltr">
+                {phone}
+              </span>
             </a>
           </div>
         );
@@ -253,16 +255,30 @@ export function PhoneBook() {
 
   // Transform data for export
   const transformDataForExport = (data: PhoneBookEntry[]) => {
+    const categoryLabels: Record<string, string> = {
+      student_guardian: t('phoneBook.studentGuardian') || 'Student Guardian',
+      student_emergency: t('phoneBook.studentEmergency') || 'Student Emergency',
+      student_zamin: t('phoneBook.studentZamin') || 'Student Zamin',
+      staff: t('settings.staff') || 'Staff',
+      donor: t('phoneBook.donor') || 'Donor',
+      guest: t('phoneBook.guest') || 'Guest',
+      other: t('events.other') || 'Other',
+    };
+
+    // Unicode Left-to-Right Mark (U+200E) - forces LTR display in RTL contexts
+    const LTR_MARK = '\u200E';
+
     return data.map((entry) => ({
-      [t('events.name') || 'Name']: entry.name,
-      [t('events.phone') || 'Phone']: entry.phone,
-      [t('events.email') || 'Email']: entry.email || '',
-      [t('assets.category') || 'Category']: entry.category,
-      [t('phoneBook.relation') || 'Relation']: entry.relation,
-      [t('phoneBook.student') || 'Student']: entry.student_name || '',
-      [t('examReports.admissionNo') || 'Admission No']: entry.admission_no || '',
-      [t('search.employeeId') || 'Employee ID']: entry.employee_id || '',
-      [t('events.address') || 'Address']: entry.address || '',
+      name: entry.name || '',
+      // Add LTR mark to phone numbers to prevent RTL reversal
+      phone: entry.phone ? LTR_MARK + entry.phone : '',
+      email: entry.email || '',
+      category: categoryLabels[entry.category] || entry.category,
+      relation: entry.relation || '',
+      student_name: entry.student_name || '',
+      admission_no: entry.admission_no || '',
+      employee_id: entry.employee_id || '',
+      address: entry.address || '',
     }));
   };
 

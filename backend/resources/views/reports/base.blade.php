@@ -40,9 +40,11 @@
             // Parse font size to get numeric value for calculations
             $baseFontSize = intval(str_replace(['px', 'pt'], '', $fontSize));
             
-            // Load Bahij Nassim fonts if the font family matches
+            // CRITICAL: Always load Bahij Nassim fonts by default (they're the standard font for this system)
+            // Check if font family matches Bahij Nassim (case-insensitive, with or without spaces)
             $loadBahijNassim = in_array(strtolower($fontFamilyNormalized), ['bahijnassim', 'bahij nassim']) || 
-                              strtolower($fontFamily) === 'bahij nassim';
+                              strtolower($fontFamily) === 'bahij nassim' ||
+                              stripos($fontFamily, 'bahij') !== false;
             
             // Log for debugging
             if (config('app.debug')) {
@@ -57,67 +59,180 @@
             }
         @endphp
 
-        @if($loadBahijNassim)
-        /* Bahij Nassim Font Faces */
+        /* Bahij Nassim Font Faces - Always load for PDF reports */
         @php
+            // CRITICAL: This block MUST execute to load fonts
+            \Log::info("Font loading block started");
+            
             // CRITICAL: Browsershot needs fonts accessible via HTTP or base64
             // Use base64 data URLs for fonts (same pattern as images/logos)
             $fontBasePath = public_path('fonts');
-            $regularTtfPath = "{$fontBasePath}/Bahij Nassim-Regular.ttf";
-            $boldTtfPath = "{$fontBasePath}/Bahij Nassim-Bold.ttf";
             
-            // Convert fonts to base64 data URLs (use TTF for better compatibility)
+            // Log the path being used
+            \Log::info("Font base path: {$fontBasePath}", [
+                'public_path_exists' => is_dir($fontBasePath),
+                'public_path_readable' => is_readable($fontBasePath),
+            ]);
+            
+            // Use DIRECTORY_SEPARATOR for cross-platform compatibility
+            $ds = DIRECTORY_SEPARATOR;
+            $regularTtfPath = $fontBasePath . $ds . 'Bahij Nassim-Regular.ttf';
+            $regularWoffPath = $fontBasePath . $ds . 'Bahij Nassim-Regular.woff';
+            $boldTtfPath = $fontBasePath . $ds . 'Bahij Nassim-Bold.ttf';
+            $boldWoffPath = $fontBasePath . $ds . 'Bahij Nassim-Bold.woff';
+            
+            // Log all paths being checked
+            \Log::info("Font file paths", [
+                'regular_ttf' => $regularTtfPath,
+                'regular_woff' => $regularWoffPath,
+                'bold_ttf' => $boldTtfPath,
+                'bold_woff' => $boldWoffPath,
+            ]);
+            
+            // Convert fonts to base64 data URLs - prefer TTF, fallback to WOFF
             $regularTtfBase64 = null;
+            $regularWoffBase64 = null;
             $boldTtfBase64 = null;
+            $boldWoffBase64 = null;
             
-            if (file_exists($regularTtfPath)) {
-                $fontData = file_get_contents($regularTtfPath);
-                $base64 = base64_encode($fontData);
-                // Use application/font-sfnt MIME type for TTF (more compatible)
-                $regularTtfBase64 = "data:application/font-sfnt;charset=utf-8;base64,{$base64}";
-            }
-            if (file_exists($boldTtfPath)) {
-                $fontData = file_get_contents($boldTtfPath);
-                $base64 = base64_encode($fontData);
-                $boldTtfBase64 = "data:application/font-sfnt;charset=utf-8;base64,{$base64}";
+            // Load Regular font (prefer TTF, fallback to WOFF)
+            $regularTtfExists = file_exists($regularTtfPath);
+            $regularWoffExists = file_exists($regularWoffPath);
+            
+            if ($regularTtfExists) {
+                try {
+                    $fontData = file_get_contents($regularTtfPath);
+                    $base64 = base64_encode($fontData);
+                    $regularTtfBase64 = "data:font/truetype;charset=utf-8;base64,{$base64}";
+                } catch (\Exception $e) {
+                    \Log::error("Failed to load Bahij Nassim Regular TTF: " . $e->getMessage());
+                }
+            } elseif ($regularWoffExists) {
+                try {
+                    $fontData = file_get_contents($regularWoffPath);
+                    $base64 = base64_encode($fontData);
+                    $regularWoffBase64 = "data:font/woff;charset=utf-8;base64,{$base64}";
+                } catch (\Exception $e) {
+                    \Log::error("Failed to load Bahij Nassim Regular WOFF: " . $e->getMessage());
+                }
             }
             
-            // Log for debugging
-            if (config('app.debug')) {
-                \Log::debug("Blade template: Font loading", [
-                    'regular_exists' => file_exists($regularTtfPath),
-                    'bold_exists' => file_exists($boldTtfPath),
-                    'regular_base64_length' => $regularTtfBase64 ? strlen($regularTtfBase64) : 0,
-                    'bold_base64_length' => $boldTtfBase64 ? strlen($boldTtfBase64) : 0,
-                ]);
+            // Load Bold font (prefer TTF, fallback to WOFF)
+            $boldTtfExists = file_exists($boldTtfPath);
+            $boldWoffExists = file_exists($boldWoffPath);
+            
+            if ($boldTtfExists) {
+                try {
+                    $fontData = file_get_contents($boldTtfPath);
+                    $base64 = base64_encode($fontData);
+                    $boldTtfBase64 = "data:font/truetype;charset=utf-8;base64,{$base64}";
+                } catch (\Exception $e) {
+                    \Log::error("Failed to load Bahij Nassim Bold TTF: " . $e->getMessage());
+                }
+            } elseif ($boldWoffExists) {
+                try {
+                    $fontData = file_get_contents($boldWoffPath);
+                    $base64 = base64_encode($fontData);
+                    $boldWoffBase64 = "data:font/woff;charset=utf-8;base64,{$base64}";
+                } catch (\Exception $e) {
+                    \Log::error("Failed to load Bahij Nassim Bold WOFF: " . $e->getMessage());
+                }
             }
+            
+            // Build src strings for @font-face declarations
+            // Prefer base64, but fallback to HTTP URLs if base64 fails
+            $regularSrc = [];
+            if ($regularTtfBase64) {
+                $regularSrc[] = 'url("' . $regularTtfBase64 . '") format("truetype")';
+            }
+            if ($regularWoffBase64) {
+                $regularSrc[] = 'url("' . $regularWoffBase64 . '") format("woff")';
+            }
+            // Fallback to HTTP URL if base64 failed but file exists
+            if (empty($regularSrc) && ($regularTtfExists || $regularWoffExists)) {
+                $fontUrl = url('fonts/Bahij Nassim-Regular.' . ($regularTtfExists ? 'ttf' : 'woff'));
+                $format = $regularTtfExists ? 'truetype' : 'woff';
+                $regularSrc[] = 'url("' . $fontUrl . '") format("' . $format . '")';
+            }
+            $regularSrcString = implode(', ', $regularSrc);
+            
+            $boldSrc = [];
+            if ($boldTtfBase64) {
+                $boldSrc[] = 'url("' . $boldTtfBase64 . '") format("truetype")';
+            }
+            if ($boldWoffBase64) {
+                $boldSrc[] = 'url("' . $boldWoffBase64 . '") format("woff")';
+            }
+            // Fallback to HTTP URL if base64 failed but file exists
+            if (empty($boldSrc) && ($boldTtfExists || $boldWoffExists)) {
+                $fontUrl = url('fonts/Bahij Nassim-Bold.' . ($boldTtfExists ? 'ttf' : 'woff'));
+                $format = $boldTtfExists ? 'truetype' : 'woff';
+                $boldSrc[] = 'url("' . $fontUrl . '") format("' . $format . '")';
+            }
+            $boldSrcString = implode(', ', $boldSrc);
+            
+            // ALWAYS log font loading status (not just in debug mode) for troubleshooting
+            \Log::info("Blade template: Font loading status", [
+                'font_base_path' => $fontBasePath,
+                'regular_ttf_path' => $regularTtfPath,
+                'regular_ttf_exists' => $regularTtfExists,
+                'regular_woff_exists' => $regularWoffExists,
+                'bold_ttf_exists' => $boldTtfExists,
+                'bold_woff_exists' => $boldWoffExists,
+                'regular_base64_length' => ($regularTtfBase64 ?: $regularWoffBase64) ? strlen($regularTtfBase64 ?: $regularWoffBase64) : 0,
+                'bold_base64_length' => ($boldTtfBase64 ?: $boldWoffBase64) ? strlen($boldTtfBase64 ?: $boldWoffBase64) : 0,
+                'regular_src_string_length' => strlen($regularSrcString),
+                'bold_src_string_length' => strlen($boldSrcString),
+                'regular_src_string_preview' => substr($regularSrcString, 0, 100),
+                'bold_src_string_preview' => substr($boldSrcString, 0, 100),
+            ]);
         @endphp
-        @if($regularTtfBase64)
+        @if(!empty($regularSrcString))
         @font-face {
             font-family: "BahijNassim";
-            src: url("{{ $regularTtfBase64 }}") format("truetype");
+            src: {!! $regularSrcString !!};
             font-weight: 400;
             font-style: normal;
-            font-display: swap;
+            font-display: block;
+            unicode-range: U+0000-10FFFF;
         }
-        @endif
-        @if($boldTtfBase64)
+        @else
+        {{-- Fallback: Try HTTP URL if base64 failed --}}
         @font-face {
             font-family: "BahijNassim";
-            src: url("{{ $boldTtfBase64 }}") format("truetype");
-            font-weight: 700;
+            src: url("{{ url('fonts/Bahij Nassim-Regular.ttf') }}") format("truetype"),
+                 url("{{ url('fonts/Bahij Nassim-Regular.woff') }}") format("woff");
+            font-weight: 400;
             font-style: normal;
-            font-display: swap;
+            font-display: block;
+            unicode-range: U+0000-10FFFF;
         }
         @endif
+        @if(!empty($boldSrcString))
+        @font-face {
+            font-family: "BahijNassim";
+            src: {!! $boldSrcString !!};
+            font-weight: 700;
+            font-style: normal;
+            font-display: block;
+            unicode-range: U+0000-10FFFF;
+        }
+        @else
+        {{-- Fallback: Try HTTP URL if base64 failed --}}
+        @font-face {
+            font-family: "BahijNassim";
+            src: url("{{ url('fonts/Bahij Nassim-Bold.ttf') }}") format("truetype"),
+                 url("{{ url('fonts/Bahij Nassim-Bold.woff') }}") format("woff");
+            font-weight: 700;
+            font-style: normal;
+            font-display: block;
+            unicode-range: U+0000-10FFFF;
+        }
         @endif
 
+        /* CRITICAL: Always use Bahij Nassim as primary font for all PDF reports */
         html, body {
-            @if($loadBahijNassim)
             font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
-            @else
-            font-family: {!! $fontFamilyQuoted !!}, 'DejaVu Sans', Arial, sans-serif !important;
-            @endif
             font-size: {{ $fontSize }} !important;
             line-height: 1.5;
             color: #333;
@@ -127,31 +242,37 @@
         
         /* CRITICAL: Apply font to ALL elements with !important to override any defaults */
         * {
-            @if($loadBahijNassim)
             font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
-            @else
-            font-family: {!! $fontFamilyQuoted !!}, 'DejaVu Sans', Arial, sans-serif !important;
-            @endif
         }
         
         /* Specific elements with font size - ensure font size is applied */
-        body, p, div, span, td, th, h1, h2, h3, h4, h5, h6, .school-name, .report-title, .header-text, .data-table {
-            @if($loadBahijNassim)
+        body, p, div, span, td, th, h1, h2, h3, h4, h5, h6, .school-name, .report-title, .header-text, .data-table,
+        table, thead, tbody, tfoot, tr, caption, li, ul, ol, a, label, input, textarea, select, button {
             font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
-            @else
-            font-family: {!! $fontFamilyQuoted !!}, 'DejaVu Sans', Arial, sans-serif !important;
-            @endif
             font-size: {{ $fontSize }} !important;
         }
         
         /* Bold text should use bold font weight */
-        .school-name, .report-title, th, strong, b {
-            @if($loadBahijNassim)
+        .school-name, .report-title, th, strong, b, h1, h2, h3, h4, h5, h6 {
             font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
             font-weight: 700 !important;
-            @else
-            font-weight: bold !important;
-            @endif
+        }
+        
+        /* Ensure all table elements use Bahij font */
+        .data-table, .data-table *, .data-table th, .data-table td, .data-table tr {
+            font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+        }
+        
+        /* Footer and header elements */
+        .report-footer, .report-footer *, .report-header, .report-header *,
+        .footer-text, .footer-left, .footer-right, .footer-center,
+        .header-text, .header-left, .header-right, .header-center {
+            font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+        }
+        
+        /* Notes sections */
+        .notes-section, .notes-section *, .note-item {
+            font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
         }
 
         /* Header section */

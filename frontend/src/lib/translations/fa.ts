@@ -2990,6 +2990,13 @@ export const fa: TranslationKeys = {
     classSubjectMarkSheet: 'برگه نمرات صنف و مضمون',
     studentReportCard: 'کارت گزارش شاگرد',
     examNumberReports: 'گزارش‌های شماره',
+    profileManagement: 'مدیریت پروفایل',
+    permissionsManagement: 'مدیریت مجوزها',
+    rolesManagement: 'مدیریت نقش‌ها',
+    userPermissions: 'مجوزهای کاربر',
+    userManagement: 'مدیریت کاربران',
+    reportTemplates: 'قالب‌های گزارش',
+    staffTypes: 'انواع کارمندان',
     subjects: {
       all: 'all'
     },

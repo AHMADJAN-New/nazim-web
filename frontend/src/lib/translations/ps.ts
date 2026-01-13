@@ -416,7 +416,7 @@ export const ps: TranslationKeys = {
     retired: 'تقاعد شوی',
     returnDate: 'د بیرته ورکولو نیټه',
     searchCategories: 'د کټګوریو لټون...',
-    searchPlaceholder: 'د املاکو لټون...',
+    searchPlaceholder: 'لټون...',
     status: 'حالت',
     statusBreakdown: 'د وضعیت تفکیک',
     subtitle: 'املاک مدیریت کړئ او ساتنه تعقیب کړئ',
@@ -3255,6 +3255,13 @@ export const ps: TranslationKeys = {
     classSubjectMarkSheet: 'د ټولګي د مضامینو نمراتو پاڼه',
     studentReportCard: 'د زده کوونکي راپور کارت',
     examNumberReports: 'د شمېرو راپورونه',
+    profileManagement: 'د پروفایل مدیریت',
+    permissionsManagement: 'د اجازو مدیریت',
+    rolesManagement: 'د رولونو مدیریت',
+    userPermissions: 'د کارونکي اجازې',
+    userManagement: 'د کارونکو مدیریت',
+    reportTemplates: 'د راپور قالبونه',
+    staffTypes: 'د کارکوونکو ډولونه',
     subjects: {
       all: 'all'
     },

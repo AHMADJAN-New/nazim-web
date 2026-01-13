@@ -3121,6 +3121,13 @@ export const en: TranslationKeys = {
     classSubjectMarkSheet: 'Class Subject Mark Sheet',
     studentReportCard: 'Student Report Card',
     examNumberReports: 'Number Reports',
+    profileManagement: 'Profile Management',
+    permissionsManagement: 'Permissions Management',
+    rolesManagement: 'Roles Management',
+    userPermissions: 'User Permissions',
+    userManagement: 'User Management',
+    reportTemplates: 'Report Templates',
+    staffTypes: 'Staff Types',
     subjects: {
       all: 'all'
     },
