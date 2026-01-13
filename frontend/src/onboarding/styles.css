@@ -62,6 +62,13 @@ html.shepherd-active {
   overflow-x: hidden !important;
 }
 
+/* CRITICAL: Allow sidebar scrolling when tour step is on sidebar */
+body.shepherd-active [data-tour="sidebar"],
+html.shepherd-active [data-tour="sidebar"] {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
 /* Ensure the page content can be scrolled */
 .shepherd-active .shepherd-modal-overlay-container {
   pointer-events: none;
@@ -70,6 +77,9 @@ html.shepherd-active {
 /* But keep the step element interactive */
 .shepherd-element {
   pointer-events: auto;
+  /* CRITICAL: Ensure dialog stays visible when scrolling */
+  position: fixed !important;
+  will-change: transform;
 }
 
 /* ============================================
@@ -84,14 +94,17 @@ html.shepherd-active {
   box-shadow: var(--shepherd-shadow);
   border: 1px solid var(--shepherd-border);
   font-family: var(--shepherd-font-family);
-  /* Prevent layout shifts that cause repositioning */
-  contain: layout style paint;
+  /* CRITICAL: Use fixed positioning to ensure dialog stays visible when scrolling */
+  position: fixed !important;
+  will-change: transform;
   /* Ensure dialog is interactive */
   pointer-events: auto;
   /* CRITICAL: Ensure element is always visible */
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
+  /* Ensure dialog is always on top */
+  transform: translateZ(0);
 }
 
 .shepherd-element.shepherd-has-title .shepherd-content .shepherd-header {

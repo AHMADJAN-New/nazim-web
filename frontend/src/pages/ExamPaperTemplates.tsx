@@ -770,8 +770,8 @@ export default function ExamPaperTemplates() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="templates">Exam Papers</TabsTrigger>
-          <TabsTrigger value="template-files">Template Files</TabsTrigger>
+          <TabsTrigger value="templates">{t('nav.examPapers') || 'Exam Papers'}</TabsTrigger>
+          <TabsTrigger value="template-files">{t('examPapers.templateFiles') || 'Template Files'}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="templates" className="space-y-6">

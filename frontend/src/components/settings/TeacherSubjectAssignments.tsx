@@ -55,10 +55,11 @@ import { useTeacherSubjectAssignments, useCreateTeacherSubjectAssignment, useUpd
 
 type Step = 1 | 2;
 
-const steps = [
-    { id: 1, label: 'Teacher & Classes', icon: User, description: 'Select teacher, academic year, classes, and schedule slots' },
-    { id: 2, label: 'Select Subjects', icon: GraduationCap, description: 'Choose subjects for each class' },
-];
+// Steps will use translation keys in component rendering
+const stepConfigs = [
+    { id: 1, icon: User, labelKey: 'teacherSubjectAssignments.teacherAndClasses', descriptionKey: 'teacherSubjectAssignments.teacherAndClassesDescription' },
+    { id: 2, icon: GraduationCap, labelKey: 'teacherSubjectAssignments.selectSubjects', descriptionKey: 'teacherSubjectAssignments.selectSubjectsDescription' },
+] as const;
 
 export function TeacherSubjectAssignments() {
     const { t } = useLanguage();
@@ -1112,11 +1113,11 @@ export function TeacherSubjectAssignments() {
                         {/* Step Navigation - Vertical Sidebar */}
                         <div className="border-r pr-6">
                             <div className="flex flex-col">
-                                {steps.map((step, index) => {
+                                {stepConfigs.map((step, index) => {
                                     const StepIcon = step.icon;
                                     const isActive = currentStep === step.id;
                                     const isCompleted = currentStep > step.id;
-                                    const isLast = index === steps.length - 1;
+                                    const isLast = index === stepConfigs.length - 1;
                                     return (
                                         <div key={step.id} className="flex items-start gap-3">
                                             <div className="flex flex-col items-center">
@@ -1148,9 +1149,9 @@ export function TeacherSubjectAssignments() {
                                                 onClick={() => setCurrentStep(step.id as Step)}
                                             >
                                                 <span className={`text-xs font-medium block ${isActive ? 'text-primary' : ''}`}>
-                                                    {step.label}
+                                                    {t(step.labelKey)}
                                                 </span>
-                                                <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
+                                                <p className="text-xs text-muted-foreground mt-0.5">{t(step.descriptionKey)}</p>
                                             </div>
                                         </div>
                                     );

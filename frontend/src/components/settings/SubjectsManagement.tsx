@@ -725,9 +725,9 @@ export function SubjectsManagement() {
                         <CardHeader>
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <CardTitle>Step 1: Assign Subjects to Classes</CardTitle>
+                                    <CardTitle>{t('academic.subjects.step1Title')}</CardTitle>
                                     <CardDescription className="hidden md:block">
-                                        First, assign subjects to classes. These subjects will appear in all academic years for the selected class.
+                                        {t('academic.subjects.step1Description')}
                                     </CardDescription>
                                 </div>
                                 <div className="flex items-center gap-2 flex-wrap">
@@ -757,11 +757,11 @@ export function SubjectsManagement() {
                                         <>
                                             <Button variant="outline" onClick={handleOpenBulkAssignToClassDialog} className="flex-shrink-0">
                                                 <Plus className="h-4 w-4 sm:mr-2" />
-                                                <span className="hidden sm:inline">Bulk Assign</span>
+                                                <span className="hidden sm:inline">{t('academic.subjects.bulkAssign')}</span>
                                             </Button>
                                             <Button onClick={handleOpenAssignToClassDialog} className="flex-shrink-0">
                                                 <Plus className="h-4 w-4 sm:mr-2" />
-                                                <span className="hidden sm:inline">Assign Subject</span>
+                                                <span className="hidden sm:inline">{t('academic.subjects.assignSubject')}</span>
                                             </Button>
                                         </>
                                     )}
@@ -792,15 +792,15 @@ export function SubjectsManagement() {
 
                             {!selectedClassId ? (
                                 <div className="text-center py-8 text-muted-foreground">
-                                    <p>Please select a class to view and manage its subjects</p>
+                                    <p>{t('academic.subjects.step1SelectClassMessage')}</p>
                                 </div>
                             ) : classSubjectTemplatesLoading ? (
                                 <div className="text-center py-8">{t('common.loading')}</div>
                             ) : !classSubjectTemplates || classSubjectTemplates.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
                                     <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                                    <p className="text-lg font-medium">No subjects assigned to this class</p>
-                                    <p className="text-sm">Assign subjects to this class to get started</p>
+                                    <p className="text-lg font-medium">{t('academic.subjects.noSubjectsAssigned')}</p>
+                                    <p className="text-sm">{t('academic.subjects.step1NoSubjectsMessage')}</p>
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto -mx-4 md:mx-0">
@@ -851,9 +851,9 @@ export function SubjectsManagement() {
                         <CardHeader>
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <CardTitle>Step 2: Customize Subjects per Academic Year</CardTitle>
+                                    <CardTitle>{t('academic.subjects.step2Title')}</CardTitle>
                                     <CardDescription className="hidden md:block">
-                                        Customize teacher, room, and hours for subjects in specific academic years.
+                                        {t('academic.subjects.step2Description')}
                                     </CardDescription>
                                 </div>
                                 <div className="flex items-center gap-2 flex-wrap">
@@ -952,7 +952,7 @@ export function SubjectsManagement() {
                                                         ))
                                                     ) : (
                                                         <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                                            No classes available for this year
+                                                            {t('academic.subjects.noClassesForYear')}
                                                         </div>
                                                     )}
                                                 </SelectContent>
@@ -973,8 +973,8 @@ export function SubjectsManagement() {
                             {!selectedClassAcademicYearId ? (
                                 <div className="text-center py-8 text-muted-foreground">
                                     <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-30" />
-                                    <p className="text-base font-medium mb-2">Select Academic Year and Class</p>
-                                    <p className="text-sm">Choose an academic year and class instance above to view and manage year-specific subject assignments.</p>
+                                    <p className="text-base font-medium mb-2">{t('academic.subjects.step2SelectMessage')}</p>
+                                    <p className="text-sm">{t('academic.subjects.step2SelectDescription')}</p>
                                 </div>
                             ) : classSubjectsLoading ? (
                                 <div className="text-center py-8">
@@ -989,7 +989,7 @@ export function SubjectsManagement() {
                                     {hasAssignPermission && (
                                         <Button onClick={handleOpenAssignDialog} variant="outline">
                                             <Plus className="mr-2 h-4 w-4" />
-                                            Assign Subject
+                                            {t('academic.subjects.assignSubject')}
                                         </Button>
                                     )}
                                 </div>
@@ -1058,7 +1058,7 @@ export function SubjectsManagement() {
                             {selectedSubject ? t('academic.subjects.editSubject') : t('academic.subjects.addSubject')}
                         </DialogTitle>
                         <DialogDescription>
-                            {selectedSubject ? 'Update subject information' : 'Create a new subject'}
+                            {selectedSubject ? t('academic.subjects.updateSubjectDialogDescription') : t('academic.subjects.createSubjectDialogDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmitSubject(onSubmitSubject)} className="space-y-4">
@@ -1174,40 +1174,40 @@ export function SubjectsManagement() {
                                     return (
                                         <Select value={field.value || undefined} onValueChange={field.onChange} disabled={subjectsLoading || !subjects || subjects.length === 0 || !classIdForStep2}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder={
+                                                <SelectValue                                                 placeholder={
                                                     !classIdForStep2
-                                                        ? "Select a class first"
+                                                        ? t('academic.subjects.selectClassFirst')
                                                         : subjectsLoading 
-                                                        ? "Loading subjects..." 
+                                                        ? t('academic.subjects.loadingSubjects')
                                                         : !subjects || subjects.length === 0
-                                                        ? "No subjects available"
+                                                        ? t('academic.subjects.noSubjectsAvailable')
                                                         : classTemplateSubjectIds.length === 0
-                                                        ? "No subjects assigned to this class in Step 1"
+                                                        ? t('academic.subjects.noSubjectsInStep1')
                                                         : availableSubjects.length === 0 
-                                                        ? "All subjects assigned" 
+                                                        ? t('academic.subjects.allSubjectsAssigned')
                                                         : t('academic.subjects.selectSubject')
                                                 } />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {!classIdForStep2 ? (
                                                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                                        Please select a class first
+                                                        {t('academic.subjects.selectClassFirstMessage')}
                                                     </div>
                                                 ) : subjectsLoading ? (
                                                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                                        Loading subjects...
+                                                        {t('academic.subjects.loadingSubjects')}
                                                     </div>
                                                 ) : !subjects || subjects.length === 0 ? (
                                                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                                        No subjects available. Please create subjects first.
+                                                        {t('academic.subjects.noSubjectsAvailable')}
                                                     </div>
                                                 ) : classTemplateSubjectIds.length === 0 ? (
                                                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                                        No subjects assigned to this class in Step 1. Please assign subjects to the class first.
+                                                        {t('academic.subjects.noSubjectsInStep1Message')}
                                                     </div>
                                                 ) : availableSubjects.length === 0 ? (
                                                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                                        All subjects are already assigned to this class instance
+                                                        {t('academic.subjects.allSubjectsAssigned')}
                                                     </div>
                                                 ) : (
                                                     availableSubjects.map((subject) => (
@@ -1225,7 +1225,7 @@ export function SubjectsManagement() {
                                 <p className="text-sm text-destructive">{assignErrors.subject_id.message}</p>
                             )}
                             {subjectsLoading && (
-                                <p className="text-xs text-muted-foreground">Loading subjects...</p>
+                                <p className="text-xs text-muted-foreground">{t('academic.subjects.loadingSubjects')}</p>
                             )}
                         </div>
                         <div className="space-y-2">
@@ -1236,10 +1236,10 @@ export function SubjectsManagement() {
                                 render={({ field }) => (
                                     <Select value={field.value || undefined} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Leave empty to use class room" />
+                                            <SelectValue placeholder={t('academic.subjects.leaveEmptyForClassRoom')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">Use Class Room</SelectItem>
+                                            <SelectItem value="none">{t('academic.subjects.useClassRoom')}</SelectItem>
                                             {rooms?.map((room) => (
                                                 <SelectItem key={room.id} value={room.id}>
                                                     {room.roomNumber}
@@ -1249,14 +1249,14 @@ export function SubjectsManagement() {
                                     </Select>
                                 )}
                             />
-                            <p className="text-xs text-muted-foreground">If not specified, the class's room will be used automatically</p>
+                            <p className="text-xs text-muted-foreground">{t('academic.subjects.leaveEmptyForClassRoom')}</p>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="notes">{t('academic.subjects.notes')}</Label>
                             <Textarea
                                 id="notes"
                                 {...registerAssign('notes')}
-                                placeholder="Optional notes"
+                                placeholder={t('academic.subjects.optionalNotes')}
                                 rows={3}
                             />
                         </div>
@@ -1287,7 +1287,7 @@ export function SubjectsManagement() {
                             <Label>{t('academic.subjects.selectSubjects')} *</Label>
                             {subjectsLoading ? (
                                 <div className="border rounded-md p-4 text-center text-muted-foreground">
-                                    Loading subjects...
+                                    {t('academic.subjects.loadingSubjects')}
                                 </div>
                             ) : (
                                 <>
@@ -1318,7 +1318,7 @@ export function SubjectsManagement() {
                                             if (!classIdForStep2) {
                                                 return (
                                                     <div className="text-center py-4 text-muted-foreground">
-                                                        Please select a class first
+                                                        {t('academic.subjects.selectClassFirstMessage')}
                                                     </div>
                                                 );
                                             }
@@ -1326,7 +1326,7 @@ export function SubjectsManagement() {
                                             if (classTemplateSubjectIds.length === 0) {
                                                 return (
                                                     <div className="text-center py-4 text-muted-foreground">
-                                                        No subjects assigned to this class in Step 1. Please assign subjects to the class first.
+                                                        {t('academic.subjects.noSubjectsInStep1Message')}
                                                     </div>
                                                 );
                                             }
@@ -1335,8 +1335,8 @@ export function SubjectsManagement() {
                                                 return (
                                                     <div className="text-center py-4 text-muted-foreground">
                                                         {subjects && subjects.length > 0 
-                                                            ? 'All subjects are already assigned to this class instance'
-                                                            : 'No active subjects available'}
+                                                            ? t('academic.subjects.allSubjectsAssigned')
+                                                            : t('academic.subjects.noSubjectsAvailable')}
                                                     </div>
                                                 );
                                             }
@@ -1384,10 +1384,10 @@ export function SubjectsManagement() {
                                 render={({ field }) => (
                                     <Select value={field.value || undefined} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Leave empty to use class room" />
+                                            <SelectValue placeholder={t('academic.subjects.leaveEmptyForClassRoom')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">Use Class Room</SelectItem>
+                                            <SelectItem value="none">{t('academic.subjects.useClassRoom')}</SelectItem>
                                             {rooms?.map((room) => (
                                                 <SelectItem key={room.id} value={room.id}>
                                                     {room.roomNumber}
@@ -1397,7 +1397,7 @@ export function SubjectsManagement() {
                                     </Select>
                                 )}
                             />
-                            <p className="text-xs text-muted-foreground">If not specified, the class's room will be used automatically</p>
+                            <p className="text-xs text-muted-foreground">{t('academic.subjects.leaveEmptyForClassRoom')}</p>
                         </div>
                         <input type="hidden" {...registerBulk('class_academic_year_id')} value={selectedClassAcademicYearId || ''} />
                         <DialogFooter>
@@ -1416,9 +1416,9 @@ export function SubjectsManagement() {
             <Dialog open={isAssignToClassDialogOpen} onOpenChange={setIsAssignToClassDialogOpen}>
                 <DialogContent className="w-[95vw] sm:max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>Assign Subject to Class</DialogTitle>
+                        <DialogTitle>{t('academic.subjects.assignSubject')}</DialogTitle>
                         <DialogDescription>
-                            Assign a subject to the selected class. This will make the subject available in all academic years for this class.
+                            {t('academic.subjects.assignToClassTemplateDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmitAssignToClass(onSubmitAssignToClass)} className="space-y-4">
@@ -1488,19 +1488,19 @@ export function SubjectsManagement() {
                     <DialogHeader>
                         <DialogTitle>{t('academic.subjects.bulkAssignSubjects')}</DialogTitle>
                         <DialogDescription>
-                            Assign multiple subjects to the selected class at once. These subjects will be available in all academic years for this class.
+                            {t('academic.subjects.bulkAssignToClassTemplateDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmitBulkToClass(onSubmitBulkAssignToClass)} className="space-y-4">
                         <div className="space-y-2">
-                            <Label>Class *</Label>
+                            <Label>{t('search.class')} *</Label>
                             <Controller
                                 name="class_id"
                                 control={controlBulkToClass}
                                 render={({ field }) => (
                                     <Select value={field.value || undefined} onValueChange={field.onChange}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder={t('events.selectClass')} />
+                                            <SelectValue placeholder={t('academic.subjects.selectClass')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {classes?.map((cls) => (
@@ -1568,7 +1568,7 @@ export function SubjectsManagement() {
                     <DialogHeader>
                         <DialogTitle>{t('academic.subjects.copyBetweenYears')}</DialogTitle>
                         <DialogDescription>
-                            Copy subject assignments from one class to another
+                            {t('academic.subjects.copySubjectsDialogDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmitCopy(onSubmitCopy)} className="space-y-4">

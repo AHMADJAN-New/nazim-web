@@ -1120,33 +1120,33 @@ export default function OutgoingDocuments() {
       {/* Documents List */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Documents</CardTitle>
+          <CardTitle>{t('dms.documents') || 'Documents'}</CardTitle>
           {paginationMeta && (
             <div className="text-sm text-muted-foreground">
-              Showing {paginationMeta.from || 0} to {paginationMeta.to || 0} of {paginationMeta.total} documents
+              {t('dms.showingDocuments', { from: paginationMeta.from || 0, to: paginationMeta.to || 0, total: paginationMeta.total }) || `Showing ${paginationMeta.from || 0} to ${paginationMeta.to || 0} of ${paginationMeta.total} documents`}
             </div>
           )}
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading documents...</div>
+            <div className="text-center py-8 text-muted-foreground">{t('dms.loadingDocuments') || 'Loading documents...'}</div>
           ) : !documents || documents.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">No documents found</div>
+            <div className="text-center py-8 text-muted-foreground">{t('dms.noDocumentsFound') || 'No documents found'}</div>
           ) : (
             <>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Number</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Recipient</TableHead>
-                    <TableHead>External Doc</TableHead>
-                    <TableHead>Pages</TableHead>
-                    <TableHead>Security</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Issued</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('dms.tableHeaders.number') || 'Number'}</TableHead>
+                    <TableHead>{t('dms.tableHeaders.subject') || 'Subject'}</TableHead>
+                    <TableHead>{t('dms.tableHeaders.description') || 'Description'}</TableHead>
+                    <TableHead>{t('dms.tableHeaders.recipient') || 'Recipient'}</TableHead>
+                    <TableHead>{t('dms.tableHeaders.externalDoc') || 'External Doc'}</TableHead>
+                    <TableHead>{t('dms.tableHeaders.pages') || 'Pages'}</TableHead>
+                    <TableHead>{t('dms.tableHeaders.security') || 'Security'}</TableHead>
+                    <TableHead>{t('dms.tableHeaders.status') || 'Status'}</TableHead>
+                    <TableHead className="text-right">{t('dms.tableHeaders.issued') || 'Issued'}</TableHead>
+                    <TableHead className="text-right">{t('dms.tableHeaders.actions') || 'Actions'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1155,7 +1155,7 @@ export default function OutgoingDocuments() {
                       <TableCell className="font-medium">
                         <DocumentNumberBadge value={doc.full_outdoc_number} type="outgoing" />
                       </TableCell>
-                      <TableCell className="max-w-[200px] truncate">{doc.subject || "No subject"}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{doc.subject || (t('dms.issueLetter.issuedLetters.noSubject') || 'No subject')}</TableCell>
                       <TableCell className="max-w-[250px]">
                         <div className="text-sm text-muted-foreground truncate">
                           {getShortDescription(doc.description, 80)}
@@ -1173,7 +1173,7 @@ export default function OutgoingDocuments() {
                       </TableCell>
                       <TableCell>
                         {doc.pages_count ? (
-                          <span className="text-sm">{doc.pages_count} {doc.pages_count === 1 ? 'page' : 'pages'}</span>
+                          <span className="text-sm">{doc.pages_count} {doc.pages_count === 1 ? (t('dms.page') || 'page') : (t('dms.pages') || 'pages')}</span>
                         ) : (
                           <span className="text-sm text-muted-foreground">-</span>
                         )}

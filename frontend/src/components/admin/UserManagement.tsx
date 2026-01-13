@@ -55,21 +55,23 @@ import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useResetUserPass
 import { showToast } from '@/lib/toast';
 import { formatDate, formatDateTime } from '@/lib/utils';
 
-const userSchema = z.object({
-  full_name: z.string().min(1, 'Full name is required').max(255, 'Full name must be 255 characters or less'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters').optional(),
-  role: z.string().min(1, 'Role is required'),
+// Note: Schema validation messages will be set dynamically in the component using t()
+const createUserSchema = (t: (key: string) => string) => z.object({
+  full_name: z.string().min(1, t('userManagement.fullNameRequired')).max(255, t('userManagement.fullNameMaxLength')),
+  email: z.string().email(t('userManagement.invalidEmail')),
+  password: z.string().min(8, t('userManagement.passwordMinLength')).optional(),
+  role: z.string().min(1, t('userManagement.roleRequired')),
   default_school_id: z.string().uuid().nullable().optional(),
   staff_id: z.string().uuid().nullable().optional(),
   schools_access_all: z.boolean().optional().default(false),
   phone: z.string().optional(),
 });
 
-type UserFormData = z.infer<typeof userSchema>;
+type UserFormData = z.infer<ReturnType<typeof createUserSchema>>;
 
 export function UserManagement() {
   const { t } = useLanguage();
+  const userSchema = createUserSchema(t);
   const hasCreatePermission = useHasPermission('users.create');
   const hasUpdatePermission = useHasPermission('users.update');
   const hasDeletePermission = useHasPermission('users.delete');
@@ -249,13 +251,13 @@ export function UserManagement() {
     }
 
     const csv = [
-      ['Name', 'Email', 'Role', 'Phone', 'Status', 'Created At'].join(','),
+      [t('userManagement.name'), t('userManagement.email'), t('userManagement.role'), t('userManagement.phone'), t('userManagement.status'), 'Created At'].join(','),
       ...users.map(user => [
         user.name,
         user.email,
         user.role,
         user.phone || '',
-        user.isActive ? 'Active' : 'Inactive',
+        user.isActive ? t('userManagement.active') : t('userManagement.inactive'),
         formatDate(user.createdAt),
       ].join(',')),
     ].join('\n');
@@ -288,7 +290,7 @@ export function UserManagement() {
       <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <Card>
           <CardContent className="p-4 md:p-6">
-            <div className="text-center">Loading users...</div>
+            <div className="text-center">{t('userManagement.loadingUsers')}</div>
           </CardContent>
         </Card>
       </div>
@@ -304,22 +306,22 @@ export function UserManagement() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <UserCog className="h-5 w-5 hidden md:inline-flex" />
-                  User Management
+                  {t('userManagement.title')}
                 </CardTitle>
                 <CardDescription className="hidden md:block">
-                  Manage user accounts, roles, and permissions
+                  {t('userManagement.subtitle')}
                 </CardDescription>
               </div>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <Button variant="outline" onClick={handleExport} className="flex-shrink-0">
                   <Download className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Export CSV</span>
+                  <span className="hidden sm:inline">{t('userManagement.exportCsv')}</span>
                 </Button>
                 {hasCreatePermission && (
                   <Button onClick={() => handleOpenDialog()} className="flex-shrink-0">
                     <Plus className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Create User</span>
-                    <span className="sm:hidden">Create</span>
+                    <span className="hidden sm:inline">{t('userManagement.createUser')}</span>
+                    <span className="sm:hidden">{t('userManagement.create')}</span>
                   </Button>
                 )}
               </div>
@@ -328,7 +330,7 @@ export function UserManagement() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('userManagement.totalUsers')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{users?.length || 0}</div>
@@ -336,7 +338,7 @@ export function UserManagement() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('userManagement.activeUsers')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
@@ -346,7 +348,7 @@ export function UserManagement() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Inactive Users</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('userManagement.inactiveUsers')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
@@ -356,7 +358,7 @@ export function UserManagement() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Roles</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('userManagement.roles')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
@@ -374,7 +376,7 @@ export function UserManagement() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name, email, or role..."
+                placeholder={t('userManagement.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -382,13 +384,13 @@ export function UserManagement() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Role</Label>
+                <Label>{t('userManagement.role')}</Label>
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="All Roles" />
+                    <SelectValue placeholder={t('userManagement.allRoles')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="all">{t('userManagement.allRoles')}</SelectItem>
                     {roles?.map(role => (
                       <SelectItem key={role.name} value={role.name}>
                         {role.name.replace('_', ' ')}
@@ -398,15 +400,15 @@ export function UserManagement() {
                 </Select>
               </div>
               <div>
-                <Label>Status</Label>
+                <Label>{t('userManagement.status')}</Label>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="All Statuses" />
+                    <SelectValue placeholder={t('userManagement.allStatuses')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="all">{t('userManagement.allStatuses')}</SelectItem>
+                    <SelectItem value="active">{t('userManagement.active')}</SelectItem>
+                    <SelectItem value="inactive">{t('userManagement.inactive')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -419,19 +421,19 @@ export function UserManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead className="hidden sm:table-cell">Email</TableHead>
-                    <TableHead className="hidden md:table-cell">Role</TableHead>
-                    <TableHead className="hidden lg:table-cell">Phone</TableHead>
-                    <TableHead className="hidden lg:table-cell">Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('userManagement.name')}</TableHead>
+                    <TableHead className="hidden sm:table-cell">{t('userManagement.email')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('userManagement.role')}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t('userManagement.phone')}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t('userManagement.status')}</TableHead>
+                    <TableHead className="text-right">{t('userManagement.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users && users.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-muted-foreground">
-                        No users found
+                        {t('userManagement.noUsersFound')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -454,15 +456,15 @@ export function UserManagement() {
                                   {(user.name || user.email || 'U')[0].toUpperCase()}
                                 </div>
                               )}
-                              <span className="truncate">{user.name || user.email || 'No name'}</span>
+                              <span className="truncate">{user.name || user.email || t('userManagement.noName')}</span>
                             </div>
-                            <span className="text-xs text-muted-foreground truncate">{user.email || 'No email'}</span>
+                            <span className="text-xs text-muted-foreground truncate">{user.email || t('userManagement.noEmail')}</span>
                             <div className="flex flex-wrap gap-1 mt-1">
                               <Badge variant="outline" className="text-xs">
-                                {typeof user.role === 'string' ? user.role.replace('_', ' ') : 'N/A'}
+                                {typeof user.role === 'string' ? user.role.replace('_', ' ') : t('userManagement.na')}
                               </Badge>
                               <Badge variant={user.isActive ? 'default' : 'secondary'} className="text-xs">
-                                {user.isActive ? 'Active' : 'Inactive'}
+                                {user.isActive ? t('userManagement.active') : t('userManagement.inactive')}
                               </Badge>
                             </div>
                           </div>
@@ -481,19 +483,19 @@ export function UserManagement() {
                                 {(user.name || user.email || 'U')[0].toUpperCase()}
                               </div>
                             )}
-                            <span className="truncate">{user.name || user.email || 'No name'}</span>
+                            <span className="truncate">{user.name || user.email || t('userManagement.noName')}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell truncate">{user.email || 'No email'}</TableCell>
+                        <TableCell className="hidden sm:table-cell truncate">{user.email || t('userManagement.noEmail')}</TableCell>
                         <TableCell className="hidden md:table-cell">
                           <Badge variant="outline">
-                            {typeof user.role === 'string' ? user.role.replace('_', ' ') : 'N/A'}
+                            {typeof user.role === 'string' ? user.role.replace('_', ' ') : t('userManagement.na')}
                           </Badge>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">{user.phone || '-'}</TableCell>
                         <TableCell className="hidden lg:table-cell">
                           <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                            {user.isActive ? 'Active' : 'Inactive'}
+                            {user.isActive ? t('userManagement.active') : t('userManagement.inactive')}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -504,7 +506,7 @@ export function UserManagement() {
                                 variant="outline"
                                 onClick={() => handleOpenDialog(user)}
                                 className="flex-shrink-0"
-                                aria-label="Edit user"
+                                aria-label={t('userManagement.editUser')}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -518,7 +520,7 @@ export function UserManagement() {
                                   setIsPasswordDialogOpen(true);
                                 }}
                                 className="flex-shrink-0"
-                                aria-label="Reset password"
+                                aria-label={t('userManagement.resetPassword')}
                               >
                                 <KeyRound className="h-4 w-4" />
                               </Button>
@@ -532,7 +534,7 @@ export function UserManagement() {
                                   setIsDeleteDialogOpen(true);
                                 }}
                                 className="flex-shrink-0"
-                                aria-label="Delete user"
+                                aria-label={t('userManagement.deleteUser')}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -553,31 +555,31 @@ export function UserManagement() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto z-50">
           <DialogHeader>
-            <DialogTitle>{isEditMode ? 'Edit User' : 'Create User'}</DialogTitle>
+            <DialogTitle>{isEditMode ? t('userManagement.editUser') : t('userManagement.createUser')}</DialogTitle>
             <DialogDescription className="hidden md:block">
-              {isEditMode ? 'Update user information' : 'Create a new user account'}
+              {isEditMode ? t('userManagement.updateUserInformation') : t('userManagement.createNewUserAccount')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="full_name">Full Name *</Label>
+                <Label htmlFor="full_name">{t('userManagement.fullNameRequired')}</Label>
                 <Input
                   id="full_name"
                   {...register('full_name')}
-                  placeholder="John Doe"
+                  placeholder={t('userManagement.fullNamePlaceholder')}
                 />
                 {errors.full_name && (
                   <p className="text-sm text-destructive mt-1">{errors.full_name.message}</p>
                 )}
               </div>
               <div>
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">{t('userManagement.emailRequired')}</Label>
                 <Input
                   id="email"
                   type="email"
                   {...register('email')}
-                  placeholder="john@example.com"
+                  placeholder={t('userManagement.emailPlaceholder')}
                 />
                 {errors.email && (
                   <p className="text-sm text-destructive mt-1">{errors.email.message}</p>
@@ -586,12 +588,12 @@ export function UserManagement() {
             </div>
             {!isEditMode && (
               <div>
-                <Label htmlFor="password">Password *</Label>
+                <Label htmlFor="password">{t('userManagement.passwordRequired')}</Label>
                 <Input
                   id="password"
                   type="password"
                   {...register('password')}
-                  placeholder="Minimum 8 characters"
+                  placeholder={t('userManagement.passwordPlaceholder')}
                 />
                 {errors.password && (
                   <p className="text-sm text-destructive mt-1">{errors.password.message}</p>
@@ -600,13 +602,13 @@ export function UserManagement() {
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="role">Role *</Label>
+                <Label htmlFor="role">{t('userManagement.roleRequired')}</Label>
                 <Select
                   value={watchedRole}
                   onValueChange={(value) => setValue('role', value as any)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
+                    <SelectValue placeholder={t('userManagement.selectRole')} />
                   </SelectTrigger>
                   <SelectContent>
                     {roles?.map(role => (
@@ -622,11 +624,11 @@ export function UserManagement() {
                 )}
               </div>
               <div>
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">{t('userManagement.phone')}</Label>
                 <Input
                   id="phone"
                   {...register('phone')}
-                  placeholder="+1234567890"
+                  placeholder={t('userManagement.phonePlaceholder')}
                 />
                 {errors.phone && (
                   <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>
@@ -637,19 +639,19 @@ export function UserManagement() {
             {schools && schools.length > 0 && (
               <div>
                 <Label htmlFor="default_school_id">
-                  Default School
-                  {schools.length > 1 ? ' (Select one)' : ' (Auto-selected)'}
+                  {t('userManagement.defaultSchool')}
+                  {schools.length > 1 ? ` ${t('userManagement.selectOne')}` : ` ${t('userManagement.autoSelected')}`}
                 </Label>
                 <Select
                   value={watch('default_school_id') || 'none'}
                   onValueChange={(value) => setValue('default_school_id', value === 'none' ? null : value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={schools && schools.length === 1 ? schools[0].schoolName : 'Select school'} />
+                    <SelectValue placeholder={schools && schools.length === 1 ? schools[0].schoolName : t('userManagement.selectSchool')} />
                   </SelectTrigger>
                   <SelectContent>
                     {schools && schools.length > 1 && (
-                      <SelectItem value="none">No Default School</SelectItem>
+                      <SelectItem value="none">{t('userManagement.noDefaultSchool')}</SelectItem>
                     )}
                     {schools?.map(school => (
                       <SelectItem key={school.id} value={school.id}>
@@ -660,12 +662,12 @@ export function UserManagement() {
                 </Select>
                 {schools.length > 1 && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    User will be assigned to the selected school. When they create buildings/rooms, this school will be used automatically.
+                    {t('userManagement.defaultSchoolDescription')}
                   </p>
                 )}
                 {schools.length === 1 && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    Only one school available. User will be automatically assigned to this school.
+                    {t('userManagement.onlyOneSchoolDescription')}
                   </p>
                 )}
               </div>
@@ -674,17 +676,17 @@ export function UserManagement() {
             {staff && staff.length > 0 && (
               <div>
                 <Label htmlFor="staff_id">
-                  Staff Member (Optional)
+                  {t('userManagement.staffMemberOptional')}
                 </Label>
                 <Select
                   value={watch('staff_id') || 'none'}
                   onValueChange={(value) => setValue('staff_id', value === 'none' ? null : value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select staff member" />
+                    <SelectValue placeholder={t('userManagement.selectStaffMember')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No Staff Member</SelectItem>
+                    <SelectItem value="none">{t('userManagement.noStaffMember')}</SelectItem>
                     {staff.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
                         <div className="flex items-center gap-2">
@@ -705,7 +707,7 @@ export function UserManagement() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Link this user to a staff member. The staff member's avatar will be displayed in the user table.
+                  {t('userManagement.staffMemberDescription')}
                 </p>
               </div>
             )}
@@ -724,19 +726,19 @@ export function UserManagement() {
                   )}
                 />
                 <Label htmlFor="schools_access_all">
-                  Allow access to all schools in organization
+                  {t('userManagement.schoolsAccessAll')}
                 </Label>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                If checked, user can access all schools. Otherwise, access is restricted to default school.
+                {t('userManagement.schoolsAccessAllDescription')}
               </p>
             </div>
             <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button type="button" variant="outline" onClick={handleCloseDialog} className="w-full sm:w-auto">
-                Cancel
+                {t('userManagement.cancel')}
               </Button>
               <Button type="submit" disabled={createUser.isPending || updateUser.isPending} className="w-full sm:w-auto">
-                {isEditMode ? 'Update' : 'Create'} User
+                {isEditMode ? t('userManagement.update') : t('userManagement.create')} {t('userManagement.addUser')}
               </Button>
             </DialogFooter>
           </form>
@@ -747,15 +749,15 @@ export function UserManagement() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent className="z-50">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogTitle>{t('userManagement.deleteConfirm')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedUser?.name || selectedUser?.email || 'this user'}? This action cannot be undone.
+              {t('userManagement.deleteConfirmDescription', { name: selectedUser?.name || selectedUser?.email || t('userManagement.addUser') })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('userManagement.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Delete
+              {t('userManagement.deleteUser')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -775,20 +777,20 @@ export function UserManagement() {
           }
         }}>
           <DialogHeader>
-            <DialogTitle>Reset Password</DialogTitle>
+            <DialogTitle>{t('userManagement.resetPasswordConfirm')}</DialogTitle>
             <DialogDescription className="hidden md:block">
-              Enter a new password for {selectedUser?.name || selectedUser?.email || 'this user'}
+              {t('userManagement.resetPasswordDescription', { name: selectedUser?.name || selectedUser?.email || t('userManagement.addUser') })}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="newPassword">New Password</Label>
+              <Label htmlFor="newPassword">{t('userManagement.newPassword')}</Label>
               <Input
                 id="newPassword"
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Minimum 8 characters"
+                placeholder={t('userManagement.passwordPlaceholder')}
                 disabled={resetPassword.isPending}
                 autoFocus
               />
@@ -802,10 +804,10 @@ export function UserManagement() {
               disabled={resetPassword.isPending}
               className="w-full sm:w-auto"
             >
-              Cancel
+              {t('userManagement.cancel')}
             </Button>
             <Button onClick={handleResetPassword} disabled={!newPassword || resetPassword.isPending} className="w-full sm:w-auto">
-              {resetPassword.isPending ? 'Resetting...' : 'Reset Password'}
+              {resetPassword.isPending ? t('userManagement.resetting') : t('userManagement.resetPassword')}
             </Button>
           </DialogFooter>
         </DialogContent>

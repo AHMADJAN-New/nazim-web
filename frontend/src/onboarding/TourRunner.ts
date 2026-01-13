@@ -238,7 +238,7 @@ export class TourRunner {
       // CRITICAL: Wait for step to actually show, with multiple checks
       // Shepherd.js might need time to resolve beforeShowPromise and create DOM elements
       let checkCount = 0;
-      const maxChecks = 20; // Check for up to 2 seconds (20 * 100ms)
+      const maxChecks = 30; // Check for up to 3 seconds (30 * 100ms) - increased for slower renders
       
       const checkStepElement = () => {
         checkCount++;
@@ -246,11 +246,30 @@ export class TourRunner {
         const overlay = document.querySelector('.shepherd-modal-overlay-container') as HTMLElement;
         
         if (stepElement) {
-          // Step element found - ensure visibility
+          // Step element found - ensure visibility and proper positioning
           stepElement.style.display = 'block';
           stepElement.style.visibility = 'visible';
           stepElement.style.opacity = '1';
           stepElement.style.zIndex = '100000';
+          
+          // CRITICAL: Fix offsetParent issue by ensuring element is properly positioned
+          const computedStyle = window.getComputedStyle(stepElement);
+          if (stepElement.offsetParent === null && computedStyle.position === 'static') {
+            // Force positioning if element has no offsetParent
+            stepElement.style.position = 'fixed';
+            // Try to get position from Popper if available
+            const popperInstance = (stepElement as any)._popper;
+            if (popperInstance && popperInstance.state) {
+              const { x, y } = popperInstance.state.rects?.popper || {};
+              if (x !== undefined && y !== undefined) {
+                stepElement.style.left = `${x}px`;
+                stepElement.style.top = `${y}px`;
+              }
+            }
+            if (DEBUG) {
+              console.warn('[TourRunner] Step element had no offsetParent - fixed positioning');
+            }
+          }
           
           // Remove the show listener
           this.shepherdTour?.off('show', showListener);
@@ -260,12 +279,9 @@ export class TourRunner {
               checkCount,
               stepShown,
               stepElementVisible: window.getComputedStyle(stepElement).display !== 'none',
+              hasOffsetParent: stepElement.offsetParent !== null,
+              position: computedStyle.position,
             });
-          }
-          
-          // Ensure it's in the DOM and visible
-          if (stepElement.offsetParent === null) {
-            console.warn('[TourRunner] Step element has no offsetParent - may be hidden');
           }
         } else if (checkCount >= maxChecks) {
           // CRITICAL: If step element not found after max checks, clean up tour state and overlay
@@ -930,6 +946,21 @@ export class TourRunner {
               stepElement.style.opacity = '1';
               stepElement.style.zIndex = '100000';
               
+              // CRITICAL: Fix offsetParent issue for hidden elements
+              const computedStyle = window.getComputedStyle(stepElement);
+              if (stepElement.offsetParent === null && computedStyle.position === 'static') {
+                stepElement.style.position = 'fixed';
+                // Update position from Popper if available
+                const popperInstance = (stepElement as any)._popper;
+                if (popperInstance && popperInstance.state) {
+                  const { x, y } = popperInstance.state.rects?.popper || {};
+                  if (x !== undefined && y !== undefined) {
+                    stepElement.style.left = `${x}px`;
+                    stepElement.style.top = `${y}px`;
+                  }
+                }
+              }
+              
               if (DEBUG) {
                 console.log('[TourRunner] Step element visibility ensured:', {
                   display: stepElement.style.display,
@@ -938,6 +969,8 @@ export class TourRunner {
                   zIndex: stepElement.style.zIndex,
                   computedDisplay: window.getComputedStyle(stepElement).display,
                   computedVisibility: window.getComputedStyle(stepElement).visibility,
+                  hasOffsetParent: stepElement.offsetParent !== null,
+                  position: computedStyle.position,
                 });
               }
             } else if (DEBUG) {
@@ -951,17 +984,24 @@ export class TourRunner {
             message: `Step "${step.id}" shown`,
           });
           
-          // Prevent dialog repositioning after step is shown
-          // But allow repositioning on scroll to keep dialog visible
+          // CRITICAL: Configure Popper.js to keep dialog visible when scrolling
+          // Allow repositioning on scroll to keep dialog visible
           const stepElement = document.querySelector('.shepherd-element');
           if (stepElement) {
             // Keep Popper.js updates enabled but with better configuration
             const popperInstance = (stepElement as any)._popper;
             if (popperInstance && popperInstance.setOptions) {
+              // Check if step is attached to sidebar (allow sidebar scrolling)
+              const attachToSelector = step.attachTo?.selector || '';
+              const isSidebarStep = attachToSelector.includes('sidebar') || attachToSelector.includes('[data-tour="sidebar"]');
+              
               popperInstance.setOptions({
                 modifiers: [
                   ...(popperInstance.options?.modifiers || []).filter((m: any) => 
-                    m.name !== 'eventListeners' && m.name !== 'preventOverflow'
+                    m.name !== 'eventListeners' && 
+                    m.name !== 'preventOverflow' && 
+                    m.name !== 'flip' &&
+                    m.name !== 'offset'
                   ),
                   {
                     name: 'eventListeners',
@@ -969,6 +1009,10 @@ export class TourRunner {
                     options: {
                       scroll: true,
                       resize: true,
+                      // For sidebar steps, also listen to scroll on sidebar container
+                      ...(isSidebarStep ? {
+                        scrollElement: document.querySelector('[data-tour="sidebar"]') || window,
+                      } : {}),
                     },
                   },
                   {
@@ -978,10 +1022,30 @@ export class TourRunner {
                       boundary: 'viewport',
                       padding: 8,
                       rootBoundary: 'viewport',
+                      // For sidebar steps, allow overflow to keep dialog visible
+                      altBoundary: isSidebarStep,
+                    },
+                  },
+                  {
+                    name: 'flip',
+                    enabled: true,
+                    options: {
+                      fallbackPlacements: ['top', 'bottom', 'left', 'right', 'auto'],
+                      padding: 8,
+                    },
+                  },
+                  {
+                    name: 'offset',
+                    enabled: true,
+                    options: {
+                      offset: [0, 8],
                     },
                   },
                 ],
               });
+              
+              // Force update to apply new configuration
+              popperInstance.update();
             }
           }
           

@@ -220,6 +220,33 @@ export const TRANSLATION_KEYS = [
   "academic.subjects.title",
   "academic.subjects.toYear",
   "academic.subjects.weeklyHours",
+  "academic.subjects.step1Title",
+  "academic.subjects.step1Description",
+  "academic.subjects.step1SelectClassMessage",
+  "academic.subjects.step1NoSubjectsMessage",
+  "academic.subjects.step2Title",
+  "academic.subjects.step2Description",
+  "academic.subjects.step2SelectMessage",
+  "academic.subjects.step2SelectDescription",
+  "academic.subjects.createSubjectDialogDescription",
+  "academic.subjects.updateSubjectDialogDescription",
+  "academic.subjects.bulkAssign",
+  "academic.subjects.assignSubject",
+  "academic.subjects.assignSubjectDialogDescription",
+  "academic.subjects.assignToClassTemplateDescription",
+  "academic.subjects.bulkAssignToClassTemplateDescription",
+  "academic.subjects.copySubjectsDialogDescription",
+  "academic.subjects.noClassesForYear",
+  "academic.subjects.selectClassFirst",
+  "academic.subjects.loadingSubjects",
+  "academic.subjects.noSubjectsAvailable",
+  "academic.subjects.noSubjectsInStep1",
+  "academic.subjects.noSubjectsInStep1Message",
+  "academic.subjects.allSubjectsAssigned",
+  "academic.subjects.selectClassFirstMessage",
+  "academic.subjects.useClassRoom",
+  "academic.subjects.leaveEmptyForClassRoom",
+  "academic.subjects.optionalNotes",
   "academic.timetable.day",
   "academic.timetable.days.friday",
   "academic.timetable.days.monday",
@@ -613,6 +640,7 @@ export const TRANSLATION_KEYS = [
   "common.metadata",
   "common.more",
   "common.name",
+  "common.na",
   "common.next",
   "common.no",
   "common.none",
@@ -1265,6 +1293,12 @@ export const TRANSLATION_KEYS = [
   "exams.removeSubjectConfirm",
   "exams.removeSubjectConfirmMessage",
   "exams.reports.errorLoading",
+  "exams.reports.filterSummaryExam",
+  "exams.reports.filterSummaryAcademicYear",
+  "exams.reports.filterSummaryTotalEnrolled",
+  "exams.reports.filterSummaryOverallProgress",
+  "exams.notFound",
+  "exams.noPermissionToViewReports",
   "exams.reportsDescription",
   "exams.results",
   "exams.resultsEntered",
@@ -2348,6 +2382,7 @@ export const TRANSLATION_KEYS = [
   "library.bookTitle",
   "library.borrower",
   "library.cannotUndo",
+  "library.confirmReturn",
   "library.categories",
   "library.category",
   "library.categoryCodeMaxLength",
@@ -2376,6 +2411,7 @@ export const TRANSLATION_KEYS = [
   "library.description",
   "library.details",
   "library.distribution",
+  "library.filters",
   "library.dueDate",
   "library.dueInNext7Days",
   "library.dueSoonBooks",
@@ -2394,6 +2430,9 @@ export const TRANSLATION_KEYS = [
   "library.libraryReports",
   "library.loanDate",
   "library.loanHistory",
+  "library.loanHistoryTab",
+  "library.loanHistoryDescription",
+  "library.noLoansInRange",
   "library.loans",
   "library.manageBookCategories",
   "library.manageLoans",
@@ -2401,9 +2440,13 @@ export const TRANSLATION_KEYS = [
   "library.monthlyLoanTrends",
   "library.moreCategories",
   "library.mostBorrowedBooks",
+  "library.mostBorrowedTab",
+  "library.mostBorrowedDescription",
+  "library.mostBorrowedEmpty",
   "library.name",
   "library.namePlaceholder",
   "library.noActiveLoans",
+  "library.noLoansMatchFilters",
   "library.noBooksDueSoon",
   "library.noBooksMessage",
   "library.noCategoriesAvailable",
@@ -2412,6 +2455,8 @@ export const TRANSLATION_KEYS = [
   "library.onLoanLabel",
   "library.order",
   "library.overdue",
+  "library.overdueBooksTab",
+  "library.overdueBooksDescription",
   "library.overview",
   "library.perPage",
   "library.price",
@@ -2421,12 +2466,17 @@ export const TRANSLATION_KEYS = [
   "library.returned",
   "library.returning",
   "library.returnLoan",
+  "library.returnBookTitle",
+  "library.returnBookConfirm",
   "library.saveBook",
   "library.searchBookPlaceholder",
+  "library.searchLoansPlaceholder",
   "library.searchCategories",
   "library.searchStudents",
+  "library.searchStaff",
   "library.selectCategory",
   "library.selectStudent",
+  "library.selectStaff",
   "library.showing",
   "library.status",
   "library.subtitle",
@@ -2450,6 +2500,18 @@ export const TRANSLATION_KEYS = [
   "library.viewFullReport",
   "library.volume",
   "library.volumePlaceholder",
+  "library.booksReportTab",
+  "library.totalCategories",
+  "library.uniqueCategories",
+  "library.sumOfAllBookPrices",
+  "library.priceTimesTotalCopies",
+  "library.averagePrice",
+  "library.perBook",
+  "library.completeInventoryDescription",
+  "library.exportCSV",
+  "library.searchBooksPlaceholder",
+  "library.noBooksMatchingFilters",
+  "library.noBooksAvailable",
   "maintenance.affectedServices",
   "maintenance.autoRefresh",
   "maintenance.defaultMessage",
@@ -4550,6 +4612,45 @@ export const TRANSLATION_KEYS = [
       userUpdateFailed: string;
       userUpdated: string;
     };
+    description: string;
+    createEvent: string;
+    searchPlaceholder: string;
+    allStatuses: string;
+    noEventsFound: string;
+    createFirstEvent: string;
+    eventTypes: {
+      title: string;
+      addEventType: string;
+      name: string;
+      description: string;
+      status: string;
+      actions: string;
+      active: string;
+      inactive: string;
+      fields: string;
+      noEventTypesFound: string;
+      createFirstEventType: string;
+      deleteEventType: string;
+      deleteConfirm: string;
+      deleteConfirmDescription: string;
+      cancel: string;
+      deleting: string;
+      deleteButton: string;
+      editEventType: string;
+      createEventType: string;
+      nameLabel: string;
+      namePlaceholder: string;
+      schoolLabel: string;
+      selectSchool: string;
+      descriptionLabel: string;
+      descriptionPlaceholder: string;
+      activeLabel: string;
+      activeDescription: string;
+      cancelButton: string;
+      saving: string;
+      updateButton: string;
+      createButton: string;
+    };
   };
   subjects: {
     noSubjects: string;
@@ -5072,6 +5173,23 @@ export const TRANSLATION_KEYS = [
     searchBySender: string;
     securityLevel: string;
     department: string;
+    category: string;
+    letterType: string;
+    letterhead: string;
+    layout: string;
+    createTemplate: string;
+    templatesTitle: string;
+    templatesDescription: string;
+    templatesSearchPlaceholder: string;
+    templatesNoTemplates: string;
+    createLetterhead: string;
+    letterheadsTitle: string;
+    letterheadsDescription: string;
+    letterheadsSearchPlaceholder: string;
+    letterheadsNoLetterheads: string;
+    position: string;
+    defaultForLayout: string;
+    livePreview: string;
     outgoingDocuments: string;
     outgoingDocumentsDescription: string;
     recipientType: string;
@@ -5083,6 +5201,75 @@ export const TRANSLATION_KEYS = [
     archiveSearch: string;
     archiveSearchDescription: string;
     searchPlaceholder: string;
+    documents: string;
+    tableHeaders: {
+      number: string;
+      subject: string;
+      description: string;
+      sender: string;
+      recipient: string;
+      externalDoc: string;
+      pages: string;
+      security: string;
+      department: string;
+      status: string;
+      received: string;
+      issued: string;
+      actions: string;
+    };
+    loadingDocuments: string;
+    noDocumentsFound: string;
+    showingDocuments: string;
+    page: string;
+    pages: string;
+    forms: {
+      incoming: {
+        title: string;
+        description: string;
+        basicInfo: string;
+        academicYear: string;
+        receivedDate: string;
+        subject: string;
+        status: string;
+        securityLevel: string;
+        senderInfo: string;
+        senderName: string;
+        senderOrganization: string;
+        senderAddress: string;
+        content: string;
+        contentLabel: string;
+        contentPlaceholder: string;
+        pagesCount: string;
+        attachmentsCount: string;
+        documentNumber: string;
+        manualNumber: string;
+        externalDocNumber: string;
+        externalDocDate: string;
+        routingDepartment: string;
+        notes: string;
+      };
+      outgoing: {
+        title: string;
+        description: string;
+        basicInfo: string;
+        academicYear: string;
+        issueDate: string;
+        subject: string;
+        recipientType: string;
+        status: string;
+        securityLevel: string;
+        content: string;
+        contentLabel: string;
+        contentPlaceholder: string;
+        pagesCount: string;
+        attachmentsCount: string;
+        documentNumber: string;
+        manualNumber: string;
+        externalDocNumber: string;
+        externalDocDate: string;
+        notes: string;
+      };
+    };
     issueLetter: {
       tabs: {
         issue: string;
@@ -5163,6 +5350,19 @@ export const TRANSLATION_KEYS = [
       recipient_info: string;
       search_fields: string;
       select_field: string;
+    };
+    dashboard: {
+      title: string;
+      description: string;
+      incomingThisWeek: string;
+      incomingThisMonth: string;
+      outgoingThisWeek: string;
+      outgoingThisMonth: string;
+      pendingRoutedDocuments: string;
+      confidentialAndHigher: string;
+      week: string;
+      month: string;
+      manageHint: string;
     };
   };
 
@@ -6953,6 +7153,17 @@ export const TRANSLATION_KEYS = [
     assignToNewCourse: string;
     manageEnrollments: string;
     fatherName: string;
+    courseCertificatesDescription: string;
+    totalCertificates: string;
+    issuedCertificates: string;
+    filterByCourseOrSearch: string;
+    searchPlaceholderCertificates: string;
+    noCertificatesIssued: string;
+    noCertificatesFound: string;
+    certificateNumber: string;
+    issuedDate: string;
+    previewCertificate: string;
+    downloadPdf: string;
     studentName: string;
     regDate: string;
     failed: string;
@@ -7833,18 +8044,34 @@ export const TRANSLATION_KEYS = [
     fullName: string;
     fullNameRequired: string;
     fullNameMaxLength: string;
+    fullNamePlaceholder: string;
     email: string;
     emailRequired: string;
+    emailPlaceholder: string;
     invalidEmail: string;
     password: string;
     passwordRequired: string;
     passwordMinLength: string;
+    passwordPlaceholder: string;
     role: string;
     roleRequired: string;
+    selectRole: string;
     defaultSchool: string;
+    selectOne: string;
+    autoSelected: string;
+    selectSchool: string;
+    noDefaultSchool: string;
+    defaultSchoolDescription: string;
+    onlyOneSchoolDescription: string;
     staffMember: string;
+    staffMemberOptional: string;
+    selectStaffMember: string;
+    noStaffMember: string;
+    staffMemberDescription: string;
     schoolsAccessAll: string;
+    schoolsAccessAllDescription: string;
     phone: string;
+    phonePlaceholder: string;
     searchPlaceholder: string;
     noUsersFound: string;
     noUsersMessage: string;
@@ -7852,14 +8079,36 @@ export const TRANSLATION_KEYS = [
     userUpdated: string;
     userDeleted: string;
     deleteConfirm: string;
+    deleteConfirmDescription: string;
     resetPassword: string;
     resetPasswordConfirm: string;
+    resetPasswordDescription: string;
+    resetting: string;
     newPassword: string;
     passwordReset: string;
     active: string;
     inactive: string;
     allRoles: string;
     allStatus: string;
+    allStatuses: string;
+    status: string;
+    name: string;
+    actions: string;
+    noName: string;
+    noEmail: string;
+    na: string;
+    updateUserInformation: string;
+    createNewUserAccount: string;
+    createUser: string;
+    create: string;
+    update: string;
+    cancel: string;
+    exportCsv: string;
+    totalUsers: string;
+    activeUsers: string;
+    inactiveUsers: string;
+    roles: string;
+    loadingUsers: string;
   };
 
   // Certificate Templates
@@ -7891,7 +8140,45 @@ export const TRANSLATION_KEYS = [
     noTemplatesFound: string;
     certificateNumber: string;
     description: string;
-  };
+    editTemplate: string;
+    createTemplate: string;
+    templateNameRequired: string;
+    templateNamePlaceholder: string;
+    courseOptional: string;
+    selectCourseOptional: string;
+    noneGeneralTemplate: string;
+    assignTemplateToCourse: string;
+    backgroundImage: string;
+    noFileChosen: string;
+    currentImageKept: string;
+    descriptionPlaceholder: string;
+    layoutSettings: string;
+    fontSize: string;
+    fontFamily: string;
+    selectFontFamily: string;
+    fontFamilyHint: string;
+    textColor: string;
+    rtlForPashtoArabic: string;
+    setAsDefault: string;
+    active: string;
+    saving: string;
+    saveTemplate: string;
+    editLayoutTitle: string;
+    templates: string;
+    noTemplatesYet: string;
+    createFirstTemplate: string;
+    background: string;
+    status: string;
+    created: string;
+    default: string;
+    yes: string;
+    none: string;
+    inactive: string;
+    editLayout: string;
+    deleteTemplate: string;
+    deleteTemplateConfirm: string;
+    cancel: string;
+    delete: string;
 
   // ID Cards
   idCards: {
@@ -8474,6 +8761,7 @@ export const TRANSLATION_KEYS = [
     noUsersFound: string;
     noName: string;
     noEmail: string;
+    user: string;
     managePermissionsDialogTitle: string;
     managePermissionsDialogDescription: string;
     loadingPermissions: string;
@@ -8499,6 +8787,13 @@ export const TRANSLATION_KEYS = [
     removeRoleConfirm: string;
     failedToAssignRole: string;
     failedToRemoveRole: string;
+    roleStaff: string;
+    roleAdmin: string;
+    roleTeacher: string;
+    roleAccountant: string;
+    roleLibrarian: string;
+    roleHostelManager: string;
+    roleAssetManager: string;
   };
 
   // Report Templates Management
@@ -9694,6 +9989,26 @@ export const TRANSLATION_KEYS = [
     totalAccounts: string;
     monthlyExpenses: string;
     reverse: string;
+    vsLastMonth: string;
+    activeDonorsText: string;
+    comparedToLastMonth: string;
+    totalIncomeDistribution: string;
+    last6Months: string;
+    trendingUpByThisMonth: string;
+    showingDataFromLast6Months: string;
+    summary: string;
+    dataFromTo: string;
+    noExpensesData: string;
+    cashAccount: string;
+    fundAccount: string;
+    includeAssetsAndBooks: string;
+    totalLibraryBooksValue: string;
+    viewLibraryBooks: string;
+    libraryBooks: string;
+    libraryBooksBreakdown: string;
+    libraryBooksBreakdownDescription: string;
+    libraryBooksByAccount: string;
+    libraryBooksByCurrency: string;
     entryDetails: string;
     viewEntryDetails: string;
     entryInformation: string;
@@ -9889,6 +10204,7 @@ export const TRANSLATION_KEYS = [
     entered: string;
     examTimetable: string;
     examTimetableDescription: string;
+    examTimetables: string;
     failed: string;
     fatherName: string;
     filterByClass: string;
@@ -10105,6 +10421,55 @@ export const TRANSLATION_KEYS = [
       draft: string;
       in_progress: string;
       scheduled: string;
+    };
+    documents: {
+      title: string;
+      description: string;
+      uploadDocument: string;
+      upload: string;
+      filter: string;
+      exam: string;
+      allExams: string;
+      documentType: string;
+      allTypes: string;
+      search: string;
+      searchPlaceholder: string;
+      documents: string;
+      noDocumentsFound: string;
+      uploadDocumentsToGetStarted: string;
+      document: string;
+      type: string;
+      size: string;
+      uploaded: string;
+      actions: string;
+      download: string;
+      delete: string;
+      deleteDocument: string;
+      deleteConfirmMessage: string;
+      cancel: string;
+      selectExam: string;
+      searchExamsPlaceholder: string;
+      noExamsFound: string;
+      tryAdjustingSearch: string;
+      examLabel: string;
+      other: string;
+      questionPaper: string;
+      answerKey: string;
+      instruction: string;
+      result: string;
+      gradeSheet: string;
+      unknownExam: string;
+      uploading: string;
+      uploadNewDocument: string;
+      titleLabel: string;
+      titlePlaceholder: string;
+      descriptionLabel: string;
+      descriptionPlaceholder: string;
+      fileLabel: string;
+      selected: string;
+      noDocumentsYet: string;
+      documentsForExam: string;
+      manageDocumentsDescription: string;
     };
   };
 
@@ -10623,6 +10988,7 @@ export const TRANSLATION_KEYS = [
     templateFileHelp: string;
     totalPapers: string;
     useDefaultTemplate: string;
+    templateFiles: string;
   };
 
   // Exam Paper Preview

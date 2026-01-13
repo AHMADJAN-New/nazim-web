@@ -419,8 +419,8 @@ class HelpCenterArticleSeeder extends Seeder
             [
                 'category_slug' => 'creating-events',
                 'slug' => 'how-to-create-event',
-                'title' => 'د پیښې د جوړولو لارښود',
-                'excerpt' => 'د نوی پیښې د جوړولو، د معلوماتو د داخلولو او د تنظیماتو لارښود',
+                'title' => 'د جلسې/ غونډې د جوړولو لارښود',
+                'excerpt' => 'د نوی جلسې/ غونډې د جوړولو، د معلوماتو د داخلولو او د تنظیماتو لارښود',
                 'content' => $this->getCreateEventContent(),
                 'is_featured' => true,
                 'order' => 1,

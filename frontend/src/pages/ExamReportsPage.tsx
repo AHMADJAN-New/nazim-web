@@ -99,7 +99,7 @@ export function ExamReportsPage() {
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-lg font-semibold">{t('events.notFound') || 'Exam not found'}</h2>
+        <h2 className="text-lg font-semibold">{t('exams.notFound') || t('events.notFound') || 'Exam not found'}</h2>
         <Button variant="outline" onClick={() => navigate('/exams')} className="mt-4">
           <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
           {t('exams.backToList') || 'Back to Exams'}
@@ -112,7 +112,7 @@ export function ExamReportsPage() {
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-lg font-semibold">{t('events.noPermission') || 'You do not have permission to view reports'}</h2>
+        <h2 className="text-lg font-semibold">{t('exams.noPermissionToViewReports') || t('events.noPermission') || 'You do not have permission to view reports'}</h2>
         <Button variant="outline" onClick={() => navigate('/exams')} className="mt-4">
           <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
           {t('exams.backToList') || 'Back to Exams'}
@@ -129,7 +129,7 @@ export function ExamReportsPage() {
           {examIdFromParams && (
             <Button variant="outline" size="sm" onClick={() => navigate('/exams')}>
               <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-              Back
+              {t('common.back') || 'Back'}
             </Button>
           )}
           <div>
@@ -158,7 +158,7 @@ export function ExamReportsPage() {
               </Select>
             </div>
           )}
-          <Badge variant="outline">{exam.academicYear?.name || 'N/A'}</Badge>
+          <Badge variant="outline">{exam.academicYear?.name || t('common.na') || 'N/A'}</Badge>
         </div>
       </div>
 
@@ -297,9 +297,9 @@ export function ExamReportsPage() {
                       }))}
                       buildFiltersSummary={() => {
                         const parts: string[] = [];
-                        if (exam?.name) parts.push(`Exam: ${exam.name}`);
-                        if (exam?.academicYear?.name) parts.push(`Academic Year: ${exam.academicYear.name}`);
-                        parts.push(`Total Enrolled: ${enrollmentStats.totalEnrolled} / ${enrollmentStats.totalAvailable}`);
+                        if (exam?.name) parts.push(`${t('exams.reports.filterSummaryExam') || 'Exam'}: ${exam.name}`);
+                        if (exam?.academicYear?.name) parts.push(`${t('exams.reports.filterSummaryAcademicYear') || 'Academic Year'}: ${exam.academicYear.name}`);
+                        parts.push(`${t('exams.reports.filterSummaryTotalEnrolled') || 'Total Enrolled'}: ${enrollmentStats.totalEnrolled} / ${enrollmentStats.totalAvailable}`);
                         return parts.join(' | ');
                       }}
                       schoolId={profile?.default_school_id}
@@ -399,9 +399,9 @@ export function ExamReportsPage() {
                       }))}
                       buildFiltersSummary={() => {
                         const parts: string[] = [];
-                        if (exam?.name) parts.push(`Exam: ${exam.name}`);
-                        if (exam?.academicYear?.name) parts.push(`Academic Year: ${exam.academicYear.name}`);
-                        parts.push(`Overall Progress: ${marksProgress.totalEntered} / ${marksProgress.totalExpected} (${(marksProgress.overallPercentage ?? 0).toFixed(0)}%)`);
+                        if (exam?.name) parts.push(`${t('exams.reports.filterSummaryExam') || 'Exam'}: ${exam.name}`);
+                        if (exam?.academicYear?.name) parts.push(`${t('exams.reports.filterSummaryAcademicYear') || 'Academic Year'}: ${exam.academicYear.name}`);
+                        parts.push(`${t('exams.reports.filterSummaryOverallProgress') || 'Overall Progress'}: ${marksProgress.totalEntered} / ${marksProgress.totalExpected} (${(marksProgress.overallPercentage ?? 0).toFixed(0)}%)`);
                         return parts.join(' | ');
                       }}
                       schoolId={profile?.default_school_id}

@@ -948,7 +948,7 @@ export function TimetableGenerator() {
 									<div className="w-full overflow-x-auto max-w-full">
 										<div className="inline-block min-w-full align-middle">
 											{headerSlots.length > 0 ? (
-												<table className="min-w-full border">
+												<table className="min-w-full border text-center">
 													<thead>
 														<tr className="bg-primary text-primary-foreground">
 															<th className="p-2 border">{t('timetable.teacher') || 'Teacher'}</th>
@@ -1010,7 +1010,7 @@ export function TimetableGenerator() {
 							<TabsContent value="classes" className="mt-4">
 								<div className="w-full overflow-x-auto max-w-full">
 									<div className="inline-block min-w-full align-middle">
-										<table className="min-w-full border">
+										<table className="min-w-full border text-center">
 										<thead>
 											<tr className="bg-primary text-primary-foreground">
 												<th className="p-2 border">{t('search.class') || 'Class'}</th>

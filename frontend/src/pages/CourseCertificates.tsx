@@ -100,8 +100,8 @@ export default function CourseCertificates() {
     { key: 'father_name', label: t('examReports.fatherName') || 'Father Name' },
     { key: 'admission_no', label: t('examReports.admissionNo') || 'Admission No' },
     { key: 'course_name', label: t('courses.courseName') || 'Course' },
-    { key: 'certificate_number', label: 'Certificate #' },
-    { key: 'issued_date', label: 'Issued Date' },
+    { key: 'certificate_number', label: t('courses.certificateNumber') || 'Certificate #' },
+    { key: 'issued_date', label: t('courses.issuedDate') || 'Issued Date' },
   ], [t]);
 
   // Transform data for report
@@ -135,14 +135,14 @@ export default function CourseCertificates() {
         <CardHeader>
           <CardTitle className="text-2xl">{t('courses.courseCertificates')}</CardTitle>
           <p className="text-sm text-muted-foreground mt-1 hidden md:block">
-            View, preview, and download certificates for completed course students.
+            {t('courses.courseCertificatesDescription') || 'View, preview, and download certificates for completed course students.'}
           </p>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Certificates</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('courses.totalCertificates') || 'Total Certificates'}</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
             <div className="text-2xl font-bold">{summary.total}</div>
@@ -170,9 +170,9 @@ export default function CourseCertificates() {
         <CardHeader className="space-y-1 pb-3">
           <div className="flex items-start justify-between">
             <div>
-              <CardTitle className="text-lg font-semibold">Issued Certificates</CardTitle>
+              <CardTitle className="text-lg font-semibold">{t('courses.issuedCertificates') || 'Issued Certificates'}</CardTitle>
               <p className="text-sm text-muted-foreground hidden md:block">
-                Filter by course or search by name, admission number, or certificate number.
+                {t('courses.filterByCourseOrSearch') || 'Filter by course or search by name, admission number, or certificate number.'}
               </p>
             </div>
             <ReportExportButtons
@@ -211,7 +211,7 @@ export default function CourseCertificates() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Name, admission #, or course"
+                  placeholder={t('courses.searchPlaceholderCertificates') || 'Name, admission #, or course'}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9"
@@ -229,8 +229,8 @@ export default function CourseCertificates() {
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
               <p className="text-muted-foreground">
                 {studentsWithCertificates.length === 0
-                  ? 'No certificates have been issued yet.'
-                  : 'No certificates found matching your filters.'}
+                  ? (t('courses.noCertificatesIssued') || 'No certificates have been issued yet.')
+                  : (t('courses.noCertificatesFound') || 'No certificates found matching your filters.')}
               </p>
             </div>
           ) : (
@@ -242,8 +242,8 @@ export default function CourseCertificates() {
                     <TableHead>{t('examReports.fatherName')}</TableHead>
                     <TableHead>{t('examReports.admissionNo')}</TableHead>
                     <TableHead className="hidden lg:table-cell">{t('courses.courseName')}</TableHead>
-                    <TableHead className="hidden md:table-cell">Certificate #</TableHead>
-                    <TableHead className="hidden md:table-cell">Issued Date</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('courses.certificateNumber') || 'Certificate #'}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('courses.issuedDate') || 'Issued Date'}</TableHead>
                     <TableHead className="text-right w-[100px]">{t('events.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -282,7 +282,7 @@ export default function CourseCertificates() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleViewCertificate(student)}
-                            title="Preview Certificate"
+                            title={t('courses.previewCertificate') || 'Preview Certificate'}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -290,7 +290,7 @@ export default function CourseCertificates() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDownloadCertificate(student)}
-                            title="Download PDF"
+                            title={t('courses.downloadPdf') || 'Download PDF'}
                           >
                             <Download className="h-4 w-4" />
                           </Button>

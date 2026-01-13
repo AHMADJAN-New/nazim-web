@@ -53,6 +53,7 @@ import {
   useDownloadExamDocument,
   ExamDocument,
 } from '@/hooks/useExamDocuments';
+import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
 
 interface ExamDocumentsDialogProps {
@@ -64,13 +65,14 @@ interface ExamDocumentsDialogProps {
   onClose: () => void;
 }
 
+// Document types will be translated in component using t() function
 const DOCUMENT_TYPES = [
-  { value: 'question_paper', label: 'Question Paper' },
-  { value: 'answer_key', label: 'Answer Key' },
-  { value: 'instruction', label: 'Instruction' },
-  { value: 'result', label: 'Result' },
-  { value: 'grade_sheet', label: 'Grade Sheet' },
-  { value: 'other', label: 'Other' },
+  { value: 'question_paper' },
+  { value: 'answer_key' },
+  { value: 'instruction' },
+  { value: 'result' },
+  { value: 'grade_sheet' },
+  { value: 'other' },
 ];
 
 export function ExamDocumentsDialog({
@@ -81,6 +83,7 @@ export function ExamDocumentsDialog({
   isOpen,
   onClose,
 }: ExamDocumentsDialogProps) {
+  const { t } = useLanguage();
   const [isUploadMode, setIsUploadMode] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
@@ -168,10 +171,10 @@ export function ExamDocumentsDialog({
         <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>
-              Documents - {examName}
+              {t('exams.documents.documents')} - {examName}
             </DialogTitle>
             <DialogDescription>
-              Manage documents for this exam. Upload, view, and delete exam-related files.
+              {t('exams.documents.manageDocumentsDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -179,19 +182,19 @@ export function ExamDocumentsDialog({
             {isUploadMode ? (
               /* Upload Form */
               <div className="space-y-4 p-4 border rounded-lg">
-                <h3 className="font-medium">Upload New Document</h3>
+                <h3 className="font-medium">{t('exams.documents.uploadNewDocument')}</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Title *</Label>
+                    <Label>{t('exams.documents.titleLabel')}</Label>
                     <Input
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Document title..."
+                      placeholder={t('exams.documents.titlePlaceholder')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Document Type</Label>
+                    <Label>{t('exams.documents.documentType')}</Label>
                     <Select value={documentType} onValueChange={setDocumentType}>
                       <SelectTrigger>
                         <SelectValue />
@@ -199,7 +202,7 @@ export function ExamDocumentsDialog({
                       <SelectContent>
                         {DOCUMENT_TYPES.map((type) => (
                           <SelectItem key={type.value} value={type.value}>
-                            {type.label}
+                            {t(`exams.documents.${type.value}`)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -208,17 +211,17 @@ export function ExamDocumentsDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>{t('exams.documents.descriptionLabel')}</Label>
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Optional description..."
+                    placeholder={t('exams.documents.descriptionPlaceholder')}
                     rows={2}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>File *</Label>
+                  <Label>{t('exams.documents.fileLabel')}</Label>
                   <Input
                     ref={fileInputRef}
                     type="file"
@@ -226,7 +229,7 @@ export function ExamDocumentsDialog({
                   />
                   {selectedFile && (
                     <p className="text-sm text-muted-foreground">
-                      Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
+                      {t('exams.documents.selected')} {selectedFile.name} ({formatFileSize(selectedFile.size)})
                     </p>
                   )}
                 </div>
@@ -239,7 +242,7 @@ export function ExamDocumentsDialog({
                       setIsUploadMode(false);
                     }}
                   >
-                    Cancel
+                    {t('exams.documents.cancel')}
                   </Button>
                   <Button
                     onClick={handleUpload}
@@ -248,12 +251,12 @@ export function ExamDocumentsDialog({
                     {createDocument.isPending ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Uploading...
+                        {t('exams.documents.uploading')}
                       </>
                     ) : (
                       <>
                         <Upload className="h-4 w-4 mr-2" />
-                        Upload
+                        {t('exams.documents.upload')}
                       </>
                     )}
                   </Button>
@@ -265,7 +268,7 @@ export function ExamDocumentsDialog({
                 <div className="flex justify-end mb-4">
                   <Button onClick={() => setIsUploadMode(true)}>
                     <Upload className="h-4 w-4 mr-2" />
-                    Upload Document
+                    {t('exams.documents.uploadDocument')}
                   </Button>
                 </div>
 
@@ -277,17 +280,17 @@ export function ExamDocumentsDialog({
                   ) : documents.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
                       <FileText className="h-8 w-8 mb-2" />
-                      <p>No documents yet</p>
+                      <p>{t('exams.documents.noDocumentsYet')}</p>
                     </div>
                   ) : (
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Title</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Size</TableHead>
-                          <TableHead>Uploaded</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableHead>{t('exams.documents.titleLabel').replace(' *', '')}</TableHead>
+                          <TableHead>{t('exams.documents.type')}</TableHead>
+                          <TableHead>{t('exams.documents.size')}</TableHead>
+                          <TableHead>{t('exams.documents.uploaded')}</TableHead>
+                          <TableHead className="text-right">{t('exams.documents.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -308,7 +311,7 @@ export function ExamDocumentsDialog({
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline">
-                                {DOCUMENT_TYPES.find((t) => t.value === doc.document_type)?.label || doc.document_type}
+                                {t(`exams.documents.${doc.document_type}`) || doc.document_type}
                               </Badge>
                             </TableCell>
                             <TableCell>{formatFileSize(doc.file_size)}</TableCell>
@@ -353,14 +356,14 @@ export function ExamDocumentsDialog({
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Document</AlertDialogTitle>
+            <AlertDialogTitle>{t('exams.documents.deleteDocument')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this document? This action cannot be undone.
+              {t('exams.documents.deleteConfirmMessage')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t('exams.documents.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t('exams.documents.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

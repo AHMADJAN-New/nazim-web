@@ -183,19 +183,19 @@ export default function DepartmentsPage() {
   // Build filters summary
   const buildFiltersSummary = () => {
     if (searchQuery) {
-      return `Search: ${searchQuery}`;
+      return `${t('dms.departmentsPage.filterSummary.search')}: ${searchQuery}`;
     }
-    return 'All departments';
+    return t('dms.departmentsPage.filterSummary.allDepartments');
   };
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
       <PageHeader
-        title="Departments & Routing"
-        description="Manage departments and document routing"
+        title={t('dms.departmentsPage.title')}
+        description={t('dms.departmentsPage.description')}
         icon={<Building className="h-5 w-5" />}
         primaryAction={{
-          label: t('events.add') || 'Add Department',
+          label: t('dms.departmentsPage.addDepartment'),
           onClick: () => setIsCreateDialogOpen(true),
           icon: <Plus className="h-4 w-4" />,
         }}
@@ -206,7 +206,7 @@ export default function DepartmentsPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Departments
+              {t('dms.departmentsPage.totalDepartments')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -216,23 +216,23 @@ export default function DepartmentsPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Documents Assigned
+              {t('dms.departmentsPage.documentsAssigned')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalIncoming}</div>
-            <p className="text-xs text-muted-foreground mt-1">Incoming documents</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('dms.departmentsPage.incomingDocuments')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Unassigned Documents
+              {t('dms.departmentsPage.unassignedDocuments')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground mt-1">Check incoming documents</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('dms.departmentsPage.checkIncomingDocuments')}</p>
           </CardContent>
         </Card>
       </div>
@@ -242,7 +242,7 @@ export default function DepartmentsPage() {
           <div className="relative flex-1 min-w-[220px]">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={t('events.search') || 'Search departments...'}
+              placeholder={t('dms.departmentsPage.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8"
@@ -251,12 +251,12 @@ export default function DepartmentsPage() {
           <ReportExportButtons
             data={departmentsExportData}
             columns={[
-              { key: 'name', label: 'Department Name' },
-              { key: 'documents_count', label: 'Documents' },
-              { key: 'created_at', label: 'Created' },
+              { key: 'name', label: t('dms.departmentsPage.departmentName') },
+              { key: 'documents_count', label: t('dms.departmentsPage.documents') },
+              { key: 'created_at', label: t('dms.departmentsPage.created') },
             ]}
             reportKey="dms_departments"
-            title="DMS Departments Report"
+            title={t('dms.departmentsPage.title')}
             transformData={(data) => data}
             buildFiltersSummary={buildFiltersSummary}
             templateType="dms"
@@ -269,9 +269,9 @@ export default function DepartmentsPage() {
       {/* Departments Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Departments</CardTitle>
+          <CardTitle>{t('dms.departmentsPage.departments')}</CardTitle>
           <CardDescription>
-            Manage your organization's departments and view document assignments
+            {t('dms.departmentsPage.departmentsDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -283,7 +283,7 @@ export default function DepartmentsPage() {
             <div className="text-center py-8">
               <Building className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
-                {searchQuery ? 'No departments found matching your search' : 'No departments yet'}
+                {searchQuery ? t('dms.departmentsPage.noDepartmentsFound') : t('dms.departmentsPage.noDepartmentsYet')}
               </p>
               {!searchQuery && (
                 <Button
@@ -292,7 +292,7 @@ export default function DepartmentsPage() {
                   variant="outline"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  {t('events.add') || 'Create First Department'}
+                  {t('dms.departmentsPage.createFirstDepartment')}
                 </Button>
               )}
             </div>
@@ -301,10 +301,10 @@ export default function DepartmentsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Department Name</TableHead>
-                    <TableHead>Documents</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('dms.departmentsPage.departmentName')}</TableHead>
+                    <TableHead>{t('dms.departmentsPage.documents')}</TableHead>
+                    <TableHead>{t('dms.departmentsPage.created')}</TableHead>
+                    <TableHead className="text-right">{t('dms.departmentsPage.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -317,7 +317,7 @@ export default function DepartmentsPage() {
                         <TableCell>
                           <Badge variant={docCount > 0 ? "default" : "secondary"}>
                             <FileText className="h-3 w-3 mr-1" />
-                            {docCount} {docCount === 1 ? 'document' : 'documents'}
+                            {docCount} {docCount === 1 ? t('dms.departmentsPage.document') : t('dms.departmentsPage.documentsPlural')}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
@@ -358,23 +358,23 @@ export default function DepartmentsPage() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Department</DialogTitle>
+            <DialogTitle>{t('dms.departmentsPage.createDialog.title')}</DialogTitle>
             <DialogDescription>
-              Add a new department to your organization for document routing
+              {t('dms.departmentsPage.createDialog.description')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="create-name">Department Name</Label>
+              <Label htmlFor="create-name">{t('dms.departmentsPage.createDialog.nameLabel')}</Label>
               <Input
                 id="create-name"
-                placeholder="e.g., Admin, Finance, Exams, Library"
+                placeholder={t('dms.departmentsPage.createDialog.namePlaceholder')}
                 value={form.name}
                 onChange={(e) => setForm({ name: e.target.value })}
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Examples: Admin, Finance, Exams, Hostel, Library, IT, HR
+                {t('dms.departmentsPage.createDialog.nameHint')}
               </p>
             </div>
             <DialogFooter>
@@ -386,12 +386,12 @@ export default function DepartmentsPage() {
                   setForm({ name: "" });
                 }}
               >
-                {t('events.cancel') || 'Cancel'}
+                {t('dms.departmentsPage.createDialog.cancel')}
               </Button>
               <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending
-                  ? t('events.creating') || 'Creating...'
-                  : t('events.create') || 'Create Department'}
+                  ? t('dms.departmentsPage.createDialog.creating')
+                  : t('dms.departmentsPage.createDialog.create')}
               </Button>
             </DialogFooter>
           </form>
@@ -402,17 +402,17 @@ export default function DepartmentsPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Department</DialogTitle>
+            <DialogTitle>{t('dms.departmentsPage.editDialog.title')}</DialogTitle>
             <DialogDescription>
-              Update the department name
+              {t('dms.departmentsPage.editDialog.description')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdate} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Department Name</Label>
+              <Label htmlFor="edit-name">{t('dms.departmentsPage.editDialog.nameLabel') || t('dms.departmentsPage.createDialog.nameLabel')}</Label>
               <Input
                 id="edit-name"
-                placeholder="e.g., Admin, Finance, Exams, Library"
+                placeholder={t('dms.departmentsPage.createDialog.namePlaceholder')}
                 value={form.name}
                 onChange={(e) => setForm({ name: e.target.value })}
                 required
@@ -428,12 +428,12 @@ export default function DepartmentsPage() {
                   setForm({ name: "" });
                 }}
               >
-                {t('events.cancel') || 'Cancel'}
+                {t('dms.departmentsPage.createDialog.cancel')}
               </Button>
               <Button type="submit" disabled={updateMutation.isPending}>
                 {updateMutation.isPending
-                  ? t('events.updating') || 'Updating...'
-                  : t('events.update') || 'Update Department'}
+                  ? t('dms.departmentsPage.editDialog.updating')
+                  : t('dms.departmentsPage.editDialog.update')}
               </Button>
             </DialogFooter>
           </form>
@@ -444,18 +444,18 @@ export default function DepartmentsPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Department</AlertDialogTitle>
+            <AlertDialogTitle>{t('dms.departmentsPage.deleteDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deletingDepartment?.name}"? This action cannot be undone.
+              {t('dms.departmentsPage.deleteDialog.description').replace('{name}', deletingDepartment?.name || '')}
               {statsMap.get(deletingDepartment?.id || '')?.incoming_count ? (
                 <span className="block mt-2 text-destructive font-medium">
-                  This department has {statsMap.get(deletingDepartment?.id || '')?.incoming_count} assigned document(s) and cannot be deleted.
+                  {t('dms.departmentsPage.deleteDialog.hasDocuments').replace('{count}', String(statsMap.get(deletingDepartment?.id || '')?.incoming_count || 0))}
                 </span>
               ) : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('dms.departmentsPage.deleteDialog.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               disabled={
@@ -464,7 +464,7 @@ export default function DepartmentsPage() {
               }
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+              {deleteMutation.isPending ? t('dms.departmentsPage.deleteDialog.deleting') : t('dms.departmentsPage.deleteDialog.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

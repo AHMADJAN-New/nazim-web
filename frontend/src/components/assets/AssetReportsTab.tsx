@@ -88,7 +88,12 @@ export default function AssetReportsTab() {
   // Helper function to format price with currency symbol
   const formatAssetPrice = (asset: Asset, price: number): string => {
     const symbol = getAssetCurrencySymbol(asset);
-    return `${symbol} ${formatDateTime(price)}`;
+    return `${symbol} ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  // Helper function to format amount with currency symbol
+  const formatAmountWithSymbol = (amount: number, symbol: string): string => {
+    return `${symbol} ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   // Calculate statistics
@@ -253,7 +258,7 @@ export default function AssetReportsTab() {
           <BarChart3 className="h-8 w-8" />
           <div>
             <h1 className="text-2xl font-semibold">{t('assets.assetReports')}</h1>
-            <p className="text-sm text-muted-foreground">Analytics and insights for your assets</p>
+            <p className="text-sm text-muted-foreground">{t('assets.analyticsInsights')}</p>
           </div>
         </div>
       </div>
@@ -262,16 +267,16 @@ export default function AssetReportsTab() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total Assets</CardDescription>
+            <CardDescription>{t('assets.totalAssets')}</CardDescription>
             <CardTitle className="text-2xl">{(stats as AssetApi.AssetStats | undefined)?.asset_count ?? calculatedStats.totalAssets}</CardTitle>
             <div className="text-xs text-muted-foreground mt-1 space-y-1">
-              <div>{calculatedStats.totalCopies} total copies</div>
+              <div>{calculatedStats.totalCopies} {t('assets.totalCopiesLabel')}</div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-xs">
-                  {calculatedStats.assignedAssets} assigned
+                  {calculatedStats.assignedAssets} {t('assets.assignedLabel')}
                 </Badge>
                 <Badge variant="outline" className="text-xs">
-                  {calculatedStats.totalAssets - calculatedStats.assignedAssets} available
+                  {calculatedStats.totalAssets - calculatedStats.assignedAssets} {t('assets.availableLabel')}
                 </Badge>
               </div>
             </div>
@@ -279,12 +284,12 @@ export default function AssetReportsTab() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total Price</CardDescription>
+            <CardDescription>{t('assets.totalPrice')}</CardDescription>
             <CardTitle className="text-2xl">
               {Object.entries(calculatedStats.totalPriceByCurrency).map(([code, { symbol, amount }], index) => (
                 <span key={code}>
                   {index > 0 && <span className="text-muted-foreground"> + </span>}
-                  <span>{symbol} {formatDateTime(amount)}</span>
+                  <span>{formatAmountWithSymbol(amount, symbol)}</span>
                 </span>
               ))}
               {Object.keys(calculatedStats.totalPriceByCurrency).length === 0 && (
@@ -292,18 +297,18 @@ export default function AssetReportsTab() {
               )}
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              Sum of all asset prices (1 copy each)
+              {t('assets.sumOfPrices')}
             </p>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total Value</CardDescription>
+            <CardDescription>{t('assets.totalValue')}</CardDescription>
             <CardTitle className="text-2xl">
               {Object.entries(calculatedStats.totalValueByCurrency).map(([code, { symbol, amount }], index) => (
                 <span key={code}>
                   {index > 0 && <span className="text-muted-foreground"> + </span>}
-                  <span>{symbol} {formatDateTime(amount)}</span>
+                  <span>{formatAmountWithSymbol(amount, symbol)}</span>
                 </span>
               ))}
               {Object.keys(calculatedStats.totalValueByCurrency).length === 0 && (
@@ -311,18 +316,18 @@ export default function AssetReportsTab() {
               )}
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              Price × Total Copies
+              {t('assets.priceTimesCopies')}
             </p>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Maintenance Cost</CardDescription>
+            <CardDescription>{t('assets.maintenanceCost')}</CardDescription>
             <CardTitle className="text-2xl">
               {formatCurrency(calculatedStats.totalMaintenanceCost)}
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              {calculatedStats.needsMaintenance} need attention
+              {calculatedStats.needsMaintenance} {t('assets.needAttention')}
             </p>
           </CardHeader>
         </Card>
@@ -332,24 +337,24 @@ export default function AssetReportsTab() {
       <div className="flex gap-3 items-center">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Filter by status" />
+            <SelectValue placeholder={t('assets.filterByStatus')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="available">Available</SelectItem>
-            <SelectItem value="assigned">Assigned</SelectItem>
-            <SelectItem value="maintenance">Maintenance</SelectItem>
-            <SelectItem value="retired">Retired</SelectItem>
-            <SelectItem value="lost">Lost</SelectItem>
-            <SelectItem value="disposed">Disposed</SelectItem>
+            <SelectItem value="all">{t('assets.allStatuses')}</SelectItem>
+            <SelectItem value="available">{t('assets.available')}</SelectItem>
+            <SelectItem value="assigned">{t('assets.assigned')}</SelectItem>
+            <SelectItem value="maintenance">{t('assets.maintenance')}</SelectItem>
+            <SelectItem value="retired">{t('assets.retired')}</SelectItem>
+            <SelectItem value="lost">{t('assets.lost')}</SelectItem>
+            <SelectItem value="disposed">{t('assets.disposed')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Filter by category" />
+            <SelectValue placeholder={t('assets.filterByCategory')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">{t('assets.allCategories')}</SelectItem>
             {categories.map((cat) => (
               <SelectItem key={cat} value={cat}>
                 {cat}
@@ -364,18 +369,18 @@ export default function AssetReportsTab() {
         <TabsList className="flex w-full gap-1 h-auto flex-shrink-0 overflow-x-auto pb-1">
           <TabsTrigger value="status-breakdown" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
             <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">Status Breakdown</span>
-            <span className="sm:hidden">Status</span>
+            <span className="hidden sm:inline">{t('assets.statusBreakdown')}</span>
+            <span className="sm:hidden">{t('assets.status')}</span>
           </TabsTrigger>
           <TabsTrigger value="category-breakdown" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
             <TrendingUp className="h-4 w-4" />
-            <span className="hidden sm:inline">Category Breakdown</span>
-            <span className="sm:hidden">Category</span>
+            <span className="hidden sm:inline">{t('assets.categoryBreakdown')}</span>
+            <span className="sm:hidden">{t('assets.category')}</span>
           </TabsTrigger>
           <TabsTrigger value="needs-maintenance" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
             <AlertTriangle className="h-4 w-4" />
-            <span className="hidden sm:inline">Needs Maintenance</span>
-            <span className="sm:hidden">Maintenance</span>
+            <span className="hidden sm:inline">{t('assets.needsMaintenance')}</span>
+            <span className="sm:hidden">{t('assets.maintenance')}</span>
             {calculatedStats.needsMaintenance > 0 && (
               <Badge variant="destructive" className="ml-1">
                 {calculatedStats.needsMaintenance}
@@ -384,8 +389,8 @@ export default function AssetReportsTab() {
           </TabsTrigger>
           <TabsTrigger value="value-analysis" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
             <DollarSign className="h-4 w-4" />
-            <span className="hidden sm:inline">Value Analysis</span>
-            <span className="sm:hidden">Value</span>
+            <span className="hidden sm:inline">{t('assets.valueAnalysis')}</span>
+            <span className="sm:hidden">{t('assets.value')}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -393,19 +398,19 @@ export default function AssetReportsTab() {
         <TabsContent value="status-breakdown" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Assets by Status</CardTitle>
-              <CardDescription>Distribution of assets across different statuses</CardDescription>
+              <CardTitle>{t('assets.assetsByStatus')}</CardTitle>
+              <CardDescription>{t('assets.statusDistribution')}</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Count</TableHead>
-                    <TableHead>Copies</TableHead>
-                    <TableHead>Assigned</TableHead>
-                    <TableHead>Total Value</TableHead>
-                    <TableHead>Percentage</TableHead>
+                    <TableHead>{t('assets.status')}</TableHead>
+                    <TableHead>{t('assets.count')}</TableHead>
+                    <TableHead>{t('assets.copies')}</TableHead>
+                    <TableHead>{t('assets.assigned')}</TableHead>
+                    <TableHead>{t('assets.totalValue')}</TableHead>
+                    <TableHead>{t('assets.percentage')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -462,7 +467,7 @@ export default function AssetReportsTab() {
                           {Object.entries(statusValueByCurrency).map(([code, { symbol, amount }], index) => (
                             <span key={code}>
                               {index > 0 && <span className="text-muted-foreground"> + </span>}
-                              <span>{symbol} {formatDateTime(amount)}</span>
+                              <span>{formatAmountWithSymbol(amount, symbol)}</span>
                             </span>
                           ))}
                           {Object.keys(statusValueByCurrency).length === 0 && (
@@ -483,19 +488,19 @@ export default function AssetReportsTab() {
         <TabsContent value="category-breakdown" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Assets by Category</CardTitle>
-              <CardDescription>Distribution of assets across different categories</CardDescription>
+              <CardTitle>{t('assets.assetsByCategoryTitle')}</CardTitle>
+              <CardDescription>{t('assets.categoryDistribution')}</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Count</TableHead>
-                    <TableHead>Copies</TableHead>
-                    <TableHead>Assigned</TableHead>
-                    <TableHead>Total Value</TableHead>
-                    <TableHead>Percentage</TableHead>
+                    <TableHead>{t('assets.category')}</TableHead>
+                    <TableHead>{t('assets.count')}</TableHead>
+                    <TableHead>{t('assets.copies')}</TableHead>
+                    <TableHead>{t('assets.assigned')}</TableHead>
+                    <TableHead>{t('assets.totalValue')}</TableHead>
+                    <TableHead>{t('assets.percentage')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -539,7 +544,7 @@ export default function AssetReportsTab() {
                           {Object.entries(categoryValueByCurrency).map(([code, { symbol, amount }], index) => (
                             <span key={code}>
                               {index > 0 && <span className="text-muted-foreground"> + </span>}
-                              <span>{symbol} {formatDateTime(amount)}</span>
+                              <span>{formatAmountWithSymbol(amount, symbol)}</span>
                             </span>
                           ))}
                           {Object.keys(categoryValueByCurrency).length === 0 && (
@@ -560,23 +565,23 @@ export default function AssetReportsTab() {
         <TabsContent value="needs-maintenance" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Assets Needing Maintenance</CardTitle>
-              <CardDescription>Assets with expired warranties or overdue maintenance</CardDescription>
+              <CardTitle>{t('assets.assetsNeedingMaintenance')}</CardTitle>
+              <CardDescription>{t('assets.maintenanceDescription')}</CardDescription>
             </CardHeader>
             <CardContent>
               {assetsNeedingMaintenance.length === 0 ? (
                 <div className="flex h-24 items-center justify-center text-muted-foreground">
-                  No assets need maintenance
+                  {t('assets.noAssetsNeedMaintenance')}
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Asset</TableHead>
-                      <TableHead>Tag</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Issue</TableHead>
-                      <TableHead>Last Maintenance</TableHead>
+                      <TableHead>{t('assets.name')}</TableHead>
+                      <TableHead>{t('assets.tag')}</TableHead>
+                      <TableHead>{t('assets.status')}</TableHead>
+                      <TableHead>{t('assets.issue')}</TableHead>
+                      <TableHead>{t('assets.lastMaintenance')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -610,13 +615,13 @@ export default function AssetReportsTab() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {warrantyExpired && <Badge variant="destructive">Warranty Expired</Badge>}
-                            {maintenanceOverdue && <Badge variant="destructive">Maintenance Overdue</Badge>}
+                            {warrantyExpired && <Badge variant="destructive">{t('assets.warrantyExpired')}</Badge>}
+                            {maintenanceOverdue && <Badge variant="destructive">{t('assets.maintenanceOverdue')}</Badge>}
                           </TableCell>
                           <TableCell>
                             {latestMaintenance?.performedOn
                               ? formatDate(latestMaintenance.performedOn)
-                              : 'Never'}
+                              : t('assets.never')}
                           </TableCell>
                         </TableRow>
                       );
@@ -633,15 +638,15 @@ export default function AssetReportsTab() {
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Top Valued Assets</CardTitle>
-                <CardDescription>Assets with highest purchase value</CardDescription>
+                <CardTitle>{t('assets.topValuedAssets')}</CardTitle>
+                <CardDescription>{t('assets.highestPurchaseValue')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Asset</TableHead>
-                      <TableHead>Value</TableHead>
+                      <TableHead>{t('assets.name')}</TableHead>
+                      <TableHead>{t('assets.value')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -663,15 +668,15 @@ export default function AssetReportsTab() {
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>Maintenance Cost Leaders</CardTitle>
-                <CardDescription>Assets with highest maintenance costs</CardDescription>
+                <CardTitle>{t('assets.maintenanceCostLeaders')}</CardTitle>
+                <CardDescription>{t('assets.highestMaintenanceCosts')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Asset</TableHead>
-                      <TableHead>Maintenance Cost</TableHead>
+                      <TableHead>{t('assets.name')}</TableHead>
+                      <TableHead>{t('assets.maintenanceCost')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -684,7 +689,7 @@ export default function AssetReportsTab() {
                           <TableCell>
                             <div>
                               <p className="font-medium">{asset.name}</p>
-                              <p className="text-xs text-muted-foreground">Tag: {asset.assetTag}</p>
+                              <p className="text-xs text-muted-foreground">{t('assets.tag')}: {asset.assetTag}</p>
                             </div>
                           </TableCell>
                           <TableCell className="font-medium">
@@ -695,7 +700,7 @@ export default function AssetReportsTab() {
                     {filteredAssets.filter((a) => (a.maintenanceCostTotal ?? 0) > 0).length === 0 && (
                       <TableRow>
                         <TableCell colSpan={2} className="text-center text-muted-foreground py-8">
-                          No maintenance costs recorded yet
+                          {t('assets.noMaintenanceCosts')}
                         </TableCell>
                       </TableRow>
                     )}

@@ -418,17 +418,17 @@ export default function AssetListTab() {
     () => [
       {
         accessorKey: 'name',
-        header: 'Asset',
+        header: t('assets.name'),
         cell: ({ row }) => (
           <div>
             <p className="font-semibold">{row.original.name}</p>
-            <p className="text-xs text-muted-foreground">Tag: {row.original.assetTag}</p>
+            <p className="text-xs text-muted-foreground">{t('assets.assetTag')}: {row.original.assetTag}</p>
           </div>
         ),
       },
       {
         accessorKey: 'status',
-        header: 'Status',
+        header: t('assets.status'),
         cell: ({ row }) => {
           const status = row.original.status;
           let variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'outline';
@@ -458,16 +458,16 @@ export default function AssetListTab() {
       },
       {
         accessorKey: 'purchasePrice',
-        header: 'Value',
+        header: t('assets.purchasePrice'),
         cell: ({ row }) => (
           <span className="text-sm font-medium">
-            {row.original.purchasePrice ? `$${row.original.purchasePrice.toFixed(2)}` : 'N/A'}
+            {row.original.purchasePrice ? `$${row.original.purchasePrice.toFixed(2)}` : (t('assets.notAvailable') || 'N/A')}
           </span>
         ),
       },
       {
         accessorKey: 'copies',
-        header: 'Copies',
+        header: t('assets.copies'),
         cell: ({ row }) => {
           const asset = row.original;
           const totalCopies = asset.totalCopiesCount ?? asset.totalCopies ?? 1;
@@ -476,14 +476,14 @@ export default function AssetListTab() {
           return (
             <div className="flex items-center gap-2">
               <Badge variant={availableCopies === 0 ? "secondary" : "outline"}>
-                Available: {availableCopies === 0 ? "No available copies" : availableCopies}
+                {t('assets.availableCopiesLabel')}: {availableCopies === 0 ? (t('assets.none') || "0") : availableCopies}
               </Badge>
               <Badge variant="secondary">
-                Total: {totalCopies}
+                {t('assets.totalCopiesLabel')}: {totalCopies}
               </Badge>
               {assignedCopies > 0 && (
                 <Badge variant="default" className="bg-blue-500 hover:bg-blue-600 text-white">
-                  Assigned: {assignedCopies}
+                  {t('assets.assigned')}:{' '}{assignedCopies}
                 </Badge>
               )}
             </div>
@@ -492,21 +492,21 @@ export default function AssetListTab() {
       },
       {
         accessorKey: 'location',
-        header: 'Location',
+        header: t('assets.location'),
         cell: ({ row }) => (
           <div className="text-sm text-muted-foreground">
-            {row.original.roomNumber && <div>Room: {row.original.roomNumber}</div>}
-            {!row.original.roomNumber && row.original.buildingName && <div>Building: {row.original.buildingName}</div>}
+            {row.original.roomNumber && <div>{t('rooms.title') || 'Room'}: {row.original.roomNumber}</div>}
+            {!row.original.roomNumber && row.original.buildingName && <div>{t('buildings.title') || 'Building'}: {row.original.buildingName}</div>}
             {!row.original.roomNumber && !row.original.buildingName && row.original.schoolName && (
-              <div>School: {row.original.schoolName}</div>
+              <div>{t('schools.title') || 'School'}: {row.original.schoolName}</div>
             )}
-            {!row.original.roomNumber && !row.original.buildingName && !row.original.schoolName && <div>Unassigned</div>}
+            {!row.original.roomNumber && !row.original.buildingName && !row.original.schoolName && <div>{t('assets.unspecified') || 'Unassigned'}</div>}
           </div>
         ),
       },
       {
         id: 'actions',
-        header: () => <div className="text-right">Actions</div>,
+        header: () => <div className="text-right">{t('events.actions')}</div>,
         cell: ({ row }) => (
           <div className="flex justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => { setViewAsset(row.original); setIsViewPanelOpen(true); }} title="View Details">
@@ -591,13 +591,13 @@ export default function AssetListTab() {
       <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total Assets</CardDescription>
+            <CardDescription>{t('assets.totalAssets')}</CardDescription>
             <CardTitle className="text-2xl">{stats?.asset_count ?? 0}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Purchase Value</CardDescription>
+            <CardDescription>{t('assets.purchaseValue')}</CardDescription>
             <CardTitle className="text-2xl">
               ${((stats?.total_purchase_value ?? 0) as number).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </CardTitle>
@@ -605,7 +605,7 @@ export default function AssetListTab() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Maintenance Spend</CardDescription>
+            <CardDescription>{t('assets.maintenanceSpend')}</CardDescription>
             <CardTitle className="text-2xl">
               ${((stats?.maintenance_cost_total ?? 0) as number).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </CardTitle>
@@ -613,7 +613,7 @@ export default function AssetListTab() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Available</CardDescription>
+            <CardDescription>{t('assets.availableCount')}</CardDescription>
             <CardTitle className="text-2xl">{stats?.status_counts?.available ?? 0}</CardTitle>
           </CardHeader>
         </Card>
@@ -627,28 +627,28 @@ export default function AssetListTab() {
       >
         <div className="flex flex-col gap-4 md:flex-row md:items-end">
           <div className="flex-1 min-w-0">
-            <Label htmlFor="search">Search</Label>
+            <Label htmlFor="search">{t('common.search') || t('assets.searchPlaceholder')}</Label>
             <Input
               id="search"
-              placeholder="Search assets by name, tag, or serial"
+              placeholder={t('assets.searchByNameTagSerial')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <div className="w-full md:w-[200px]">
-            <Label htmlFor="status-filter">Status</Label>
+            <Label htmlFor="status-filter">{t('assets.status')}</Label>
             <Select value={statusFilter || 'all'} onValueChange={(value) => setStatusFilter(value === 'all' ? undefined : value)}>
               <SelectTrigger id="status-filter">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder={t('assets.filterByStatus')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="assigned">Assigned</SelectItem>
-                <SelectItem value="maintenance">Maintenance</SelectItem>
-                <SelectItem value="retired">Retired</SelectItem>
-                <SelectItem value="lost">Lost</SelectItem>
-                <SelectItem value="disposed">Disposed</SelectItem>
+                <SelectItem value="all">{t('assets.allStatuses')}</SelectItem>
+                <SelectItem value="available">{t('assets.available')}</SelectItem>
+                <SelectItem value="assigned">{t('assets.assigned')}</SelectItem>
+                <SelectItem value="maintenance">{t('assets.maintenance')}</SelectItem>
+                <SelectItem value="retired">{t('assets.retired')}</SelectItem>
+                <SelectItem value="lost">{t('assets.lost')}</SelectItem>
+                <SelectItem value="disposed">{t('assets.disposed')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -660,7 +660,7 @@ export default function AssetListTab() {
         <div className="flex justify-end">
           <Button onClick={openCreate} className="gap-2">
             <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">New Asset</span>
+            <span className="hidden sm:inline">{t('assets.newAsset')}</span>
           </Button>
         </div>
       )}
@@ -670,28 +670,28 @@ export default function AssetListTab() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <CardTitle>Assets</CardTitle>
-              <CardDescription className="hidden md:block">Manage and track all assets in your organization</CardDescription>
+              <CardTitle>{t('assets.title')}</CardTitle>
+              <CardDescription className="hidden md:block">{t('assets.managementDescription')}</CardDescription>
             </div>
             <div className="flex-shrink-0">
               <ReportExportButtons
               data={assets as Asset[]}
               columns={[
-                { key: 'name', label: 'Name', align: 'left' },
-                { key: 'asset_tag', label: 'Asset Tag', align: 'left' },
-                { key: 'status', label: 'Status', align: 'left' },
-                { key: 'category', label: 'Category', align: 'left' },
-                { key: 'serial_number', label: 'Serial Number', align: 'left' },
-                { key: 'purchase_price', label: 'Purchase Price', align: 'left' },
-                { key: 'total_copies', label: 'Total Copies', align: 'left' },
-                { key: 'available_copies', label: 'Available Copies', align: 'left' },
-                { key: 'purchase_date', label: 'Purchase Date', align: 'left' },
-                { key: 'warranty_expiry', label: 'Warranty Expiry', align: 'left' },
-                { key: 'vendor', label: 'Vendor', align: 'left' },
-                { key: 'location', label: 'Location', align: 'left' },
+                { key: 'name', label: t('assets.name'), align: 'left' },
+                { key: 'asset_tag', label: t('assets.assetTag'), align: 'left' },
+                { key: 'status', label: t('assets.status'), align: 'left' },
+                { key: 'category', label: t('assets.category'), align: 'left' },
+                { key: 'serial_number', label: t('assets.serialNumber'), align: 'left' },
+                { key: 'purchase_price', label: t('assets.purchasePrice'), align: 'left' },
+                { key: 'total_copies', label: t('assets.totalCopiesLabel'), align: 'left' },
+                { key: 'available_copies', label: t('assets.availableCopiesLabel'), align: 'left' },
+                { key: 'purchase_date', label: t('assets.purchaseDate'), align: 'left' },
+                { key: 'warranty_expiry', label: t('assets.warrantyExpiry'), align: 'left' },
+                { key: 'vendor', label: t('assets.vendor'), align: 'left' },
+                { key: 'location', label: t('assets.location'), align: 'left' },
               ]}
               reportKey="assets_management"
-              title="Assets Management Report"
+              title={t('assets.management')}
               transformData={transformAssetsForExport}
               buildFiltersSummary={buildFiltersSummary}
               templateType="assets_management"
@@ -729,7 +729,7 @@ export default function AssetListTab() {
                   {table.getRowModel().rows.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={columns.length} className="text-center text-muted-foreground py-8">
-                        No assets found
+                        {t('assets.noAssetsFound')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -764,39 +764,39 @@ export default function AssetListTab() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingAsset ? 'Update Asset' : 'Create Asset'}</DialogTitle>
+            <DialogTitle>{editingAsset ? t('assets.updateAsset') : t('assets.createAsset')}</DialogTitle>
           </DialogHeader>
           <FormProvider {...formMethods}>
             <form onSubmit={handleSubmit(onSubmitAsset)} className="space-y-4">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
-                <Label>Name *</Label>
+                <Label>{t('assets.name')} *</Label>
                 <Input {...register('name')} />
                 {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
               </div>
               <div>
-                <Label>Asset Tag *</Label>
+                <Label>{t('assets.assetTag')} *</Label>
                 <Input {...register('assetTag')} />
                 {errors.assetTag && <p className="text-sm text-destructive">{errors.assetTag.message}</p>}
               </div>
               <div>
-                <Label>Status</Label>
+                <Label>{t('assets.status')}</Label>
                 <Select value={watch('status') || 'available'} onValueChange={(value) => setValue('status', value as any)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t('assets.status')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="available">Available</SelectItem>
-                    <SelectItem value="assigned">Assigned</SelectItem>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                    <SelectItem value="retired">Retired</SelectItem>
-                    <SelectItem value="lost">Lost</SelectItem>
-                    <SelectItem value="disposed">Disposed</SelectItem>
+                    <SelectItem value="available">{t('assets.available')}</SelectItem>
+                    <SelectItem value="assigned">{t('assets.assigned')}</SelectItem>
+                    <SelectItem value="maintenance">{t('assets.maintenance')}</SelectItem>
+                    <SelectItem value="retired">{t('assets.retired')}</SelectItem>
+                    <SelectItem value="lost">{t('assets.lost')}</SelectItem>
+                    <SelectItem value="disposed">{t('assets.disposed')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Category</Label>
+                <Label>{t('assets.category')}</Label>
                 <Select
                   value={watch('categoryId') || 'none'}
                   onValueChange={(value) => {
@@ -807,10 +807,10 @@ export default function AssetListTab() {
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder={t('assets.selectCategory')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t('assets.none')}</SelectItem>
                     {categories
                       ?.filter((cat) => cat.is_active)
                       .map((category) => (
@@ -822,12 +822,12 @@ export default function AssetListTab() {
                 </Select>
               </div>
               <div>
-                <Label>Serial Number</Label>
+                <Label>{t('assets.serialNumber')}</Label>
                 <Input {...register('serialNumber')} />
               </div>
               <div>
                 <Label>
-                  Purchase Price <span className="text-destructive">*</span>
+                  {t('assets.purchasePrice')} <span className="text-destructive">*</span>
                 </Label>
                 <Input type="number" step="0.01" {...register('purchasePrice')} />
                 {errors.purchasePrice && (
@@ -835,13 +835,13 @@ export default function AssetListTab() {
                 )}
               </div>
               <div>
-                <Label>Number of Copies</Label>
+                <Label>{t('assets.totalCopiesLabel')}</Label>
                 <Input type="number" min="1" step="1" defaultValue={1} {...register('totalCopies')} />
                 <p className="text-xs text-muted-foreground mt-1">Number of identical copies of this asset</p>
               </div>
               <div>
                 <Label>
-                  Purchase Date <span className="text-destructive">*</span>
+                  {t('assets.purchaseDate')} <span className="text-destructive">*</span>
                 </Label>
                 <Controller
                   control={control}
@@ -852,7 +852,7 @@ export default function AssetListTab() {
                       onDateChange={(date) => {
                         field.onChange(date ? date.toISOString().slice(0, 10) : '');
                       }}
-                      placeholder="Select purchase date"
+                      placeholder={t('assets.purchaseDate')}
                     />
                   )}
                 />
@@ -861,7 +861,7 @@ export default function AssetListTab() {
                 )}
               </div>
               <div>
-                <Label>Warranty Expiry</Label>
+                <Label>{t('assets.warrantyExpiry')}</Label>
                 <Controller
                   control={control}
                   name="warrantyExpiry"
@@ -871,26 +871,26 @@ export default function AssetListTab() {
                       onDateChange={(date) => {
                         field.onChange(date ? date.toISOString().slice(0, 10) : null);
                       }}
-                      placeholder="Select warranty expiry date"
+                      placeholder={t('assets.warrantyExpiry')}
                     />
                   )}
                 />
               </div>
               <div>
-                <Label>Vendor</Label>
+                <Label>{t('assets.vendor')}</Label>
                 <Input {...register('vendor')} />
               </div>
               <div>
-                <Label>School</Label>
+                <Label>{t('schools.title') || 'School'}</Label>
                 <Select
                   value={watch('schoolId') || 'none'}
                   onValueChange={(value) => setValue('schoolId', value === 'none' ? undefined : value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select school" />
+                    <SelectValue placeholder={t('common.selectSchool')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t('assets.none')}</SelectItem>
                     {schools?.map((school) => (
                       <SelectItem key={school.id} value={school.id}>
                         {school.schoolName}
@@ -900,7 +900,7 @@ export default function AssetListTab() {
                 </Select>
               </div>
               <div>
-                <Label>Building</Label>
+                <Label>{t('buildings.title') || 'Building'}</Label>
                 <Select
                   value={watch('buildingId') || 'none'}
                   onValueChange={(value) => {
@@ -923,10 +923,10 @@ export default function AssetListTab() {
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select building (optional)" />
+                    <SelectValue placeholder={t('common.selectBuilding') || t('buildings.title') || 'Select building'} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t('assets.none')}</SelectItem>
                     {buildings?.map((building) => (
                       <SelectItem key={building.id} value={building.id}>
                         {building.buildingName}
@@ -936,16 +936,16 @@ export default function AssetListTab() {
                 </Select>
               </div>
               <div>
-                <Label>Room</Label>
+                <Label>{t('rooms.title') || 'Room'}</Label>
                 <Select
                   value={watch('roomId') || 'none'}
                   onValueChange={(value) => setValue('roomId', value === 'none' ? undefined : value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select room (optional)" />
+                    <SelectValue placeholder={t('common.selectRoom') || t('rooms.title') || 'Select room'} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t('assets.none')}</SelectItem>
                     {rooms?.map((room) => (
                       <SelectItem key={room.id} value={room.id}>
                         {room.roomNumber} {room.buildingName ? `(${room.buildingName})` : ''}
@@ -965,7 +965,7 @@ export default function AssetListTab() {
               </div>
               <div>
                 <Label>
-                  Finance Account <span className="text-destructive">*</span>
+                  {t('finance.accounts') || 'Finance Account'} <span className="text-destructive">*</span>
                 </Label>
                 <Controller
                   control={control}
@@ -985,7 +985,7 @@ export default function AssetListTab() {
                       }}
                     >
                       <SelectTrigger className={errors.financeAccountId ? 'border-destructive' : ''}>
-                        <SelectValue placeholder="Select finance account" />
+                        <SelectValue placeholder={t('finance.selectAccount') || 'Select finance account'} />
                       </SelectTrigger>
                       <SelectContent>
                         {financeAccounts?.map((account) => (
@@ -1002,16 +1002,16 @@ export default function AssetListTab() {
                 )}
               </div>
               <div>
-                <Label>Currency</Label>
+                <Label>{t('finance.currency') || 'Currency'}</Label>
                 <Select
                   value={watch('currencyId') || 'none'}
                   onValueChange={(value) => setValue('currencyId', value === 'none' ? undefined : value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select currency" />
+                    <SelectValue placeholder={t('finance.selectCurrency') || 'Select currency'} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t('assets.none')}</SelectItem>
                     {currencies?.map((currency) => (
                       <SelectItem key={currency.id} value={currency.id}>
                         {currency.code} - {currency.name}
@@ -1025,15 +1025,15 @@ export default function AssetListTab() {
               </div>
             </div>
             <div>
-              <Label>Notes</Label>
+              <Label>{t('assets.notes')}</Label>
               <Textarea rows={3} {...register('notes')} />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
+                {t('events.cancel')}
               </Button>
               <Button type="submit" disabled={(editingAsset ? updateAsset.isPending : createAsset.isPending) || !canUpdate}>
-                {editingAsset ? 'Update' : 'Create'}
+                {editingAsset ? t('events.update') : t('events.create')}
               </Button>
             </DialogFooter>
             </form>

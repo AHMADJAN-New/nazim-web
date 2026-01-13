@@ -243,7 +243,7 @@ export function UserPermissionsManagement() {
   const handleRemoveRole = async (roleName: string) => {
     if (!selectedUserId) return;
     
-    if (!confirm(t('userPermissions.removeRoleConfirm').replace('{roleName}', roleName))) {
+    if (!confirm(t('userPermissions.removeRoleConfirm', { roleName }))) {
       return;
     }
     
@@ -296,7 +296,7 @@ export function UserPermissionsManagement() {
               <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-blue-900 dark:text-blue-100 break-words">
-                  {t('userPermissions.managingUserPermissionsFor').replace('{name}', currentOrg.name)}
+                  {t('userPermissions.managingUserPermissionsFor', { name: currentOrg.name })}
                 </p>
                 <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
                   {t('userPermissions.assignSpecificPermissions')}
@@ -338,13 +338,13 @@ export function UserPermissionsManagement() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('userManagement.allRoles')}</SelectItem>
-                    <SelectItem value="staff">Staff</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="teacher">Teacher</SelectItem>
-                    <SelectItem value="accountant">Accountant</SelectItem>
-                    <SelectItem value="librarian">Librarian</SelectItem>
-                    <SelectItem value="hostel_manager">Hostel Manager</SelectItem>
-                    <SelectItem value="asset_manager">Asset Manager</SelectItem>
+                    <SelectItem value="staff">{t('userPermissions.roleStaff')}</SelectItem>
+                    <SelectItem value="admin">{t('userPermissions.roleAdmin')}</SelectItem>
+                    <SelectItem value="teacher">{t('userPermissions.roleTeacher')}</SelectItem>
+                    <SelectItem value="accountant">{t('userPermissions.roleAccountant')}</SelectItem>
+                    <SelectItem value="librarian">{t('userPermissions.roleLibrarian')}</SelectItem>
+                    <SelectItem value="hostel_manager">{t('userPermissions.roleHostelManager')}</SelectItem>
+                    <SelectItem value="asset_manager">{t('userPermissions.roleAssetManager')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -424,7 +424,7 @@ export function UserPermissionsManagement() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="break-words">
-              {t('userPermissions.managePermissionsDialogTitle').replace('{name}', selectedUser?.fullName || selectedUser?.email || 'User')}
+              {t('userPermissions.managePermissionsDialogTitle', { name: selectedUser?.fullName || selectedUser?.email || t('userPermissions.user') })}
             </DialogTitle>
             <DialogDescription className="hidden md:block">
               {t('userPermissions.managePermissionsDialogDescription')}

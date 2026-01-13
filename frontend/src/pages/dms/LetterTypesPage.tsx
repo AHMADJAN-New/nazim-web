@@ -30,14 +30,28 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { useLetterTypes, useCreateLetterType, useUpdateLetterType, useDeleteLetterType } from "@/hooks/useLetterTypes";
 
 
-const letterTypeFormSchema = z.object({
-  key: z.string().min(1, "Key is required").max(50, "Key must be 50 characters or less").regex(/^[a-z0-9_]+$/, "Key must contain only lowercase letters, numbers, and underscores"),
-  name: z.string().min(1, "Name is required").max(255, "Name must be 255 characters or less"),
-  description: z.string().max(1000, "Description must be 1000 characters or less").optional().nullable(),
+// Schema will be created inside component to access t() function
+const createLetterTypeFormSchema = (t: (key: string) => string) => z.object({
+  key: z.string()
+    .min(1, t('dms.letterTypesPage.validation.keyRequired'))
+    .max(50, t('dms.letterTypesPage.validation.keyMaxLength'))
+    .regex(/^[a-z0-9_]+$/, t('dms.letterTypesPage.validation.keyInvalidFormat')),
+  name: z.string()
+    .min(1, t('dms.letterTypesPage.validation.nameRequired'))
+    .max(255, t('dms.letterTypesPage.validation.nameMaxLength')),
+  description: z.string()
+    .max(1000, t('dms.letterTypesPage.validation.descriptionMaxLength'))
+    .optional()
+    .nullable(),
   active: z.boolean().default(true),
 });
 
-type LetterTypeFormData = z.infer<typeof letterTypeFormSchema>;
+type LetterTypeFormData = {
+  key: string;
+  name: string;
+  description?: string | null;
+  active: boolean;
+};
 
 export default function LetterTypesPage() {
   const { t } = useLanguage();
@@ -87,6 +101,8 @@ export default function LetterTypesPage() {
   const createMutation = useCreateLetterType();
   const updateMutation = useUpdateLetterType();
   const deleteMutation = useDeleteLetterType();
+
+  const letterTypeFormSchema = useMemo(() => createLetterTypeFormSchema(t), [t]);
 
   const {
     register: registerCreate,
@@ -162,10 +178,10 @@ export default function LetterTypesPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Letter Types</CardTitle>
+            <CardTitle>{t('dms.letterTypesPage.title')}</CardTitle>
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Create Letter Type
+              {t('dms.letterTypesPage.createButton')}
             </Button>
           </div>
         </CardHeader>
@@ -176,7 +192,7 @@ export default function LetterTypesPage() {
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name, key, or description..."
+                  placeholder={t('dms.letterTypesPage.searchPlaceholder')}
                   value={filters.search}
                   onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                   className="pl-8"
@@ -185,30 +201,30 @@ export default function LetterTypesPage() {
             </div>
             <Select value={filters.active} onValueChange={(value) => setFilters({ ...filters, active: value })}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Status" />
+                <SelectValue placeholder={t('dms.letterTypesPage.allStatus')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="true">Active</SelectItem>
-                <SelectItem value="false">Inactive</SelectItem>
+                <SelectItem value="all">{t('dms.letterTypesPage.allStatus')}</SelectItem>
+                <SelectItem value="true">{t('dms.letterTypesPage.active')}</SelectItem>
+                <SelectItem value="false">{t('dms.letterTypesPage.inactive')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Table */}
           {isLoading ? (
-            <div className="text-center py-8">Loading...</div>
+            <div className="text-center py-8">{t('dms.letterTypesPage.loading')}</div>
           ) : filteredLetterTypes.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">No letter types found</div>
+            <div className="text-center py-8 text-muted-foreground">{t('dms.letterTypesPage.noLetterTypesFound')}</div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Key</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('dms.letterTypesPage.key')}</TableHead>
+                  <TableHead>{t('dms.letterTypesPage.name')}</TableHead>
+                  <TableHead>{t('dms.letterTypesPage.description')}</TableHead>
+                  <TableHead>{t('dms.letterTypesPage.status')}</TableHead>
+                  <TableHead className="text-right">{t('dms.letterTypesPage.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -219,7 +235,7 @@ export default function LetterTypesPage() {
                     <TableCell className="text-muted-foreground">{letterType.description || "-"}</TableCell>
                     <TableCell>
                       <Badge variant={letterType.active ? "default" : "secondary"}>
-                        {letterType.active ? "Active" : "Inactive"}
+                        {letterType.active ? t('dms.letterTypesPage.active') : t('dms.letterTypesPage.inactive')}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -230,7 +246,7 @@ export default function LetterTypesPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t('dms.letterTypesPage.actions')}</DropdownMenuLabel>
                           <DropdownMenuItem
                             onClick={() => {
                               setSelectedLetterType(letterType);
@@ -238,7 +254,7 @@ export default function LetterTypesPage() {
                             }}
                           >
                             <Eye className="h-4 w-4 mr-2" />
-                            View
+                            {t('dms.letterTypesPage.view')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
@@ -247,7 +263,7 @@ export default function LetterTypesPage() {
                             }}
                           >
                             <Edit className="h-4 w-4 mr-2" />
-                            Edit
+                            {t('dms.letterTypesPage.edit')}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -258,7 +274,7 @@ export default function LetterTypesPage() {
                             }}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                            {t('dms.letterTypesPage.delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -275,36 +291,36 @@ export default function LetterTypesPage() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Create Letter Type</DialogTitle>
-            <DialogDescription>Add a new letter type for organizing templates and letterheads.</DialogDescription>
+            <DialogTitle>{t('dms.letterTypesPage.createDialog.title')}</DialogTitle>
+            <DialogDescription>{t('dms.letterTypesPage.createDialog.description')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitCreate(handleCreate)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="create-key">
-                Key <span className="text-destructive">*</span>
+                {t('dms.letterTypesPage.createDialog.keyLabel')} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="create-key"
                 {...registerCreate("key")}
-                placeholder="e.g., application, moe_letter"
+                placeholder={t('dms.letterTypesPage.createDialog.keyPlaceholder')}
                 className="font-mono"
               />
               {errorsCreate.key && <p className="text-sm text-destructive">{errorsCreate.key.message}</p>}
-              <p className="text-xs text-muted-foreground">Lowercase letters, numbers, and underscores only</p>
+              <p className="text-xs text-muted-foreground">{t('dms.letterTypesPage.createDialog.keyHint')}</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="create-name">
-                Name <span className="text-destructive">*</span>
+                {t('dms.letterTypesPage.createDialog.nameLabel')} <span className="text-destructive">*</span>
               </Label>
-              <Input id="create-name" {...registerCreate("name")} placeholder="e.g., Application Letters" />
+              <Input id="create-name" {...registerCreate("name")} placeholder={t('dms.letterTypesPage.createDialog.namePlaceholder')} />
               {errorsCreate.name && <p className="text-sm text-destructive">{errorsCreate.name.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-description">Description</Label>
+              <Label htmlFor="create-description">{t('dms.letterTypesPage.createDialog.descriptionLabel')}</Label>
               <Textarea
                 id="create-description"
                 {...registerCreate("description")}
-                placeholder="Optional description..."
+                placeholder={t('dms.letterTypesPage.createDialog.descriptionPlaceholder')}
                 rows={3}
               />
               {errorsCreate.description && <p className="text-sm text-destructive">{errorsCreate.description.message}</p>}
@@ -321,14 +337,14 @@ export default function LetterTypesPage() {
                   />
                 )}
               />
-              <Label htmlFor="create-active">Active</Label>
+              <Label htmlFor="create-active">{t('dms.letterTypesPage.createDialog.activeLabel')}</Label>
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                Cancel
+                {t('dms.letterTypesPage.createDialog.cancel')}
               </Button>
               <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Creating..." : "Create"}
+                {createMutation.isPending ? t('dms.letterTypesPage.createDialog.creating') : t('dms.letterTypesPage.createDialog.create')}
               </Button>
             </div>
           </form>
@@ -339,35 +355,35 @@ export default function LetterTypesPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit Letter Type</DialogTitle>
-            <DialogDescription>Update the letter type information.</DialogDescription>
+            <DialogTitle>{t('dms.letterTypesPage.editDialog.title')}</DialogTitle>
+            <DialogDescription>{t('dms.letterTypesPage.editDialog.description')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitEdit(handleUpdate)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="edit-key">
-                Key <span className="text-destructive">*</span>
+                {t('dms.letterTypesPage.createDialog.keyLabel')} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="edit-key"
                 {...registerEdit("key")}
-                placeholder="e.g., application, moe_letter"
+                placeholder={t('dms.letterTypesPage.createDialog.keyPlaceholder')}
                 className="font-mono"
               />
               {errorsEdit.key && <p className="text-sm text-destructive">{errorsEdit.key.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-name">
-                Name <span className="text-destructive">*</span>
+                {t('dms.letterTypesPage.createDialog.nameLabel')} <span className="text-destructive">*</span>
               </Label>
-              <Input id="edit-name" {...registerEdit("name")} placeholder="e.g., Application Letters" />
+              <Input id="edit-name" {...registerEdit("name")} placeholder={t('dms.letterTypesPage.createDialog.namePlaceholder')} />
               {errorsEdit.name && <p className="text-sm text-destructive">{errorsEdit.name.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-description">Description</Label>
+              <Label htmlFor="edit-description">{t('dms.letterTypesPage.createDialog.descriptionLabel')}</Label>
               <Textarea
                 id="edit-description"
                 {...registerEdit("description")}
-                placeholder="Optional description..."
+                placeholder={t('dms.letterTypesPage.createDialog.descriptionPlaceholder')}
                 rows={3}
               />
               {errorsEdit.description && <p className="text-sm text-destructive">{errorsEdit.description.message}</p>}
@@ -384,14 +400,14 @@ export default function LetterTypesPage() {
                   />
                 )}
               />
-              <Label htmlFor="edit-active">Active</Label>
+              <Label htmlFor="edit-active">{t('dms.letterTypesPage.createDialog.activeLabel')}</Label>
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancel
+                {t('dms.letterTypesPage.createDialog.cancel')}
               </Button>
               <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? "Updating..." : "Update"}
+                {updateMutation.isPending ? t('dms.letterTypesPage.editDialog.updating') : t('dms.letterTypesPage.editDialog.update')}
               </Button>
             </div>
           </form>
@@ -402,28 +418,28 @@ export default function LetterTypesPage() {
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Letter Type Details</DialogTitle>
+            <DialogTitle>{t('dms.letterTypesPage.viewDialog.title')}</DialogTitle>
           </DialogHeader>
           {selectedLetterType && (
             <div className="space-y-4">
               <div>
-                <Label className="text-muted-foreground">Key</Label>
+                <Label className="text-muted-foreground">{t('dms.letterTypesPage.key')}</Label>
                 <p className="font-mono text-sm">{selectedLetterType.key}</p>
               </div>
               <div>
-                <Label className="text-muted-foreground">Name</Label>
+                <Label className="text-muted-foreground">{t('dms.letterTypesPage.name')}</Label>
                 <p>{selectedLetterType.name}</p>
               </div>
               {selectedLetterType.description && (
                 <div>
-                  <Label className="text-muted-foreground">Description</Label>
+                  <Label className="text-muted-foreground">{t('dms.letterTypesPage.description')}</Label>
                   <p>{selectedLetterType.description}</p>
                 </div>
               )}
               <div>
-                <Label className="text-muted-foreground">Status</Label>
+                <Label className="text-muted-foreground">{t('dms.letterTypesPage.status')}</Label>
                 <Badge variant={selectedLetterType.active ? "default" : "secondary"}>
-                  {selectedLetterType.active ? "Active" : "Inactive"}
+                  {selectedLetterType.active ? t('dms.letterTypesPage.active') : t('dms.letterTypesPage.inactive')}
                 </Badge>
               </div>
             </div>
@@ -435,15 +451,15 @@ export default function LetterTypesPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Letter Type</AlertDialogTitle>
+            <AlertDialogTitle>{t('dms.letterTypesPage.deleteDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this letter type? This action cannot be undone. The letter type cannot be deleted if it's in use by templates or letterheads.
+              {t('dms.letterTypesPage.deleteDialog.description')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('dms.letterTypesPage.deleteDialog.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Delete
+              {t('dms.letterTypesPage.deleteDialog.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

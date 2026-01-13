@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useLetterTypes } from "@/hooks/useLetterTypes";
+import { useLanguage } from "@/hooks/useLanguage";
 import { letterheadSchema, type LetterheadFormData } from "@/lib/validations/dms";
 import type { Letterhead } from "@/types/dms";
 
@@ -27,6 +28,7 @@ export function LetterheadForm({
   onCancel,
   isLoading = false,
 }: LetterheadFormProps) {
+  const { t } = useLanguage();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileType, setFileType] = useState<"pdf" | "image" | "html">("image");
 
@@ -119,12 +121,12 @@ export function LetterheadForm({
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="name">
-          Name <span className="text-destructive">*</span>
+          {t("dms.letterheadForm.nameLabel") || "Name"} <span className="text-destructive">*</span>
         </Label>
         <Input
           id="name"
           {...register("name")}
-          placeholder="Main Portrait Letterhead"
+          placeholder={t("dms.letterheadForm.namePlaceholder") || "Main Portrait Letterhead"}
         />
         {errors.name && (
           <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -133,7 +135,7 @@ export function LetterheadForm({
 
       <div className="space-y-2">
         <Label htmlFor="file">
-          File {!letterhead && <span className="text-destructive">*</span>}
+          {t("dms.letterheadForm.fileLabel") || "File"} {!letterhead && <span className="text-destructive">*</span>}
         </Label>
         {!watchedFile && !letterhead?.file_path ? (
           <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
@@ -150,10 +152,10 @@ export function LetterheadForm({
             >
               <Upload className="h-8 w-8 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
-                Click to upload or drag and drop
+                {t("dms.letterheadForm.uploadHint") || "Click to upload or drag and drop"}
               </span>
               <span className="text-xs text-muted-foreground">
-                PDF, JPG, PNG, WEBP (Max 10MB)
+                {t("dms.letterheadForm.fileTypesHint") || "PDF, JPG, PNG, WEBP (Max 10MB)"}
               </span>
             </Label>
           </div>
@@ -215,7 +217,7 @@ export function LetterheadForm({
 
       <div className="space-y-4">
         <div className="space-y-3">
-          <Label>Letterhead Type <span className="text-destructive">*</span></Label>
+          <Label>{t("dms.letterheadForm.letterheadTypeLabel") || "Letterhead Type"} <span className="text-destructive">*</span></Label>
           <Controller
             name="letterhead_type"
             control={control}
@@ -229,10 +231,10 @@ export function LetterheadForm({
                   <RadioGroupItem value="background" id="background" />
                   <div className="flex-1">
                     <Label htmlFor="background" className="font-medium cursor-pointer">
-                      Background
+                      {t("dms.letterheadForm.backgroundLabel") || "Background"}
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      Full-page background that appears on all pages
+                      {t("dms.letterheadForm.backgroundDescription") || "Full-page background that appears on all pages"}
                     </p>
                   </div>
                 </div>
@@ -240,10 +242,10 @@ export function LetterheadForm({
                   <RadioGroupItem value="watermark" id="watermark" />
                   <div className="flex-1">
                     <Label htmlFor="watermark" className="font-medium cursor-pointer">
-                      Watermark
+                      {t("dms.letterheadForm.watermarkLabel") || "Watermark"}
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      Centered overlay with low opacity behind text
+                      {t("dms.letterheadForm.watermarkDescription") || "Centered overlay with low opacity behind text"}
                     </p>
                   </div>
                 </div>
@@ -257,7 +259,7 @@ export function LetterheadForm({
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="file_type">File Type</Label>
+            <Label htmlFor="file_type">{t("dms.letterheadForm.fileTypeLabel") || "File Type"}</Label>
             <Controller
               name="file_type"
               control={control}
@@ -280,7 +282,7 @@ export function LetterheadForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="letter_type">Letter Type (Optional)</Label>
+            <Label htmlFor="letter_type">{t("dms.letterheadForm.letterTypeOptionalLabel") || "Letter Type (Optional)"}</Label>
             <Controller
               name="letter_type"
               control={control}
@@ -293,7 +295,7 @@ export function LetterheadForm({
                   disabled={letterTypesLoading}
                 >
                   <SelectTrigger id="letter_type">
-                    <SelectValue placeholder={letterTypesLoading ? "Loading..." : "Select letter type"} />
+                    <SelectValue placeholder={letterTypesLoading ? (t("common.loading") || "Loading...") : (t("dms.letterheadForm.selectLetterType") || "Select letter type")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">None</SelectItem>
@@ -322,17 +324,17 @@ export function LetterheadForm({
             />
           )}
         />
-        <Label htmlFor="active">Active</Label>
+        <Label htmlFor="active">{t("dms.letterheadForm.activeLabel") || "Active"}</Label>
       </div>
 
       <div className="flex items-center justify-end gap-2 pt-4">
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            {t("common.cancel") || "Cancel"}
           </Button>
         )}
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Saving..." : letterhead ? "Update" : "Create"}
+          {isLoading ? (t("common.saving") || "Saving...") : letterhead ? (t("dms.letterheadForm.update") || "Update") : (t("dms.letterheadForm.create") || "Create")}
         </Button>
       </div>
     </form>

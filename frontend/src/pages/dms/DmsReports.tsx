@@ -15,32 +15,32 @@ export default function DmsReports() {
   const incomingByDeptData = useMemo(() => {
     if (!data?.incoming_by_department) return [];
     return data.incoming_by_department.map((row: any) => ({
-      department: row.routing_department_id || "Unassigned",
+      department: row.routing_department_id || t('dms.reportsPage.unassigned'),
       total: row.total,
     }));
-  }, [data]);
+  }, [data, t]);
 
   // Prepare data for export - Security Breakdown
   const securityBreakdownData = useMemo(() => {
     if (!data?.security_breakdown) return [];
     return data.security_breakdown.map((row: any) => ({
-      security_level: row.security_level_key || "None",
+      security_level: row.security_level_key || t('dms.reportsPage.none'),
       count: row.total,
     }));
-  }, [data]);
+  }, [data, t]);
 
   // Prepare data for export - Pending Aging
   const pendingAgingData = useMemo(() => {
     if (!data?.pending_aging) return [];
     return data.pending_aging.map((row: any) => ({
-      status: row.status || "N/A",
+      status: row.status || t('dms.reportsPage.notAvailable'),
       average_days: Number(row.average_days).toFixed(1),
     }));
-  }, [data]);
+  }, [data, t]);
 
   // Build filters summary
   const buildFiltersSummary = () => {
-    return "DMS Distribution Report";
+    return t('dms.reportsPage.filterSummary');
   };
 
   return (
@@ -49,15 +49,15 @@ export default function DmsReports() {
       <Card className="lg:col-span-2">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Incoming by department</CardTitle>
+            <CardTitle>{t('dms.reportsPage.incomingByDepartment')}</CardTitle>
             <ReportExportButtons
               data={incomingByDeptData}
               columns={[
-                { key: 'department', label: 'Department' },
-                { key: 'total', label: 'Total' },
+                { key: 'department', label: t('dms.reportsPage.department') },
+                { key: 'total', label: t('dms.reportsPage.total') },
               ]}
               reportKey="dms_incoming_by_department"
-              title="DMS Incoming Documents by Department"
+              title={t('dms.reportsPage.incomingByDepartment')}
               transformData={(data) => data}
               buildFiltersSummary={buildFiltersSummary}
               templateType="dms"
@@ -70,14 +70,14 @@ export default function DmsReports() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Department</TableHead>
-                <TableHead className="text-right">Total</TableHead>
+                <TableHead>{t('dms.reportsPage.department')}</TableHead>
+                <TableHead className="text-right">{t('dms.reportsPage.total')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data?.incoming_by_department?.map((row: any, idx: number) => (
                 <TableRow key={idx}>
-                  <TableCell>{row.routing_department_id || "Unassigned"}</TableCell>
+                  <TableCell>{row.routing_department_id || t('dms.reportsPage.unassigned')}</TableCell>
                   <TableCell className="text-right">{row.total}</TableCell>
                 </TableRow>
               ))}
@@ -89,15 +89,15 @@ export default function DmsReports() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Security distribution</CardTitle>
+            <CardTitle>{t('dms.reportsPage.securityDistribution')}</CardTitle>
             <ReportExportButtons
               data={securityBreakdownData}
               columns={[
-                { key: 'security_level', label: 'Security Level' },
-                { key: 'count', label: 'Count' },
+                { key: 'security_level', label: t('dms.reportsPage.level') },
+                { key: 'count', label: t('dms.reportsPage.count') },
               ]}
               reportKey="dms_security_distribution"
-              title="DMS Security Level Distribution"
+              title={t('dms.reportsPage.securityDistribution')}
               transformData={(data) => data}
               buildFiltersSummary={buildFiltersSummary}
               templateType="dms"
@@ -111,14 +111,14 @@ export default function DmsReports() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Level</TableHead>
-                <TableHead className="text-right">Count</TableHead>
+                <TableHead>{t('dms.reportsPage.level')}</TableHead>
+                <TableHead className="text-right">{t('dms.reportsPage.count')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data?.security_breakdown?.map((row: any, idx: number) => (
                 <TableRow key={idx}>
-                  <TableCell>{row.security_level_key || "None"}</TableCell>
+                  <TableCell>{row.security_level_key || t('dms.reportsPage.none')}</TableCell>
                   <TableCell className="text-right">{row.total}</TableCell>
                 </TableRow>
               ))}
@@ -130,15 +130,15 @@ export default function DmsReports() {
       <Card className="lg:col-span-3">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Pending aging</CardTitle>
+            <CardTitle>{t('dms.reportsPage.pendingAging')}</CardTitle>
             <ReportExportButtons
               data={pendingAgingData}
               columns={[
-                { key: 'status', label: 'Status' },
-                { key: 'average_days', label: 'Average Days' },
+                { key: 'status', label: t('dms.reportsPage.status') },
+                { key: 'average_days', label: t('dms.reportsPage.avgDays') },
               ]}
               reportKey="dms_pending_aging"
-              title="DMS Pending Documents Aging"
+              title={t('dms.reportsPage.pendingAging')}
               transformData={(data) => data}
               buildFiltersSummary={buildFiltersSummary}
               templateType="dms"
@@ -151,8 +151,8 @@ export default function DmsReports() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Avg days</TableHead>
+                <TableHead>{t('dms.reportsPage.status')}</TableHead>
+                <TableHead className="text-right">{t('dms.reportsPage.avgDays')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
