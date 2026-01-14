@@ -145,7 +145,8 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|unique:users,email|max:255',
+            // Email must be globally unique across all users (not per-organization)
+            'email' => ['required', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users', 'email')],
             'password' => 'required|string|min:8',
             'full_name' => 'required|string|max:255',
             'role' => 'required|string|max:255', // Changed: Allow any role name, validate existence later

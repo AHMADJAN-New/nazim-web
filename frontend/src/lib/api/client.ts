@@ -203,7 +203,10 @@ class ApiClient {
           const details = Object.entries(validationErrors)
             .map(([key, messages]) => `${key}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
             .join('; ');
-          throw new Error(error.message || 'Validation failed' + (details ? ` - ${details}` : ''));
+          const validationError = new Error(error.message || 'Validation failed' + (details ? ` - ${details}` : ''));
+          // Attach errors object so hooks can access it
+          (validationError as any).errors = validationErrors;
+          throw validationError;
         }
 
         // Handle 402 subscription errors (feature not available, limit reached, etc.)

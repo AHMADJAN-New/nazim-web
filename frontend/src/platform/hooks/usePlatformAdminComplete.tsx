@@ -419,8 +419,34 @@ export const usePlatformCreateOrganization = () => {
       queryClient.invalidateQueries({ queryKey: ['platform-organizations'] });
       showToast.success(t('toast.organizationCreated') || 'Organization created successfully');
     },
-    onError: (error: Error) => {
-      showToast.error(error.message || t('toast.organizationCreateFailed') || 'Failed to create organization');
+    onError: (error: any) => {
+      // Extract validation errors if available
+      let errorMessage = error.message || t('toast.organizationCreateFailed') || 'Failed to create organization';
+      
+      // Check if error has validation errors object
+      if (error.errors && typeof error.errors === 'object') {
+        const validationMessages = Object.entries(error.errors)
+          .map(([field, messages]: [string, any]) => {
+            // Format field name: admin_email -> Admin Email, email -> Email
+            const fieldLabel = field
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, l => l.toUpperCase())
+              .replace('Admin Email', 'Admin Email')
+              .replace('Email', 'Email');
+            
+            // Get first message if array, otherwise use the message
+            const messageList = Array.isArray(messages) ? messages[0] : messages;
+            
+            return `${fieldLabel}: ${messageList}`;
+          })
+          .join('. ');
+        
+        if (validationMessages) {
+          errorMessage = validationMessages;
+        }
+      }
+      
+      showToast.error(errorMessage);
     },
   });
 };

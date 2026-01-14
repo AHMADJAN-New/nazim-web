@@ -24,11 +24,25 @@ class OrganizationService
      */
     public function createOrganizationWithAdmin(array $organizationData, array $adminData): array
     {
-        return DB::transaction(function () use ($organizationData, $adminData) {
-            // 1. Create the organization
-            $organization = Organization::create($organizationData);
-
-            Log::info('Organization created', ['organization_id' => $organization->id]);
+        try {
+            return DB::transaction(function () use ($organizationData, $adminData) {
+                // 1. Create the organization
+                try {
+                    $organization = Organization::create($organizationData);
+                    error_log('Organization created: ' . $organization->id);
+                    Log::info('Organization created', ['organization_id' => $organization->id]);
+                } catch (\Exception $e) {
+                    error_log('Failed to create organization in transaction: ' . $e->getMessage());
+                    error_log('File: ' . $e->getFile() . ' Line: ' . $e->getLine());
+                    Log::error('Failed to create organization in transaction', [
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'organization_data' => $organizationData,
+                    ]);
+                    throw $e;
+                }
 
             // 2. Create default school for the organization
             $school = $this->createDefaultSchool($organization);
@@ -54,12 +68,31 @@ class OrganizationService
                 'admin_id' => $adminUser->id
             ]);
 
-            return [
-                'organization' => $organization,
-                'admin_user' => $adminUser,
-                'school' => $school,
-            ];
-        });
+                return [
+                    'organization' => $organization,
+                    'admin_user' => $adminUser,
+                    'school' => $school,
+                ];
+            });
+        } catch (\Exception $e) {
+            // CRITICAL: Use error_log to ensure error is written even if Log::error fails
+            error_log('OrganizationService error: ' . $e->getMessage());
+            error_log('File: ' . $e->getFile() . ' Line: ' . $e->getLine());
+            error_log('Trace: ' . $e->getTraceAsString());
+            
+            try {
+                Log::error('Failed to create organization with admin', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'exception_class' => get_class($e),
+                ]);
+            } catch (\Exception $logException) {
+                error_log('Failed to write to Laravel log: ' . $logException->getMessage());
+            }
+            throw $e;
+        }
     }
 
     /**
