@@ -908,6 +908,9 @@ export const fa: TranslationKeys = {
     weak: 'ضعیف',
     years: 'سال‌ها',
     yes: 'بله',
+    selectLanguage: 'انتخاب زبان',
+    schoolManagement: 'ناظم – سیستم مدیریت مدارس اسلامی',
+    toggleSidebar: 'تغییر نوار کناری',
     cardView: 'card View',
     tableView: 'table View',
     noData: 'داده‌ای موجود نیست',
@@ -1701,8 +1704,6 @@ export const fa: TranslationKeys = {
     resetToDefault: 'reset To Default',
     downloadPdf: 'download Pdf',
     schoolSwitched: 'school Switched',
-    selectLanguage: 'انتخاب زبان',
-    schoolManagement: 'ناظم – سیستم مدیریت مدارس اسلامی',
     mainNavigation: 'main Navigation',
     checkin: 'checkin',
     addGuest: 'add Guest',
@@ -1776,7 +1777,6 @@ export const fa: TranslationKeys = {
     previousSlide: 'previous Slide',
     previousPage: 'previous Page',
     nextPage: 'next Page',
-    toggleSidebar: 'تغییر نوار کناری',
     exampleCategories: 'example Categories',
     noData: 'no Data',
     viewAll: 'view All',
@@ -3376,6 +3376,7 @@ export const fa: TranslationKeys = {
     },
     hero: {
       badge: '🚀 مورد اعتماد بیش از 500 مکتب در سراسر جهان',
+      description: 'برای مدیران، ناظمان و استادان مکتب: ثبت نام، حاضری، امتحانات و راپورها در یک سیستم — بدون سردرگمی.',
       startFreeTrial: 'شروع آزمایشی رایگان',
       subtitle: 'عملیات را ساده کنید، نتایج یادگیری را بهبود بخشید و ارتباطات جامعه را با پلتفرم جامع مدیریت مکتب اسلامی ما تقویت کنید.',
       title: 'مدیریت مکتب خود را',
@@ -3483,6 +3484,42 @@ export const fa: TranslationKeys = {
       studentsManaged: 'شاگردان مدیریت شده',
       supportAvailable: 'پشتیبانی موجود',
       uptimeGuarantee: 'ضمانت زمان کار'
+    },
+    index: {
+      heroBadges: {
+        fullySecure: 'کاملاً امن',
+        multiLanguage: 'چند زبانه',
+        strongSecurity: 'امنیت قوی',
+        permissionControl: 'کنترل دسترسی',
+        standardDesign: 'طراحی استاندارد'
+      },
+      valueBadges: {
+        savesTime: 'زمان شما را صرفه‌جویی می‌کند',
+        transparentReports: 'گزارش‌های شفاف و دقیق',
+        allInOne: 'همه عملیات مدرسه را در یک مکان مدیریت می‌کند'
+      },
+      stats: {
+        activeFeatures: {
+          value: '۱۰۰+',
+          label: 'ویژگی‌های فعال'
+        },
+        fastAttendance: {
+          value: 'حاضری سریع',
+          label: '۳ نفر در یک ثانیه'
+        },
+        accurate: {
+          value: 'دقیق',
+          label: 'گزارش‌های دقیق و صحیح'
+        },
+        trusted: {
+          value: 'قابل اعتماد',
+          label: 'در مدارس مختلف استفاده شده'
+        }
+      },
+      contactSection: {
+        contactInfo: 'اطلاعات تماس',
+        tagline: 'ناظم – مدیریت کامل مدرسه در چند کلیک!'
+      }
     }
   },
   library: {

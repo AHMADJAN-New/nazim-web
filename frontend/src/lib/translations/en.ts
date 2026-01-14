@@ -884,7 +884,10 @@ export const en: TranslationKeys = {
     view: 'View',
     weak: 'Weak',
     years: 'years',
-    yes: 'Yes'
+    yes: 'Yes',
+    selectLanguage: 'Select Language',
+    schoolManagement: 'School Management',
+    toggleSidebar: 'Toggle Sidebar'
   },
   completionDate: 'Completion date',
   contextualHelp: 'Get help',
@@ -1664,8 +1667,6 @@ export const en: TranslationKeys = {
     resetToDefault: 'reset To Default',
     downloadPdf: 'download Pdf',
     schoolSwitched: 'school Switched',
-    selectLanguage: 'Select Language',
-    schoolManagement: 'School Management',
     mainNavigation: 'main Navigation',
     checkin: 'checkin',
     addGuest: 'add Guest',
@@ -1739,7 +1740,6 @@ export const en: TranslationKeys = {
     previousSlide: 'previous Slide',
     previousPage: 'previous Page',
     nextPage: 'next Page',
-    toggleSidebar: 'Toggle Sidebar',
     exampleCategories: 'example Categories',
     noData: 'no Data',
     viewAll: 'view All',
@@ -3343,6 +3343,7 @@ export const en: TranslationKeys = {
     },
     hero: {
       badge: 'Trusted by many schools',
+      description: 'For school principals, administrators, and teachers: registration, attendance, exams, and reports in one system — without confusion.',
       startFreeTrial: 'Start Free Trial',
       subtitle: 'Streamline operations, enhance learning outcomes, and strengthen community connections with our comprehensive Islamic school management platform.',
       title: 'Transform Your',
@@ -3450,6 +3451,42 @@ export const en: TranslationKeys = {
       studentsManaged: 'Students Managed',
       supportAvailable: 'Support Available',
       uptimeGuarantee: 'Uptime Guarantee'
+    },
+    index: {
+      heroBadges: {
+        fullySecure: 'Fully Secure',
+        multiLanguage: 'Multi-Language',
+        strongSecurity: 'Strong Security',
+        permissionControl: 'Permission Control',
+        standardDesign: 'Standard Design'
+      },
+      valueBadges: {
+        savesTime: 'Saves Your Time',
+        transparentReports: 'Transparent & Accurate Reports',
+        allInOne: 'Manages All School Operations in One Place'
+      },
+      stats: {
+        activeFeatures: {
+          value: '100+',
+          label: 'Active Features'
+        },
+        fastAttendance: {
+          value: 'Fast Attendance',
+          label: '3 People in One Second'
+        },
+        accurate: {
+          value: 'Accurate',
+          label: 'Accurate & Precise Reports'
+        },
+        trusted: {
+          value: 'Trusted',
+          label: 'Used in Various Schools'
+        }
+      },
+      contactSection: {
+        contactInfo: 'Contact Information',
+        tagline: 'Nazim – Complete School Management in Just a Few Clicks!'
+      }
     }
   },
   leave: {

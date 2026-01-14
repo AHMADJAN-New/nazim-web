@@ -1,11 +1,40 @@
-import { memo } from 'react';
-import { stats, valueBadges } from './data';
+import { memo, useMemo } from 'react';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useIndexTranslations } from './translations/useIndexTranslations';
 import { Badge } from '@/components/ui/badge';
 
 export const StatsSection = memo(function StatsSection() {
+  const { isRTL } = useLanguage();
+  const { t, translations } = useIndexTranslations();
+  
+  const stats = useMemo(() => [
+    {
+      value: t('stats.activeFeatures.value') as string,
+      label: t('stats.activeFeatures.label') as string,
+    },
+    {
+      value: t('stats.fastAttendance.value') as string,
+      label: t('stats.fastAttendance.label') as string,
+    },
+    {
+      value: t('stats.accurate.value') as string,
+      label: t('stats.accurate.label') as string,
+    },
+    {
+      value: t('stats.trusted.value') as string,
+      label: t('stats.trusted.label') as string,
+    },
+  ], [t, translations]);
+
+  const valueBadges = useMemo(() => [
+    t('stats.valueBadges.savesTime') as string,
+    t('stats.valueBadges.transparentReports') as string,
+    t('stats.valueBadges.allInOne') as string,
+  ], [t, translations]);
+
   return (
     <section className="px-6 py-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 max-w-5xl mx-auto">
         {stats.map((stat, index) => (
           <div
             key={index}

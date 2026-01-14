@@ -1,6 +1,8 @@
 import { memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageCircle } from 'lucide-react';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useIndexTranslations } from './translations/useIndexTranslations';
 
 interface ContactSectionProps {
   onContactClick: () => void;
@@ -9,6 +11,9 @@ interface ContactSectionProps {
 export const ContactSection = memo(function ContactSection({
   onContactClick,
 }: ContactSectionProps) {
+  const { isRTL } = useLanguage();
+  const { t } = useIndexTranslations();
+  
   return (
     <section className="px-6 pb-6">
       <div className="relative overflow-hidden bg-gradient-to-br from-[#f8fafc] to-[#e2e8f0] border-2 border-[#c9a44d]/20 rounded-3xl p-5 flex items-center justify-center">
@@ -26,13 +31,13 @@ export const ContactSection = memo(function ContactSection({
           className="relative z-10 px-6 py-3 bg-gradient-to-r from-[#0b0b56] to-[#1a1a6a] text-white font-bold text-lg rounded-lg hover:opacity-90 transition-opacity shadow-lg flex items-center gap-2"
         >
           <MessageCircle className="w-6 h-6" />
-          <span dir="rtl">د اړیکو معلومات</span>
+          <span dir={isRTL ? "rtl" : "ltr"}>{t('contact.contactInfo')}</span>
         </Button>
 
       </div>
 
-      <div className="text-center text-base text-slate-600 mt-4 font-medium" dir="rtl">
-        "ناظم – د مدرسې بشپړ مدیریت په څو کلیکونو کې!"
+      <div className="text-center text-base text-slate-600 mt-4 font-medium" dir={isRTL ? "rtl" : "ltr"}>
+        "{t('contact.tagline')}"
       </div>
     </section>
   );

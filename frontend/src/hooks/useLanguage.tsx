@@ -40,12 +40,21 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
   const setLanguage = (lang: Language) => {
     // Only set if it's a valid language
     if (['en', 'ps', 'fa', 'ar'].includes(lang)) {
-      setLanguageState(lang);
+      // Save to localStorage first (cache the selection)
       localStorage.setItem('nazim-language', lang);
-      // Pre-load the new language translation
-      loadTranslation(lang).catch(() => {
-        // Silently fail - will use English fallback
-      });
+      
+      // Pre-load the new language translation before refresh
+      loadTranslation(lang)
+        .then(() => {
+          // After translation is loaded, refresh the page to apply changes
+          // This ensures all components re-render with the new language
+          window.location.reload();
+        })
+        .catch(() => {
+          // Even if translation load fails, refresh to apply language change
+          // English fallback will be used
+          window.location.reload();
+        });
     }
   };
 

@@ -1206,8 +1206,6 @@ export const ps: TranslationKeys = {
     resetToDefault: 'اصلي حالت ته اړول',
     downloadPdf: 'ډاونلوډ PDF',
     schoolSwitched: 'ښوونځی بدل شو',
-    selectLanguage: 'ژبه غوره کړئ',
-    schoolManagement: 'ناظم – د دیني مدارسو د اداري چارو د مدیریت سیستم',
     mainNavigation: 'اصلي نیویګیشن',
     checkin: 'حاضر شوی',
     addGuest: 'مېلمه اضافه کړئ',
@@ -1281,7 +1279,6 @@ export const ps: TranslationKeys = {
     previousSlide: 'مخکنی سلایډ',
     previousPage: 'مخکنی مخ',
     nextPage: 'بل مخ',
-    toggleSidebar: 'سایډتر لاسه بدل کړئ',
     exampleCategories: 'د کټګوریو بېلګه',
     noData: 'معلومات نشته',
     viewAll: 'ټول کتل',
@@ -2692,6 +2689,7 @@ export const ps: TranslationKeys = {
     },
     hero: {
       badge: 'په مختلفو مدارسو کې استفاده شوی',
+      description: 'د مدرسې مهتمم، ناظم، او استاد ته: ثبت نام، حاضري، امتحانات، او راپورونه په یو سیستم کې — پرته له ګډوډۍ.',
       startFreeTrial: 'وړیا ازمایښت پیل کړئ',
       subtitle: 'زموږ د هراړخیز اسلامي ښوونځي مدیریت پلیټفارم سره عملیات ساده کړئ، د زده کړې پایلې ښه کړئ او د ټولنې اړیکې پیاوړې کړئ.',
       title: 'خپل',
@@ -2799,6 +2797,42 @@ export const ps: TranslationKeys = {
       studentsManaged: 'مدیریت شوي زده کوونکي',
       supportAvailable: 'ملاتړ شتون لري',
       uptimeGuarantee: 'د فعالیت تضمین'
+    },
+    index: {
+      heroBadges: {
+        fullySecure: 'مکمل محفوظ',
+        multiLanguage: 'په دریو ژبو',
+        strongSecurity: 'قوي امنیت',
+        permissionControl: 'د صلاحیتونو کنترول',
+        standardDesign: 'معیاري ډیزاین'
+      },
+      valueBadges: {
+        savesTime: 'ستاسو وخت بچت کوي',
+        transparentReports: 'شفاف او کره راپورونه برابروي',
+        allInOne: 'د مدرسې ټولې چارې په یوه ځای کې مدیریتوي'
+      },
+      stats: {
+        activeFeatures: {
+          value: '۱۰۰+',
+          label: 'فعالې برخې'
+        },
+        fastAttendance: {
+          value: 'چټکه حاضري',
+          label: 'په یوه ثانیه کې ۳ نفر'
+        },
+        accurate: {
+          value: 'کره',
+          label: 'کره او دقیق راپورونه'
+        },
+        trusted: {
+          value: 'د باور وړ',
+          label: 'په مختلفو مدارسو کې استفاده شوی'
+        }
+      },
+      contactSection: {
+        contactInfo: 'د اړیکو معلومات',
+        tagline: 'ناظم – د مدرسې بشپړ مدیریت په څو کلیکونو کې!'
+      }
     }
   },
   leave: {

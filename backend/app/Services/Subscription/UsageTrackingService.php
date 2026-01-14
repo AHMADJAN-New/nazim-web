@@ -17,23 +17,27 @@ class UsageTrackingService
 {
     /**
      * Resource counting queries - maps resource_key to SQL count query
+     * CRITICAL: 
+     * - All queries using SoftDeletes MUST exclude deleted records (deleted_at IS NULL)
+     * - Resources with is_active should only count active records (is_active = true)
+     * - Resources without SoftDeletes (like incoming_documents) don't check deleted_at
      */
     private array $countQueries = [
-        'students' => "SELECT COUNT(*) FROM students WHERE organization_id = :org_id AND deleted_at IS NULL",
-        'staff' => "SELECT COUNT(*) FROM staff WHERE organization_id = :org_id AND deleted_at IS NULL",
-        'users' => "SELECT COUNT(*) FROM profiles WHERE organization_id = :org_id AND is_active = true",
-        'schools' => "SELECT COUNT(*) FROM school_branding WHERE organization_id = :org_id AND deleted_at IS NULL",
-        'classes' => "SELECT COUNT(*) FROM classes WHERE organization_id = :org_id AND deleted_at IS NULL",
-        'documents' => "SELECT COUNT(*) FROM incoming_documents WHERE organization_id = :org_id",
-        'exams' => "SELECT COUNT(*) FROM exams WHERE organization_id = :org_id AND deleted_at IS NULL",
-        'finance_accounts' => "SELECT COUNT(*) FROM finance_accounts WHERE organization_id = :org_id AND deleted_at IS NULL",
-        'income_entries' => "SELECT COUNT(*) FROM income_entries WHERE organization_id = :org_id AND deleted_at IS NULL",
-        'expense_entries' => "SELECT COUNT(*) FROM expense_entries WHERE organization_id = :org_id AND deleted_at IS NULL",
-        'assets' => "SELECT COUNT(*) FROM assets WHERE organization_id = :org_id AND deleted_at IS NULL",
-        'library_books' => "SELECT COUNT(*) FROM library_books WHERE organization_id = :org_id AND deleted_at IS NULL",
-        'events' => "SELECT COUNT(*) FROM events WHERE organization_id = :org_id AND deleted_at IS NULL",
-        'certificate_templates' => "SELECT COUNT(*) FROM certificate_templates WHERE organization_id = :org_id AND deleted_at IS NULL",
-        'id_card_templates' => "SELECT COUNT(*) FROM id_card_templates WHERE organization_id = :org_id AND deleted_at IS NULL",
+        'students' => "SELECT COUNT(*) as count FROM students WHERE organization_id = :org_id AND deleted_at IS NULL",
+        'staff' => "SELECT COUNT(*) as count FROM staff WHERE organization_id = :org_id AND deleted_at IS NULL",
+        'users' => "SELECT COUNT(*) as count FROM profiles WHERE organization_id = :org_id AND is_active = true",
+        'schools' => "SELECT COUNT(*) as count FROM school_branding WHERE organization_id = :org_id AND deleted_at IS NULL",
+        'classes' => "SELECT COUNT(*) as count FROM classes WHERE organization_id = :org_id AND deleted_at IS NULL",
+        'documents' => "SELECT COUNT(*) as count FROM incoming_documents WHERE organization_id = :org_id",
+        'exams' => "SELECT COUNT(*) as count FROM exams WHERE organization_id = :org_id AND deleted_at IS NULL",
+        'finance_accounts' => "SELECT COUNT(*) as count FROM finance_accounts WHERE organization_id = :org_id AND deleted_at IS NULL AND is_active = true",
+        'income_entries' => "SELECT COUNT(*) as count FROM income_entries WHERE organization_id = :org_id AND deleted_at IS NULL",
+        'expense_entries' => "SELECT COUNT(*) as count FROM expense_entries WHERE organization_id = :org_id AND deleted_at IS NULL",
+        'assets' => "SELECT COUNT(*) as count FROM assets WHERE organization_id = :org_id AND deleted_at IS NULL",
+        'library_books' => "SELECT COUNT(*) as count FROM library_books WHERE organization_id = :org_id AND deleted_at IS NULL",
+        'events' => "SELECT COUNT(*) as count FROM events WHERE organization_id = :org_id AND deleted_at IS NULL",
+        'certificate_templates' => "SELECT COUNT(*) as count FROM certificate_templates WHERE organization_id = :org_id AND deleted_at IS NULL",
+        'id_card_templates' => "SELECT COUNT(*) as count FROM id_card_templates WHERE organization_id = :org_id AND deleted_at IS NULL",
     ];
 
     /**
@@ -55,7 +59,14 @@ class UsageTrackingService
     ) {}
 
     /**
+     * Cache TTL in minutes - how long to trust cached counts before recalculating
+     * Set to 5 minutes for balance between performance and accuracy
+     */
+    public const CACHE_TTL_MINUTES = 5;
+
+    /**
      * Get current usage count for a resource
+     * Uses cached counts for performance, with periodic refresh to ensure accuracy
      */
     public function getUsage(string $organizationId, string $resourceKey): float|int
     {
@@ -67,10 +78,10 @@ class UsageTrackingService
 
             // Check if we need to count from database
             if (isset($this->countQueries[$resourceKey])) {
-                return $this->countFromDatabase($organizationId, $resourceKey);
+                return $this->getCachedCount($organizationId, $resourceKey);
             }
 
-            // Otherwise, get from usage_current table
+            // Otherwise, get from usage_current table (for non-database-counted resources)
             $usage = UsageCurrent::where('organization_id', $organizationId)
                 ->where('resource_key', $resourceKey)
                 ->first();
@@ -98,7 +109,63 @@ class UsageTrackingService
     }
 
     /**
-     * Count directly from database
+     * Get cached count with automatic refresh if stale
+     * Performance optimization: Uses cached count from usage_current table
+     * Refreshes periodically (every 5 minutes) to catch any drift from concurrent operations
+     */
+    private function getCachedCount(string $organizationId, string $resourceKey): int
+    {
+        try {
+            // Get cached count
+            $usage = UsageCurrent::where('organization_id', $organizationId)
+                ->where('resource_key', $resourceKey)
+                ->first();
+
+            // If no cache exists or cache is stale, recalculate
+            $shouldRecalculate = false;
+            if (!$usage) {
+                $shouldRecalculate = true;
+            } elseif ($usage->last_calculated_at === null) {
+                $shouldRecalculate = true;
+            } else {
+                $cacheAge = now()->diffInMinutes($usage->last_calculated_at);
+                if ($cacheAge >= self::CACHE_TTL_MINUTES) {
+                    $shouldRecalculate = true;
+                }
+            }
+
+            if ($shouldRecalculate) {
+                // Recalculate from database and update cache
+                $actualCount = $this->countFromDatabase($organizationId, $resourceKey);
+                
+                // Update or create cache record
+                UsageCurrent::updateOrCreate(
+                    [
+                        'organization_id' => $organizationId,
+                        'resource_key' => $resourceKey,
+                    ],
+                    [
+                        'id' => $usage->id ?? (string) \Illuminate\Support\Str::uuid(),
+                        'current_count' => $actualCount,
+                        'last_calculated_at' => now(),
+                    ]
+                );
+
+                return $actualCount;
+            }
+
+            // Return cached count
+            return $usage->current_count ?? 0;
+        } catch (\Exception $e) {
+            \Log::warning("Failed to get cached count for {$resourceKey} for org {$organizationId}: " . $e->getMessage());
+            // Fallback to direct database count on error
+            return $this->countFromDatabase($organizationId, $resourceKey);
+        }
+    }
+
+    /**
+     * Count directly from database using parameterized queries
+     * CRITICAL: Always uses fresh database counts to ensure deleted/disabled records are excluded
      */
     private function countFromDatabase(string $organizationId, string $resourceKey): int
     {
@@ -106,13 +173,24 @@ class UsageTrackingService
             return 0;
         }
 
-        $query = str_replace(':org_id', "'" . $organizationId . "'", $this->countQueries[$resourceKey]);
-        
         try {
-            $result = DB::select($query);
-            return $result[0]->count ?? 0;
+            // Use parameterized query to prevent SQL injection and ensure proper type handling
+            $result = DB::select($this->countQueries[$resourceKey], ['org_id' => $organizationId]);
+            
+            if (empty($result)) {
+                return 0;
+            }
+            
+            // Handle both object and array results
+            $count = is_object($result[0]) ? ($result[0]->count ?? 0) : ($result[0]['count'] ?? 0);
+            
+            return (int) $count;
         } catch (\Exception $e) {
-            \Log::warning("Failed to count {$resourceKey} for org {$organizationId}: " . $e->getMessage());
+            \Log::warning("Failed to count {$resourceKey} for org {$organizationId}: " . $e->getMessage(), [
+                'query' => $this->countQueries[$resourceKey],
+                'org_id' => $organizationId,
+                'trace' => $e->getTraceAsString(),
+            ]);
             return 0;
         }
     }
