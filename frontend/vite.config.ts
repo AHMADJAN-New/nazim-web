@@ -1,12 +1,13 @@
 import react from '@vitejs/plugin-react-swc'
 import fs from 'fs'
 import path from 'path'
-import { defineConfig } from 'vite'
+import { defineConfig, type PluginOption } from 'vite'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 // Plugin to suppress CSS syntax warnings from Tailwind's arbitrary variants
 // These warnings are false positives - Tailwind generates valid CSS with advanced selectors
 // The warnings come from esbuild's CSS minifier not recognizing Tailwind's arbitrary variant syntax
-const suppressCssWarnings = () => {
+const suppressCssWarnings = (): PluginOption => {
   return {
     name: 'suppress-css-warnings',
     enforce: 'pre',
@@ -48,6 +49,15 @@ export default defineConfig({
   plugins: [
     react(),
     suppressCssWarnings(),
+    // Bundle analyzer - generates dist/stats.html after build
+    // Run: npm run build, then open dist/stats.html in browser
+    visualizer({
+      open: false, // Don't auto-open (set to true to auto-open after build)
+      filename: 'dist/stats.html',
+      gzipSize: true,
+      brotliSize: true,
+      template: 'treemap', // 'treemap', 'sunburst', or 'network'
+    }),
   ],
   resolve: {
     alias: {
@@ -86,7 +96,25 @@ export default defineConfig({
             if (id.includes('/translations/ar')) return 'i18n-ar';
           }
 
-          // Default: let Vite handle it (prevents circular chunk deps)
+          // Vendor chunking - split large vendors for better caching and parallel loading
+          
+          // React core - keeping them together avoids some circular dependency issues
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return 'vendor-react';
+          }
+
+          // PDFMake - large library, separate chunk
+          if (id.includes('pdfmake')) {
+            return 'vendor-pdfmake';
+          }
+
+          // Recharts - DO NOT code-split separately (causes initialization errors)
+          // Keep it with other vendors or let Vite handle it automatically
+          // Recharts has internal circular dependencies that break when split
+          // It's still lazy-loaded via LazyChart.tsx re-exports
+
+          // Default: let Vite handle other chunks automatically
+          // This prevents circular dependencies in common libraries like Radix/TanStack
           return undefined;
         },
       },
@@ -104,14 +132,19 @@ export default defineConfig({
       'react',
       'react-dom',
       '@tanstack/react-table',
-      // Removed 'recharts' - will be lazy loaded to reduce initial bundle size
-      'jszip',
+      // Include recharts in optimizeDeps to ensure proper initialization
+      // It will still be code-split via manualChunks
+      'recharts',
+      // Removed 'jszip' - will be lazy loaded to reduce initial bundle size
+      // Removed 'xlsx' - will be lazy loaded to reduce initial bundle size
       'shepherd.js',
       'date-fns', // Pre-bundle date-fns to avoid circular dependency issues
     ],
     exclude: [
       'pdfmake-arabic',
       'pdfmake',
+      'jszip', // Exclude jszip to allow for lazy loading
+      'xlsx', // Exclude xlsx to allow for lazy loading
     ],
     esbuildOptions: {
       // Handle CommonJS modules

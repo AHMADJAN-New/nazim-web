@@ -265,9 +265,9 @@ export default function TranslationsManagement() {
     setEditValue('');
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     try {
-      exportTranslationsToExcel();
+      await exportTranslationsToExcel();
       showToast.success('Translations exported to Excel');
     } catch (error) {
       showToast.error('Failed to export translations');

@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { useMemo, useEffect, useState, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
-// Recharts removed from optimizeDeps - will be code-split automatically by Vite
+// Lazy load recharts to reduce initial bundle size
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -47,8 +47,9 @@ import {
   Line,
   Area,
   AreaChart,
-  Legend
-} from "recharts";
+  Legend,
+  ChartSkeleton
+} from "@/components/charts/LazyChart";
 
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -343,38 +344,40 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <ChartContainer
-                config={{
-                  students: {
-                    label: "Students",
-                    color: "hsl(var(--primary))",
-                  },
-                }}
-                className="h-[200px] sm:h-[220px] md:h-[250px] lg:h-[300px] w-full"
-              >
-                <BarChart data={studentsByClass}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis 
-                    dataKey="class" 
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    className="text-xs"
-                  />
-                  <YAxis 
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    className="text-xs"
-                  />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar 
-                    dataKey="students" 
-                    fill="var(--color-students)"
-                    radius={[8, 8, 0, 0]}
-                  />
-                </BarChart>
-              </ChartContainer>
+              <Suspense fallback={<ChartSkeleton />}>
+                <ChartContainer
+                  config={{
+                    students: {
+                      label: "Students",
+                      color: "hsl(var(--primary))",
+                    },
+                  }}
+                  className="h-[200px] sm:h-[220px] md:h-[250px] lg:h-[300px] w-full"
+                >
+                  <BarChart data={studentsByClass}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis 
+                      dataKey="class" 
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      className="text-xs"
+                    />
+                    <YAxis 
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      className="text-xs"
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar 
+                      dataKey="students" 
+                      fill="var(--color-students)"
+                      radius={[8, 8, 0, 0]}
+                    />
+                  </BarChart>
+                </ChartContainer>
+              </Suspense>
             </CardContent>
           </Card>
         )}

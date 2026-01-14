@@ -27,7 +27,9 @@ import {
     Cell,
     AreaChart,
     Area,
-} from 'recharts';
+    ChartSkeleton,
+} from '@/components/charts/LazyChart';
+import { Suspense } from 'react';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';

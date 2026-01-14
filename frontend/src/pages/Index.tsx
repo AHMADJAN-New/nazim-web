@@ -99,7 +99,7 @@ const Index = () => {
             {/* Logo/Brand */}
             <div className="flex items-center gap-3">
               <img
-                src="/nazim_logo.jpg"
+                src="/nazim_logo.webp"
                 alt="Nazim Logo"
                 className="w-10 h-10 rounded-lg object-contain ring-2 ring-white/20 bg-white/20 p-1"
                 loading="eager"

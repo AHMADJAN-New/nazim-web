@@ -24,7 +24,7 @@ export function HeroSection() {
         <div className="flex items-center justify-center gap-4">
           <div className="flex items-center gap-4">
             <img
-              src="/nazim_logo.jpg"
+              src="/nazim_logo.webp"
               alt="Nazim Logo"
               className="w-12 h-12 rounded-lg ring-2 ring-white/20 bg-white/20 object-contain p-1"
               loading="eager"

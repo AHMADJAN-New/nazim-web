@@ -1,4 +1,4 @@
-import { utils, writeFile } from 'xlsx';
+import { loadXlsx } from '@/lib/xlsx-loader';
 
 export interface XlsxSheet {
 	name: string;
@@ -6,14 +6,17 @@ export interface XlsxSheet {
 	rows: Array<Array<string | number>>;
 }
 
-export function exportTimetableToExcel(sheets: XlsxSheet[], fileName = 'timetable.xlsx') {
+export async function exportTimetableToExcel(sheets: XlsxSheet[], fileName = 'timetable.xlsx') {
 	try {
-		const wb = utils.book_new();
+		// Lazy load xlsx library
+		const XLSX = await loadXlsx();
+		
+		const wb = XLSX.utils.book_new();
 		for (const sheet of sheets) {
-			const ws = utils.aoa_to_sheet(sheet.rows);
-			utils.book_append_sheet(wb, ws, sanitizeSheetName(sheet.name));
+			const ws = XLSX.utils.aoa_to_sheet(sheet.rows);
+			XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName(sheet.name));
 		}
-		writeFile(wb, fileName);
+		XLSX.writeFile(wb, fileName);
 	} catch (err) {
 		console.error('Failed to export Excel:', err);
 		throw err;

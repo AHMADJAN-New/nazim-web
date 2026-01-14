@@ -14,7 +14,7 @@ import { LanguageProvider } from '@/hooks/useLanguage';
 
 // Unregister any existing service workers (PWA removed for performance)
 // Guard against sandboxed/invalid documents (e.g., PDF/object viewers) that throw InvalidStateError
-if (import.meta.env.DEV && 'serviceWorker' in navigator) {
+if ('serviceWorker' in navigator) {
   try {
     navigator.serviceWorker
       .getRegistrations()

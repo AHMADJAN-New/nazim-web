@@ -191,7 +191,15 @@ export default function ExchangeRates() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="effectiveDate">{t('finance.effectiveDate') || 'Effective Date'} *</Label>
-                    <CalendarDatePicker date={formData.effectiveDate ? new Date(formData.effectiveDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
+                    <CalendarDatePicker
+                        date={formData.effectiveDate ? new Date(formData.effectiveDate) : undefined}
+                        onDateChange={(date) =>
+                            setFormData({
+                                ...formData,
+                                effectiveDate: date ? date.toISOString().split('T')[0] : '',
+                            })
+                        }
+                    />
                 </div>
             </div>
             <div className="space-y-2">
@@ -224,7 +232,7 @@ export default function ExchangeRates() {
     );
 
     return (
-        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
             <PageHeader
                 title={t('finance.exchangeRates') || 'Exchange Rates'}
                 description={t('finance.exchangeRatesDescription') || 'Manage currency exchange rates for conversion'}

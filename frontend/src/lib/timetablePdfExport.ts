@@ -1,18 +1,5 @@
-// Uses pdfmake; ensure vfs is initialized by importing our reporting pdfExport once
-import * as pdfMakeModule from 'pdfmake/build/pdfmake';
-const pdfMake = (pdfMakeModule as any).default || pdfMakeModule;
-import * as pdfFonts from 'pdfmake/build/vfs_fonts';
-
-// Initialize vfs (similar logic as reporting/pdfExport.ts)
-try {
-  if (pdfFonts && typeof pdfFonts === 'object') {
-    (pdfMake as any).vfs = pdfFonts;
-  } else if ((pdfMake as any).vfs) {
-    // already initialized
-  }
-} catch (e) {
-  console.warn('[timetablePdfExport] Could not initialize pdfmake vfs', e);
-}
+// Lazy load pdfmake to reduce initial bundle size
+import { getPdfMakeInstance } from '@/lib/pdfmake-loader';
 
 export interface PdfTable {
   title: string;
@@ -20,7 +7,10 @@ export interface PdfTable {
   rows: Array<Array<string | number>>;
 }
 
-export function exportTimetableToPdf(tables: PdfTable[], fileName = 'timetable.pdf') {
+export async function exportTimetableToPdf(tables: PdfTable[], fileName = 'timetable.pdf') {
+  // Lazy load pdfmake
+  const pdfMake = await getPdfMakeInstance(false); // Use regular pdfmake, not Arabic version
+  
   if (!(pdfMake as any).vfs) {
     throw new Error('PDF fonts (vfs) not initialized. Please check pdfmake configuration.');
   }

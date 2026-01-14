@@ -1,4 +1,4 @@
-import JSZip from 'jszip';
+import { loadJszip } from '@/lib/jszip-loader';
 
 import { renderIdCardToCanvas } from './idCardCanvasRenderer';
 import { DEFAULT_ID_CARD_PADDING_PX, getDefaultPrintRenderSize, getDefaultScreenRenderSize } from './idCardRenderMetrics';
@@ -47,6 +47,8 @@ export async function exportIdCardsToZip(
     throw new Error('No cards to export');
   }
 
+  // Lazy load jszip library
+  const JSZip = await loadJszip();
   const zip = new JSZip();
   const renderQuality = quality === 'high' ? 'print' : 'screen';
   const screenRenderSize = getDefaultScreenRenderSize();

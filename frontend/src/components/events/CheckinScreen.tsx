@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Html5Qrcode } from 'html5-qrcode';
 import {
   Camera,
   Keyboard,
@@ -28,6 +27,9 @@ import { cn } from '@/lib/utils';
 import type { CheckinResponse } from '@/types/events';
 import { GUEST_TYPE_LABELS } from '@/types/events';
 
+// Lazy load Html5Qrcode - this saves ~350KB from main bundle
+// We import the type for TS but load the class dynamically
+import type { Html5Qrcode } from 'html5-qrcode';
 
 // If you already have a cn helper, use it. Otherwise remove cn usage and keep simple className strings.
 
@@ -516,6 +518,9 @@ export function CheckinScreen({ eventId, onBack }: CheckinScreenProps) {
       if (import.meta.env.DEV) {
         console.log('[CheckinScreen] startScanner: Creating Html5Qrcode instance', { containerId });
       }
+      
+      // Dynamic import of Html5Qrcode
+      const { Html5Qrcode } = await import('html5-qrcode');
       
       const scanner = new Html5Qrcode(containerId);
       qrScannerRef.current = scanner;

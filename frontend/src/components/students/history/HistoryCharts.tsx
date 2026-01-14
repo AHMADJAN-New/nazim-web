@@ -12,7 +12,9 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-} from 'recharts';
+  ChartSkeleton,
+} from '@/components/charts/LazyChart';
+import { Suspense } from 'react';
 import type { 
   AttendanceHistory, 
   ExamHistory, 

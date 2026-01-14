@@ -24,7 +24,8 @@ import {
 import { useState, useMemo } from 'react';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
+import { PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, ChartSkeleton } from '@/components/charts/LazyChart';
+import { Suspense } from 'react';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';

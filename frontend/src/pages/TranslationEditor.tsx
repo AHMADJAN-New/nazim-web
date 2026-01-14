@@ -253,9 +253,9 @@ export default function TranslationEditor() {
   };
 
   // Export to Excel
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     try {
-      exportTranslationsToExcel();
+      await exportTranslationsToExcel();
       toast.success('Translations exported to Excel');
     } catch (error) {
       toast.error('Failed to export translations');

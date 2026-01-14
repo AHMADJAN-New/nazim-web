@@ -2244,9 +2244,10 @@ export const SmartSidebar = memo(function SmartSidebar() {
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
           <img
-            src="/nazim_logo.jpg"
+            src="/nazim_logo.webp"
             alt="Nazim Logo"
             className="w-12 h-12 rounded-lg object-contain ring-2 ring-sidebar-border bg-sidebar-primary/10 p-1.5 flex-shrink-0"
+            loading="lazy"
           />
           {!collapsed && (
             <div className="flex-1 min-w-0">

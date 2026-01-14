@@ -49,7 +49,7 @@ export async function exportReport<T extends AnyRow>({
       filtersSummary,
     });
   } else {
-    exportReportToExcel(definition, rows, school, filtersSummary);
+    await exportReportToExcel(definition, rows, school, filtersSummary);
   }
 }
 

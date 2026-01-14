@@ -394,9 +394,10 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
             >
               <SelectTrigger className="hidden md:flex w-[200px]">
                 <img
-                  src="/nazim_logo.jpg"
+                  src="/nazim_logo.webp"
                   alt="Nazim"
                   className="h-4 w-4 mr-2 object-contain"
+                  loading="lazy"
                 />
                 <SelectValue placeholder={t("common.selectSchool") || "Select School"} />
               </SelectTrigger>

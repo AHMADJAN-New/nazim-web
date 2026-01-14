@@ -1,37 +1,10 @@
 // src/lib/reporting/pdfExport.ts
-// pdfmake imports - types are handled via type assertions below
-import * as pdfMakeModule from 'pdfmake/build/pdfmake';
-const pdfMake = (pdfMakeModule as any).default || pdfMakeModule;
-import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+// Lazy load pdfmake to reduce initial bundle size
+import { getPdfMakeInstance } from '@/lib/pdfmake-loader';
 
 import type { ReportDefinition, ResolvedReportBranding, PageSize } from './types';
 
 import type { School } from '@/hooks/useSchools';
-
-// Initialize vfs fonts
-// Try multiple patterns to handle different pdfmake build configurations
-try {
-  // Pattern 1: pdfmake 0.2.15+ - vfs_fonts exports vfs directly as default
-  if (pdfFonts && typeof pdfFonts === 'object') {
-    (pdfMake as any).vfs = pdfFonts;
-  }
-  // Pattern 2: Older versions - vfs might be in pdfMake property
-  else if (pdfFonts && (pdfFonts as any).pdfMake && (pdfFonts as any).pdfMake.vfs) {
-    (pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
-  }
-  // Pattern 3: Check if already initialized
-  else if ((pdfMake as any).vfs) {
-    // Already initialized, do nothing
-  } else {
-    console.warn('[pdfmake] Could not initialize vfs. pdfFonts structure:', {
-      hasPdfFonts: !!pdfFonts,
-      pdfFontsType: typeof pdfFonts,
-      pdfFontsKeys: pdfFonts ? Object.keys(pdfFonts as any) : [],
-    });
-  }
-} catch (error) {
-  console.error('[pdfmake] Failed to initialize vfs fonts:', error);
-}
 
 type AnyRow = Record<string, any>;
 
@@ -316,6 +289,9 @@ export function buildPdfDocDefinition<T extends AnyRow>({
 export async function exportReportToPdf<T extends AnyRow>(
   options: BuildPdfOptions<T>,
 ) {
+  // Lazy load pdfmake
+  const pdfMake = await getPdfMakeInstance(false); // Use regular pdfmake, not Arabic version
+  
   if (!(pdfMake as any).vfs) {
     throw new Error('PDF fonts (vfs) not initialized. Please check pdfmake configuration.');
   }
