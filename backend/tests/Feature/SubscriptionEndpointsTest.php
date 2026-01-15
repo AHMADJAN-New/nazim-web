@@ -44,6 +44,24 @@ class SubscriptionEndpointsTest extends TestCase
         return $user;
     }
 
+    private function createUserWithoutOrganization(string $email): User
+    {
+        $user = User::create([
+            'email' => $email,
+            'encrypted_password' => 'test',
+        ]);
+
+        Profile::create([
+            'id' => $user->id,
+            'organization_id' => null,
+            'email' => $email,
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+
+        return $user;
+    }
+
     private function createPlan(string $slug, string $name): SubscriptionPlan
     {
         return SubscriptionPlan::create([
@@ -136,5 +154,34 @@ class SubscriptionEndpointsTest extends TestCase
         $this->getJson('/api/subscription/usage')->assertOk()->assertJsonStructure(['data' => ['usage', 'warnings']]);
         $this->getJson('/api/subscription/features')->assertOk()->assertJsonStructure(['data']);
     }
-}
 
+    public function test_status_lite_returns_none_when_no_active_subscription(): void
+    {
+        $org = $this->createOrg('No Sub Org', 'no-sub-org');
+        $user = $this->createUserWithProfile($org, 'nosub@example.com');
+
+        Sanctum::actingAs($user);
+
+        $res = $this->getJson('/api/subscription/status-lite');
+
+        $res->assertOk()
+            ->assertJson([
+                'data' => [
+                    'status' => 'none',
+                    'access_level' => 'none',
+                    'can_read' => false,
+                    'can_write' => false,
+                    'message' => 'No active subscription',
+                ],
+            ]);
+    }
+
+    public function test_status_lite_requires_organization_context(): void
+    {
+        $user = $this->createUserWithoutOrganization('no-org@example.com');
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/subscription/status-lite')->assertStatus(403);
+    }
+}

@@ -58,7 +58,12 @@ export function ContextualHelpButton({
   }, [isOpen, error, isLoading, t]);
 
   const handleOpenHelpCenter = () => {
-    if (article?.category?.slug && article?.slug) {
+    if (article?.id) {
+      // Use ID-based URL for article access
+      navigate(`/help-center/article/${article.id}`);
+      setIsOpen(false);
+    } else if (article?.category?.slug && article?.slug) {
+      // Fallback to slug-based URL if ID is not available
       navigate(`/help-center/s/${article.category.slug}/${article.slug}`);
       setIsOpen(false);
     } else {

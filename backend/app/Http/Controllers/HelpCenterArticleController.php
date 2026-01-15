@@ -1609,6 +1609,51 @@ class HelpCenterArticleController extends Controller
                 }
             }
 
+            // Fallback: Try to match by category/article slugs
+            if ($route) {
+                // Extract route segment (e.g., "/students" -> "students")
+                $routeSegment = trim($route, '/');
+                $routeParts = explode('/', $routeSegment);
+                $firstSegment = $routeParts[0] ?? null;
+                
+                if ($firstSegment) {
+                    // Try to find article with matching slug in category with matching slug
+                    $slugMatch = (clone $query)
+                        ->whereHas('category', function ($q) use ($firstSegment) {
+                            $q->where('slug', $firstSegment)
+                              ->whereNull('deleted_at');
+                        })
+                        ->where('slug', $firstSegment)
+                        ->orderBy('is_featured', 'desc')
+                        ->orderBy('view_count', 'desc')
+                        ->first();
+                    
+                    if ($slugMatch) {
+                        return response()->json([
+                            'article' => $slugMatch,
+                            'match_type' => 'slug_fallback',
+                        ]);
+                    }
+                    
+                    // If no exact match, try category slug only (any article in that category)
+                    $categorySlugMatch = (clone $query)
+                        ->whereHas('category', function ($q) use ($firstSegment) {
+                            $q->where('slug', $firstSegment)
+                              ->whereNull('deleted_at');
+                        })
+                        ->orderBy('is_featured', 'desc')
+                        ->orderBy('view_count', 'desc')
+                        ->first();
+                    
+                    if ($categorySlugMatch) {
+                        return response()->json([
+                            'article' => $categorySlugMatch,
+                            'match_type' => 'category_slug_fallback',
+                        ]);
+                    }
+                }
+            }
+
             // Fallback: Try to find category-level help
             if ($contextKey) {
                 // Extract category from context_key (e.g., "students.create" -> "students")
