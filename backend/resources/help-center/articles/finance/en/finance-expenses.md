@@ -1,8 +1,22 @@
 # Finance Expenses
 
-**Article will be ready soon**
+Finance Expenses records outgoing payments and posts them to accounts.
 
-This article is currently being prepared. Content will be available soon.
+## How this page is used
+- Select an expense category and finance account.
+- Link a project if applicable.
+- Save the transaction for reporting.
+
+## Typical flow
+1. Create expense categories and accounts with starting balances.
+2. Record expenses as they occur.
+3. Review expense reports and budgets.
+
+## Related pages
+- Finance Accounts
+- Finance Expenses Categories
+- Finance Projects
+- Finance Reports
 
 ---
 

@@ -1,8 +1,20 @@
 # Graduation
 
-**Article will be ready soon**
+Use Graduation to manage Graduation tasks.
 
-This article is currently being prepared. Content will be available soon.
+## How this page is used
+- Complete the main task on this page.
+- Use related pages to continue the workflow.
+- Review outcomes in reports or dashboards.
+
+## Typical flow
+1. Prepare templates.
+2. Create batches.
+3. Issue certificates.
+
+## Related pages
+- Graduation Batches
+- Graduation Certificate Templates
 
 ---
 

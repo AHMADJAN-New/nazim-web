@@ -195,6 +195,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 28: Seeding help center categories...');
         $this->call(HelpCenterCategorySeeder::class);
 
+        // Step 28b: Seed help center articles from MD files (global)
+        $this->command->info('Step 28b: Seeding help center articles...');
+        $this->call(HelpCenterArticleSeeder::class);
+
         // Step 28a: Seed onboarding article (global)
         $this->command->info('Step 28a: Seeding onboarding article...');
         $this->call(OnboardingArticleSeeder::class);

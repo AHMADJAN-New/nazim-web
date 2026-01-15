@@ -1,8 +1,23 @@
 # DMS Letter Types
 
-**Article will be ready soon**
+Use DMS Letter Types to manage DMS tasks.
 
-This article is currently being prepared. Content will be available soon.
+## How this page is used
+- Complete the main task on this page.
+- Use related pages to continue the workflow.
+- Review outcomes in reports or dashboards.
+
+## Typical flow
+1. Set up departments and templates.
+2. Record documents.
+3. Archive and report.
+
+## Related pages
+- DMS Dashboard
+- DMS Incoming
+- DMS Outgoing
+- DMS Templates
+- DMS Reports
 
 ---
 

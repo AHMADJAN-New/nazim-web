@@ -1,8 +1,24 @@
 # Finance Fees Assignments
 
-**Article will be ready soon**
+Use Finance Fees Assignments to link items to people or groups.
 
-This article is currently being prepared. Content will be available soon.
+## How this page is used
+- Select the item and assignee.
+- Set dates or status.
+- Update when items move or return.
+
+## Typical flow
+1. Set currencies and accounts.
+2. Record transactions.
+3. Review reports and dashboards.
+
+## Related pages
+- Finance
+- Finance Accounts
+- Finance Income
+- Finance Expenses
+- Finance Reports
+- Fees
 
 ---
 

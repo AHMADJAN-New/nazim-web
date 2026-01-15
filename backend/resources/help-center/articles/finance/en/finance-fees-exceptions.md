@@ -1,8 +1,24 @@
 # Finance Fees Exceptions
 
-**Article will be ready soon**
+Use Finance Fees Exceptions to manage Finance tasks.
 
-This article is currently being prepared. Content will be available soon.
+## How this page is used
+- Complete the main task on this page.
+- Use related pages to continue the workflow.
+- Review outcomes in reports or dashboards.
+
+## Typical flow
+1. Set currencies and accounts.
+2. Record transactions.
+3. Review reports and dashboards.
+
+## Related pages
+- Finance
+- Finance Accounts
+- Finance Income
+- Finance Expenses
+- Finance Reports
+- Fees
 
 ---
 

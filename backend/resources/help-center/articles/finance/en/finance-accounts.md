@@ -1,8 +1,22 @@
 # Finance Accounts
 
-**Article will be ready soon**
+Finance Accounts store your cash and bank ledgers and starting balances.
 
-This article is currently being prepared. Content will be available soon.
+## How this page is used
+- Create an account for each cash box or bank account.
+- Enter the opening balance to match your real starting position.
+- Select these accounts when recording income, expenses, and fees payments.
+
+## Typical flow
+1. Set currencies and exchange rates if needed.
+2. Create accounts with starting balances.
+3. Post transactions so balances stay accurate.
+
+## Related pages
+- Finance Income
+- Finance Expenses
+- Finance Fees Payments
+- Finance Reports
 
 ---
 

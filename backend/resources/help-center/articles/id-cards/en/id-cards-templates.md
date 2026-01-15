@@ -1,8 +1,20 @@
 # ID Cards Templates
 
-**Article will be ready soon**
+Use ID Cards Templates to create templates used by related workflows.
 
-This article is currently being prepared. Content will be available soon.
+## How this page is used
+- Create templates with required fields.
+- Preview output for accuracy.
+- Use templates in issuing workflows.
+
+## Typical flow
+1. Create templates.
+2. Assign cards.
+3. Export for printing.
+
+## Related pages
+- ID Cards Assignment
+- ID Cards Export
 
 ---
 

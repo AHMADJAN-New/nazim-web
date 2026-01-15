@@ -1682,6 +1682,21 @@ class HelpCenterArticleController extends Controller
                             'match_type' => 'slug_fallback',
                         ]);
                     }
+
+                    // If no category+slug match, try slug-only (supports "path/to/page" -> "path-to-page")
+                    $normalizedSlug = str_replace('/', '-', $path);
+                    $slugOnlyMatch = (clone $query)
+                        ->where('slug', $normalizedSlug)
+                        ->orderBy('is_featured', 'desc')
+                        ->orderBy('view_count', 'desc')
+                        ->first();
+
+                    if ($slugOnlyMatch) {
+                        return response()->json([
+                            'article' => $slugOnlyMatch,
+                            'match_type' => 'slug_fallback',
+                        ]);
+                    }
                     
                     // If no exact match, try category slug only (any article in that category, global only)
                     $categorySlugMatch = (clone $query)

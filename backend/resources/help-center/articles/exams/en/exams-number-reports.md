@@ -1,8 +1,23 @@
 # Exam Number Reports
 
-**Article will be ready soon**
+Use Exam Number Reports to analyze data produced by related pages.
 
-This article is currently being prepared. Content will be available soon.
+## How this page is used
+- Set filters such as date or class.
+- Review totals and trends.
+- Export results if needed.
+
+## Typical flow
+1. Set up exams and timetables.
+2. Enroll students and record attendance/marks.
+3. Generate reports and analytics.
+
+## Related pages
+- Exams
+- Exam Timetables
+- Exam Enrollment
+- Exam Marks
+- Exam Reports
 
 ---
 

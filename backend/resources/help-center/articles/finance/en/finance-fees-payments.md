@@ -1,8 +1,21 @@
 # Finance Fees Payments
 
-**Article will be ready soon**
+Fee Payments records student fee collections and posts to finance accounts.
 
-This article is currently being prepared. Content will be available soon.
+## How this page is used
+- Select the student and fee item.
+- Choose the finance account used for the deposit.
+- Record payment details and save.
+
+## Typical flow
+1. Set up finance accounts with starting balances.
+2. Assign fee structures.
+3. Record payments and track balances.
+
+## Related pages
+- Finance Accounts
+- Finance Fees Assignments
+- Finance Fees Reports
 
 ---
 

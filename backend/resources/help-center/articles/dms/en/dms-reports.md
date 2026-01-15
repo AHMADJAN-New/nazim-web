@@ -1,8 +1,22 @@
 # DMS Reports
 
-**Article will be ready soon**
+Use DMS Reports to analyze data produced by related pages.
 
-This article is currently being prepared. Content will be available soon.
+## How this page is used
+- Set filters such as date or class.
+- Review totals and trends.
+- Export results if needed.
+
+## Typical flow
+1. Set up departments and templates.
+2. Record documents.
+3. Archive and report.
+
+## Related pages
+- DMS Dashboard
+- DMS Incoming
+- DMS Outgoing
+- DMS Templates
 
 ---
 

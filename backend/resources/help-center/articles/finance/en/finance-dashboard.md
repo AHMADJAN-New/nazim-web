@@ -1,8 +1,24 @@
 # Finance Dashboard
 
-**Article will be ready soon**
+Use Finance Dashboard to review summary activity and jump into related tasks.
 
-This article is currently being prepared. Content will be available soon.
+## How this page is used
+- Review summary cards.
+- Open related pages for details.
+- Use reports for deeper analysis.
+
+## Typical flow
+1. Set currencies and accounts.
+2. Record transactions.
+3. Review reports and dashboards.
+
+## Related pages
+- Finance
+- Finance Accounts
+- Finance Income
+- Finance Expenses
+- Finance Reports
+- Fees
 
 ---
 

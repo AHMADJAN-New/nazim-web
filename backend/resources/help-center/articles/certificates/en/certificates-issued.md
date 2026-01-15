@@ -1,8 +1,19 @@
 # Certificates Issued
 
-**Article will be ready soon**
+Use Certificates Issued to manage Certificates tasks.
 
-This article is currently being prepared. Content will be available soon.
+## How this page is used
+- Complete the main task on this page.
+- Use related pages to continue the workflow.
+- Review outcomes in reports or dashboards.
+
+## Typical flow
+1. Create templates.
+2. Issue certificates.
+3. Review issued records.
+
+## Related pages
+- Certificate Templates
 
 ---
 

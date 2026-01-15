@@ -1,8 +1,22 @@
 # Students Import
 
-**Article will be ready soon**
+Use Students Import to bulk import records.
 
-This article is currently being prepared. Content will be available soon.
+## How this page is used
+- Prepare the file using the template.
+- Upload and fix validation errors.
+- Confirm the import.
+
+## Typical flow
+1. Add students via admissions or import.
+2. Maintain profiles and status.
+3. Use reports for oversight.
+
+## Related pages
+- 🎓 Students
+- Admissions
+- Students History
+- Admissions Report
 
 ---
 

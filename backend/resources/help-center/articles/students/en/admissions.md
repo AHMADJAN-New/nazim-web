@@ -1,8 +1,22 @@
 # Admissions
 
-**Article will be ready soon**
+Use Admissions to manage Students tasks.
 
-This article is currently being prepared. Content will be available soon.
+## How this page is used
+- Complete the main task on this page.
+- Use related pages to continue the workflow.
+- Review outcomes in reports or dashboards.
+
+## Typical flow
+1. Add students via admissions or import.
+2. Maintain profiles and status.
+3. Use reports for oversight.
+
+## Related pages
+- 🎓 Students
+- Students Import
+- Students History
+- Admissions Report
 
 ---
 
