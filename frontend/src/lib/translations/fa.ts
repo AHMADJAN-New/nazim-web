@@ -3760,7 +3760,7 @@ export const fa: TranslationKeys = {
     documents: 'اسناد',
     examAnalytics: 'تحلیل امتحان',
     examAttendance: 'حاضری امتحان',
-    examEnrollment: 'ثبت‌نام در امتحان',
+    examEnrollment: 'ثبت‌نام  صنف‌ها و مضامین',
     examInsights: 'بینش‌های امتحان',
     examManagement: 'مدیریت امتحان',
     examMarks: 'نمرات امتحان',

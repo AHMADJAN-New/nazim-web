@@ -3874,7 +3874,7 @@ export const en: TranslationKeys = {
     documents: 'Documents',
     examAnalytics: 'Exam Analytics',
     examAttendance: 'Exam Attendance',
-    examEnrollment: 'Exam Enrollment',
+    examEnrollment: 'Class and Subject Enrollment',
     examInsights: 'Exam Insights',
     examManagement: 'Exam Management',
     examMarks: 'Exam Marks',

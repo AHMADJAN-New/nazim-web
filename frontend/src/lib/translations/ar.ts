@@ -3920,7 +3920,7 @@ export const ar: TranslationKeys = {
     "documents": "Documents",
     "examAnalytics": "Exam Analytics",
     "examAttendance": "Exam Attendance",
-    "examEnrollment": "تسجيل الامتحانات",
+    "examEnrollment": "تسجيل الفصول والمواد",
     "examInsights": "Exam Insights",
     "examManagement": "Exam Management",
     "examMarks": "درجات الامتحانات",
