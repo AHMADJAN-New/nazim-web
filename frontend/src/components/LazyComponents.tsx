@@ -169,6 +169,7 @@ export const MaintenanceFeesManagement = lazy(() => import('@/platform/pages/adm
 export const LicenseFeesManagement = lazy(() => import('@/platform/pages/admin/LicenseFeesManagement').then(module => ({ default: module.default })));
 export const OrganizationRevenueHistory = lazy(() => import('@/platform/pages/admin/OrganizationRevenueHistory').then(module => ({ default: module.default })));
 export const PlanRequestsPage = lazy(() => import('@/platform/pages/admin/PlanRequestsPage').then(module => ({ default: module.default })));
+export const DesktopLicenseGeneration = lazy(() => import('@/platform/pages/admin/DesktopLicenseGeneration').then(module => ({ default: module.default })));
 
 // Re-export loading components for backward compatibility
 export { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';

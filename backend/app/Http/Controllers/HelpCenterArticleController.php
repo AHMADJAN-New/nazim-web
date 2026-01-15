@@ -64,6 +64,57 @@ class HelpCenterArticleController extends Controller
     }
 
     /**
+     * Get user's language preference from request
+     * Priority: 1. Query parameter 'lang' 2. Accept-Language header 3. Default 'en'
+     */
+    private function getUserLanguage(Request $request): string
+    {
+        $supportedLanguages = ['en', 'ps', 'fa', 'ar'];
+        
+        // Check query parameter first
+        $lang = $request->input('lang');
+        if ($lang && in_array($lang, $supportedLanguages)) {
+            return $lang;
+        }
+
+        // Check Accept-Language header
+        $acceptLanguage = $request->header('Accept-Language');
+        if ($acceptLanguage) {
+            // Parse Accept-Language header (e.g., "en-US,en;q=0.9,ps;q=0.8")
+            $languages = explode(',', $acceptLanguage);
+            foreach ($languages as $langHeader) {
+                // Extract language code (e.g., "en-US" -> "en")
+                $langCode = strtolower(trim(explode(';', $langHeader)[0]));
+                $langCode = explode('-', $langCode)[0]; // Get base language code
+                
+                if (in_array($langCode, $supportedLanguages)) {
+                    return $langCode;
+                }
+            }
+        }
+
+        // Default to English
+        return 'en';
+    }
+
+    /**
+     * Apply language filter to query
+     * Filters articles by the user's preferred language
+     */
+    private function applyLanguageFilter($query, string $preferredLanguage): void
+    {
+        $supportedLanguages = ['en', 'ps', 'fa', 'ar'];
+        
+        // Validate language
+        if (!in_array($preferredLanguage, $supportedLanguages)) {
+            $preferredLanguage = 'en';
+        }
+
+        // Filter by preferred language
+        $query->where('language', $preferredLanguage);
+    }
+
+    /**
      * Load relations safely (avoid invalid UUID relation lookups)
      */
     private function loadSafeArticleRelations(HelpCenterArticle $article): void
@@ -175,14 +226,74 @@ class HelpCenterArticleController extends Controller
      * Apply permission-based filtering to article query
      * Filters articles by context_key matching user permissions
      */
-    private function applyPermissionFilter($query, $user, $organizationId)
+    /**
+     * Extract route paths from a route string, excluding UUIDs and generating variations
+     * 
+     * @param string $route Route path (e.g., "/exams/217dd9a5-6b4f-4a40-a7bc-cffcb3fd0d0d/timetable")
+     * @return array Array of path variations to try (e.g., ["exams/timetable", "exams/timetables", "exams"])
+     */
+    private function extractRoutePaths($route): array
     {
-        if ($user && $organizationId) {
-            // Set organization context for permission checks
-            setPermissionsTeamId($organizationId);
-            
-            // Get user permissions
+        $routeSegment = trim($route, '/');
+        $parts = explode('/', $routeSegment);
+        $pathSegments = [];
+        
+        // Filter out UUID segments
+        foreach ($parts as $part) {
+            // Check if part is a UUID (format: 8-4-4-4-12 hex characters)
+            if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $part)) {
+                $pathSegments[] = $part;
+            }
+        }
+        
+        if (empty($pathSegments)) {
+            return [];
+        }
+        
+        $paths = [];
+        $fullPath = implode('/', $pathSegments);
+        
+        // Add full path first (most specific)
+        $paths[] = $fullPath;
+        
+        // Add singular/plural variations for last segment
+        $lastSegment = end($pathSegments);
+        if (strlen($lastSegment) > 0) {
+            if (str_ends_with($lastSegment, 's')) {
+                // If ends with 's', try singular version
+                $singularPath = substr($fullPath, 0, -1);
+                if ($singularPath !== $fullPath) {
+                    $paths[] = $singularPath;
+                }
+            } else {
+                // If doesn't end with 's', try plural version
+                $pluralPath = $fullPath . 's';
+                $paths[] = $pluralPath;
+            }
+        }
+        
+        // Add parent path if multi-segment (e.g., "library" from "library/books")
+        if (count($pathSegments) > 1) {
+            $paths[] = $pathSegments[0];
+        }
+        
+        // Remove duplicates while preserving order
+        return array_values(array_unique($paths));
+    }
+
+    private function applyPermissionFilter($query, $user, $organizationId = null)
+    {
+        // All articles are global now - permissions are also global
+        // No need to set organization context for permission checks
+        
+        if ($user) {
+            // Get user permissions (global permissions)
             try {
+                // Set organization context if user has one (for permission checks)
+                if ($organizationId) {
+                    setPermissionsTeamId($organizationId);
+                }
+                
                 $userPermissions = $user->getAllPermissions()->pluck('name')->toArray();
                 
                 // Check if user has admin or organization_admin role (for onboarding article)
@@ -220,7 +331,7 @@ class HelpCenterArticleController extends Controller
                 });
             }
         } else {
-            // For unauthenticated users or users without organization, only show articles with no context_key
+            // For unauthenticated users, only show articles with no context_key
             $query->where(function ($q) {
                 $q->whereNull('context_key')
                   ->orWhere('context_key', '');
@@ -254,16 +365,16 @@ class HelpCenterArticleController extends Controller
                 }
             }
 
-            $query = HelpCenterArticle::whereNull('deleted_at')
-                ->with(['category', 'author']);
+            // Get user's language preference first (before building query)
+            $userLanguage = $this->getUserLanguage($request);
 
-            // Apply organization scope (include global + org articles)
-            if ($organizationId) {
-                $query->forOrganization($organizationId);
-            } else {
-                // Public access: only global articles
-                $query->whereNull('organization_id');
-            }
+            // Optimize query: filter by language and organization_id first (uses composite index)
+            $query = HelpCenterArticle::whereNull('deleted_at')
+                ->whereNull('organization_id') // Only global articles
+                ->where('language', $userLanguage) // Filter by language early (uses index)
+                ->with(['category:id,name,slug', 'author:id,full_name,email']); // Select only needed columns
+
+            // Note: Eager loading is optimized to only load needed columns
 
             // Apply visibility filter
             $query->visibleTo($user, $hasStaffPermission);
@@ -298,20 +409,25 @@ class HelpCenterArticleController extends Controller
 
             // Filter by category
             if ($request->has('category_id')) {
-                $query->where('category_id', $request->category_id);
+                $categoryId = $request->category_id;
+                
+                // Check if we should include children (default: true for parent categories)
+                $includeChildren = filter_var($request->input('include_children', true), FILTER_VALIDATE_BOOLEAN);
+                
+                if ($includeChildren) {
+                    // Recursively get all descendant category IDs (parent + all descendants)
+                    $categoryIds = HelpCenterCategory::descendantIds($categoryId);
+                    $query->whereIn('category_id', $categoryIds);
+                } else {
+                    // Only the selected category
+                    $query->where('category_id', $categoryId);
+                }
             }
 
             // Filter by category slug
             if ($request->has('category_slug')) {
                 $category = HelpCenterCategory::where('slug', $request->category_slug)
-                    ->where(function ($q) use ($organizationId) {
-                        if ($organizationId) {
-                            $q->where('organization_id', $organizationId)
-                                ->orWhereNull('organization_id');
-                        } else {
-                            $q->whereNull('organization_id');
-                        }
-                    })
+                    ->whereNull('organization_id') // Only global categories
                     ->first();
                 if ($category) {
                     $query->where('category_id', $category->id);
@@ -411,14 +527,8 @@ class HelpCenterArticleController extends Controller
             $categoryQuery = HelpCenterCategory::where('slug', $categorySlug)
                 ->whereNull('deleted_at');
             
-            if ($user && $organizationId) {
-                $categoryQuery->where(function ($q) use ($organizationId) {
-                    $q->where('organization_id', $organizationId)
-                        ->orWhereNull('organization_id');
-                });
-            } elseif ($user) {
-                $categoryQuery->whereNull('organization_id');
-            }
+            // Only global categories (organization_id = NULL)
+            $categoryQuery->whereNull('organization_id');
             // For unauthenticated users, don't filter by organization (allow all categories)
             
             $category = $categoryQuery->first();
@@ -427,10 +537,23 @@ class HelpCenterArticleController extends Controller
                 return response()->json(['error' => 'Category not found'], 404);
             }
 
+            // Get user's language preference
+            $userLanguage = $this->getUserLanguage($request);
+
             // Find article (don't eager load relations - we'll load them safely later)
+            // Try preferred language first, fallback to English if not found
             $query = HelpCenterArticle::whereNull('deleted_at')
                 ->where('slug', $articleSlug)
-                ->where('category_id', $category->id);
+                ->where('category_id', $category->id)
+                ->where(function ($q) use ($userLanguage) {
+                    // First, try to get article in user's preferred language
+                    $q->where('language', $userLanguage);
+                    // Fallback to English if preferred language not available
+                    if ($userLanguage !== 'en') {
+                        $q->orWhere('language', 'en');
+                    }
+                })
+                ->orderByRaw("CASE WHEN language = ? THEN 0 ELSE 1 END", [$userLanguage]);
 
             // For unauthenticated users, only show published public articles with no context_key
             // These should be accessible regardless of organization
@@ -444,12 +567,8 @@ class HelpCenterArticleController extends Controller
                 // Public articles can be global (organization_id = NULL) or from any organization
                 // Don't filter by organization for public articles
             } else {
-                // Apply organization scope for authenticated users
-                if ($organizationId) {
-                    $query->forOrganization($organizationId);
-                } else {
-                    $query->whereNull('organization_id');
-                }
+                // Only global articles (organization_id = NULL)
+                $query->whereNull('organization_id');
 
                 // Apply visibility filter
                 $query->visibleTo($user, $hasStaffPermission);
@@ -463,6 +582,7 @@ class HelpCenterArticleController extends Controller
                 }
             }
 
+            // Get the first article (preferred language first due to ordering)
             $article = $query->first();
 
             if (!$article) {
@@ -472,6 +592,7 @@ class HelpCenterArticleController extends Controller
                         'category_slug' => $categorySlug,
                         'article_slug' => $articleSlug,
                         'category_id' => $category->id ?? null,
+                        'language' => $userLanguage,
                         'reason' => 'Article may not be public, published, or has context_key',
                     ]);
                 }
@@ -523,14 +644,7 @@ class HelpCenterArticleController extends Controller
 
             // Find category
             $category = HelpCenterCategory::where('slug', $categorySlug)
-                ->where(function ($q) use ($organizationId) {
-                    if ($organizationId) {
-                        $q->where('organization_id', $organizationId)
-                            ->orWhereNull('organization_id');
-                    } else {
-                        $q->whereNull('organization_id');
-                    }
-                })
+                ->whereNull('organization_id') // Only global categories
                 ->with(['children', 'parent'])
                 ->first();
 
@@ -538,17 +652,15 @@ class HelpCenterArticleController extends Controller
                 return response()->json(['error' => 'Category not found'], 404);
             }
 
-            // Get articles in this category
-            $articlesQuery = HelpCenterArticle::whereNull('deleted_at')
-                ->where('category_id', $category->id)
-                ->with(['author']);
+            // Get user's language preference
+            $userLanguage = $this->getUserLanguage($request);
 
-            // Apply organization scope
-            if ($organizationId) {
-                $articlesQuery->forOrganization($organizationId);
-            } else {
-                $articlesQuery->whereNull('organization_id');
-            }
+            // Optimize query: filter by language, category, and organization_id first (uses composite index)
+            $articlesQuery = HelpCenterArticle::whereNull('deleted_at')
+                ->whereNull('organization_id') // Only global articles
+                ->where('category_id', $category->id)
+                ->where('language', $userLanguage) // Filter by language early (uses index)
+                ->with(['author:id,full_name,email']); // Select only needed columns
 
             // Apply visibility filter
             $articlesQuery->visibleTo($user, $hasStaffPermission);
@@ -601,10 +713,10 @@ class HelpCenterArticleController extends Controller
 
             // Build query without eager loading relations that might have invalid UUIDs
             // We'll load them safely later using loadSafeArticleRelations
-            $query = HelpCenterArticle::whereNull('deleted_at');
+            $query = HelpCenterArticle::whereNull('deleted_at')
+                ->whereNull('organization_id'); // Only global articles
 
             // For unauthenticated users, only show published public articles with no context_key
-            // These should be accessible regardless of organization
             if (!$user) {
                 $query->where('visibility', 'public')
                       ->where(function ($q) {
@@ -612,15 +724,7 @@ class HelpCenterArticleController extends Controller
                             ->orWhere('context_key', '');
                       })
                       ->published();
-                // Public articles can be global (organization_id = NULL) or from any organization
-                // Don't filter by organization for public articles
             } else {
-                // Apply organization scope for authenticated users
-                if ($organizationId) {
-                    $query->forOrganization($organizationId);
-                } else {
-                    $query->whereNull('organization_id');
-                }
 
                 // Apply visibility filter
                 $query->visibleTo($user, $hasStaffPermission);
@@ -668,15 +772,9 @@ class HelpCenterArticleController extends Controller
                 if ($rawArticle) {
                     $issues = [];
                     
-                    // Check organization scope
-                    if ($user && $organizationId) {
-                        if ($rawArticle->organization_id && $rawArticle->organization_id !== $organizationId) {
-                            $issues[] = "article belongs to different organization";
-                        }
-                    } elseif ($user && !$organizationId) {
-                        if ($rawArticle->organization_id) {
-                            $issues[] = "article belongs to an organization, but user has no organization";
-                        }
+                    // All articles are global now - no organization checks needed
+                    if ($rawArticle->organization_id) {
+                        $issues[] = "article should be global (organization_id should be NULL)";
                     }
                     
                     // Check visibility
@@ -840,38 +938,23 @@ class HelpCenterArticleController extends Controller
                 'order' => 'nullable|integer|min:0',
                 'related_article_ids' => 'nullable|array',
                 'related_article_ids.*' => 'uuid|exists:help_center_articles,id',
-                'organization_id' => 'nullable|uuid|exists:organizations,id', // Allow setting org or null for global
+                // organization_id removed - all articles are global now
             ]);
 
-            // Validate category belongs to same organization or is global
+            // Validate category is global
             $category = HelpCenterCategory::where('id', $validated['category_id'])
-                ->where(function ($q) use ($profile) {
-                    if ($profile->organization_id) {
-                        $q->where('organization_id', $profile->organization_id)
-                            ->orWhereNull('organization_id');
-                    } else {
-                        $q->whereNull('organization_id');
-                    }
-                })
+                ->whereNull('organization_id') // Only global categories
+                ->whereNull('deleted_at')
                 ->first();
             if (!$category) {
                 return response()->json(['error' => 'Category not found'], 404);
             }
 
-            // Determine organization_id
-            $orgId = $validated['organization_id'] ?? $profile->organization_id;
-
-            // Validate related articles belong to same organization or are global
+            // Validate related articles are global
             if (!empty($validated['related_article_ids'])) {
                 $relatedCount = HelpCenterArticle::whereIn('id', $validated['related_article_ids'])
-                    ->where(function ($q) use ($orgId) {
-                        if ($orgId) {
-                            $q->where('organization_id', $orgId)
-                                ->orWhereNull('organization_id');
-                        } else {
-                            $q->whereNull('organization_id');
-                        }
-                    })
+                    ->whereNull('organization_id') // Only global articles
+                    ->whereNull('deleted_at')
                     ->count();
                 if ($relatedCount !== count($validated['related_article_ids'])) {
                     return response()->json(['error' => 'Some related articles not found'], 404);
@@ -879,7 +962,7 @@ class HelpCenterArticleController extends Controller
             }
 
             $article = HelpCenterArticle::create([
-                'organization_id' => $orgId,
+                'organization_id' => null, // All articles are global
                 'category_id' => $validated['category_id'],
                 'title' => $validated['title'],
                 'slug' => $validated['slug'] ?? null,
@@ -888,7 +971,7 @@ class HelpCenterArticleController extends Controller
                 'content_type' => $validated['content_type'] ?? 'markdown',
                 'featured_image_url' => $validated['featured_image_url'] ?? null,
                 'status' => $validated['status'] ?? 'draft',
-                'visibility' => $validated['visibility'] ?? ($orgId ? 'org_users' : 'public'),
+                'visibility' => $validated['visibility'] ?? 'org_users',
                 'is_featured' => $validated['is_featured'] ?? false,
                 'is_pinned' => $validated['is_pinned'] ?? false,
                 'meta_title' => $validated['meta_title'] ?? null,
@@ -939,12 +1022,8 @@ class HelpCenterArticleController extends Controller
 
             $query = HelpCenterArticle::whereNull('deleted_at');
 
-            // Apply organization scope
-            if ($profile->organization_id) {
-                $query->forOrganization($profile->organization_id);
-            } else {
-                $query->whereNull('organization_id');
-            }
+            // Only global articles (organization_id = NULL)
+            $query->whereNull('organization_id');
 
             $article = $query->find($id);
 
@@ -959,6 +1038,7 @@ class HelpCenterArticleController extends Controller
                 'excerpt' => 'nullable|string',
                 'content' => 'sometimes|required|string',
                 'content_type' => 'nullable|in:markdown,html',
+                'language' => 'nullable|in:en,ps,fa,ar',
                 'featured_image_url' => 'nullable|url',
                 'status' => 'nullable|in:draft,published,archived',
                 'visibility' => 'nullable|in:public,org_users,staff_only',
@@ -973,41 +1053,30 @@ class HelpCenterArticleController extends Controller
                 'related_article_ids.*' => 'uuid|exists:help_center_articles,id',
             ]);
 
-            // Validate category belongs to same organization or is global
+            // Validate category is global
             if (!empty($validated['category_id']) && $validated['category_id'] !== $article->category_id) {
                 $category = HelpCenterCategory::where('id', $validated['category_id'])
-                    ->where(function ($q) use ($profile, $article) {
-                        $orgId = $article->organization_id ?? $profile->organization_id;
-                        if ($orgId) {
-                            $q->where('organization_id', $orgId)
-                                ->orWhereNull('organization_id');
-                        } else {
-                            $q->whereNull('organization_id');
-                        }
-                    })
+                    ->whereNull('organization_id') // Only global categories
+                    ->whereNull('deleted_at')
                     ->first();
                 if (!$category) {
                     return response()->json(['error' => 'Category not found'], 404);
                 }
             }
 
-            // Validate related articles
+            // Validate related articles are global
             if (!empty($validated['related_article_ids'])) {
-                $orgId = $article->organization_id ?? $profile->organization_id;
                 $relatedCount = HelpCenterArticle::whereIn('id', $validated['related_article_ids'])
-                    ->where(function ($q) use ($orgId) {
-                        if ($orgId) {
-                            $q->where('organization_id', $orgId)
-                                ->orWhereNull('organization_id');
-                        } else {
-                            $q->whereNull('organization_id');
-                        }
-                    })
+                    ->whereNull('organization_id') // Only global articles
+                    ->whereNull('deleted_at')
                     ->count();
                 if ($relatedCount !== count($validated['related_article_ids'])) {
                     return response()->json(['error' => 'Some related articles not found'], 404);
                 }
             }
+
+            // Ensure organization_id is not updated (always NULL for global articles)
+            unset($validated['organization_id']);
 
             // Update updated_by
             $validated['updated_by'] = $profile->id;
@@ -1051,12 +1120,8 @@ class HelpCenterArticleController extends Controller
 
             $query = HelpCenterArticle::whereNull('deleted_at');
 
-            // Apply organization scope
-            if ($profile->organization_id) {
-                $query->forOrganization($profile->organization_id);
-            } else {
-                $query->whereNull('organization_id');
-            }
+            // Only global articles (organization_id = NULL)
+            $query->whereNull('organization_id');
 
             $article = $query->find($id);
 
@@ -1100,12 +1165,8 @@ class HelpCenterArticleController extends Controller
 
             $query = HelpCenterArticle::whereNull('deleted_at');
 
-            // Apply organization scope
-            if ($profile->organization_id) {
-                $query->forOrganization($profile->organization_id);
-            } else {
-                $query->whereNull('organization_id');
-            }
+            // Only global articles (organization_id = NULL)
+            $query->whereNull('organization_id');
 
             $article = $query->find($id);
 
@@ -1149,12 +1210,8 @@ class HelpCenterArticleController extends Controller
 
             $query = HelpCenterArticle::whereNull('deleted_at');
 
-            // Apply organization scope
-            if ($profile->organization_id) {
-                $query->forOrganization($profile->organization_id);
-            } else {
-                $query->whereNull('organization_id');
-            }
+            // Only global articles (organization_id = NULL)
+            $query->whereNull('organization_id');
 
             $article = $query->find($id);
 
@@ -1198,12 +1255,8 @@ class HelpCenterArticleController extends Controller
 
             $query = HelpCenterArticle::whereNull('deleted_at');
 
-            // Apply organization scope
-            if ($profile->organization_id) {
-                $query->forOrganization($profile->organization_id);
-            } else {
-                $query->whereNull('organization_id');
-            }
+            // Only global articles (organization_id = NULL)
+            $query->whereNull('organization_id');
 
             $article = $query->find($id);
 
@@ -1251,12 +1304,8 @@ class HelpCenterArticleController extends Controller
             $query = HelpCenterArticle::whereNull('deleted_at')
                 ->where('status', 'published');
 
-            // Apply organization scope
-            if ($profile && $profile->organization_id) {
-                $query->forOrganization($profile->organization_id);
-            } else {
-                $query->whereNull('organization_id');
-            }
+            // Only global articles (organization_id = NULL)
+            $query->whereNull('organization_id');
 
             // Apply visibility filter
             $hasStaffPermission = false;
@@ -1324,12 +1373,8 @@ class HelpCenterArticleController extends Controller
             $query = HelpCenterArticle::whereNull('deleted_at')
                 ->where('status', 'published');
 
-            // Apply organization scope
-            if ($profile && $profile->organization_id) {
-                $query->forOrganization($profile->organization_id);
-            } else {
-                $query->whereNull('organization_id');
-            }
+            // Only global articles (organization_id = NULL)
+            $query->whereNull('organization_id');
 
             // Apply visibility filter
             $hasStaffPermission = false;
@@ -1386,17 +1431,17 @@ class HelpCenterArticleController extends Controller
             $hasStaffPermission = $context['has_staff_permission'];
 
             $limit = min((int)($validated['limit'] ?? 5), 20);
+            
+            // Get user's language preference
+            $userLanguage = $this->getUserLanguage($request);
+            
+            // Optimize query: filter by language, organization, and status first (uses composite index)
             $query = HelpCenterArticle::whereNull('deleted_at')
+                ->whereNull('organization_id') // Only global articles
+                ->where('language', $userLanguage) // Filter by language early (uses index)
                 ->published()
                 ->featured()
-                ->with(['category']);
-
-            // Apply organization scope
-            if ($organizationId) {
-                $query->forOrganization($organizationId);
-            } else {
-                $query->whereNull('organization_id');
-            }
+                ->with(['category:id,name,slug']); // Select only needed columns
 
             // Apply visibility filter
             $query->visibleTo($user, $hasStaffPermission);
@@ -1467,16 +1512,16 @@ class HelpCenterArticleController extends Controller
             $hasStaffPermission = $context['has_staff_permission'];
 
             $limit = min((int)($validated['limit'] ?? 10), 20);
+            
+            // Get user's language preference
+            $userLanguage = $this->getUserLanguage($request);
+            
+            // Optimize query: filter by language, organization, and status first (uses composite index)
             $query = HelpCenterArticle::whereNull('deleted_at')
+                ->whereNull('organization_id') // Only global articles
+                ->where('language', $userLanguage) // Filter by language early (uses index)
                 ->published()
-                ->with(['category']);
-
-            // Apply organization scope
-            if ($organizationId) {
-                $query->forOrganization($organizationId);
-            } else {
-                $query->whereNull('organization_id');
-            }
+                ->with(['category:id,name,slug']); // Select only needed columns
 
             // Apply visibility filter
             $query->visibleTo($user, $hasStaffPermission);
@@ -1552,16 +1597,15 @@ class HelpCenterArticleController extends Controller
                 return response()->json(['error' => 'Either route or context parameter is required'], 400);
             }
 
+            // Get user's language preference
+            $userLanguage = $this->getUserLanguage($request);
+            
+            // Optimize query: filter by language, organization, and status first (uses composite index)
             $query = HelpCenterArticle::whereNull('deleted_at')
+                ->whereNull('organization_id') // Only global articles
+                ->where('language', $userLanguage) // Filter by language early (uses index)
                 ->where('status', 'published')
-                ->with(['category']);
-
-            // Apply organization scope
-            if ($organizationId) {
-                $query->forOrganization($organizationId);
-            } else {
-                $query->whereNull('organization_id');
-            }
+                ->with(['category:id,name,slug']); // Select only needed columns
 
             // Apply visibility filter
             $query->visibleTo($user, $hasStaffPermission);
@@ -1611,19 +1655,23 @@ class HelpCenterArticleController extends Controller
 
             // Fallback: Try to match by category/article slugs
             if ($route) {
-                // Extract route segment (e.g., "/students" -> "students")
-                $routeSegment = trim($route, '/');
-                $routeParts = explode('/', $routeSegment);
-                $firstSegment = $routeParts[0] ?? null;
+                // Extract route paths (excluding UUIDs, with plural/singular variations)
+                $routePaths = $this->extractRoutePaths($route);
                 
-                if ($firstSegment) {
-                    // Try to find article with matching slug in category with matching slug
+                // Try each path variation in order of specificity
+                foreach ($routePaths as $path) {
+                    if (empty($path)) {
+                        continue;
+                    }
+                    
+                    // Try to find article with matching slug in category with matching slug (global only)
                     $slugMatch = (clone $query)
-                        ->whereHas('category', function ($q) use ($firstSegment) {
-                            $q->where('slug', $firstSegment)
+                        ->whereHas('category', function ($q) use ($path) {
+                            $q->where('slug', $path)
+                              ->whereNull('organization_id') // Only global categories
                               ->whereNull('deleted_at');
                         })
-                        ->where('slug', $firstSegment)
+                        ->where('slug', $path)
                         ->orderBy('is_featured', 'desc')
                         ->orderBy('view_count', 'desc')
                         ->first();
@@ -1635,10 +1683,11 @@ class HelpCenterArticleController extends Controller
                         ]);
                     }
                     
-                    // If no exact match, try category slug only (any article in that category)
+                    // If no exact match, try category slug only (any article in that category, global only)
                     $categorySlugMatch = (clone $query)
-                        ->whereHas('category', function ($q) use ($firstSegment) {
-                            $q->where('slug', $firstSegment)
+                        ->whereHas('category', function ($q) use ($path) {
+                            $q->where('slug', $path)
+                              ->whereNull('organization_id') // Only global categories
                               ->whereNull('deleted_at');
                         })
                         ->orderBy('is_featured', 'desc')
@@ -1717,9 +1766,14 @@ class HelpCenterArticleController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            // Get user's language preference (platform admin can see all languages, but filter for consistency)
+            $userLanguage = $this->getUserLanguage($request);
+            
             // Filter out articles with invalid author_id values that cause UUID type errors
             // Some articles may have author_id = 0 (integer) which can't be compared to UUID in profiles table
+            // Optimize query: filter by language early (uses composite index)
             $query = HelpCenterArticle::whereNull('deleted_at')
+                ->where('language', $userLanguage) // Filter by language early (uses index)
                 ->where(function ($q) {
                     // Include articles with NULL author_id
                     $q->whereNull('author_id')
@@ -1732,9 +1786,9 @@ class HelpCenterArticleController extends Controller
                       });
                 })
                 ->with(['category' => function ($q) {
-                    $q->whereNull('deleted_at');
+                    $q->whereNull('deleted_at')->select('id', 'name', 'slug');
                 }])
-                ->with(['author']);
+                ->with(['author:id,full_name,email']); // Select only needed columns
 
             // Search filter
             if ($request->has('search') && !empty($request->search)) {
@@ -1822,6 +1876,7 @@ class HelpCenterArticleController extends Controller
                 'excerpt' => 'nullable|string',
                 'content' => 'required|string',
                 'content_type' => 'nullable|in:markdown,html',
+                'language' => 'nullable|in:en,ps,fa,ar',
                 'featured_image_url' => 'nullable|url',
                 'status' => 'nullable|in:draft,published,archived',
                 'visibility' => 'nullable|in:public,org_users,staff_only',
@@ -1864,6 +1919,7 @@ class HelpCenterArticleController extends Controller
                 'excerpt' => $validated['excerpt'] ?? null,
                 'content' => $validated['content'],
                 'content_type' => $validated['content_type'] ?? 'html',
+                'language' => $validated['language'] ?? 'en',
                 'featured_image_url' => $validated['featured_image_url'] ?? null,
                 'status' => $status,
                 'is_published' => $isPublished,
@@ -1936,6 +1992,7 @@ class HelpCenterArticleController extends Controller
                 'excerpt' => 'nullable|string',
                 'content' => 'sometimes|required|string',
                 'content_type' => 'nullable|in:markdown,html',
+                'language' => 'nullable|in:en,ps,fa,ar',
                 'featured_image_url' => 'nullable|url',
                 'status' => 'nullable|in:draft,published,archived',
                 'visibility' => 'nullable|in:public,org_users,staff_only',
@@ -1948,7 +2005,7 @@ class HelpCenterArticleController extends Controller
                 'order' => 'nullable|integer|min:0',
                 'related_article_ids' => 'nullable|array',
                 'related_article_ids.*' => 'uuid|exists:help_center_articles,id',
-                'organization_id' => 'nullable|uuid|exists:organizations,id',
+                // organization_id removed - all articles are global now
             ]);
 
             // Validate category if changed

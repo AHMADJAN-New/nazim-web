@@ -97,6 +97,7 @@ use App\Http\Controllers\HelpCenterArticleController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\MaintenanceFeeController;
 use App\Http\Controllers\LicenseFeeController;
+use App\Http\Controllers\DesktopLicenseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -1498,6 +1499,26 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::post('/maintenance/enable', [App\Http\Controllers\MaintenanceController::class, 'enable']);
     Route::post('/maintenance/disable', [App\Http\Controllers\MaintenanceController::class, 'disable']);
     Route::get('/maintenance/history', [App\Http\Controllers\MaintenanceController::class, 'history']);
+    
+    // Desktop License Management
+    Route::prefix('desktop-licenses')->group(function () {
+        // License Keys
+        Route::get('/keys', [App\Http\Controllers\DesktopLicenseController::class, 'listKeys']);
+        Route::post('/keys', [App\Http\Controllers\DesktopLicenseController::class, 'generateKeyPair']);
+        Route::get('/keys/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'getKey']);
+        Route::put('/keys/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'updateKey']);
+        Route::delete('/keys/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'deleteKey']);
+        
+        // License Operations
+        Route::post('/sign', [App\Http\Controllers\DesktopLicenseController::class, 'signLicense']);
+        Route::post('/verify', [App\Http\Controllers\DesktopLicenseController::class, 'verifyLicense']);
+        
+        // Desktop Licenses
+        Route::get('/', [App\Http\Controllers\DesktopLicenseController::class, 'listLicenses']);
+        Route::get('/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'getLicense']);
+        Route::get('/{id}/download', [App\Http\Controllers\DesktopLicenseController::class, 'downloadLicense']);
+        Route::delete('/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'deleteLicense']);
+    });
 });
 
 // Legacy admin subscription routes (kept for backward compatibility, but will be deprecated)

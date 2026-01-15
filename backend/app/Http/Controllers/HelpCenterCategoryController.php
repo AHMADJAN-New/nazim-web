@@ -9,6 +9,16 @@ use Illuminate\Support\Facades\Log;
 
 class HelpCenterCategoryController extends Controller
 {
+    private function getUserLanguage(Request $request): string
+    {
+        $lang = $request->get('lang');
+        if (!is_string($lang) || $lang === '') {
+            $lang = 'en';
+        }
+        $lang = strtolower($lang);
+        return in_array($lang, ['en', 'ps', 'fa', 'ar'], true) ? $lang : 'en';
+    }
+
     /**
      * Display a listing of help center categories
      */
@@ -17,7 +27,6 @@ class HelpCenterCategoryController extends Controller
         try {
             $user = $request->user();
             $profile = DB::table('profiles')->where('id', $user->id)->first();
-            $organizationId = $profile->organization_id ?? null;
 
             // Check permission (if authenticated)
             if ($user) {
@@ -31,48 +40,54 @@ class HelpCenterCategoryController extends Controller
                 }
             }
 
-            $query = HelpCenterCategory::whereNull('deleted_at');
+            $userLanguage = $this->getUserLanguage($request);
 
-            // Apply organization scope (include global + org categories)
-            if ($organizationId) {
-                $query->forOrganization($organizationId);
-            } else {
-                // Public access: only global categories
-                $query->whereNull('organization_id');
-            }
+            // Root categories only, but include recursive children.
+            $categories = HelpCenterCategory::query()
+                ->whereNull('deleted_at')
+                ->whereNull('organization_id')
+                ->active()
+                ->when($request->has('parent_id'), function ($q) use ($request) {
+                    if ($request->parent_id === 'null' || $request->parent_id === null) {
+                        $q->whereNull('parent_id');
+                    } else {
+                        $q->where('parent_id', $request->parent_id);
+                    }
+                }, function ($q) {
+                    $q->root();
+                })
+                ->with([
+                    // unlimited nesting
+                    'childrenRecursive',
+                ])
+                // direct counts for each node (language-aware; don't multiply by 4)
+                ->withCount([
+                    'publishedArticles as article_count' => function ($q) use ($userLanguage) {
+                        $q->where('language', $userLanguage);
+                    }
+                ])
+                ->orderBy('order')
+                ->orderBy('name')
+                ->get();
 
-            // Filter by active status
-            if ($request->has('is_active')) {
-                $query->where('is_active', filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN));
-            } else {
-                // Default: only active
-                $query->active();
-            }
+            // Optionally compute aggregated counts (parent includes descendants)
+            $computeAggregate = function ($node) use (&$computeAggregate) {
+                $sum = (int) ($node->article_count ?? 0);
 
-            // Filter by parent (root categories if null)
-            if ($request->has('parent_id')) {
-                if ($request->parent_id === 'null' || $request->parent_id === null) {
-                    $query->whereNull('parent_id');
-                } else {
-                    $query->where('parent_id', $request->parent_id);
+                $children = $node->childrenRecursive ?? collect();
+                foreach ($children as $child) {
+                    $computeAggregate($child);
+                    $sum += (int) ($child->article_count_aggregate ?? 0);
                 }
-            } else {
-                // Default: show root categories
-                $query->root();
-            }
 
-            $categories = $query->with(['children' => function ($q) use ($organizationId) {
-                $q->where('is_active', true);
-                if ($organizationId) {
-                    $q->forOrganization($organizationId);
-                } else {
-                    $q->whereNull('organization_id');
-                }
-                $q->orderBy('order');
-            }])
-            ->orderBy('order')
-            ->orderBy('name')
-            ->get();
+                $node->setAttribute('article_count_aggregate', $sum);
+
+                return $node;
+            };
+
+            foreach ($categories as $cat) {
+                $computeAggregate($cat);
+            }
 
             return response()->json($categories);
         } catch (\Exception $e) {
@@ -107,14 +122,8 @@ class HelpCenterCategoryController extends Controller
 
             $query = HelpCenterCategory::whereNull('deleted_at')
                 ->where('slug', $slug)
+                ->whereNull('organization_id') // Only global categories
                 ->active();
-
-            // Apply organization scope
-            if ($organizationId) {
-                $query->forOrganization($organizationId);
-            } else {
-                $query->whereNull('organization_id');
-            }
 
             $category = $query->with(['parent', 'children', 'publishedArticles'])
                 ->first();
@@ -145,10 +154,6 @@ class HelpCenterCategoryController extends Controller
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
-            if (!$profile->organization_id) {
-                return response()->json(['error' => 'User must be assigned to an organization'], 403);
-            }
-
             // Check permission
             try {
                 if (!$user->hasPermissionTo('help_center.create')) {
@@ -168,22 +173,14 @@ class HelpCenterCategoryController extends Controller
                 'order' => 'nullable|integer|min:0',
                 'is_active' => 'nullable|boolean',
                 'parent_id' => 'nullable|uuid|exists:help_center_categories,id',
+                // organization_id removed - all categories are global now
             ]);
 
-            // Determine organization_id (allow null for global categories)
-            $orgId = $request->input('organization_id', $profile->organization_id);
-
-            // Validate parent belongs to same organization or is global
+            // Validate parent is global
             if (!empty($validated['parent_id'])) {
                 $parent = HelpCenterCategory::where('id', $validated['parent_id'])
-                    ->where(function ($q) use ($orgId) {
-                        if ($orgId) {
-                            $q->where('organization_id', $orgId)
-                                ->orWhereNull('organization_id');
-                        } else {
-                            $q->whereNull('organization_id');
-                        }
-                    })
+                    ->whereNull('organization_id') // Only global categories
+                    ->whereNull('deleted_at')
                     ->first();
                 if (!$parent) {
                     return response()->json(['error' => 'Parent category not found'], 404);
@@ -191,7 +188,7 @@ class HelpCenterCategoryController extends Controller
             }
 
             $category = HelpCenterCategory::create([
-                'organization_id' => $orgId,
+                'organization_id' => null, // All categories are global
                 'name' => $validated['name'],
                 'slug' => $validated['slug'] ?? null,
                 'description' => $validated['description'] ?? null,
@@ -238,14 +235,8 @@ class HelpCenterCategoryController extends Controller
             }
 
             $query = HelpCenterCategory::whereNull('deleted_at')
+                ->whereNull('organization_id') // Only global categories
                 ->active();
-
-            // Apply organization scope
-            if ($organizationId) {
-                $query->forOrganization($organizationId);
-            } else {
-                $query->whereNull('organization_id');
-            }
 
             $category = $query->with(['parent', 'children', 'publishedArticles'])
                 ->find($id);
@@ -276,10 +267,6 @@ class HelpCenterCategoryController extends Controller
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
-            if (!$profile->organization_id) {
-                return response()->json(['error' => 'User must be assigned to an organization'], 403);
-            }
-
             // Check permission
             try {
                 if (!$user->hasPermissionTo('help_center.update')) {
@@ -290,14 +277,8 @@ class HelpCenterCategoryController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
-            $query = HelpCenterCategory::whereNull('deleted_at');
-
-            // Apply organization scope
-            if ($profile->organization_id) {
-                $query->forOrganization($profile->organization_id);
-            } else {
-                $query->whereNull('organization_id');
-            }
+            $query = HelpCenterCategory::whereNull('deleted_at')
+                ->whereNull('organization_id'); // Only global categories
 
             $category = $query->find($id);
 
@@ -316,18 +297,11 @@ class HelpCenterCategoryController extends Controller
                 'parent_id' => 'nullable|uuid|exists:help_center_categories,id',
             ]);
 
-            // Validate parent belongs to same organization or is global
+            // Validate parent is global
             if (!empty($validated['parent_id']) && $validated['parent_id'] !== $category->parent_id) {
-                $orgId = $category->organization_id ?? $profile->organization_id;
                 $parent = HelpCenterCategory::where('id', $validated['parent_id'])
-                    ->where(function ($q) use ($orgId) {
-                        if ($orgId) {
-                            $q->where('organization_id', $orgId)
-                                ->orWhereNull('organization_id');
-                        } else {
-                            $q->whereNull('organization_id');
-                        }
-                    })
+                    ->whereNull('organization_id') // Only global categories
+                    ->whereNull('deleted_at')
                     ->first();
                 if (!$parent) {
                     return response()->json(['error' => 'Parent category not found'], 404);
@@ -337,6 +311,9 @@ class HelpCenterCategoryController extends Controller
                     return response()->json(['error' => 'Category cannot be its own parent'], 422);
                 }
             }
+
+            // Ensure organization_id is not updated (always NULL for global categories)
+            unset($validated['organization_id']);
 
             $category->update($validated);
 
@@ -364,10 +341,6 @@ class HelpCenterCategoryController extends Controller
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
-            if (!$profile->organization_id) {
-                return response()->json(['error' => 'User must be assigned to an organization'], 403);
-            }
-
             // Check permission
             try {
                 if (!$user->hasPermissionTo('help_center.delete')) {
@@ -378,14 +351,8 @@ class HelpCenterCategoryController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
-            $query = HelpCenterCategory::whereNull('deleted_at');
-
-            // Apply organization scope
-            if ($profile->organization_id) {
-                $query->forOrganization($profile->organization_id);
-            } else {
-                $query->whereNull('organization_id');
-            }
+            $query = HelpCenterCategory::whereNull('deleted_at')
+                ->whereNull('organization_id'); // Only global categories
 
             $category = $query->find($id);
 
@@ -444,7 +411,8 @@ class HelpCenterCategoryController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
-            $query = HelpCenterCategory::whereNull('deleted_at');
+            $query = HelpCenterCategory::whereNull('deleted_at')
+                ->whereNull('organization_id'); // Only global categories
 
             // Filter by active status
             if ($request->has('is_active')) {
@@ -466,9 +434,16 @@ class HelpCenterCategoryController extends Controller
                 $query->root();
             }
 
+            // Recursively load all nested children (supports multi-level nesting)
             $categories = $query->with(['children' => function ($q) {
                 $q->where('is_active', true)
-                  ->orderBy('order');
+                  ->whereNull('organization_id') // Only global categories
+                  ->orderBy('order')
+                  ->with(['children' => function ($subQ) {
+                      $subQ->where('is_active', true)
+                           ->whereNull('organization_id')
+                           ->orderBy('order');
+                  }]);
             }])
             ->orderBy('order')
             ->orderBy('name')
@@ -518,23 +493,14 @@ class HelpCenterCategoryController extends Controller
                 'order' => 'nullable|integer|min:0',
                 'is_active' => 'nullable|boolean',
                 'parent_id' => 'nullable|uuid|exists:help_center_categories,id',
-                'organization_id' => 'nullable|uuid|exists:organizations,id',
+                // organization_id removed - all categories are global now
             ]);
 
-            // Allow null organization_id for global categories
-            $orgId = $request->input('organization_id');
-
-            // Validate parent belongs to same organization or is global
+            // Validate parent is global
             if (!empty($validated['parent_id'])) {
                 $parent = HelpCenterCategory::where('id', $validated['parent_id'])
-                    ->where(function ($q) use ($orgId) {
-                        if ($orgId) {
-                            $q->where('organization_id', $orgId)
-                                ->orWhereNull('organization_id');
-                        } else {
-                            $q->whereNull('organization_id');
-                        }
-                    })
+                    ->whereNull('organization_id') // Only global categories
+                    ->whereNull('deleted_at')
                     ->first();
                 if (!$parent) {
                     return response()->json(['error' => 'Parent category not found'], 404);
@@ -542,7 +508,7 @@ class HelpCenterCategoryController extends Controller
             }
 
             $category = HelpCenterCategory::create([
-                'organization_id' => $orgId,
+                'organization_id' => null, // All categories are global
                 'name' => $validated['name'],
                 'slug' => $validated['slug'] ?? null,
                 'description' => $validated['description'] ?? null,
@@ -605,21 +571,14 @@ class HelpCenterCategoryController extends Controller
                 'order' => 'nullable|integer|min:0',
                 'is_active' => 'nullable|boolean',
                 'parent_id' => 'nullable|uuid|exists:help_center_categories,id',
-                'organization_id' => 'nullable|uuid|exists:organizations,id',
+                // organization_id removed - all categories are global now
             ]);
 
-            // Validate parent belongs to same organization or is global
+            // Validate parent is global
             if (!empty($validated['parent_id']) && $validated['parent_id'] !== $category->parent_id) {
-                $orgId = $validated['organization_id'] ?? $category->organization_id;
                 $parent = HelpCenterCategory::where('id', $validated['parent_id'])
-                    ->where(function ($q) use ($orgId) {
-                        if ($orgId) {
-                            $q->where('organization_id', $orgId)
-                                ->orWhereNull('organization_id');
-                        } else {
-                            $q->whereNull('organization_id');
-                        }
-                    })
+                    ->whereNull('organization_id') // Only global categories
+                    ->whereNull('deleted_at')
                     ->first();
                 if (!$parent) {
                     return response()->json(['error' => 'Parent category not found'], 404);
@@ -629,6 +588,9 @@ class HelpCenterCategoryController extends Controller
                     return response()->json(['error' => 'Category cannot be its own parent'], 422);
                 }
             }
+
+            // Ensure organization_id is not updated (always NULL for global categories)
+            unset($validated['organization_id']);
 
             $category->update($validated);
 

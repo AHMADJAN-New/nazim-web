@@ -102,6 +102,7 @@ interface ArticleFormData {
   excerpt: string;
   content: string;
   content_type: 'markdown' | 'html';
+  language: 'en' | 'ps' | 'fa' | 'ar';
   featured_image_url: string;
   status: 'draft' | 'published' | 'archived';
   visibility: 'public' | 'org_users' | 'staff_only';
@@ -121,6 +122,7 @@ const initialArticleFormData: ArticleFormData = {
   excerpt: '',
   content: '',
   content_type: 'html',
+  language: 'en',
   featured_image_url: '',
   status: 'draft',
   visibility: 'public',
@@ -311,6 +313,7 @@ export default function HelpCenterManagement() {
       excerpt: article.excerpt || '',
       content: article.content,
       content_type: article.content_type,
+      language: article.language || 'en',
       featured_image_url: article.featured_image_url || '',
       status: article.status || (article.is_published ? 'published' : 'draft'),
       visibility: article.visibility || 'public',
@@ -334,6 +337,7 @@ export default function HelpCenterManagement() {
         excerpt: articleFormData.excerpt || undefined,
         content: articleFormData.content,
         content_type: articleFormData.content_type,
+        language: articleFormData.language,
         featured_image_url: articleFormData.featured_image_url || undefined,
         status: articleFormData.status,
         visibility: articleFormData.visibility,
@@ -823,7 +827,19 @@ export default function HelpCenterManagement() {
                 </Label>
                 <Select
                   value={articleFormData.category_id}
-                  onValueChange={(value) => setArticleFormData({ ...articleFormData, category_id: value })}
+                  onValueChange={(value) => {
+                    const selectedCategory = categories.find((c) => c.id === value);
+                    // Auto-populate slug from category slug when creating new article (only if slug is empty)
+                    if (selectedCategory && !editingArticle && selectedCategory.slug && !articleFormData.slug) {
+                      setArticleFormData({ 
+                        ...articleFormData, 
+                        category_id: value,
+                        slug: selectedCategory.slug 
+                      });
+                    } else {
+                      setArticleFormData({ ...articleFormData, category_id: value });
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
@@ -879,7 +895,7 @@ export default function HelpCenterManagement() {
                 placeholder="article-slug"
               />
               <p className="text-xs text-muted-foreground">
-                Leave empty to auto-generate from title
+                Auto-populated from selected category. Leave empty to auto-generate from title.
               </p>
             </div>
 
@@ -907,7 +923,29 @@ export default function HelpCenterManagement() {
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="article-language">
+                  Language <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={articleFormData.language}
+                  onValueChange={(value: 'en' | 'ps' | 'fa' | 'ar') => 
+                    setArticleFormData({ ...articleFormData, language: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="ps">پښتو (Pashto)</SelectItem>
+                    <SelectItem value="fa">فارسی (Farsi)</SelectItem>
+                    <SelectItem value="ar">العربية (Arabic)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="article-visibility">Visibility</Label>
                 <Select

@@ -2,6 +2,7 @@ import { apiClient } from '@/lib/api/client';
 import type * as HelpCenterApi from '@/types/api/helpCenter';
 import type * as OrganizationApi from '@/types/api/organization';
 import type * as SubscriptionApi from '@/types/api/subscription';
+import type * as DesktopLicenseApi from '@/types/api/desktopLicense';
 
 /**
  * Platform Admin API Client
@@ -812,6 +813,59 @@ export const platformApi = {
           } | null;
         }>;
       }>('/platform/maintenance/history');
+    },
+  },
+
+  // Desktop License Management
+  desktopLicenses: {
+    // License Keys
+    keys: {
+      list: async () => {
+        return apiClient.get<{ data: DesktopLicenseApi.LicenseKey[] }>('/platform/desktop-licenses/keys');
+      },
+      generate: async (data: DesktopLicenseApi.GenerateKeyPairRequest) => {
+        return apiClient.post<{ data: DesktopLicenseApi.LicenseKey }>('/platform/desktop-licenses/keys', data);
+      },
+      get: async (id: string) => {
+        return apiClient.get<{ data: DesktopLicenseApi.LicenseKey }>(`/platform/desktop-licenses/keys/${id}`);
+      },
+      update: async (id: string, data: DesktopLicenseApi.UpdateKeyRequest) => {
+        return apiClient.put<{ data: DesktopLicenseApi.LicenseKey }>(`/platform/desktop-licenses/keys/${id}`, data);
+      },
+      delete: async (id: string) => {
+        return apiClient.delete(`/platform/desktop-licenses/keys/${id}`);
+      },
+    },
+    // License Operations
+    sign: async (data: DesktopLicenseApi.SignLicenseRequest) => {
+      return apiClient.post<{ data: DesktopLicenseApi.SignedLicenseResponse }>('/platform/desktop-licenses/sign', data);
+    },
+    verify: async (data: DesktopLicenseApi.VerifyLicenseRequest) => {
+      return apiClient.post<{ data: DesktopLicenseApi.VerifyLicenseResponse }>('/platform/desktop-licenses/verify', data);
+    },
+    // Desktop Licenses
+    list: async () => {
+      return apiClient.get<{ data: DesktopLicenseApi.DesktopLicense[] }>('/platform/desktop-licenses');
+    },
+    get: async (id: string) => {
+      return apiClient.get<{ data: DesktopLicenseApi.DesktopLicense }>(`/platform/desktop-licenses/${id}`);
+    },
+    download: async (id: string) => {
+      const { blob, filename } = await apiClient.requestFile(
+        `/platform/desktop-licenses/${id}/download`,
+        { method: 'GET' }
+      );
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || `license-${id}.dat`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    },
+    delete: async (id: string) => {
+      return apiClient.delete(`/platform/desktop-licenses/${id}`);
     },
   },
 };

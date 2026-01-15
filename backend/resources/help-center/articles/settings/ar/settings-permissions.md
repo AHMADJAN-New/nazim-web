@@ -1,0 +1,9 @@
+# Settings Permissions
+
+**المقالة ستكون جاهزة قريباً**
+
+هذه المقالة قيد الإعداد حالياً. المحتوى سيكون متاحاً قريباً.
+
+---
+
+*Category: `settings/permissions` | Language: `ar`*

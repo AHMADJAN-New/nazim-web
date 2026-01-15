@@ -16,6 +16,7 @@ import RenewalReviewPage from './pages/admin/RenewalReviewPage';
 import PlatformSettings from './pages/admin/PlatformSettings';
 import MaintenanceFeesManagement from './pages/admin/MaintenanceFeesManagement';
 import LicenseFeesManagement from './pages/admin/LicenseFeesManagement';
+import DesktopLicenseGeneration from './pages/admin/DesktopLicenseGeneration';
 import { PlatformAdminDashboard } from './pages/PlatformAdminDashboard';
 import { PlatformAdminLogin } from './pages/PlatformAdminLogin';
 import { PlatformPermissionGroupsManagement } from './pages/PlatformPermissionGroupsManagement';
@@ -200,6 +201,7 @@ export function PlatformAdminApp() {
               <Route path="settings" element={<PlatformSettings />} />
               <Route path="help-center" element={<HelpCenterManagement />} />
               <Route path="maintenance-history" element={<MaintenanceHistory />} />
+              <Route path="desktop-licenses" element={<DesktopLicenseGeneration />} />
 
               {/* Fallback inside platform */}
               <Route path="*" element={<Navigate to="dashboard" replace />} />

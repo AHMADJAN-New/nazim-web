@@ -130,6 +130,18 @@ class ApiClient {
       }
     }
     
+    // Automatically add language parameter for help center endpoints
+    // This ensures articles are filtered by user's language preference
+    if (typeof window !== 'undefined' && endpoint.includes('/help-center/')) {
+      const userLanguage = localStorage.getItem('nazim-language') || 'en';
+      if (!options.params) {
+        options.params = {};
+      }
+      if (!options.params.lang) {
+        options.params.lang = userLanguage;
+      }
+    }
+    
     // CRITICAL: Extract params BEFORE destructuring to ensure it's a plain object
     const params = options.params ? { ...options.params } : undefined;
     const { params: _, ...fetchOptions } = options;
@@ -4510,6 +4522,7 @@ export const helpCenterArticlesApi = {
     excerpt?: string | null;
     content: string;
     content_type?: 'markdown' | 'html';
+    language?: 'en' | 'ps' | 'fa' | 'ar';
     featured_image_url?: string | null;
     is_published?: boolean;
     is_featured?: boolean;
@@ -4530,6 +4543,7 @@ export const helpCenterArticlesApi = {
     excerpt?: string | null;
     content?: string;
     content_type?: 'markdown' | 'html';
+    language?: 'en' | 'ps' | 'fa' | 'ar';
     featured_image_url?: string | null;
     is_published?: boolean;
     is_featured?: boolean;

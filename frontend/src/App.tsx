@@ -179,7 +179,8 @@ import {
   PlatformSettings,
   TranslationsManagement,
   HelpCenterManagement,
-  MaintenanceHistory
+  MaintenanceHistory,
+  DesktopLicenseGeneration
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -382,6 +383,11 @@ const App = () => (
                     <Route path="maintenance-history" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <MaintenanceHistory />
+                      </Suspense>
+                    } />
+                    <Route path="desktop-licenses" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <DesktopLicenseGeneration />
                       </Suspense>
                     } />
                     <Route path="maintenance" element={<Navigate to="maintenance-history" replace />} />

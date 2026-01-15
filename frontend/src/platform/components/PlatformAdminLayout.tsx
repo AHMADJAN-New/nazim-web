@@ -20,6 +20,7 @@ import {
   DollarSign,
   Lock,
   Mail,
+  Key,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -204,6 +205,12 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       href: '/platform/maintenance-history', 
       icon: History,
       description: 'View maintenance mode history'
+    },
+    { 
+      name: 'Desktop Licenses', 
+      href: '/platform/desktop-licenses', 
+      icon: Key,
+      description: 'Generate and manage desktop application licenses'
     },
   ];
 

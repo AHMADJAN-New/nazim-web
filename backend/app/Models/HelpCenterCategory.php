@@ -85,7 +85,20 @@ class HelpCenterCategory extends Model
      */
     public function children()
     {
-        return $this->hasMany(HelpCenterCategory::class, 'parent_id')->orderBy('order');
+        return $this->hasMany(self::class, 'parent_id')
+            ->whereNull('deleted_at')
+            ->where('is_active', true)
+            ->whereNull('organization_id')
+            ->orderBy('order')
+            ->orderBy('name');
+    }
+
+    /**
+     * Recursive children (unlimited depth)
+     */
+    public function childrenRecursive()
+    {
+        return $this->children()->with('childrenRecursive');
     }
 
     /**
@@ -102,8 +115,11 @@ class HelpCenterCategory extends Model
     public function publishedArticles()
     {
         return $this->hasMany(HelpCenterArticle::class, 'category_id')
-            ->where('status', 'published')
-            ->whereNull('deleted_at');
+            ->whereNull('deleted_at')
+            ->where(function ($q) {
+                // Backward compatibility: support both status and is_published
+                $q->where('is_published', true)->orWhere('status', 'published');
+            });
     }
 
     /**
@@ -129,6 +145,36 @@ class HelpCenterCategory extends Model
     {
         $this->article_count = $this->publishedArticles()->count();
         $this->save();
+    }
+
+    /**
+     * Get descendant IDs (category itself + all descendants)
+     */
+    public static function descendantIds(string $categoryId): array
+    {
+        $root = self::query()
+            ->where('id', $categoryId)
+            ->whereNull('organization_id')
+            ->whereNull('deleted_at')
+            ->with('childrenRecursive:id,parent_id')
+            ->first();
+
+        if (!$root) {
+            return [$categoryId];
+        }
+
+        $ids = [];
+        $walk = function ($node) use (&$walk, &$ids) {
+            if (!$node) return;
+            $ids[] = $node->id;
+            foreach (($node->childrenRecursive ?? []) as $child) {
+                $walk($child);
+            }
+        };
+
+        $walk($root);
+
+        return array_values(array_unique($ids));
     }
 
     /**
@@ -165,14 +211,9 @@ class HelpCenterCategory extends Model
     /**
      * Scope to include global and organization categories
      */
-    public function scopeForOrganization($query, $organizationId)
+    public function scopeForOrganization($query, $organizationId = null)
     {
-        if ($organizationId) {
-            return $query->where(function ($q) use ($organizationId) {
-                $q->where('organization_id', $organizationId)
-                    ->orWhereNull('organization_id');
-            });
-        }
+        // All categories are global now (organization_id = NULL)
         return $query->whereNull('organization_id');
     }
 }

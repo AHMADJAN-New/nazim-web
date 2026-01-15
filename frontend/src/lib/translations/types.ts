@@ -4165,6 +4165,18 @@ export const TRANSLATION_KEYS = [
   "toast.library.loanCreated",
   "toast.library.loanCreateFailed",
   "toast.limitOverrideAdded",
+  "toast.licenseSigned",
+  "toast.licenseSignFailed",
+  "toast.licenseDownloaded",
+  "toast.licenseDownloadFailed",
+  "toast.licenseDeleted",
+  "toast.licenseDeleteFailed",
+  "toast.keyPairGenerated",
+  "toast.keyPairGenerationFailed",
+  "toast.keyUpdated",
+  "toast.keyUpdateFailed",
+  "toast.keyDeleted",
+  "toast.keyDeleteFailed",
   "toast.marksSaved",
   "toast.marksSaveFailed",
   "toast.organizationCreated",
@@ -11754,6 +11766,26 @@ export const TRANSLATION_KEYS = [
     views: string;
     wasThisHelpful: string;
     yes: string;
+    filters: string;
+    browseCategories: string;
+    sortBy: string;
+    sortRecent: string;
+    sortPopular: string;
+    sortAZ: string;
+    categoryHint: string;
+    scanHint: string;
+    needMoreHelp: string;
+    needMoreHelpDesc: string;
+    resetSearch: string;
+    contactSupport: string;
+    continueReading: string;
+    topMatches: string;
+    tipEnter: string;
+    activeFilters: string;
+    category: string;
+    search: string;
+    browseAll: string;
+    minRead: string;
     title: {
       helpCenterManagement: string;
     };
