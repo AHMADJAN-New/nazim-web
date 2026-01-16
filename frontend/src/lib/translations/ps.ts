@@ -2467,7 +2467,7 @@ export const ps: TranslationKeys = {
     students: 'زده کوونکي',
     subtitle: 'د لیلیې اتاقونه او لیلیه وال مدیریت کړئ',
     title: 'د لیلیې مدیریت',
-    totalRooms: 'ټولې اتاقونه',
+    totalRooms: 'ټول اتاقونه',
     unassigned: 'بې ځایه',
     warden: 'نګران / څارونکی',
     overview: 'overview'
