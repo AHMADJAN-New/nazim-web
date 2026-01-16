@@ -413,7 +413,7 @@ export const fa: TranslationKeys = {
     withdrawn: 'منفک شده',
     year: 'سال'
   },
-  articleFound: 'مقاله یافت شد',
+  articleFound: 'مقاله برای کمک در این صفحه',
   assets: {
     active: 'فعال',
     assetReports: 'گزارش‌های دارایی',
