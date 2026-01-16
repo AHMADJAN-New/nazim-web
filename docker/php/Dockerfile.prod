@@ -1,0 +1,74 @@
+FROM php:8.3-fpm
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# System deps (PHP extensions, image/PDF tooling, Chromium for Browsershot)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    git \
+    unzip \
+    libpq-dev \
+    libzip-dev \
+    libonig-dev \
+    libicu-dev \
+    libxml2-dev \
+    libxslt1-dev \
+    libpng-dev \
+    libjpeg62-turbo-dev \
+    libfreetype6-dev \
+    imagemagick \
+    ghostscript \
+    libmagickwand-dev \
+    chromium \
+    fontconfig \
+    fonts-dejavu \
+    fonts-noto \
+    fonts-noto-color-emoji \
+    && rm -rf /var/lib/apt/lists/*
+
+# Node.js 20 (required by spatie/browsershot)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get update && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+      pdo \
+      pdo_pgsql \
+      mbstring \
+      bcmath \
+      zip \
+      pcntl \
+      intl \
+      gd \
+      exif \
+      xsl
+
+# Imagick + Redis extensions
+RUN pecl install imagick redis \
+    && docker-php-ext-enable imagick redis
+
+# Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# PHP INI overrides
+COPY docker/php/nazim.ini /usr/local/etc/php/conf.d/99-nazim.ini
+
+# App code
+WORKDIR /var/www/backend
+COPY backend/ /var/www/backend/
+
+# Install PHP deps (prod)
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader \
+    && mkdir -p /var/www/backend/storage /var/www/backend/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/backend/storage /var/www/backend/bootstrap/cache
+
+# Browsershot defaults (can be overridden via env)
+ENV BROWSERSHOT_CHROME_PATH=/usr/bin/chromium \
+    BROWSERSHOT_NODE_BINARY=/usr/bin/node
+
+EXPOSE 9000
+CMD ["php-fpm"]
+

@@ -78,6 +78,14 @@ use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\FinanceDocumentController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\GraduationBatchController;
+
+// Lightweight health check for reverse proxy (/api/*) setups
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'service' => 'Nazim API',
+    ]);
+});
 use App\Http\Controllers\Certificates\IssuedCertificateController;
 use App\Http\Controllers\Dms\ArchiveSearchController;
 use App\Http\Controllers\Dms\DepartmentsController as DmsDepartmentsController;
