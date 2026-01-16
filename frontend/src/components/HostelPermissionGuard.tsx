@@ -31,7 +31,8 @@ export function HostelPermissionGuard({
   const hasHostelRead = useHasPermission('hostel.read');
   const hasRoomsRead = useHasPermission('rooms.read');
   const hasAdmissionsRead = useHasPermission('student_admissions.read');
-  const hasHostelFeature = !!features?.find((feature) => feature.featureKey === 'hostel')?.isEnabled;
+  const hostelFeature = features?.find((feature) => feature.featureKey === 'hostel');
+  const hasHostelFeature = hostelFeature?.isAccessible ?? hostelFeature?.isEnabled ?? false;
 
   // Show loading state while permissions are being fetched
   const isInitialLoad = isLoading && permissions === undefined;
@@ -64,7 +65,7 @@ export function HostelPermissionGuard({
         <div className="text-center text-muted-foreground">
           <Shield className="h-12 w-12 mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">{t('guards.accessDenied')}</h3>
-          <p>{t('guards.noPermission')}</p>
+          <p>{t('events.noPermission')}</p>
           <p className="text-sm mt-2">
             {t('guards.requiredPermission')}: <code className="bg-muted px-2 py-1 rounded">(hostel.read OR rooms.read) AND student_admissions.read</code>
           </p>

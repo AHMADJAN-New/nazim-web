@@ -284,9 +284,9 @@ export default function LetterheadsPage() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Upload Letterhead</DialogTitle>
+              <DialogTitle>{t('dms.createLetterhead') || 'Create Letterhead'}</DialogTitle>
               <DialogDescription>
-                Upload a new letterhead file (PDF or image).
+                {t('dms.letterheadsDescription') || 'Upload a new letterhead file (PDF or image).'}
               </DialogDescription>
             </DialogHeader>
             <LetterheadForm
@@ -297,10 +297,10 @@ export default function LetterheadsPage() {
           </DialogContent>
         </Dialog>
 
-      <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+      <FilterPanel title={t('events.filters') || 'Search & Filter'}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
-            <Label>{t('common.search') || 'Search'}</Label>
+            <Label>{t('events.search') || 'Search'}</Label>
             <Input
               placeholder={t('dms.searchByName') || 'Search by name...'}
               value={filters.search}
@@ -344,7 +344,7 @@ export default function LetterheadsPage() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>{t('common.status') || 'Status'}</Label>
+            <Label>{t('events.status') || 'Status'}</Label>
             <Select
               value={filters.active || "all"}
               onValueChange={(value) => setFilters((s) => ({ ...s, active: value }))}
@@ -353,9 +353,9 @@ export default function LetterheadsPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
-                <SelectItem value="true">{t('common.active') || 'Active'}</SelectItem>
-                <SelectItem value="false">{t('common.inactive') || 'Inactive'}</SelectItem>
+                <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                <SelectItem value="true">{t('events.active') || 'Active'}</SelectItem>
+                <SelectItem value="false">{t('events.inactive') || 'Inactive'}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -365,14 +365,14 @@ export default function LetterheadsPage() {
       {/* Letterheads Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Letterheads</CardTitle>
+          <CardTitle>{t('dms.letterheadsTitle') || 'Letterheads'}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">Loading...</div>
+            <div className="text-center py-8">{t('common.loading') || 'Loading...'}</div>
           ) : letterheads.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No letterheads found. Upload your first letterhead to get started.
+              {t('dms.letterheadsNoLetterheads') || 'No letterheads found. Upload your first letterhead to get started.'}
             </div>
           ) : (
             <>
@@ -380,13 +380,13 @@ export default function LetterheadsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>File Type</TableHead>
-                      <TableHead>Letter Type</TableHead>
-                      <TableHead>Position</TableHead>
-                      <TableHead>Layout</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t('common.name') || 'Name'}</TableHead>
+                      <TableHead>{t('dms.fileType') || 'File Type'}</TableHead>
+                      <TableHead>{t('dms.letterType') || 'Letter Type'}</TableHead>
+                      <TableHead>{t('dms.position') || 'Position'}</TableHead>
+                      <TableHead>{t('dms.layout') || 'Layout'}</TableHead>
+                      <TableHead>{t('common.status') || 'Status'}</TableHead>
+                      <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -413,7 +413,7 @@ export default function LetterheadsPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant={letterhead.active ? "default" : "secondary"}>
-                            {letterhead.active ? "Active" : "Inactive"}
+                            {letterhead.active ? (t("common.active") || "Active") : (t("common.inactive") || "Inactive")}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -424,22 +424,22 @@ export default function LetterheadsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuLabel>{t("events.actions") || "Actions"}</DropdownMenuLabel>
                               <DropdownMenuItem onClick={() => openViewDialog(letterhead)}>
                                 <Eye className="h-4 w-4 mr-2" />
-                                View
+                                {t("common.view") || "View"}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openPreviewDialog(letterhead)}>
                                 <ImageIcon className="h-4 w-4 mr-2" />
-                                Preview
+                                {t("common.preview") || "Preview"}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDownload(letterhead)}>
                                 <Download className="h-4 w-4 mr-2" />
-                                Download
+                                {t("common.download") || "Download"}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openEditDialog(letterhead)}>
                                 <Edit className="h-4 w-4 mr-2" />
-                                Edit
+                                {t("common.edit") || "Edit"}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
@@ -447,7 +447,7 @@ export default function LetterheadsPage() {
                                 className="text-destructive"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
+                                {t("common.delete") || "Delete"}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -503,20 +503,20 @@ export default function LetterheadsPage() {
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Letterhead Details</DialogTitle>
+            <DialogTitle>{t("dms.letterheads.viewTitle") || "Letterhead Details"}</DialogTitle>
             <DialogDescription>
-              View letterhead information and configuration.
+              {t("dms.letterheads.viewDescription") || "View letterhead information and configuration."}
             </DialogDescription>
           </DialogHeader>
           {selectedLetterhead && (
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <Label className="text-muted-foreground">Name</Label>
+                  <Label className="text-muted-foreground">{t("common.name") || "Name"}</Label>
                   <p className="font-medium">{selectedLetterhead.name}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">File Type</Label>
+                  <Label className="text-muted-foreground">{t("dms.fileType") || "File Type"}</Label>
                   <div className="font-medium">
                     <Badge variant="outline">
                       {selectedLetterhead.file_type?.toUpperCase() || "IMAGE"}
@@ -524,29 +524,29 @@ export default function LetterheadsPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Letter Type</Label>
+                  <Label className="text-muted-foreground">{t("dms.letterType") || "Letter Type"}</Label>
                   <p className="font-medium">{selectedLetterhead.letter_type || "N/A"}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Position</Label>
+                  <Label className="text-muted-foreground">{t("dms.position") || "Position"}</Label>
                   <p className="font-medium capitalize">{selectedLetterhead.position || "header"}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Default Layout</Label>
+                  <Label className="text-muted-foreground">{t("dms.letterheads.defaultLayout") || "Default Layout"}</Label>
                   <p className="font-medium">{selectedLetterhead.default_for_layout || "None"}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Status</Label>
+                  <Label className="text-muted-foreground">{t("common.status") || "Status"}</Label>
                   <div className="font-medium">
                     <Badge variant={selectedLetterhead.active ? "default" : "secondary"}>
-                      {selectedLetterhead.active ? "Active" : "Inactive"}
+                      {selectedLetterhead.active ? (t("common.active") || "Active") : (t("common.inactive") || "Inactive")}
                     </Badge>
                   </div>
                 </div>
               </div>
               {selectedLetterhead.preview_url && selectedLetterhead.file_type === "image" && (
                 <div>
-                  <Label className="text-muted-foreground">Preview</Label>
+                  <Label className="text-muted-foreground">{t("common.preview") || "Preview"}</Label>
                   <div className="mt-2 border rounded-lg overflow-hidden">
                     <img
                       src={selectedLetterhead.preview_url}
@@ -565,9 +565,9 @@ export default function LetterheadsPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Letterhead</DialogTitle>
+            <DialogTitle>{t("dms.letterheads.editTitle") || "Edit Letterhead"}</DialogTitle>
             <DialogDescription>
-              Update letterhead configuration and settings.
+              {t("dms.letterheads.editDescription") || "Update letterhead configuration and settings."}
             </DialogDescription>
           </DialogHeader>
           {selectedLetterhead && (
@@ -588,9 +588,9 @@ export default function LetterheadsPage() {
       <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Letterhead Preview</DialogTitle>
+            <DialogTitle>{t("dms.letterheads.previewTitle") || "Letterhead Preview"}</DialogTitle>
             <DialogDescription>
-              Preview the letterhead as it will appear in documents.
+              {t("dms.letterheads.previewDescription") || "Preview the letterhead as it will appear in documents."}
             </DialogDescription>
           </DialogHeader>
            {selectedLetterhead && (
@@ -633,10 +633,9 @@ export default function LetterheadsPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t("common.confirmDelete") || "Are you sure?"}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the letterhead.
-              If the letterhead is in use by any templates or documents, it cannot be deleted.
+              {t("dms.letterheads.deleteDescription") || "This action cannot be undone. This will permanently delete the letterhead. If the letterhead is in use by any templates or documents, it cannot be deleted."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -644,10 +643,10 @@ export default function LetterheadsPage() {
               setIsDeleteDialogOpen(false);
               setDeleteLetterheadId(null);
             }}>
-              Cancel
+              {t("common.cancel") || "Cancel"}
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              {t("common.delete") || "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

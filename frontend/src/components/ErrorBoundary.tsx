@@ -68,7 +68,7 @@ class ErrorBoundary extends Component<Props, State> {
       toast.error(t('errorBoundary.somethingWentWrong', lang), {
         description: t('errorBoundary.workingOnFix', lang),
         action: {
-          label: t('errorBoundary.retry', lang),
+          label: t('events.retry', lang),
           onClick: () => this.handleRetry(),
         },
       });
@@ -241,7 +241,7 @@ Please describe what you were doing when this error occurred:
                   {this.retryCount < this.maxRetries && (
                     <Button size="sm" onClick={this.handleRetry}>
                       <RefreshCw className="w-3 h-3 mr-1" />
-                      {t('errorBoundary.retry', lang)} ({this.maxRetries - this.retryCount} left)
+                      {t('events.retry', lang)} ({this.maxRetries - this.retryCount} left)
                     </Button>
                   )}
                   <Button size="sm" variant="outline" onClick={this.handleReportBug}>

@@ -304,10 +304,10 @@ export function AcademicYearsManagement() {
             <div className="flex flex-col sm:flex-row gap-2">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder={t('common.filterByStatus')} />
+                  <SelectValue placeholder={t('events.filterByStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('common.all')} {t('academic.academicYears.status')}</SelectItem>
+                  <SelectItem value="all">{t('subjects.all')} {t('academic.academicYears.status')}</SelectItem>
                   <SelectItem value="active">{t('academic.academicYears.active')}</SelectItem>
                   <SelectItem value="archived">{t('academic.academicYears.archived')}</SelectItem>
                   <SelectItem value="planned">{t('academic.academicYears.planned')}</SelectItem>
@@ -353,7 +353,7 @@ export function AcademicYearsManagement() {
                   <TableHead>{t('academic.academicYears.endDate')}</TableHead>
                   <TableHead>{t('academic.academicYears.status')}</TableHead>
                   <TableHead>{t('academic.academicYears.isCurrent')}</TableHead>
-                  <TableHead className="text-right">{t('students.actions')}</TableHead>
+                  <TableHead className="text-right">{t('events.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -428,7 +428,7 @@ export function AcademicYearsManagement() {
                               onClick={() => handleDeleteClick(year.id)}
                               title="Delete academic year"
                               className="flex-shrink-0"
-                              aria-label={t('common.delete')}
+                              aria-label={t('events.delete')}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -477,19 +477,13 @@ export function AcademicYearsManagement() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="start_date">
-                    {t('academic.academicYears.startDate')} *
-                  </Label>
-                  <CalendarFormField control={control} name="start_date" label={t('academic.academicYears.startDate') + ' *'} />
+                  <CalendarFormField control={control} name="start_date" label={t('academic.academicYears.startDate') + ' *'} required />
                   {errors.start_date && (
                     <p className="text-sm text-destructive">{errors.start_date.message}</p>
                   )}
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="end_date">
-                    {t('academic.academicYears.endDate')} *
-                  </Label>
-                  <CalendarFormField control={control} name="end_date" label={t('academic.academicYears.endDate') + ' *'} />
+                  <CalendarFormField control={control} name="end_date" label={t('academic.academicYears.endDate') + ' *'} required />
                   {errors.end_date && (
                     <p className="text-sm text-destructive">{errors.end_date.message}</p>
                   )}
@@ -540,10 +534,10 @@ export function AcademicYearsManagement() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                {t('common.cancel')}
+                {t('events.cancel')}
               </Button>
               <Button type="submit">
-                {t('common.save')}
+                {t('events.save')}
               </Button>
             </DialogFooter>
             </form>
@@ -555,18 +549,18 @@ export function AcademicYearsManagement() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('events.delete')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('academic.academicYears.deleteConfirm')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('common.delete')}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

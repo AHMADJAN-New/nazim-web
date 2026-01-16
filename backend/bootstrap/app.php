@@ -27,6 +27,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\CustomMaintenanceMode::class
         );
         
+        // Force JSON responses for all API routes
+        $middleware->api(prepend: [
+            \App\Http\Middleware\ForceJsonResponse::class,
+        ]);
+        
         $middleware->alias([
             'auth' => \App\Http\Middleware\Authenticate::class,
             'auth.sanctum' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
@@ -37,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscription' => \App\Http\Middleware\EnsureSubscriptionAccess::class,
             'feature' => \App\Http\Middleware\EnsureFeatureAccess::class,
             'limit' => \App\Http\Middleware\EnforceUsageLimit::class,
+            'token.from.query' => \App\Http\Middleware\AcceptTokenFromQuery::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -160,6 +166,30 @@ return Application::configure(basePath: dirname(__DIR__))
             }
             
             // For web routes, let Laravel handle it normally (will show HTML maintenance page)
+            return null;
+        });
+        
+        // Handle all other exceptions for API routes - ensure they return JSON
+        // This must come LAST so specific handlers above can handle their exceptions first
+        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+            // For API routes, always return JSON, never HTML
+            if ($request->is('api/*') || $request->expectsJson()) {
+                $statusCode = 500;
+                
+                // Try to get status code from exception
+                if (method_exists($e, 'getStatusCode')) {
+                    $statusCode = $e->getStatusCode();
+                } elseif (method_exists($e, 'getCode') && $e->getCode() >= 400 && $e->getCode() < 600) {
+                    $statusCode = $e->getCode();
+                }
+                
+                // Return JSON error response
+                return response()->json([
+                    'message' => config('app.debug') ? $e->getMessage() : 'An error occurred',
+                    'error' => config('app.debug') ? $e->getMessage() : 'An error occurred',
+                ], $statusCode);
+            }
+            
             return null;
         });
     })->create();

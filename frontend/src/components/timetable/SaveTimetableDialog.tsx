@@ -153,21 +153,21 @@ export function SaveTimetableDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-lg">
 				<DialogHeader>
-					<DialogTitle>{t('timetable.save') || 'Save Timetable'}</DialogTitle>
+					<DialogTitle>{t('events.save') || 'Save Timetable'}</DialogTitle>
 					<DialogDescription>
 						{t('timetable.saveDesc') || 'Provide a name and optional description for this timetable.'}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={handleSubmit(handleSave)} className="space-y-4">
 					<div className="space-y-2">
-						<label className="text-sm font-medium">{t('timetable.name') || 'Name'}</label>
+						<label className="text-sm font-medium">{t('events.name') || 'Name'}</label>
 						<Input {...register('name')} />
 						{errors.name && (
 							<p className="text-sm text-destructive mt-1">{errors.name.message}</p>
 						)}
 					</div>
 					<div className="space-y-2">
-						<label className="text-sm font-medium">{t('timetable.description') || 'Description'}</label>
+						<label className="text-sm font-medium">{t('events.description') || 'Description'}</label>
 						<Textarea {...register('description')} rows={3} />
 						{errors.description && (
 							<p className="text-sm text-destructive mt-1">{errors.description.message}</p>
@@ -182,10 +182,10 @@ export function SaveTimetableDialog({
 							variant="outline" 
 							onClick={() => onOpenChange(false)}
 						>
-							{t('common.cancel') || 'Cancel'}
+							{t('events.cancel') || 'Cancel'}
 						</Button>
 						<Button type="submit" disabled={isPending}>
-							{t('common.save') || 'Save'}
+							{t('events.save') || 'Save'}
 						</Button>
 					</DialogFooter>
 				</form>

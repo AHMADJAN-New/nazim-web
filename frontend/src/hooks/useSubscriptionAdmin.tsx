@@ -233,17 +233,27 @@ export const useOrganizationSubscription = (organizationId: string) => {
       );
       
       // Map features to domain types
-      const mappedFeatures = response.data.features.map((apiFeature) => ({
-        featureKey: apiFeature.feature_key,
-        name: apiFeature.name,
-        description: apiFeature.description,
-        category: apiFeature.category,
-        isEnabled: apiFeature.is_enabled,
-        isAddon: apiFeature.is_addon,
-        canPurchaseAddon: apiFeature.can_purchase_addon,
-        addonPriceAfn: Number(apiFeature.addon_price_afn),
-        addonPriceUsd: Number(apiFeature.addon_price_usd),
-      }));
+      const mappedFeatures = response.data.features.map((apiFeature) => {
+        const accessLevel = apiFeature.access_level ?? (apiFeature.is_enabled ? 'full' : 'none');
+        const isAccessible = apiFeature.is_accessible ?? accessLevel !== 'none';
+
+        return {
+          featureKey: apiFeature.feature_key,
+          name: apiFeature.name,
+          description: apiFeature.description,
+          category: apiFeature.category,
+          isEnabled: apiFeature.is_enabled,
+          isAccessible,
+          accessLevel,
+          missingDependencies: apiFeature.missing_dependencies ?? [],
+          requiredPlan: apiFeature.required_plan ?? null,
+          parentFeature: apiFeature.parent_feature ?? null,
+          isAddon: apiFeature.is_addon,
+          canPurchaseAddon: apiFeature.can_purchase_addon,
+          addonPriceAfn: Number(apiFeature.addon_price_afn),
+          addonPriceUsd: Number(apiFeature.addon_price_usd),
+        };
+      });
       
       return {
         ...response.data,

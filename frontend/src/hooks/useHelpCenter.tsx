@@ -7,6 +7,39 @@ import { helpCenterCategoriesApi, helpCenterArticlesApi } from '@/lib/api/client
 import { showToast } from '@/lib/toast';
 import type * as HelpCenterApi from '@/types/api/helpCenter';
 
+type HelpCenterCategoryWithRecursive = HelpCenterApi.HelpCenterCategory & {
+  // Backend returns children_recursive (snake_case) but UI wants a stable camelCase alias.
+  childrenRecursive?: HelpCenterCategoryWithRecursive[];
+  children_recursive?: HelpCenterCategoryWithRecursive[];
+  article_count?: number;
+  article_count_aggregate?: number;
+};
+
+function mapCategoryRecursive(cat: any): HelpCenterCategoryWithRecursive {
+  const children = Array.isArray(cat?.children_recursive)
+    ? cat.children_recursive
+    : Array.isArray(cat?.childrenRecursive)
+      ? cat.childrenRecursive
+      : Array.isArray(cat?.children)
+        ? cat.children
+        : [];
+
+  const mappedChildren = children.map(mapCategoryRecursive);
+
+  return {
+    ...(cat as HelpCenterApi.HelpCenterCategory),
+    childrenRecursive: mappedChildren,
+    children_recursive: mappedChildren,
+    article_count: typeof cat?.article_count === 'number' ? cat.article_count : cat?.article_count ? Number(cat.article_count) : 0,
+    article_count_aggregate:
+      typeof cat?.article_count_aggregate === 'number'
+        ? cat.article_count_aggregate
+        : cat?.article_count_aggregate
+          ? Number(cat.article_count_aggregate)
+          : undefined,
+  };
+}
+
 
 // Re-export types for convenience
 export type { HelpCenterCategory, HelpCenterArticle } from '@/types/api/helpCenter';
@@ -15,13 +48,14 @@ export type { HelpCenterCategory, HelpCenterArticle } from '@/types/api/helpCent
 export const useHelpCenterCategories = (params?: { is_active?: boolean; parent_id?: string | null }) => {
   const { user, profile } = useAuth();
 
-  return useQuery<HelpCenterApi.HelpCenterCategory[]>({
+  return useQuery<HelpCenterCategoryWithRecursive[]>({
     queryKey: ['help-center-categories', profile?.organization_id, params?.is_active, params?.parent_id],
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id) return [];
 
       const apiCategories = await helpCenterCategoriesApi.list(params);
-      return (apiCategories as HelpCenterApi.HelpCenterCategory[]);
+      const arr = Array.isArray(apiCategories) ? apiCategories : [];
+      return arr.map(mapCategoryRecursive);
     },
     enabled: !!user && !!profile && !!profile.organization_id,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -159,7 +193,7 @@ export const useCreateHelpCenterCategory = () => {
       });
     },
     onSuccess: () => {
-      showToast.success(t('toast.categoryCreated') || 'Category created successfully');
+      showToast.success(t('library.categoryCreated') || 'Category created successfully');
       void queryClient.invalidateQueries({ queryKey: ['help-center-categories'] });
     },
     onError: (error: Error) => {
@@ -177,7 +211,7 @@ export const useUpdateHelpCenterCategory = () => {
       return await helpCenterCategoriesApi.update(id, updates);
     },
     onSuccess: () => {
-      showToast.success(t('toast.categoryUpdated') || 'Category updated successfully');
+      showToast.success(t('library.categoryUpdated') || 'Category updated successfully');
       void queryClient.invalidateQueries({ queryKey: ['help-center-categories'] });
     },
     onError: (error: Error) => {
@@ -195,7 +229,7 @@ export const useDeleteHelpCenterCategory = () => {
       await helpCenterCategoriesApi.delete(id);
     },
     onSuccess: async () => {
-      showToast.success(t('toast.categoryDeleted') || 'Category deleted successfully');
+      showToast.success(t('library.categoryDeleted') || 'Category deleted successfully');
       await queryClient.invalidateQueries({ queryKey: ['help-center-categories'] });
       await queryClient.refetchQueries({ queryKey: ['help-center-categories'] });
     },
@@ -296,4 +330,6 @@ export const useMarkArticleNotHelpful = () => {
     },
   });
 };
+
+
 

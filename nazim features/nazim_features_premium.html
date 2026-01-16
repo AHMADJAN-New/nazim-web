@@ -1,0 +1,1400 @@
+﻿<!DOCTYPE html>
+<html lang="ps" dir="rtl">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ناظم – د دیني مدارسو د اداري چارو د مدیریت سیستم</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        /* ===================== 1) Premium Fonts ===================== */
+        @font-face {
+            font-family: "Bahij Nassim";
+            src: url("assets/fonts/BahijNassim-Regular.ttf") format("truetype");
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "Bahij Nassim";
+            src: url("assets/fonts/BahijNassim-Bold.ttf") format("truetype");
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        /* ===================== 2) Nazim Standard Color Tokens ===================== */
+        :root {
+            --brand-primary: #0b0b56;
+            /* ناظم معیاري ژور آبي - Standard Nazim Dark Blue */
+            --brand-secondary: #1a1a6a;
+            /* رڼا آبي - Lighter Blue */
+            --brand-accent: #c9a44d;
+            /* ناظم معیاري طلايي - Standard Nazim Gold */
+            --brand-accent-light: #f0e6b3;
+            /* رڼا طلايي - Light Gold */
+            --brand-gradient: linear-gradient(135deg, #0b0b56 0%, #1a1a6a 100%);
+            --gold-gradient: linear-gradient(135deg, #c9a44d 0%, #f0e6b3 100%);
+            --paper: #ffffff;
+            --ink: #0b0b56;
+            --soft: #f8fafc;
+            --premium-shadow: none;
+            --card-shadow: none;
+        }
+
+        html,
+        body {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: var(--ink);
+            min-height: 100vh;
+        }
+
+        body {
+            font-family: "Bahij Nassim", "Noto Naskh Arabic", "Amiri", serif;
+        }
+
+        /* ===================== 3) Responsive A5 Surface ===================== */
+        @page {
+            size: A5;
+            margin: 10mm;
+        }
+
+        .a5 {
+            width: 100%;
+            max-width: 148mm;
+            min-height: 210mm;
+            margin: 10mm auto;
+            background: var(--paper);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: none;
+            position: relative;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+
+            html,
+            body {
+                background: var(--paper);
+                margin: 0;
+                padding: 0;
+            }
+
+            .a5 {
+                margin: 0;
+                border-radius: 0;
+                min-height: auto;
+                max-width: 100%;
+                width: 100%;
+                box-shadow: none;
+            }
+
+            .hero {
+                padding: 1rem !important;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr !important;
+                gap: 1rem !important;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
+
+        @media print {
+
+            html,
+            body {
+                background: #fff;
+                margin: 0;
+                padding: 0;
+            }
+
+            .a5 {
+                width: auto;
+                min-height: auto;
+                margin: 0;
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .icon {
+                box-shadow: none !important;
+            }
+        }
+
+        /* ===================== 4) Premium Decorations ===================== */
+        .hero {
+            background:
+                radial-gradient(1200px 400px at 85% -20%, rgba(201, 164, 77, 0.25) 0%, transparent 60%),
+                var(--brand-gradient);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+        }
+
+        .gold-top {
+            position: relative;
+        }
+
+        .gold-top::before {
+            content: "";
+            position: absolute;
+            inset-inline: 0;
+            top: 0;
+            height: 6px;
+            background: var(--gold-gradient);
+            border-radius: 3px;
+        }
+
+        .divider {
+            height: 2px;
+            border: 0;
+            margin: 1.5rem 0;
+            background: linear-gradient(90deg, transparent 0%, var(--brand-accent) 20%, var(--brand-primary) 50%, var(--brand-accent) 80%, transparent 100%);
+            opacity: 0.7;
+        }
+
+        .avoid-break {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        /* Premium Icon circles */
+        .icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+            border: 2px solid rgba(201, 164, 77, 0.2);
+            color: var(--brand-primary);
+            transition: all 0.3s ease;
+        }
+
+        .icon:hover {
+            transform: translateY(-2px);
+        }
+
+        .badge {
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, var(--brand-accent-light) 0%, #f0e6b3 100%);
+            color: var(--brand-primary);
+            border: 1px solid rgba(201, 164, 77, 0.3);
+            font-weight: 600;
+            box-shadow: none;
+        }
+
+        /* Premium Section cards */
+        .card {
+            border: 1px solid rgba(11, 11, 86, 0.08);
+            background: linear-gradient(180deg, #ffffff, #fafbfc);
+            border-radius: 16px;
+            padding: 1.25rem;
+            box-shadow: none;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gold-gradient);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: none;
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        /* Premium list style */
+        .list li {
+            padding-inline-start: 6px;
+            margin: 4px 0;
+            position: relative;
+        }
+
+        .list li::before {
+            content: "•";
+            color: var(--brand-accent);
+            font-weight: bold;
+            position: absolute;
+            right: -12px;
+        }
+
+        /* Premium stats cards */
+        .stat-card {
+            background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(201, 164, 77, 0.1) 0%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Premium CTA section */
+        .cta-section {
+            background: linear-gradient(135deg, var(--soft) 0%, #e2e8f0 100%);
+            border: 2px solid rgba(201, 164, 77, 0.2);
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(201, 164, 77, 0.06) 50%, transparent 70%);
+            animation: slide 3s infinite;
+        }
+
+        @keyframes slide {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+
+            html,
+            body {
+                background: var(--paper);
+                margin: 0;
+                padding: 0;
+            }
+
+            .a5 {
+                margin: 0;
+                border-radius: 0;
+                min-height: auto;
+                max-width: 100%;
+                width: 100%;
+                box-shadow: none;
+            }
+
+            .hero h1 {
+                font-size: 18px !important;
+                line-height: 1.3 !important;
+            }
+
+            .hero p {
+                font-size: 12px !important;
+            }
+
+            .card {
+                padding: 1rem !important;
+            }
+
+            .stat-card {
+                padding: 1rem !important;
+            }
+
+            .badge {
+                font-size: 11px !important;
+                padding: 3px 8px !important;
+            }
+
+            .cta-section {
+                flex-direction: column !important;
+                gap: 1rem !important;
+                text-align: center !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="a5 gold-top">
+        <!-- ===================== Premium Header ===================== -->
+        <header class="hero text-white px-6 py-6 relative">
+            <div class="relative z-10">
+                <div class="flex items-center justify-center gap-4">
+                    <div class="flex items-center gap-4">
+                        <img src="nazim_logo.jpg" alt="Nazim Logo"
+                            class="w-12 h-12 rounded-lg ring-2 ring-white/20 bg-white/20 object-contain p-1">
+                        <div class="text-center">
+                            <h1 class="text-[22px] font-bold leading-tight text-center">ناظم – د دیني مدارسو د اداري
+                                چارو
+                                د مدیریت سیستم
+                            </h1>
+                            <p class="text-white/90 text-[14px] mt-1 leading-relaxed text-center">ناظم، د دیني مدارسو
+                                لپاره ځانګړی
+                                جوړ شوی سافټویر دی چې له ثبت نامه تر نتایجو او اسنادو پورې ټول کارونه په څو دقیقو کې په
+                                خپلکار ډول ترسره کوي.</p>
+                            <p class="text-white/80 text-[13px] mt-3 leading-relaxed text-center font-medium">د مدرسې مهتمم، ناظم، او استاد ته: ثبت نام، حاضري، امتحانات، او راپورونه په یو سیستم کې — پرته له ګډوډۍ.</p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="mt-6 flex flex-wrap gap-3 justify-center">
+                    <span class="badge">مکمل محفوظ</span>
+                    <span class="badge">په دریو ژبو</span>
+                    <span class="badge">قوي امنیت</span>
+                    <span class="badge">د صلاحیتونو کنترول</span>
+                    <span class="badge">معیاري ډیزاین</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===================== Premium Intro Value ===================== -->
+        <section class="px-6 py-6">
+            <div class="stats-grid grid grid-cols-4 gap-4 mb-6">
+                <div class="stat-card">
+                    <div class="text-[20px] font-bold mb-1">۱۰۰+</div>
+                    <div class="text-[13px] text-white/90">فعالې برخې</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-[20px] font-bold mb-1">چټکه حاضري</div>
+                    <div class="text-[13px] text-white/90">په یوه ثانیه کې ۳ نفر</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-[20px] font-bold mb-1">کره</div>
+                    <div class="text-[13px] text-white/90">کره او دقیق راپورونه</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-[20px] font-bold mb-1">د باور وړ</div>
+                    <div class="text-[13px] text-white/90">په مختلفو مدارسو کې استفاده شوی</div>
+                </div>
+            </div>
+
+
+            <div class="mt-3 flex flex-wrap items-center justify-center gap-3">
+                <span class="badge">ستاسو وخت بچت کوي</span>
+                <span class="badge">شفاف او کره راپورونه برابروي</span>
+                <span class="badge">د مدرسې ټولې چارې په یوه ځای کې مدیریتوي</span>
+            </div>
+        </section>
+
+        <div class="px-6">
+            <hr class="divider">
+        </div>
+
+        <!-- ===================== Premium Features Grid ===================== -->
+        <section class="px-6 py-6">
+            <h2 class="text-[18px] font-bold text-[var(--brand-primary)] mb-4"> ځانګړتیاوې</h2>
+
+            <div class="feature-grid grid grid-cols-2 gap-4">
+                <!-- Row 1 -->
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Clipboard -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path
+                                    d="M9 4.5h6M9 7.5h6M7 3h10a2 2 0 0 1 2 2v15a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+                                <path d="m9 13 2 2 4-4" />
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">ثبت نام او داخله</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>عمومي ثبت نام، داخله او بشپړ راپورونه</li>
+                        <li>د ایکسل فایل له لارې ډله‌ییزه داخله</li>
+                        <li>د زده کونکي، سرپرست او خپلوانو اسناد</li>
+                    </ul>
+                </div>
+
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Calendar -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path
+                                    d="M8 3v3M16 3v3M4 9h16M5 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" />
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">حاضري او اجازتنامې</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>ورځنۍ حاضري د کارت/شمېرې له لارې</li>
+                        <li>د لیلیې او امتحاناتو حاضري</li>
+                        <li>د حاضري او غیرحاضري تفصیلي راپورونه</li>
+                    </ul>
+                </div>
+
+                <!-- Row 2 -->
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Academic cap -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="m12 3 9 5-9 5-9-5 9-5z" />
+                                <path d="M7 12v5a5 5 0 0 0 10 0v-5" />
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">درسي مواد او راپورونه</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>استادانو ته د کتابونو وېش </li>
+                        <li> له ټکر پرته د تقسیم اوقات جوړول</li>
+                        <li>د زده کوونکو د ټولې تعلیمي سابقې راپورونه</li>
+
+
+                    </ul>
+                </div>
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Academic cap -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="m12 3 9 5-9 5-9-5 9-5z" />
+                                <path d="M7 12v5a5 5 0 0 0 10 0v-5" />
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">امتحانات او نتایج</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د امتحاناتو تقسیم اوقات، او داخلې کارتونه</li>
+                        <li>د سوالیه پاڼو په محفوظه توګه جوړول </li>
+                        <li>سوالیه پاڼو او نتائجو ته محدود لاس رسی</li>
+                        <li>د رقم الجلوس او د امتحان د صحنې د نقشې جوړول په داسې توګه چې د نقل مخنیوی کوي</li>
+                        <li>د زده کونکو لپاره رقم السري ټاکل</li>
+
+                    </ul>
+                </div>
+
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Id card -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+                                <path d="M7 9h5M7 12h3M16 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"></path>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">اسناد او کارتونه</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د زده کوونکو د کارتونو چاپول</li>
+                        <li>فارغ‌التحصیلۍ سند او کشف الدرجات چاپول</li>
+                        <li>د فاضلانو خارجو کسانو راپورونه</li>
+
+                    </ul>
+                </div>
+
+                <!-- Row 3 -->
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Books -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path
+                                    d="M3 5a2 2 0 0 1 2-2h6v16H5a2 2 0 0 1-2-2V5zM13 3h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6V3z" />
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">کتابتون/مکتب/پخلنځی</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د مدرسې مربوط د ټولو کتابونو ثبت او توزیع</li>
+                        <li>د توزیع شویو کتابونو راپورونه او مدیریت</li>
+                    </ul>
+                </div>
+
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Money -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="3" y="6" width="18" height="12" rx="2"></rect>
+                                <circle cx="12" cy="12" r="2"></circle>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د مالي بخش مکمل مدیریت</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د فیسونو ټاکل، ټولونه او راپورونه</li>
+                        <li>بودیجه، مصارف، عواید، معاشونه او پورونه</li>
+                        <li>د انوایس او پراخ مالي راپورونه</li>
+                    </ul>
+                </div>
+
+
+
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Heart/Donation -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path
+                                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+                                </path>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د مساعدت او چندې راپورونه</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د مساعدت او چندې د ورکړې ثبت او مدیریت</li>
+                        <li>د چندې ورکوونکو تفصیلي راپورونه</li>
+                        <li>د مساعدتونو د ویش او توزیع راپورونه</li>
+                    </ul>
+                </div>
+
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Activity/Log -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M9 12l2 2 4-4"></path>
+                                <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"></path>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د کاروونکو فعالیتونه او لاس رسی</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د هر کاروونکو ټول فعالیتونه کتل</li>
+                        <li>د سسیتم هرې برخې ته لاس رسی ورکول یا محدودل</li>
+                        <li>د کاروونکو د اجازو دقیق مدیریت</li>
+                    </ul>
+                </div>
+
+   
+                <!-- د لویو جلسو او غونډو د میلمنو د تنظیم او مدیریت سیستم -->
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Calendar/Events -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path>
+                                <circle cx="8" cy="14" r="1"></circle>
+                                <circle cx="12" cy="14" r="1"></circle>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د لویو جلسو او غونډو د میلمنو د تنظیم او مدیریت سیستم</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د لویو جلسو او غونډو د میلمنو د ثبت سیستم</li>
+                        <li>د میلمنو د چک-این او چک-آوټ سیستم</li>
+                        <li>د میلمنو د تفصیلي راپورونه</li>
+                        <li>د جلسو  تنظیم او مدیریت</li>
+                    </ul>
+                </div>
+
+                <!-- Row 5 -->
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- File/Documents -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د اسنادو مدیریت سیستم (DMS)</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د داخلي او خارجي اسنادو ثبت او مدیریت</li>
+                        <li>د مکتوبونو د جوړولو سیستم</li>
+                        <li>د اسنادو د ټیمپلیټونو مدیریت</li>
+                        <li>د اسنادو د ارشیف او لټون سیستم</li>
+                    </ul>
+                </div>
+
+                <!-- Row 6 -->
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Graduation Cap -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                                <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د لنډمهاله کورسونو سیستم</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د لنډمهاله کورسونو ثبت او مدیریت</li>
+                        <li>د کورس زده کوونکو د داخلی سیستم</li>
+                        <li>د کورس حاضري او اسناد</li>
+                        <li>د کورس د سرتیفیکتونو چاپول</li>
+                        <li>د کورس د ټیمپلیټونو مدیریت</li>
+                    </ul>
+                </div>
+
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Award/Certificate -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2zm10-10V7a4 4 0 0 0-8 0v4h8z"></path>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د فارغینو او سرتیفیکتونو سیستم</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د فارغینو د بیچونو مدیریت</li>
+                        <li>د فارغینو د سرتیفیکتونو چاپول</li>
+                        <li>د سرتیفیکتونو د ټیمپلیټونو مدیریت</li>
+                        <li>د صادر شویو سرتیفیکتونو راپورونه</li>
+                        <li>د آنلاین سرتیفیکت د تصدیق سیستم</li>
+                    </ul>
+                </div>
+
+                <!-- Row 7 -->
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Clock/Timetable -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 6v6l4 2"></path>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د تقسیم اوقات سیستم</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د خپلکار تقسیم اوقات جوړول</li>
+                        <li>د استادانو د شتون د وختونو مدیریت</li>
+                        <li>د ټکرونو د کشف او حل سیستم</li>
+                        <li>د وختونو د سلاټونو مدیریت</li>
+                    </ul>
+                </div>
+
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Question/Book -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"></path>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د پوښتنو بانک او سوالیه پاڼو د جوړولو سیستم</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د پوښتنو د بانک مدیریت</li>
+                        <li>د سوالیه پاڼو د خپلکار جوړول</li>
+                        <li>د سوالیه پاڼو د چاپ د تعقیب سیستم</li>
+                        <li>د سوالیه پاڼو د ټیمپلیټونو مدیریت</li>
+                    </ul>
+                </div>
+
+                <!-- Row 8 -->
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Calendar/Leave -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د رخصتیو مدیریت</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د کارمندانو د رخصتیو غوښتنې</li>
+                        <li>د رخصتیو د تصویب سیستم</li>
+                        <li>د رخصتیو د تفصیلي راپورونه</li>
+                    </ul>
+                </div>
+
+                <!-- Row 9 -->
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- User Check/Assignments -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د استادانو د درسی موادو تخصیص</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د استادانو ته د درسی موادو تخصیص</li>
+                        <li>د استادانو د درسی موادو راپورونه</li>
+                        <li>د تخصیص شویو درسی موادو مدیریت</li>
+                    </ul>
+                </div>
+
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Credit Card/ID -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                <line x1="1" y1="10" x2="23" y2="10"></line>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د کارتونو سیستم</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د کارتونو د ټیمپلیټونو مدیریت</li>
+                        <li>د زده کوونکو د کارتونو تخصیص</li>
+                        <li>د کارتونو د چاپ او صادرات</li>
+                        <li>د کارتونو د ډیزاینونو مدیریت</li>
+                    </ul>
+                </div>
+
+                <!-- Row 10 -->
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Currency/Multi-currency -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="6" x2="12" y2="18"></line>
+                                <line x1="6" y1="12" x2="18" y2="12"></line>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د مالي سیستم تفصیلات</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د ګڼو اسعارو ملاتړ</li>
+                        <li>د د اسعارو د تبادلې د نرخونو مدیریت</li>
+                        <li>د مالي پروژو مدیریت</li>
+                        <li>د مالي حسابونو مدیریت</li>
+                        <li>د عوایدو او مصارفو د کټګوریو مدیریت</li>
+                    </ul>
+                </div>
+
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Banknote/Fees -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                                <circle cx="12" cy="12" r="2"></circle>
+                                <path d="M6 12h.01M18 12h.01"></path>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د فیسونو مدیریت تفصیلات</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د فیسونو د جوړښتونو مدیریت</li>
+                        <li>د فیسونو د تخصیص سیستم</li>
+                        <li>د فیسونو د تادیاتو مدیریت</li>
+                        <li>د فیسونو د استثنائاتو سیستم</li>
+                        <li>د زده کوونکو د فیسونو د بیان راپورونه</li>
+                    </ul>
+                </div>
+
+                <!-- Row 11 -->
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Book Open/Library -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د کتابتون سیستم تفصیلات</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د کتابتون د ډشبورډ</li>
+                        <li>د کتابونو د کټګوریو مدیریت</li>
+                        <li>د کتابونو د توزیع او امانت سیستم</li>
+                        <li>د کتابتون د تفصیلي راپورونه</li>
+                    </ul>
+                </div>
+
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- File Text/Reports -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د راپورونو ټیمپلیټونه</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د راپورونو د شخصي ټیمپلیټونو مدیریت</li>
+                        <li>د راپورونو د برانډینګ سیستم</li>
+                        <li>د راپورونو د ډیزاینونو مدیریت</li>
+                    </ul>
+                </div>
+
+                <!-- Row 12 -->
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- History -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د زده کوونکو تاریخچه</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د زده کوونکو د تعلیمي تاریخچې تعقیب</li>
+                        <li>د زده کوونکو د تاریخچې راپورونه</li>
+                        <li>د زده کوونکو د سابقې تفصیلي معلومات</li>
+                    </ul>
+                </div>
+
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Shield Check/Verification -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                <path d="M9 12l2 2 4-4"></path>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د سرتیفیکتونو د تصدیق سیستم</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د آنلاین سرتیفیکتونو د تصدیق سیستم</li>
+                        <li>د سرتیفیکتونو د اعتبار چک</li>
+                        <li>د سرتیفیکتونو د تفصیلي معلومات</li>
+                    </ul>
+                </div>
+
+                <!-- Row 13 -->
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Exam Details -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 0 0 1.946-.806 3.42 3.42 0 0 1 4.438 0 3.42 3.42 0 0 0 1.946.806 3.42 3.42 0 0 1 3.138 3.138 3.42 3.42 0 0 0 .806 1.946 3.42 3.42 0 0 1 0 4.438 3.42 3.42 0 0 0-.806 1.946 3.42 3.42 0 0 1-3.138 3.138 3.42 3.42 0 0 0-1.946.806 3.42 3.42 0 0 1-4.438 0 3.42 3.42 0 0 0-1.946-.806 3.42 3.42 0 0 1-3.138-3.138 3.42 3.42 0 0 0-.806-1.946 3.42 3.42 0 0 1 0-4.438 3.42 3.42 0 0 0 .806-1.946 3.42 3.42 0 0 1 3.138-3.138z"></path>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">د امتحاناتو مدیریت تفصیلات</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د امتحاناتو د داخلی سیستم</li>
+                        <li>د زده کوونکو د داخلی سیستم</li>
+                        <li>د رقم الجلوس او رقم السري تخصیص</li>
+                        <li>د امتحان حاضري</li>
+                        <li>د امتحان اسناد</li>
+                        <li>د یوځای شویو نمراتو پاڼې</li>
+                        <li>د صنف د درسی موادو د نمراتو پاڼې</li>
+                        <li>د زده کوونکو د کارت راپورونه</li>
+                    </ul>
+                </div>
+
+                <!-- متفرق - Moved to Last -->
+                <div class="card avoid-break">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="icon">
+                            <!-- Settings/Misc -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path
+                                    d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z">
+                                </path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-[var(--brand-primary)]">متفرق</h3>
+                    </div>
+                    <ul class="list text-[14px] text-slate-700">
+                        <li>د مجالسو ثبت او راپورنو سیستم</li>
+                        <li>د مدرسې اړوند د مکتوبونو او اسنادو د ثبت سیستم</li>
+                        <li>د مدرسې د نظم ضبط اصول او ضوابطو سیستم</li>
+                        <li>د مطبخ د مصارفو سیستم</li>
+                        <li>او لسګونه نورې د کار وړ برخې</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================== Pricing Section ===================== -->
+        <section class="px-6 py-6">
+            <h2 class="text-[18px] font-bold text-[var(--brand-primary)] mb-3 text-center">د ناظم سیستم پکېجونه او بیې</h2>
+            <p class="text-[13px] text-slate-600 mb-6 text-center">هر پکېج د اړتیا مطابق ټاکل کېږي، او لوړ پکېج کې نورې برخې فعالې وي.</p>
+
+                                    <div class="grid grid-cols-4 gap-4 mb-6">
+                <!-- Starter Plan -->
+                <div class="card text-center">
+                    <h3 class="text-[16px] font-bold mb-2 text-[var(--brand-primary)]">اساسي (Starter)</h3>
+                    <div class="text-[20px] font-bold mb-1 text-[var(--brand-primary)]">12,000 افغاني</div>
+                </div>
+
+                <!-- Pro Plan -->
+                <div class="card text-center relative">
+                    <div
+                        class="absolute -top-2 -right-2 bg-[var(--brand-accent)] text-white text-[10px] px-2 py-1 rounded-full">
+                        محبوب
+                    </div>
+                    <h3 class="text-[16px] font-bold mb-2 text-[var(--brand-primary)]">پرو (Pro)</h3>
+                    <div class="text-[20px] font-bold mb-1 text-[var(--brand-primary)]">25,000 افغاني</div>
+                </div>
+
+                <!-- Complete Plan -->
+                <div class="card text-center">
+                    <h3 class="text-[16px] font-bold mb-2 text-[var(--brand-primary)]">مکمل (Complete)</h3>
+                    <div class="text-[20px] font-bold mb-1 text-[var(--brand-primary)]">35,000 افغاني</div>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div class="card text-center">
+                    <h3 class="text-[16px] font-bold mb-2 text-[var(--brand-primary)]">انټرپرایز (Enterprise)</h3>
+                    <div class="text-[20px] font-bold mb-1 text-[var(--brand-primary)]">اختصاصي</div>
+                </div>
+            </div>
+<!-- Feature Comparison Table -->
+            <div class="card">
+                <div class="overflow-x-auto">
+                                        <table class="w-full text-[12px] text-slate-700">
+                        <thead>
+                            <tr class="border-b border-slate-200">
+                                <th class="text-right py-2 pr-4 font-bold text-[var(--brand-primary)]">ځانګړتیاوې</th>
+                                <th class="text-center py-2 font-bold text-[var(--brand-primary)]">اساسي</th>
+                                <th class="text-center py-2 font-bold text-[var(--brand-primary)]">پرو</th>
+                                <th class="text-center py-2 font-bold text-[var(--brand-primary)]">مکمل</th>
+                                <th class="text-center py-2 font-bold text-[var(--brand-primary)]">انټرپرایز</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د زده کوونکو د ثبت نام سیستم</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د کارمندانو د تنظیم سیستم</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د حاضري سيستم</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د رخصتي او اجازت نامی سیستم</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د رخصتیو مدیریت</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د تقسیم اوقات سیستم</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د زده کوونکو تاریخچه</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د امتحاناتو سیستم (ساده/بشپړ)</td>
+                                <td class="text-center font-semibold text-emerald-600">ساده</td>
+                                <td class="text-center font-semibold text-emerald-600">بشپړ</td>
+                                <td class="text-center font-semibold text-emerald-600">بشپړ</td>
+                                <td class="text-center font-semibold text-emerald-600">بشپړ</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د درسي موادو د تنظیم سیستم</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د استادانو د درسي موادو تخصیص</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د پوښتنو بانک او سوالیه پاڼو د جوړولو سیستم</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د امتحاناتو مدیریت تفصیلات</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د کتابتون سیستم</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د لنډمهاله کورسونو سیستم</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د مدرسې د اجناسو د ثبت او توزیع سیستم</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د مالي څانګې مکمل سیستم</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د اسنادو مدیریت سیستم (DMS)</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د مجالسو او اسنادو د تعقیب سیستم</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د لویو جلسو او غونډو د میلمنو د تنظیم او مدیریت سیستم</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د فارغینو او سرتیفیکتونو سیستم</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د سرتیفیکتونو د تصدیق سیستم</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د کارتونو سیستم</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د راپورونو ټیمپلیټونه</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د ګڼو څانګو ملاتړ</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">د ګڼو اسعارو ملاتړ</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4">پرمختللي راپورونه</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 pr-4">اختصاصي حدونه، ادغامونه او SLA ملاتړ</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-red-500 font-bold">✗</td>
+                                <td class="text-center text-green-600 font-bold">✓</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+<!-- ===================== Limits + Maintenance Fees ===================== -->
+            <div class="mt-6 grid grid-cols-1 gap-4">
+
+                <!-- Limits / Quotas -->
+                <div class="card">
+                    <h3 class="text-[15px] font-bold text-[var(--brand-primary)] mb-3">حدود او ظرفیتونه (Limits)</h3>
+
+                    <div class="overflow-x-auto">
+                                                                    <table class="w-full text-[12px] text-slate-700">
+                            <thead>
+                                <tr class="border-b border-slate-200">
+                                    <th class="text-right py-2 pr-4 font-bold text-[var(--brand-primary)]">حد / ظرفیت</th>
+                                    <th class="text-center py-2 font-bold text-[var(--brand-primary)]">اساسي</th>
+                                    <th class="text-center py-2 font-bold text-[var(--brand-primary)]">پرو</th>
+                                    <th class="text-center py-2 font-bold text-[var(--brand-primary)]">مکمل</th>
+                                    <th class="text-center py-2 font-bold text-[var(--brand-primary)]">انټرپرایز</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-slate-100">
+                                    <td class="py-2 pr-4">د زده کوونکو حد</td>
+                                    <td class="text-center font-semibold">تر 250</td>
+                                    <td class="text-center font-semibold">تر 600</td>
+                                    <td class="text-center font-semibold">تر 1200</td>
+                                    <td class="text-center font-semibold">Custom</td>
+                                </tr>
+                                <tr class="border-b border-slate-100">
+                                    <td class="py-2 pr-4">د کاروونکو (Users) حد</td>
+                                    <td class="text-center font-semibold">تر 10</td>
+                                    <td class="text-center font-semibold">تر 30</td>
+                                    <td class="text-center font-semibold">تر 50</td>
+                                    <td class="text-center font-semibold">Custom</td>
+                                </tr>
+                                <tr class="border-b border-slate-100">
+                                    <td class="py-2 pr-4">د څانګو / شعبو حد</td>
+                                    <td class="text-center font-semibold">1</td>
+                                    <td class="text-center font-semibold">1</td>
+                                    <td class="text-center font-semibold">1</td>
+                                    <td class="text-center font-semibold">Custom</td>
+                                </tr>
+                                <tr class="border-b border-slate-100">
+                                    <td class="py-2 pr-4">د راپورونو صادرات (PDF/Excel)</td>
+                                    <td class="text-center font-semibold">معیاري</td>
+                                    <td class="text-center font-semibold">پرمختللی</td>
+                                    <td class="text-center font-semibold">پرمختللی + ټیمپلیټونه</td>
+                                    <td class="text-center font-semibold">Custom</td>
+                                </tr>
+                                <tr class="border-b border-slate-100">
+                                    <td class="py-2 pr-4">Backup/Restore</td>
+                                    <td class="text-center font-semibold">دستی</td>
+                                    <td class="text-center font-semibold">دستی</td>
+                                    <td class="text-center font-semibold">اتومات</td>
+                                    <td class="text-center font-semibold">SLA-based</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4">د صلاحیتونو کچه (Permissions)</td>
+                                    <td class="text-center font-semibold">تفصیلي</td>
+                                    <td class="text-center font-semibold">تفصیلي</td>
+                                    <td class="text-center font-semibold">تفصیلي</td>
+                                    <td class="text-center font-semibold">Custom</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+
+                    </div>
+
+                    <p class="mt-3 text-[12px] text-slate-600 leading-relaxed">
+                        یادونه: که ستاسو د مدرسې اړتیاوې له دې حدونو لوړې وي، نو د ځانګړي پکېج (Custom Package) په توګه تنظیمېږي.
+                    </p>
+                </div>
+
+                <!-- Maintenance / Support -->
+                <div class="card">
+                    <h3 class="text-[15px] font-bold text-[var(--brand-primary)] mb-3">ساتنه، تازه کول او تخنیکي ملاتړ (Maintenance)</h3>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-[12px] text-slate-700">
+                            <thead>
+                                <tr class="border-b border-slate-200">
+                                    <th class="text-right py-2 pr-4 font-bold text-[var(--brand-primary)]">خدمت</th>
+                                    <th class="text-center py-2 font-bold text-[var(--brand-primary)]">آفلاین نسخه</th>
+                                    <th class="text-center py-2 font-bold text-[var(--brand-primary)]">آنلاین نسخه</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-slate-100">
+                                    <td class="py-2 pr-4">کلنی د ساتنې فیس</td>
+                                    <td class="text-center font-semibold">اختیاري (پیشنهادي)</td>
+                                    <td class="text-center font-semibold">لازمي</td>
+                                </tr>
+                                <tr class="border-b border-slate-100">
+                                    <td class="py-2 pr-4">تازه کول (Updates)</td>
+                                    <td class="text-center font-semibold">د ساتنې په فیس کې شامل</td>
+                                    <td class="text-center font-semibold">شامل</td>
+                                </tr>
+                                <tr class="border-b border-slate-100">
+                                    <td class="py-2 pr-4">تخنیکي ملاتړ (Support)</td>
+                                    <td class="text-center font-semibold">✓ (د ساتنې په فیس کې)</td>
+                                    <td class="text-center font-semibold">✓</td>
+                                </tr>
+                                <tr class="border-b border-slate-100">
+                                    <td class="py-2 pr-4">Backup/Monitoring</td>
+                                    <td class="text-center font-semibold">د مشتری په سیستم</td>
+                                    <td class="text-center font-semibold">اتومات + نظارت</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4">Hosting/Server</td>
+                                    <td class="text-center font-semibold">نه لري</td>
+                                    <td class="text-center font-semibold">شامل/جلا (د پکېج مطابق)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Maintenance fee chips -->
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <span class="badge">اساسي ساتنه: 3,000 افغانی / کال</span>
+                        <span class="badge">معیاري ساتنه: 6,000 افغانی / کال</span>
+                        <span class="badge">مکمل ساتنه: 10,000 افغانی / کال</span>
+                        <span class="badge">آنلاین: کلنی ساتنه + Hosting د پکېج مطابق</span>
+                    </div>
+
+                    <p class="mt-3 text-[12px] text-slate-600 leading-relaxed">
+                        وضاحت: د ساتنې فیس کې د سافټویر تازه کول، تخنیکي ملاتړ، د ستونزو حل، او د امنیت اړوند اصلاحات شامل وي.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="text-center text-[13px] text-slate-600 mt-4 font-medium space-y-2">
+                <p>یادونه: تاسو کولای شئ د خپلې خوښی فنکشنونه د همدې بیو په مناسبت انتخاب کړئ.</p>
+                <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p class="font-bold text-[var(--brand-primary)] mb-1">مهمه خبرتیا:</p>
+                    <p class="text-[12px] leading-relaxed">ناظم سیستم دواړه آنلاین او آفلاین نسخې لري. دواړه نسخې یو شان ځانګړتیاوې لري. د آنلاین سیستم لپاره د کال د ساتنې او تازه کولو فیس او محدودیتونه شته. په آفلاین بڼه کې نشته.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================== Premium CTA ===================== -->
+        <section class="px-6 pb-6">
+            <div class="cta-section p-5 flex items-center justify-between relative">
+                <div class="relative z-10">
+                    <div class="text-[15px] text-slate-700 mb-2 font-medium">د لا زیاتو معلوماتو یا نورو ځانګړتیاوو په
+                        اړه د معلوماتو لپاره اړیکه
+                        ونیسئ</div>
+                    <div class="flex items-center gap-3 font-bold text-[var(--brand-primary)]">
+                        <!-- Premium WhatsApp Icon -->
+                        <svg class="w-6 h-6 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path
+                                d="M20.52 3.48A11.94 11.94 0 0012.04 0C5.46 0 0 5.37 0 12c0 2.11.55 4.18 1.6 6.01L0 24l6.15-1.6A12 12 0 1012.04 0h-.02zm0 0" />
+                            <path fill="#fff"
+                                d="M17.47 14.2c-.26-.13-1.53-.75-1.77-.83-.24-.08-.41-.13-.58.13-.17.26-.67.83-.82 1-.15.17-.3.2-.56.07-.26-.13-1.09-.4-2.08-1.27-.77-.68-1.29-1.52-1.45-1.78-.15-.26-.02-.4.11-.53.11-.11.26-.3.39-.45.13-.15.17-.26.26-.43.09-.17.04-.32-.02-.45-.06-.13-.58-1.39-.79-1.9-.21-.5-.42-.43-.58-.44h-.5c-.17 0-.45.06-.68.32-.23.26-.89.87-.89 2.12s.91 2.46 1.04 2.63c.13.17 1.78 2.71 4.3 3.7.6.26 1.07.41 1.44.52.61.19 1.17.16 1.61.1.49-.08 1.53-.63 1.75-1.24.22-.61.22-1.12.15-1.24-.06-.12-.24-.19-.5-.32z" />
+                        </svg>
+                        <span>واټساپ: <a href="https://wa.link/0ly8rl" target="_blank" rel="noopener"
+                                class="ltr:inline-block font-mono hover:underline text-emerald-600">0787779988</a></span>
+                    </div>
+                </div>
+                <!-- Website and X (Twitter) Links -->
+                <div class="relative z-10 flex flex-col items-end gap-2 text-[var(--brand-primary)]">
+                    <a href="https://nazimapp.com" target="_blank" rel="noopener"
+                        class="inline-flex items-center gap-2 hover:underline">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                            aria-hidden="true">
+                            <circle cx="12" cy="12" r="9"></circle>
+                            <path d="M2.5 12h19"></path>
+                            <path d="M12 3c2.8 2.6 4.1 5.6 4.1 9s-1.3 6.4-4.1 9c-2.8-2.6-4.1-5.6-4.1-9s1.3-6.4 4.1-9z">
+                            </path>
+                        </svg>
+                        <span class="ltr:inline-block">nazimapp.com</span>
+                    </a>
+                    <a href="https://x.com/Nazimapp" target="_blank" rel="noopener"
+                        class="inline-flex items-center gap-2 hover:underline">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path
+                                d="M18.244 2H21l-6.5 7.43L22.5 22H15.9l-5.03-6.61L4.97 22H2.21l6.97-7.97L1.5 2h6.75l4.53 6L18.244 2Zm-2.35 18h1.83L8.2 4h-1.8l9.494 16Z">
+                            </path>
+                        </svg>
+                        <span class="ltr:inline-block">@Nazimapp</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="text-center text-[13px] text-slate-600 mt-4 font-medium">"ناظم – د مدرسې بشپړ مدیریت په څو
+                کلیکونو کې!"
+            </div>
+        </section>
+    </div>
+
+</body>
+
+</html>

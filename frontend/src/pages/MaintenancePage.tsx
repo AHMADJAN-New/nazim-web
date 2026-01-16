@@ -386,7 +386,7 @@ export default function MaintenancePage({
                   "h-5 w-5 mr-2",
                   countdown !== null && countdown > 0 && "animate-spin"
                 )} />
-                {t('maintenance.retry') || 'Retry Connection'}
+                {t('events.retry') || 'Retry Connection'}
               </Button>
               
               {!scheduledEndAt && (
@@ -397,7 +397,7 @@ export default function MaintenancePage({
                   className="min-w-[200px] border-2 hover:bg-slate-50"
                 >
                   <Shield className="h-5 w-5 mr-2" />
-                  {t('maintenance.refresh') || 'Refresh Page'}
+                  {t('events.refresh') || 'Refresh Page'}
                 </Button>
               )}
             </div>

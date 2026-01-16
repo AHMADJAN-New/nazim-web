@@ -9,6 +9,7 @@ use App\Models\NotificationDelivery;
 use App\Models\NotificationEvent;
 use App\Models\NotificationPreference;
 use App\Models\User;
+use App\Services\Subscription\FeatureGateService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -16,7 +17,8 @@ use Illuminate\Support\Str;
 class NotificationService
 {
     public function __construct(
-        private NotificationRuleRegistry $ruleRegistry
+        private NotificationRuleRegistry $ruleRegistry,
+        private FeatureGateService $featureGateService
     ) {
     }
 
@@ -36,6 +38,25 @@ class NotificationService
                 'entity' => get_class($entity),
             ]);
             return;
+        }
+
+        // Check if organization has access to the feature required for this entity
+        $entityType = get_class($entity);
+        $featureMap = config('subscription_features.entity_type_feature_map', []);
+        $requiredFeature = $featureMap[$entityType] ?? null;
+
+        // If a feature is required, check subscription access
+        if ($requiredFeature !== null) {
+            if (!$this->featureGateService->hasFeature($organizationId, $requiredFeature)) {
+                Log::info('Notification dropped: organization does not have access to required feature', [
+                    'event' => $eventType,
+                    'entity' => $entityType,
+                    'entity_id' => $entity->getKey(),
+                    'organization_id' => $organizationId,
+                    'required_feature' => $requiredFeature,
+                ]);
+                return;
+            }
         }
 
         $event = NotificationEvent::create([

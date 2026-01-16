@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { reportTemplatesApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
+import { useHasFeature } from './useSubscription';
 
 export interface ReportTemplate {
   id: string;
@@ -62,16 +63,24 @@ export interface CreateReportTemplateData {
 
 // Hook to fetch report templates by school
 export const useReportTemplates = (schoolId?: string) => {
+  const hasReportTemplatesFeature = useHasFeature('report_templates');
+  
   return useQuery({
     queryKey: ['report-templates', schoolId],
     queryFn: async (): Promise<ReportTemplate[]> => {
+      // If feature is disabled, return empty array without making API call
+      if (!hasReportTemplatesFeature) {
+        return [];
+      }
       if (schoolId) {
         return await reportTemplatesApi.bySchool(schoolId);
       }
       return await reportTemplatesApi.list();
     },
-    enabled: true,
+    // Only enable query when feature is enabled
+    enabled: hasReportTemplatesFeature,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    placeholderData: [], // Return empty array as placeholder when feature is disabled
   });
 };
 

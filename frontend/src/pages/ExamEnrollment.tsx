@@ -184,7 +184,7 @@ function ExamClassCard({
                   <CardDescription className="flex items-center gap-2 mt-1">
                     <span className="flex items-center gap-1">
                       <BookOpen className="h-3 w-3" />
-                      {linkedSubjects.length} {t('exams.subjects') || 'subjects'}
+                      {linkedSubjects.length} {t('events.subjects') || 'subjects'}
                     </span>
                     {scheduledCount > 0 && (
                       <span className="flex items-center gap-1 text-emerald-600">
@@ -237,7 +237,7 @@ function ExamClassCard({
                 }}
                 className="flex-shrink-0"
               >
-                <span className="text-xs sm:text-sm">{showBulkEnroll ? t('common.cancel') || 'Cancel' : t('exams.bulkEnroll') || 'Bulk Enroll'}</span>
+                <span className="text-xs sm:text-sm">{showBulkEnroll ? t('events.cancel') || 'Cancel' : t('exams.bulkEnroll') || 'Bulk Enroll'}</span>
               </Button>
             </div>
 
@@ -273,7 +273,7 @@ function ExamClassCard({
                     </ScrollArea>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">
-                        {selectedSubjectIds.length} {t('exams.selected') || 'selected'}
+                        {selectedSubjectIds.length} {t('events.selected') || 'selected'}
                       </span>
                       <Button
                         onClick={handleBulkEnroll}
@@ -331,7 +331,7 @@ function ExamClassCard({
                   className="flex-shrink-0"
                 >
                   <Plus className="h-4 w-4 sm:mr-1" />
-                  <span className="text-xs sm:text-sm">{t('common.add') || 'Add'}</span>
+                  <span className="text-xs sm:text-sm">{t('events.add') || 'Add'}</span>
                 </Button>
               </div>
             )}
@@ -408,7 +408,7 @@ function ExamClassCard({
                           />
                         </div>
                         <div>
-                          <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('exams.date') || 'Date'}</Label>
+                          <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('events.date') || 'Date'}</Label>
                           <CalendarDatePicker
                             date={draft.scheduledAt ? new Date(draft.scheduledAt) : undefined}
                             onDateChange={(date) => onDraftChange(subject.id, { ...draft, scheduledAt: date ? date.toISOString().slice(0, 10) : '' })}
@@ -436,7 +436,7 @@ function ExamClassCard({
                             disabled={!hasAssign || updateSubject.isPending}
                           >
                             <NotebookPen className="h-3 w-3 sm:mr-1" />
-                            <span className="text-xs sm:text-sm">{t('common.save') || 'Save'}</span>
+                            <span className="text-xs sm:text-sm">{t('events.save') || 'Save'}</span>
                           </Button>
                         </div>
                       </div>
@@ -680,7 +680,7 @@ export function ExamEnrollment() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('exams.classes') || 'Classes'}</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('nav.classes') || 'Classes'}</p>
                   <p className="text-2xl font-bold mt-1">{stats.classes}</p>
                 </div>
                 <div className="h-10 w-10 rounded-lg bg-sky-500/20 flex items-center justify-center">
@@ -694,7 +694,7 @@ export function ExamEnrollment() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('exams.subjects') || 'Subjects'}</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('events.subjects') || 'Subjects'}</p>
                   <p className="text-2xl font-bold mt-1">{stats.subjects}</p>
                 </div>
                 <div className="h-10 w-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
@@ -803,7 +803,7 @@ export function ExamEnrollment() {
                         </div>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">{t('common.all') || 'All Years'}</SelectItem>
+                        <SelectItem value="all">{t('subjects.all') || 'All Years'}</SelectItem>
                         {examAcademicYears.map((year) => (
                           <SelectItem key={year.id} value={year.id}>
                             {year.name}
@@ -834,11 +834,11 @@ export function ExamEnrollment() {
                     <p className="text-sm text-muted-foreground mt-2">
                       {hasActiveFilters 
                         ? t('exams.noExamsMatchFilter') || 'No exams match your filters'
-                        : t('exams.noExamsFound') || 'No exams found'}
+                        : t('studentReportCard.noExamsFound') || 'No exams found'}
                     </p>
                     {hasActiveFilters && (
                       <Button variant="link" size="sm" onClick={clearFilters} className="mt-1">
-                        {t('common.clearFilters') || 'Clear filters'}
+                        {t('events.clearFilters') || 'Clear filters'}
                       </Button>
                     )}
                   </div>
@@ -911,7 +911,7 @@ export function ExamEnrollment() {
                           }}
                           className="flex-shrink-0"
                         >
-                          <span className="text-xs sm:text-sm">{showBulkClassAssign ? t('common.cancel') || 'Cancel' : t('exams.bulkAssign') || 'Bulk Assign'}</span>
+                          <span className="text-xs sm:text-sm">{showBulkClassAssign ? t('events.cancel') || 'Cancel' : t('exams.bulkAssign') || 'Bulk Assign'}</span>
                         </Button>
                       )}
                     </div>
@@ -949,7 +949,7 @@ export function ExamEnrollment() {
                             </ScrollArea>
                             <div className="flex items-center justify-between">
                               <span className="text-xs text-muted-foreground">
-                                {selectedClassIds.length} {t('exams.selected') || 'selected'}
+                                {selectedClassIds.length} {t('events.selected') || 'selected'}
                               </span>
                               <Button
                                 onClick={handleBulkAssignClasses}
@@ -967,7 +967,7 @@ export function ExamEnrollment() {
                       /* Single class assignment */
                       <div className="flex items-end gap-3">
                         <div className="flex-1">
-                          <Label className="text-xs text-muted-foreground">{t('exams.classSection') || 'Class Section'}</Label>
+                          <Label className="text-xs text-muted-foreground">{t('students.classSection') || 'Class Section'}</Label>
                           <Select
                             value={selectedClassId}
                             onValueChange={setSelectedClassId}

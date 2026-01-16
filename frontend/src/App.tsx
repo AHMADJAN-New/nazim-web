@@ -72,6 +72,8 @@ import {
   StudentAdmissions,
   StudentReport,
   StudentAdmissionsReport,
+  StudentHistoryPage,
+  StudentHistoryListPage,
   NotificationsPage,
   ShortTermCourses,
   CourseStudents,
@@ -161,6 +163,8 @@ import {
   SubscriptionPage,
   PlansPage,
   RenewPage,
+  MaintenanceFeesPage,
+  LicenseFeesPage,
   SubscriptionAdminDashboard,
   PendingActionsPage,
   AllSubscriptionsPage,
@@ -168,10 +172,15 @@ import {
   OrganizationSubscriptionDetail,
   RenewalReviewPage,
   DiscountCodesManagement,
+  MaintenanceFeesManagement,
+  LicenseFeesManagement,
+  OrganizationRevenueHistory,
+  PlanRequestsPage,
   PlatformSettings,
   TranslationsManagement,
   HelpCenterManagement,
-  MaintenanceHistory
+  MaintenanceHistory,
+  DesktopLicenseGeneration
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -186,6 +195,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SchoolProvider } from "@/contexts/SchoolContext";
 import { AuthProvider } from "@/hooks/useAuth";
+import { appCoreTour } from "@/onboarding";
+import { TourProviderWrapper } from "@/components/TourProviderWrapper";
+import { RouteToursHandler } from "@/components/RouteToursHandler";
 
 // Optimized QueryClient with better caching and performance settings
 const queryClient = new QueryClient({
@@ -312,6 +324,11 @@ const App = () => (
                         <PlansManagement />
                       </Suspense>
                     } />
+                    <Route path="plan-requests" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <PlanRequestsPage />
+                      </Suspense>
+                    } />
                     <Route path="pending" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <PendingActionsPage />
@@ -330,6 +347,21 @@ const App = () => (
                     <Route path="discount-codes" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <DiscountCodesManagement />
+                      </Suspense>
+                    } />
+                    <Route path="maintenance-fees" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <MaintenanceFeesManagement />
+                      </Suspense>
+                    } />
+                    <Route path="license-fees" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <LicenseFeesManagement />
+                      </Suspense>
+                    } />
+                    <Route path="revenue-history" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <OrganizationRevenueHistory />
                       </Suspense>
                     } />
                     {/* CRITICAL: More specific routes must come before less specific ones */}
@@ -353,11 +385,22 @@ const App = () => (
                         <MaintenanceHistory />
                       </Suspense>
                     } />
+                    <Route path="desktop-licenses" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <DesktopLicenseGeneration />
+                      </Suspense>
+                    } />
                     <Route path="maintenance" element={<Navigate to="maintenance-history" replace />} />
                   </Route>
 
                   {/* Protected routes with persistent layout */}
-                  <Route element={<ProtectedRoute><PersistentLayout /></ProtectedRoute>}>
+                  <Route element={
+                    <ProtectedRoute>
+                      <TourProviderWrapper tours={[appCoreTour]} autoStart={false}>
+                        <PersistentLayout />
+                      </TourProviderWrapper>
+                    </ProtectedRoute>
+                  }>
                     {/* Dashboard with optimized loading */}
                     <Route path="/dashboard" element={
                       <Suspense fallback={<DashboardSkeleton />}>
@@ -859,6 +902,21 @@ const App = () => (
                           <PhoneBook />
                         </Suspense>
                       </AnyPermissionRoute>
+                    } />
+                    {/* Student History routes must come BEFORE /students route to avoid route conflicts */}
+                    <Route path="/students/history" element={
+                      <PermissionRoute permission="students.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <StudentHistoryListPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/students/:studentId/history" element={
+                      <PermissionRoute permission="students.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <StudentHistoryPage />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/students" element={
                       <PermissionRoute permission="students.read">
@@ -1429,27 +1487,32 @@ const App = () => (
                       </PermissionRoute>
                     } />
 
-                    {/* Subscription routes - Only accessible to admin and organization_admin */}
+                    {/* Subscription routes - Accessible to ALL authenticated users (needed for expired subscriptions) */}
+                    {/* CRITICAL: These routes must NOT require subscription.read permission because users with expired subscriptions need to access them */}
                     <Route path="/subscription" element={
-                      <PermissionRoute permission="subscription.read">
-                        <Suspense fallback={<PageSkeleton />}>
-                          <SubscriptionPage />
-                        </Suspense>
-                      </PermissionRoute>
+                      <Suspense fallback={<PageSkeleton />}>
+                        <SubscriptionPage />
+                      </Suspense>
                     } />
                     <Route path="/subscription/plans" element={
-                      <PermissionRoute permission="subscription.read">
-                        <Suspense fallback={<PageSkeleton />}>
-                          <PlansPage />
-                        </Suspense>
-                      </PermissionRoute>
+                      <Suspense fallback={<PageSkeleton />}>
+                        <PlansPage />
+                      </Suspense>
                     } />
                     <Route path="/subscription/renew" element={
-                      <PermissionRoute permission="subscription.read">
-                        <Suspense fallback={<PageSkeleton />}>
-                          <RenewPage />
-                        </Suspense>
-                      </PermissionRoute>
+                      <Suspense fallback={<PageSkeleton />}>
+                        <RenewPage />
+                      </Suspense>
+                    } />
+                    <Route path="/subscription/maintenance-fees" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <MaintenanceFeesPage />
+                      </Suspense>
+                    } />
+                    <Route path="/subscription/license-fees" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <LicenseFeesPage />
+                      </Suspense>
                     } />
 
                   {/* Catch-all route */}

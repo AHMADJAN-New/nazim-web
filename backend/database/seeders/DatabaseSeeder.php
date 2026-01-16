@@ -195,6 +195,11 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 28: Seeding help center categories...');
         $this->call(HelpCenterCategorySeeder::class);
 
+        // Step 28b: Seed help center articles from MD files (global)
+        $this->command->info('Step 28b: Seeding help center articles...');
+        $this->call(HelpCenterArticleSeeder::class);
+
+  
         $this->command->info('');
         $this->command->info('✅ Database seeding completed successfully!');
         $this->command->info('');
@@ -340,10 +345,15 @@ class DatabaseSeeder extends Seeder
         $skippedCount = 0;
 
         if ($permissionList === '*') {
-            // Admin gets all organization permissions (except subscription.admin - it's global only)
+            // Admin gets all organization permissions (except subscription.admin and help_center write permissions)
+            $excludedPermissions = array_merge(
+                \Database\Seeders\PermissionSeeder::getSuperAdminOnlyPermissions(),
+                \Database\Seeders\PermissionSeeder::getExcludedAdminPermissions()
+            );
+            
             foreach ($orgPermissions as $permission) {
-                // CRITICAL: Skip subscription.admin - it's GLOBAL only and should NEVER be assigned to organization roles
-                if ($permission->name === 'subscription.admin') {
+                // CRITICAL: Skip excluded permissions
+                if (in_array($permission->name, $excludedPermissions)) {
                     continue;
                 }
 
@@ -366,9 +376,14 @@ class DatabaseSeeder extends Seeder
             }
         } else {
             // Assign specific permissions
+            $excludedPermissions = array_merge(
+                \Database\Seeders\PermissionSeeder::getSuperAdminOnlyPermissions(),
+                \Database\Seeders\PermissionSeeder::getExcludedAdminPermissions()
+            );
+            
             foreach ($permissionList as $permissionName) {
-                // CRITICAL: Skip subscription.admin - it's GLOBAL only
-                if ($permissionName === 'subscription.admin') {
+                // CRITICAL: Skip excluded permissions
+                if (in_array($permissionName, $excludedPermissions)) {
                     continue;
                 }
 
@@ -575,6 +590,34 @@ class DatabaseSeeder extends Seeder
                 ]);
 
                 $this->command->info("  ✓ Assigned {$userData['role']} role to {$userData['email']} (org: {$organization->id})");
+            }
+            
+            // CRITICAL: Assign tours to user (especially initialSetup tour)
+            try {
+                $tourService = app(\App\Services\TourAssignmentService::class);
+                
+                // Always assign initialSetup tour first (no permissions required)
+                $tourService->assignInitialSetupTour($userId);
+                
+                // Then assign other tours based on permissions
+                $userModel = \App\Models\User::find($userId);
+                if ($userModel) {
+                    // Set organization context for permission checks
+                    $userModel->setPermissionsTeamId($organization->id);
+                    
+                    // Get user's permissions (from roles and direct assignments)
+                    $userPermissions = $userModel->getAllPermissions()->pluck('name')->toArray();
+                    
+                    // Assign other tours based on permissions
+                    $assignedTours = $tourService->assignToursForUser($userId, $userPermissions);
+                    
+                    if (!empty($assignedTours)) {
+                        $this->command->info("  ✓ Assigned tours to {$userData['email']}: " . implode(', ', $assignedTours));
+                    }
+                }
+            } catch (\Exception $e) {
+                // Don't fail user creation if tour assignment fails
+                $this->command->warn("  ⚠ Failed to assign tours to {$userData['email']}: " . $e->getMessage());
             }
         } catch (\Exception $e) {
             $this->command->error("  ❌ Error processing user {$userData['email']}: " . $e->getMessage());

@@ -79,6 +79,17 @@ class SchoolBranding extends Model
     ];
 
     /**
+     * Hide binary logo columns from JSON responses
+     * Logos are only needed for reports, not for normal API responses
+     * Use /api/schools/{id}/logos/{type} endpoint to fetch logos on-demand
+     */
+    protected $hidden = [
+        'primary_logo_binary',
+        'secondary_logo_binary',
+        'ministry_logo_binary',
+    ];
+
+    /**
      * Boot the model
      */
     protected static function boot()
@@ -170,56 +181,6 @@ class SchoolBranding extends Model
     protected function serializeDate(\DateTimeInterface $date)
     {
         return $date->format('Y-m-d H:i:s');
-    }
-
-    /**
-     * Convert binary fields to base64 when serializing to array/JSON
-     */
-    public function toArray()
-    {
-        $array = parent::toArray();
-
-        // Convert binary logo fields to base64 strings for JSON transmission
-        // PostgreSQL BYTEA columns need special handling
-        $logoFields = ['primary_logo_binary', 'secondary_logo_binary', 'ministry_logo_binary'];
-        
-        foreach ($logoFields as $field) {
-            try {
-                // Get the raw attribute value directly from the model
-                $rawValue = $this->getAttribute($field);
-                
-                if ($rawValue !== null && $rawValue !== '') {
-                    // PostgreSQL BYTEA is returned as a binary string
-                    if (is_string($rawValue)) {
-                        // Check if it's already base64 encoded (unlikely but possible)
-                        $decoded = @base64_decode($rawValue, true);
-                        if ($decoded !== false && base64_encode($decoded) === $rawValue) {
-                            // Already base64, keep as is
-                            $array[$field] = $rawValue;
-                        } else {
-                            // Encode binary string to base64
-                            $array[$field] = base64_encode($rawValue);
-                        }
-                    } elseif (is_resource($rawValue)) {
-                        // If it's a resource stream, read it
-                        rewind($rawValue);
-                        $binary = stream_get_contents($rawValue);
-                        $array[$field] = base64_encode($binary);
-                    } else {
-                        // Fallback: try to convert to string and encode
-                        $array[$field] = base64_encode((string)$rawValue);
-                    }
-                } else {
-                    $array[$field] = null;
-                }
-            } catch (\Exception $e) {
-                // If encoding fails, set to null to prevent JSON serialization errors
-                \Log::warning("Error encoding {$field} to base64: " . $e->getMessage() . " | Type: " . gettype($this->getAttribute($field)));
-                $array[$field] = null;
-            }
-        }
-
-        return $array;
     }
 }
 

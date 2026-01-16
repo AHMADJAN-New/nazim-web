@@ -23,6 +23,7 @@ class ClassAcademicYear extends Model
         'class_id',
         'academic_year_id',
         'organization_id',
+        'school_id',
         'section_name',
         'teacher_id',
         'room_id',

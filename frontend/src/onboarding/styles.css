@@ -1,0 +1,428 @@
+/**
+ * Onboarding Tour System - Shepherd.js Styles
+ * 
+ * Custom styling for the Nazim tour system.
+ */
+
+/* Import Shepherd base styles */
+@import 'shepherd.js/dist/css/shepherd.css';
+
+/* ============================================
+   CSS Variables
+   ============================================ */
+:root {
+  --shepherd-primary: hsl(222.2, 84%, 50%);
+  --shepherd-primary-hover: hsl(222.2, 84%, 45%);
+  --shepherd-secondary: hsl(210, 40%, 96%);
+  --shepherd-secondary-hover: hsl(210, 40%, 90%);
+  --shepherd-bg: hsl(0, 0%, 100%);
+  --shepherd-text: hsl(222.2, 84%, 5%);
+  --shepherd-text-muted: hsl(215, 16%, 47%);
+  --shepherd-border: hsl(214, 32%, 91%);
+  --shepherd-overlay: rgba(0, 0, 0, 0.5);
+  --shepherd-radius: 0.75rem;
+  --shepherd-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shepherd-z-index: 99999;
+  --shepherd-font-family: 'Bahij Nazanin', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Dark mode support */
+.dark {
+  --shepherd-bg: hsl(222.2, 84%, 5%);
+  --shepherd-text: hsl(210, 40%, 98%);
+  --shepherd-text-muted: hsl(215, 20%, 65%);
+  --shepherd-border: hsl(217, 33%, 17%);
+  --shepherd-secondary: hsl(217, 33%, 17%);
+  --shepherd-secondary-hover: hsl(217, 33%, 25%);
+}
+
+/* ============================================
+   Modal Overlay
+   ============================================ */
+.shepherd-modal-overlay-container {
+  z-index: var(--shepherd-z-index) !important;
+  /* Allow scrolling - make overlay non-blocking for scroll events */
+  pointer-events: none;
+}
+
+/* Make the SVG overlay non-interactive to allow scrolling */
+.shepherd-modal-overlay-container svg {
+  pointer-events: none;
+}
+
+.shepherd-modal-overlay-container .shepherd-modal-mask-rect {
+  fill: var(--shepherd-overlay);
+  pointer-events: none;
+}
+
+/* Allow page scrolling when tour is active */
+body.shepherd-active,
+html.shepherd-active {
+  overflow: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* CRITICAL: Allow sidebar scrolling when tour step is on sidebar */
+body.shepherd-active [data-tour="sidebar"],
+html.shepherd-active [data-tour="sidebar"] {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Ensure the page content can be scrolled */
+.shepherd-active .shepherd-modal-overlay-container {
+  pointer-events: none;
+}
+
+/* But keep the step element interactive */
+.shepherd-element {
+  pointer-events: auto;
+  /* CRITICAL: Ensure dialog stays visible when scrolling */
+  position: fixed !important;
+  will-change: transform;
+}
+
+/* ============================================
+   Step Element (Tooltip)
+   ============================================ */
+.shepherd-element {
+  z-index: calc(var(--shepherd-z-index) + 1) !important;
+  max-width: 420px;
+  min-width: 300px;
+  background: var(--shepherd-bg);
+  border-radius: var(--shepherd-radius);
+  box-shadow: var(--shepherd-shadow);
+  border: 1px solid var(--shepherd-border);
+  font-family: var(--shepherd-font-family);
+  /* CRITICAL: Use fixed positioning to ensure dialog stays visible when scrolling */
+  position: fixed !important;
+  will-change: transform;
+  /* Ensure dialog is interactive */
+  pointer-events: auto;
+  /* CRITICAL: Ensure element is always visible */
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  /* Ensure dialog is always on top */
+  transform: translateZ(0);
+}
+
+.shepherd-element.shepherd-has-title .shepherd-content .shepherd-header {
+  background: transparent;
+  padding: 0;
+}
+
+/* ============================================
+   Content
+   ============================================ */
+.shepherd-content {
+  padding: 1.25rem;
+}
+
+/* Progress Indicator */
+.shepherd-progress {
+  font-size: 0.75rem;
+  color: var(--shepherd-text-muted);
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+
+/* Title */
+.shepherd-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--shepherd-text);
+  margin: 0 0 0.75rem 0;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Icon Wrapper */
+.shepherd-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--shepherd-primary);
+}
+
+.shepherd-icon {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+}
+
+.shepherd-icon-only {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  color: var(--shepherd-primary);
+}
+
+/* Text */
+.shepherd-text {
+  font-size: 0.9375rem;
+  color: var(--shepherd-text);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.shepherd-text p {
+  margin: 0 0 0.75rem 0;
+}
+
+.shepherd-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================
+   Header (Cancel Button)
+   ============================================ */
+.shepherd-header {
+  position: relative;
+}
+
+.shepherd-cancel-icon {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  background: transparent;
+  border: none;
+  color: var(--shepherd-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.shepherd-cancel-icon:hover {
+  background: var(--shepherd-secondary);
+  color: var(--shepherd-text);
+}
+
+/* RTL cancel icon position */
+.shepherd-rtl .shepherd-cancel-icon {
+  right: auto;
+  left: 0.75rem;
+}
+
+/* ============================================
+   Footer (Buttons)
+   ============================================ */
+.shepherd-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0;
+  margin-top: 0.5rem;
+}
+
+/* RTL button order */
+.shepherd-rtl .shepherd-footer {
+  flex-direction: row-reverse;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+.shepherd-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  font-family: var(--shepherd-font-family);
+  pointer-events: auto;
+}
+
+/* Disabled button styles */
+.shepherd-button[disabled],
+.shepherd-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: auto;
+}
+
+.shepherd-button:focus {
+  outline: 2px solid var(--shepherd-primary);
+  outline-offset: 2px;
+}
+
+.shepherd-button-primary {
+  background: var(--shepherd-primary);
+  color: white;
+}
+
+.shepherd-button-primary:hover {
+  background: var(--shepherd-primary-hover);
+}
+
+.shepherd-button-secondary {
+  background: var(--shepherd-secondary);
+  color: var(--shepherd-text);
+}
+
+.shepherd-button-secondary:hover {
+  background: var(--shepherd-secondary-hover);
+}
+
+/* ============================================
+   Arrow
+   ============================================ */
+.shepherd-arrow {
+  border-width: 0 !important;
+}
+
+.shepherd-arrow::before {
+  background: var(--shepherd-bg) !important;
+  border: 1px solid var(--shepherd-border) !important;
+}
+
+/* ============================================
+   RTL Support
+   ============================================ */
+.shepherd-rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+.shepherd-rtl .shepherd-text {
+  text-align: right;
+}
+
+.shepherd-rtl .shepherd-title {
+  text-align: right;
+}
+
+.shepherd-rtl .shepherd-progress {
+  text-align: right;
+}
+
+/* ============================================
+   Target Highlight
+   ============================================ */
+.shepherd-target-highlight {
+  position: relative;
+}
+
+.shepherd-target-highlight::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 2px solid var(--shepherd-primary);
+  border-radius: var(--shepherd-radius);
+  pointer-events: none;
+  animation: shepherd-pulse 2s infinite;
+}
+
+@keyframes shepherd-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ============================================
+   Centered Step (No Target)
+   ============================================ */
+.shepherd-element.shepherd-centered {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 640px) {
+  .shepherd-element {
+    max-width: calc(100vw - 2rem);
+    min-width: auto;
+    margin: 0 1rem;
+  }
+  
+  .shepherd-content {
+    padding: 1rem;
+  }
+  
+  .shepherd-title {
+    font-size: 1rem;
+  }
+  
+  .shepherd-text {
+    font-size: 0.875rem;
+  }
+  
+  .shepherd-button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+.shepherd-element {
+  animation: shepherd-fade-in 0.2s ease-out;
+}
+
+@keyframes shepherd-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   Theme: Nazim
+   ============================================ */
+.shepherd-theme-nazim {
+  /* Uses CSS variables defined above */
+  /* This class is used for theming via CSS variables */
+  color: inherit;
+}
+
+.shepherd-theme-nazim.shepherd-element {
+  border: 1px solid var(--shepherd-border);
+}
+
+/* ============================================
+   Accessibility
+   ============================================ */
+.shepherd-element:focus-within {
+  outline: 2px solid var(--shepherd-primary);
+  outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .shepherd-element {
+    animation: none;
+  }
+  
+  .shepherd-target-highlight::after {
+    animation: none;
+  }
+}
+

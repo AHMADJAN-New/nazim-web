@@ -1,11 +1,14 @@
-import * as XLSX from 'xlsx';
+import { loadXlsx } from '@/lib/xlsx-loader';
 
 import { flattenTranslations, nestTranslations, type TranslationRow } from './utils';
 
 /**
  * Export translations to Excel file
  */
-export function exportTranslationsToExcel(): void {
+export async function exportTranslationsToExcel(): Promise<void> {
+  // Lazy load xlsx library
+  const XLSX = await loadXlsx();
+  
   const flattened = flattenTranslations();
   
   // Create workbook
@@ -37,6 +40,9 @@ export function exportTranslationsToExcel(): void {
  * Import translations from Excel file
  */
 export async function importTranslationsFromExcel(file: File): Promise<TranslationRow[]> {
+  // Lazy load xlsx library
+  const XLSX = await loadXlsx();
+  
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     

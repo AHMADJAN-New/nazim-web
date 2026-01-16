@@ -116,7 +116,7 @@ const navigationItems: NavigationItem[] = [
       { title: "Letterheads", url: "/dms/letterheads", icon: Trophy },
       { title: "Departments", url: "/dms/departments", icon: Building },
       { title: "Archive", url: "/dms/archive", icon: Package },
-      { title: "Reports", url: "/dms/reports", icon: BarChart3 },
+      { titleKey: "nav.dms.reports", url: "/dms/reports", icon: BarChart3 },
       { title: "Settings", url: "/dms/settings", icon: Settings },
     ],
   },
@@ -276,7 +276,7 @@ export function AppSidebar() {
 
       <SidebarContent className="custom-scrollbar">
         <SidebarGroup>
-          <SidebarGroupLabel>{t('common.mainNavigation')}</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('events.mainNavigation')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {filteredItems.map(renderMenuItem)}

@@ -27,7 +27,9 @@ import {
     Cell,
     AreaChart,
     Area,
-} from 'recharts';
+    ChartSkeleton,
+} from '@/components/charts/LazyChart';
+import { Suspense } from 'react';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -95,15 +97,15 @@ export default function FinanceReports() {
     const { data: accountBalances, isLoading: accountLoading } = useAccountBalancesReport();
 
     const DateRangePicker = () => (
-        <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+        <FilterPanel title={t('events.filters') || 'Search & Filter'}>
             <div className="flex flex-col gap-4 md:flex-row md:items-end">
                 <div className="flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <Label htmlFor="startDate">{t('common.from') || 'From'}</Label>
+                    <Label htmlFor="startDate">{t('events.from') || 'From'}</Label>
                     <CalendarDatePicker date={dateRange.startDate ? new Date(dateRange.startDate) : undefined} onDateChange={(date) => setDateRange(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
                 <div className="flex items-center gap-2">
-                    <Label htmlFor="endDate">{t('common.to') || 'To'}</Label>
+                    <Label htmlFor="endDate">{t('events.to') || 'To'}</Label>
                     <CalendarDatePicker date={dateRange.endDate ? new Date(dateRange.endDate) : undefined} onDateChange={(date) => setDateRange(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
             </div>
@@ -271,10 +273,10 @@ export default function FinanceReports() {
                                             <ReportExportButtons
                                                 data={allEntries}
                                                 columns={[
-                                                    { key: 'date', label: t('common.date'), align: 'left' },
-                                                    { key: 'type', label: t('common.type'), align: 'left' },
-                                                    { key: 'category', label: t('finance.category'), align: 'left' },
-                                                    { key: 'description', label: t('common.description'), align: 'left' },
+                                                    { key: 'date', label: t('events.date'), align: 'left' },
+                                                    { key: 'type', label: t('events.type'), align: 'left' },
+                                                    { key: 'category', label: t('assets.category'), align: 'left' },
+                                                    { key: 'description', label: t('events.description'), align: 'left' },
                                                     { key: 'amount', label: t('finance.amount'), align: 'right' },
                                                 ]}
                                                 reportKey="finance_daily_cashbook"
@@ -293,7 +295,7 @@ export default function FinanceReports() {
                                                     }))
                                                 }
                                                 buildFiltersSummary={() =>
-                                                    `${t('common.date')}: ${formatDate(cashbook.date)} | ${t('finance.account')}: ${cb.account.name}`
+                                                    `${t('events.date')}: ${formatDate(cashbook.date)} | ${t('finance.account')}: ${cb.account.name}`
                                                 }
                                                 templateType="finance_daily_cashbook"
                                                 disabled={allEntries.length === 0}
@@ -305,10 +307,10 @@ export default function FinanceReports() {
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
-                                                        <TableHead>{t('common.date') || 'Date'}</TableHead>
-                                                        <TableHead>{t('common.type') || 'Type'}</TableHead>
-                                                        <TableHead>{t('finance.category') || 'Category'}</TableHead>
-                                                        <TableHead>{t('common.description') || 'Description'}</TableHead>
+                                                        <TableHead>{t('events.date') || 'Date'}</TableHead>
+                                                        <TableHead>{t('events.type') || 'Type'}</TableHead>
+                                                        <TableHead>{t('assets.category') || 'Category'}</TableHead>
+                                                        <TableHead>{t('events.description') || 'Description'}</TableHead>
                                                         <TableHead className="text-right">{t('finance.amount') || 'Amount'}</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
@@ -503,8 +505,8 @@ export default function FinanceReports() {
                     <ReportExportButtons
                         data={combinedExportData}
                         columns={[
-                            { key: 'type', label: t('common.type'), align: 'left' },
-                            { key: 'category', label: t('finance.category'), align: 'left' },
+                            { key: 'type', label: t('events.type'), align: 'left' },
+                            { key: 'category', label: t('assets.category'), align: 'left' },
                             { key: 'amount', label: t('finance.amount'), align: 'right' },
                         ]}
                         reportKey="finance_income_expense_summary"
@@ -663,7 +665,7 @@ export default function FinanceReports() {
                                     </ChartContainer>
                                 ) : (
                                     <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                                        {t('finance.noData') || 'No data available for the selected period'}
+                                        {t('events.noData') || 'No data available for the selected period'}
                                     </div>
                                 )}
                             </CardContent>
@@ -716,7 +718,7 @@ export default function FinanceReports() {
                                         </ChartContainer>
                                     ) : (
                                         <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                                            {t('finance.noData') || 'No data available'}
+                                            {t('events.noData') || 'No data available'}
                                         </div>
                                     )}
                                 </CardContent>
@@ -766,7 +768,7 @@ export default function FinanceReports() {
                                         </ChartContainer>
                                     ) : (
                                         <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                                            {t('finance.noData') || 'No data available'}
+                                            {t('events.noData') || 'No data available'}
                                         </div>
                                     )}
                                 </CardContent>
@@ -786,7 +788,7 @@ export default function FinanceReports() {
                 <ReportExportButtons
                     data={projectSummary?.projects || []}
                     columns={[
-                        { key: 'name', label: t('common.name'), align: 'left' },
+                        { key: 'name', label: t('events.name'), align: 'left' },
                         { key: 'income', label: t('finance.income'), align: 'right' },
                         { key: 'expense', label: t('finance.expense'), align: 'right' },
                         { key: 'balance', label: t('finance.balance'), align: 'right' },
@@ -847,7 +849,7 @@ export default function FinanceReports() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>{t('common.name') || 'Name'}</TableHead>
+                                        <TableHead>{t('events.name') || 'Name'}</TableHead>
                                         <TableHead className="text-right">{t('finance.income') || 'Income'}</TableHead>
                                         <TableHead className="text-right">{t('finance.expense') || 'Expense'}</TableHead>
                                         <TableHead className="text-right">{t('finance.balance') || 'Balance'}</TableHead>
@@ -997,8 +999,8 @@ export default function FinanceReports() {
                 <ReportExportButtons
                     data={donorSummary?.donors || []}
                     columns={[
-                        { key: 'name', label: t('common.name'), align: 'left' },
-                        { key: 'type', label: t('common.type'), align: 'left' },
+                        { key: 'name', label: t('events.name'), align: 'left' },
+                        { key: 'type', label: t('events.type'), align: 'left' },
                         { key: 'donationCount', label: t('finance.donationCount'), align: 'right' },
                         { key: 'totalDonated', label: t('finance.totalDonated'), align: 'right' },
                     ]}
@@ -1007,7 +1009,7 @@ export default function FinanceReports() {
                     transformData={(data) =>
                         data.map((item) => ({
                             name: item.donor.name,
-                            type: item.donor.type === 'individual' ? t('finance.individual') || 'Individual' : t('finance.organization') || 'Organization',
+                            type: item.donor.type === 'individual' ? t('finance.individual') || 'Individual' : t('students.organization') || 'Organization',
                             donationCount: item.donationCount.toString(),
                             totalDonated: formatCurrency(item.totalDonated),
                         }))
@@ -1050,8 +1052,8 @@ export default function FinanceReports() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>{t('common.name') || 'Name'}</TableHead>
-                                        <TableHead>{t('common.type') || 'Type'}</TableHead>
+                                        <TableHead>{t('events.name') || 'Name'}</TableHead>
+                                        <TableHead>{t('events.type') || 'Type'}</TableHead>
                                         <TableHead className="text-right">{t('finance.donationCount') || 'Donations'}</TableHead>
                                         <TableHead className="text-right">{t('finance.totalAmount') || 'Total Amount'}</TableHead>
                                     </TableRow>
@@ -1069,7 +1071,7 @@ export default function FinanceReports() {
                                                             : 'bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400'
                                                     }
                                                 >
-                                                    {item.donor.type === 'individual' ? t('finance.individual') || 'Individual' : t('finance.organization') || 'Organization'}
+                                                    {item.donor.type === 'individual' ? t('finance.individual') || 'Individual' : t('students.organization') || 'Organization'}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
@@ -1125,8 +1127,8 @@ export default function FinanceReports() {
                 <ReportExportButtons
                     data={accountBalances?.accounts || []}
                     columns={[
-                        { key: 'name', label: t('common.name'), align: 'left' },
-                        { key: 'type', label: t('common.type'), align: 'left' },
+                        { key: 'name', label: t('events.name'), align: 'left' },
+                        { key: 'type', label: t('events.type'), align: 'left' },
                         { key: 'openingBalance', label: t('finance.openingBalance'), align: 'right' },
                         { key: 'currentBalance', label: t('finance.currentBalance'), align: 'right' },
                     ]}
@@ -1169,8 +1171,8 @@ export default function FinanceReports() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>{t('common.name') || 'Name'}</TableHead>
-                                        <TableHead>{t('common.type') || 'Type'}</TableHead>
+                                        <TableHead>{t('events.name') || 'Name'}</TableHead>
+                                        <TableHead>{t('events.type') || 'Type'}</TableHead>
                                         <TableHead className="text-right">{t('finance.openingBalance') || 'Opening Balance'}</TableHead>
                                         <TableHead className="text-right">{t('finance.currentBalance') || 'Current Balance'}</TableHead>
                                     </TableRow>
@@ -1274,7 +1276,7 @@ export default function FinanceReports() {
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
             <PageHeader
-                title={t('finance.reports') || 'Finance Reports'}
+                title={t('nav.finance.reports') || t('finance.reports') || 'Finance Reports'}
                 description={t('finance.reportsDescription') || 'Generate and view financial reports'}
                 icon={<FileText className="h-5 w-5" />}
             />

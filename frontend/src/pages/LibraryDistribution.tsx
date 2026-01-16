@@ -450,13 +450,13 @@ export default function LibraryDistribution() {
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
             <PageHeader
-                title="Library Distribution"
-                description="Manage book loans and returns"
+                title={t('library.distribution') || 'Library Distribution'}
+                description={t('library.manageLoans') || 'Manage book loans and returns'}
                 icon={<BookCheck className="h-5 w-5" />}
                 primaryAction={
                     hasCreatePermission
                         ? {
-                            label: 'Assign Book',
+                            label: t('library.assignBook') || 'Assign Book',
                             onClick: handleOpenLoanDialog,
                             icon: <Plus className="h-4 w-4" />,
                         }
@@ -466,22 +466,36 @@ export default function LibraryDistribution() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Active Loans</CardTitle>
+                    <CardTitle>{t('library.activeLoans') || 'Active Loans'}</CardTitle>
                     <CardDescription>
-                        {Array.isArray(openLoans) ? openLoans.length : 0} active loans
+                        {t('library.activeLoansCount', {
+                            count: Array.isArray(openLoans) ? openLoans.length : 0,
+                        }) ||
+                            `${Array.isArray(openLoans) ? openLoans.length : 0} active loans`}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+                        <FilterPanel
+                            title={
+                                t('library.filters') ||
+                                t('events.filters') ||
+                                'Search & Filter'
+                            }
+                        >
                             <div className="flex flex-col md:flex-row gap-4 items-end">
                                 <div className="relative flex-1 max-w-md w-full">
-                                    <Label htmlFor="search" className="mb-2 block">Search</Label>
+                                    <Label htmlFor="search" className="mb-2 block">
+                                        {t('common.search') || 'Search'}
+                                    </Label>
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                         <Input
                                             id="search"
-                                            placeholder="Search by book title or copy code..."
+                                            placeholder={
+                                                t('library.searchLoansPlaceholder') ||
+                                                'Search by book title or copy code...'
+                                            }
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             className="pl-10"
@@ -490,27 +504,45 @@ export default function LibraryDistribution() {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
                                     <div className="space-y-2">
-                                        <Label htmlFor="category-filter">Category</Label>
+                                        <Label htmlFor="category-filter">
+                                            {t('library.category') || 'Category'}
+                                        </Label>
                                         <Combobox
                                             options={categoryOptions}
                                             value={categoryFilter}
                                             onValueChange={setCategoryFilter}
-                                            placeholder="All Categories"
-                                            searchPlaceholder="Search categories..."
-                                            emptyText="No categories found."
+                                            placeholder={
+                                                t('library.allCategories') || 'All Categories'
+                                            }
+                                            searchPlaceholder={
+                                                t('library.searchCategories') ||
+                                                'Search categories...'
+                                            }
+                                            emptyText={
+                                                t('library.noCategoriesAvailable') ||
+                                                'No categories found.'
+                                            }
                                             className="w-full"
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="borrower-filter">Borrower</Label>
+                                        <Label htmlFor="borrower-filter">
+                                            {t('library.borrower') || 'Borrower'}
+                                        </Label>
                                         <Select value={borrowerFilter} onValueChange={setBorrowerFilter}>
                                             <SelectTrigger id="borrower-filter" className="w-full">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="all">All Borrowers</SelectItem>
-                                                <SelectItem value="student">Students Only</SelectItem>
-                                                <SelectItem value="staff">Staff Only</SelectItem>
+                                                <SelectItem value="all">
+                                                    {t('library.allBorrowers') || 'All Borrowers'}
+                                                </SelectItem>
+                                                <SelectItem value="student">
+                                                    {t('library.studentsOnly') || 'Students Only'}
+                                                </SelectItem>
+                                                <SelectItem value="staff">
+                                                    {t('library.staffOnly') || 'Staff Only'}
+                                                </SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -528,7 +560,7 @@ export default function LibraryDistribution() {
                                             className="w-full md:w-auto"
                                         >
                                             <X className="h-4 w-4 mr-2" />
-                                            Reset
+                                            {t('library.reset') || 'Reset'}
                                         </Button>
                                     </div>
                                 )}
@@ -539,13 +571,15 @@ export default function LibraryDistribution() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Book</TableHead>
-                                        <TableHead>Copy</TableHead>
-                                        <TableHead>Borrower</TableHead>
-                                        <TableHead>Loan Date</TableHead>
-                                        <TableHead>Due Date</TableHead>
-                                        <TableHead>Deposit</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                                        <TableHead>{t('library.book') || 'Book'}</TableHead>
+                                        <TableHead>{t('library.copy') || 'Copy'}</TableHead>
+                                        <TableHead>{t('library.borrower') || 'Borrower'}</TableHead>
+                                        <TableHead>{t('library.loanDate') || 'Loan Date'}</TableHead>
+                                        <TableHead>{t('library.dueDate') || 'Due Date'}</TableHead>
+                                        <TableHead>{t('library.deposit') || 'Deposit'}</TableHead>
+                                        <TableHead className="text-right">
+                                            {t('common.actions') || 'Actions'}
+                                        </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -553,8 +587,9 @@ export default function LibraryDistribution() {
                                         <TableRow>
                                             <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                                                 {searchQuery || borrowerFilter !== 'all'
-                                                    ? 'No loans found matching your filters.'
-                                                    : 'No active loans.'}
+                                                    ? t('library.noLoansMatchFilters') ||
+                                                      'No loans found matching your filters.'
+                                                    : t('library.noActiveLoans') || 'No active loans.'}
                                             </TableCell>
                                         </TableRow>
                                     ) : (
@@ -628,7 +663,7 @@ export default function LibraryDistribution() {
                                                                 onClick={() => handleReturn(loan)}
                                                             >
                                                                 <RefreshCw className="h-4 w-4 mr-2" />
-                                                                Return
+                                                                {t('library.return') || 'Return'}
                                                             </Button>
                                                         )}
                                                     </TableCell>
@@ -647,9 +682,10 @@ export default function LibraryDistribution() {
             <Dialog open={isLoanDialogOpen} onOpenChange={setIsLoanDialogOpen}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Assign Book</DialogTitle>
+                        <DialogTitle>{t('library.assignBook') || 'Assign Book'}</DialogTitle>
                         <DialogDescription>
-                            Loan a book to a student or staff member
+                            {t('library.assignBookDescription') ||
+                                'Loan a book to a student or staff member'}
                         </DialogDescription>
                     </DialogHeader>
                     <FormProvider {...formMethods}>
@@ -657,7 +693,8 @@ export default function LibraryDistribution() {
                         <div className="space-y-4 py-4">
                             <div>
                                 <Label htmlFor="book_id">
-                                    Book <span className="text-destructive">*</span>
+                                    {t('library.book') || 'Book'}{' '}
+                                    <span className="text-destructive">*</span>
                                 </Label>
                                 <div className="flex items-center gap-4">
                                     <div className="flex-1">
@@ -672,9 +709,18 @@ export default function LibraryDistribution() {
                                                         field.onChange(value);
                                                         handleBookChange(value);
                                                     }}
-                                                    placeholder="Search and select a book..."
-                                                    searchPlaceholder="Search by title or author..."
-                                                    emptyText="No books available."
+                                                    placeholder={
+                                                        t('library.searchAndSelectBook') ||
+                                                        'Search and select a book...'
+                                                    }
+                                                    searchPlaceholder={
+                                                        t('library.searchBookPlaceholder') ||
+                                                        'Search by title or author...'
+                                                    }
+                                                    emptyText={
+                                                        t('library.noBooksAvailable') ||
+                                                        'No books available.'
+                                                    }
                                                     className="w-full"
                                                 />
                                             )}
@@ -712,14 +758,27 @@ export default function LibraryDistribution() {
                                     <div className="mt-2 text-sm text-muted-foreground">
                                         {availableCopies.length > 0 ? (
                                             <span>
-                                                {availableCopies.length} available copy{availableCopies.length !== 1 ? 'ies' : ''} 
-                                                {selectedBook.total_copies !== undefined && selectedBook.total_copies > 0 && (
-                                                    <span> of {selectedBook.total_copies} total</span>
-                                                )}
+                                                {t('library.availableCopiesSummary', {
+                                                    available: availableCopies.length,
+                                                    total: selectedBook.total_copies ?? 0,
+                                                }) ||
+                                                    `${availableCopies.length} available copy${
+                                                        availableCopies.length !== 1 ? 'ies' : ''
+                                                    }${
+                                                        selectedBook.total_copies !== undefined &&
+                                                        selectedBook.total_copies > 0
+                                                            ? ` of ${selectedBook.total_copies} total`
+                                                            : ''
+                                                    }`}
                                             </span>
                                         ) : (
                                             <span className="text-destructive">
-                                                No available copies. Total copies: {selectedBook.total_copies ?? 0}
+                                                {t('library.noAvailableCopies', {
+                                                    total: selectedBook.total_copies ?? 0,
+                                                }) ||
+                                                    `No available copies. Total copies: ${
+                                                        selectedBook.total_copies ?? 0
+                                                    }`}
                                             </span>
                                         )}
                                     </div>
@@ -731,7 +790,9 @@ export default function LibraryDistribution() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="borrower_type">Borrower Type</Label>
+                                    <Label htmlFor="borrower_type">
+                                        {t('library.borrowerType') || 'Borrower Type'}
+                                    </Label>
                                     <Controller
                                         control={control}
                                         name="borrower_type"
@@ -748,8 +809,12 @@ export default function LibraryDistribution() {
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="student">Student</SelectItem>
-                                                    <SelectItem value="staff">Staff</SelectItem>
+                                                    <SelectItem value="student">
+                                                        {t('common.student') || 'Student'}
+                                                    </SelectItem>
+                                                    <SelectItem value="staff">
+                                                        {t('common.staff') || 'Staff'}
+                                                    </SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         )}
@@ -757,7 +822,8 @@ export default function LibraryDistribution() {
                                 </div>
                                 <div>
                                     <Label htmlFor="borrower">
-                                        Borrower <span className="text-destructive">*</span>
+                                        {t('library.borrower') || 'Borrower'}{' '}
+                                        <span className="text-destructive">*</span>
                                     </Label>
                                     <Controller
                                         control={control}
@@ -770,9 +836,27 @@ export default function LibraryDistribution() {
                                                     // Convert empty string to null
                                                     field.onChange(value === '' ? null : value);
                                                 }}
-                                                placeholder={`Select ${borrowerType === 'student' ? 'student' : 'staff'}...`}
-                                                searchPlaceholder={`Search ${borrowerType === 'student' ? 'students' : 'staff'}...`}
-                                                emptyText={`No ${borrowerType === 'student' ? 'students' : 'staff'} available.`}
+                                                    placeholder={
+                                                        borrowerType === 'student'
+                                                            ? t('library.selectStudent') ||
+                                                              'Select student...'
+                                                            : t('library.selectStaff') ||
+                                                              'Select staff...'
+                                                    }
+                                                    searchPlaceholder={
+                                                        borrowerType === 'student'
+                                                            ? t('library.searchStudents') ||
+                                                              'Search students...'
+                                                            : t('library.searchStaff') ||
+                                                              'Search staff...'
+                                                    }
+                                                    emptyText={
+                                                        borrowerType === 'student'
+                                                            ? t('library.noStudentsAvailable') ||
+                                                              'No students available.'
+                                                            : t('library.noStaffAvailable') ||
+                                                              'No staff available.'
+                                                    }
                                                 className="w-full"
                                             />
                                         )}
@@ -788,17 +872,22 @@ export default function LibraryDistribution() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="loan_date">
-                                        Loan Date <span className="text-destructive">*</span>
-                                    </Label>
-                                    <CalendarFormField control={control} name="loan_date" label="Loan Date" />
+                                    <CalendarFormField
+                                        control={control}
+                                        name="loan_date"
+                                        label={t('library.loanDate') || 'Loan Date'}
+                                        required
+                                    />
                                     {errors.loan_date && (
                                         <p className="text-sm text-destructive mt-1">{errors.loan_date.message}</p>
                                     )}
                                 </div>
                                 <div>
-                                    <Label htmlFor="due_date">Due Date</Label>
-                                    <CalendarFormField control={control} name="due_date" label="Due Date" />
+                                    <CalendarFormField
+                                        control={control}
+                                        name="due_date"
+                                        label={t('library.dueDate') || 'Due Date'}
+                                    />
                                     {errors.due_date && (
                                         <p className="text-sm text-destructive mt-1">{errors.due_date.message}</p>
                                     )}
@@ -806,7 +895,9 @@ export default function LibraryDistribution() {
                             </div>
 
                             <div>
-                                <Label htmlFor="deposit_amount">Deposit Amount</Label>
+                                <Label htmlFor="deposit_amount">
+                                    {t('library.depositAmount') || 'Deposit Amount'}
+                                </Label>
                                 <Input
                                     id="deposit_amount"
                                     type="number"
@@ -821,10 +912,10 @@ export default function LibraryDistribution() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseLoanDialog}>
-                                Cancel
+                                {t('common.cancel') || 'Cancel'}
                             </Button>
                             <Button type="submit" disabled={createLoan.isPending}>
-                                Assign Book
+                                {t('library.assignBook') || 'Assign Book'}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -836,17 +927,24 @@ export default function LibraryDistribution() {
             <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Return Book</DialogTitle>
+                        <DialogTitle>
+                            {t('library.returnBookTitle') || 'Return Book'}
+                        </DialogTitle>
                         <DialogDescription>
-                            Confirm return of "{selectedLoan?.book?.title}"?
+                            {t('library.returnBookConfirm', {
+                                title: selectedLoan?.book?.title ?? '',
+                            }) ||
+                                `Confirm return of "${selectedLoan?.book?.title}"?`}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsReturnDialogOpen(false)}>
-                            Cancel
+                            {t('common.cancel') || 'Cancel'}
                         </Button>
                         <Button onClick={handleConfirmReturn} disabled={returnLoan.isPending}>
-                            {returnLoan.isPending ? 'Returning...' : 'Confirm Return'}
+                            {returnLoan.isPending
+                                ? t('library.returning') || 'Returning...'
+                                : t('library.confirmReturn') || 'Confirm Return'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

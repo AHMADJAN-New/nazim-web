@@ -80,8 +80,11 @@ const TableHead = React.forwardRef<
     <th
       ref={ref}
       className={cn(
-        "h-12 px-4 align-middle font-medium text-muted-foreground",
-        isRTL ? "text-right [&:has([role=checkbox])]:pl-0" : "text-left [&:has([role=checkbox])]:pr-0",
+        // Default to centered alignment for consistent header/data alignment across the app.
+        // Specific columns can override via className (e.g. text-left/text-right).
+        "h-12 px-4 align-middle font-medium text-muted-foreground text-center",
+        // Keep checkbox column padding consistent with header in both LTR and RTL
+        isRTL ? "[&:has([role=checkbox])]:pl-0" : "[&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}
@@ -93,13 +96,21 @@ TableHead.displayName = "TableHead"
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-  <td
-    ref={ref}
-    className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
-    {...props}
-  />
-))
+>(({ className, ...props }, ref) => {
+  const { isRTL } = useLanguage();
+  return (
+    <td
+      ref={ref}
+      className={cn(
+        // Default to centered alignment for consistent columns.
+        "p-4 align-middle text-center",
+        isRTL ? "[&:has([role=checkbox])]:pl-0" : "[&:has([role=checkbox])]:pr-0",
+        className
+      )}
+      {...props}
+    />
+  );
+})
 TableCell.displayName = "TableCell"
 
 const TableCaption = React.forwardRef<

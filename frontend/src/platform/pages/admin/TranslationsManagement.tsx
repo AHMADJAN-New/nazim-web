@@ -265,9 +265,9 @@ export default function TranslationsManagement() {
     setEditValue('');
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     try {
-      exportTranslationsToExcel();
+      await exportTranslationsToExcel();
       showToast.success('Translations exported to Excel');
     } catch (error) {
       showToast.error('Failed to export translations');
@@ -539,18 +539,18 @@ export default function TranslationsManagement() {
   }
 
   return (
-    <div className="space-y-6 min-w-0 w-full">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Translations Management</h1>
-          <p className="text-muted-foreground mt-1 text-sm md:text-base">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Translations Management</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Manage application translations for all supported languages
           </p>
         </div>
       </div>
 
       {/* Status Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Keys</CardTitle>

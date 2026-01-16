@@ -72,11 +72,11 @@ export default function AllSubscriptionsPage() {
   const [viewingSubscriptionOrgId, setViewingSubscriptionOrgId] = useState<string | null>(null);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">All Subscriptions</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold">All Subscriptions</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">
           View and manage all organization subscriptions
         </p>
       </div>
@@ -88,13 +88,13 @@ export default function AllSubscriptionsPage() {
             Complete list of all organization subscriptions
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6">
           {isSubscriptionsLoading ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex items-center justify-center py-8 px-4 sm:px-0">
               <LoadingSpinner />
             </div>
           ) : subscriptionsError ? (
-            <div className="py-8 text-center">
+            <div className="py-8 text-center px-4 sm:px-0">
               <p className="text-destructive">Error loading subscriptions</p>
               {import.meta.env.DEV && (
                 <p className="text-xs mt-2 text-muted-foreground">
@@ -103,41 +103,51 @@ export default function AllSubscriptionsPage() {
               )}
             </div>
           ) : !subscriptions || subscriptions.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground">
+            <div className="py-8 text-center text-muted-foreground px-4 sm:px-0">
               <p>No subscriptions found</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Organization</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Started</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead className="text-right">Amount Paid</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                <Table className="min-w-[800px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Organization</TableHead>
+                      <TableHead className="hidden md:table-cell">Plan</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="hidden lg:table-cell">Started</TableHead>
+                      <TableHead className="hidden lg:table-cell">Expires</TableHead>
+                      <TableHead className="hidden md:table-cell text-right">Amount Paid</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
               <TableBody>
                 {subscriptions.map((sub: any) => (
                   <TableRow key={sub.id}>
                     <TableCell className="font-medium">
-                      {sub.organization?.name || 'Unknown Organization'}
+                      <div>
+                        {sub.organization?.name || 'Unknown Organization'}
+                        <div className="md:hidden mt-1">
+                          <Badge variant="outline" className="text-xs">{sub.plan?.name || 'N/A'}</Badge>
+                        </div>
+                        <div className="md:hidden mt-1 text-xs text-muted-foreground">
+                          {sub.started_at && formatDate(new Date(sub.started_at))}
+                        </div>
+                      </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <Badge variant="outline">{sub.plan?.name || 'N/A'}</Badge>
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={sub.status} />
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="hidden lg:table-cell text-muted-foreground">
                       {sub.started_at ? formatDate(new Date(sub.started_at)) : 'N/A'}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="hidden lg:table-cell text-muted-foreground">
                       {sub.expires_at ? formatDate(new Date(sub.expires_at)) : 'N/A'}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="hidden md:table-cell text-right">
                       {sub.amount_paid > 0 ? (
                         <span>
                           {sub.currency === 'AFN' ? '؋' : '$'}
@@ -153,6 +163,7 @@ export default function AllSubscriptionsPage() {
                           size="sm"
                           variant="ghost"
                           onClick={() => setViewingOrganizationId(sub.organization_id)}
+                          aria-label="View organization"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -160,8 +171,10 @@ export default function AllSubscriptionsPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => setViewingSubscriptionOrgId(sub.organization_id)}
+                          className="flex-shrink-0"
                         >
-                          Manage
+                          <span className="hidden sm:inline">Manage</span>
+                          <span className="sm:hidden">Edit</span>
                         </Button>
                       </div>
                     </TableCell>
@@ -169,6 +182,8 @@ export default function AllSubscriptionsPage() {
                 ))}
               </TableBody>
             </Table>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

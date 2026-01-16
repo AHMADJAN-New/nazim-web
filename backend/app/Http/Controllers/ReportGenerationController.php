@@ -24,7 +24,23 @@ class ReportGenerationController extends Controller
      */
     public function generate(Request $request)
     {
-        $validated = $request->validate([
+        // Determine if using a custom template (custom templates fetch their own data)
+        $hasCustomTemplate = !empty($request->input('template_name'));
+        
+        // Check if using multi-sheet Excel structure (parameters.sheets)
+        // Multi-sheet Excel reports don't need top-level columns/rows
+        $parameters = $request->input('parameters', []);
+        $hasMultiSheetStructure = !empty($parameters['sheets']) || 
+                                 !empty($request->input('parameters.sheets'));
+        
+        // Check if this is a student history report (which fetches its own data)
+        // Student history reports use parameters.student_id and build data server-side
+        $reportKey = $request->input('report_key');
+        $isStudentHistoryReport = $reportKey === 'student_lifetime_history' && 
+                                 !empty($parameters['student_id']);
+        
+        // Build validation rules conditionally
+        $rules = [
             'report_key' => 'required|string|max:100',
             'report_type' => 'required|in:pdf,excel',
             'branding_id' => 'nullable|uuid',
@@ -36,11 +52,28 @@ class ReportGenerationController extends Controller
             'notes_mode' => 'nullable|in:defaults,custom,none',
             'parameters' => 'nullable|array',
             'column_config' => 'nullable|array',
-            'columns' => 'required|array',
-            'columns.*' => 'required',
-            'rows' => 'required|array',
             'async' => 'nullable|boolean',
-        ]);
+        ];
+        
+        // Columns and rows are only required when:
+        // - NOT using a custom template
+        // - NOT using multi-sheet structure
+        // - NOT a student history report (which fetches its own data)
+        // Custom templates (like student-history) fetch their own data from parameters
+        // Multi-sheet Excel reports use parameters.sheets instead of top-level columns/rows
+        // Student history reports fetch data server-side using parameters.student_id
+        if (!$hasCustomTemplate && !$hasMultiSheetStructure && !$isStudentHistoryReport) {
+            $rules['columns'] = 'required|array';
+            $rules['columns.*'] = 'required';
+            $rules['rows'] = 'required|array';
+        } else {
+            // For custom templates, multi-sheet reports, or student history reports,
+            // columns and rows are optional (can be empty arrays)
+            $rules['columns'] = 'nullable|array';
+            $rules['rows'] = 'nullable|array';
+        }
+        
+        $validated = $request->validate($rules);
 
         // Get organization from authenticated user
         $user = $request->user();
@@ -97,9 +130,10 @@ class ReportGenerationController extends Controller
         ]);
 
         // Prepare data
+        // For custom templates, columns and rows may be empty/null (data is fetched by template)
         $data = [
-            'columns' => $validated['columns'],
-            'rows' => $validated['rows'],
+            'columns' => $validated['columns'] ?? [],
+            'rows' => $validated['rows'] ?? [],
         ];
 
         // Check if async is requested
@@ -130,7 +164,7 @@ class ReportGenerationController extends Controller
                 'title' => $config->title,
                 'parameters' => $config->parameters,
                 'column_config' => $config->columnConfig,
-                'row_count' => count($data['rows']),
+                'row_count' => count($data['rows'] ?? []),
                 'generated_by' => $config->generatedBy,
                 'status' => ReportRun::STATUS_PENDING,
                 'progress' => 0,

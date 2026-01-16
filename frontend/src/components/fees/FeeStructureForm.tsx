@@ -176,7 +176,7 @@ export function FeeStructureForm({
                 <FormControl>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder={t('fees.selectSchool')} />
+                      <SelectValue placeholder={t('common.selectSchool')} />
                     </SelectTrigger>
                     <SelectContent>
                       {schools.map((s) => (
@@ -197,7 +197,7 @@ export function FeeStructureForm({
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('fees.name')}</FormLabel>
+                <FormLabel>{t('events.name')}</FormLabel>
                 <FormControl>
                   <Input placeholder={t('fees.namePlaceholder')} {...field} />
                 </FormControl>
@@ -211,7 +211,7 @@ export function FeeStructureForm({
             name="code"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('fees.code')}</FormLabel>
+                <FormLabel>{t('events.code')}</FormLabel>
                 <FormControl>
                   <Input placeholder={t('fees.codePlaceholder')} {...field} />
                 </FormControl>
@@ -289,7 +289,7 @@ export function FeeStructureForm({
                     <SelectContent>
                       {currencies.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
-                          {c.code} {c.isBase ? `(${t('common.base')})` : ''} - {c.name}
+                          {c.code} {c.isBase ? `(${t('events.base')})` : ''} - {c.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -302,16 +302,16 @@ export function FeeStructureForm({
 
           <CalendarFormField control={form.control} name="due_date" label={t('fees.dueDate')} />
 
-          <CalendarFormField control={form.control} name="start_date" label={t('fees.startDate')} />
+          <CalendarFormField control={form.control} name="start_date" label={t('events.startDate')} />
 
-          <CalendarFormField control={form.control} name="end_date" label={t('fees.endDate')} />
+          <CalendarFormField control={form.control} name="end_date" label={t('events.endDate')} />
 
           <FormField
             control={form.control}
             name="class_academic_year_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('fees.class')}</FormLabel>
+                <FormLabel>{t('search.class')}</FormLabel>
                 <FormControl>
                   <Select
                     value={field.value}
@@ -322,7 +322,7 @@ export function FeeStructureForm({
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('fees.selectClass')} />
+                      <SelectValue placeholder={t('events.selectClass')} />
                     </SelectTrigger>
                     <SelectContent>
                       {classAcademicYears
@@ -358,7 +358,7 @@ export function FeeStructureForm({
                       ''
                     }
                     onChange={field.onChange}
-                    placeholder={t('fees.selectClass')}
+                    placeholder={t('events.selectClass')}
                   />
                 </FormControl>
                 <FormMessage />
@@ -371,7 +371,7 @@ export function FeeStructureForm({
             name="display_order"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('fees.displayOrder')}</FormLabel>
+                <FormLabel>{t('events.displayOrder')}</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -393,9 +393,9 @@ export function FeeStructureForm({
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('fees.description')}</FormLabel>
+              <FormLabel>{t('events.description')}</FormLabel>
               <FormControl>
-                <Input placeholder={t('fees.descriptionPlaceholder')} {...field} />
+                <Input placeholder={t('permissions.descriptionPlaceholder')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -408,7 +408,7 @@ export function FeeStructureForm({
             name="is_active"
             render={({ field }) => (
               <FormItem className="flex items-center gap-2">
-                <FormLabel>{t('fees.active')}</FormLabel>
+                <FormLabel>{t('events.active')}</FormLabel>
                 <FormControl>
                   <Switch checked={field.value} onCheckedChange={field.onChange} />
                 </FormControl>
@@ -421,7 +421,7 @@ export function FeeStructureForm({
             name="is_required"
             render={({ field }) => (
               <FormItem className="flex items-center gap-2">
-                <FormLabel>{t('fees.required')}</FormLabel>
+                <FormLabel>{t('events.required')}</FormLabel>
                 <FormControl>
                   <Switch checked={field.value} onCheckedChange={field.onChange} />
                 </FormControl>
@@ -433,11 +433,11 @@ export function FeeStructureForm({
         <div className="flex justify-end gap-2">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-              {t('common.cancel')}
+              {t('events.cancel')}
             </Button>
           )}
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? t('common.saving') : t('common.save')}
+            {isSubmitting ? t('events.saving') : t('events.save')}
           </Button>
         </div>
       </form>

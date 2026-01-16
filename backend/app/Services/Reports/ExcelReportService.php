@@ -34,6 +34,42 @@ use PhpOffice\PhpSpreadsheet\Worksheet\HeaderFooter;
  */
 class ExcelReportService
 {
+    /**
+     * Track temporary image files that need to be cleaned up after spreadsheet is saved
+     * @var array<string>
+     */
+    private array $tempImageFiles = [];
+
+    /**
+     * PhpSpreadsheet cannot bind arrays/objects to a cell; convert to a safe scalar.
+     *
+     * @return string|int|float|bool
+     */
+    private function normalizeSpreadsheetValue(mixed $value): string|int|float|bool
+    {
+        // Match PDF behavior for empty cells
+        if ($value === null || $value === '') {
+            return '—';
+        }
+
+        // Preserve numeric/bool types where possible (Excel treats them correctly)
+        if (is_int($value) || is_float($value) || is_bool($value)) {
+            return $value;
+        }
+
+        // Date objects -> string
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d H:i');
+        }
+
+        // Arrays/objects -> JSON string (RTL-safe, readable, no escaping noise)
+        if (is_array($value) || is_object($value)) {
+            return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '—';
+        }
+
+        // Fallback: stringify
+        return (string) $value;
+    }
     public function __construct(
         private FileStorageService $fileStorageService
     ) {}
@@ -66,6 +102,9 @@ class ExcelReportService
         string $organizationId,
         string $schoolId
     ): array {
+        // Reset temp image files tracking for this generation
+        $this->tempImageFiles = [];
+        
         $this->reportProgress($progressCallback, 0, 'Starting Excel generation');
 
         // Multi-sheet support via parameters.sheets
@@ -320,6 +359,9 @@ class ExcelReportService
         $tempPath = tempnam(sys_get_temp_dir(), 'logo_') . ".{$extension}";
         file_put_contents($tempPath, $imageData);
 
+        // Track temp file for cleanup after spreadsheet is saved
+        $this->tempImageFiles[] = $tempPath;
+
         try {
             $drawing = new Drawing();
             $drawing->setName('Logo');
@@ -329,10 +371,11 @@ class ExcelReportService
             $drawing->setWorksheet($sheet);
         } catch (\Exception $e) {
             \Log::warning("Failed to add logo: " . $e->getMessage());
-        } finally {
-            // Clean up temp file
+            // Remove from tracking if failed to add
+            $this->tempImageFiles = array_filter($this->tempImageFiles, fn($path) => $path !== $tempPath);
+            // Clean up immediately if failed
             if (file_exists($tempPath)) {
-                unlink($tempPath);
+                @unlink($tempPath);
             }
         }
     }
@@ -495,10 +538,8 @@ class ExcelReportService
                     $value = $row[$key] ?? (isset($row[$colIndex - 2]) ? $row[$colIndex - 2] : '');
                 }
 
-                // Show "—" for empty/null values (matches PDF behavior)
-                if ($value === null || $value === '') {
-                    $value = '—';
-                }
+                // Normalize to spreadsheet-safe scalar; PhpSpreadsheet cannot bind arrays/objects.
+                $value = $this->normalizeSpreadsheetValue($value);
 
                 $sheet->getCell("{$colLetter}{$currentRow}")->setValue($value);
                 $colIndex++;
@@ -586,7 +627,8 @@ class ExcelReportService
                     }
                 }
                 
-                $sheet->getCell("{$colLetter}{$totalsRow}")->setValue($value);
+                // Totals row can also contain arrays if caller passes computed structures
+                $sheet->getCell("{$colLetter}{$totalsRow}")->setValue($this->normalizeSpreadsheetValue($value));
                 $colIndex++;
             }
             
@@ -831,6 +873,9 @@ class ExcelReportService
         $tempPath = tempnam(sys_get_temp_dir(), 'watermark_') . ".{$extension}";
         file_put_contents($tempPath, $imageData);
 
+        // Track temp file for cleanup after spreadsheet is saved
+        $this->tempImageFiles[] = $tempPath;
+
         try {
             $drawing = new Drawing();
             $drawing->setName('Watermark');
@@ -872,10 +917,11 @@ class ExcelReportService
             // For true watermark effect, users may need to manually send to back in Excel
         } catch (\Exception $e) {
             \Log::warning("Failed to add watermark image: " . $e->getMessage());
-        } finally {
-            // Clean up temp file
+            // Remove from tracking if failed to add
+            $this->tempImageFiles = array_filter($this->tempImageFiles, fn($path) => $path !== $tempPath);
+            // Clean up immediately if failed
             if (file_exists($tempPath)) {
-                unlink($tempPath);
+                @unlink($tempPath);
             }
         }
     }
@@ -1021,33 +1067,47 @@ class ExcelReportService
         $tempDir = sys_get_temp_dir();
         $tempPath = $tempDir . '/' . $filename;
 
-        // Save file to temp location
-        $writer = new Xlsx($spreadsheet);
-        $writer->save($tempPath);
+        try {
+            // Save file to temp location
+            // NOTE: PhpSpreadsheet needs access to image files during save, so temp image files
+            // must still exist at this point (they're cleaned up after save)
+            $writer = new Xlsx($spreadsheet);
+            $writer->save($tempPath);
 
-        // Get file size
-        $fileSize = filesize($tempPath);
+            // Get file size
+            $fileSize = filesize($tempPath);
 
-        // Read file content
-        $fileContent = file_get_contents($tempPath);
+            // Read file content
+            $fileContent = file_get_contents($tempPath);
 
-        // Store using FileStorageService (school-scoped storage)
-        $storagePath = $this->fileStorageService->storeReport(
-            $fileContent,
-            $filename,
-            $organizationId,
-            $schoolId,
-            $config->reportKey ?? 'general'
-        );
+            // Store using FileStorageService (school-scoped storage)
+            $storagePath = $this->fileStorageService->storeReport(
+                $fileContent,
+                $filename,
+                $organizationId,
+                $schoolId,
+                $config->reportKey ?? 'general'
+            );
 
-        // Clean up temp file
-        @unlink($tempPath);
-
-        return [
-            'path' => $storagePath,
-            'filename' => $filename,
-            'size' => $fileSize,
-        ];
+            return [
+                'path' => $storagePath,
+                'filename' => $filename,
+                'size' => $fileSize,
+            ];
+        } finally {
+            // Clean up temp Excel file
+            if (file_exists($tempPath)) {
+                @unlink($tempPath);
+            }
+            
+            // Clean up all temporary image files (logos, watermarks) after spreadsheet is saved
+            foreach ($this->tempImageFiles as $imagePath) {
+                if (file_exists($imagePath)) {
+                    @unlink($imagePath);
+                }
+            }
+            $this->tempImageFiles = [];
+        }
     }
 
     /**

@@ -11,7 +11,7 @@ interface FeeAssignmentTableProps {
 export function FeeAssignmentTable({ assignments }: FeeAssignmentTableProps) {
   const { t } = useLanguage();
 
-  const formatDate = (value: Date | null) => (value ? format(value, 'yyyy-MM-dd') : t('common.notAvailable'));
+  const formatDate = (value: Date | null) => (value ? format(value, 'yyyy-MM-dd') : t('events.notAvailable'));
 
   return (
     <Table>
@@ -21,7 +21,7 @@ export function FeeAssignmentTable({ assignments }: FeeAssignmentTableProps) {
           <TableHead>{t('fees.amountAssigned')}</TableHead>
           <TableHead>{t('fees.paid')}</TableHead>
           <TableHead>{t('fees.remaining')}</TableHead>
-          <TableHead>{t('fees.status')}</TableHead>
+          <TableHead>{t('events.status')}</TableHead>
           <TableHead>{t('fees.dueDate')}</TableHead>
         </TableRow>
       </TableHeader>

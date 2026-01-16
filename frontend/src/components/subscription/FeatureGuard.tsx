@@ -53,6 +53,12 @@ export function FeatureGuard({
   const featureName = featureInfo?.name || featureKey;
   const featureDescription = featureInfo?.description || '';
   const canPurchaseAddon = featureInfo?.canPurchaseAddon ?? false;
+  const missingDependencies = featureInfo?.missingDependencies ?? [];
+  const requiredPlanName = featureInfo?.requiredPlan?.name || null;
+  const missingDependencyNames = missingDependencies.map((dependencyKey) => {
+    const dependency = features?.find((f) => f.featureKey === dependencyKey);
+    return dependency?.name || dependencyKey;
+  });
 
   return (
     <Card 
@@ -74,6 +80,16 @@ export function FeatureGuard({
         {featureDescription && (
           <p className="text-sm text-muted-foreground">
             {featureDescription}
+          </p>
+        )}
+        {missingDependencyNames.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Requires: {missingDependencyNames.join(' + ')}
+          </p>
+        )}
+        {requiredPlanName && (
+          <p className="text-xs text-muted-foreground">
+            Requires {requiredPlanName} plan
           </p>
         )}
         

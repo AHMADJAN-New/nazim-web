@@ -17,17 +17,62 @@ import {
   Languages,
   ChevronDown,
   ChevronRight,
+  DollarSign,
+  Lock,
+  Mail,
+  Key,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/hooks/useLanguage';
 import { cn } from '@/lib/utils';
 
 interface PlatformAdminLayoutProps {
   children: React.ReactNode;
+}
+
+// Language Switcher Component (without Arabic)
+function LanguageSwitcherButton() {
+  const { language, setLanguage } = useLanguage();
+  // Filter out Arabic since translations are not complete
+  const languages = [
+    { code: 'en' as const, name: 'English', flag: '🇺🇸' },
+    { code: 'ps' as const, name: 'پښتو', flag: '🇦🇫' },
+    { code: 'fa' as const, name: 'فارسی', flag: '🇮🇷' },
+    // Arabic temporarily hidden until translations are complete
+    // { code: 'ar' as const, name: 'العربية', flag: '🇸🇦' },
+  ];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="flex-shrink-0">
+          <Languages className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {languages.map((lang) => (
+          <DropdownMenuItem
+            key={lang.code}
+            onClick={() => setLanguage(lang.code)}
+            className={language === lang.code ? "bg-accent" : ""}
+          >
+            <span className="mr-2">{lang.flag}</span>
+            {lang.name}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
@@ -96,6 +141,12 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       description: 'Manage subscription plans'
     },
     { 
+      name: 'Plan Requests', 
+      href: '/platform/plan-requests', 
+      icon: Mail,
+      description: 'Enterprise plan contact requests'
+    },
+    { 
       name: 'Pending Actions', 
       href: '/platform/pending', 
       icon: Clock,
@@ -106,6 +157,24 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       href: '/platform/discount-codes', 
       icon: Ticket,
       description: 'Manage discount codes'
+    },
+    { 
+      name: 'Maintenance Fees', 
+      href: '/platform/maintenance-fees', 
+      icon: RefreshCw,
+      description: 'Manage maintenance fees across all organizations'
+    },
+    { 
+      name: 'License Fees', 
+      href: '/platform/license-fees', 
+      icon: Lock,
+      description: 'Manage license fee payments across all organizations'
+    },
+    { 
+      name: 'Revenue History', 
+      href: '/platform/revenue-history', 
+      icon: DollarSign,
+      description: 'View organization revenue history and breakdown'
     },
     { 
       name: 'Settings', 
@@ -136,6 +205,12 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       href: '/platform/maintenance-history', 
       icon: History,
       description: 'View maintenance mode history'
+    },
+    { 
+      name: 'Desktop Licenses', 
+      href: '/platform/desktop-licenses', 
+      icon: Key,
+      description: 'Generate and manage desktop application licenses'
     },
   ];
 
@@ -305,7 +380,8 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex-1" />
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <LanguageSwitcherButton />
             <Button
               variant="ghost"
               size="sm"
@@ -329,9 +405,9 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto overflow-x-auto p-4 lg:p-6">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
           {/* Debug: Log when children render */}
-          <div className="min-w-0 w-full">
+          <div className="min-w-0 w-full h-full">
             {children}
           </div>
         </main>

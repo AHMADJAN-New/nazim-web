@@ -16,6 +16,7 @@ import { useAttendanceSession, useAttendanceSessions, useCreateAttendanceSession
 import { useClasses } from '@/hooks/useClasses';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useSchools } from '@/hooks/useSchools';
+import { cn } from '@/lib/utils';
 import { showToast } from '@/lib/toast';
 import type { AttendanceSessionInsert } from '@/types/domain/attendance';
 
@@ -86,7 +87,7 @@ export default function Attendance() {
       setSessionDate('');
       setSessionRemarks('');
     } catch (error: any) {
-      showToast.error(error.message || t('common.error'));
+      showToast.error(error.message || t('events.error'));
     }
   };
 
@@ -95,8 +96,8 @@ export default function Attendance() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">{t('attendancePage.title')}</CardTitle>
-          <CardDescription className="text-sm">{t('attendancePage.subtitle')}</CardDescription>
+          <CardTitle className="text-lg">{t('nav.attendance')}</CardTitle>
+          <CardDescription className="text-sm">{t('attendancePage.markAttendanceDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="md:col-span-2 space-y-3">
@@ -158,7 +159,7 @@ export default function Attendance() {
                 <SelectValue placeholder={t('attendancePage.schoolLabel')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('common.all')}</SelectItem>
+                <SelectItem value="all">{t('subjects.all')}</SelectItem>
                 {(schools || []).map(school => (
                   <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>
                 ))}
@@ -240,19 +241,68 @@ export default function Attendance() {
               )}
             </div>
             {pagination && (
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <div>{t('pagination.showing')} {pagination.current_page} {t('pagination.of')} {pagination.last_page}</div>
-                <div className="space-x-2">
-                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>{t('common.previous')}</Button>
-                  <Button variant="outline" size="sm" disabled={page >= (pagination.last_page || 1)} onClick={() => setPage(page + 1)}>{t('common.next')}</Button>
-                  <Select value={String(pageSize)} onValueChange={value => setPageSize(Number(value))}>
-                    <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {[10, 25, 50].map(size => (
-                        <SelectItem key={size} value={String(size)}>{size} {t('pagination.perPage') || '/ page'}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-3 pt-3 border-t">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="text-sm text-muted-foreground">
+                    {t('library.showing') || 'Showing'} {pagination.from || 0} {t('events.to') || 'to'} {pagination.to || 0} {t('events.of') || 'of'} {pagination.total || 0} {t('attendancePage.sessions') || 'sessions'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Select value={String(pageSize)} onValueChange={value => setPageSize(Number(value))}>
+                      <SelectTrigger className="w-24 h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[10, 25, 50, 100].map(size => (
+                          <SelectItem key={size} value={String(size)}>{size} {t('library.perPage') || '/ page'}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex items-center justify-center gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={page <= 1 || sessionsLoading} 
+                    onClick={() => setPage(1)}
+                    className="h-8 w-8 p-0"
+                    title={t('events.first') || 'First page'}
+                  >
+                    «
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={page <= 1 || sessionsLoading} 
+                    onClick={() => setPage(page - 1)}
+                    className="h-8"
+                  >
+                    {t('events.previous') || 'Previous'}
+                  </Button>
+                  <div className="flex items-center gap-1 px-2">
+                    <span className="text-sm text-muted-foreground">
+                      {t('events.page') || 'Page'} {pagination.current_page} {t('events.of') || 'of'} {pagination.last_page}
+                    </span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={page >= (pagination.last_page || 1) || sessionsLoading} 
+                    onClick={() => setPage(page + 1)}
+                    className="h-8"
+                  >
+                    {t('events.next') || 'Next'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={page >= (pagination.last_page || 1) || sessionsLoading} 
+                    onClick={() => setPage(pagination.last_page || 1)}
+                    className="h-8 w-8 p-0"
+                    title={t('events.last') || 'Last page'}
+                  >
+                    »
+                  </Button>
                 </div>
               </div>
             )}

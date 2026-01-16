@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Notification;
 use App\Models\NotificationPreference;
+use App\Services\Subscription\FeatureGateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -11,6 +12,10 @@ use Illuminate\Support\Facades\Validator;
 
 class NotificationController extends Controller
 {
+    public function __construct(
+        private FeatureGateService $featureGateService
+    ) {
+    }
     private function getProfile(Request $request)
     {
         $user = $request->user();
@@ -66,9 +71,18 @@ class NotificationController extends Controller
             $paginated = $query->paginate($perPage, ['*'], 'page', $page);
             
             // Transform paginated results to include entity info
-            $paginated->getCollection()->transform(function ($notification) {
-                return $this->transformNotification($notification);
-            });
+            // Filter out notifications for entities the organization no longer has access to
+            $filteredCollection = $paginated->getCollection()
+                ->map(function ($notification) use ($profile) {
+                    return $this->transformNotification($notification, $profile->organization_id);
+                })
+                ->filter(function ($notification) {
+                    return $notification !== null; // Filter out null notifications (subscription denied)
+                })
+                ->values(); // Re-index the collection after filtering
+            
+            // Replace the collection with filtered results
+            $paginated->setCollection($filteredCollection);
             
             return $paginated;
         }
@@ -76,16 +90,37 @@ class NotificationController extends Controller
         $notifications = $query->limit($perPage)->get();
         
         // Transform results to include entity info
-        return $notifications->map(function ($notification) {
-            return $this->transformNotification($notification);
-        });
+        // Filter out notifications for entities the organization no longer has access to
+        return $notifications
+            ->map(function ($notification) use ($profile) {
+                return $this->transformNotification($notification, $profile->organization_id);
+            })
+            ->filter(function ($notification) {
+                return $notification !== null; // Filter out null notifications (subscription denied)
+            })
+            ->values(); // Re-index the collection after filtering
     }
 
     /**
      * Transform notification to include entity info in response
+     * Returns null if organization no longer has access to the feature
      */
-    private function transformNotification($notification)
+    private function transformNotification($notification, string $organizationId): ?array
     {
+        // Check subscription access for the entity type
+        if ($notification->event?->entity_type) {
+            $featureMap = config('subscription_features.entity_type_feature_map', []);
+            $requiredFeature = $featureMap[$notification->event->entity_type] ?? null;
+
+            // If a feature is required, check subscription access
+            if ($requiredFeature !== null) {
+                if (!$this->featureGateService->hasFeature($organizationId, $requiredFeature)) {
+                    // Organization no longer has access to this feature - filter out notification
+                    return null;
+                }
+            }
+        }
+
         return [
             'id' => $notification->id,
             'title' => $notification->title,

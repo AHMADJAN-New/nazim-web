@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, School, Shield } from "lucide-react";
+import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, Shield, Play } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -34,6 +34,7 @@ import { useNotificationCount } from "@/hooks/useNotifications";
 import { useSchools } from "@/hooks/useSchools";
 import { authApi, apiClient } from "@/lib/api/client";
 import { showToast } from "@/lib/toast";
+import { useTour } from "@/onboarding";
 
 interface UserProfile {
   full_name: string;
@@ -63,6 +64,9 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const queryClient = useQueryClient();
   const { data: schools = [] } = useSchools(authProfile?.organization_id ?? undefined);
   const { selectedSchoolId, setSelectedSchoolId, hasSchoolsAccessAll } = useSchoolContext();
+  
+  // Tour system
+  const { startTour, isTourCompleted } = useTour();
 
   // Check if user is platform admin (for main app context)
   // Only check if we're NOT on platform routes (we're in main app)
@@ -126,7 +130,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
       queryClient.clear();
       
       // Show success message briefly before reload
-      showToast.success(t("common.schoolSwitched"));
+      showToast.success(t("events.schoolSwitched"));
       
       // Hard reload after a short delay to ensure localStorage is updated and toast is visible
       // This ensures all data is refreshed with the new school context
@@ -177,11 +181,13 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
 
   const unreadNotifications = unreadCount?.count ?? 0;
 
+  // Filter out Arabic since translations are not complete
   const languages = [
     { code: "en" as const, name: "English", flag: "🇺🇸" },
     { code: "ps" as const, name: "پښتو", flag: "🇦🇫" },
     { code: "fa" as const, name: "فارسی", flag: "🇮🇷" },
-    { code: "ar" as const, name: "العربية", flag: "🇸🇦" }
+    // Arabic temporarily hidden until translations are complete
+    // { code: "ar" as const, name: "العربية", flag: "🇸🇦" }
   ];
 
   const toggleTheme = () => {
@@ -265,8 +271,8 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   };
 
   return (
-    <header className="bg-card border-b border-border sticky top-0 z-50 w-full shadow-sm flex-shrink-0">
-      <div className="px-4 py-2 flex flex-wrap items-center gap-3 sm:gap-4">
+    <header className="bg-card border-b border-border sticky top-0 z-50 w-full shadow-sm flex-shrink-0" data-tour="app-header">
+      <div className="px-4 py-2 grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] items-center gap-3 sm:gap-4">
         {/* Left Section - Sidebar trigger + Title/Breadcrumb */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <SidebarTrigger />
@@ -300,7 +306,8 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
         </div>
 
         {/* Center Section - Search */}
-        <div className="order-3 w-full sm:order-none sm:flex-1 sm:min-w-[280px] lg:max-w-xl" ref={searchContainerRef}>
+        <div className="order-3 w-full sm:order-none sm:flex sm:justify-center" ref={searchContainerRef} data-tour="search-container">
+          <div className="relative w-full sm:max-w-xl">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
@@ -312,6 +319,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               onFocus={handleSearchFocus}
               onBlur={handleSearchBlur}
               onClick={handleSearchClick}
+              data-tour="search-input"
               onKeyDown={(e) => {
                 // Allow Ctrl+K / Cmd+K to work in search input
                 if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
@@ -338,6 +346,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               anchorEl={searchInputRef.current}
             />
           </div>
+          </div>
         </div>
 
         {/* Global Search Command Palette */}
@@ -358,7 +367,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
         />
 
         {/* Right Section - Actions & Profile */}
-        <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end w-full sm:w-auto sm:flex-nowrap">
+        <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end w-full sm:w-auto sm:flex-nowrap flex-shrink-0">
           {/* Platform Admin Button */}
           {isPlatformAdmin && (
             <Button
@@ -384,7 +393,12 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               disabled={updateMySchool.isPending && !hasSchoolsAccessAll}
             >
               <SelectTrigger className="hidden md:flex w-[200px]">
-                <School className="h-4 w-4 mr-2" />
+                <img
+                  src="/nazim_logo.webp"
+                  alt="Nazim"
+                  className="h-4 w-4 mr-2 object-contain"
+                  loading="lazy"
+                />
                 <SelectValue placeholder={t("common.selectSchool") || "Select School"} />
               </SelectTrigger>
               <SelectContent>
@@ -437,11 +451,13 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
           </Button>
 
           {/* Contextual Help */}
-          <ContextualHelpButton
-            contextKey={undefined} // Will use current route automatically
-            variant="ghost"
-            size="sm"
-          />
+          <div data-tour="help-button">
+            <ContextualHelpButton
+              contextKey={undefined} // Will use current route automatically
+              variant="ghost"
+              size="sm"
+            />
+          </div>
 
           {/* Notifications */}
           <Button
@@ -449,6 +465,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
             size="sm"
             className="relative"
             onClick={() => setIsNotificationsOpen(true)}
+            data-tour="notifications"
           >
             <Bell className="h-4 w-4" />
             {unreadNotifications > 0 && (
@@ -464,7 +481,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
           {/* User Profile */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0" data-tour="user-menu">
                 <Avatar className="h-8 w-8">
                   <AvatarImage
                     src={profile?.avatar_url || undefined}
@@ -507,6 +524,10 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               <DropdownMenuItem onClick={() => navigate('/settings/user')}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => startTour('appCore')}>
+                <Play className="mr-2 h-4 w-4" />
+                <span>{t('onboarding.actions.takeTour') || 'Take App Tour'}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={signOut} className="text-destructive">

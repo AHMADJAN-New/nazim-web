@@ -1,4 +1,5 @@
 import {
+  type LucideIcon,
   Users,
   GraduationCap,
   UserCheck,
@@ -18,7 +19,6 @@ import {
   ClipboardList,
   MessageSquare,
   BarChart3,
-  PieChart,
   Activity,
   Target,
   Gift,
@@ -34,10 +34,8 @@ import {
 } from "lucide-react";
 import { useMemo, useEffect, useState, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
+// Lazy load recharts to reduce initial bundle size
 import { 
-  PieChart as RechartsPieChart, 
-  Pie,
-  Cell, 
   ResponsiveContainer, 
   BarChart, 
   Bar, 
@@ -49,8 +47,9 @@ import {
   Line,
   Area,
   AreaChart,
-  Legend
-} from "recharts";
+  Legend,
+  ChartSkeleton
+} from "@/components/charts/LazyChart";
 
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -66,6 +65,7 @@ import { useDashboardStats, useStudentsByClass, useWeeklyAttendance, useMonthlyF
 import { useLanguage } from "@/hooks/useLanguage";
 import { useRecentActivities } from "@/hooks/useRecentActivities";
 import { useUpcomingEvents } from "@/hooks/useUpcomingEvents";
+import { useHasAnyPermissionAndFeature, useHasPermissionAndFeature } from "@/hooks/usePermissions";
 import { useUserRole } from "@/hooks/useUserRole";
 import { formatDate, formatDateTime } from '@/lib/utils';
 
@@ -77,12 +77,118 @@ const AttendanceDashboard = lazy(() => import('@/pages/dashboard/AttendanceDashb
 const LeaveRequestsDashboard = lazy(() => import('@/pages/dashboard/LeaveRequestsDashboard').then(m => ({ default: m.default })));
 const DmsDashboard = lazy(() => import('@/pages/dms/DmsDashboard').then(m => ({ default: m.default })));
 
+const FINANCE_PERMISSIONS = [
+  'finance_accounts.read',
+  'income_entries.read',
+  'expense_entries.read',
+  'finance_projects.read',
+  'donors.read',
+  'finance_reports.read',
+  'currencies.read',
+  'exchange_rates.read',
+  'fees.read',
+  'fees.payments.create',
+  'fees.exceptions.create',
+  'finance_documents.read',
+];
+
+const LIBRARY_PERMISSIONS = [
+  'library_books.read',
+  'library_categories.read',
+  'library_loans.read',
+];
+
+const DOCUMENTS_PERMISSIONS = [
+  'dms.incoming.read',
+  'dms.outgoing.read',
+  'dms.templates.read',
+  'dms.letterheads.read',
+  'dms.letter_types.read',
+  'dms.departments.read',
+  'dms.reports.read',
+  'dms.settings.read',
+  'dms.archive.read',
+];
+
+const ATTENDANCE_PERMISSIONS = [
+  'attendance_sessions.read',
+  'attendance_sessions.report',
+];
+
+const LEAVE_PERMISSIONS = [
+  'leave_requests.read',
+];
+
+const ASSETS_PERMISSIONS = [
+  'assets.read',
+];
+
+const EXAMS_PERMISSIONS = [
+  'exams.read',
+];
+
 export default function Dashboard() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { role, loading: roleLoading } = useUserRole();
   const [activeTab, setActiveTab] = useState<string>('overview');
+
+  const canSeeStudents = useHasPermissionAndFeature('students.read') === true;
+  const canSeeStaff = useHasPermissionAndFeature('staff.read') === true;
+  const canSeeClasses = useHasPermissionAndFeature('classes.read') === true;
+  const canSeeBuildings = useHasPermissionAndFeature('buildings.read') === true;
+  const canSeeRooms = useHasPermissionAndFeature('rooms.read') === true;
+  const canSeeFinanceTab = useHasAnyPermissionAndFeature(FINANCE_PERMISSIONS) === true;
+  const canSeeAssetsTab = useHasAnyPermissionAndFeature(ASSETS_PERMISSIONS) === true;
+  const canSeeLibraryTab = useHasAnyPermissionAndFeature(LIBRARY_PERMISSIONS) === true;
+  const canSeeAttendanceTab = useHasAnyPermissionAndFeature(ATTENDANCE_PERMISSIONS) === true;
+  const canSeeLeaveTab = useHasAnyPermissionAndFeature(LEAVE_PERMISSIONS) === true;
+  const canSeeDocumentsTab = useHasAnyPermissionAndFeature(DOCUMENTS_PERMISSIONS) === true;
+  const canSeeExams = useHasAnyPermissionAndFeature(EXAMS_PERMISSIONS) === true;
+
+  const allowedTabs = useMemo(() => {
+    const tabs = ['overview'];
+    if (canSeeFinanceTab) tabs.push('finance');
+    if (canSeeAssetsTab) tabs.push('assets');
+    if (canSeeLibraryTab) tabs.push('library');
+    if (canSeeAttendanceTab) tabs.push('attendance');
+    if (canSeeLeaveTab) tabs.push('leave');
+    if (canSeeDocumentsTab) tabs.push('documents');
+    return tabs;
+  }, [
+    canSeeFinanceTab,
+    canSeeAssetsTab,
+    canSeeLibraryTab,
+    canSeeAttendanceTab,
+    canSeeLeaveTab,
+    canSeeDocumentsTab,
+  ]);
+
+  useEffect(() => {
+    if (!allowedTabs.includes(activeTab)) {
+      setActiveTab(allowedTabs[0] || 'overview');
+    }
+  }, [activeTab, allowedTabs]);
+
+  const availableTabLabels = useMemo(() => {
+    const labels: string[] = [];
+    if (canSeeFinanceTab) labels.push(t('nav.finance') || 'Finance');
+    if (canSeeAssetsTab) labels.push(t('nav.assets') || 'Assets');
+    if (canSeeLibraryTab) labels.push(t('nav.library') || 'Library');
+    if (canSeeAttendanceTab) labels.push(t('nav.attendance') || 'Attendance');
+    if (canSeeLeaveTab) labels.push(t('nav.leaveRequests') || 'Leave Requests');
+    if (canSeeDocumentsTab) labels.push(t('students.documents') || 'Documents');
+    return labels;
+  }, [
+    canSeeFinanceTab,
+    canSeeAssetsTab,
+    canSeeLibraryTab,
+    canSeeAttendanceTab,
+    canSeeLeaveTab,
+    canSeeDocumentsTab,
+    t,
+  ]);
 
   // CRITICAL: Event users should not access dashboard - redirect to their event
   useEffect(() => {
@@ -113,77 +219,97 @@ export default function Dashboard() {
   };
 
   // Create stats cards from real data
-  const statsCards = dashboardStats ? [
-    {
-      title: t('dashboard.totalStudents') || "Total Students",
+  const statsCards = dashboardStats ? ([
+    canSeeStudents ? {
+      title: t('students.totalStudents') || "Total Students",
       value: dashboardStats.totalStudents.toLocaleString(),
       icon: Users,
       description: t('dashboard.activeStudents') || "Active students",
       color: "primary" as const,
       onClick: "/students"
-    },
-    {
+    } : null,
+    canSeeStaff ? {
       title: t('dashboard.totalStaff') || "Total Staff",
       value: dashboardStats.totalStaff.toLocaleString(),
       icon: GraduationCap,
       description: t('dashboard.activeStaff') || "Active staff",
       color: "secondary" as const,
       onClick: "/staff"
-    },
-    {
+    } : null,
+    canSeeClasses ? {
       title: t('dashboard.totalClasses') || "Total Classes",
       value: dashboardStats.totalClasses.toLocaleString(),
       icon: BookOpen,
       description: t('dashboard.activeClasses') || "Active classes",
       color: "primary" as const,
       onClick: "/settings/classes"
-    },
-    {
-      title: t('dashboard.totalRooms') || "Total Rooms",
+    } : null,
+    canSeeRooms ? {
+      title: t('hostel.totalRooms') || "Total Rooms",
       value: dashboardStats.totalRooms.toLocaleString(),
       icon: Building,
       description: t('dashboard.availableRooms') || "Available rooms",
       color: "secondary" as const,
       onClick: "/settings/buildings"
-    },
-    {
+    } : null,
+    canSeeBuildings ? {
       title: t('dashboard.totalBuildings') || "Total Buildings",
       value: dashboardStats.totalBuildings.toLocaleString(),
       icon: Home,
       description: t('dashboard.schoolBuildings') || "School buildings",
       color: "primary" as const,
       onClick: "/settings/buildings"
-    }
-  ] : [];
+    } : null
+  ].filter(Boolean) as Array<{
+    title: string;
+    value: string;
+    icon: LucideIcon;
+    description: string;
+    color: "primary" | "secondary";
+    onClick: string;
+  }>) : [];
 
-  const genderDistribution = dashboardStats ? [
-    { name: t('students.male') || "Male", value: dashboardStats.studentGender.male, color: "#2563eb" },
-    { name: t('students.female') || "Female", value: dashboardStats.studentGender.female, color: "#dc2626" }
-  ] : [];
 
   if (statsLoading || roleLoading) {
     return (
-      <MainLayout title={t('dashboard.title') || "Dashboard"}>
-        <LoadingSpinner />
-      </MainLayout>
+        <MainLayout title={t('dashboard.title') || "Dashboard"}>
+          <LoadingSpinner />
+        </MainLayout>
     );
   }
 
-  const renderDefaultDashboard = () => (
-    <>
+  const otherTabsMessage = availableTabLabels.length > 0
+    ? `${t('dashboard.viewTabsForDetails') || 'View other tabs for'} ${availableTabLabels.join(', ')}`
+    : (t('dashboard.viewTabsForDetails') || 'View other tabs for more details');
+
+  const renderDefaultDashboard = () => {
+    const quickActions = ([
+      canSeeStudents ? { label: "Students", icon: Users, href: "/students", color: "hover:bg-primary/10 hover:border-primary" } : null,
+      canSeeStaff ? { label: "Staff", icon: GraduationCap, href: "/staff", color: "hover:bg-secondary/10 hover:border-secondary" } : null,
+      canSeeClasses ? { label: "Classes", icon: BookOpen, href: "/settings/classes", color: "hover:bg-primary/10 hover:border-primary" } : null,
+      canSeeBuildings ? { label: "Buildings", icon: Building, href: "/settings/buildings", color: "hover:bg-accent/10 hover:border-accent" } : null,
+    ].filter(Boolean) as Array<{
+      label: string;
+      icon: LucideIcon;
+      href: string;
+      color: string;
+    }>);
+
+    return (
+      <div data-tour="dashboard">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-primary to-primary/80 p-4 md:p-8 rounded-xl text-primary-foreground shadow-lg mb-6 md:mb-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t('dashboard.welcomeBack') || 'Welcome back'}, {user?.email?.split('@')[0] || t('common.user') || 'User'}!</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t('dashboard.welcomeBack') || 'Welcome back'}, {user?.email?.split('@')[0] || t('events.user') || 'User'}!</h1>
             <p className="text-primary-foreground/90 text-sm sm:text-lg">
               {t('dashboard.welcomeMessage') || "Here's what's happening at your school today"}
             </p>
           </div>
           <div className="hidden md:flex items-center gap-2 text-primary-foreground/80">
             <Calendar className="h-5 w-5" />
-            <span className="hidden lg:inline">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-            <span className="lg:hidden">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            <span className="hidden lg:inline">{formatDate(new Date())}</span>
+            <span className="lg:hidden">{formatDate(new Date())}</span>
           </div>
         </div>
       </div>
@@ -204,7 +330,7 @@ export default function Dashboard() {
       {/* Analytics Section - Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
         {/* Students by Class - Bar Chart */}
-        {studentsByClass && studentsByClass.length > 0 && (
+        {canSeeClasses && studentsByClass && studentsByClass.length > 0 && (
           <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -218,87 +344,44 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <ChartContainer
-                config={{
-                  students: {
-                    label: "Students",
-                    color: "hsl(var(--primary))",
-                  },
-                }}
-                className="h-[200px] sm:h-[220px] md:h-[250px] lg:h-[300px] w-full"
-              >
-                <BarChart data={studentsByClass}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis 
-                    dataKey="class" 
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    className="text-xs"
-                  />
-                  <YAxis 
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    className="text-xs"
-                  />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar 
-                    dataKey="students" 
-                    fill="var(--color-students)"
-                    radius={[8, 8, 0, 0]}
-                  />
-                </BarChart>
-              </ChartContainer>
+              <Suspense fallback={<ChartSkeleton />}>
+                <ChartContainer
+                  config={{
+                    students: {
+                      label: "Students",
+                      color: "hsl(var(--primary))",
+                    },
+                  }}
+                  className="h-[200px] sm:h-[220px] md:h-[250px] lg:h-[300px] w-full"
+                >
+                  <BarChart data={studentsByClass}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis 
+                      dataKey="class" 
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      className="text-xs"
+                    />
+                    <YAxis 
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      className="text-xs"
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar 
+                      dataKey="students" 
+                      fill="var(--color-students)"
+                      radius={[8, 8, 0, 0]}
+                    />
+                  </BarChart>
+                </ChartContainer>
+              </Suspense>
             </CardContent>
           </Card>
         )}
 
-        {/* Gender Distribution - Pie Chart */}
-        {dashboardStats && (dashboardStats.studentGender.male > 0 || dashboardStats.studentGender.female > 0) && (
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/students")}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <PieChart className="h-5 w-5 text-secondary" />
-                {t('dashboard.genderDistribution') || 'Gender Distribution'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={{
-                  male: {
-                    label: "Male",
-                    color: "hsl(221.2 83.2% 53.3%)",
-                  },
-                  female: {
-                    label: "Female",
-                    color: "hsl(0 72.2% 50.6%)",
-                  },
-                }}
-                className="mx-auto aspect-square max-h-[150px] sm:max-h-[180px] md:max-h-[200px] lg:max-h-[250px] w-full"
-              >
-                <RechartsPieChart>
-                  <Pie
-                    data={genderDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {genderDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <ChartLegend content={<ChartLegendContent />} />
-                </RechartsPieChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       {/* Quick Actions & Recent Activity Section */}
@@ -313,12 +396,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
-              {[
-                { label: "Students", icon: Users, href: "/students", color: "hover:bg-primary/10 hover:border-primary" },
-                { label: "Staff", icon: GraduationCap, href: "/staff", color: "hover:bg-secondary/10 hover:border-secondary" },
-                { label: "Classes", icon: BookOpen, href: "/settings/classes", color: "hover:bg-primary/10 hover:border-primary" },
-                { label: "Buildings", icon: Building, href: "/settings/buildings", color: "hover:bg-accent/10 hover:border-accent" }
-              ].map((action, index) => (
+              {quickActions.map((action, index) => (
                 <Button
                   key={index}
                   variant="outline"
@@ -342,7 +420,7 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {upcomingExams && upcomingExams.length > 0 && (
+            {canSeeExams && upcomingExams && upcomingExams.length > 0 && (
               <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20">
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4 text-primary" />
@@ -354,88 +432,113 @@ export default function Dashboard() {
               </div>
             )}
             <div className="text-sm text-muted-foreground text-center py-4">
-              {t('dashboard.viewTabsForDetails') || 'View other tabs for Finance, Assets, Library, Attendance, Leave Requests, and Documents'}
+              {otherTabsMessage}
             </div>
           </CardContent>
         </Card>
       </div>
-    </>
-  );
+      </div>
+    );
+  };
 
   return (
-    <MainLayout title={t('dashboard.title') || "Dashboard"}>
+      <MainLayout title={t('dashboard.title') || "Dashboard"}>
       <div className="space-y-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 h-auto p-1">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" data-tour="dashboard-tabs">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 h-auto p-1" data-tour="dashboard-tabs-list">
+            <TabsTrigger value="overview" className="flex items-center gap-2" data-tour="tab-overview">
               <Home className="h-4 w-4" />
               <span className="hidden sm:inline">{t('dashboard.overview') || 'Overview'}</span>
             </TabsTrigger>
-            <TabsTrigger value="finance" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('nav.finance') || 'Finance'}</span>
-            </TabsTrigger>
-            <TabsTrigger value="assets" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('nav.assets') || 'Assets'}</span>
-            </TabsTrigger>
-            <TabsTrigger value="library" className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('nav.library') || 'Library'}</span>
-            </TabsTrigger>
-            <TabsTrigger value="attendance" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('nav.attendance') || 'Attendance'}</span>
-            </TabsTrigger>
-            <TabsTrigger value="leave" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('nav.leaveRequests') || 'Leave Requests'}</span>
-            </TabsTrigger>
-            <TabsTrigger value="documents" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('nav.documents') || 'Documents'}</span>
-            </TabsTrigger>
+            {canSeeFinanceTab && (
+              <TabsTrigger value="finance" className="flex items-center gap-2" data-tour="tab-finance">
+                <DollarSign className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('nav.finance') || 'Finance'}</span>
+              </TabsTrigger>
+            )}
+            {canSeeAssetsTab && (
+              <TabsTrigger value="assets" className="flex items-center gap-2" data-tour="tab-assets">
+                <Package className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('nav.assets') || 'Assets'}</span>
+              </TabsTrigger>
+            )}
+            {canSeeLibraryTab && (
+              <TabsTrigger value="library" className="flex items-center gap-2" data-tour="tab-library">
+                <BookOpen className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('nav.library') || 'Library'}</span>
+              </TabsTrigger>
+            )}
+            {canSeeAttendanceTab && (
+              <TabsTrigger value="attendance" className="flex items-center gap-2" data-tour="tab-attendance">
+                <Activity className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('nav.attendance') || 'Attendance'}</span>
+              </TabsTrigger>
+            )}
+            {canSeeLeaveTab && (
+              <TabsTrigger value="leave" className="flex items-center gap-2" data-tour="tab-leave">
+                <Calendar className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('nav.leaveRequests') || 'Leave Requests'}</span>
+              </TabsTrigger>
+            )}
+            {canSeeDocumentsTab && (
+              <TabsTrigger value="documents" className="flex items-center gap-2" data-tour="tab-documents">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('students.documents') || 'Documents'}</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="overview" className="mt-6">
             {renderDefaultDashboard()}
           </TabsContent>
 
-          <TabsContent value="finance" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading finance dashboard...'} />}>
-              <FinanceDashboard />
-            </Suspense>
-          </TabsContent>
+          {canSeeFinanceTab && (
+            <TabsContent value="finance" className="mt-6">
+              <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading finance dashboard...'} />}>
+                <FinanceDashboard />
+              </Suspense>
+            </TabsContent>
+          )}
 
-          <TabsContent value="assets" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading assets dashboard...'} />}>
-              <AssetsDashboard />
-            </Suspense>
-          </TabsContent>
+          {canSeeAssetsTab && (
+            <TabsContent value="assets" className="mt-6">
+              <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading assets dashboard...'} />}>
+                <AssetsDashboard />
+              </Suspense>
+            </TabsContent>
+          )}
 
-          <TabsContent value="library" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading library dashboard...'} />}>
-              <LibraryDashboard />
-            </Suspense>
-          </TabsContent>
+          {canSeeLibraryTab && (
+            <TabsContent value="library" className="mt-6">
+              <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading library dashboard...'} />}>
+                <LibraryDashboard />
+              </Suspense>
+            </TabsContent>
+          )}
 
-          <TabsContent value="attendance" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading attendance dashboard...'} />}>
-              <AttendanceDashboard />
-            </Suspense>
-          </TabsContent>
+          {canSeeAttendanceTab && (
+            <TabsContent value="attendance" className="mt-6">
+              <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading attendance dashboard...'} />}>
+                <AttendanceDashboard />
+              </Suspense>
+            </TabsContent>
+          )}
 
-          <TabsContent value="leave" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading leave requests dashboard...'} />}>
-              <LeaveRequestsDashboard />
-            </Suspense>
-          </TabsContent>
+          {canSeeLeaveTab && (
+            <TabsContent value="leave" className="mt-6">
+              <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading leave requests dashboard...'} />}>
+                <LeaveRequestsDashboard />
+              </Suspense>
+            </TabsContent>
+          )}
 
-          <TabsContent value="documents" className="mt-6">
-            <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading documents dashboard...'} />}>
-              <DmsDashboard />
-            </Suspense>
-          </TabsContent>
+          {canSeeDocumentsTab && (
+            <TabsContent value="documents" className="mt-6">
+              <Suspense fallback={<LoadingSpinner text={t('common.loading') || 'Loading documents dashboard...'} />}>
+                <DmsDashboard />
+              </Suspense>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </MainLayout>

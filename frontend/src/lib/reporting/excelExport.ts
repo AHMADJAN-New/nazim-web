@@ -1,5 +1,5 @@
 // src/lib/reporting/excelExport.ts
-import * as XLSX from 'xlsx';
+import { loadXlsx } from '@/lib/xlsx-loader';
 
 import type { ReportDefinition } from './types';
 
@@ -7,12 +7,15 @@ import type { School } from '@/hooks/useSchools';
 
 type AnyRow = Record<string, any>;
 
-export function exportReportToExcel<T extends AnyRow>(
+export async function exportReportToExcel<T extends AnyRow>(
   definition: ReportDefinition<T>,
   rows: T[],
   school: School,
   filtersSummary?: string,
 ) {
+  // Lazy load xlsx library
+  const XLSX = await loadXlsx();
+
   const { columns, title, fileName, showRowNumber = true, rowNumberLabel = '#' } = definition;
 
   // Build header row

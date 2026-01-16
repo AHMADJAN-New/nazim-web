@@ -86,7 +86,7 @@ export function FinanceDocumentPreviewDialog({
 
           if (!response.ok) {
             if (response.status === 401) {
-              showToast.error(t('common.unauthorized') || 'Unauthorized. Please log in again.');
+              showToast.error(t('events.unauthorized') || 'Unauthorized. Please log in again.');
               onOpenChange(false);
               return;
             }
@@ -156,7 +156,7 @@ export function FinanceDocumentPreviewDialog({
                 disabled={downloadDocument.isPending}
               >
                 <Download className="h-4 w-4 mr-2" />
-                {t('common.download')}
+                {t('events.download')}
               </Button>
               <Button
                 variant="ghost"
@@ -190,7 +190,7 @@ export function FinanceDocumentPreviewDialog({
               {/* Title */}
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
-                  {t('finance.documentTitle')}
+                  {t('courses.documentTitle')}
                 </label>
                 <p className="mt-1 text-sm font-medium">{document.title}</p>
               </div>
@@ -199,7 +199,7 @@ export function FinanceDocumentPreviewDialog({
               {document.description && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    {t('finance.documentDescription')}
+                    {t('courses.documentDescription')}
                   </label>
                   <p className="mt-1 text-sm">{document.description}</p>
                 </div>
@@ -259,7 +259,7 @@ export function FinanceDocumentPreviewDialog({
               {document.mime_type && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    {t('common.type')}
+                    {t('events.type')}
                   </label>
                   <p className="mt-1 text-sm">{document.mime_type}</p>
                 </div>
@@ -335,7 +335,7 @@ export function FinanceDocumentPreviewDialog({
                       </p>
                       <Button variant="outline" onClick={handleDownload}>
                         <Download className="h-4 w-4 mr-2" />
-                        {t('common.download')}
+                        {t('events.download')}
                       </Button>
                     </>
                   )}

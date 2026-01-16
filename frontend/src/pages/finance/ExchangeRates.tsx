@@ -191,11 +191,19 @@ export default function ExchangeRates() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="effectiveDate">{t('finance.effectiveDate') || 'Effective Date'} *</Label>
-                    <CalendarDatePicker date={formData.effectiveDate ? new Date(formData.effectiveDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
+                    <CalendarDatePicker
+                        date={formData.effectiveDate ? new Date(formData.effectiveDate) : undefined}
+                        onDateChange={(date) =>
+                            setFormData({
+                                ...formData,
+                                effectiveDate: date ? date.toISOString().split('T')[0] : '',
+                            })
+                        }
+                    />
                 </div>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="notes">{t('common.notes') || 'Notes'}</Label>
+                <Label htmlFor="notes">{t('events.notes') || 'Notes'}</Label>
                 <Textarea
                     id="notes"
                     value={formData.notes || ''}
@@ -210,21 +218,21 @@ export default function ExchangeRates() {
                     checked={formData.isActive}
                     onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
                 />
-                <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
+                <Label htmlFor="isActive">{t('events.active') || 'Active'}</Label>
             </div>
             <DialogFooter>
                 <Button 
                     type="submit" 
                     disabled={loading || !formData.fromCurrencyId || !formData.toCurrencyId || formData.rate <= 0}
                 >
-                    {editRate ? t('common.update') || 'Update' : t('common.create') || 'Create'}
+                    {editRate ? t('events.update') || 'Update' : t('events.create') || 'Create'}
                 </Button>
             </DialogFooter>
         </form>
     );
 
     return (
-        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
             <PageHeader
                 title={t('finance.exchangeRates') || 'Exchange Rates'}
                 description={t('finance.exchangeRatesDescription') || 'Manage currency exchange rates for conversion'}
@@ -268,9 +276,9 @@ export default function ExchangeRates() {
                                 <TableHead>{t('finance.toCurrency') || 'To'}</TableHead>
                                 <TableHead>{t('finance.exchangeRate') || 'Rate'}</TableHead>
                                 <TableHead>{t('finance.effectiveDate') || 'Effective Date'}</TableHead>
-                                <TableHead>{t('common.notes') || 'Notes'}</TableHead>
-                                <TableHead>{t('common.status') || 'Status'}</TableHead>
-                                <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                                <TableHead>{t('events.notes') || 'Notes'}</TableHead>
+                                <TableHead>{t('events.status') || 'Status'}</TableHead>
+                                <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -329,7 +337,7 @@ export default function ExchangeRates() {
                                                         : 'bg-gray-500 hover:bg-gray-600 text-white dark:bg-gray-600 dark:hover:bg-gray-700'
                                                 }
                                             >
-                                                {rate.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
+                                                {rate.isActive ? t('events.active') || 'Active' : t('events.inactive') || 'Inactive'}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
@@ -383,15 +391,15 @@ export default function ExchangeRates() {
             <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('events.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('finance.deleteExchangeRateWarning') || 'Are you sure you want to delete this exchange rate? This action cannot be undone.'}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                            {t('common.delete') || 'Delete'}
+                            {t('events.delete') || 'Delete'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

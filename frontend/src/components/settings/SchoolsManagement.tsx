@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Pencil, Trash2, Search, School as SchoolIcon, Shield, Eye, Droplet } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -50,6 +50,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useSchools, useCreateSchool, useUpdateSchool, useDeleteSchool, type School } from '@/hooks/useSchools';
 import { useHasFeature } from '@/hooks/useSubscription';
+import { schoolsApi } from '@/lib/api/client';
 
 const schoolSchema = z.object({
   school_name: z.string().min(1, 'School name is required').max(255, 'School name must be 255 characters or less'),
@@ -104,14 +105,23 @@ export function SchoolsManagement() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
   const [selectedSchoolForWatermarks, setSelectedSchoolForWatermarks] = useState<string | null>(null);
+  // Logo URLs for details dialog
+  const [detailsPrimaryLogoUrl, setDetailsPrimaryLogoUrl] = useState<string | null>(null);
+  const [detailsSecondaryLogoUrl, setDetailsSecondaryLogoUrl] = useState<string | null>(null);
+  const [detailsMinistryLogoUrl, setDetailsMinistryLogoUrl] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [organizationFilter, setOrganizationFilter] = useState<string>('all');
   const [primaryLogoFile, setPrimaryLogoFile] = useState<File | null>(null);
   const [secondaryLogoFile, setSecondaryLogoFile] = useState<File | null>(null);
   const [ministryLogoFile, setMinistryLogoFile] = useState<File | null>(null);
-  const [existingPrimaryLogo, setExistingPrimaryLogo] = useState<{ binary: string; mimeType: string; filename: string } | null>(null);
-  const [existingSecondaryLogo, setExistingSecondaryLogo] = useState<{ binary: string; mimeType: string; filename: string } | null>(null);
-  const [existingMinistryLogo, setExistingMinistryLogo] = useState<{ binary: string; mimeType: string; filename: string } | null>(null);
+  // Store blob URLs for existing logos (fetched on-demand)
+  const [existingPrimaryLogoUrl, setExistingPrimaryLogoUrl] = useState<string | null>(null);
+  const [existingSecondaryLogoUrl, setExistingSecondaryLogoUrl] = useState<string | null>(null);
+  const [existingMinistryLogoUrl, setExistingMinistryLogoUrl] = useState<string | null>(null);
+  // Store metadata for existing logos
+  const [existingPrimaryLogoMeta, setExistingPrimaryLogoMeta] = useState<{ mimeType: string; filename: string } | null>(null);
+  const [existingSecondaryLogoMeta, setExistingSecondaryLogoMeta] = useState<{ mimeType: string; filename: string } | null>(null);
+  const [existingMinistryLogoMeta, setExistingMinistryLogoMeta] = useState<{ mimeType: string; filename: string } | null>(null);
 
   const {
     register,
@@ -142,6 +152,150 @@ export function SchoolsManagement() {
       is_active: true,
     },
   });
+
+  // Fetch logos on-demand when a school is selected for editing
+  useEffect(() => {
+    if (!selectedSchool) {
+      return;
+    }
+
+    const school = schools?.find((s) => s.id === selectedSchool);
+    if (!school) {
+      return;
+    }
+
+    // Fetch logos only if metadata indicates they exist
+    const fetchLogos = async () => {
+      try {
+        // Primary logo
+        if (school.primaryLogoMimeType) {
+          const url = await schoolsApi.getLogo(selectedSchool, 'primary');
+          if (url) {
+            setExistingPrimaryLogoUrl(url);
+          }
+        }
+
+        // Secondary logo
+        if (school.secondaryLogoMimeType) {
+          const url = await schoolsApi.getLogo(selectedSchool, 'secondary');
+          if (url) {
+            setExistingSecondaryLogoUrl(url);
+          }
+        }
+
+        // Ministry logo
+        if (school.ministryLogoMimeType) {
+          const url = await schoolsApi.getLogo(selectedSchool, 'ministry');
+          if (url) {
+            setExistingMinistryLogoUrl(url);
+          }
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[SchoolsManagement] Error fetching logos:', error);
+        }
+      }
+    };
+
+    fetchLogos();
+
+    // Cleanup function to revoke blob URLs when component unmounts or school changes
+    return () => {
+      if (existingPrimaryLogoUrl) {
+        URL.revokeObjectURL(existingPrimaryLogoUrl);
+      }
+      if (existingSecondaryLogoUrl) {
+        URL.revokeObjectURL(existingSecondaryLogoUrl);
+      }
+      if (existingMinistryLogoUrl) {
+        URL.revokeObjectURL(existingMinistryLogoUrl);
+      }
+    };
+  }, [selectedSchool, schools]);
+
+  // Cleanup blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (existingPrimaryLogoUrl) {
+        URL.revokeObjectURL(existingPrimaryLogoUrl);
+      }
+      if (existingSecondaryLogoUrl) {
+        URL.revokeObjectURL(existingSecondaryLogoUrl);
+      }
+      if (existingMinistryLogoUrl) {
+        URL.revokeObjectURL(existingMinistryLogoUrl);
+      }
+      if (detailsPrimaryLogoUrl) {
+        URL.revokeObjectURL(detailsPrimaryLogoUrl);
+      }
+      if (detailsSecondaryLogoUrl) {
+        URL.revokeObjectURL(detailsSecondaryLogoUrl);
+      }
+      if (detailsMinistryLogoUrl) {
+        URL.revokeObjectURL(detailsMinistryLogoUrl);
+      }
+    };
+  }, []);
+
+  // Fetch logos for details dialog when it opens
+  useEffect(() => {
+    if (!isDetailsDialogOpen || !selectedSchool) {
+      // Clean up when dialog closes
+      if (detailsPrimaryLogoUrl) {
+        URL.revokeObjectURL(detailsPrimaryLogoUrl);
+        setDetailsPrimaryLogoUrl(null);
+      }
+      if (detailsSecondaryLogoUrl) {
+        URL.revokeObjectURL(detailsSecondaryLogoUrl);
+        setDetailsSecondaryLogoUrl(null);
+      }
+      if (detailsMinistryLogoUrl) {
+        URL.revokeObjectURL(detailsMinistryLogoUrl);
+        setDetailsMinistryLogoUrl(null);
+      }
+      return;
+    }
+
+    const school = schools?.find((s) => s.id === selectedSchool);
+    if (!school) {
+      return;
+    }
+
+    // Fetch logos only if metadata indicates they exist
+    const fetchLogos = async () => {
+      try {
+        // Primary logo
+        if (school.primaryLogoMimeType) {
+          const url = await schoolsApi.getLogo(selectedSchool, 'primary');
+          if (url) {
+            setDetailsPrimaryLogoUrl(url);
+          }
+        }
+
+        // Secondary logo
+        if (school.secondaryLogoMimeType) {
+          const url = await schoolsApi.getLogo(selectedSchool, 'secondary');
+          if (url) {
+            setDetailsSecondaryLogoUrl(url);
+          }
+        }
+
+        // Ministry logo
+        if (school.ministryLogoMimeType) {
+          const url = await schoolsApi.getLogo(selectedSchool, 'ministry');
+          if (url) {
+            setDetailsMinistryLogoUrl(url);
+          }
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[SchoolsManagement] Error fetching logos for details:', error);
+        }
+      }
+    };
+
+    fetchLogos();
+  }, [isDetailsDialogOpen, selectedSchool, schools]);
 
   const filteredSchools = schools?.filter((school) => {
     const query = (searchQuery || '').toLowerCase();
@@ -191,22 +345,33 @@ export function SchoolsManagement() {
         });
         setSelectedSchool(schoolId);
         
-        // Store existing logos for preview
-        setExistingPrimaryLogo(school.primaryLogoBinary && school.primaryLogoMimeType ? {
-          binary: school.primaryLogoBinary,
+        // Store metadata for existing logos (binary data is no longer in response)
+        setExistingPrimaryLogoMeta(school.primaryLogoMimeType ? {
           mimeType: school.primaryLogoMimeType,
           filename: school.primaryLogoFilename || 'primary_logo.png',
         } : null);
-        setExistingSecondaryLogo(school.secondaryLogoBinary && school.secondaryLogoMimeType ? {
-          binary: school.secondaryLogoBinary,
+        setExistingSecondaryLogoMeta(school.secondaryLogoMimeType ? {
           mimeType: school.secondaryLogoMimeType,
           filename: school.secondaryLogoFilename || 'secondary_logo.png',
         } : null);
-        setExistingMinistryLogo(school.ministryLogoBinary && school.ministryLogoMimeType ? {
-          binary: school.ministryLogoBinary,
+        setExistingMinistryLogoMeta(school.ministryLogoMimeType ? {
           mimeType: school.ministryLogoMimeType,
           filename: school.ministryLogoFilename || 'ministry_logo.png',
         } : null);
+        
+        // Clear existing blob URLs (will be fetched on-demand)
+        if (existingPrimaryLogoUrl) {
+          URL.revokeObjectURL(existingPrimaryLogoUrl);
+          setExistingPrimaryLogoUrl(null);
+        }
+        if (existingSecondaryLogoUrl) {
+          URL.revokeObjectURL(existingSecondaryLogoUrl);
+          setExistingSecondaryLogoUrl(null);
+        }
+        if (existingMinistryLogoUrl) {
+          URL.revokeObjectURL(existingMinistryLogoUrl);
+          setExistingMinistryLogoUrl(null);
+        }
       }
     } else {
       reset({
@@ -237,6 +402,23 @@ export function SchoolsManagement() {
         is_active: true,
       });
       setSelectedSchool(null);
+      
+      // Clear existing blob URLs
+      if (existingPrimaryLogoUrl) {
+        URL.revokeObjectURL(existingPrimaryLogoUrl);
+        setExistingPrimaryLogoUrl(null);
+      }
+      if (existingSecondaryLogoUrl) {
+        URL.revokeObjectURL(existingSecondaryLogoUrl);
+        setExistingSecondaryLogoUrl(null);
+      }
+      if (existingMinistryLogoUrl) {
+        URL.revokeObjectURL(existingMinistryLogoUrl);
+        setExistingMinistryLogoUrl(null);
+      }
+      setExistingPrimaryLogoMeta(null);
+      setExistingSecondaryLogoMeta(null);
+      setExistingMinistryLogoMeta(null);
     }
     setIsDialogOpen(true);
   };
@@ -247,9 +429,23 @@ export function SchoolsManagement() {
     setPrimaryLogoFile(null);
     setSecondaryLogoFile(null);
     setMinistryLogoFile(null);
-    setExistingPrimaryLogo(null);
-    setExistingSecondaryLogo(null);
-    setExistingMinistryLogo(null);
+    
+    // Clean up blob URLs
+    if (existingPrimaryLogoUrl) {
+      URL.revokeObjectURL(existingPrimaryLogoUrl);
+      setExistingPrimaryLogoUrl(null);
+    }
+    if (existingSecondaryLogoUrl) {
+      URL.revokeObjectURL(existingSecondaryLogoUrl);
+      setExistingSecondaryLogoUrl(null);
+    }
+    if (existingMinistryLogoUrl) {
+      URL.revokeObjectURL(existingMinistryLogoUrl);
+      setExistingMinistryLogoUrl(null);
+    }
+    setExistingPrimaryLogoMeta(null);
+    setExistingSecondaryLogoMeta(null);
+    setExistingMinistryLogoMeta(null);
     reset();
   };
 
@@ -406,7 +602,7 @@ export function SchoolsManagement() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden" data-tour="schools-management-page">
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -436,7 +632,7 @@ export function SchoolsManagement() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('schools.searchPlaceholder')}
+                placeholder={t('assets.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -452,10 +648,10 @@ export function SchoolsManagement() {
                   <TableHead>{t('schools.schoolName')}</TableHead>
                   <TableHead>{t('schools.arabicName')}</TableHead>
                   <TableHead>{t('schools.pashtoName')}</TableHead>
-                  <TableHead>{t('schools.email')}</TableHead>
-                  <TableHead>{t('schools.phone')}</TableHead>
-                  <TableHead>{t('schools.status')}</TableHead>
-                  <TableHead className="text-right">{t('schools.actions')}</TableHead>
+                  <TableHead>{t('events.email')}</TableHead>
+                  <TableHead>{t('events.phone')}</TableHead>
+                  <TableHead>{t('events.status')}</TableHead>
+                  <TableHead className="text-right">{t('events.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -476,7 +672,7 @@ export function SchoolsManagement() {
                         <TableCell>{school.schoolPhone || '-'}</TableCell>
                         <TableCell>
                           <Badge variant={school.isActive ? 'default' : 'secondary'}>
-                            {school.isActive ? t('schools.active') : t('schools.inactive')}
+                            {school.isActive ? t('events.active') : t('events.inactive')}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -488,9 +684,9 @@ export function SchoolsManagement() {
                                 setSelectedSchool(school.id);
                                 setIsDetailsDialogOpen(true);
                               }}
-                              title={t('schools.viewDetails')}
+                              title={t('events.viewDetails')}
                               className="flex-shrink-0"
-                              aria-label={t('schools.viewDetails')}
+                              aria-label={t('events.viewDetails')}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -513,9 +709,10 @@ export function SchoolsManagement() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleOpenDialog(school.id)}
-                                title={t('schools.edit')}
+                                title={t('events.edit')}
                                 className="flex-shrink-0"
                                 aria-label={t('schools.edit')}
+                                data-tour="schools-edit-button"
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -525,9 +722,9 @@ export function SchoolsManagement() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteClick(school.id)}
-                                title={t('schools.delete')}
+                                title={t('events.delete')}
                                 className="flex-shrink-0"
-                                aria-label={t('schools.delete')}
+                                aria-label={t('events.delete')}
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
@@ -554,7 +751,7 @@ export function SchoolsManagement() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" data-tour="schools-edit-dialog">
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
               <DialogTitle>
@@ -605,7 +802,7 @@ export function SchoolsManagement() {
                 </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="school_address">{t('schools.address')}</Label>
+                <Label htmlFor="school_address">{t('events.address')}</Label>
                 <Input
                   id="school_address"
                   {...register('school_address')}
@@ -614,7 +811,7 @@ export function SchoolsManagement() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="school_phone">{t('schools.phone')}</Label>
+                  <Label htmlFor="school_phone">{t('events.phone')}</Label>
                   <Input
                     id="school_phone"
                     {...register('school_phone')}
@@ -622,12 +819,12 @@ export function SchoolsManagement() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="school_email">{t('schools.email')}</Label>
+                  <Label htmlFor="school_email">{t('events.email')}</Label>
                   <Input
                     id="school_email"
                     type="email"
                     {...register('school_email')}
-                    placeholder={t('schools.enterEmail')}
+                    placeholder={t('auth.enterEmail')}
                   />
                   {errors.school_email && (
                     <p className="text-sm text-destructive">{errors.school_email.message}</p>
@@ -824,7 +1021,10 @@ export function SchoolsManagement() {
                       setPrimaryLogoFile(file || null);
                       // Clear existing logo preview when new file is selected
                       if (file) {
-                        setExistingPrimaryLogo(null);
+                        if (existingPrimaryLogoUrl) {
+                          URL.revokeObjectURL(existingPrimaryLogoUrl);
+                          setExistingPrimaryLogoUrl(null);
+                        }
                       }
                     }}
                   />
@@ -838,11 +1038,11 @@ export function SchoolsManagement() {
                       />
                     </div>
                   )}
-                  {!primaryLogoFile && existingPrimaryLogo && (
+                  {!primaryLogoFile && existingPrimaryLogoUrl && existingPrimaryLogoMeta && (
                     <div className="mt-2">
-                      <p className="text-sm text-muted-foreground mb-2">{existingPrimaryLogo.filename}</p>
+                      <p className="text-sm text-muted-foreground mb-2">{existingPrimaryLogoMeta.filename}</p>
                       <img
-                        src={`data:${existingPrimaryLogo.mimeType};base64,${existingPrimaryLogo.binary}`}
+                        src={existingPrimaryLogoUrl}
                         alt="Primary Logo"
                         className="w-20 h-20 object-contain border rounded"
                       />
@@ -860,7 +1060,10 @@ export function SchoolsManagement() {
                       const file = e.target.files?.[0];
                       setSecondaryLogoFile(file || null);
                       if (file) {
-                        setExistingSecondaryLogo(null);
+                        if (existingSecondaryLogoUrl) {
+                          URL.revokeObjectURL(existingSecondaryLogoUrl);
+                          setExistingSecondaryLogoUrl(null);
+                        }
                       }
                     }}
                   />
@@ -874,11 +1077,11 @@ export function SchoolsManagement() {
                       />
                     </div>
                   )}
-                  {!secondaryLogoFile && existingSecondaryLogo && (
+                  {!secondaryLogoFile && existingSecondaryLogoUrl && existingSecondaryLogoMeta && (
                     <div className="mt-2">
-                      <p className="text-sm text-muted-foreground mb-2">{existingSecondaryLogo.filename}</p>
+                      <p className="text-sm text-muted-foreground mb-2">{existingSecondaryLogoMeta.filename}</p>
                       <img
-                        src={`data:${existingSecondaryLogo.mimeType};base64,${existingSecondaryLogo.binary}`}
+                        src={existingSecondaryLogoUrl}
                         alt="Secondary Logo"
                         className="w-20 h-20 object-contain border rounded"
                       />
@@ -896,7 +1099,10 @@ export function SchoolsManagement() {
                       const file = e.target.files?.[0];
                       setMinistryLogoFile(file || null);
                       if (file) {
-                        setExistingMinistryLogo(null);
+                        if (existingMinistryLogoUrl) {
+                          URL.revokeObjectURL(existingMinistryLogoUrl);
+                          setExistingMinistryLogoUrl(null);
+                        }
                       }
                     }}
                   />
@@ -910,11 +1116,11 @@ export function SchoolsManagement() {
                       />
                     </div>
                   )}
-                  {!ministryLogoFile && existingMinistryLogo && (
+                  {!ministryLogoFile && existingMinistryLogoUrl && existingMinistryLogoMeta && (
                     <div className="mt-2">
-                      <p className="text-sm text-muted-foreground mb-2">{existingMinistryLogo.filename}</p>
+                      <p className="text-sm text-muted-foreground mb-2">{existingMinistryLogoMeta.filename}</p>
                       <img
-                        src={`data:${existingMinistryLogo.mimeType};base64,${existingMinistryLogo.binary}`}
+                        src={existingMinistryLogoUrl}
                         alt="Ministry Logo"
                         className="w-20 h-20 object-contain border rounded"
                       />
@@ -1123,7 +1329,7 @@ export function SchoolsManagement() {
                           <SelectItem value="header">{t('schools.header')}</SelectItem>
                           <SelectItem value="footer">{t('schools.footer')}</SelectItem>
                           <SelectItem value="both">{t('schools.both')}</SelectItem>
-                          <SelectItem value="none">{t('schools.none')}</SelectItem>
+                          <SelectItem value="none">{t('events.none')}</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -1143,7 +1349,7 @@ export function SchoolsManagement() {
                           <SelectItem value="header">{t('schools.header')}</SelectItem>
                           <SelectItem value="footer">{t('schools.footer')}</SelectItem>
                           <SelectItem value="both">{t('schools.both')}</SelectItem>
-                          <SelectItem value="none">{t('schools.none')}</SelectItem>
+                          <SelectItem value="none">{t('events.none')}</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -1163,7 +1369,7 @@ export function SchoolsManagement() {
                           <SelectItem value="header">{t('schools.header')}</SelectItem>
                           <SelectItem value="footer">{t('schools.footer')}</SelectItem>
                           <SelectItem value="both">{t('schools.both')}</SelectItem>
-                          <SelectItem value="none">{t('schools.none')}</SelectItem>
+                          <SelectItem value="none">{t('events.none')}</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -1181,15 +1387,15 @@ export function SchoolsManagement() {
                     />
                   )}
                 />
-                <Label htmlFor="is_active">{t('schools.active')}</Label>
+                <Label htmlFor="is_active">{t('events.active')}</Label>
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                {t('schools.cancel')}
+                {t('events.cancel')}
               </Button>
               <Button type="submit" disabled={createSchool.isPending || updateSchool.isPending}>
-                {selectedSchool ? t('common.update') : t('common.create')} {t('schools.schoolName')}
+                {selectedSchool ? t('events.update') : t('events.create')} {t('schools.schoolName')}
               </Button>
             </DialogFooter>
           </form>
@@ -1229,19 +1435,19 @@ export function SchoolsManagement() {
                 )}
                 {selectedSchoolData.schoolAddress && (
                   <div className="col-span-2">
-                    <Label className="text-muted-foreground">{t('schools.address')}</Label>
+                    <Label className="text-muted-foreground">{t('events.address')}</Label>
                     <p>{selectedSchoolData.schoolAddress}</p>
                   </div>
                 )}
                 {selectedSchoolData.schoolPhone && (
                   <div>
-                    <Label className="text-muted-foreground">{t('schools.phone')}</Label>
+                    <Label className="text-muted-foreground">{t('events.phone')}</Label>
                     <p>{selectedSchoolData.schoolPhone}</p>
                   </div>
                 )}
                 {selectedSchoolData.schoolEmail && (
                   <div>
-                    <Label className="text-muted-foreground">{t('schools.email')}</Label>
+                    <Label className="text-muted-foreground">{t('events.email')}</Label>
                     <p>{selectedSchoolData.schoolEmail}</p>
                   </div>
                 )}
@@ -1252,9 +1458,9 @@ export function SchoolsManagement() {
                   </div>
                 )}
                 <div>
-                  <Label className="text-muted-foreground">{t('schools.status')}</Label>
+                  <Label className="text-muted-foreground">{t('events.status')}</Label>
                   <Badge variant={selectedSchoolData.isActive ? 'default' : 'secondary'}>
-                    {selectedSchoolData.isActive ? t('schools.active') : t('schools.inactive')}
+                    {selectedSchoolData.isActive ? t('events.active') : t('events.inactive')}
                   </Badge>
                 </div>
               </div>
@@ -1308,10 +1514,10 @@ export function SchoolsManagement() {
                   {/* Primary Logo */}
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">{t('schools.primaryLogo')}</Label>
-                    {selectedSchoolData.primaryLogoBinary && selectedSchoolData.primaryLogoMimeType ? (
+                    {detailsPrimaryLogoUrl && selectedSchoolData.primaryLogoMimeType ? (
                       <div className="border rounded-lg p-2 bg-muted/50">
                         <img
-                          src={`data:${selectedSchoolData.primaryLogoMimeType};base64,${selectedSchoolData.primaryLogoBinary}`}
+                          src={detailsPrimaryLogoUrl}
                           alt={selectedSchoolData.primaryLogoFilename || 'Primary Logo'}
                           className="w-full h-auto max-h-32 object-contain"
                         />
@@ -1339,10 +1545,10 @@ export function SchoolsManagement() {
                   {/* Secondary Logo */}
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">{t('schools.secondaryLogo')}</Label>
-                    {selectedSchoolData.secondaryLogoBinary && selectedSchoolData.secondaryLogoMimeType ? (
+                    {detailsSecondaryLogoUrl && selectedSchoolData.secondaryLogoMimeType ? (
                       <div className="border rounded-lg p-2 bg-muted/50">
                         <img
-                          src={`data:${selectedSchoolData.secondaryLogoMimeType};base64,${selectedSchoolData.secondaryLogoBinary}`}
+                          src={detailsSecondaryLogoUrl}
                           alt={selectedSchoolData.secondaryLogoFilename || 'Secondary Logo'}
                           className="w-full h-auto max-h-32 object-contain"
                         />
@@ -1370,10 +1576,10 @@ export function SchoolsManagement() {
                   {/* Ministry Logo */}
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">{t('schools.ministryLogo')}</Label>
-                    {selectedSchoolData.ministryLogoBinary && selectedSchoolData.ministryLogoMimeType ? (
+                    {detailsMinistryLogoUrl && selectedSchoolData.ministryLogoMimeType ? (
                       <div className="border rounded-lg p-2 bg-muted/50">
                         <img
-                          src={`data:${selectedSchoolData.ministryLogoMimeType};base64,${selectedSchoolData.ministryLogoBinary}`}
+                          src={detailsMinistryLogoUrl}
                           alt={selectedSchoolData.ministryLogoFilename || 'Ministry Logo'}
                           className="w-full h-auto max-h-32 object-contain"
                         />
@@ -1403,7 +1609,7 @@ export function SchoolsManagement() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
-              {t('schools.close')}
+              {t('events.close')}
             </Button>
             <Button onClick={() => {
               setIsDetailsDialogOpen(false);
@@ -1426,12 +1632,12 @@ export function SchoolsManagement() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('schools.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('schools.delete')}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

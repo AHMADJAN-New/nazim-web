@@ -5,7 +5,9 @@ namespace App\Services\Reports;
 use App\Models\ReportRun;
 use App\Models\ReportTemplate;
 use App\Models\SchoolBranding;
+use App\Services\StudentHistoryService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -19,6 +21,7 @@ class ReportService
         private PdfReportService $pdfService,
         private ExcelReportService $excelService,
         private DateConversionService $dateService,
+        private StudentHistoryService $historyService,
     ) {}
 
     /**
@@ -35,6 +38,17 @@ class ReportService
         ?string $organizationId = null
     ): ReportRun {
         $startTime = microtime(true);
+
+        // CRITICAL: For student history reports (PDF with template or Excel with sheets), fetch data from parameters
+        // Check by template name (PDF) or report key + student_id (Excel)
+        $isStudentHistoryReport = ($config->templateName === 'student-history' || 
+                                   ($config->reportKey === 'student_lifetime_history' && 
+                                    !empty($config->parameters['student_id']))) &&
+                                   !empty($config->parameters['student_id']);
+        
+        if ($isStudentHistoryReport) {
+            $data = $this->fetchStudentHistoryData($config, $organizationId, $data);
+        }
 
         // Create report run record
         $reportRun = $this->createReportRun($config, $data, $organizationId);
@@ -457,10 +471,17 @@ class ReportService
         // Auto-select template if not specified
         $templateName = $config->autoSelectTemplate(count($columns));
 
+        // CRITICAL: Student history report must use Bahij Nassim (RTL-friendly) regardless of branding defaults
+        if ($templateName === 'student-history') {
+            $layout['font_family'] = 'Bahij Nassim';
+            // Slightly smaller default to fit more student fields
+            $layout['font_size'] = $layout['font_size'] ?? '11px';
+        }
+
         // Calculate column widths
         $columnWidths = $this->calculateColumnWidths($columns, $config);
 
-        return [
+        $context = [
             // Branding
             'SCHOOL_NAME' => $branding['school_name'] ?? '',
             'SCHOOL_NAME_EN' => $branding['school_name'] ?? '',
@@ -561,7 +582,36 @@ class ReportService
 
             // Date service for row data
             'date_service' => $this->dateService,
+
+            // Pass through all custom data keys (for custom templates like student-history)
+            // This allows templates to access custom data like 'student', 'summary', 'sections', etc.
+            // CRITICAL: Explicitly add student history data if present
+            'student' => $data['student'] ?? [],
+            'summary' => $data['summary'] ?? [],
+            'sections' => $data['sections'] ?? [],
+            'metadata' => $data['metadata'] ?? [],
+            'generatedAt' => $data['generatedAt'] ?? now()->toISOString(),
+            'labels' => $data['labels'] ?? [],
+
+            // Also pass through any other custom data keys (excluding columns/rows)
+            ...array_filter($data, function ($key) {
+                return !in_array($key, ['columns', 'rows', 'student', 'summary', 'sections', 'metadata', 'generatedAt', 'labels']);
+            }, ARRAY_FILTER_USE_KEY),
         ];
+
+        // Debug: Log context data for student-history template
+        if ($templateName === 'student-history') {
+            \Log::debug("Student history context built", [
+                'has_student' => !empty($context['student']),
+                'has_summary' => !empty($context['summary']),
+                'has_sections' => !empty($context['sections']),
+                'student_name' => $context['student']['full_name'] ?? 'N/A',
+                'context_keys' => array_keys($context),
+                'data_keys' => array_keys($data),
+            ]);
+        }
+
+        return $context;
     }
 
     /**
@@ -651,5 +701,544 @@ class ReportService
     public function getDateService(): DateConversionService
     {
         return $this->dateService;
+    }
+
+    /**
+     * Fetch student history data for student-history template
+     * This method is called when template_name is 'student-history' and parameters.student_id is provided
+     */
+    private function fetchStudentHistoryData(ReportConfig $config, ?string $organizationId, array $data): array
+    {
+        $studentId = $config->parameters['student_id'] ?? null;
+        if (!$studentId) {
+            \Log::warning('Student ID not provided in parameters for student-history template');
+            return $data;
+        }
+
+        if (!$organizationId) {
+            // Try to get organization from authenticated user
+            $user = Auth::user();
+            if ($user) {
+                $profile = DB::table('profiles')->where('id', $user->id)->first();
+                $organizationId = $profile->organization_id ?? null;
+            }
+        }
+
+        if (!$organizationId) {
+            \Log::warning('Organization ID not available for student history data fetch');
+            return $data;
+        }
+
+        // Get current school ID from branding_id (branding_id is the school_id)
+        $schoolId = $config->brandingId;
+
+        try {
+            \Log::debug("Fetching student history data", [
+                'student_id' => $studentId,
+                'organization_id' => $organizationId,
+                'school_id' => $schoolId,
+                'sections_filter' => $config->parameters['sections'] ?? null,
+            ]);
+
+            // Prepare filters (sections filter if provided)
+            $filters = [];
+            if (!empty($config->parameters['sections']) && is_array($config->parameters['sections'])) {
+                $filters['sections'] = $config->parameters['sections'];
+            }
+
+            // Fetch student history using StudentHistoryService
+            $history = $this->historyService->getStudentHistory(
+                $studentId,
+                $organizationId,
+                $schoolId,
+                $filters
+            );
+
+            \Log::debug("Student history fetched", [
+                'has_student' => !empty($history['student']),
+                'has_summary' => !empty($history['summary']),
+                'has_sections' => !empty($history['sections']),
+                'sections_keys' => array_keys($history['sections'] ?? []),
+            ]);
+
+            // Format data for template (same structure as StudentHistoryController::buildPdfReportData)
+            $student = $history['student'] ?? [];
+            $summary = $history['summary'] ?? [];
+            $sections = $history['sections'] ?? [];
+            $metadata = $history['metadata'] ?? [];
+
+            // Format student data for template (snake_case for Blade template)
+            // CRITICAL: Include ALL fields from student history to match UI display
+            $studentData = [
+                // Basic Information
+                'full_name' => $student['fullName'] ?? '',
+                'first_name' => $student['firstName'] ?? '',
+                'last_name' => $student['lastName'] ?? '',
+                'admission_no' => $student['admissionNumber'] ?? '',
+                'father_name' => $student['fatherName'] ?? '',
+                'grandfather_name' => $student['grandfatherName'] ?? '',
+                'mother_name' => $student['motherName'] ?? '',
+                'gender' => $student['gender'] ?? '',
+                'birth_date' => isset($student['dateOfBirth']) && $student['dateOfBirth'] ? \Carbon\Carbon::parse($student['dateOfBirth'])->format('Y-m-d') : '',
+                'birth_year' => $student['birthYear'] ?? '',
+                'age' => $student['age'] ?? '',
+                'nationality' => $student['nationality'] ?? '',
+                'preferred_language' => $student['preferredLanguage'] ?? '',
+                'is_orphan' => $student['isOrphan'] ?? false,
+                
+                // Contact Information
+                'phone' => $student['phone'] ?? '',
+                'home_address' => $student['homeAddress'] ?? '',
+                'emergency_contact_name' => $student['emergencyContactName'] ?? '',
+                'emergency_contact_phone' => $student['emergencyContactPhone'] ?? '',
+                
+                // Location Information
+                'orig_province' => $student['origProvince'] ?? '',
+                'orig_district' => $student['origDistrict'] ?? '',
+                'orig_village' => $student['origVillage'] ?? '',
+                'curr_province' => $student['currProvince'] ?? '',
+                'curr_district' => $student['currDistrict'] ?? '',
+                'curr_village' => $student['currVillage'] ?? '',
+                
+                // Guardian Information
+                'guardian_name' => $student['guardianName'] ?? '',
+                'guardian_relation' => $student['guardianRelation'] ?? '',
+                'guardian_phone' => $student['guardianPhone'] ?? '',
+                'guardian_tazkira' => $student['guardianTazkira'] ?? '',
+                
+                // Guarantor (Zamin) Information
+                'zamin_name' => $student['zaminName'] ?? '',
+                'zamin_phone' => $student['zaminPhone'] ?? '',
+                'zamin_tazkira' => $student['zaminTazkira'] ?? '',
+                'zamin_address' => $student['zaminAddress'] ?? '',
+                
+                // Academic Information
+                'current_class' => $student['currentClass']['name'] ?? '',
+                'current_section' => $student['currentClass']['section'] ?? '',
+                'current_academic_year' => $student['currentClass']['academicYear'] ?? '',
+                'admission_year' => $student['admissionYear'] ?? '',
+                'applying_grade' => $student['applyingGrade'] ?? '',
+                'admission_fee_status' => $student['admissionFeeStatus'] ?? '',
+                
+                // Financial Information
+                'family_income' => $student['familyIncome'] ?? '',
+                
+                // System Information
+                'status' => $student['status'] ?? '',
+                'student_code' => $student['studentCode'] ?? '',
+                'card_number' => $student['cardNumber'] ?? '',
+                'picture_path' => $student['picturePath'] ?? null,
+                'school_name' => $student['schoolName'] ?? '',
+                'organization_name' => $student['organizationName'] ?? '',
+                'created_at' => isset($student['createdAt']) && $student['createdAt'] ? \Carbon\Carbon::parse($student['createdAt'])->format('Y-m-d H:i:s') : '',
+                'previous_school' => $student['previousSchool'] ?? '',
+            ];
+
+            // Format summary data
+            $summaryData = [
+                'academic_years' => $summary['totalAcademicYears'] ?? 0,
+                'attendance_rate' => round($summary['attendanceRate'] ?? 0, 2),
+                'exam_average' => round($summary['averageExamScore'] ?? 0, 2),
+                'total_fees_paid' => $summary['totalFeesPaid'] ?? 0,
+                'library_loans' => $summary['totalLibraryLoans'] ?? 0,
+                'courses_completed' => $summary['totalCoursesCompleted'] ?? 0,
+            ];
+
+            // Format sections data for template (snake_case keys as expected by template)
+            // Format admissions section
+            $admissionsData = array_map(function ($admission) {
+                return [
+                    'academic_year' => $admission['academicYear']['name'] ?? '',
+                    'class' => $admission['class']['name'] ?? '',
+                    'admission_date' => isset($admission['admissionDate']) && $admission['admissionDate'] ? \Carbon\Carbon::parse($admission['admissionDate'])->format('Y-m-d') : '',
+                    'enrollment_status' => $admission['enrollmentStatus'] ?? '',
+                    'enrollment_type' => $admission['enrollmentType'] ?? '',
+                    'residency_type' => $admission['residencyType']['name'] ?? '',
+                ];
+            }, $sections['admissions'] ?? []);
+
+            // Format attendance section
+            $attendanceSummary = $sections['attendance']['summary'] ?? [];
+            $attendanceData = [
+                'summary' => [
+                    'total_days' => $attendanceSummary['totalDays'] ?? 0,
+                    'present' => $attendanceSummary['present'] ?? 0,
+                    'absent' => $attendanceSummary['absent'] ?? 0,
+                    'late' => $attendanceSummary['late'] ?? 0,
+                    'rate' => round($attendanceSummary['rate'] ?? 0, 2),
+                ],
+                'monthly_breakdown' => array_map(function ($item) {
+                    return [
+                        'month' => $item['month'] ?? '',
+                        'present' => $item['present'] ?? 0,
+                        'absent' => $item['absent'] ?? 0,
+                        'late' => $item['late'] ?? 0,
+                        'rate' => round($item['rate'] ?? 0, 2),
+                    ];
+                }, $sections['attendance']['monthlyBreakdown'] ?? []),
+            ];
+
+            // Format exams section
+            $examsSummary = $sections['exams']['summary'] ?? [];
+            $examsData = [
+                'summary' => [
+                    'total_exams' => $examsSummary['totalExams'] ?? 0,
+                    'average_percentage' => round($examsSummary['averagePercentage'] ?? 0, 2),
+                ],
+                'exams' => array_map(function ($exam) {
+                    $subjectResults = array_map(function ($result) {
+                        return [
+                            'subject_name' => $result['subjectName'] ?? '',
+                            'marks_obtained' => $result['marksObtained'] ?? 0,
+                            'max_marks' => $result['maxMarks'] ?? 0,
+                            'percentage' => round($result['percentage'] ?? 0, 2),
+                            'is_absent' => $result['isAbsent'] ?? false,
+                        ];
+                    }, $exam['subjectResults'] ?? []);
+                    
+                    return [
+                        'exam_name' => $exam['examName'] ?? '',
+                        'class_name' => $exam['className'] ?? '',
+                        'exam_date' => isset($exam['examStartDate']) && $exam['examStartDate'] ? \Carbon\Carbon::parse($exam['examStartDate'])->format('Y-m-d') : '',
+                        'total_marks' => $exam['totalMarks'] ?? 0,
+                        'max_marks' => $exam['maxMarks'] ?? 0,
+                        'percentage' => round($exam['percentage'] ?? 0, 2),
+                        'subject_results' => $subjectResults,
+                    ];
+                }, $sections['exams']['exams'] ?? []),
+            ];
+
+            // Format fees section
+            $feesSummary = $sections['fees']['summary'] ?? [];
+            $feesData = [
+                'summary' => [
+                    'total_assigned' => $feesSummary['totalAssigned'] ?? 0,
+                    'total_paid' => $feesSummary['totalPaid'] ?? 0,
+                    'total_remaining' => $feesSummary['totalRemaining'] ?? 0,
+                ],
+                'assignments' => array_map(function ($assignment) {
+                    $payments = array_map(function ($payment) {
+                        return [
+                            'payment_date' => isset($payment['paymentDate']) && $payment['paymentDate'] ? \Carbon\Carbon::parse($payment['paymentDate'])->format('Y-m-d') : '',
+                            'amount' => $payment['amount'] ?? 0,
+                            'payment_method' => $payment['paymentMethod'] ?? '',
+                            'reference_no' => $payment['referenceNo'] ?? '',
+                        ];
+                    }, $assignment['feePayments'] ?? []);
+                    
+                    return [
+                        'fee_structure' => $assignment['feeStructure']['name'] ?? '',
+                        'academic_year' => $assignment['academicYear']['name'] ?? '',
+                        'assigned_amount' => $assignment['assignedAmount'] ?? 0,
+                        'paid_amount' => $assignment['paidAmount'] ?? 0,
+                        'remaining_amount' => $assignment['remainingAmount'] ?? 0,
+                        'status' => $assignment['status'] ?? '',
+                        'due_date' => isset($assignment['dueDate']) && $assignment['dueDate'] ? \Carbon\Carbon::parse($assignment['dueDate'])->format('Y-m-d') : '',
+                        'payments' => $payments,
+                    ];
+                }, $sections['fees']['assignments'] ?? []),
+            ];
+
+            // Format library section
+            $libraryData = array_map(function ($loan) {
+                return [
+                    'book_title' => $loan['book']['title'] ?? '',
+                    'author' => $loan['book']['author'] ?? '',
+                    'loan_date' => isset($loan['loanDate']) && $loan['loanDate'] ? \Carbon\Carbon::parse($loan['loanDate'])->format('Y-m-d') : '',
+                    'due_date' => isset($loan['dueDate']) && $loan['dueDate'] ? \Carbon\Carbon::parse($loan['dueDate'])->format('Y-m-d') : '',
+                    'return_date' => isset($loan['returnedAt']) && $loan['returnedAt'] ? \Carbon\Carbon::parse($loan['returnedAt'])->format('Y-m-d') : null,
+                    'status' => $loan['status'] ?? '',
+                ];
+            }, $sections['library']['loans'] ?? []);
+
+            // Format ID cards section
+            $idCardsData = array_map(function ($card) {
+                return [
+                    'card_number' => $card['cardNumber'] ?? '',
+                    'academic_year' => $card['academicYear']['name'] ?? '',
+                    'class' => $card['class']['name'] ?? '',
+                    'issued_at' => isset($card['createdAt']) && $card['createdAt'] ? \Carbon\Carbon::parse($card['createdAt'])->format('Y-m-d') : '',
+                    'is_printed' => $card['isPrinted'] ?? false,
+                    'template' => $card['templateName'] ?? ($card['template']['name'] ?? ''),
+                    'fee_paid' => $card['feePaid'] ?? null,
+                ];
+            }, $sections['idCards'] ?? []);
+
+            // Format courses section
+            $coursesData = array_map(function ($course) {
+                return [
+                    'course_name' => $course['course']['name'] ?? '',
+                    'registration_date' => isset($course['registrationDate']) && $course['registrationDate'] ? \Carbon\Carbon::parse($course['registrationDate'])->format('Y-m-d') : '',
+                    'status' => $course['completionStatus'] ?? '',
+                    'completion_date' => isset($course['completionDate']) && $course['completionDate'] ? \Carbon\Carbon::parse($course['completionDate'])->format('Y-m-d') : null,
+                    'grade' => $course['grade'] ?? '',
+                    'certificate_issued' => $course['certificateIssued'] ?? false,
+                ];
+            }, $sections['courses'] ?? []);
+
+            // Format graduations section
+            $graduationsData = array_map(function ($graduation) {
+                return [
+                    'batch_name' => $graduation['batch']['name'] ?? '',
+                    'graduation_date' => isset($graduation['createdAt']) && $graduation['createdAt'] ? \Carbon\Carbon::parse($graduation['createdAt'])->format('Y-m-d') : '',
+                    'final_result' => $graduation['finalResultStatus'] ?? '',
+                    'certificate_number' => $graduation['certificateNumber'] ?? '',
+                ];
+            }, $sections['graduations'] ?? []);
+
+            // Format sections data for template (all in snake_case)
+            $sectionsData = [
+                'admissions' => $admissionsData,
+                'attendance' => $attendanceData,
+                'exams' => $examsData,
+                'fees' => $feesData,
+                'library' => $libraryData,
+                'id_cards' => $idCardsData,
+                'courses' => $coursesData,
+                'graduations' => $graduationsData,
+            ];
+
+            // Check if this is an Excel report - Excel reports use multi-sheet structure
+            if ($config->isExcel()) {
+                // Build Excel report data structure with sheets (same as StudentHistoryController::buildExcelReportData)
+                // Use original camelCase sections from history, not snake_case formatted sectionsData
+                return [
+                    // Top-level columns and rows (required for validation, but empty since we use sheets)
+                    'columns' => [],
+                    'rows' => [],
+                    'student' => $student,
+                    'summary' => $summary,
+                    'parameters' => [
+                        'sheets' => $this->buildExcelSheetsData($student, $summary, $history['sections'] ?? []),
+                    ],
+                    'metadata' => $metadata,
+                ];
+            }
+
+            // For PDF reports, merge student history data into the data array
+            // This will be passed through to the template via buildContext
+            $mergedData = array_merge($data, [
+                'student' => $studentData,
+                'summary' => $summaryData,
+                'sections' => $sectionsData,
+                'metadata' => $metadata,
+                'generatedAt' => $metadata['generatedAt'] ?? now()->toISOString(),
+                'labels' => [], // Will be populated by template based on language
+            ]);
+
+            \Log::debug("Student history data merged", [
+                'has_student' => !empty($mergedData['student']),
+                'has_summary' => !empty($mergedData['summary']),
+                'has_sections' => !empty($mergedData['sections']),
+                'student_name' => $mergedData['student']['full_name'] ?? 'N/A',
+                'sections_count' => count($mergedData['sections'] ?? []),
+            ]);
+
+            return $mergedData;
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to fetch student history data', [
+                'student_id' => $studentId,
+                'organization_id' => $organizationId,
+                'error' => $e->getMessage(),
+            ]);
+            return $data; // Return original data on error
+        }
+    }
+
+    /**
+     * Build Excel sheets data structure for student history
+     * This matches the structure from StudentHistoryController::buildExcelReportData
+     */
+    private function buildExcelSheetsData(array $student, array $summary, array $sections): array
+    {
+        return [
+            'overview' => [
+                'sheet_name' => 'Overview',
+                'title' => 'Student Overview',
+                'columns' => [
+                    ['key' => 'field', 'label' => 'Field'],
+                    ['key' => 'value', 'label' => 'Value'],
+                ],
+                'rows' => [
+                    ['field' => 'Full Name', 'value' => $student['fullName'] ?? ''],
+                    ['field' => 'Admission Number', 'value' => $student['admissionNumber'] ?? ''],
+                    ['field' => 'Father Name', 'value' => $student['fatherName'] ?? ''],
+                    ['field' => 'Status', 'value' => $student['status'] ?? ''],
+                    ['field' => 'Total Academic Years', 'value' => (string) ($summary['totalAcademicYears'] ?? 0)],
+                    ['field' => 'Attendance Rate', 'value' => ($summary['attendanceRate'] ?? 0) . '%'],
+                    ['field' => 'Average Exam Score', 'value' => ($summary['averageExamScore'] ?? 0) . '%'],
+                    ['field' => 'Outstanding Fees', 'value' => (string) ($summary['outstandingFees'] ?? 0)],
+                ],
+            ],
+            'admissions' => [
+                'sheet_name' => 'Admissions',
+                'title' => 'Admission History',
+                'columns' => [
+                    ['key' => 'admissionDate', 'label' => 'Admission Date'],
+                    ['key' => 'class', 'label' => 'Class'],
+                    ['key' => 'academicYear', 'label' => 'Academic Year'],
+                    ['key' => 'status', 'label' => 'Status'],
+                ],
+                'rows' => array_map(function ($admission) {
+                    return [
+                        'admissionDate' => isset($admission['admissionDate']) && $admission['admissionDate'] ? \Carbon\Carbon::parse($admission['admissionDate'])->format('Y-m-d') : '',
+                        'class' => $admission['class']['name'] ?? '',
+                        'academicYear' => $admission['academicYear']['name'] ?? '',
+                        'status' => $admission['enrollmentStatus'] ?? '',
+                    ];
+                }, $sections['admissions'] ?? []),
+            ],
+            'exams' => [
+                'sheet_name' => 'Exams',
+                'title' => 'Exam Results',
+                'columns' => [
+                    ['key' => 'examName', 'label' => 'Exam Name'],
+                    ['key' => 'className', 'label' => 'Class'],
+                    ['key' => 'totalMarks', 'label' => 'Marks Obtained'],
+                    ['key' => 'maxMarks', 'label' => 'Max Marks'],
+                    ['key' => 'percentage', 'label' => 'Percentage'],
+                ],
+                'rows' => array_map(function ($exam) {
+                    return [
+                        'examName' => $exam['examName'] ?? '',
+                        'className' => $exam['className'] ?? '',
+                        'totalMarks' => (string) ($exam['totalMarks'] ?? 0),
+                        'maxMarks' => (string) ($exam['maxMarks'] ?? 0),
+                        'percentage' => ($exam['percentage'] ?? 0) . '%',
+                    ];
+                }, $sections['exams']['exams'] ?? []),
+            ],
+            'fees' => [
+                'sheet_name' => 'Fees',
+                'title' => 'Fee History',
+                'columns' => [
+                    ['key' => 'feeStructure', 'label' => 'Fee Structure'],
+                    ['key' => 'academicYear', 'label' => 'Academic Year'],
+                    ['key' => 'assignedAmount', 'label' => 'Assigned'],
+                    ['key' => 'paidAmount', 'label' => 'Paid'],
+                    ['key' => 'remainingAmount', 'label' => 'Remaining'],
+                    ['key' => 'status', 'label' => 'Status'],
+                ],
+                'rows' => array_map(function ($assignment) {
+                    return [
+                        'feeStructure' => $assignment['feeStructure']['name'] ?? '',
+                        'academicYear' => $assignment['academicYear']['name'] ?? '',
+                        'assignedAmount' => (string) ($assignment['assignedAmount'] ?? 0),
+                        'paidAmount' => (string) ($assignment['paidAmount'] ?? 0),
+                        'remainingAmount' => (string) ($assignment['remainingAmount'] ?? 0),
+                        'status' => $assignment['status'] ?? '',
+                    ];
+                }, $sections['fees']['assignments'] ?? []),
+            ],
+            'library' => [
+                'sheet_name' => 'Library',
+                'title' => 'Library Loans',
+                'columns' => [
+                    ['key' => 'bookTitle', 'label' => 'Book Title'],
+                    ['key' => 'author', 'label' => 'Author'],
+                    ['key' => 'accessionNumber', 'label' => 'Accession #'],
+                    ['key' => 'loanDate', 'label' => 'Loan Date'],
+                    ['key' => 'dueDate', 'label' => 'Due Date'],
+                    ['key' => 'returnedAt', 'label' => 'Returned'],
+                    ['key' => 'status', 'label' => 'Status'],
+                ],
+                'rows' => array_map(function ($loan) {
+                    return [
+                        'bookTitle' => $loan['book']['title'] ?? '',
+                        'author' => $loan['book']['author'] ?? '',
+                        'accessionNumber' => $loan['book']['accessionNumber'] ?? '',
+                        'loanDate' => isset($loan['loanDate']) && $loan['loanDate'] ? \Carbon\Carbon::parse($loan['loanDate'])->format('Y-m-d') : '',
+                        'dueDate' => isset($loan['dueDate']) && $loan['dueDate'] ? \Carbon\Carbon::parse($loan['dueDate'])->format('Y-m-d') : '',
+                        'returnedAt' => isset($loan['returnedAt']) && $loan['returnedAt'] ? \Carbon\Carbon::parse($loan['returnedAt'])->format('Y-m-d') : '',
+                        'status' => $loan['status'] ?? '',
+                    ];
+                }, $sections['library']['loans'] ?? []),
+            ],
+            'attendance' => [
+                'sheet_name' => 'Attendance',
+                'title' => 'Attendance Summary',
+                'columns' => [
+                    ['key' => 'month', 'label' => 'Month'],
+                    ['key' => 'present', 'label' => 'Present'],
+                    ['key' => 'absent', 'label' => 'Absent'],
+                    ['key' => 'late', 'label' => 'Late'],
+                    ['key' => 'rate', 'label' => 'Rate (%)'],
+                ],
+                'rows' => array_map(function ($item) {
+                    return [
+                        'month' => $item['month'] ?? '',
+                        'present' => (string) ($item['present'] ?? 0),
+                        'absent' => (string) ($item['absent'] ?? 0),
+                        'late' => (string) ($item['late'] ?? 0),
+                        'rate' => round($item['rate'] ?? 0, 2) . '%',
+                    ];
+                }, $sections['attendance']['monthlyBreakdown'] ?? []),
+            ],
+            'id_cards' => [
+                'sheet_name' => 'ID Cards',
+                'title' => 'ID Card History',
+                'columns' => [
+                    ['key' => 'cardNumber', 'label' => 'Card Number'],
+                    ['key' => 'template', 'label' => 'Template'],
+                    ['key' => 'academicYear', 'label' => 'Academic Year'],
+                    ['key' => 'class', 'label' => 'Class'],
+                    ['key' => 'issueDate', 'label' => 'Issue Date'],
+                    ['key' => 'isPrinted', 'label' => 'Printed'],
+                    ['key' => 'feePaid', 'label' => 'Fee Paid'],
+                ],
+                'rows' => array_map(function ($card) {
+                    return [
+                        'cardNumber' => $card['cardNumber'] ?? '',
+                        'template' => $card['template']['name'] ?? '',
+                        'academicYear' => $card['academicYear']['name'] ?? '',
+                        'class' => $card['class']['name'] ?? '',
+                        'issueDate' => isset($card['createdAt']) && $card['createdAt'] ? \Carbon\Carbon::parse($card['createdAt'])->format('Y-m-d') : '',
+                        'isPrinted' => $card['isPrinted'] ? 'Yes' : 'No',
+                        'feePaid' => $card['feePaid'] ? 'Yes' : 'No',
+                    ];
+                }, $sections['idCards'] ?? []),
+            ],
+            'courses' => [
+                'sheet_name' => 'Courses',
+                'title' => 'Short-Term Courses',
+                'columns' => [
+                    ['key' => 'courseName', 'label' => 'Course Name'],
+                    ['key' => 'registrationDate', 'label' => 'Registration Date'],
+                    ['key' => 'completionDate', 'label' => 'Completion Date'],
+                    ['key' => 'completionStatus', 'label' => 'Status'],
+                    ['key' => 'grade', 'label' => 'Grade'],
+                    ['key' => 'certificateIssued', 'label' => 'Certificate Issued'],
+                ],
+                'rows' => array_map(function ($course) {
+                    return [
+                        'courseName' => $course['course']['name'] ?? '',
+                        'registrationDate' => isset($course['registrationDate']) && $course['registrationDate'] ? \Carbon\Carbon::parse($course['registrationDate'])->format('Y-m-d') : '',
+                        'completionDate' => isset($course['completionDate']) && $course['completionDate'] ? \Carbon\Carbon::parse($course['completionDate'])->format('Y-m-d') : '',
+                        'completionStatus' => $course['completionStatus'] ?? '',
+                        'grade' => $course['grade'] ?? '',
+                        'certificateIssued' => $course['certificateIssued'] ? 'Yes' : 'No',
+                    ];
+                }, $sections['courses'] ?? []),
+            ],
+            'graduations' => [
+                'sheet_name' => 'Graduations',
+                'title' => 'Graduation Records',
+                'columns' => [
+                    ['key' => 'batchName', 'label' => 'Batch Name'],
+                    ['key' => 'graduationDate', 'label' => 'Graduation Date'],
+                    ['key' => 'finalResult', 'label' => 'Final Result'],
+                    ['key' => 'certificateNumber', 'label' => 'Certificate #'],
+                ],
+                'rows' => array_map(function ($graduation) {
+                    return [
+                        'batchName' => $graduation['batch']['name'] ?? '',
+                        'graduationDate' => isset($graduation['createdAt']) && $graduation['createdAt'] ? \Carbon\Carbon::parse($graduation['createdAt'])->format('Y-m-d') : '',
+                        'finalResult' => $graduation['finalResultStatus'] ?? '',
+                        'certificateNumber' => $graduation['certificateNumber'] ?? '',
+                    ];
+                }, $sections['graduations'] ?? []),
+            ],
+        ];
     }
 }

@@ -523,6 +523,15 @@ class StaffController extends Controller
             }
         }
 
+        // If staff_type_id is provided but staff_type is not, derive staff_type from staff_type_id
+        // This must happen BEFORE $request->only() to ensure staff_type is included
+        if ($request->has('staff_type_id') && !$request->has('staff_type')) {
+            $staffType = StaffType::find($request->staff_type_id);
+            if ($staffType) {
+                $request->merge(['staff_type' => $staffType->code]);
+            }
+        }
+
         $updateData = $request->only([
             'profile_id',
             'employee_id',
@@ -562,6 +571,24 @@ class StaffController extends Controller
             'document_urls',
             'notes',
         ]);
+
+        // Remove staff_type and staff_type_id if they are null (not being updated)
+        // staff_type is required (NOT NULL constraint), so we should not set it to null
+        if (isset($updateData['staff_type']) && $updateData['staff_type'] === null) {
+            unset($updateData['staff_type']);
+        }
+        if (isset($updateData['staff_type_id']) && $updateData['staff_type_id'] === null) {
+            unset($updateData['staff_type_id']);
+        }
+
+        // Ensure staff_type is set if staff_type_id is being updated
+        // This is a fallback in case the merge above didn't work
+        if (isset($updateData['staff_type_id']) && (!isset($updateData['staff_type']) || $updateData['staff_type'] === null)) {
+            $staffType = StaffType::find($updateData['staff_type_id']);
+            if ($staffType) {
+                $updateData['staff_type'] = $staffType->code;
+            }
+        }
 
         $updateData['updated_by'] = $user->id;
 
@@ -759,12 +786,14 @@ class StaffController extends Controller
 
         // Delete old picture if exists
         if ($staff->picture_url) {
-            // Try to delete old picture from public storage
+            // Try to delete old picture from private storage (check both disks in case of migration)
+            $this->fileStorageService->deleteFile($staff->picture_url, $this->fileStorageService->getPrivateDisk());
+            // Also try public disk in case old files are still there
             $this->fileStorageService->deleteFile($staff->picture_url, $this->fileStorageService->getPublicDisk());
         }
 
-        // Store picture using FileStorageService (PUBLIC storage for staff pictures)
-        $filePath = $this->fileStorageService->storeStaffPicturePublic(
+        // Store picture using FileStorageService (PRIVATE storage for staff pictures)
+        $filePath = $this->fileStorageService->storeStaffPicturePrivate(
             $file,
             $staff->organization_id,
             $id,
@@ -774,13 +803,114 @@ class StaffController extends Controller
         // Update staff record with picture path
         $staff->update(['picture_url' => $filePath]);
 
-        // Return public URL
-        $publicUrl = $this->fileStorageService->getPublicUrl($filePath);
+        // Return private download URL
+        $downloadUrl = $this->fileStorageService->getPrivateDownloadUrl($filePath);
 
         return response()->json([
-            'url' => $publicUrl,
+            'url' => $downloadUrl,
             'path' => $filePath,
         ]);
+    }
+
+    /**
+     * Get staff picture
+     */
+    public function getPicture(Request $request, string $id)
+    {
+        try {
+            $user = $request->user();
+            if (!$user) {
+                abort(401, 'Unauthorized');
+            }
+
+            $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+            if (!$profile) {
+                abort(404, 'Profile not found');
+            }
+
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            }
+
+            try {
+                if (!$user->hasPermissionTo('staff.read')) {
+                    return response()->json([
+                        'error' => 'Access Denied',
+                        'message' => 'You do not have permission to access this resource.',
+                        'required_permission' => 'staff.read'
+                    ], 403);
+                }
+            } catch (\Exception $e) {
+                Log::warning("Permission check failed for staff.read: " . $e->getMessage());
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'You do not have permission to access this resource.',
+                    'required_permission' => 'staff.read'
+                ], 403);
+            }
+
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+            $staff = Staff::whereNull('deleted_at')
+                ->where('school_id', $currentSchoolId)
+                ->find($id);
+
+            if (!$staff) {
+                abort(404, 'Staff member not found');
+            }
+
+            // Org access is enforced by organization middleware + school scope.
+
+            if (!$staff->picture_url) {
+                Log::info('Staff picture requested but no picture_url', ['staff_id' => $id]);
+                abort(404, 'Picture not found');
+            }
+
+            // Check if file exists using FileStorageService (PRIVATE disk for staff pictures)
+            // Try private disk first, then public disk (for backward compatibility during migration)
+            $disk = $this->fileStorageService->getPrivateDisk();
+            if (!$this->fileStorageService->fileExists($staff->picture_url, $disk)) {
+                // Fallback to public disk for old files
+                $disk = $this->fileStorageService->getPublicDisk();
+                if (!$this->fileStorageService->fileExists($staff->picture_url, $disk)) {
+                    Log::warning('Staff picture file not found on disk', [
+                        'staff_id' => $id,
+                        'picture_url' => $staff->picture_url,
+                    ]);
+                    abort(404, 'Picture file not found');
+                }
+            }
+
+            // Get file content using FileStorageService (PRIVATE or PUBLIC disk)
+            $file = $this->fileStorageService->getFile($staff->picture_url, $disk);
+
+            if (!$file || empty($file)) {
+                Log::error('Staff picture file is empty', [
+                    'staff_id' => $id,
+                    'picture_url' => $staff->picture_url,
+                ]);
+                abort(404, 'Picture file is empty');
+            }
+
+            // Determine MIME type from file extension using FileStorageService
+            $mimeType = $this->fileStorageService->getMimeTypeFromExtension($staff->picture_url);
+
+            return response($file, 200)
+                ->header('Content-Type', $mimeType)
+                ->header('Content-Disposition', 'inline; filename="' . basename($staff->picture_url) . '"')
+                ->header('Cache-Control', 'private, max-age=3600');
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Error getting staff picture', [
+                'staff_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            abort(500, 'Error getting staff picture: ' . $e->getMessage());
+        }
     }
 
     /**

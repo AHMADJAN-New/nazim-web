@@ -90,6 +90,81 @@ class RoomController extends Controller
             
             $rooms = $query->orderBy('room_number', 'asc')->paginate((int)$perPage);
             
+            // Get building IDs and staff IDs for relationships
+            $buildingIds = $rooms->pluck('building_id')->filter()->unique()->toArray();
+            $staffIds = $rooms->pluck('staff_id')->filter()->unique()->toArray();
+
+            // Fetch buildings - filter by accessible schools
+            $buildings = [];
+            if (!empty($buildingIds)) {
+                $buildings = DB::table('buildings')
+                    ->whereIn('id', $buildingIds)
+                    ->whereIn('school_id', $schoolIds) // CRITICAL: Only fetch buildings from accessible schools
+                    ->whereNull('deleted_at')
+                    ->get()
+                    ->keyBy('id')
+                    ->toArray();
+            }
+
+            // Fetch staff and profiles
+            $staffMap = [];
+            if (!empty($staffIds) && Schema::hasTable('staff')) {
+                $staffList = DB::table('staff')
+                    ->whereIn('id', $staffIds)
+                    ->whereNull('deleted_at')
+                    ->get();
+
+                $profileIds = $staffList->pluck('profile_id')
+                    ->filter(function ($id) {
+                        // Filter out null, empty strings, 0, and ensure it's a valid UUID-like string
+                        return !empty($id) && $id !== '0' && $id !== 0 && is_string($id);
+                    })
+                    ->unique()
+                    ->values()
+                    ->toArray();
+                $profiles = [];
+                if (!empty($profileIds)) {
+                    $profiles = DB::table('profiles')
+                        ->whereIn('id', $profileIds)
+                        ->get()
+                        ->keyBy('id')
+                        ->toArray();
+                }
+
+                foreach ($staffList as $staff) {
+                    $staffProfile = null;
+                    if (!empty($staff->profile_id) && isset($profiles[$staff->profile_id])) {
+                        $staffProfile = [
+                            'full_name' => $profiles[$staff->profile_id]->full_name ?? null,
+                        ];
+                    }
+
+                    $staffMap[$staff->id] = [
+                        'id' => $staff->id,
+                        'duty' => $staff->duty ?? null,
+                        'profile' => $staffProfile,
+                    ];
+                }
+            }
+
+            // Enrich rooms with relationships
+            $rooms->getCollection()->transform(function ($room) use ($buildings, $staffMap) {
+                $roomArray = $room->toArray();
+
+                // Add building relationship
+                $building = $buildings[$room->building_id] ?? null;
+                $roomArray['building'] = $building ? [
+                    'id' => $building->id,
+                    'building_name' => $building->building_name,
+                    'school_id' => $building->school_id,
+                ] : null;
+
+                // Add staff relationship
+                $roomArray['staff'] = isset($staffMap[$room->staff_id]) ? $staffMap[$room->staff_id] : null;
+
+                return $roomArray;
+            });
+            
             // Return paginated response in Laravel's standard format
             return response()->json($rooms);
         }
@@ -148,6 +223,7 @@ class RoomController extends Controller
 
                 $staffMap[$staff->id] = [
                     'id' => $staff->id,
+                    'duty' => $staff->duty ?? null,
                     'profile' => $staffProfile,
                 ];
             }
@@ -271,6 +347,7 @@ class RoomController extends Controller
 
                 $roomArray['staff'] = [
                     'id' => $staff->id,
+                    'duty' => $staff->duty ?? null,
                     'profile' => $staffProfile ? [
                         'full_name' => $staffProfile->full_name ?? null,
                     ] : null,
@@ -379,6 +456,7 @@ class RoomController extends Controller
 
                 $roomArray['staff'] = [
                     'id' => $staff->id,
+                    'duty' => $staff->duty ?? null,
                     'profile' => $staffProfile ? [
                         'full_name' => $staffProfile->full_name ?? null,
                     ] : null,
@@ -538,6 +616,7 @@ class RoomController extends Controller
 
                 $roomArray['staff'] = [
                     'id' => $staff->id,
+                    'duty' => $staff->duty ?? null,
                     'profile' => $staffProfile ? [
                         'full_name' => $staffProfile->full_name ?? null,
                     ] : null,

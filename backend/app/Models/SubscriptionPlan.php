@@ -17,6 +17,12 @@ class SubscriptionPlan extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
+    // Billing period constants
+    const BILLING_PERIOD_MONTHLY = 'monthly';
+    const BILLING_PERIOD_QUARTERLY = 'quarterly';
+    const BILLING_PERIOD_YEARLY = 'yearly';
+    const BILLING_PERIOD_CUSTOM = 'custom';
+
     protected $fillable = [
         'id',
         'name',
@@ -34,6 +40,15 @@ class SubscriptionPlan extends Model
         'max_schools',
         'per_school_price_afn',
         'per_school_price_usd',
+        // New fee separation fields
+        'billing_period',
+        'custom_billing_days',
+        'license_fee_afn',
+        'license_fee_usd',
+        'maintenance_fee_afn',
+        'maintenance_fee_usd',
+        'per_school_maintenance_fee_afn',
+        'per_school_maintenance_fee_usd',
         'sort_order',
         'metadata',
     ];
@@ -43,6 +58,14 @@ class SubscriptionPlan extends Model
         'price_yearly_usd' => 'decimal:2',
         'per_school_price_afn' => 'decimal:2',
         'per_school_price_usd' => 'decimal:2',
+        // New fee fields
+        'license_fee_afn' => 'decimal:2',
+        'license_fee_usd' => 'decimal:2',
+        'maintenance_fee_afn' => 'decimal:2',
+        'maintenance_fee_usd' => 'decimal:2',
+        'per_school_maintenance_fee_afn' => 'decimal:2',
+        'per_school_maintenance_fee_usd' => 'decimal:2',
+        'custom_billing_days' => 'integer',
         'is_active' => 'boolean',
         'is_default' => 'boolean',
         'is_custom' => 'boolean',
@@ -69,7 +92,8 @@ class SubscriptionPlan extends Model
     }
 
     /**
-     * Get the price for a given currency
+     * Get the price for a given currency (legacy - returns yearly price)
+     * @deprecated Use getLicenseFee() and getMaintenanceFee() instead
      */
     public function getPrice(string $currency = 'AFN'): float
     {
@@ -79,7 +103,8 @@ class SubscriptionPlan extends Model
     }
 
     /**
-     * Get the per-school price for a given currency
+     * Get the per-school price for a given currency (legacy)
+     * @deprecated Use getPerSchoolMaintenanceFee() instead
      */
     public function getPerSchoolPrice(string $currency = 'AFN'): float
     {
@@ -89,11 +114,138 @@ class SubscriptionPlan extends Model
     }
 
     /**
+     * Get the one-time license fee for a given currency
+     */
+    public function getLicenseFee(string $currency = 'AFN'): float
+    {
+        return $currency === 'USD' 
+            ? (float) ($this->license_fee_usd ?? 0)
+            : (float) ($this->license_fee_afn ?? 0);
+    }
+
+    /**
+     * Get the recurring maintenance fee for a given currency
+     * This is the fee per billing period
+     */
+    public function getMaintenanceFee(string $currency = 'AFN'): float
+    {
+        return $currency === 'USD' 
+            ? (float) ($this->maintenance_fee_usd ?? 0)
+            : (float) ($this->maintenance_fee_afn ?? 0);
+    }
+
+    /**
+     * Get the per-school maintenance fee for a given currency
+     */
+    public function getPerSchoolMaintenanceFee(string $currency = 'AFN'): float
+    {
+        return $currency === 'USD' 
+            ? (float) ($this->per_school_maintenance_fee_usd ?? 0)
+            : (float) ($this->per_school_maintenance_fee_afn ?? 0);
+    }
+
+    /**
+     * Get the total maintenance fee including additional schools
+     */
+    public function getTotalMaintenanceFee(string $currency = 'AFN', int $additionalSchools = 0): float
+    {
+        $baseFee = $this->getMaintenanceFee($currency);
+        $perSchoolFee = $this->getPerSchoolMaintenanceFee($currency);
+        
+        return $baseFee + ($perSchoolFee * $additionalSchools);
+    }
+
+    /**
+     * Get the total cost for initial subscription (license + first maintenance period)
+     */
+    public function getTotalInitialCost(string $currency = 'AFN', int $additionalSchools = 0): float
+    {
+        $licenseFee = $this->getLicenseFee($currency);
+        $maintenanceFee = $this->getTotalMaintenanceFee($currency, $additionalSchools);
+        
+        return $licenseFee + $maintenanceFee;
+    }
+
+    /**
+     * Get the number of days in the billing period
+     */
+    public function getBillingPeriodDays(): int
+    {
+        switch ($this->billing_period) {
+            case self::BILLING_PERIOD_MONTHLY:
+                return 30;
+            case self::BILLING_PERIOD_QUARTERLY:
+                return 90;
+            case self::BILLING_PERIOD_YEARLY:
+                return 365;
+            case self::BILLING_PERIOD_CUSTOM:
+                return $this->custom_billing_days ?? 365;
+            default:
+                return 365;
+        }
+    }
+
+    /**
+     * Get the billing period label for display
+     */
+    public function getBillingPeriodLabel(): string
+    {
+        switch ($this->billing_period) {
+            case self::BILLING_PERIOD_MONTHLY:
+                return 'Monthly';
+            case self::BILLING_PERIOD_QUARTERLY:
+                return 'Quarterly';
+            case self::BILLING_PERIOD_YEARLY:
+                return 'Yearly';
+            case self::BILLING_PERIOD_CUSTOM:
+                return $this->custom_billing_days . ' days';
+            default:
+                return 'Yearly';
+        }
+    }
+
+    /**
+     * Calculate the maintenance fee for a different billing period
+     * Useful for displaying monthly equivalent of yearly price, etc.
+     */
+    public function getMaintenanceFeeForPeriod(string $currency = 'AFN', string $targetPeriod = 'monthly'): float
+    {
+        $fee = $this->getMaintenanceFee($currency);
+        $currentDays = $this->getBillingPeriodDays();
+        
+        $targetDays = match($targetPeriod) {
+            'monthly' => 30,
+            'quarterly' => 90,
+            'yearly' => 365,
+            default => 365,
+        };
+        
+        // Convert to target period
+        return ($fee / $currentDays) * $targetDays;
+    }
+
+    /**
+     * Check if this plan has a license fee
+     */
+    public function hasLicenseFee(): bool
+    {
+        return $this->getLicenseFee('AFN') > 0 || $this->getLicenseFee('USD') > 0;
+    }
+
+    /**
+     * Check if this plan has a maintenance fee
+     */
+    public function hasMaintenanceFee(): bool
+    {
+        return $this->getMaintenanceFee('AFN') > 0 || $this->getMaintenanceFee('USD') > 0;
+    }
+
+    /**
      * Check if this is a free/trial plan
      */
     public function isFree(): bool
     {
-        return $this->price_yearly_afn == 0 && $this->price_yearly_usd == 0;
+        return !$this->hasLicenseFee() && !$this->hasMaintenanceFee();
     }
 
     /**
@@ -198,5 +350,26 @@ class SubscriptionPlan extends Model
     public function scopeDefault($query)
     {
         return $query->where('is_default', true);
+    }
+
+    /**
+     * Scope to filter by billing period
+     */
+    public function scopeByBillingPeriod($query, string $period)
+    {
+        return $query->where('billing_period', $period);
+    }
+
+    /**
+     * Get all available billing periods
+     */
+    public static function getBillingPeriods(): array
+    {
+        return [
+            self::BILLING_PERIOD_MONTHLY => 'Monthly',
+            self::BILLING_PERIOD_QUARTERLY => 'Quarterly',
+            self::BILLING_PERIOD_YEARLY => 'Yearly',
+            self::BILLING_PERIOD_CUSTOM => 'Custom',
+        ];
     }
 }

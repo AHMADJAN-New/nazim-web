@@ -672,12 +672,10 @@ export function AssetManagement() {
                 <Input type="number" step="0.01" {...register('purchasePrice')} />
               </div>
               <div>
-                <Label>Purchase Date</Label>
-                <CalendarFormField control={assignmentForm.control} name="purchaseDate" label="Category" />
+                <CalendarFormField control={assignmentForm.control} name="purchaseDate" label="Purchase Date" />
               </div>
               <div>
-                <Label>Warranty Expiry</Label>
-                <CalendarFormField control={assignmentForm.control} name="warrantyExpiry" label="Purchase Price" />
+                <CalendarFormField control={assignmentForm.control} name="warrantyExpiry" label="Warranty Expiry" />
               </div>
               <div>
                 <Label>Vendor</Label>

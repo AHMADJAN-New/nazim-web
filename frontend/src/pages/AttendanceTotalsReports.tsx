@@ -14,6 +14,9 @@ import {
     Building2,
     Download,
     Loader2,
+    FileDown,
+    FileSpreadsheet,
+    ChevronRight,
 } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 
@@ -48,6 +51,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Progress } from '@/components/ui/progress';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const attendanceStatusMeta = {
     present: { label: 'Present', icon: CheckCircle2, tone: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950' },
@@ -192,7 +206,7 @@ export default function AttendanceTotalsReports() {
 
     const handleGenerateReport = async (variant: 'totals' | 'class_wise' | 'room_wise') => {
         if (!report) {
-            showToast.error(t('attendanceTotalsReport.noDataToExport') || 'No data to export');
+            showToast.error(t('events.noDataToExport') || 'No data to export');
             return;
         }
 
@@ -279,86 +293,134 @@ export default function AttendanceTotalsReports() {
     return (
         <div className="container mx-auto p-4 md:p-6 max-w-7xl space-y-6">
             <PageHeader
-                title={t('attendanceTotalsReport.title') || 'Attendance Totals Report'}
+                title={t('nav.attendanceTotalsReport') || 'Attendance Totals Report'}
                 description={t('attendanceTotalsReport.subtitle') || 'Analyze attendance performance across classes, rooms, and schools.'}
                 icon={<Activity className="h-5 w-5" />}
                 secondaryActions={[
                     {
-                        label: t('common.refresh') || 'Refresh',
+                        label: t('events.refresh') || 'Refresh',
                         onClick: () => refetch(),
                         icon: <RefreshCw className="h-4 w-4" />,
                         variant: 'outline',
                     },
                 ]}
                 rightSlot={
-                    <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" size="sm" onClick={() => {
-                            setReportType('pdf');
-                            handleGenerateReport('totals');
-                        }} disabled={isLoading || !report || isGenerating}>
-                            {isGenerating && reportType === 'pdf' ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="mr-2 h-4 w-4" />
-                            )}
-                            PDF Totals
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => {
-                            setReportType('excel');
-                            handleGenerateReport('totals');
-                        }} disabled={isLoading || !report || isGenerating}>
-                            {isGenerating && reportType === 'excel' ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="mr-2 h-4 w-4" />
-                            )}
-                            Excel Totals
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => {
-                            setReportType('pdf');
-                            handleGenerateReport('class_wise');
-                        }} disabled={isLoading || !report || isGenerating}>
-                            {isGenerating && reportType === 'pdf' ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="mr-2 h-4 w-4" />
-                            )}
-                            PDF Class-wise
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => {
-                            setReportType('excel');
-                            handleGenerateReport('class_wise');
-                        }} disabled={isLoading || !report || isGenerating}>
-                            {isGenerating && reportType === 'excel' ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="mr-2 h-4 w-4" />
-                            )}
-                            Excel Class-wise
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => {
-                            setReportType('pdf');
-                            handleGenerateReport('room_wise');
-                        }} disabled={isLoading || !report || isGenerating}>
-                            {isGenerating && reportType === 'pdf' ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="mr-2 h-4 w-4" />
-                            )}
-                            PDF Room-wise
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => {
-                            setReportType('excel');
-                            handleGenerateReport('room_wise');
-                        }} disabled={isLoading || !report || isGenerating}>
-                            {isGenerating && reportType === 'excel' ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="mr-2 h-4 w-4" />
-                            )}
-                            Excel Room-wise
-                        </Button>
-                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                disabled={isLoading || !report || isGenerating}
+                                className="flex items-center gap-2"
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <span className="hidden sm:inline">{t('attendanceTotalsReport.generating') || 'Generating...'}</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Download className="h-4 w-4" />
+                                        <span className="hidden sm:inline">{t('events.export') || 'Export'}</span>
+                                    </>
+                                )}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel>{t('attendanceTotalsReport.exportOptions') || 'Export Options'}</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            
+                            {/* Totals Reports */}
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <BarChart3 className="mr-2 h-4 w-4" />
+                                    <span>{t('attendanceTotalsReport.totals') || 'Totals'}</span>
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setReportType('pdf');
+                                            handleGenerateReport('totals');
+                                        }}
+                                        disabled={isGenerating}
+                                    >
+                                        <FileDown className="mr-2 h-4 w-4" />
+                                        <span>PDF</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setReportType('excel');
+                                            handleGenerateReport('totals');
+                                        }}
+                                        disabled={isGenerating}
+                                    >
+                                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                        <span>Excel</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+
+                            {/* Class-wise Reports */}
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <GraduationCap className="mr-2 h-4 w-4" />
+                                    <span>{t('attendanceTotalsReport.classWise') || 'Class-wise'}</span>
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setReportType('pdf');
+                                            handleGenerateReport('class_wise');
+                                        }}
+                                        disabled={isGenerating}
+                                    >
+                                        <FileDown className="mr-2 h-4 w-4" />
+                                        <span>PDF</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setReportType('excel');
+                                            handleGenerateReport('class_wise');
+                                        }}
+                                        disabled={isGenerating}
+                                    >
+                                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                        <span>Excel</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+
+                            {/* Room-wise Reports */}
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <Building2 className="mr-2 h-4 w-4" />
+                                    <span>{t('attendanceTotalsReport.roomWise') || 'Room-wise'}</span>
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setReportType('pdf');
+                                            handleGenerateReport('room_wise');
+                                        }}
+                                        disabled={isGenerating}
+                                    >
+                                        <FileDown className="mr-2 h-4 w-4" />
+                                        <span>PDF</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setReportType('excel');
+                                            handleGenerateReport('room_wise');
+                                        }}
+                                        disabled={isGenerating}
+                                    >
+                                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                        <span>Excel</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 }
             />
 
@@ -377,7 +439,7 @@ export default function AttendanceTotalsReports() {
                 footer={
                     <div className="flex justify-end">
                         <Button variant="ghost" size="sm" onClick={handleResetFilters}>
-                            {t('attendanceTotalsReport.reset') || 'Reset'}
+                            {t('events.reset') || 'Reset'}
                         </Button>
                     </div>
                 }
@@ -393,16 +455,16 @@ export default function AttendanceTotalsReports() {
                                 options={(schools || []).map((school) => ({ label: school.schoolName, value: school.id }))}
                                 value={filters.schoolId || ''}
                                 onValueChange={(value) => handleFilterChange('schoolId', value || undefined)}
-                                placeholder={t('attendanceTotalsReport.allSchools') || 'All schools'}
+                                placeholder={t('leave.allSchools') || 'All schools'}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>{t('attendanceTotalsReport.class') || 'Class / Room'}</Label>
+                            <Label>{t('search.class') || 'Class / Room'}</Label>
                             <Combobox
                                 options={(classes || []).map((classItem) => ({ label: classItem.name, value: classItem.id }))}
                                 value={filters.classId || ''}
                                 onValueChange={(value) => handleFilterChange('classId', value || undefined)}
-                                placeholder={t('attendanceTotalsReport.allClasses') || 'All classes'}
+                                placeholder={t('students.allClasses') || 'All classes'}
                             />
                         </div>
                         <div className="space-y-2">
@@ -425,13 +487,13 @@ export default function AttendanceTotalsReports() {
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label>{t('attendanceTotalsReport.status') || 'Status'}</Label>
+                            <Label>{t('events.status') || 'Status'}</Label>
                             <Select value={filters.status || 'all'} onValueChange={(value) => handleFilterChange('status', value)}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder={t('common.all') || 'All'} />
+                                    <SelectValue placeholder={t('subjects.all') || 'All'} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                                    <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
                                     {Object.entries(attendanceStatusMeta).map(([key, meta]) => (
                                         <SelectItem key={key} value={key}>
                                             {meta.label}
@@ -454,11 +516,11 @@ export default function AttendanceTotalsReports() {
                         {dateRangePreset === 'custom' && (
                             <>
                                 <div className="space-y-2">
-                                    <Label>{t('attendanceTotalsReport.fromDate') || 'From date'}</Label>
+                                    <Label>{t('library.fromDate') || 'From date'}</Label>
                                     <CalendarDatePicker date={filters.dateFrom || '' ? new Date(filters.dateFrom || '') : undefined} onDateChange={(date) => handleFilterChange("dateFrom", date ? date.toISOString().split("T")[0] : "")} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>{t('attendanceTotalsReport.toDate') || 'To date'}</Label>
+                                    <Label>{t('library.toDate') || 'To date'}</Label>
                                     <CalendarDatePicker date={filters.dateTo || '' ? new Date(filters.dateTo || '') : undefined} onDateChange={(date) => handleFilterChange("dateTo", date ? date.toISOString().split("T")[0] : "")} />
                                 </div>
                             </>
@@ -469,7 +531,7 @@ export default function AttendanceTotalsReports() {
 
             {isLoading && (
                 <div className="flex items-center justify-center py-16">
-                    <LoadingSpinner text={t('attendanceTotalsReport.loading') || 'Loading attendance report...'} />
+                    <LoadingSpinner text={t('common.loading') || 'Loading attendance report...'} />
                 </div>
             )}
 
@@ -552,10 +614,10 @@ export default function AttendanceTotalsReports() {
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
-                                                    <TableHead>{t('attendanceTotalsReport.class') || 'Class'}</TableHead>
+                                                    <TableHead>{t('search.class') || 'Class'}</TableHead>
                                                     <TableHead>{t('attendanceTotalsReport.school') || 'School'}</TableHead>
                                                     <TableHead className="text-right">{t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}</TableHead>
-                                                    <TableHead className="text-right">{t('attendanceTotalsReport.present') || 'Present'}</TableHead>
+                                                    <TableHead className="text-right">{t('examReports.present') || 'Present'}</TableHead>
                                                     <TableHead className="text-right">{t('attendanceTotalsReport.absent') || 'Absent'}</TableHead>
                                                     <TableHead className="text-right">{t('attendanceTotalsReport.totalRecords') || 'Records'}</TableHead>
                                                 </TableRow>
@@ -596,7 +658,7 @@ export default function AttendanceTotalsReports() {
                                                 <TableRow>
                                                     <TableHead>{t('attendanceTotalsReport.school') || 'School'}</TableHead>
                                                     <TableHead className="text-right">{t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}</TableHead>
-                                                    <TableHead className="text-right">{t('attendanceTotalsReport.present') || 'Present'}</TableHead>
+                                                    <TableHead className="text-right">{t('examReports.present') || 'Present'}</TableHead>
                                                     <TableHead className="text-right">{t('attendanceTotalsReport.absent') || 'Absent'}</TableHead>
                                                     <TableHead className="text-right">{t('attendanceTotalsReport.totalRecords') || 'Records'}</TableHead>
                                                 </TableRow>
@@ -635,11 +697,11 @@ export default function AttendanceTotalsReports() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>{t('attendanceTotalsReport.date') || 'Date'}</TableHead>
-                                                <TableHead>{t('attendanceTotalsReport.class') || 'Class'}</TableHead>
+                                                <TableHead>{t('events.date') || 'Date'}</TableHead>
+                                                <TableHead>{t('search.class') || 'Class'}</TableHead>
                                                 <TableHead>{t('attendanceTotalsReport.school') || 'School'}</TableHead>
                                                 <TableHead className="text-right">{t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}</TableHead>
-                                                <TableHead className="text-right">{t('attendanceTotalsReport.present') || 'Present'}</TableHead>
+                                                <TableHead className="text-right">{t('examReports.present') || 'Present'}</TableHead>
                                                 <TableHead className="text-right">{t('attendanceTotalsReport.absent') || 'Absent'}</TableHead>
                                                 <TableHead className="text-right">{t('attendanceTotalsReport.totalRecords') || 'Records'}</TableHead>
                                             </TableRow>
@@ -700,11 +762,11 @@ export default function AttendanceTotalsReports() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>{t('attendanceTotalsReport.date') || 'Date'}</TableHead>
+                                                <TableHead>{t('events.date') || 'Date'}</TableHead>
                                                 <TableHead>{t('attendanceTotalsReport.room') || 'Room'}</TableHead>
                                                 <TableHead>{t('attendanceTotalsReport.school') || 'School'}</TableHead>
                                                 <TableHead className="text-right">{t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}</TableHead>
-                                                <TableHead className="text-right">{t('attendanceTotalsReport.present') || 'Present'}</TableHead>
+                                                <TableHead className="text-right">{t('examReports.present') || 'Present'}</TableHead>
                                                 <TableHead className="text-right">{t('attendanceTotalsReport.absent') || 'Absent'}</TableHead>
                                                 <TableHead className="text-right">{t('attendanceTotalsReport.totalRecords') || 'Records'}</TableHead>
                                             </TableRow>

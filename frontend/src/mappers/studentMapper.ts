@@ -182,11 +182,22 @@ export function mapStudentDomainToInsert(domain: Partial<Student>): StudentApi.S
   // Build full_name from fullName or firstName + lastName, but don't allow empty
   const fullName = domain.fullName || `${domain.firstName || ''} ${domain.lastName || ''}`.trim();
   
+  // Validate required fields
+  if (!domain.admissionNumber || domain.admissionNumber.trim() === '') {
+    throw new Error('Admission number is required');
+  }
+  if (!fullName || fullName.trim() === '') {
+    throw new Error('Full name is required');
+  }
+  if (!domain.fatherName || domain.fatherName.trim() === '') {
+    throw new Error('Father name is required');
+  }
+  
   return {
-    admission_no: domain.admissionNumber || '',
+    admission_no: domain.admissionNumber.trim(),
     student_code: domain.studentCode || null,
-    full_name: fullName || null, // Use null instead of empty string
-    father_name: domain.fatherName || null, // Use null instead of empty string
+    full_name: fullName.trim(),
+    father_name: domain.fatherName.trim(),
     gender: domain.gender || 'male',
     organization_id: domain.organizationId || null,
     school_id: domain.schoolId || null,

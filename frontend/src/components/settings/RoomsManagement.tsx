@@ -126,10 +126,14 @@ export function RoomsManagement() {
     return roomsToTransform.map((room: Room) => {
       const roomBuilding = buildings?.find((b) => b.id === room.buildingId);
 
+      const staffName = room.staff?.profile?.fullName || t('settings.rooms.noStaffAssigned');
+      const staffDuty = room.staff?.duty;
+      const staffDisplay = staffDuty ? `${staffName} (${staffDuty})` : staffName;
+      
       return {
         room_number: room.roomNumber,
         building_name: roomBuilding?.buildingName || t('settings.rooms.na'),
-        staff_name: room.staff?.profile?.fullName || t('settings.rooms.noStaffAssigned'),
+        staff_name: staffDisplay,
         // Pass date as ISO string - backend DateConversionService will format it based on user's calendar preference
         created_at: room.createdAt instanceof Date 
           ? room.createdAt.toISOString().slice(0, 10) 
@@ -143,7 +147,7 @@ export function RoomsManagement() {
     const parts: string[] = [];
 
     if (searchQuery) {
-      parts.push(`${t('common.search')}: ${searchQuery}`);
+      parts.push(`${t('events.search')}: ${searchQuery}`);
     }
 
     return parts.length > 0 ? parts.join(' | ') : '';
@@ -177,9 +181,20 @@ export function RoomsManagement() {
     {
       accessorKey: 'staff',
       header: t('settings.rooms.staffWarden'),
-      cell: ({ row }) => row.original.staff?.profile?.fullName || (
-        <span className="text-muted-foreground">{t('settings.rooms.noStaffAssigned')}</span>
-      ),
+      cell: ({ row }) => {
+        const staff = row.original.staff;
+        if (!staff?.profile?.fullName) {
+          return <span className="text-muted-foreground">{t('settings.rooms.noStaffAssigned')}</span>;
+        }
+        const name = staff.profile.fullName;
+        const duty = staff.duty;
+        return (
+          <div className="flex flex-col">
+            <span className="font-medium">{name}</span>
+            {duty && <span className="text-xs text-muted-foreground">{duty}</span>}
+          </div>
+        );
+      },
     },
     {
       accessorKey: 'createdAt',
@@ -193,7 +208,7 @@ export function RoomsManagement() {
     },
     {
       id: 'actions',
-      header: () => <div className="text-right">{t('common.actions')}</div>,
+      header: () => <div className="text-right">{t('events.actions')}</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
           {hasUpdatePermission && (
@@ -371,7 +386,7 @@ export function RoomsManagement() {
       />
 
       <FilterPanel 
-        title={t('common.filters') || 'Search & Filter'}
+        title={t('events.filters') || 'Search & Filter'}
         defaultOpenDesktop={true}
         defaultOpenMobile={false}
       >
@@ -537,7 +552,7 @@ export function RoomsManagement() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                {t('common.cancel')}
+                {t('events.cancel')}
               </Button>
               <Button type="submit" disabled={createRoom.isPending || updateRoom.isPending}>
                 {selectedRoom ? t('settings.rooms.update') : t('settings.rooms.create')}
@@ -551,7 +566,7 @@ export function RoomsManagement() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('events.delete')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('settings.rooms.deleteConfirm')}
               {selectedRoom &&
@@ -561,12 +576,12 @@ export function RoomsManagement() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('common.delete')}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

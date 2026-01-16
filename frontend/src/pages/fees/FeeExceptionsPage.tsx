@@ -149,7 +149,7 @@ export default function FeeExceptionsPage() {
         const structureName = structuresById[assignment.feeStructureId]?.name ?? assignment.feeStructureId;
         return {
           value: assignment.id,
-          label: `${structureName} - ${className ?? t('common.notAvailable')}`,
+          label: `${structureName} - ${className ?? t('events.notAvailable')}`,
           studentId: assignment.studentId,
           classAcademicYearId: assignment.classAcademicYearId,
           academicYearId: assignment.academicYearId,
@@ -296,14 +296,14 @@ export default function FeeExceptionsPage() {
             data={exceptions}
             columns={[
               { key: 'studentName', label: t('fees.student'), align: 'left' },
-              { key: 'className', label: t('fees.class'), align: 'left' },
+              { key: 'className', label: t('search.class'), align: 'left' },
               { key: 'structureName', label: t('fees.structure'), align: 'left' },
               { key: 'exceptionType', label: t('fees.exceptionType'), align: 'left' },
               { key: 'exceptionAmount', label: t('fees.exceptionAmount'), align: 'right' },
               { key: 'exceptionReason', label: t('fees.exceptionReason'), align: 'left' },
               { key: 'validFrom', label: t('fees.validFrom'), align: 'left' },
               { key: 'validTo', label: t('fees.validTo'), align: 'left' },
-              { key: 'isActive', label: t('fees.status'), align: 'center' },
+              { key: 'isActive', label: t('events.status'), align: 'center' },
             ]}
             reportKey="fee_exceptions"
             title={t('fees.exceptions') || 'Fee Exceptions'}
@@ -326,7 +326,7 @@ export default function FeeExceptionsPage() {
                   exceptionReason: exception.exceptionReason,
                   validFrom: exception.validFrom ? formatDate(exception.validFrom) : '-',
                   validTo: exception.validTo ? formatDate(exception.validTo) : '-',
-                  isActive: exception.isActive ? t('common.yes') : t('common.no'),
+                  isActive: exception.isActive ? t('events.yes') : t('events.no'),
                 };
               })
             }
@@ -336,7 +336,7 @@ export default function FeeExceptionsPage() {
               if (ay) parts.push(`${t('fees.academicYear')}: ${ay.name}`);
               if (filterClassAy !== 'all') {
                 const cay = classAcademicYears.find((c) => c.id === filterClassAy);
-                if (cay) parts.push(`${t('fees.class')}: ${cay.class?.name || filterClassAy}`);
+                if (cay) parts.push(`${t('search.class')}: ${cay.class?.name || filterClassAy}`);
               }
               return parts.join(' | ');
             }}
@@ -399,7 +399,7 @@ export default function FeeExceptionsPage() {
         </DialogContent>
       </Dialog>
 
-      <FilterPanel title={t('fees.filters')}>
+      <FilterPanel title={t('events.filters')}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <span className="text-sm font-medium">{t('fees.academicYear')}</span>
@@ -423,16 +423,16 @@ export default function FeeExceptionsPage() {
             </Select>
           </div>
           <div>
-            <span className="text-sm font-medium">{t('fees.class')}</span>
+            <span className="text-sm font-medium">{t('search.class')}</span>
             <Select
               value={filterClassAy}
               onValueChange={(val) => setFilterClassAy(val)}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t('fees.selectClass')} />
+                <SelectValue placeholder={t('events.selectClass')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('fees.allClasses')}</SelectItem>
+                <SelectItem value="all">{t('students.allClasses')}</SelectItem>
                 {classAcademicYears.map((cay) => (
                   <SelectItem key={cay.id} value={cay.id}>
                     {cay.class?.name ?? cay.id}
@@ -453,10 +453,10 @@ export default function FeeExceptionsPage() {
             <p>{t('common.loading')}</p>
           ) : error ? (
             <p className="text-destructive text-center py-8">
-              {t('common.error') || 'Error loading data'}: {error instanceof Error ? error.message : String(error)}
+              {t('events.error') || 'Error loading data'}: {error instanceof Error ? error.message : String(error)}
             </p>
           ) : exceptions.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">{t('common.noData') || 'No data available'}</p>
+            <p className="text-muted-foreground text-center py-8">{t('events.noData') || 'No data available'}</p>
           ) : (
             <>
               <div className="overflow-x-auto">
@@ -464,12 +464,12 @@ export default function FeeExceptionsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('fees.student')}</TableHead>
-                    <TableHead>{t('fees.class')}</TableHead>
+                    <TableHead>{t('search.class')}</TableHead>
                     <TableHead>{t('fees.structure')}</TableHead>
                     <TableHead>{t('fees.exceptionType')}</TableHead>
                     <TableHead className="text-right">{t('fees.exceptionAmount')}</TableHead>
-                    <TableHead>{t('fees.status')}</TableHead>
-                    <TableHead className="text-right">{t('common.actions')}</TableHead>
+                    <TableHead>{t('events.status')}</TableHead>
+                    <TableHead className="text-right">{t('events.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -577,7 +577,7 @@ export default function FeeExceptionsPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">{t('fees.class') || 'Class'}</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('search.class') || 'Class'}</p>
                       <p className="font-medium">
                         {currentAssignment?.classAcademicYearId
                           ? (classAyById[currentAssignment.classAcademicYearId || '']?.class?.name ?? '-')
@@ -700,7 +700,7 @@ export default function FeeExceptionsPage() {
                               </div>
                               <div className="grid grid-cols-3 gap-2 text-xs">
                                 <div>
-                                  <span className="text-muted-foreground">{t('fees.assigned') || 'Assigned'}: </span>
+                                  <span className="text-muted-foreground">{t('assets.assigned') || 'Assigned'}: </span>
                                   <span className="font-medium">{formatCurrency(assignment.assignedAmount)}</span>
                                 </div>
                                 <div>
@@ -729,7 +729,7 @@ export default function FeeExceptionsPage() {
                       <p className="font-medium">{formatCurrency(viewingException.exceptionAmount)}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">{t('fees.status') || 'Status'}</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('events.status') || 'Status'}</p>
                       <div className="mt-1">{getActiveBadge(viewingException.isActive)}</div>
                     </div>
                     <div>
@@ -751,7 +751,7 @@ export default function FeeExceptionsPage() {
                   </div>
                   {viewingException.notes && (
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">{t('fees.notes') || 'Notes'}</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('events.notes') || 'Notes'}</p>
                       <p className="font-medium">{viewingException.notes}</p>
                     </div>
                   )}
@@ -766,15 +766,15 @@ export default function FeeExceptionsPage() {
       <AlertDialog open={!!deletingException} onOpenChange={(open) => !open && setDeletingException(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('common.confirmDelete')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('events.confirmDelete')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('fees.confirmDeleteException')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              {t('common.delete')}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

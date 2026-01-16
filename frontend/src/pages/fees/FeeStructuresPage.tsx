@@ -244,15 +244,15 @@ export default function FeeStructuresPage() {
           <ReportExportButtons
             data={structures}
             columns={[
-              { key: 'name', label: t('fees.name'), align: 'left' },
-              { key: 'code', label: t('fees.code'), align: 'left' },
+              { key: 'name', label: t('events.name'), align: 'left' },
+              { key: 'code', label: t('events.code'), align: 'left' },
               { key: 'amount', label: t('fees.amount'), align: 'right' },
               { key: 'feeType', label: t('fees.feeType'), align: 'left' },
               { key: 'className', label: t('academic.classes.class'), align: 'left' },
               { key: 'academicYear', label: t('academic.academicYears.academicYear'), align: 'left' },
               { key: 'dueDate', label: t('fees.dueDate'), align: 'left' },
-              { key: 'isRequired', label: t('fees.required'), align: 'center' },
-              { key: 'isActive', label: t('fees.active'), align: 'center' },
+              { key: 'isRequired', label: t('events.required'), align: 'center' },
+              { key: 'isActive', label: t('events.active'), align: 'center' },
             ]}
             reportKey="fee_structures"
             title={t('fees.structures') || 'Fee Structures'}
@@ -265,8 +265,8 @@ export default function FeeStructuresPage() {
                 className: classesById.get(structure.classId)?.name || '-',
                 academicYear: academicYearsById.get(structure.academicYearId)?.name || '-',
                 dueDate: structure.dueDate ? formatDate(structure.dueDate) : '-',
-                isRequired: structure.isRequired ? t('common.yes') : t('common.no'),
-                isActive: structure.isActive ? t('common.yes') : t('common.no'),
+                isRequired: structure.isRequired ? t('events.yes') : t('events.no'),
+                isActive: structure.isActive ? t('events.yes') : t('events.no'),
               }))
             }
             templateType="fee_structures"
@@ -298,14 +298,14 @@ export default function FeeStructuresPage() {
                 <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('fees.name')}</TableHead>
+                    <TableHead>{t('events.name')}</TableHead>
                     <TableHead>{t('fees.amount')}</TableHead>
                     <TableHead>{t('fees.feeType')}</TableHead>
                     <TableHead>{t('academic.classes.class')}</TableHead>
                     <TableHead>{t('academic.academicYears.academicYear')}</TableHead>
-                    <TableHead>{t('fees.required')}</TableHead>
-                    <TableHead>{t('fees.active')}</TableHead>
-                    <TableHead className="text-right">{t('common.actions')}</TableHead>
+                    <TableHead>{t('events.required')}</TableHead>
+                    <TableHead>{t('events.active')}</TableHead>
+                    <TableHead className="text-right">{t('events.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -349,12 +349,12 @@ export default function FeeStructuresPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant={structure.isRequired ? 'default' : 'outline'}>
-                            {structure.isRequired ? t('common.yes') : t('common.no')}
+                            {structure.isRequired ? t('events.yes') : t('events.no')}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <Badge variant={structure.isActive ? 'default' : 'secondary'}>
-                            {structure.isActive ? t('common.yes') : t('common.no')}
+                            {structure.isActive ? t('events.yes') : t('events.no')}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
@@ -365,7 +365,7 @@ export default function FeeStructuresPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>{t('common.actions')}</DropdownMenuLabel>
+                              <DropdownMenuLabel>{t('events.actions')}</DropdownMenuLabel>
                               <DropdownMenuItem
                                 onClick={() => {
                                   setViewingStructure(structure);
@@ -374,7 +374,7 @@ export default function FeeStructuresPage() {
                                 disabled={actionsDisabled}
                               >
                                 <Eye className="h-4 w-4 mr-2" />
-                                {t('common.view')}
+                                {t('events.view')}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => {
@@ -384,7 +384,7 @@ export default function FeeStructuresPage() {
                                 disabled={actionsDisabled}
                               >
                                 <Pencil className="h-4 w-4 mr-2" />
-                                {t('common.edit')}
+                                {t('events.edit')}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
@@ -392,7 +392,7 @@ export default function FeeStructuresPage() {
                                 disabled={actionsDisabled}
                               >
                                 <Trash className="h-4 w-4 mr-2" />
-                                {t('common.delete')}
+                                {t('events.delete')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -445,8 +445,8 @@ export default function FeeStructuresPage() {
       >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{t('common.edit')}</DialogTitle>
-            <DialogDescription className="sr-only">{t('common.edit')}</DialogDescription>
+            <DialogTitle>{t('events.edit')}</DialogTitle>
+            <DialogDescription className="sr-only">{t('events.edit')}</DialogDescription>
           </DialogHeader>
           <FeeStructureForm
             defaultValues={toFormDefaults(editingStructure)}
@@ -473,15 +473,15 @@ export default function FeeStructuresPage() {
               <div className="mt-6 space-y-6">
                 {/* Basic Information */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">{t('common.basicInformation')}</h3>
+                  <h3 className="text-lg font-semibold">{t('events.basicInformation')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">{t('fees.name')}</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('events.name')}</p>
                       <p className="text-sm font-medium">{viewingStructure.name}</p>
                     </div>
                     {viewingStructure.code && (
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground">{t('fees.code')}</p>
+                        <p className="text-sm font-medium text-muted-foreground">{t('events.code')}</p>
                         <p className="text-sm font-medium">{viewingStructure.code}</p>
                       </div>
                     )}
@@ -498,7 +498,7 @@ export default function FeeStructuresPage() {
                   </div>
                   {viewingStructure.description && (
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">{t('common.description')}</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('events.description')}</p>
                       <p className="text-sm">{viewingStructure.description}</p>
                     </div>
                   )}
@@ -537,7 +537,7 @@ export default function FeeStructuresPage() {
                     {viewingClassAcademicYear && (
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">{t('academic.classes.section')}</p>
-                        <p className="text-sm">{viewingClassAcademicYear.sectionName || t('common.default')}</p>
+                        <p className="text-sm">{viewingClassAcademicYear.sectionName || t('events.default')}</p>
                       </div>
                     )}
                   </div>
@@ -547,17 +547,17 @@ export default function FeeStructuresPage() {
 
                 {/* Dates */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">{t('common.dates')}</h3>
+                  <h3 className="text-lg font-semibold">{t('events.dates')}</h3>
                   <div className="grid grid-cols-2 gap-4">
                     {viewingStructure.startDate && (
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground">{t('common.startDate')}</p>
+                        <p className="text-sm font-medium text-muted-foreground">{t('events.startDate')}</p>
                         <p className="text-sm">{format(viewingStructure.startDate, 'PPP')}</p>
                       </div>
                     )}
                     {viewingStructure.endDate && (
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground">{t('common.endDate')}</p>
+                        <p className="text-sm font-medium text-muted-foreground">{t('events.endDate')}</p>
                         <p className="text-sm">{format(viewingStructure.endDate, 'PPP')}</p>
                       </div>
                     )}
@@ -574,23 +574,23 @@ export default function FeeStructuresPage() {
 
                 {/* Status */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">{t('common.status')}</h3>
+                  <h3 className="text-lg font-semibold">{t('events.status')}</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">{t('fees.active')}</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('events.active')}</p>
                       <Badge variant={viewingStructure.isActive ? 'default' : 'secondary'}>
-                        {viewingStructure.isActive ? t('common.yes') : t('common.no')}
+                        {viewingStructure.isActive ? t('events.yes') : t('events.no')}
                       </Badge>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">{t('fees.required')}</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('events.required')}</p>
                       <Badge variant={viewingStructure.isRequired ? 'default' : 'outline'}>
-                        {viewingStructure.isRequired ? t('common.yes') : t('common.no')}
+                        {viewingStructure.isRequired ? t('events.yes') : t('events.no')}
                       </Badge>
                     </div>
                     {viewingStructure.displayOrder !== undefined && (
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground">{t('common.displayOrder')}</p>
+                        <p className="text-sm font-medium text-muted-foreground">{t('events.displayOrder')}</p>
                         <p className="text-sm">{viewingStructure.displayOrder}</p>
                       </div>
                     )}
@@ -601,17 +601,17 @@ export default function FeeStructuresPage() {
 
                 {/* Metadata */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">{t('common.metadata')}</h3>
+                  <h3 className="text-lg font-semibold">{t('events.metadata')}</h3>
                   <div className="grid grid-cols-2 gap-4">
                     {viewingStructure.createdAt && (
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground">{t('common.createdAt')}</p>
+                        <p className="text-sm font-medium text-muted-foreground">{t('events.createdAt')}</p>
                         <p className="text-sm">{format(viewingStructure.createdAt, 'PPP p')}</p>
                       </div>
                     )}
                     {viewingStructure.updatedAt && (
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground">{t('common.updatedAt')}</p>
+                        <p className="text-sm font-medium text-muted-foreground">{t('events.updatedAt')}</p>
                         <p className="text-sm">{format(viewingStructure.updatedAt, 'PPP p')}</p>
                       </div>
                     )}

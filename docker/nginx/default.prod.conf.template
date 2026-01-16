@@ -1,0 +1,88 @@
+server {
+    listen 80;
+    server_name ${DOMAIN} _;
+
+    client_max_body_size 50M;
+
+    # Health endpoint for container checks (avoid redirect)
+    location = /healthz {
+        add_header Content-Type text/plain;
+        return 200 "ok\n";
+    }
+
+    # ACME challenge (Let's Encrypt)
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        try_files $uri =404;
+    }
+
+    # Redirect everything else to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${DOMAIN} _;
+
+    client_max_body_size 50M;
+
+    # TLS (Let's Encrypt via certbot, or temporary self-signed on first boot)
+    # nginx always reads certs via this stable path. A helper script maintains symlinks.
+    ssl_certificate     /etc/nginx/certs/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/${DOMAIN}/privkey.pem;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    # HSTS (safe when HTTPS is stable)
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    # Frontend (Vite build)
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location ^~ /assets/ {
+        try_files $uri =404;
+        access_log off;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000, immutable";
+    }
+
+    # Public storage (Laravel public disk URLs -> /storage/...)
+    # Laravel config/filesystems.php: public url = APP_URL . '/storage'
+    location ^~ /storage/ {
+        alias /backend-storage/app/public/;
+        try_files $uri =404;
+        access_log off;
+        expires 7d;
+        add_header Cache-Control "public, max-age=604800";
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Backend API under /api
+    location = /api { return 301 /api/; }
+
+    location ^~ /api/ {
+        include fastcgi_params;
+        fastcgi_pass php:9000;
+
+        # Always execute Laravel public/index.php (path is inside the PHP container)
+        fastcgi_param SCRIPT_FILENAME /var/www/backend/public/index.php;
+        fastcgi_param DOCUMENT_ROOT  /var/www/backend/public;
+
+        # Preserve the real URI (/api/...) so Laravel routes match
+        fastcgi_param REQUEST_URI $request_uri;
+
+        # Long-running endpoints (reports, exports)
+        fastcgi_read_timeout 300;
+    }
+
+    location ~ /\.(?!well-known).* { deny all; }
+}
+

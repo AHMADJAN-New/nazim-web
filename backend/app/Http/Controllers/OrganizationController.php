@@ -7,6 +7,7 @@ use App\Services\OrganizationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class OrganizationController extends Controller
 {
@@ -132,8 +133,8 @@ class OrganizationController extends Controller
         $validated = $request->validate([
             // Organization data
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:100|unique:organizations,slug',
-            'email' => 'nullable|email|max:255',
+            'slug' => ['required', 'string', 'max:100', \Illuminate\Validation\Rule::unique('organizations', 'slug')->whereNull('deleted_at')],
+            'email' => ['nullable', 'email', 'max:255', \Illuminate\Validation\Rule::unique('organizations', 'email')->whereNull('deleted_at')],
             'phone' => 'nullable|string|max:50',
             'website' => 'nullable|url|max:255',
             'street_address' => 'nullable|string|max:500',
@@ -149,14 +150,14 @@ class OrganizationController extends Controller
             'established_date' => 'nullable|date',
             'is_active' => 'nullable|boolean',
             'contact_person_name' => 'nullable|string|max:255',
-            'contact_person_email' => 'nullable|email|max:255',
+            'contact_person_email' => ['nullable', 'email', 'max:255', \Illuminate\Validation\Rule::unique('organizations', 'contact_person_email')->whereNull('deleted_at')],
             'contact_person_phone' => 'nullable|string|max:50',
             'contact_person_position' => 'nullable|string|max:100',
             'logo_url' => 'nullable|url|max:500',
             'settings' => 'nullable|array',
 
-            // Admin user data
-            'admin_email' => 'required|email|max:255|unique:users,email',
+            // Admin user data - email must be globally unique across all users
+            'admin_email' => ['required', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users', 'email')],
             'admin_password' => 'required|string|min:8',
             'admin_full_name' => 'required|string|max:255',
         ]);
@@ -336,8 +337,19 @@ class OrganizationController extends Controller
             ], 403);
         }
 
-        // All users can only update their own organization
-        if ($profile->organization_id !== $organization->id) {
+        // Platform admins can update any organization, regular users can only update their own
+        $isPlatformAdmin = false;
+        try {
+            // Check if user is platform admin (has subscription.admin permission)
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
+            $isPlatformAdmin = $user->hasPermissionTo('subscription.admin');
+        } catch (\Exception $e) {
+            // If permission check fails, user is not platform admin
+            Log::debug("Platform admin check failed: " . $e->getMessage());
+        }
+
+        if (!$isPlatformAdmin && $profile->organization_id !== $organization->id) {
             return response()->json(['error' => 'Cannot update organization from different organization'], 403);
         }
 
@@ -835,8 +847,19 @@ class OrganizationController extends Controller
             return response()->json(['error' => 'Organization not found'], 404);
         }
 
-        // All users can only update their own organization
-        if ($profile->organization_id !== $organization->id) {
+        // Platform admins can update permissions for any organization, regular users can only update their own
+        $isPlatformAdmin = false;
+        try {
+            // Check if user is platform admin (has subscription.admin permission)
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
+            $isPlatformAdmin = $user->hasPermissionTo('subscription.admin');
+        } catch (\Exception $e) {
+            // If permission check fails, user is not platform admin
+            Log::debug("Platform admin check failed: " . $e->getMessage());
+        }
+
+        if (!$isPlatformAdmin && $profile->organization_id !== $organization->id) {
             return response()->json(['error' => 'Cannot update organization from different organization'], 403);
         }
 
@@ -1001,65 +1024,91 @@ class OrganizationController extends Controller
      */
     public function storePlatformAdmin(Request $request)
     {
-        $user = $request->user();
-
-        if (!$user) {
-            return response()->json(['error' => 'Unauthenticated'], 401);
-        }
-
-        // Check subscription.admin permission (GLOBAL, not organization-scoped)
+        // CRITICAL: Log entry to method
+        error_log('storePlatformAdmin called');
+        error_log('Request data: ' . json_encode($request->except(['admin_password'])));
+        
         try {
-            // CRITICAL: Use platform org UUID as team context for global permissions
-            $platformOrgId = '00000000-0000-0000-0000-000000000000';
-            setPermissionsTeamId($platformOrgId);
-            if (!$user->hasPermissionTo('subscription.admin')) {
-                return response()->json([
-                    'error' => 'Access Denied',
-                    'message' => 'This endpoint is only accessible to platform administrators.',
-                ], 403);
+            $user = $request->user();
+
+            if (!$user) {
+                error_log('No user found in storePlatformAdmin');
+                return response()->json(['error' => 'Unauthenticated'], 401);
             }
-        } catch (\Exception $e) {
-            Log::warning("Permission check failed for subscription.admin in storePlatformAdmin: " . $e->getMessage());
-            return response()->json([
-                'error' => 'Access Denied',
-                'message' => 'This endpoint is only accessible to platform administrators.',
-            ], 403);
-        }
 
-        // Validate organization and admin data (same validation as regular store)
-        $validated = $request->validate([
-            // Organization data
-            'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:100|unique:organizations,slug',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:50',
-            'website' => 'nullable|url|max:255',
-            'street_address' => 'nullable|string|max:500',
-            'city' => 'nullable|string|max:100',
-            'state_province' => 'nullable|string|max:100',
-            'country' => 'nullable|string|max:100',
-            'postal_code' => 'nullable|string|max:20',
-            'registration_number' => 'nullable|string|max:100',
-            'tax_id' => 'nullable|string|max:100',
-            'license_number' => 'nullable|string|max:100',
-            'type' => 'nullable|string|max:100',
-            'description' => 'nullable|string|max:2000',
-            'established_date' => 'nullable|date',
-            'is_active' => 'nullable|boolean',
-            'contact_person_name' => 'nullable|string|max:255',
-            'contact_person_email' => 'nullable|email|max:255',
-            'contact_person_phone' => 'nullable|string|max:50',
-            'contact_person_position' => 'nullable|string|max:100',
-            'logo_url' => 'nullable|url|max:500',
-            'settings' => 'nullable|array',
+            error_log('User authenticated: ' . $user->id);
 
-            // Admin user data
-            'admin_email' => 'required|email|max:255|unique:users,email',
-            'admin_password' => 'required|string|min:8',
-            'admin_full_name' => 'required|string|max:255',
-        ]);
+            // CRITICAL: Permission check is already done by platform.admin middleware
+            // The middleware sets the team context, so we don't need to check again here
+            // However, we should clear team context to ensure clean state for organization creation
+            setPermissionsTeamId(null);
 
-        try {
+            error_log('Starting validation');
+
+            // Validate organization and admin data (same validation as regular store)
+            try {
+                $validated = $request->validate([
+                    // Organization data
+                    'name' => 'required|string|max:255',
+                    'slug' => ['required', 'string', 'max:100', \Illuminate\Validation\Rule::unique('organizations', 'slug')->whereNull('deleted_at')],
+                    'email' => ['nullable', 'email', 'max:255', \Illuminate\Validation\Rule::unique('organizations', 'email')->whereNull('deleted_at')],
+                    'phone' => 'nullable|string|max:50',
+                    'website' => 'nullable|url|max:255',
+                    'street_address' => 'nullable|string|max:500',
+                    'city' => 'nullable|string|max:100',
+                    'state_province' => 'nullable|string|max:100',
+                    'country' => 'nullable|string|max:100',
+                    'postal_code' => 'nullable|string|max:20',
+                    'registration_number' => 'nullable|string|max:100',
+                    'tax_id' => 'nullable|string|max:100',
+                    'license_number' => 'nullable|string|max:100',
+                    'type' => 'nullable|string|max:100',
+                    'description' => 'nullable|string|max:2000',
+                    'established_date' => 'nullable|date',
+                    'is_active' => 'nullable|boolean',
+                    'contact_person_name' => 'nullable|string|max:255',
+                    'contact_person_email' => ['nullable', 'email', 'max:255', \Illuminate\Validation\Rule::unique('organizations', 'contact_person_email')->whereNull('deleted_at')],
+                    'contact_person_phone' => 'nullable|string|max:50',
+                    'contact_person_position' => 'nullable|string|max:100',
+                    'logo_url' => 'nullable|url|max:500',
+                    'settings' => 'nullable|array',
+
+                    // Admin user data - email must be globally unique across all users
+                    'admin_email' => ['required', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users', 'email')],
+                    'admin_password' => 'required|string|min:8',
+                    'admin_full_name' => 'required|string|max:255',
+                ]);
+                
+                error_log('Validation passed');
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                error_log('Validation failed: ' . json_encode($e->errors()));
+                Log::error('Validation failed when creating organization (platform admin)', [
+                    'errors' => $e->errors(),
+                ]);
+
+                return response()->json([
+                    'error' => 'Validation failed',
+                    'message' => 'The provided data is invalid.',
+                    'errors' => $e->errors(),
+                ], 422);
+            } catch (\Exception $e) {
+                error_log('Exception during validation: ' . $e->getMessage());
+                error_log('File: ' . $e->getFile() . ' Line: ' . $e->getLine());
+                Log::error('Exception during validation in storePlatformAdmin', [
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                
+                return response()->json([
+                    'error' => 'Validation error',
+                    'message' => $e->getMessage(),
+                ], 500);
+            }
+
+            error_log('Starting organization creation');
+
             // Prepare organization data
             $organizationData = [
                 'name' => $validated['name'],
@@ -1104,14 +1153,40 @@ class OrganizationController extends Controller
                 'data' => $result['organization'],
                 'message' => 'Organization created successfully',
             ], 201);
-        } catch (\Exception $e) {
-            Log::error('Failed to create organization (platform admin): ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation failed when creating organization (platform admin)', [
+                'errors' => $e->errors(),
             ]);
+
+            return response()->json([
+                'error' => 'Validation failed',
+                'message' => 'The provided data is invalid.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            // CRITICAL: Use error_log to ensure error is written even if Log::error fails
+            error_log('Organization creation error: ' . $e->getMessage());
+            error_log('File: ' . $e->getFile() . ' Line: ' . $e->getLine());
+            error_log('Trace: ' . $e->getTraceAsString());
+            
+            // Also use Laravel's Log facade
+            try {
+                Log::error('Failed to create organization (platform admin): ' . $e->getMessage(), [
+                    'trace' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'request_data' => $request->except(['admin_password']),
+                    'exception_class' => get_class($e),
+                ]);
+            } catch (\Exception $logException) {
+                error_log('Failed to write to Laravel log: ' . $logException->getMessage());
+            }
 
             return response()->json([
                 'error' => 'Failed to create organization',
                 'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ], 500);
         }
     }

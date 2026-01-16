@@ -1128,7 +1128,7 @@ export default function IssueLetter() {
         <Card>
           <CardHeader>
             <CardTitle className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-              <span>Live Preview</span>
+              <span>{t("dms.livePreview") || "Live Preview"}</span>
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <Button
                   size="sm"

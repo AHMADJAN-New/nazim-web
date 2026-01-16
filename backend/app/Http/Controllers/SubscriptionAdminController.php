@@ -22,6 +22,7 @@ use Spatie\Permission\Models\Role;
 use App\Services\Subscription\UsageTrackingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -91,8 +92,24 @@ class SubscriptionAdminController extends Controller
             'name' => $plan->name,
             'slug' => $plan->slug,
             'description' => $plan->description,
+            // Legacy pricing fields (for backward compatibility)
             'price_yearly_afn' => $plan->price_yearly_afn,
             'price_yearly_usd' => $plan->price_yearly_usd,
+            // New fee separation fields
+            'billing_period' => $plan->billing_period ?? 'yearly',
+            'billing_period_label' => $plan->getBillingPeriodLabel(),
+            'billing_period_days' => $plan->getBillingPeriodDays(),
+            'custom_billing_days' => $plan->custom_billing_days,
+            'license_fee_afn' => $plan->license_fee_afn ?? 0,
+            'license_fee_usd' => $plan->license_fee_usd ?? 0,
+            'maintenance_fee_afn' => $plan->maintenance_fee_afn ?? $plan->price_yearly_afn ?? 0,
+            'maintenance_fee_usd' => $plan->maintenance_fee_usd ?? $plan->price_yearly_usd ?? 0,
+            'has_license_fee' => $plan->hasLicenseFee(),
+            'has_maintenance_fee' => $plan->hasMaintenanceFee(),
+            // Total fees (for display convenience)
+            'total_fee_afn' => ($plan->license_fee_afn ?? 0) + ($plan->maintenance_fee_afn ?? $plan->price_yearly_afn ?? 0),
+            'total_fee_usd' => ($plan->license_fee_usd ?? 0) + ($plan->maintenance_fee_usd ?? $plan->price_yearly_usd ?? 0),
+            // Other plan fields
             'is_active' => $plan->is_active,
             'is_default' => $plan->is_default,
             'is_custom' => $plan->is_custom,
@@ -146,7 +163,7 @@ class SubscriptionAdminController extends Controller
             $revenueThisYear = PaymentRecord::where('status', PaymentRecord::STATUS_CONFIRMED)
                 ->whereNotNull('confirmed_at')
                 ->whereYear('confirmed_at', now()->year)
-                ->select('currency', DB::raw('sum(COALESCE(amount, 0) - COALESCE(discount_amount, 0)) as total'))
+                ->select('currency', DB::raw('sum(COALESCE(amount, 0)) as total'))
                 ->groupBy('currency')
                 ->get()
                 ->pluck('total', 'currency')
@@ -158,6 +175,38 @@ class SubscriptionAdminController extends Controller
             }
             if (!isset($revenueThisYear['USD'])) {
                 $revenueThisYear['USD'] = 0;
+            }
+
+            // Revenue breakdown by payment type this year
+            $revenueByType = PaymentRecord::where('status', PaymentRecord::STATUS_CONFIRMED)
+                ->whereNotNull('confirmed_at')
+                ->whereYear('confirmed_at', now()->year)
+                ->select(
+                    'payment_type',
+                    'currency',
+                    DB::raw('sum(COALESCE(amount, 0)) as total')
+                )
+                ->groupBy('payment_type', 'currency')
+                ->get()
+                ->groupBy('payment_type')
+                ->map(function ($group) {
+                    return $group->pluck('total', 'currency')->toArray();
+                })
+                ->toArray();
+
+            // Ensure all payment types have default values
+            $paymentTypes = [PaymentRecord::TYPE_LICENSE, PaymentRecord::TYPE_MAINTENANCE, PaymentRecord::TYPE_RENEWAL];
+            foreach ($paymentTypes as $type) {
+                if (!isset($revenueByType[$type])) {
+                    $revenueByType[$type] = ['AFN' => 0, 'USD' => 0];
+                } else {
+                    if (!isset($revenueByType[$type]['AFN'])) {
+                        $revenueByType[$type]['AFN'] = 0;
+                    }
+                    if (!isset($revenueByType[$type]['USD'])) {
+                        $revenueByType[$type]['USD'] = 0;
+                    }
+                }
             }
 
             // Pending payments
@@ -206,6 +255,7 @@ class SubscriptionAdminController extends Controller
                     'subscriptions_by_status' => $subscriptionsByStatus,
                     'subscriptions_by_plan' => $subscriptionsByPlan,
                     'revenue_this_year' => $revenueThisYear,
+                    'revenue_by_type' => $revenueByType,
                     'pending_payments' => $pendingPayments,
                     'pending_renewals' => $pendingRenewals,
                     'expiring_soon' => $expiringSoon,
@@ -261,8 +311,17 @@ class SubscriptionAdminController extends Controller
             'name' => 'required|string|max:100',
             'slug' => 'required|string|max:50|unique:subscription_plans,slug',
             'description' => 'nullable|string',
+            // Legacy pricing (still required for backward compatibility)
             'price_yearly_afn' => 'required|numeric|min:0',
             'price_yearly_usd' => 'required|numeric|min:0',
+            // New fee separation fields
+            'billing_period' => 'nullable|in:monthly,quarterly,yearly,custom',
+            'custom_billing_days' => 'nullable|integer|min:1|max:730',
+            'license_fee_afn' => 'nullable|numeric|min:0',
+            'license_fee_usd' => 'nullable|numeric|min:0',
+            'maintenance_fee_afn' => 'nullable|numeric|min:0',
+            'maintenance_fee_usd' => 'nullable|numeric|min:0',
+            // Other plan fields
             'trial_days' => 'integer|min:0',
             'grace_period_days' => 'integer|min:0',
             'readonly_period_days' => 'integer|min:0',
@@ -286,6 +345,15 @@ class SubscriptionAdminController extends Controller
                 'description' => $request->description,
                 'price_yearly_afn' => $request->price_yearly_afn,
                 'price_yearly_usd' => $request->price_yearly_usd,
+                // New fee separation fields
+                'billing_period' => $request->billing_period ?? 'yearly',
+                'custom_billing_days' => $request->custom_billing_days,
+                'license_fee_afn' => $request->license_fee_afn ?? 0,
+                'license_fee_usd' => $request->license_fee_usd ?? 0,
+                // If maintenance fees not provided, use legacy price_yearly as maintenance fee
+                'maintenance_fee_afn' => $request->maintenance_fee_afn ?? $request->price_yearly_afn,
+                'maintenance_fee_usd' => $request->maintenance_fee_usd ?? $request->price_yearly_usd,
+                // Other plan fields
                 'trial_days' => $request->trial_days ?? 0,
                 'grace_period_days' => $request->grace_period_days ?? 14,
                 'readonly_period_days' => $request->readonly_period_days ?? 60,
@@ -317,6 +385,8 @@ class SubscriptionAdminController extends Controller
 
             DB::commit();
 
+            Cache::forget('subscription:plans:public:v1');
+
             return response()->json([
                 'data' => $this->serializePlan($plan->fresh(['features', 'limits'])),
                 'message' => 'Plan created successfully',
@@ -339,8 +409,17 @@ class SubscriptionAdminController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'string|max:100',
             'description' => 'nullable|string',
+            // Legacy pricing
             'price_yearly_afn' => 'numeric|min:0',
             'price_yearly_usd' => 'numeric|min:0',
+            // New fee separation fields
+            'billing_period' => 'nullable|in:monthly,quarterly,yearly,custom',
+            'custom_billing_days' => 'nullable|integer|min:1|max:730',
+            'license_fee_afn' => 'nullable|numeric|min:0',
+            'license_fee_usd' => 'nullable|numeric|min:0',
+            'maintenance_fee_afn' => 'nullable|numeric|min:0',
+            'maintenance_fee_usd' => 'nullable|numeric|min:0',
+            // Other plan fields
             'is_active' => 'boolean',
             'trial_days' => 'integer|min:0',
             'grace_period_days' => 'integer|min:0',
@@ -361,17 +440,41 @@ class SubscriptionAdminController extends Controller
         try {
             $plan->update($request->only([
                 'name', 'description', 'price_yearly_afn', 'price_yearly_usd',
+                // New fee separation fields
+                'billing_period', 'custom_billing_days',
+                'license_fee_afn', 'license_fee_usd',
+                'maintenance_fee_afn', 'maintenance_fee_usd',
+                // Other plan fields
                 'is_active', 'trial_days', 'grace_period_days', 'readonly_period_days',
                 'max_schools', 'per_school_price_afn', 'per_school_price_usd', 'sort_order',
             ]));
 
-            // Update features
+            // Update features - ensure disabled features are explicitly set to false
             if ($request->has('features')) {
-                foreach ($request->features as $featureKey => $isEnabled) {
+                $requestedFeatures = $request->features;
+                
+                // Get all feature definitions that exist for this plan (or all if updating)
+                $existingPlanFeatures = $plan->features()->pluck('feature_key')->toArray();
+                
+                // Update/create features from request
+                foreach ($requestedFeatures as $featureKey => $isEnabled) {
                     $plan->features()->updateOrCreate(
                         ['feature_key' => $featureKey],
                         ['is_enabled' => (bool) $isEnabled]
                     );
+                }
+                
+                // CRITICAL: For features that exist in the plan but are NOT in the request,
+                // explicitly set them to disabled (false). This handles the case where
+                // a feature was previously enabled but the frontend didn't include it in the update.
+                // Note: We only disable existing plan features, not all feature definitions,
+                // to avoid auto-disabling newly added feature definitions.
+                foreach ($existingPlanFeatures as $featureKey) {
+                    if (!isset($requestedFeatures[$featureKey])) {
+                        // Feature exists in plan but not in request - explicitly disable it
+                        $plan->features()->where('feature_key', $featureKey)
+                            ->update(['is_enabled' => false]);
+                    }
                 }
             }
 
@@ -386,6 +489,8 @@ class SubscriptionAdminController extends Controller
             }
 
             DB::commit();
+
+            Cache::forget('subscription:plans:public:v1');
 
             return response()->json([
                 'data' => $this->serializePlan($plan->fresh(['features', 'limits'])),
@@ -443,6 +548,7 @@ class SubscriptionAdminController extends Controller
         $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
         $status = $this->featureGateService->getSubscriptionStatus($organizationId);
         $usage = $this->usageTrackingService->getAllUsage($organizationId);
+        $usage = $this->featureGateService->filterUsageByFeatures($organizationId, $usage);
         $features = $this->featureGateService->getAllFeaturesStatus($organizationId);
 
         return response()->json([
@@ -657,6 +763,8 @@ class SubscriptionAdminController extends Controller
                 ['feature_key' => $featureKey]
             );
 
+            Cache::forget("subscription:enabled-features:v1:{$organizationId}");
+
             return response()->json([
                 'data' => $currentAddon->fresh(),
                 'message' => 'Feature disabled',
@@ -689,6 +797,8 @@ class SubscriptionAdminController extends Controller
                 "Feature enabled: {$featureKey}",
                 ['feature_key' => $featureKey]
             );
+
+            Cache::forget("subscription:enabled-features:v1:{$organizationId}");
 
             return response()->json([
                 'data' => $addon,
@@ -723,38 +833,75 @@ class SubscriptionAdminController extends Controller
     {
         $this->enforceSubscriptionAdmin($request);
 
-        $payment = PaymentRecord::findOrFail($paymentId);
         $user = $request->user();
 
-        if (!$payment->isPending()) {
-            return response()->json(['error' => 'Payment is not pending'], 400);
-        }
+        try {
+            $result = DB::transaction(function () use ($paymentId, $user) {
+                /** @var PaymentRecord $payment */
+                $payment = PaymentRecord::where('id', $paymentId)->lockForUpdate()->firstOrFail();
 
-        // Find associated renewal request
-        $renewalRequest = RenewalRequest::where('organization_id', $payment->organization_id)
-            ->pending()
-            ->first();
+                // Idempotent: already processed
+                if (!$payment->isPending()) {
+                    return [
+                        'payment' => $payment->fresh(),
+                        'message' => 'Payment already processed',
+                    ];
+                }
 
-        if ($renewalRequest) {
-            // Approve the renewal request
-            $subscription = $this->subscriptionService->approveRenewalRequest(
-                $renewalRequest->id,
-                $paymentId,
-                $user->id
-            );
-        } else {
-            // Just confirm the payment
-            $payment->update([
-                'status' => PaymentRecord::STATUS_CONFIRMED,
-                'confirmed_by' => $user->id,
-                'confirmed_at' => now(),
+                // Prefer an explicitly linked renewal request
+                $renewalRequest = RenewalRequest::where('payment_record_id', $payment->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                // Fallback: if exactly one pending request exists for this org, use it
+                if (!$renewalRequest) {
+                    $pendingForOrg = RenewalRequest::where('organization_id', $payment->organization_id)
+                        ->pending()
+                        ->lockForUpdate()
+                        ->get();
+
+                    if ($pendingForOrg->count() === 1) {
+                        $renewalRequest = $pendingForOrg->first();
+                    } elseif ($pendingForOrg->count() > 1) {
+                        throw new \Exception('Multiple pending renewal requests exist. Please approve from the renewal request screen.');
+                    }
+                }
+
+                if ($renewalRequest) {
+                    // Approve the renewal request (service is idempotent + transactional)
+                    $this->subscriptionService->approveRenewalRequest(
+                        $renewalRequest->id,
+                        $paymentId,
+                        $user->id
+                    );
+                } else {
+                    // Just confirm the payment
+                    $payment->update([
+                        'status' => PaymentRecord::STATUS_CONFIRMED,
+                        'confirmed_by' => $user->id,
+                        'confirmed_at' => now(),
+                    ]);
+                }
+
+                return [
+                    'payment' => $payment->fresh(),
+                    'message' => 'Payment confirmed successfully',
+                ];
+            }, 3);
+
+            return response()->json([
+                'data' => $result['payment'],
+                'message' => $result['message'],
             ]);
-        }
+        } catch (\Exception $e) {
+            \Log::error('Failed to confirm payment: ' . $e->getMessage(), [
+                'payment_id' => $paymentId,
+                'user_id' => $user?->id,
+                'trace' => $e->getTraceAsString(),
+            ]);
 
-        return response()->json([
-            'data' => $payment->fresh(),
-            'message' => 'Payment confirmed successfully',
-        ]);
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
     }
 
     /**
@@ -824,21 +971,40 @@ class SubscriptionAdminController extends Controller
             ->orderBy('requested_at', 'asc')
             ->paginate($request->per_page ?? 20);
 
-        // Ensure plan is loaded for each renewal's subscription
-        $renewals->getCollection()->transform(function ($renewal) {
-            if ($renewal->subscription && !$renewal->subscription->relationLoaded('plan')) {
-                $renewal->subscription->load('plan');
-            }
-            // If subscription doesn't exist, try to get current subscription from organization
-            if (!$renewal->subscription && $renewal->organization_id) {
-                $currentSubscription = $this->subscriptionService->getCurrentSubscription($renewal->organization_id);
-                if ($currentSubscription) {
-                    $currentSubscription->load('plan');
-                    $renewal->setRelation('subscription', $currentSubscription);
+        // If subscription is missing for some renewals, load current subscriptions in bulk (avoid N+1)
+        $collection = $renewals->getCollection();
+        $missingOrgIds = $collection
+            ->filter(fn ($r) => !$r->subscription && !empty($r->organization_id))
+            ->pluck('organization_id')
+            ->unique()
+            ->values();
+
+        if ($missingOrgIds->isNotEmpty()) {
+            $subs = OrganizationSubscription::with('plan')
+                ->whereIn('organization_id', $missingOrgIds->all())
+                ->whereNull('deleted_at')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $currentByOrg = [];
+            foreach ($subs as $sub) {
+                if (!isset($currentByOrg[$sub->organization_id])) {
+                    $currentByOrg[$sub->organization_id] = $sub;
                 }
             }
-            return $renewal;
-        });
+
+            $collection->transform(function ($renewal) use ($currentByOrg) {
+                if ($renewal->subscription && !$renewal->subscription->relationLoaded('plan')) {
+                    $renewal->subscription->load('plan');
+                }
+
+                if (!$renewal->subscription && $renewal->organization_id && isset($currentByOrg[$renewal->organization_id])) {
+                    $renewal->setRelation('subscription', $currentByOrg[$renewal->organization_id]);
+                }
+
+                return $renewal;
+            });
+        }
 
         return response()->json($renewals);
     }
@@ -903,24 +1069,46 @@ class SubscriptionAdminController extends Controller
                 $renewal->organization_id
             );
 
+            $expectedTotal = (float) ($priceInfo['total'] ?? 0);
+            $submittedAmount = (float) $request->amount;
+            $tolerance = 0.01;
+
+            if (abs($submittedAmount - $expectedTotal) > $tolerance) {
+                return response()->json([
+                    'error' => "Payment amount does not match expected total. Expected {$expectedTotal} {$request->currency}.",
+                ], 422);
+            }
+
             $subscription = $this->subscriptionService->getCurrentSubscription($renewal->organization_id);
+            $plan = SubscriptionPlan::findOrFail($renewal->requested_plan_id);
+            if (!$plan->is_active) {
+                return response()->json(['error' => 'Selected plan is not active'], 422);
+            }
+
+            $billingDays = $plan->getBillingPeriodDays();
+            $periodStart = Carbon::parse($request->payment_date)->toDateString();
+            $periodEnd = Carbon::parse($request->payment_date)->addDays($billingDays)->toDateString();
 
             $paymentRecord = PaymentRecord::create([
                 'organization_id' => $renewal->organization_id,
                 'subscription_id' => $subscription?->id,
-                'amount' => $request->amount,
+                'amount' => $submittedAmount,
                 'currency' => $request->currency,
                 'payment_method' => $request->payment_method,
                 'payment_reference' => $request->payment_reference,
                 'payment_date' => $request->payment_date,
-                'period_start' => now()->toDateString(),
-                'period_end' => now()->addYear()->toDateString(),
+                'period_start' => $periodStart,
+                'period_end' => $periodEnd,
                 'status' => PaymentRecord::STATUS_CONFIRMED, // Auto-confirm when created by admin
                 'confirmed_by' => $user->id,
                 'confirmed_at' => now(),
                 'discount_code_id' => $renewal->discount_code_id,
                 'discount_amount' => $priceInfo['discount_amount'],
                 'notes' => $request->notes,
+                // New fee separation fields
+                'payment_type' => PaymentRecord::TYPE_RENEWAL,
+                'billing_period' => $plan->billing_period ?? PaymentRecord::BILLING_YEARLY,
+                'is_recurring' => true,
             ]);
 
             $paymentRecordId = $paymentRecord->id;
@@ -1044,22 +1232,22 @@ class SubscriptionAdminController extends Controller
                 ]);
             }
 
-            // Get user details using User model and profiles
-            $users = collect($userIds)->map(function ($userId) {
-                $user = User::find($userId);
-                if (!$user) {
+            // Load users + profiles in bulk (avoid N+1)
+            $usersById = User::whereIn('id', $userIds)->get()->keyBy('id');
+            $profilesById = DB::table('profiles')
+                ->whereIn('id', $userIds)
+                ->whereNull('deleted_at')
+                ->get()
+                ->keyBy('id');
+
+            $users = collect($userIds)->map(function ($userId) use ($usersById, $profilesById) {
+                $user = $usersById->get($userId);
+                $profile = $profilesById->get($userId);
+
+                if (!$user || !$profile) {
                     return null;
                 }
-                
-                $profile = DB::table('profiles')
-                    ->where('id', $userId)
-                    ->whereNull('deleted_at')
-                    ->first();
-                
-                if (!$profile) {
-                    return null;
-                }
-                
+
                 return [
                     'id' => $user->id,
                     'email' => $user->email,
@@ -1188,6 +1376,34 @@ class SubscriptionAdminController extends Controller
             // Assign role to user
             setPermissionsTeamId($organizationId);
             $userModel->assignRole($adminRole);
+            
+            // CRITICAL: Assign tours to user (especially initialSetup tour)
+            // Do this AFTER role assignment so user has permissions
+            try {
+                $tourService = app(\App\Services\TourAssignmentService::class);
+                
+                // Always assign initialSetup tour first (no permissions required)
+                $tourService->assignInitialSetupTour($userId);
+                
+                // Then assign other tours based on permissions
+                if ($userModel) {
+                    // Set organization context for permission checks
+                    $userModel->setPermissionsTeamId($organizationId);
+                    
+                    // Get user's permissions (from roles and direct assignments)
+                    $userPermissions = $userModel->getAllPermissions()->pluck('name')->toArray();
+                    
+                    // Assign other tours based on permissions
+                    $assignedTours = $tourService->assignToursForUser($userId, $userPermissions);
+                    
+                    if (!empty($assignedTours) && config('app.debug')) {
+                        Log::info("Assigned tours to platform user {$userId}: " . implode(', ', $assignedTours));
+                    }
+                }
+            } catch (\Exception $e) {
+                // Don't fail user creation if tour assignment fails
+                Log::warning("Failed to assign tours to platform user {$userId}: " . $e->getMessage());
+            }
 
             // Ensure organization_id is set in model_has_roles
             $roleAssignment = DB::table('model_has_roles')
@@ -1680,5 +1896,455 @@ class SubscriptionAdminController extends Controller
             'data' => $processed,
             'message' => 'Status transitions processed',
         ]);
+    }
+
+    // =====================================================
+    // MAINTENANCE FEES (PLATFORM ADMIN)
+    // =====================================================
+
+    /**
+     * Get all maintenance fees overview (platform-wide)
+     */
+    public function listMaintenanceFees(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            $maintenanceFeeService = app(\App\Services\Subscription\MaintenanceFeeService::class);
+
+            // Get all subscriptions with maintenance info
+            $subscriptions = OrganizationSubscription::with(['plan', 'organization'])
+                ->whereNull('deleted_at')
+                ->whereIn('status', [
+                    OrganizationSubscription::STATUS_ACTIVE,
+                    OrganizationSubscription::STATUS_GRACE_PERIOD,
+                    OrganizationSubscription::STATUS_TRIAL,
+                ])
+                ->orderBy('next_maintenance_due_at')
+                ->paginate($request->per_page ?? 20);
+
+            $subscriptions->getCollection()->transform(function ($subscription) use ($maintenanceFeeService) {
+                $currency = $subscription->currency ?? 'AFN';
+                return [
+                    'subscription_id' => $subscription->id,
+                    'organization_id' => $subscription->organization_id,
+                    'organization_name' => $subscription->organization?->name,
+                    'plan_name' => $subscription->plan?->name,
+                    'status' => $subscription->status,
+                    'billing_period' => $subscription->billing_period,
+                    'billing_period_label' => $subscription->getBillingPeriodLabel(),
+                    'next_maintenance_due_at' => $subscription->next_maintenance_due_at?->toDateString(),
+                    'last_maintenance_paid_at' => $subscription->last_maintenance_paid_at?->toDateString(),
+                    'is_overdue' => $subscription->isMaintenanceOverdue(),
+                    'days_until_due' => $subscription->daysUntilMaintenanceDue(),
+                    'days_overdue' => $subscription->daysMaintenanceOverdue(),
+                    'maintenance_amount' => $maintenanceFeeService->calculateMaintenanceAmount($subscription, $currency),
+                    'currency' => $currency,
+                ];
+            });
+
+            return response()->json($subscriptions);
+        } catch (\Exception $e) {
+            \Log::error('Failed to list maintenance fees: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to list maintenance fees'], 500);
+        }
+    }
+
+    /**
+     * Get overdue maintenance fees (platform-wide)
+     */
+    public function listOverdueMaintenanceFees(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            $maintenanceFeeService = app(\App\Services\Subscription\MaintenanceFeeService::class);
+            $overdue = $maintenanceFeeService->getOverdueMaintenance();
+
+            return response()->json([
+                'data' => $overdue,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to list overdue maintenance fees: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to list overdue maintenance fees'], 500);
+        }
+    }
+
+    /**
+     * Generate maintenance invoices for due subscriptions
+     */
+    public function generateMaintenanceInvoices(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $validator = Validator::make($request->all(), [
+            'days_before_due' => 'integer|min:1|max:90',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 422);
+        }
+
+        try {
+            $maintenanceFeeService = app(\App\Services\Subscription\MaintenanceFeeService::class);
+            $daysBeforeDue = $request->days_before_due ?? 30;
+            
+            $invoices = $maintenanceFeeService->generateInvoices($daysBeforeDue);
+
+            return response()->json([
+                'data' => [
+                    'generated_count' => $invoices->count(),
+                    'invoices' => $invoices->map(function ($invoice) {
+                        return [
+                            'id' => $invoice->id,
+                            'invoice_number' => $invoice->invoice_number,
+                            'organization_id' => $invoice->organization_id,
+                            'amount' => $invoice->amount,
+                            'currency' => $invoice->currency,
+                            'due_date' => $invoice->due_date?->toDateString(),
+                        ];
+                    }),
+                ],
+                'message' => "Generated {$invoices->count()} maintenance invoice(s)",
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to generate maintenance invoices: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to generate invoices: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * List all maintenance invoices (platform-wide)
+     */
+    public function listMaintenanceInvoices(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            $query = \App\Models\MaintenanceInvoice::with(['organization', 'subscription.plan'])
+                ->orderBy('due_date', 'desc');
+
+            // Filter by status
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+
+            // Filter by organization
+            if ($request->has('organization_id')) {
+                $query->where('organization_id', $request->organization_id);
+            }
+
+            // Filter by overdue
+            if ($request->boolean('overdue')) {
+                $query->overdue();
+            }
+
+            // Filter by due soon
+            if ($request->has('due_within_days')) {
+                $query->dueSoon($request->due_within_days);
+            }
+
+            $invoices = $query->paginate($request->per_page ?? 20);
+
+            $invoices->getCollection()->transform(function ($invoice) {
+                return [
+                    'id' => $invoice->id,
+                    'invoice_number' => $invoice->invoice_number,
+                    'organization_id' => $invoice->organization_id,
+                    'organization_name' => $invoice->organization?->name,
+                    'subscription_id' => $invoice->subscription_id,
+                    'plan_name' => $invoice->subscription?->plan?->name,
+                    'amount' => $invoice->amount,
+                    'currency' => $invoice->currency,
+                    'billing_period' => $invoice->billing_period,
+                    'billing_period_label' => $invoice->getBillingPeriodLabel(),
+                    'period_start' => $invoice->period_start?->toDateString(),
+                    'period_end' => $invoice->period_end?->toDateString(),
+                    'due_date' => $invoice->due_date?->toDateString(),
+                    'status' => $invoice->status,
+                    'status_label' => $invoice->getStatusLabel(),
+                    'is_overdue' => $invoice->isOverdue(),
+                    'days_until_due' => $invoice->daysUntilDue(),
+                    'days_overdue' => $invoice->daysOverdue(),
+                    'generated_at' => $invoice->generated_at?->toISOString(),
+                    'paid_at' => $invoice->paid_at?->toISOString(),
+                ];
+            });
+
+            return response()->json($invoices);
+        } catch (\Exception $e) {
+            \Log::error('Failed to list maintenance invoices: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to list maintenance invoices'], 500);
+        }
+    }
+
+    /**
+     * Confirm a maintenance fee payment (by platform admin)
+     */
+    public function confirmMaintenancePayment(Request $request, string $paymentId)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $user = $request->user();
+
+        try {
+            $payment = PaymentRecord::findOrFail($paymentId);
+
+            if ($payment->payment_type !== PaymentRecord::TYPE_MAINTENANCE) {
+                return response()->json(['error' => 'Payment is not a maintenance fee payment'], 400);
+            }
+
+            if (!$payment->isPending()) {
+                return response()->json(['error' => 'Payment is not pending'], 400);
+            }
+
+            $maintenanceFeeService = app(\App\Services\Subscription\MaintenanceFeeService::class);
+            $confirmedPayment = $maintenanceFeeService->confirmMaintenancePayment($payment, $user->id);
+
+            return response()->json([
+                'data' => $confirmedPayment,
+                'message' => 'Maintenance payment confirmed successfully',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to confirm maintenance payment: ' . $e->getMessage(), [
+                'payment_id' => $paymentId,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to confirm payment: ' . $e->getMessage()], 500);
+        }
+    }
+
+    // =====================================================
+    // LICENSE FEES (PLATFORM ADMIN)
+    // =====================================================
+
+    /**
+     * Get all unpaid license fees (platform-wide)
+     */
+    public function listUnpaidLicenseFees(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            $licenseFeeService = app(\App\Services\Subscription\LicenseFeeService::class);
+            $unpaid = $licenseFeeService->getUnpaidLicenseFees();
+
+            return response()->json([
+                'data' => $unpaid,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to list unpaid license fees: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to list unpaid license fees'], 500);
+        }
+    }
+
+    /**
+     * Confirm a license fee payment (by platform admin)
+     */
+    public function confirmLicensePayment(Request $request, string $paymentId)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $user = $request->user();
+
+        try {
+            $payment = PaymentRecord::findOrFail($paymentId);
+
+            if ($payment->payment_type !== PaymentRecord::TYPE_LICENSE) {
+                return response()->json(['error' => 'Payment is not a license fee payment'], 400);
+            }
+
+            if (!$payment->isPending()) {
+                return response()->json(['error' => 'Payment is not pending'], 400);
+            }
+
+            $licenseFeeService = app(\App\Services\Subscription\LicenseFeeService::class);
+            $confirmedPayment = $licenseFeeService->confirmLicensePayment($payment, $user->id);
+
+            return response()->json([
+                'data' => $confirmedPayment,
+                'message' => 'License payment confirmed successfully',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to confirm license payment: ' . $e->getMessage(), [
+                'payment_id' => $paymentId,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to confirm payment: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * List all license fee payments (platform-wide)
+     */
+    public function listLicensePayments(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            $query = PaymentRecord::with(['organization', 'subscription.plan'])
+                ->licensePayments()
+                ->orderBy('payment_date', 'desc');
+
+            // Filter by status
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+
+            // Filter by organization
+            if ($request->has('organization_id')) {
+                $query->where('organization_id', $request->organization_id);
+            }
+
+            $payments = $query->paginate($request->per_page ?? 20);
+
+            $payments->getCollection()->transform(function ($payment) {
+                return [
+                    'id' => $payment->id,
+                    'organization_id' => $payment->organization_id,
+                    'organization_name' => $payment->organization?->name,
+                    'subscription_id' => $payment->subscription_id,
+                    'plan_name' => $payment->subscription?->plan?->name,
+                    'amount' => $payment->amount,
+                    'currency' => $payment->currency,
+                    'payment_method' => $payment->payment_method,
+                    'payment_reference' => $payment->payment_reference,
+                    'payment_date' => $payment->payment_date?->toDateString(),
+                    'status' => $payment->status,
+                    'payment_type' => $payment->payment_type,
+                    'confirmed_at' => $payment->confirmed_at?->toISOString(),
+                    'notes' => $payment->notes,
+                ];
+            });
+
+            return response()->json($payments);
+        } catch (\Exception $e) {
+            \Log::error('Failed to list license payments: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to list license payments'], 500);
+        }
+    }
+
+    /**
+     * Get organization revenue history with breakdown
+     */
+    public function getOrganizationRevenueHistory(Request $request, string $organizationId)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        try {
+            $organization = Organization::find($organizationId);
+            if (!$organization) {
+                return response()->json(['error' => 'Organization not found'], 404);
+            }
+
+            // Get all confirmed payments for this organization
+            $payments = PaymentRecord::where('organization_id', $organizationId)
+                ->where('status', PaymentRecord::STATUS_CONFIRMED)
+                ->whereNotNull('confirmed_at')
+                ->with(['subscription.plan', 'discountCode', 'confirmedByUser'])
+                ->orderBy('confirmed_at', 'desc')
+                ->get();
+
+            // Calculate totals by payment type
+            $totalsByType = [
+                PaymentRecord::TYPE_LICENSE => ['AFN' => 0, 'USD' => 0, 'count' => 0],
+                PaymentRecord::TYPE_MAINTENANCE => ['AFN' => 0, 'USD' => 0, 'count' => 0],
+                PaymentRecord::TYPE_RENEWAL => ['AFN' => 0, 'USD' => 0, 'count' => 0],
+            ];
+
+            $totalRevenue = ['AFN' => 0, 'USD' => 0];
+            $paymentsByYear = [];
+            $paymentsByMonth = [];
+
+            foreach ($payments as $payment) {
+                $netAmount = $payment->getNetAmount();
+                $currency = $payment->currency;
+                $paymentType = $payment->payment_type ?? PaymentRecord::TYPE_RENEWAL;
+                $confirmedAt = $payment->confirmed_at;
+
+                // Update totals by type
+                if (isset($totalsByType[$paymentType])) {
+                    $totalsByType[$paymentType][$currency] += $netAmount;
+                    $totalsByType[$paymentType]['count']++;
+                }
+
+                // Update total revenue
+                $totalRevenue[$currency] += $netAmount;
+
+                // Group by year
+                $year = $confirmedAt->format('Y');
+                if (!isset($paymentsByYear[$year])) {
+                    $paymentsByYear[$year] = ['AFN' => 0, 'USD' => 0, 'count' => 0];
+                }
+                $paymentsByYear[$year][$currency] += $netAmount;
+                $paymentsByYear[$year]['count']++;
+
+                // Group by month
+                $monthKey = $confirmedAt->format('Y-m');
+                if (!isset($paymentsByMonth[$monthKey])) {
+                    $paymentsByMonth[$monthKey] = ['AFN' => 0, 'USD' => 0, 'count' => 0];
+                }
+                $paymentsByMonth[$monthKey][$currency] += $netAmount;
+                $paymentsByMonth[$monthKey]['count']++;
+            }
+
+            // Transform payments for response
+            $paymentList = $payments->map(function ($payment) {
+                return [
+                    'id' => $payment->id,
+                    'subscription_id' => $payment->subscription_id,
+                    'plan_name' => $payment->subscription?->plan?->name,
+                    'amount' => (float) $payment->amount,
+                    'currency' => $payment->currency,
+                    'discount_amount' => (float) $payment->discount_amount,
+                    'net_amount' => $payment->getNetAmount(),
+                    'payment_method' => $payment->payment_method,
+                    'payment_reference' => $payment->payment_reference,
+                    'payment_date' => $payment->payment_date?->toDateString(),
+                    'payment_type' => $payment->payment_type ?? PaymentRecord::TYPE_RENEWAL,
+                    'payment_type_label' => $payment->getPaymentTypeLabel(),
+                    'billing_period' => $payment->billing_period,
+                    'billing_period_label' => $payment->getBillingPeriodLabel(),
+                    'is_recurring' => $payment->is_recurring,
+                    'confirmed_at' => $payment->confirmed_at?->toISOString(),
+                    'confirmed_by' => $payment->confirmedByUser?->email,
+                    'discount_code' => $payment->discountCode?->code,
+                    'notes' => $payment->notes,
+                    'invoice_number' => $payment->invoice_number,
+                ];
+            });
+
+            return response()->json([
+                'data' => [
+                    'organization' => [
+                        'id' => $organization->id,
+                        'name' => $organization->name,
+                    ],
+                    'total_revenue' => $totalRevenue,
+                    'totals_by_type' => $totalsByType,
+                    'payments_by_year' => $paymentsByYear,
+                    'payments_by_month' => $paymentsByMonth,
+                    'payments' => $paymentList,
+                    'total_payments' => $payments->count(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to get organization revenue history: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to get organization revenue history'], 500);
+        }
     }
 }

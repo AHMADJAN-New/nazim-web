@@ -36,11 +36,11 @@ const statusLabelMap = (
 ): Record<AdmissionStatus, string> => ({
   pending: t('admissions.pending') || 'Pending',
   admitted: t('admissions.admitted') || 'Admitted',
-  active: t('admissions.active') || 'Active',
-  inactive: t('admissions.inactive') || 'Inactive',
-  suspended: t('admissions.suspended') || 'Suspended',
+  active: t('events.active') || 'Active',
+  inactive: t('events.inactive') || 'Inactive',
+  suspended: t('students.suspended') || 'Suspended',
   withdrawn: t('admissions.withdrawn') || 'Withdrawn',
-  graduated: t('admissions.graduated') || 'Graduated',
+  graduated: t('students.graduated') || 'Graduated',
 });
 
 const formatNumber = (value?: number) => (value ?? 0).toLocaleString();
@@ -222,7 +222,7 @@ const StudentAdmissionsReport = () => {
         }}
         secondaryActions={[
           {
-            label: t('common.refresh') || 'Refresh',
+            label: t('events.refresh') || 'Refresh',
             onClick: () => refetch(),
             icon: <RefreshCw className="h-4 w-4" />,
             variant: 'outline',
@@ -233,20 +233,20 @@ const StudentAdmissionsReport = () => {
             <ReportExportButtons
               data={report.recentAdmissions}
               columns={[
-                { key: 'student_name', label: t('students.name') || 'Student Name' },
-                { key: 'admission_no', label: t('admissions.admissionNo') || 'Admission #' },
-                { key: 'card_number', label: t('admissions.cardNumber') || 'Card #' },
+                { key: 'student_name', label: t('events.name') || 'Student Name' },
+                { key: 'admission_no', label: t('examReports.admissionNo') || 'Admission #' },
+                { key: 'card_number', label: t('attendanceReports.cardNumber') || 'Card #' },
                 { key: 'school', label: t('admissions.school') || 'School' },
-                { key: 'class', label: t('admissions.class') || 'Class' },
-                { key: 'section', label: t('admissions.section') || 'Section' },
+                { key: 'class', label: t('search.class') || 'Class' },
+                { key: 'section', label: t('events.section') || 'Section' },
                 { key: 'academic_year', label: t('admissions.academicYear') || 'Academic Year' },
                 { key: 'residency_type', label: t('admissions.residency') || 'Residency Type' },
                 { key: 'is_boarder', label: t('admissions.boarder') || 'Boarder' },
                 { key: 'room', label: t('admissions.room') || 'Room' },
                 { key: 'guardian_name', label: t('admissions.guardian') || 'Guardian Name' },
                 { key: 'guardian_phone', label: t('admissions.guardianPhone') || 'Guardian Phone' },
-                { key: 'enrollment_status', label: t('admissions.status') || 'Enrollment Status' },
-                { key: 'admission_date', label: t('admissions.admissionDate') || 'Admission Date' },
+                { key: 'enrollment_status', label: t('events.status') || 'Enrollment Status' },
+                { key: 'admission_date', label: t('studentReportCard.admissionDate') || 'Admission Date' },
               ]}
               reportKey="student_admissions"
               title={t('admissions.reportTitle') || 'Student Admissions Report'}
@@ -256,7 +256,7 @@ const StudentAdmissionsReport = () => {
               templateType="student_admissions"
               disabled={!report || report.recentAdmissions.length === 0 || isLoading}
               errorNoSchool={t('admissions.schoolRequiredForExport') || 'A school is required to export the report.'}
-              errorNoData={t('admissions.noDataToExport') || 'No data to export'}
+              errorNoData={t('events.noDataToExport') || 'No data to export'}
               successPdf={t('admissions.reportExported') || 'PDF report generated successfully'}
               successExcel={t('admissions.reportExported') || 'Excel report generated successfully'}
               errorPdf={t('admissions.exportFailed') || 'Failed to generate PDF report'}
@@ -293,7 +293,7 @@ const StudentAdmissionsReport = () => {
               options={(schools || []).map((school) => ({ label: school.schoolName, value: school.id }))}
               value={filters.schoolId || ''}
               onValueChange={(value) => handleFilterChange('schoolId', value || undefined)}
-              placeholder={t('admissions.allSchools') || 'All schools'}
+              placeholder={t('leave.allSchools') || 'All schools'}
             />
           </div>
           <div className="space-y-2">
@@ -306,7 +306,7 @@ const StudentAdmissionsReport = () => {
                 <SelectValue placeholder={t('admissions.selectAcademicYear') || 'Select year'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
                 {(academicYears || []).map((year) => (
                   <SelectItem key={year.id} value={year.id}>
                     {year.name}
@@ -325,7 +325,7 @@ const StudentAdmissionsReport = () => {
                 <SelectValue placeholder={t('admissions.allResidency') || 'All residency'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
                 {(residencyTypes || []).map((residency) => (
                   <SelectItem key={residency.id} value={residency.id}>
                     {residency.name}
@@ -335,16 +335,16 @@ const StudentAdmissionsReport = () => {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>{t('admissions.status') || 'Status'}</Label>
+            <Label>{t('events.status') || 'Status'}</Label>
             <Select
               value={filters.enrollmentStatus || 'all'}
               onValueChange={(value) => handleFilterChange('enrollmentStatus', value as AdmissionStatus | 'all')}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t('admissions.allStatus') || 'All status'} />
+                <SelectValue placeholder={t('userManagement.allStatus') || 'All status'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
                 {statusOrder.map((status) => (
                   <SelectItem key={status} value={status}>
                     {statusLabels[status]}
@@ -354,11 +354,11 @@ const StudentAdmissionsReport = () => {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>{t('admissions.fromDate') || 'From date'}</Label>
+            <Label>{t('library.fromDate') || 'From date'}</Label>
             <CalendarDatePicker date={filters.fromDate || '' ? new Date(filters.fromDate || '') : undefined} onDateChange={(date) => handleFilterChange("fromDate", date ? date.toISOString().split("T")[0] : "")} />
           </div>
           <div className="space-y-2">
-            <Label>{t('admissions.toDate') || 'To date'}</Label>
+            <Label>{t('library.toDate') || 'To date'}</Label>
             <CalendarDatePicker date={filters.toDate || '' ? new Date(filters.toDate || '') : undefined} onDateChange={(date) => handleFilterChange("toDate", date ? date.toISOString().split("T")[0] : "")} />
           </div>
           <div className="flex items-center justify-between rounded-lg border px-4 py-3 md:col-span-2">
@@ -394,8 +394,8 @@ const StudentAdmissionsReport = () => {
       {!isLoading && isError && !hasInvalidRange && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>{t('common.error') || 'Error'}</AlertTitle>
-          <AlertDescription>{(error as Error)?.message || t('common.unexpectedError') || 'Could not load report.'}</AlertDescription>
+          <AlertTitle>{t('events.error') || 'Error'}</AlertTitle>
+          <AlertDescription>{(error as Error)?.message || t('events.unexpectedError') || 'Could not load report.'}</AlertDescription>
         </Alert>
       )}
 
@@ -405,7 +405,7 @@ const StudentAdmissionsReport = () => {
           {/* Summary Cards */}
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <SummaryCard label={t('admissions.totalAdmissions') || 'Total admissions'} value={report.totals.total} icon={BarChart3} tone="primary" />
-            <SummaryCard label={t('admissions.active') || 'Active'} value={report.totals.active} icon={BarChart3} tone="success" />
+            <SummaryCard label={t('events.active') || 'Active'} value={report.totals.active} icon={BarChart3} tone="success" />
             <SummaryCard label={t('admissions.pending') || 'Pending'} value={report.totals.pending} icon={BarChart3} tone="warning" />
             <SummaryCard label={t('admissions.boarder') || 'Boarders'} value={report.totals.boarders} icon={Building2} />
           </div>
@@ -421,7 +421,7 @@ const StudentAdmissionsReport = () => {
                   <Table className="w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('admissions.status') || 'Status'}</TableHead>
+                        <TableHead>{t('events.status') || 'Status'}</TableHead>
                         <TableHead className="text-right">{t('admissions.totalAdmissions') || 'Count'}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -461,7 +461,7 @@ const StudentAdmissionsReport = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t('admissions.school') || 'School'}</TableHead>
-                        <TableHead className="text-right hidden sm:table-cell">{t('admissions.active') || 'Active'}</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">{t('events.active') || 'Active'}</TableHead>
                         <TableHead className="text-right hidden md:table-cell">{t('admissions.boarder') || 'Boarders'}</TableHead>
                         <TableHead className="text-right">{t('admissions.totalAdmissions') || 'Total'}</TableHead>
                       </TableRow>
@@ -499,7 +499,7 @@ const StudentAdmissionsReport = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t('admissions.academicYear') || 'Year'}</TableHead>
-                        <TableHead className="text-right hidden sm:table-cell">{t('admissions.active') || 'Active'}</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">{t('events.active') || 'Active'}</TableHead>
                         <TableHead className="text-right hidden md:table-cell">{t('admissions.boarder') || 'Boarders'}</TableHead>
                         <TableHead className="text-right">{t('admissions.totalAdmissions') || 'Total'}</TableHead>
                       </TableRow>
@@ -537,7 +537,7 @@ const StudentAdmissionsReport = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t('admissions.residencyType') || 'Type'}</TableHead>
-                        <TableHead className="text-right hidden sm:table-cell">{t('admissions.active') || 'Active'}</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">{t('events.active') || 'Active'}</TableHead>
                         <TableHead className="text-right hidden md:table-cell">{t('admissions.boarder') || 'Boarders'}</TableHead>
                         <TableHead className="text-right">{t('admissions.totalAdmissions') || 'Total'}</TableHead>
                       </TableRow>
@@ -574,7 +574,7 @@ const StudentAdmissionsReport = () => {
                   <CardTitle>{t('admissions.recentAdmissions') || 'Admissions'}</CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
                     {report.pagination.total > 0
-                      ? `${t('pagination.showing') || 'Showing'} ${report.pagination.from} ${t('pagination.to') || 'to'} ${report.pagination.to} ${t('pagination.of') || 'of'} ${formatNumber(report.pagination.total)} ${t('pagination.entries') || 'entries'}`
+                      ? `${t('library.showing') || 'Showing'} ${report.pagination.from} ${t('events.to') || 'to'} ${report.pagination.to} ${t('events.of') || 'of'} ${formatNumber(report.pagination.total)} ${t('pagination.entries') || 'entries'}`
                       : t('admissions.noDataFound') || 'No admissions found'}
                   </p>
                 </div>
@@ -588,12 +588,12 @@ const StudentAdmissionsReport = () => {
                 <Table className="w-full">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('students.name') || 'Student'}</TableHead>
+                      <TableHead>{t('events.name') || 'Student'}</TableHead>
                       <TableHead className="hidden md:table-cell">{t('admissions.schoolClass') || 'School / Class'}</TableHead>
                       <TableHead className="hidden lg:table-cell">{t('admissions.residency') || 'Residency'}</TableHead>
                       <TableHead className="hidden lg:table-cell">{t('admissions.guardian') || 'Guardian'}</TableHead>
-                      <TableHead>{t('admissions.status') || 'Status'}</TableHead>
-                      <TableHead className="hidden sm:table-cell">{t('admissions.admissionDate') || 'Date'}</TableHead>
+                      <TableHead>{t('events.status') || 'Status'}</TableHead>
+                      <TableHead className="hidden sm:table-cell">{t('studentReportCard.admissionDate') || 'Date'}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -608,16 +608,16 @@ const StudentAdmissionsReport = () => {
                         <TableRow key={admission.id}>
                           <TableCell>
                             <div className="space-y-1 min-w-0">
-                              <div className="font-semibold break-words">{admission.student?.fullName || t('students.notAvailable')}</div>
+                              <div className="font-semibold break-words">{admission.student?.fullName || t('events.notAvailable')}</div>
                               <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
                                 {admission.student?.admissionNumber && (
                                   <Badge variant="outline" className="text-xs">
-                                    {t('admissions.admissionNo') || 'Adm'}: {admission.student.admissionNumber}
+                                    {t('examReports.admissionNo') || 'Adm'}: {admission.student.admissionNumber}
                                   </Badge>
                                 )}
                                 {admission.student?.cardNumber && (
                                   <Badge variant="secondary" className="text-xs">
-                                    {t('admissions.cardNumber') || 'Card'}: {admission.student.cardNumber}
+                                    {t('attendanceReports.cardNumber') || 'Card'}: {admission.student.cardNumber}
                                   </Badge>
                                 )}
                               </div>
@@ -656,7 +656,7 @@ const StudentAdmissionsReport = () => {
                           </TableCell>
                           <TableCell className="hidden lg:table-cell">
                             <div className="space-y-0.5 min-w-0">
-                              <div className="font-medium break-words">{admission.student?.guardianName || t('students.notAvailable')}</div>
+                              <div className="font-medium break-words">{admission.student?.guardianName || t('events.notAvailable')}</div>
                               {admission.student?.guardianPhone && (
                                 <Button variant="ghost" size="sm" className="h-6 text-xs px-2" asChild>
                                   <a href={`tel:${admission.student.guardianPhone}`}>

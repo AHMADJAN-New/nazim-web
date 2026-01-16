@@ -320,14 +320,14 @@ export function StudentProfilePrint({
       addressSection: t('students.addressInfo') || 'Address Information',
       guardianSection: t('students.guardianInfo') || 'Guardian Information',
       otherInfo: t('students.otherInfo') || 'Other Information',
-      name: t('students.name') || 'Name',
-      fatherName: t('students.fatherName') || 'Father Name',
+      name: t('events.name') || 'Name',
+      fatherName: t('examReports.fatherName') || 'Father Name',
       grandfatherName: t('students.grandfatherName') || 'Grandfather Name',
       birthYear: t('students.birthYear') || 'Birth Year',
       tazkiraNumber: t('students.tazkiraNumber') || 'Tazkira Number',
       idNumber: t('students.idNumber') || 'ID Number',
-      cardNumber: t('students.cardNumber') || 'Card Number',
-      admissionNo: t('students.admissionNo') || 'Admission No',
+      cardNumber: t('attendanceReports.cardNumber') || 'Card Number',
+      admissionNo: t('examReports.admissionNo') || 'Admission No',
       admissionYear: t('students.admissionYear') || 'Admission Year',
       applyingGrade: t('students.applyingGrade') || 'Applying Grade',
       schoolLabel: t('students.school') || 'School',
@@ -340,7 +340,7 @@ export function StudentProfilePrint({
       homeAddress: t('students.homeAddress') || 'Home Address',
       guardianName: t('students.guardianName') || 'Guardian Name',
       guardianRelation: t('students.relation') || 'Relation',
-      guardianPhone: t('students.phone') || 'Phone',
+      guardianPhone: t('events.phone') || 'Phone',
       guardianTazkira: t('students.guardianTazkira') || 'National ID',
       guarantorName: t('students.zaminName') || 'Guarantor Name',
       guarantorPhone: t('students.zaminPhone') || 'Guarantor Phone',
@@ -348,12 +348,12 @@ export function StudentProfilePrint({
       guarantorAddress: t('students.zaminAddress') || 'Guarantor Address',
       isOrphan: t('students.orphanStatus') || 'Is Orphan?',
       feeStatus: t('students.admissionFeeStatus') || 'Fee Status',
-      createdAt: t('students.createdAt') || 'Created At',
-      updatedAt: t('students.updatedAt') || 'Updated At',
+      createdAt: t('events.createdAt') || 'Created At',
+      updatedAt: t('events.updatedAt') || 'Updated At',
       guardianLabel: t('students.guardian') || 'Guardian',
       studentLabel: t('students.student') || 'Student',
-      yes: t('common.yes') || 'Yes',
-      no: t('common.no') || 'No',
+      yes: t('events.yes') || 'Yes',
+      no: t('events.no') || 'No',
       commitmentsTitle: t('students.commitmentsTitle') || 'Commitments, Guarantee & Approval',
       commitmentTitle: t('students.commitmentTitle') || 'Commitment',
       guaranteeTitle: t('students.guaranteeTitle') || 'Guarantee',
@@ -452,7 +452,7 @@ export function StudentProfilePrint({
             </tr>
             {student.mother_name && (
               <tr>
-                <td className="print-label">{t('students.motherName') || 'Mother Name'}</td>
+                <td className="print-label">{t('studentReportCard.motherName') || 'Mother Name'}</td>
                 <td className="print-value">{displayValue(student.mother_name)}</td>
                 <td className="print-label">{t('students.gender') || 'Gender'}</td>
                 <td className="print-value">{student.gender === 'male' ? t('students.male') : t('students.female')}</td>
@@ -591,7 +591,7 @@ export function StudentProfilePrint({
           ))}
         </ul>
         <div style={{ marginTop: '18px' }}>
-          {t('common.signature') || 'Signature'}: <span className="signature-line"></span>
+          {t('events.signature') || 'Signature'}: <span className="signature-line"></span>
         </div>
       </div>
 

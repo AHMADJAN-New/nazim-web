@@ -874,11 +874,11 @@ export function IdCardLayoutEditor({
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onCancel}>
-            {t('common.cancel')}
+            {t('events.cancel')}
           </Button>
           <Button onClick={handleSave}>
             <Save className="h-4 w-4 mr-2" />
-            {t('common.save')}
+            {t('events.save')}
           </Button>
         </div>
       </div>
@@ -1328,7 +1328,7 @@ export function IdCardLayoutEditor({
                             className="text-xs"
                           >
                             <RotateCcw className="h-3 w-3 mr-1" />
-                            {t('common.reset') || 'Reset'}
+                            {t('events.reset') || 'Reset'}
                           </Button>
                         </div>
                         
@@ -1388,7 +1388,7 @@ export function IdCardLayoutEditor({
                               variant="outline"
                               onClick={() => clearFieldFont(selectedField, 'fontSize')}
                               className="h-8 px-2"
-                              title={t('common.resetToDefault') || 'Reset to default'}
+                              title={t('events.resetToDefault') || 'Reset to default'}
                             >
                               <RotateCcw className="h-3 w-3" />
                             </Button>
@@ -1692,7 +1692,7 @@ export function IdCardLayoutEditor({
                           className="text-xs"
                         >
                           <RotateCcw className="h-3 w-3 mr-1" />
-                          {t('common.reset') || 'Reset'}
+                          {t('events.reset') || 'Reset'}
                         </Button>
                       </div>
                       
@@ -1749,7 +1749,7 @@ export function IdCardLayoutEditor({
                             variant="outline"
                             onClick={() => clearFieldFont(selectedField, 'fontSize')}
                             className="h-8 px-2"
-                            title={t('common.reset') || 'Reset to default'}
+                            title={t('events.reset') || 'Reset to default'}
                           >
                             <RotateCcw className="h-3 w-3" />
                           </Button>
@@ -1787,7 +1787,7 @@ export function IdCardLayoutEditor({
                             variant="outline"
                             onClick={() => clearFieldFont(selectedField, 'textColor')}
                             className="h-8 px-2"
-                            title={t('common.resetToDefault') || 'Reset to default'}
+                            title={t('events.resetToDefault') || 'Reset to default'}
                           >
                             <RotateCcw className="h-3 w-3" />
                           </Button>
@@ -1883,8 +1883,8 @@ export function IdCardLayoutEditor({
                                 <SelectItem value="student_id">{t('idCards.studentId') || 'Student ID'}</SelectItem>
                                 <SelectItem value="student_code">{t('idCards.studentCode') || 'Student Code'}</SelectItem>
                                 <SelectItem value="admission_number">{t('idCards.admissionNumber') || 'Admission Number'}</SelectItem>
-                                <SelectItem value="card_number">{t('idCards.cardNumber') || 'Card Number'}</SelectItem>
-                                <SelectItem value="roll_number">{t('idCards.rollNumber') || 'Roll Number'}</SelectItem>
+                                <SelectItem value="card_number">{t('attendanceReports.cardNumber') || 'Card Number'}</SelectItem>
+                                <SelectItem value="roll_number">{t('students.rollNumber') || 'Roll Number'}</SelectItem>
                               </SelectContent>
                             </Select>
                             <p className="text-xs text-muted-foreground">

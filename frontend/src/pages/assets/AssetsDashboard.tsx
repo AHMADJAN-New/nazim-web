@@ -21,7 +21,8 @@ import {
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, ChartSkeleton } from '@/components/charts/LazyChart';
+import { Suspense } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -84,7 +85,7 @@ export default function AssetsDashboard() {
     if (error) {
         return (
             <div className="text-center py-8 text-destructive">
-                {t('common.error') || 'An error occurred'}: {(error as Error).message}
+                {t('events.error') || 'An error occurred'}: {(error as Error).message}
             </div>
         );
     }
@@ -92,7 +93,7 @@ export default function AssetsDashboard() {
     if (!dashboard) {
         return (
             <div className="text-center py-8 text-muted-foreground">
-                {t('common.noData') || 'No data available'}
+                {t('events.noData') || 'No data available'}
             </div>
         );
     }
@@ -516,7 +517,7 @@ export default function AssetsDashboard() {
                             size="sm"
                             onClick={() => navigate('/assets/assignments')}
                         >
-                            {t('assets.viewAll') || 'View All'}
+                            {t('events.viewAll') || 'View All'}
                         </Button>
                     </CardHeader>
                     <CardContent>

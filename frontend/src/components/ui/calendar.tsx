@@ -1,11 +1,15 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import * as React from "react";
-import { DayPicker } from "react-day-picker";
+import { lazy, Suspense } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { LoadingSpinner } from "@/components/ui/loading";
 
-export type CalendarProps = React.ComponentProps<typeof DayPicker>;
+// Lazy load react-day-picker to reduce initial bundle size (759 KB)
+const DayPicker = lazy(() => import("react-day-picker").then((mod) => ({ default: mod.DayPicker })));
+
+export type CalendarProps = React.ComponentProps<typeof import("react-day-picker").DayPicker>;
 
 function Calendar({
   className,
@@ -14,7 +18,8 @@ function Calendar({
   ...props
 }: CalendarProps) {
   return (
-    <DayPicker
+    <Suspense fallback={<div className="flex items-center justify-center h-[300px]"><LoadingSpinner /></div>}>
+      <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn("p-3", className)}
       classNames={{
@@ -58,7 +63,8 @@ function Calendar({
         IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
       }}
       {...props}
-    />
+      />
+    </Suspense>
   );
 }
 Calendar.displayName = "Calendar";

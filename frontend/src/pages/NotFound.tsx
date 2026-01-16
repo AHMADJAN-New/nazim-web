@@ -26,7 +26,7 @@ export default function NotFound() {
             </Button>
             <Button variant="outline" onClick={() => window.history.back()}>
               <ArrowLeft className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''}`} />
-              {t('notFound.goBack') || 'Go Back'}
+              {t('events.goBack') || 'Go Back'}
             </Button>
           </div>
         </CardContent>

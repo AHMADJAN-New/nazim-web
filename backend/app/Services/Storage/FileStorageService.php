@@ -2,9 +2,13 @@
 
 namespace App\Services\Storage;
 
+use App\Services\Storage\ImageCompressionService;
+use App\Services\Subscription\UsageTrackingService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -21,6 +25,11 @@ class FileStorageService
     // Storage disks
     private const DISK_PRIVATE = 'local';
     private const DISK_PUBLIC = 'public';
+
+    public function __construct(
+        private UsageTrackingService $usageTrackingService,
+        private ImageCompressionService $imageCompressionService
+    ) {}
 
     // Resource type paths
     private const PATH_STUDENTS = 'students';
@@ -46,8 +55,16 @@ class FileStorageService
         string $studentId,
         string $schoolId
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_STUDENTS, $studentId, 'pictures');
-        return $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     /**
@@ -61,9 +78,17 @@ class FileStorageService
         string $schoolId,
         ?string $documentType = null
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $subPath = $documentType ? "documents/{$documentType}" : 'documents';
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_STUDENTS, $studentId, $subPath);
-        return $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     // ==============================================
@@ -80,8 +105,16 @@ class FileStorageService
         string $staffId,
         string $schoolId
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_STAFF, $staffId, 'pictures');
-        return $this->storeFile($file, $path, self::DISK_PUBLIC);
+        $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     /**
@@ -94,8 +127,16 @@ class FileStorageService
         string $staffId,
         string $schoolId
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_STAFF, $staffId, 'pictures');
-        return $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     /**
@@ -109,9 +150,17 @@ class FileStorageService
         string $schoolId,
         ?string $documentType = null
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $subPath = $documentType ? "documents/{$documentType}" : 'documents';
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_STAFF, $staffId, $subPath);
-        return $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     // ==============================================
@@ -129,9 +178,17 @@ class FileStorageService
         string $schoolId,
         ?string $documentType = null
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $subPath = $documentType ? "{$documentType}" : 'documents';
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_COURSES, $courseId, $subPath);
-        return $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     // ==============================================
@@ -149,9 +206,17 @@ class FileStorageService
         string $schoolId,
         ?string $documentType = null
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $subPath = $documentType ? "{$documentType}" : 'documents';
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_EXAMS, $examId, $subPath);
-        return $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     // ==============================================
@@ -168,9 +233,17 @@ class FileStorageService
         string $schoolId,
         ?string $documentType = null
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $subPath = $documentType ? "finance/{$documentType}" : 'finance';
         $path = $this->buildPath($organizationId, $schoolId, $subPath);
-        return $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     // ==============================================
@@ -187,8 +260,16 @@ class FileStorageService
         string $documentType,
         string $documentId
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_DMS, $documentType, $documentId, 'files');
-        return $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     // ==============================================
@@ -205,8 +286,16 @@ class FileStorageService
         string $eventId,
         string $schoolId
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_EVENTS, $eventId, 'attachments');
-        return $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     /**
@@ -220,8 +309,16 @@ class FileStorageService
         string $guestId,
         string $schoolId
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_EVENTS, $eventId, 'guests', $guestId);
-        return $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     /**
@@ -236,9 +333,33 @@ class FileStorageService
         string $guestId,
         string $schoolId
     ): string {
+        // Check storage limit before storing
+        $contentSizeInGB = strlen($content) / 1073741824;
+        $check = $this->usageTrackingService->canStoreFile($organizationId, $contentSizeInGB);
+        if (!$check['allowed']) {
+            // Use HttpException so Laravel properly handles 402 status code
+            throw new HttpException(
+                Response::HTTP_PAYMENT_REQUIRED,
+                $check['message'] ?? 'Storage limit exceeded',
+                null,
+                [
+                    'code' => 'STORAGE_LIMIT_REACHED',
+                    'resource_key' => 'storage_gb',
+                    'current' => $check['current'],
+                    'limit' => $check['limit'],
+                    'file_size_gb' => $contentSizeInGB,
+                    'upgrade_required' => true,
+                ]
+            );
+        }
+
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_EVENTS, $eventId, 'guests', $guestId);
         $fullPath = $path . '/' . $filename;
         Storage::disk(self::DISK_PUBLIC)->put($fullPath, $content);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsageForContent($content, $organizationId);
+
         return $fullPath;
     }
 
@@ -254,9 +375,33 @@ class FileStorageService
         string $guestId,
         string $schoolId
     ): string {
+        // Check storage limit before storing
+        $contentSizeInGB = strlen($content) / 1073741824;
+        $check = $this->usageTrackingService->canStoreFile($organizationId, $contentSizeInGB);
+        if (!$check['allowed']) {
+            // Use HttpException so Laravel properly handles 402 status code
+            throw new HttpException(
+                Response::HTTP_PAYMENT_REQUIRED,
+                $check['message'] ?? 'Storage limit exceeded',
+                null,
+                [
+                    'code' => 'STORAGE_LIMIT_REACHED',
+                    'resource_key' => 'storage_gb',
+                    'current' => $check['current'],
+                    'limit' => $check['limit'],
+                    'file_size_gb' => $contentSizeInGB,
+                    'upgrade_required' => true,
+                ]
+            );
+        }
+
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_EVENTS, $eventId, 'guests', $guestId, 'thumbs');
         $fullPath = $path . '/' . $filename;
         Storage::disk(self::DISK_PUBLIC)->put($fullPath, $content);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsageForContent($content, $organizationId);
+
         return $fullPath;
     }
 
@@ -270,8 +415,16 @@ class FileStorageService
         string $eventId,
         string $schoolId
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_EVENTS, $eventId, 'banners');
-        return $this->storeFile($file, $path, self::DISK_PUBLIC);
+        $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     /**
@@ -284,8 +437,16 @@ class FileStorageService
         string $eventId,
         string $schoolId
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_EVENTS, $eventId, 'thumbnails');
-        return $this->storeFile($file, $path, self::DISK_PUBLIC);
+        $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     // ==============================================
@@ -303,11 +464,19 @@ class FileStorageService
         string $templateId,
         string $side = 'front'
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_TEMPLATES, 'id-cards', $templateId);
         $extension = strtolower($file->getClientOriginalExtension());
         $filename = "background_{$side}.{$extension}";
 
-        return Storage::disk(self::DISK_PRIVATE)->putFileAs($path, $file, $filename);
+        $filePath = Storage::disk(self::DISK_PRIVATE)->putFileAs($path, $file, $filename);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     /**
@@ -320,11 +489,19 @@ class FileStorageService
         string $schoolId,
         string $templateId
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_TEMPLATES, 'certificates', $templateId);
         $extension = strtolower($file->getClientOriginalExtension());
         $filename = "background.{$extension}";
-        
-        return Storage::disk(self::DISK_PRIVATE)->putFileAs($path, $file, $filename);
+
+        $filePath = Storage::disk(self::DISK_PRIVATE)->putFileAs($path, $file, $filename);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     // ==============================================
@@ -342,10 +519,33 @@ class FileStorageService
         string $schoolId,
         string $reportType = 'general'
     ): string {
+        // Check storage limit before storing
+        $contentSizeInGB = strlen($content) / 1073741824;
+        $check = $this->usageTrackingService->canStoreFile($organizationId, $contentSizeInGB);
+        if (!$check['allowed']) {
+            // Use HttpException so Laravel properly handles 402 status code
+            throw new HttpException(
+                Response::HTTP_PAYMENT_REQUIRED,
+                $check['message'] ?? 'Storage limit exceeded',
+                null,
+                [
+                    'code' => 'STORAGE_LIMIT_REACHED',
+                    'resource_key' => 'storage_gb',
+                    'current' => $check['current'],
+                    'limit' => $check['limit'],
+                    'file_size_gb' => $contentSizeInGB,
+                    'upgrade_required' => true,
+                ]
+            );
+        }
+
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_REPORTS, $reportType);
         $fullPath = $path . '/' . $filename;
 
         Storage::disk(self::DISK_PRIVATE)->put($fullPath, $content);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsageForContent($content, $organizationId);
 
         return $fullPath;
     }
@@ -360,8 +560,16 @@ class FileStorageService
         string $schoolId,
         string $reportType = 'general'
     ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_REPORTS, $reportType);
-        return $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
     }
 
     // ==============================================
@@ -377,11 +585,37 @@ class FileStorageService
             return false;
         }
 
-        if (Storage::disk($disk)->exists($path)) {
-            return Storage::disk($disk)->delete($path);
+        // Get file size before deletion for usage tracking
+        $fileSize = null;
+        $organizationId = null;
+
+        try {
+            if (Storage::disk($disk)->exists($path)) {
+                $fileSize = Storage::disk($disk)->size($path);
+                $organizationId = $this->extractOrganizationIdFromPath($path);
+            }
+        } catch (\Exception $e) {
+            \Log::warning("Failed to get file size before deletion: " . $e->getMessage());
         }
 
-        return false;
+        // Delete file
+        $deleted = false;
+        if (Storage::disk($disk)->exists($path)) {
+            $deleted = Storage::disk($disk)->delete($path);
+        }
+
+        // Decrement storage usage after successful deletion
+        if ($deleted && $fileSize !== null && $organizationId) {
+            try {
+                $fileSizeInGB = $fileSize / 1073741824; // Convert bytes to GB
+                $this->usageTrackingService->decrementStorageUsage($organizationId, $fileSizeInGB);
+            } catch (\Exception $e) {
+                \Log::error("Failed to decrement storage usage after file deletion: " . $e->getMessage());
+                // Don't throw - file is already deleted
+            }
+        }
+
+        return $deleted;
     }
 
     /**
@@ -576,14 +810,119 @@ class FileStorageService
     }
 
     /**
+     * Check storage limit before storing file
+     */
+    private function checkStorageLimit(UploadedFile $file, string $organizationId): void
+    {
+        try {
+            $fileSizeInBytes = $file->getSize();
+            $fileSizeInGB = $fileSizeInBytes / 1073741824; // Convert bytes to GB
+
+            $check = $this->usageTrackingService->canStoreFile($organizationId, $fileSizeInGB);
+
+            if (!$check['allowed']) {
+                // Use HttpException so Laravel properly handles 402 status code
+                throw new HttpException(
+                    Response::HTTP_PAYMENT_REQUIRED,
+                    $check['message'] ?? 'Storage limit exceeded',
+                    null,
+                    [
+                        'code' => 'STORAGE_LIMIT_REACHED',
+                        'resource_key' => 'storage_gb',
+                        'current' => $check['current'],
+                        'limit' => $check['limit'],
+                        'file_size_gb' => $fileSizeInGB,
+                        'upgrade_required' => true,
+                    ]
+                );
+            }
+        } catch (HttpException $e) {
+            // Re-throw HttpException as-is (includes 402 status)
+            throw $e;
+        } catch (\Exception $e) {
+            // Log other errors but don't block
+            \Log::warning("Failed to check storage limit: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update storage usage after file is stored
+     */
+    private function updateStorageUsage(UploadedFile $file, string $organizationId): void
+    {
+        try {
+            $fileSizeInBytes = $file->getSize();
+            $fileSizeInGB = $fileSizeInBytes / 1073741824; // Convert bytes to GB
+
+            $this->usageTrackingService->incrementStorageUsage($organizationId, $fileSizeInGB);
+        } catch (\Exception $e) {
+            \Log::error("Failed to update storage usage: " . $e->getMessage());
+            // Don't throw - file is already stored, just log the error
+        }
+    }
+
+    /**
+     * Update storage usage for file content (string)
+     */
+    private function updateStorageUsageForContent(string $content, string $organizationId): void
+    {
+        try {
+            $fileSizeInBytes = strlen($content);
+            $fileSizeInGB = $fileSizeInBytes / 1073741824; // Convert bytes to GB
+
+            $this->usageTrackingService->incrementStorageUsage($organizationId, $fileSizeInGB);
+        } catch (\Exception $e) {
+            \Log::error("Failed to update storage usage for content: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Extract organization_id from file path
+     * Path format: organizations/{org_id}/...
+     */
+    private function extractOrganizationIdFromPath(string $path): ?string
+    {
+        if (preg_match('/^organizations\/([^\/]+)/', $path, $matches)) {
+            return $matches[1];
+        }
+        return null;
+    }
+
+    /**
      * Store file with UUID filename
      */
     private function storeFile(UploadedFile $file, string $path, string $disk): string
     {
+        // Compress images before storing
+        if ($this->isImage($file)) {
+            try {
+                $compressed = $this->imageCompressionService->compressImage($file);
+                if ($compressed) {
+                    $file = $compressed;
+                }
+            } catch (\Exception $e) {
+                // Log error but continue with original file
+                \Log::warning("ImageCompressionService: Failed to compress image, using original", [
+                    'filename' => $file->getClientOriginalName(),
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         $extension = strtolower($file->getClientOriginalExtension());
         $filename = Str::uuid() . '.' . $extension;
 
         return Storage::disk($disk)->putFileAs($path, $file, $filename);
+    }
+
+    /**
+     * Check if file is an image
+     */
+    private function isImage(UploadedFile $file): bool
+    {
+        $mimeType = $file->getMimeType();
+        return str_starts_with($mimeType, 'image/') && 
+               in_array(strtolower($file->getClientOriginalExtension()), $this->getAllowedImageExtensions());
     }
 
     /**

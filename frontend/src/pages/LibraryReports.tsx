@@ -362,78 +362,91 @@ export default function LibraryReports() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Total Books</CardTitle>
+                        <CardTitle className="text-sm font-medium">
+                            {t('library.totalBooks') || 'Total Books'}
+                        </CardTitle>
                         <BookOpen className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats.totalBooks}</div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            {stats.totalCopies} total copies
+                            {stats.totalCopies} {t('library.totalCopiesLabel2') || 'total copies'}
                         </p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Available Copies</CardTitle>
+                        <CardTitle className="text-sm font-medium">
+                            {t('library.availableCopies') || 'Available Copies'}
+                        </CardTitle>
                         <BookCheck className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats.availableCopies}</div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            {stats.totalCopies - stats.availableCopies} on loan
+                            {stats.totalCopies - stats.availableCopies}{' '}
+                            {t('library.onLoanLabel') || 'on loan'}
                         </p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Active Loans</CardTitle>
+                        <CardTitle className="text-sm font-medium">
+                            {t('library.activeLoans') || 'Active Loans'}
+                        </CardTitle>
                         <BookCheck className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats.activeLoans}</div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Currently loaned out
+                            {t('library.currentlyLoanedOut') || 'Currently loaned out'}
                         </p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+                        <CardTitle className="text-sm font-medium">
+                            {t('library.overdue') || 'Overdue'}
+                        </CardTitle>
                         <AlertTriangle className="h-4 w-4 text-destructive" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-destructive">{stats.overdueCount}</div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Books past due date
+                            {t('library.booksPastDue') || 'Books past due date'}
                         </p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Due Soon</CardTitle>
+                        <CardTitle className="text-sm font-medium">
+                            {t('library.dueSoonBooks') || 'Due Soon'}
+                        </CardTitle>
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats.dueSoonCount}</div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Due in next 7 days
+                            {t('library.dueInNext7Days') || 'Due in next 7 days'}
                         </p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Loan History</CardTitle>
+                        <CardTitle className="text-sm font-medium">
+                            {t('library.loanHistory') || 'Loan History'}
+                        </CardTitle>
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{filteredLoanHistory.length}</div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            In selected date range
+                            {t('library.inSelectedDateRange') || 'In selected date range'}
                         </p>
                     </CardContent>
                 </Card>
@@ -444,13 +457,17 @@ export default function LibraryReports() {
                 <TabsList className="flex w-full gap-1 h-auto flex-shrink-0 overflow-x-auto pb-1">
                     <TabsTrigger value="books-report" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                         <FileText className="h-4 w-4" />
-                        <span className="hidden sm:inline">Books Report</span>
-                        <span className="sm:hidden">Books</span>
+                        <span className="hidden sm:inline">
+                            {t('library.booksReportTab') || 'Books Report'}
+                        </span>
+                        <span className="sm:hidden">{t('library.books') || 'Books'}</span>
                     </TabsTrigger>
                     <TabsTrigger value="overdue" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                         <AlertTriangle className="h-4 w-4" />
-                        <span className="hidden sm:inline">Overdue Books</span>
-                        <span className="sm:hidden">Overdue</span>
+                        <span className="hidden sm:inline">
+                            {t('library.overdueBooksTab') || 'Overdue Books'}
+                        </span>
+                        <span className="sm:hidden">{t('library.overdue') || 'Overdue'}</span>
                         {stats.overdueCount > 0 && (
                             <Badge variant="destructive" className="ml-1">
                                 {stats.overdueCount}
@@ -459,8 +476,10 @@ export default function LibraryReports() {
                     </TabsTrigger>
                     <TabsTrigger value="due-soon" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                         <Calendar className="h-4 w-4" />
-                        <span className="hidden sm:inline">Due Soon</span>
-                        <span className="sm:hidden">Due</span>
+                        <span className="hidden sm:inline">
+                            {t('library.dueSoonTab') || 'Due Soon'}
+                        </span>
+                        <span className="sm:hidden">{t('library.dueSoonShort') || 'Due'}</span>
                         {stats.dueSoonCount > 0 && (
                             <Badge variant="secondary" className="ml-1">
                                 {stats.dueSoonCount}
@@ -469,13 +488,17 @@ export default function LibraryReports() {
                     </TabsTrigger>
                     <TabsTrigger value="loan-history" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                         <History className="h-4 w-4" />
-                        <span className="hidden sm:inline">Loan History</span>
-                        <span className="sm:hidden">History</span>
+                        <span className="hidden sm:inline">
+                            {t('library.loanHistoryTab') || t('library.loanHistory') || 'Loan History'}
+                        </span>
+                        <span className="sm:hidden">{t('library.history') || 'History'}</span>
                     </TabsTrigger>
                     <TabsTrigger value="most-borrowed" className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                         <TrendingUp className="h-4 w-4" />
-                        <span className="hidden sm:inline">Most Borrowed</span>
-                        <span className="sm:hidden">Popular</span>
+                        <span className="hidden sm:inline">
+                            {t('library.mostBorrowedTab') || 'Most Borrowed'}
+                        </span>
+                        <span className="sm:hidden">{t('library.popularShort') || 'Popular'}</span>
                     </TabsTrigger>
                 </TabsList>
 
@@ -485,14 +508,16 @@ export default function LibraryReports() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <AlertTriangle className="h-5 w-5 text-destructive" />
-                                Overdue Books
+                                {t('library.overdueBooksTab') || 'Overdue Books'}
                             </CardTitle>
-                            <CardDescription>Books that are past their due date</CardDescription>
+                            <CardDescription>
+                                {t('library.overdueBooksDescription') || 'Books that are past their due date'}
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             {overdueLoans.length === 0 ? (
                                 <p className="text-sm text-muted-foreground text-center py-8">
-                                    No overdue books. Great job!
+                                    {t('library.noOverdue') || 'No overdue books. Great job!'}
                                 </p>
                             ) : (
                                 <>
@@ -593,13 +618,15 @@ export default function LibraryReports() {
                 <TabsContent value="due-soon" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Due Soon</CardTitle>
-                            <CardDescription>Books due for return in the next 7 days</CardDescription>
+                            <CardTitle>{t('library.dueSoonTab') || 'Due Soon'}</CardTitle>
+                            <CardDescription>
+                                {t('library.dueSoonDescription') || 'Books due for return in the next 7 days'}
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             {Array.isArray(dueSoon) && dueSoon.length === 0 ? (
                                 <p className="text-sm text-muted-foreground text-center py-8">
-                                    No books due in the next week.
+                                    {t('library.noBooksDueSoon') || 'No books due in the next week.'}
                                 </p>
                             ) : (
                                 <>
@@ -697,11 +724,13 @@ export default function LibraryReports() {
                 <TabsContent value="loan-history" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Loan History</CardTitle>
-                            <CardDescription>All loans within the selected date range</CardDescription>
+                            <CardTitle>{t('library.loanHistory') || 'Loan History'}</CardTitle>
+                            <CardDescription>
+                                {t('library.loanHistoryDescription') || 'All loans within the selected date range'}
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+                            <FilterPanel title={t('events.filters') || 'Search & Filter'}>
                                 <div className="flex flex-col md:flex-row gap-4 items-end">
                                     <div className="space-y-2">
                                         <Label htmlFor="date-from">From Date</Label>
@@ -732,7 +761,7 @@ export default function LibraryReports() {
 
                             {filteredLoanHistory.length === 0 ? (
                                 <p className="text-sm text-muted-foreground text-center py-8">
-                                    No loans found in the selected date range.
+                                    {t('library.noLoansInRange') || 'No loans found in the selected date range.'}
                                 </p>
                             ) : (
                                 <div className="space-y-2 max-h-[500px] overflow-y-auto">
@@ -744,7 +773,9 @@ export default function LibraryReports() {
                                             <div className="flex items-center justify-between">
                                                 <div className="font-medium">{loan.book?.title}</div>
                                                 <Badge variant={loan.returned_at ? 'secondary' : 'default'}>
-                                                    {loan.returned_at ? 'Returned' : 'Active'}
+                                                    {loan.returned_at
+                                                        ? t('library.returned') || 'Returned'
+                                                        : t('library.active') || 'Active'}
                                                 </Badge>
                                             </div>
                                             <div className="text-xs text-muted-foreground">
@@ -934,20 +965,20 @@ export default function LibraryReports() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium">Total Categories</CardTitle>
+                                <CardTitle className="text-sm font-medium">{t('library.totalCategories') || 'Total Categories'}</CardTitle>
                                 <Tag className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{booksReportStats.totalCategories}</div>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Unique categories
+                                    {t('library.uniqueCategories') || 'Unique categories'}
                                 </p>
                             </CardContent>
                         </Card>
 
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium">Total Price</CardTitle>
+                                <CardTitle className="text-sm font-medium">{t('library.totalPrice') || 'Total Price'}</CardTitle>
                                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
@@ -955,14 +986,14 @@ export default function LibraryReports() {
                                     {formatCurrency(booksReportStats.totalPrice)}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Sum of all book prices
+                                    {t('library.sumOfAllBookPrices') || 'Sum of all book prices'}
                                 </p>
                             </CardContent>
                         </Card>
 
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium">Total Value</CardTitle>
+                                <CardTitle className="text-sm font-medium">{t('library.totalValue') || 'Total Value'}</CardTitle>
                                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
@@ -970,14 +1001,14 @@ export default function LibraryReports() {
                                     {formatCurrency(booksReportStats.totalValue)}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Price × Total Copies
+                                    {t('library.priceTimesTotalCopies') || 'Price × Total Copies'}
                                 </p>
                             </CardContent>
                         </Card>
 
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium">Average Price</CardTitle>
+                                <CardTitle className="text-sm font-medium">{t('library.averagePrice') || 'Average Price'}</CardTitle>
                                 <Layers className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
@@ -985,7 +1016,7 @@ export default function LibraryReports() {
                                     {formatCurrency(booksReportStats.averagePrice)}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Per book
+                                    {t('library.perBook') || 'Per book'}
                                 </p>
                             </CardContent>
                         </Card>
@@ -997,38 +1028,38 @@ export default function LibraryReports() {
                                 <div>
                                     <CardTitle className="flex items-center gap-2">
                                         <FileText className="h-5 w-5" />
-                                        Books Report
+                                        {t('library.booksReportTab') || 'Books Report'}
                                     </CardTitle>
-                                    <CardDescription>Complete inventory of all library books</CardDescription>
+                                    <CardDescription>{t('library.completeInventoryDescription') || 'Complete inventory of all library books'}</CardDescription>
                                 </div>
                                 <Button variant="outline" onClick={handleExportBooks} disabled={filteredBooks.length === 0}>
                                     <Download className="h-4 w-4 mr-2" />
-                                    Export CSV
+                                    {t('library.exportCSV') || 'Export CSV'}
                                 </Button>
                             </div>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+                                <FilterPanel title={t('events.filters') || 'Search & Filter'}>
                                     <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
                                         <div className="relative flex-1 w-full sm:max-w-md">
-                                            <Label htmlFor="books-search" className="mb-2 block">Search</Label>
+                                            <Label htmlFor="books-search" className="mb-2 block">{t('common.search') || 'Search'}</Label>
                                             <Input
                                                 id="books-search"
-                                                placeholder="Search by title, author, ISBN, or book number..."
+                                                placeholder={t('library.searchBooksPlaceholder') || 'Search by title, author, ISBN, or book number...'}
                                                 value={booksSearchQuery}
                                                 onChange={(e) => setBooksSearchQuery(e.target.value)}
                                                 className="w-full"
                                             />
                                         </div>
                                         <div className="space-y-2 w-full sm:w-auto sm:min-w-[192px]">
-                                            <Label htmlFor="books-category-filter">Category</Label>
+                                            <Label htmlFor="books-category-filter">{t('library.category') || 'Category'}</Label>
                                             <Select value={booksCategoryFilter} onValueChange={setBooksCategoryFilter}>
                                                 <SelectTrigger id="books-category-filter" className="w-full sm:w-48">
-                                                    <SelectValue placeholder="All Categories" />
+                                                    <SelectValue placeholder={t('library.allCategories') || 'All Categories'} />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="all">All Categories</SelectItem>
+                                                    <SelectItem value="all">{t('library.allCategories') || 'All Categories'}</SelectItem>
                                                     {Array.isArray(categories) && categories.map((cat) => (
                                                         <SelectItem key={cat.id} value={cat.id}>
                                                             {cat.name}
@@ -1058,14 +1089,14 @@ export default function LibraryReports() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Title</TableHead>
-                                                <TableHead>Author</TableHead>
-                                                <TableHead>ISBN</TableHead>
-                                                <TableHead>Book #</TableHead>
-                                                <TableHead>Category</TableHead>
-                                                <TableHead>Price</TableHead>
-                                                <TableHead>Total Copies</TableHead>
-                                                <TableHead>Available</TableHead>
+                                                <TableHead>{t('library.bookTitle') || 'Title'}</TableHead>
+                                                <TableHead>{t('library.author') || 'Author'}</TableHead>
+                                                <TableHead>{t('library.isbn') || 'ISBN'}</TableHead>
+                                                <TableHead>{t('library.bookNumber') || 'Book #'}</TableHead>
+                                                <TableHead>{t('library.category') || 'Category'}</TableHead>
+                                                <TableHead>{t('library.price') || 'Price'}</TableHead>
+                                                <TableHead>{t('library.totalCopies') || 'Total Copies'}</TableHead>
+                                                <TableHead>{t('library.availableCopies') || 'Available'}</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -1073,8 +1104,8 @@ export default function LibraryReports() {
                                                 <TableRow>
                                                     <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                                                         {booksSearchQuery || booksCategoryFilter !== 'all'
-                                                            ? 'No books found matching your filters.'
-                                                            : 'No books available.'}
+                                                            ? (t('library.noBooksMatchingFilters') || 'No books found matching your filters.')
+                                                            : (t('library.noBooksAvailable') || 'No books available.')}
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
@@ -1119,7 +1150,7 @@ export default function LibraryReports() {
                                 {filteredBooks.length > 0 && (
                                     <div className="flex items-center justify-between mt-4 pt-4 border-t">
                                         <div className="text-sm text-muted-foreground">
-                                            Showing {(booksPage - 1) * booksPageSize + 1} to {Math.min(booksPage * booksPageSize, filteredBooks.length)} of {filteredBooks.length} books
+                                            {t('library.showing') || 'Showing'} {(booksPage - 1) * booksPageSize + 1} {t('library.to') || 'to'} {Math.min(booksPage * booksPageSize, filteredBooks.length)} {t('library.of') || 'of'} {filteredBooks.length} {t('library.books') || 'books'}
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Select value={booksPageSize.toString()} onValueChange={(value) => { setBooksPageSize(Number(value)); setBooksPage(1); }}>

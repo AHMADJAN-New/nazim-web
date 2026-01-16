@@ -35,7 +35,7 @@ export default function ExamReportsHub() {
     },
     {
       id: 'student-report',
-      title: t('studentReportCard.title'),
+      title: t('nav.examReports'),
       description: t('studentReportCard.selectStudentPrompt'),
       icon: User,
       path: '/exams/reports/student',
@@ -50,7 +50,7 @@ export default function ExamReportsHub() {
       <div className="container mx-auto py-6">
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <p className="text-muted-foreground">{t('common.noPermission')}</p>
+            <p className="text-muted-foreground">{t('events.noPermission')}</p>
           </CardContent>
         </Card>
       </div>
@@ -101,7 +101,7 @@ export default function ExamReportsHub() {
 
       <Card className="bg-muted/50">
         <CardHeader>
-          <CardTitle className="text-lg">{t('common.howToUse')}</CardTitle>
+          <CardTitle className="text-lg">{t('events.howToUse')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>• {t('examReports.consolidatedMarkSheet')}: {t('examReports.consolidatedMarkSheetDescription')}</p>

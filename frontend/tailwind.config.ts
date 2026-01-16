@@ -58,6 +58,10 @@ export default {
 					DEFAULT: 'hsl(var(--warning))',
 					foreground: 'hsl(var(--warning-foreground))'
 				},
+				info: {
+					DEFAULT: 'hsl(var(--info))',
+					foreground: 'hsl(var(--info-foreground))'
+				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
 					foreground: 'hsl(var(--muted-foreground))'
@@ -79,6 +83,21 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Nazim Brand Colors (direct hex values)
+				nazim: {
+					primary: 'var(--nazim-primary)',
+					secondary: 'var(--nazim-secondary)',
+					gold: 'var(--nazim-gold)',
+					'gold-soft': 'var(--nazim-gold-soft)',
+					bg: 'var(--nazim-bg)',
+					surface: 'var(--nazim-surface)',
+					border: 'var(--nazim-border)',
+					text: 'var(--nazim-text)',
+					success: 'var(--nazim-success)',
+					warning: 'var(--nazim-warning)',
+					danger: 'var(--nazim-danger)',
+					info: 'var(--nazim-info)'
 				}
 			},
 			borderRadius: {
@@ -132,6 +151,14 @@ export default {
 						opacity: '1',
 						transform: 'scale(1)'
 					}
+				},
+				'shimmer': {
+					'0%': { transform: 'rotate(0deg)' },
+					'100%': { transform: 'rotate(360deg)' }
+				},
+				'slide': {
+					'0%': { transform: 'translateX(-100%)' },
+					'100%': { transform: 'translateX(100%)' }
 				}
 			},
 			animation: {
@@ -139,9 +166,14 @@ export default {
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.3s ease-out',
 				'slide-in': 'slide-in 0.4s ease-out',
-				'scale-in': 'scale-in 0.2s ease-out'
+				'scale-in': 'scale-in 0.2s ease-out',
+				'shimmer': 'shimmer 3s infinite linear',
+				'slide': 'slide 3s infinite linear'
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
-} satisfies Config;
+	plugins: [
+		require("tailwindcss-animate"),
+		require("@tailwindcss/typography"),
+	  ],
+	  } satisfies Config;

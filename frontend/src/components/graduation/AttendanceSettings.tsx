@@ -62,10 +62,10 @@ export function AttendanceSettings({
           />
           <div className="flex-1">
             <Label htmlFor="require-attendance" className="text-base font-semibold cursor-pointer">
-              {t('graduation.attendance.requireAttendance') || 'Require Attendance'}
+              {t('toast.graduation.attendance.requireAttendance') || 'Require Attendance'}
             </Label>
             <CardDescription className="mt-1">
-              {t('graduation.attendance.requireAttendance') || 'Require Attendance'}
+              {t('toast.graduation.attendance.requireAttendance') || 'Require Attendance'}
               {' - '}
               {requireAttendance
                 ? 'Students must meet attendance requirements to graduate'
@@ -78,7 +78,7 @@ export function AttendanceSettings({
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="min-attendance-percentage">
-              {t('graduation.attendance.minPercentage') || 'Minimum Attendance %'}
+              {t('toast.graduation.attendance.minPercentage') || 'Minimum Attendance %'}
             </Label>
             <div className="flex items-center gap-2">
               <Input
@@ -106,7 +106,7 @@ export function AttendanceSettings({
             />
             <div className="flex-1">
               <Label htmlFor="exclude-approved-leaves" className="text-sm font-normal cursor-pointer">
-                {t('graduation.attendance.excludeLeaves') || 'Exclude Approved Leaves'}
+                {t('toast.graduation.attendance.excludeLeaves') || 'Exclude Approved Leaves'}
               </Label>
               <p className="text-xs text-muted-foreground mt-1">
                 Approved leaves (sick leave, personal leave, etc.) will not count as absences when calculating attendance percentage

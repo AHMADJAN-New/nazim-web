@@ -253,9 +253,9 @@ export default function TranslationEditor() {
   };
 
   // Export to Excel
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     try {
-      exportTranslationsToExcel();
+      await exportTranslationsToExcel();
       toast.success('Translations exported to Excel');
     } catch (error) {
       toast.error('Failed to export translations');
@@ -861,11 +861,11 @@ export default function TranslationEditor() {
               <div className="text-sm text-muted-foreground">
                 {filteredTranslations.length > 0 ? (
                   <>
-                    {t('pagination.showing') || 'Showing'} {from} {t('pagination.to') || 'to'} {to} {t('pagination.of') || 'of'}{' '}
+                    {t('library.showing') || 'Showing'} {from} {t('events.to') || 'to'} {to} {t('events.of') || 'of'}{' '}
                     {filteredTranslations.length} {t('pagination.entries') || 'entries'}
                     {search && (
                       <span className="ml-2">
-                        ({t('pagination.filtered') || 'filtered'} {t('pagination.from') || 'from'} {translations.length} {t('pagination.total') || 'total'})
+                        ({t('pagination.filtered') || 'filtered'} {t('events.from') || 'from'} {translations.length} {t('events.total') || 'total'})
                       </span>
                     )}
                   </>

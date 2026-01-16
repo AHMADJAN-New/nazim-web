@@ -23,6 +23,7 @@ export function mapRoomApiToDomain(api: RoomApi.Room): Room {
         } : undefined,
         staff: api.staff ? {
             id: api.staff.id,
+            duty: api.staff.duty ?? null,
             profile: api.staff.profile ? {
                 fullName: api.staff.profile.full_name,
             } : undefined,

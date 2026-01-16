@@ -107,7 +107,7 @@ export default function TemplatesPage() {
   const createMutation = useMutation({
     mutationFn: (payload: any) => dmsApi.templates.create(payload),
     onSuccess: () => {
-      showToast.success(t('toast.templateCreated') || 'Template created successfully');
+      showToast.success(t('certificateTemplates.templateCreated') || 'Template created successfully');
       queryClient.invalidateQueries({ queryKey: ["dms", "templates"] });
       setIsCreateDialogOpen(false);
     },
@@ -119,7 +119,7 @@ export default function TemplatesPage() {
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: any }) => dmsApi.templates.update(id, payload),
     onSuccess: () => {
-      showToast.success(t('toast.templateUpdated') || 'Template updated successfully');
+      showToast.success(t('certificateTemplates.templateUpdated') || 'Template updated successfully');
       queryClient.invalidateQueries({ queryKey: ["dms", "templates"] });
       setIsEditDialogOpen(false);
       setSelectedTemplate(null);
@@ -132,7 +132,7 @@ export default function TemplatesPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => dmsApi.templates.delete(id),
     onSuccess: async () => {
-      showToast.success(t('toast.templateDeleted') || 'Template deleted successfully');
+      showToast.success(t('certificateTemplates.templateDeleted') || 'Template deleted successfully');
       await queryClient.invalidateQueries({ queryKey: ["dms", "templates"] });
       await queryClient.refetchQueries({ queryKey: ["dms", "templates"] });
       setIsDeleteDialogOpen(false);
@@ -217,11 +217,11 @@ export default function TemplatesPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
       <PageHeader
-        title="Letter Templates"
-        description="Manage letter templates and their configurations"
+        title={t("dms.templatesTitle") || "Letter Templates"}
+        description={t("dms.templatesDescription") || "Manage letter templates and their configurations"}
         icon={<FileText className="h-5 w-5" />}
         primaryAction={{
-          label: "Create Template",
+          label: t("dms.createTemplate") || "Create Template",
           onClick: () => setIsCreateDialogOpen(true),
           icon: <Plus className="h-4 w-4" />,
         }}
@@ -230,9 +230,9 @@ export default function TemplatesPage() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create Template</DialogTitle>
+            <DialogTitle>{t("dms.createTemplate") || "Create Template"}</DialogTitle>
             <DialogDescription>
-              Create a new letter template with variables and letterhead.
+              {t("dms.templatesDescription") || "Create a new letter template with variables and letterhead."}
             </DialogDescription>
           </DialogHeader>
           <TemplateForm
@@ -243,18 +243,18 @@ export default function TemplatesPage() {
         </DialogContent>
       </Dialog>
 
-      <FilterPanel title={t("common.filters")}>
+      <FilterPanel title={t("events.filters")}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
-            <Label>Search</Label>
+            <Label>{t("common.search") || "Search"}</Label>
             <Input
-              placeholder="Search by name..."
+              placeholder={t("dms.templatesSearchPlaceholder") || "Search by name..."}
               value={filters.search}
               onChange={(e) => setFilters((s) => ({ ...s, search: e.target.value }))}
             />
           </div>
           <div className="space-y-2">
-            <Label>Category</Label>
+            <Label>{t("dms.category") || "Category"}</Label>
             <Select
               value={filters.category || "all"}
               onValueChange={(value) => setFilters((s) => ({ ...s, category: value }))}
@@ -263,17 +263,17 @@ export default function TemplatesPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="student">Student</SelectItem>
-                <SelectItem value="staff">Staff</SelectItem>
-                <SelectItem value="applicant">Applicant</SelectItem>
-                <SelectItem value="general">General</SelectItem>
-                <SelectItem value="announcement">Announcement</SelectItem>
+                <SelectItem value="all">{t("common.all") || "All"}</SelectItem>
+                <SelectItem value="student">{t("students.student") || "Student"}</SelectItem>
+                <SelectItem value="staff">{t("settings.staff") || "Staff"}</SelectItem>
+                <SelectItem value="applicant">{t("admissions.applicant") || "Applicant"}</SelectItem>
+                <SelectItem value="general">{t("common.general") || "General"}</SelectItem>
+                <SelectItem value="announcement">{t("common.announcement") || "Announcement"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Letter Type</Label>
+            <Label>{t("dms.letterType") || "Letter Type"}</Label>
             <Select
               value={filters.letter_type || "all"}
               onValueChange={(value) => setFilters((s) => ({ ...s, letter_type: value }))}
@@ -282,7 +282,7 @@ export default function TemplatesPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="all">{t("common.allTypes") || "All Types"}</SelectItem>
                 {letterTypeOptions.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
@@ -292,7 +292,7 @@ export default function TemplatesPage() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Status</Label>
+            <Label>{t("common.status") || "Status"}</Label>
             <Select
               value={filters.active || "all"}
               onValueChange={(value) => setFilters((s) => ({ ...s, active: value }))}
@@ -301,9 +301,9 @@ export default function TemplatesPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="true">Active</SelectItem>
-                <SelectItem value="false">Inactive</SelectItem>
+                <SelectItem value="all">{t("common.all") || "All"}</SelectItem>
+                <SelectItem value="true">{t("common.active") || "Active"}</SelectItem>
+                <SelectItem value="false">{t("common.inactive") || "Inactive"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -313,14 +313,14 @@ export default function TemplatesPage() {
       {/* Templates Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Templates</CardTitle>
+          <CardTitle>{t("dms.templates") || "Templates"}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">Loading...</div>
+            <div className="text-center py-8">{t("common.loading") || "Loading..."}</div>
           ) : templates.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No templates found. Create your first template to get started.
+              {t("dms.templatesNoTemplates") || "No templates found. Create your first template to get started."}
             </div>
           ) : (
             <>
@@ -328,13 +328,13 @@ export default function TemplatesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Letter Type</TableHead>
-                      <TableHead>Letterhead</TableHead>
-                      <TableHead>Layout</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t("common.name") || "Name"}</TableHead>
+                      <TableHead>{t("dms.category") || "Category"}</TableHead>
+                      <TableHead>{t("dms.letterType") || "Letter Type"}</TableHead>
+                      <TableHead>{t("dms.letterhead") || "Letterhead"}</TableHead>
+                      <TableHead>{t("dms.layout") || "Layout"}</TableHead>
+                      <TableHead>{t("common.status") || "Status"}</TableHead>
+                      <TableHead className="text-right">{t("events.actions") || "Actions"}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -363,7 +363,7 @@ export default function TemplatesPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant={template.active ? "default" : "secondary"}>
-                            {template.active ? "Active" : "Inactive"}
+                            {template.active ? (t("common.active") || "Active") : (t("common.inactive") || "Inactive")}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -374,22 +374,22 @@ export default function TemplatesPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuLabel>{t("events.actions") || "Actions"}</DropdownMenuLabel>
                               <DropdownMenuItem onClick={() => openViewDialog(template)}>
                                 <Eye className="h-4 w-4 mr-2" />
-                                View
+                                {t("common.view") || "View"}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openPreviewDialog(template)}>
                                 <Play className="h-4 w-4 mr-2" />
-                                Preview
+                                {t("common.preview") || "Preview"}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openEditDialog(template)}>
                                 <Edit className="h-4 w-4 mr-2" />
-                                Edit
+                                {t("common.edit") || "Edit"}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDuplicate(template)}>
                                 <Copy className="h-4 w-4 mr-2" />
-                                Duplicate
+                                {t("common.duplicate") || "Duplicate"}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
@@ -397,7 +397,7 @@ export default function TemplatesPage() {
                                 className="text-destructive"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
+                                {t("common.delete") || "Delete"}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -453,36 +453,36 @@ export default function TemplatesPage() {
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Template Details</DialogTitle>
+            <DialogTitle>{t("dms.templates.viewTitle") || "Template Details"}</DialogTitle>
             <DialogDescription>
-              View template information and configuration.
+              {t("dms.templates.viewDescription") || "View template information and configuration."}
             </DialogDescription>
           </DialogHeader>
           {selectedTemplate && (
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <Label className="text-muted-foreground">Name</Label>
+                  <Label className="text-muted-foreground">{t("common.name") || "Name"}</Label>
                   <p className="font-medium">{selectedTemplate.name}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Category</Label>
+                  <Label className="text-muted-foreground">{t("dms.category") || "Category"}</Label>
                   <p className="font-medium">{selectedTemplate.category}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Letter Type</Label>
+                  <Label className="text-muted-foreground">{t("dms.letterType") || "Letter Type"}</Label>
                   <p className="font-medium">{selectedTemplate.letter_type || "N/A"}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Page Layout</Label>
+                  <Label className="text-muted-foreground">{t("dms.templates.pageLayout") || "Page Layout"}</Label>
                   <p className="font-medium">{selectedTemplate.page_layout || "A4_portrait"}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Letterhead</Label>
+                  <Label className="text-muted-foreground">{t("dms.letterhead") || "Letterhead"}</Label>
                   <p className="font-medium">{selectedTemplate.letterhead?.name || "None"}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Status</Label>
+                  <Label className="text-muted-foreground">{t("common.status") || "Status"}</Label>
                   <div className="font-medium">
                     <Badge variant={selectedTemplate.active ? "default" : "secondary"}>
                       {selectedTemplate.active ? "Active" : "Inactive"}
@@ -492,7 +492,7 @@ export default function TemplatesPage() {
               </div>
               {selectedTemplate.variables && Array.isArray(selectedTemplate.variables) && selectedTemplate.variables.length > 0 && (
                 <div>
-                  <Label className="text-muted-foreground">Variables</Label>
+                  <Label className="text-muted-foreground">{t("dms.templates.variables") || "Variables"}</Label>
                   <div className="mt-2 space-y-1">
                     {selectedTemplate.variables.map((varDef: any, idx: number) => (
                       <div key={idx} className="text-sm">
@@ -512,9 +512,9 @@ export default function TemplatesPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Template</DialogTitle>
+            <DialogTitle>{t("dms.templates.editTitle") || "Edit Template"}</DialogTitle>
             <DialogDescription>
-              Update template configuration and settings.
+              {t("dms.templates.editDescription") || "Update template configuration and settings."}
             </DialogDescription>
           </DialogHeader>
           {selectedTemplate && (
@@ -535,9 +535,9 @@ export default function TemplatesPage() {
       <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
         <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Template Preview</DialogTitle>
+            <DialogTitle>{t("dms.templates.previewTitle") || "Template Preview"}</DialogTitle>
             <DialogDescription>
-              Preview the template with letterhead and variable values.
+              {t("dms.templates.previewDescription") || "Preview the template with letterhead and variable values."}
             </DialogDescription>
           </DialogHeader>
           {selectedTemplate && (
@@ -556,10 +556,9 @@ export default function TemplatesPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t("common.confirmDelete") || "Are you sure?"}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the template.
-              If the template is in use by any documents, it cannot be deleted.
+              {t("dms.templates.deleteDescription") || "This action cannot be undone. This will permanently delete the template. If the template is in use by any documents, it cannot be deleted."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -567,10 +566,10 @@ export default function TemplatesPage() {
               setIsDeleteDialogOpen(false);
               setDeleteTemplateId(null);
             }}>
-              Cancel
+              {t("common.cancel") || "Cancel"}
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              {t("common.delete") || "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

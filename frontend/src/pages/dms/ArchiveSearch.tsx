@@ -26,14 +26,15 @@ import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
+// Status options will be translated in the component using t() function
 const statusOptions = [
-  { label: "All Statuses", value: "all" },
-  { label: "Pending", value: "pending" },
-  { label: "Under review", value: "under_review" },
-  { label: "Completed", value: "completed" },
-  { label: "Draft", value: "draft" },
-  { label: "Issued", value: "issued" },
-  { label: "Printed", value: "printed" },
+  { labelKey: "dms.archiveSearch.allStatuses", value: "all" },
+  { labelKey: "dms.archiveSearch.pending", value: "pending" },
+  { labelKey: "dms.archiveSearch.underReview", value: "under_review" },
+  { labelKey: "dms.archiveSearch.completed", value: "completed" },
+  { labelKey: "dms.archiveSearch.draft", value: "draft" },
+  { labelKey: "dms.archiveSearch.issued", value: "issued" },
+  { labelKey: "dms.archiveSearch.printed", value: "printed" },
 ];
 
 // Simple document view using data from archive list (no API call)
@@ -46,17 +47,17 @@ function DocumentViewContent({ type, doc }: { type: 'incoming' | 'outgoing'; doc
       {/* Basic Information */}
       <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <Label className="text-muted-foreground">Document Number</Label>
+          <Label className="text-muted-foreground">{t('dms.archiveSearch.viewDialog.documentNumber')}</Label>
           <p className="font-medium mt-1">
             {incomingDoc?.full_indoc_number || outgoingDoc?.full_outdoc_number || "N/A"}
           </p>
         </div>
         <div>
-          <Label className="text-muted-foreground">Subject</Label>
+          <Label className="text-muted-foreground">{t('dms.archiveSearch.viewDialog.subject')}</Label>
           <p className="font-medium mt-1">{doc.subject || "N/A"}</p>
         </div>
         <div>
-          <Label className="text-muted-foreground">Date</Label>
+          <Label className="text-muted-foreground">{t('dms.archiveSearch.viewDialog.date')}</Label>
           <p className="font-medium mt-1">
             {formatDate(
               incomingDoc?.received_date || outgoingDoc?.issue_date || ""
@@ -64,7 +65,7 @@ function DocumentViewContent({ type, doc }: { type: 'incoming' | 'outgoing'; doc
           </p>
         </div>
         <div>
-          <Label className="text-muted-foreground">Status</Label>
+          <Label className="text-muted-foreground">{t('dms.archiveSearch.viewDialog.status')}</Label>
           <div className="mt-1">
             <Badge variant={doc.status === 'completed' || doc.status === 'issued' ? 'default' : doc.status === 'pending' || doc.status === 'draft' ? 'secondary' : 'outline'}>
               {doc.status ? doc.status.replace('_', ' ') : 'N/A'}
@@ -72,7 +73,7 @@ function DocumentViewContent({ type, doc }: { type: 'incoming' | 'outgoing'; doc
           </div>
         </div>
         <div>
-          <Label className="text-muted-foreground">Security Level</Label>
+          <Label className="text-muted-foreground">{t('dms.archiveSearch.viewDialog.securityLevel')}</Label>
           <div className="mt-1">
             <SecurityBadge level={doc.security_level_key} />
           </div>
@@ -80,16 +81,16 @@ function DocumentViewContent({ type, doc }: { type: 'incoming' | 'outgoing'; doc
         {incomingDoc && (
           <>
             <div>
-              <Label className="text-muted-foreground">Sender Name</Label>
+              <Label className="text-muted-foreground">{t('dms.archiveSearch.viewDialog.senderName')}</Label>
               <p className="font-medium mt-1">{incomingDoc.sender_name || "N/A"}</p>
             </div>
             <div>
-              <Label className="text-muted-foreground">Sender Organization</Label>
+              <Label className="text-muted-foreground">{t('dms.archiveSearch.viewDialog.senderOrganization')}</Label>
               <p className="font-medium mt-1">{incomingDoc.sender_org || "N/A"}</p>
             </div>
             {incomingDoc.sender_address && (
               <div>
-                <Label className="text-muted-foreground">Sender Address</Label>
+                <Label className="text-muted-foreground">{t('dms.archiveSearch.viewDialog.senderAddress')}</Label>
                 <p className="font-medium mt-1">{incomingDoc.sender_address}</p>
               </div>
             )}
@@ -97,31 +98,31 @@ function DocumentViewContent({ type, doc }: { type: 'incoming' | 'outgoing'; doc
         )}
         {outgoingDoc && (
           <div>
-            <Label className="text-muted-foreground">Recipient Type</Label>
+            <Label className="text-muted-foreground">{t('dms.archiveSearch.viewDialog.recipientType')}</Label>
             <p className="font-medium mt-1 capitalize">{outgoingDoc.recipient_type || "N/A"}</p>
           </div>
         )}
         {doc.external_doc_number && (
           <div>
-            <Label className="text-muted-foreground">External Document Number</Label>
+            <Label className="text-muted-foreground">{t('dms.archiveSearch.viewDialog.externalDocNumber')}</Label>
             <p className="font-medium mt-1">{doc.external_doc_number}</p>
           </div>
         )}
         {doc.external_doc_date && (
           <div>
-            <Label className="text-muted-foreground">External Document Date</Label>
+            <Label className="text-muted-foreground">{t('dms.archiveSearch.viewDialog.externalDocDate')}</Label>
             <p className="font-medium mt-1">{formatDate(doc.external_doc_date)}</p>
           </div>
         )}
         {doc.pages_count && (
           <div>
-            <Label className="text-muted-foreground">Pages</Label>
+            <Label className="text-muted-foreground">{t('dms.archiveSearch.viewDialog.pages')}</Label>
             <p className="font-medium mt-1">{doc.pages_count}</p>
           </div>
         )}
         {doc.attachments_count && (
           <div>
-            <Label className="text-muted-foreground">Attachments</Label>
+            <Label className="text-muted-foreground">{t('dms.archiveSearch.viewDialog.attachments')}</Label>
             <p className="font-medium mt-1">{doc.attachments_count}</p>
           </div>
         )}
@@ -130,7 +131,7 @@ function DocumentViewContent({ type, doc }: { type: 'incoming' | 'outgoing'; doc
       {/* Description */}
       {doc.description && (
         <div>
-          <Label className="text-muted-foreground mb-2 block">Description</Label>
+          <Label className="text-muted-foreground mb-2 block">{t('dms.archiveSearch.viewDialog.descriptionLabel')}</Label>
           <div 
             className="prose prose-sm max-w-none p-4 border rounded-lg bg-muted/50"
             dangerouslySetInnerHTML={{ __html: doc.description }}
@@ -141,7 +142,7 @@ function DocumentViewContent({ type, doc }: { type: 'incoming' | 'outgoing'; doc
       {/* Notes */}
       {doc.notes && (
         <div>
-          <Label className="text-muted-foreground mb-2 block">Notes</Label>
+          <Label className="text-muted-foreground mb-2 block">{t('dms.archiveSearch.viewDialog.notes')}</Label>
           <p className="p-4 border rounded-lg bg-muted/50 whitespace-pre-wrap">{doc.notes}</p>
         </div>
       )}
@@ -274,18 +275,19 @@ export default function ArchiveSearch() {
   // Build filters summary
   const buildFiltersSummary = () => {
     const parts: string[] = [];
-    if (appliedSearchQuery) parts.push(`Search: ${appliedSearchQuery}`);
-    if (appliedFilters.status !== 'all') parts.push(`Status: ${appliedFilters.status}`);
+    if (appliedSearchQuery) parts.push(`${t('dms.archiveSearch.filterSummary.search')}: ${appliedSearchQuery}`);
+    if (appliedFilters.status !== 'all') parts.push(`${t('dms.archiveSearch.filterSummary.status')}: ${appliedFilters.status}`);
     if (appliedFilters.security_level_key !== 'all') {
-      parts.push(`Security: ${appliedFilters.security_level_key === 'none' ? 'None' : appliedFilters.security_level_key}`);
+      const securityValue = appliedFilters.security_level_key === 'none' ? t('dms.archiveSearch.none') : appliedFilters.security_level_key;
+      parts.push(`${t('dms.archiveSearch.filterSummary.security')}: ${securityValue}`);
     }
     if (appliedFilters.academic_year_id && appliedFilters.academic_year_id !== 'all') {
       const year = academicYears?.find(y => y.id === appliedFilters.academic_year_id);
-      if (year) parts.push(`Academic Year: ${year.name}`);
+      if (year) parts.push(`${t('dms.archiveSearch.filterSummary.academicYear')}: ${year.name}`);
     }
-    if (appliedFilters.from_date) parts.push(`From: ${appliedFilters.from_date}`);
-    if (appliedFilters.to_date) parts.push(`To: ${appliedFilters.to_date}`);
-    return parts.length > 0 ? parts.join(' | ') : 'All documents';
+    if (appliedFilters.from_date) parts.push(`${t('dms.archiveSearch.filterSummary.from')}: ${appliedFilters.from_date}`);
+    if (appliedFilters.to_date) parts.push(`${t('dms.archiveSearch.filterSummary.to')}: ${appliedFilters.to_date}`);
+    return parts.length > 0 ? parts.join(' | ') : t('dms.archiveSearch.filterSummary.allDocuments');
   };
 
   // Reset pages when applied filters change or tab changes
@@ -338,8 +340,8 @@ export default function ArchiveSearch() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
       <PageHeader
-        title={t('dms.archiveSearch') || 'Archive & Search'}
-        description={t('dms.archiveSearchDescription') || 'Search and browse all incoming and outgoing documents'}
+        title={t('dms.archiveSearch.title')}
+        description={t('dms.archiveSearch.description')}
         icon={<Archive className="h-5 w-5" />}
       />
 
@@ -347,43 +349,43 @@ export default function ArchiveSearch() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dms.archiveSearch.totalDocuments')}</CardTitle>
             <FileCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalDocuments}</div>
-            <p className="text-xs text-muted-foreground">All documents in archive</p>
+            <p className="text-xs text-muted-foreground">{t('dms.archiveSearch.allDocumentsInArchive')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Incoming Documents</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dms.archiveSearch.incomingDocuments')}</CardTitle>
             <Inbox className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalIncoming}</div>
-            <p className="text-xs text-muted-foreground">Received documents</p>
+            <p className="text-xs text-muted-foreground">{t('dms.archiveSearch.receivedDocuments')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Outgoing Documents</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dms.archiveSearch.outgoingDocuments')}</CardTitle>
             <Send className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalOutgoing}</div>
-            <p className="text-xs text-muted-foreground">Issued documents</p>
+            <p className="text-xs text-muted-foreground">{t('dms.archiveSearch.issuedDocuments')}</p>
           </CardContent>
         </Card>
       </div>
 
       <FilterPanel
-        title={t('common.filters') || 'Search & Filter'}
+        title={t('dms.archiveSearch.searchAndFilter')}
         footer={
           <div className="flex gap-2">
             <Button onClick={handleApplyFilters}>
               <Search className="h-4 w-4 mr-2" />
-              {t('common.applyFilters') || 'Apply Filters'}
+              {t('dms.archiveSearch.applyFilters')}
             </Button>
             <Button
               variant="outline"
@@ -407,7 +409,7 @@ export default function ArchiveSearch() {
               }}
             >
               <X className="h-4 w-4 mr-2" />
-              {t('common.clearAll') || 'Clear All'}
+              {t('dms.archiveSearch.clearAll')}
             </Button>
           </div>
         }
@@ -415,9 +417,9 @@ export default function ArchiveSearch() {
         <div className="space-y-4">
           {/* Search Query */}
           <div className="space-y-2">
-            <Label>{t('common.search') || 'Search'}</Label>
+            <Label>{t('dms.archiveSearch.search')}</Label>
             <Input
-              placeholder={t('dms.searchPlaceholder') || 'Search by document number, subject, sender, description, external doc number...'}
+              placeholder={t('dms.archiveSearch.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
@@ -431,7 +433,7 @@ export default function ArchiveSearch() {
           {/* Filters Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <div className="space-y-2">
-              <Label>{t('common.status') || 'Status'}</Label>
+              <Label>{t('dms.archiveSearch.status')}</Label>
               <Select
                 value={filters.status}
                 onValueChange={(value) => setFilters((s) => ({ ...s, status: value }))}
@@ -440,17 +442,19 @@ export default function ArchiveSearch() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {statusOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="all">{t('dms.archiveSearch.allStatuses')}</SelectItem>
+                  <SelectItem value="pending">{t('dms.archiveSearch.pending')}</SelectItem>
+                  <SelectItem value="under_review">{t('dms.archiveSearch.underReview')}</SelectItem>
+                  <SelectItem value="completed">{t('dms.archiveSearch.completed')}</SelectItem>
+                  <SelectItem value="draft">{t('dms.archiveSearch.draft')}</SelectItem>
+                  <SelectItem value="issued">{t('dms.archiveSearch.issued')}</SelectItem>
+                  <SelectItem value="printed">{t('dms.archiveSearch.printed')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>{t('dms.securityLevel') || 'Security Level'}</Label>
+              <Label>{t('dms.archiveSearch.securityLevel')}</Label>
               <Select
                 value={filters.security_level_key}
                 onValueChange={(value) => setFilters((s) => ({ ...s, security_level_key: value }))}
@@ -459,28 +463,28 @@ export default function ArchiveSearch() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('common.allLevels') || 'All Levels'}</SelectItem>
-                  <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
-                  <SelectItem value="public">Public</SelectItem>
-                  <SelectItem value="internal">Internal</SelectItem>
-                  <SelectItem value="confidential">Confidential</SelectItem>
-                  <SelectItem value="secret">Secret</SelectItem>
-                  <SelectItem value="top_secret">Top Secret</SelectItem>
+                  <SelectItem value="all">{t('dms.archiveSearch.allLevels')}</SelectItem>
+                  <SelectItem value="none">{t('dms.archiveSearch.none')}</SelectItem>
+                  <SelectItem value="public">{t('dms.archiveSearch.public')}</SelectItem>
+                  <SelectItem value="internal">{t('dms.archiveSearch.internal')}</SelectItem>
+                  <SelectItem value="confidential">{t('dms.archiveSearch.confidential')}</SelectItem>
+                  <SelectItem value="secret">{t('dms.archiveSearch.secret')}</SelectItem>
+                  <SelectItem value="top_secret">{t('dms.archiveSearch.topSecret')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>{t('academic.academicYears.academicYear') || 'Academic Year'}</Label>
+              <Label>{t('dms.archiveSearch.academicYear')}</Label>
               <Select
                 value={filters.academic_year_id || "all"}
                 onValueChange={(value) => setFilters((s) => ({ ...s, academic_year_id: value === "all" ? "" : value }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={t('common.allYears') || 'All years'} />
+                  <SelectValue placeholder={t('dms.archiveSearch.allYears')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('common.allYears') || 'All years'}</SelectItem>
+                  <SelectItem value="all">{t('dms.archiveSearch.allYears')}</SelectItem>
                   {academicYears?.map((year) => (
                     <SelectItem key={year.id} value={year.id}>
                       {year.name} {year.isCurrent ? "(Current)" : ""}
@@ -491,12 +495,12 @@ export default function ArchiveSearch() {
             </div>
 
             <div className="space-y-2">
-              <Label>{t('common.fromDate') || 'From Date'}</Label>
+              <Label>{t('dms.archiveSearch.fromDate')}</Label>
               <CalendarDatePicker date={filters.from_date ? new Date(filters.from_date) : undefined} onDateChange={(date) => setFilters((s) => ({ ...s, from_date: date ? date.toISOString().split("T")[0] : "" }))} />
             </div>
 
             <div className="space-y-2">
-              <Label>{t('common.toDate') || 'To Date'}</Label>
+              <Label>{t('dms.archiveSearch.toDate')}</Label>
               <CalendarDatePicker date={filters.to_date ? new Date(filters.to_date) : undefined} onDateChange={(date) => setFilters((s) => ({ ...s, to_date: date ? date.toISOString().split("T")[0] : "" }))} />
             </div>
           </div>
@@ -507,7 +511,7 @@ export default function ArchiveSearch() {
       {isLoading ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            Loading search results...
+            {t('dms.archiveSearch.loadingSearchResults')}
           </CardContent>
         </Card>
       ) : (
@@ -518,7 +522,7 @@ export default function ArchiveSearch() {
                 <TabsList className="grid w-full max-w-md grid-cols-2">
                   <TabsTrigger value="incoming" className="flex items-center gap-2">
                     <Inbox className="h-4 w-4" />
-                    Incoming Documents
+                    {t('dms.archiveSearch.incomingDocumentsTab')}
                     {incomingMeta && (
                       <Badge variant="secondary" className="ml-1">
                         {incomingMeta.total}
@@ -527,7 +531,7 @@ export default function ArchiveSearch() {
                   </TabsTrigger>
                   <TabsTrigger value="outgoing" className="flex items-center gap-2">
                     <Send className="h-4 w-4" />
-                    Outgoing Documents
+                    {t('dms.archiveSearch.outgoingDocumentsTab')}
                     {outgoingMeta && (
                       <Badge variant="secondary" className="ml-1">
                         {outgoingMeta.total}
@@ -540,15 +544,15 @@ export default function ArchiveSearch() {
                     <ReportExportButtons
                       data={incomingExportData}
                       columns={[
-                        { key: 'document_number', label: 'Document Number' },
-                        { key: 'subject', label: 'Subject' },
-                        { key: 'sender_name', label: 'Sender Name' },
-                        { key: 'sender_org', label: 'Sender Organization' },
-                        { key: 'received_date', label: 'Received Date' },
-                        { key: 'status', label: 'Status' },
-                        { key: 'security_level', label: 'Security Level' },
-                        { key: 'external_doc_number', label: 'External Doc Number' },
-                        { key: 'pages_count', label: 'Pages' },
+                        { key: 'document_number', label: t('dms.archiveSearch.exportColumns.documentNumber') },
+                        { key: 'subject', label: t('dms.archiveSearch.exportColumns.subject') },
+                        { key: 'sender_name', label: t('dms.archiveSearch.exportColumns.senderName') },
+                        { key: 'sender_org', label: t('dms.archiveSearch.exportColumns.senderOrg') },
+                        { key: 'received_date', label: t('dms.archiveSearch.exportColumns.receivedDate') },
+                        { key: 'status', label: t('dms.archiveSearch.exportColumns.status') },
+                        { key: 'security_level', label: t('dms.archiveSearch.exportColumns.securityLevel') },
+                        { key: 'external_doc_number', label: t('dms.archiveSearch.exportColumns.externalDocNumber') },
+                        { key: 'pages_count', label: t('dms.archiveSearch.exportColumns.pages') },
                       ]}
                       reportKey="dms_archive_incoming"
                       title="DMS Archive - Incoming Documents"
@@ -556,21 +560,21 @@ export default function ArchiveSearch() {
                       buildFiltersSummary={buildFiltersSummary}
                       templateType="dms"
                       disabled={incomingExportData.length === 0}
-                      errorNoData={t('common.noDataToExport') || 'No data to export'}
+                      errorNoData={t('events.noDataToExport') || 'No data to export'}
                     />
                   )}
                   {activeTab === 'outgoing' && (
                     <ReportExportButtons
                       data={outgoingExportData}
                       columns={[
-                        { key: 'document_number', label: 'Document Number' },
-                        { key: 'subject', label: 'Subject' },
-                        { key: 'recipient_type', label: 'Recipient Type' },
-                        { key: 'issue_date', label: 'Issue Date' },
-                        { key: 'status', label: 'Status' },
-                        { key: 'security_level', label: 'Security Level' },
-                        { key: 'external_doc_number', label: 'External Doc Number' },
-                        { key: 'pages_count', label: 'Pages' },
+                        { key: 'document_number', label: t('dms.archiveSearch.exportColumns.documentNumber') },
+                        { key: 'subject', label: t('dms.archiveSearch.exportColumns.subject') },
+                        { key: 'recipient_type', label: t('dms.archiveSearch.exportColumns.recipientType') },
+                        { key: 'issue_date', label: t('dms.archiveSearch.exportColumns.issueDate') },
+                        { key: 'status', label: t('dms.archiveSearch.exportColumns.status') },
+                        { key: 'security_level', label: t('dms.archiveSearch.exportColumns.securityLevel') },
+                        { key: 'external_doc_number', label: t('dms.archiveSearch.exportColumns.externalDocNumber') },
+                        { key: 'pages_count', label: t('dms.archiveSearch.exportColumns.pages') },
                       ]}
                       reportKey="dms_archive_outgoing"
                       title="DMS Archive - Outgoing Documents"
@@ -578,7 +582,7 @@ export default function ArchiveSearch() {
                       buildFiltersSummary={buildFiltersSummary}
                       templateType="dms"
                       disabled={outgoingExportData.length === 0}
-                      errorNoData={t('common.noDataToExport') || 'No data to export'}
+                      errorNoData={t('events.noDataToExport') || 'No data to export'}
                     />
                   )}
                 </div>
@@ -590,17 +594,22 @@ export default function ArchiveSearch() {
                 {incomingMeta && (
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>
-                      Showing {incomingMeta.from || 0} to {incomingMeta.to || 0} of {incomingMeta.total} documents
+                      {t('dms.archiveSearch.showingResults')
+                        .replace('{from}', String(incomingMeta.from || 0))
+                        .replace('{to}', String(incomingMeta.to || 0))
+                        .replace('{total}', String(incomingMeta.total))}
                     </span>
                     {incomingMeta.last_page > 1 && (
-                      <span>Page {incomingMeta.current_page} of {incomingMeta.last_page}</span>
+                      <span>{t('dms.archiveSearch.pageInfo')
+                        .replace('{current}', String(incomingMeta.current_page))
+                        .replace('{total}', String(incomingMeta.last_page))}</span>
                     )}
                   </div>
                 )}
                 {incomingDocs.length === 0 ? (
                   <div className="text-center py-12">
                     <Archive className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No incoming documents found</p>
+                    <p className="text-muted-foreground">{t('dms.archiveSearch.noIncomingDocumentsFound')}</p>
                   </div>
                 ) : (
                   <>
@@ -608,13 +617,13 @@ export default function ArchiveSearch() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Document Number</TableHead>
-                            <TableHead>Subject</TableHead>
-                            <TableHead>Sender</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Security</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead>{t('dms.archiveSearch.documentNumber')}</TableHead>
+                            <TableHead>{t('dms.archiveSearch.subject')}</TableHead>
+                            <TableHead>{t('dms.archiveSearch.sender')}</TableHead>
+                            <TableHead>{t('dms.archiveSearch.date')}</TableHead>
+                            <TableHead>{t('dms.archiveSearch.status')}</TableHead>
+                            <TableHead>{t('dms.archiveSearch.security')}</TableHead>
+                            <TableHead className="text-right">{t('dms.archiveSearch.view')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -625,7 +634,7 @@ export default function ArchiveSearch() {
                               </TableCell>
                               <TableCell>
                                 <div className="max-w-[300px]">
-                                  <p className="font-medium truncate">{doc.subject || "No subject"}</p>
+                                  <p className="font-medium truncate">{doc.subject || t('dms.archiveSearch.noSubject')}</p>
                                   {doc.description && (
                                     <p className="text-xs text-muted-foreground truncate mt-1">
                                       {getShortDescription(doc.description, 60)}
@@ -658,7 +667,7 @@ export default function ArchiveSearch() {
                               <TableCell className="text-right">
                                 <Button size="sm" variant="ghost" onClick={() => handleView('incoming', doc)}>
                                   <Eye className="h-4 w-4 mr-1" />
-                                  View
+                                  {t('dms.archiveSearch.view')}
                                 </Button>
                               </TableCell>
                             </TableRow>
@@ -727,17 +736,22 @@ export default function ArchiveSearch() {
                 {outgoingMeta && (
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>
-                      Showing {outgoingMeta.from || 0} to {outgoingMeta.to || 0} of {outgoingMeta.total} documents
+                      {t('dms.archiveSearch.showingResults')
+                        .replace('{from}', String(outgoingMeta.from || 0))
+                        .replace('{to}', String(outgoingMeta.to || 0))
+                        .replace('{total}', String(outgoingMeta.total))}
                     </span>
                     {outgoingMeta.last_page > 1 && (
-                      <span>Page {outgoingMeta.current_page} of {outgoingMeta.last_page}</span>
+                      <span>{t('dms.archiveSearch.pageInfo')
+                        .replace('{current}', String(outgoingMeta.current_page))
+                        .replace('{total}', String(outgoingMeta.last_page))}</span>
                     )}
                   </div>
                 )}
                 {outgoingDocs.length === 0 ? (
                   <div className="text-center py-12">
                     <Archive className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No outgoing documents found</p>
+                    <p className="text-muted-foreground">{t('dms.archiveSearch.noOutgoingDocumentsFound')}</p>
                   </div>
                 ) : (
                   <>
@@ -745,13 +759,13 @@ export default function ArchiveSearch() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Document Number</TableHead>
-                            <TableHead>Subject</TableHead>
-                            <TableHead>Recipient</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Security</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead>{t('dms.archiveSearch.documentNumber')}</TableHead>
+                            <TableHead>{t('dms.archiveSearch.subject')}</TableHead>
+                            <TableHead>{t('dms.archiveSearch.recipient')}</TableHead>
+                            <TableHead>{t('dms.archiveSearch.date')}</TableHead>
+                            <TableHead>{t('dms.archiveSearch.status')}</TableHead>
+                            <TableHead>{t('dms.archiveSearch.security')}</TableHead>
+                            <TableHead className="text-right">{t('dms.archiveSearch.view')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -762,7 +776,7 @@ export default function ArchiveSearch() {
                               </TableCell>
                               <TableCell>
                                 <div className="max-w-[300px]">
-                                  <p className="font-medium truncate">{doc.subject || "No subject"}</p>
+                                  <p className="font-medium truncate">{doc.subject || t('dms.archiveSearch.noSubject')}</p>
                                   {doc.description && (
                                     <p className="text-xs text-muted-foreground truncate mt-1">
                                       {getShortDescription(doc.description, 60)}
@@ -785,7 +799,7 @@ export default function ArchiveSearch() {
                               <TableCell className="text-right">
                                 <Button size="sm" variant="ghost" onClick={() => handleView('outgoing', doc)}>
                                   <Eye className="h-4 w-4 mr-1" />
-                                  View
+                                  {t('dms.archiveSearch.view')}
                                 </Button>
                               </TableCell>
                             </TableRow>
@@ -858,10 +872,10 @@ export default function ArchiveSearch() {
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {viewDoc?.type === 'incoming' ? 'Incoming' : 'Outgoing'} Document Details
+              {viewDoc?.type === 'incoming' ? t('dms.archiveSearch.viewDialog.incomingTitle') : t('dms.archiveSearch.viewDialog.outgoingTitle')}
             </DialogTitle>
             <DialogDescription>
-              View complete document information and content
+              {t('dms.archiveSearch.viewDialog.description')}
             </DialogDescription>
           </DialogHeader>
           {viewDoc && (

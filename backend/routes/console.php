@@ -26,3 +26,10 @@ Schedule::command('help-center:prune-analytics')
     ->at('02:00')
     ->appendOutputTo(storage_path('logs/help-center-analytics-pruning.log'))
     ->description('Prune old help center analytics data (views and votes)');
+
+// Schedule usage count recalculation for accuracy
+// Runs every 15 minutes to catch any drift from concurrent operations
+Schedule::command('usage:recalculate')
+    ->everyFifteenMinutes()
+    ->appendOutputTo(storage_path('logs/usage-recalculation.log'))
+    ->description('Recalculate usage counts from database to ensure accuracy');

@@ -6,7 +6,7 @@ import type * as HelpCenterApi from '@/types/api/helpCenter';
 
 interface ContextualHelpResult {
   article: HelpCenterApi.HelpCenterArticle | null;
-  match_type: 'context_key' | 'route_pattern' | 'category_fallback' | 'none';
+  match_type: 'context_key' | 'route_pattern' | 'category_fallback' | 'slug_fallback' | 'category_slug_fallback' | 'none';
   message?: string;
 }
 

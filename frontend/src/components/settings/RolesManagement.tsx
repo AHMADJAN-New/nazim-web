@@ -166,7 +166,7 @@ export function RolesManagement() {
         <Card>
           <CardContent className="p-4 md:p-6">
             <div className="text-center text-muted-foreground">
-              {t('roles.noPermission')}
+              {t('events.noPermission')}
             </div>
           </CardContent>
         </Card>
@@ -192,7 +192,7 @@ export function RolesManagement() {
               <Button onClick={() => handleOpenDialog()} className="flex-shrink-0">
                 <Plus className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">{t('roles.createRole')}</span>
-                <span className="sm:hidden">{t('roles.create')}</span>
+                <span className="sm:hidden">{t('events.create')}</span>
               </Button>
             )}
           </div>
@@ -203,7 +203,7 @@ export function RolesManagement() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('roles.searchPlaceholder')}
+                placeholder={t('assets.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -220,10 +220,10 @@ export function RolesManagement() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('roles.name')}</TableHead>
-                      <TableHead className="hidden md:table-cell">{t('roles.description')}</TableHead>
-                      <TableHead className="hidden lg:table-cell">{t('roles.organization')}</TableHead>
-                      <TableHead className="text-right">{t('roles.actions')}</TableHead>
+                      <TableHead>{t('events.name')}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t('events.description')}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('students.organization')}</TableHead>
+                      <TableHead className="text-right">{t('events.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -240,7 +240,7 @@ export function RolesManagement() {
                             <div className="flex flex-col sm:hidden gap-1">
                               <span>{role.name}</span>
                               <span className="text-xs text-muted-foreground">
-                                {role.description || t('roles.noDescription')}
+                                {role.description || t('permissions.noDescription')}
                               </span>
                               {role.organization_id ? (
                                 <Badge variant="outline" className="text-xs w-fit">{t('roles.organizationSpecific')}</Badge>
@@ -251,7 +251,7 @@ export function RolesManagement() {
                             <span className="hidden sm:inline">{role.name}</span>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
-                            {role.description || <span className="text-muted-foreground">{t('roles.noDescription')}</span>}
+                            {role.description || <span className="text-muted-foreground">{t('permissions.noDescription')}</span>}
                           </TableCell>
                           <TableCell className="hidden lg:table-cell">
                             {role.organization_id ? (
@@ -350,11 +350,11 @@ export function RolesManagement() {
               )}
             </div>
             <div>
-              <Label htmlFor="description">{t('roles.description')}</Label>
+              <Label htmlFor="description">{t('events.description')}</Label>
               <Input
                 id="description"
                 {...register('description')}
-                placeholder={t('roles.descriptionPlaceholder')}
+                placeholder={t('permissions.descriptionPlaceholder')}
               />
               {errors.description && (
                 <p className="text-sm text-destructive mt-1">{errors.description.message}</p>
@@ -362,10 +362,10 @@ export function RolesManagement() {
             </div>
             <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button type="button" variant="outline" onClick={handleCloseDialog} className="w-full sm:w-auto">
-                {t('roles.cancel')}
+                {t('events.cancel')}
               </Button>
               <Button type="submit" disabled={createRole.isPending || updateRole.isPending} className="w-full sm:w-auto">
-                {isEditMode ? t('roles.update') : t('roles.create')} {t('roles.name')}
+                {isEditMode ? t('events.update') : t('events.create')} {t('events.name')}
               </Button>
             </DialogFooter>
           </form>
@@ -378,13 +378,13 @@ export function RolesManagement() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('roles.deleteRole')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('roles.deleteConfirm').replace('{name}', selectedRole?.name || '')}
+              {t('assets.deleteConfirm').replace('{name}', selectedRole?.name || '')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('roles.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              {t('roles.delete')}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

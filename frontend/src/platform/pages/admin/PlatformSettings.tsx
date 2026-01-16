@@ -508,38 +508,43 @@ export default function PlatformSettings() {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Platform Settings</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Platform Settings</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Manage platform users and SaaS configuration
           </p>
         </div>
       </div>
 
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="users">
-            <Users className="mr-2 h-4 w-4" />
-            Platform Users
+        <TabsList className="grid w-full grid-cols-5 overflow-x-auto">
+          <TabsTrigger value="users" className="flex items-center gap-1 sm:gap-2">
+            <Users className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Platform Users</span>
+            <span className="sm:hidden">Users</span>
           </TabsTrigger>
-          <TabsTrigger value="testimonials">
-            <MessageSquare className="mr-2 h-4 w-4" />
-            Testimonials
+          <TabsTrigger value="testimonials" className="flex items-center gap-1 sm:gap-2">
+            <MessageSquare className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Testimonials</span>
+            <span className="sm:hidden">Test</span>
           </TabsTrigger>
-          <TabsTrigger value="messages">
-            <Mail className="mr-2 h-4 w-4" />
-            Contact Messages
+          <TabsTrigger value="messages" className="flex items-center gap-1 sm:gap-2">
+            <Mail className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Contact Messages</span>
+            <span className="sm:hidden">Msgs</span>
           </TabsTrigger>
-          <TabsTrigger value="system">
-            <Settings className="mr-2 h-4 w-4" />
-            System Settings
+          <TabsTrigger value="system" className="flex items-center gap-1 sm:gap-2">
+            <Settings className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">System Settings</span>
+            <span className="sm:hidden">System</span>
           </TabsTrigger>
-          <TabsTrigger value="restore">
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Restore
+          <TabsTrigger value="restore" className="flex items-center gap-1 sm:gap-2">
+            <RotateCcw className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Restore</span>
+            <span className="sm:hidden">Rest</span>
           </TabsTrigger>
         </TabsList>
 
@@ -584,41 +589,48 @@ export default function PlatformSettings() {
                   <p className="text-sm mt-1">Create your first platform administrator</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                    <Table className="min-w-[700px]">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead className="hidden md:table-cell">Email</TableHead>
+                          <TableHead className="hidden lg:table-cell">Phone</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="hidden lg:table-cell">Created</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
                   <TableBody>
                     {platformUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
-                          {user.full_name}
+                          <div>
+                            {user.full_name}
+                            <div className="md:hidden mt-1 text-xs text-muted-foreground">
+                              {user.email}
+                            </div>
+                          </div>
                         </TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="hidden md:table-cell">{user.email}</TableCell>
+                        <TableCell className="hidden lg:table-cell text-muted-foreground">
                           {user.phone || '-'}
                         </TableCell>
                         <TableCell>
                           {user.is_active ? (
-                            <Badge variant="default" className="bg-green-500">
+                            <Badge variant="default" className="bg-green-500 text-xs">
                               <CheckCircle className="mr-1 h-3 w-3" />
                               Active
                             </Badge>
                           ) : (
-                            <Badge variant="destructive">
+                            <Badge variant="destructive" className="text-xs">
                               <XCircle className="mr-1 h-3 w-3" />
                               Inactive
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="hidden lg:table-cell text-muted-foreground">
                           {formatDate(new Date(user.created_at))}
                         </TableCell>
                         <TableCell className="text-right">
@@ -634,6 +646,7 @@ export default function PlatformSettings() {
                                 setValue('password', ''); // Clear password for edit
                                 setIsCreateDialogOpen(true);
                               }}
+                              aria-label="Edit user"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -641,6 +654,7 @@ export default function PlatformSettings() {
                               variant="ghost"
                               size="icon"
                               onClick={() => setDeletingUserId(user.id)}
+                              aria-label="Delete user"
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -650,6 +664,8 @@ export default function PlatformSettings() {
                     ))}
                   </TableBody>
                 </Table>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>

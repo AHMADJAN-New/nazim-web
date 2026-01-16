@@ -12,7 +12,7 @@ const Breadcrumb = React.forwardRef<
   }
 >(({ ...props }, ref) => {
   const { t } = useLanguage()
-  return <nav ref={ref} aria-label={t('common.breadcrumb')} {...props} />
+  return <nav ref={ref} aria-label={t('events.breadcrumb')} {...props} />
 })
 Breadcrumb.displayName = "Breadcrumb"
 
@@ -105,7 +105,7 @@ const BreadcrumbEllipsis = ({
       {...props}
     >
       <MoreHorizontal className="h-4 w-4" />
-      <span className="sr-only">{t('common.morePages')}</span>
+      <span className="sr-only">{t('events.morePages')}</span>
     </span>
   )
 }

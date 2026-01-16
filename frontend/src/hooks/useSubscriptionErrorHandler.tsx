@@ -10,6 +10,8 @@ interface SubscriptionErrorDetail {
   message: string;
   resourceKey?: string;
   featureKey?: string;
+  missingDependencies?: string[];
+  requiredPlan?: { slug: string; name: string } | null;
   current?: number;
   limit?: number;
   subscriptionStatus?: string;
@@ -31,7 +33,7 @@ export function useSubscriptionErrorHandler() {
   const navigate = useNavigate();
 
   const handleSubscriptionError = useCallback((event: CustomEvent<SubscriptionErrorDetail>) => {
-    const { code, message, resourceKey, featureKey, current, limit } = event.detail;
+    const { code, message, resourceKey, featureKey, current, limit, missingDependencies, requiredPlan } = event.detail;
     
     // Create a unique key for this error to prevent duplicate toasts
     const errorKey = `${code}-${featureKey || resourceKey || 'unknown'}`;
@@ -69,6 +71,26 @@ export function useSubscriptionErrorHandler() {
           message || 
           t('subscription.featureNotAvailableMessage') || 
           `The ${featureKey || 'requested'} feature is not available on your current plan.`
+        );
+        break;
+
+      case 'FEATURE_DEPENDENCY_MISSING': {
+        const dependencyList = (missingDependencies && missingDependencies.length > 0)
+          ? ` Missing: ${missingDependencies.join(', ')}.`
+          : '';
+        const planInfo = requiredPlan?.name ? ` Requires ${requiredPlan.name} plan.` : '';
+
+        showToast.error(
+          message || 
+          `This feature requires additional modules.${dependencyList}${planInfo}`
+        );
+        break;
+      }
+
+      case 'FEATURE_READONLY':
+        showToast.warning(
+          message || 
+          'This feature is in read-only mode. You can view data but cannot edit until you upgrade.'
         );
         break;
 
@@ -123,6 +145,8 @@ export function isSubscriptionError(error: unknown): error is Error & {
   accessLevel?: string;
   resourceKey?: string;
   featureKey?: string;
+  missingDependencies?: string[];
+  requiredPlan?: { slug: string; name: string } | null;
   current?: number;
   limit?: number;
   upgradeRequired?: boolean;
@@ -146,6 +170,8 @@ export function getSubscriptionErrorDetails(error: unknown) {
     accessLevel: error.accessLevel,
     resourceKey: error.resourceKey,
     featureKey: error.featureKey,
+    missingDependencies: error.missingDependencies,
+    requiredPlan: error.requiredPlan,
     current: error.current,
     limit: error.limit,
     upgradeRequired: error.upgradeRequired,

@@ -339,7 +339,7 @@ export function QuestionBank() {
     }
     
     if (!organizationId) {
-      showToast.error(t('common.error') || 'Organization required');
+      showToast.error(t('events.error') || 'Organization required');
       return;
     }
 
@@ -358,11 +358,11 @@ export function QuestionBank() {
         if (import.meta.env.DEV) {
           console.error('[QuestionBank] Error fetching class subject:', error);
         }
-        showToast.error(t('common.error') || 'Failed to get class subject details');
+        showToast.error(t('events.error') || 'Failed to get class subject details');
         return;
       }
     } else {
-      showToast.error(t('common.error') || 'Class subject is required');
+      showToast.error(t('events.error') || 'Class subject is required');
       return;
     }
 
@@ -425,11 +425,11 @@ export function QuestionBank() {
         if (import.meta.env.DEV) {
           console.error('[QuestionBank] Error fetching class subject:', error);
         }
-        showToast.error(t('common.error') || 'Failed to get class subject details');
+        showToast.error(t('events.error') || 'Failed to get class subject details');
         return;
       }
     } else {
-      showToast.error(t('common.error') || 'Class subject is required');
+      showToast.error(t('events.error') || 'Class subject is required');
       return;
     }
 
@@ -583,7 +583,7 @@ export function QuestionBank() {
     },
     {
       accessorKey: 'text',
-      header: t('questionBank.question') || 'Question',
+      header: t('examPapers.question') || 'Question',
       cell: ({ row }) => (
         <div 
           className={cn(
@@ -598,12 +598,12 @@ export function QuestionBank() {
     },
     {
       accessorKey: 'type',
-      header: t('questionBank.type') || 'Type',
+      header: t('events.type') || 'Type',
       cell: ({ row }) => getTypeBadge(row.original.type),
     },
     {
       accessorKey: 'difficulty',
-      header: t('questionBank.difficulty') || 'Difficulty',
+      header: t('examPapers.difficulty') || 'Difficulty',
       cell: ({ row }) => getDifficultyBadge(row.original.difficulty),
     },
     {
@@ -620,18 +620,18 @@ export function QuestionBank() {
     },
     {
       accessorKey: 'isActive',
-      header: t('questionBank.status') || 'Status',
+      header: t('events.status') || 'Status',
       cell: ({ row }) => (
         row.original.isActive ? (
-          <Badge variant="default">{t('common.active') || 'Active'}</Badge>
+          <Badge variant="default">{t('events.active') || 'Active'}</Badge>
         ) : (
-          <Badge variant="outline">{t('common.inactive') || 'Inactive'}</Badge>
+          <Badge variant="outline">{t('events.inactive') || 'Inactive'}</Badge>
         )
       ),
     },
     {
       id: 'actions',
-      header: t('common.actions') || 'Actions',
+      header: t('events.actions') || 'Actions',
       cell: ({ row }) => (
         <div className="text-right">
           <DropdownMenu>
@@ -641,22 +641,22 @@ export function QuestionBank() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('events.actions') || 'Actions'}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => openViewDialog(row.original)}>
                 <Eye className="h-4 w-4 mr-2" />
-                {t('common.view') || 'View'}
+                {t('events.view') || 'View'}
               </DropdownMenuItem>
               {hasUpdate && (
                 <DropdownMenuItem onClick={() => openEditDialog(row.original)}>
                   <Pencil className="h-4 w-4 mr-2" />
-                  {t('common.edit') || 'Edit'}
+                  {t('events.edit') || 'Edit'}
                 </DropdownMenuItem>
               )}
               {hasCreate && (
                 <DropdownMenuItem onClick={() => handleDuplicate(row.original)}>
                   <Copy className="h-4 w-4 mr-2" />
-                  {t('common.duplicate') || 'Duplicate'}
+                  {t('events.duplicate') || 'Duplicate'}
                 </DropdownMenuItem>
               )}
               {hasDelete && (
@@ -667,7 +667,7 @@ export function QuestionBank() {
                     className="text-destructive"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    {t('common.delete') || 'Delete'}
+                    {t('events.delete') || 'Delete'}
                   </DropdownMenuItem>
                 </>
               )}
@@ -728,7 +728,7 @@ export function QuestionBank() {
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
                   <SelectTrigger id="schoolId">
-                    <SelectValue placeholder={t('questionBank.selectSchool') || 'Select school'} />
+                    <SelectValue placeholder={t('common.selectSchool') || 'Select school'} />
                   </SelectTrigger>
                   <SelectContent>
                     {(schools || [])
@@ -752,7 +752,7 @@ export function QuestionBank() {
               {selectedSchool ? (
                 <Input value={selectedSchool.schoolName} disabled readOnly className="bg-muted" />
               ) : (
-                <Input value={t('questionBank.loading') || 'Loading...'} disabled className="bg-muted" />
+                <Input value={t('common.loading') || 'Loading...'} disabled className="bg-muted" />
               )}
               <input type="hidden" {...form.register('schoolId')} />
             </>
@@ -811,7 +811,7 @@ export function QuestionBank() {
                   <SelectValue placeholder={
                     !watchedAcademicYearId 
                       ? (t('questionBank.selectAcademicYearFirst') || 'Select academic year first')
-                      : (t('questionBank.selectClass') || 'Select class')
+                      : (t('events.selectClass') || 'Select class')
                   } />
                 </SelectTrigger>
                 <SelectContent>
@@ -851,7 +851,7 @@ export function QuestionBank() {
                 <SelectTrigger id="classSubjectId">
                   <SelectValue placeholder={
                     !watchedClassAcademicYearId 
-                      ? (t('questionBank.selectClassFirst') || 'Select class first')
+                      ? (t('examReports.selectClassFirst') || 'Select class first')
                       : (t('questionBank.selectSubject') || 'Select subject')
                   } />
                 </SelectTrigger>
@@ -880,7 +880,7 @@ export function QuestionBank() {
       {/* Type, Difficulty, Marks */}
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <Label>{t('questionBank.type') || 'Type'} *</Label>
+          <Label>{t('events.type') || 'Type'} *</Label>
           <Controller
             control={form.control}
             name="type"
@@ -906,7 +906,7 @@ export function QuestionBank() {
           />
         </div>
         <div>
-          <Label>{t('questionBank.difficulty') || 'Difficulty'} *</Label>
+          <Label>{t('examPapers.difficulty') || 'Difficulty'} *</Label>
           <Controller
             control={form.control}
             name="difficulty"
@@ -952,7 +952,7 @@ export function QuestionBank() {
         <div className="flex items-center justify-between mb-2">
           <Label htmlFor="text">{t('questionBank.questionText') || 'Question Text'} *</Label>
           <div className="flex items-center gap-2">
-            <Label htmlFor="textRtl" className="text-sm">{t('questionBank.rtl') || 'RTL'}</Label>
+            <Label htmlFor="textRtl" className="text-sm">{t('events.rtl') || 'RTL'}</Label>
             <Controller
               control={form.control}
               name="textRtl"
@@ -1080,7 +1080,7 @@ export function QuestionBank() {
             />
           )}
         />
-        <Label>{t('questionBank.active') || 'Active'}</Label>
+        <Label>{t('events.active') || 'Active'}</Label>
       </div>
     </div>
   );
@@ -1091,9 +1091,9 @@ export function QuestionBank() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">{t('questionBank.title') || 'Question Bank'}</h1>
+          <h1 className="text-2xl font-semibold">{t('nav.questionBank') || 'Question Bank'}</h1>
           <p className="text-sm text-muted-foreground">
-            {t('questionBank.description') || 'Create and manage exam questions'}
+            {t('events.description') || 'Create and manage exam questions'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -1113,25 +1113,25 @@ export function QuestionBank() {
             <ReportExportButtons
               data={questions}
               columns={[
-                { key: 'questionText', label: t('questionBank.question') || 'Question' },
-                { key: 'type', label: t('questionBank.type') || 'Type' },
-                { key: 'difficulty', label: t('questionBank.difficulty') || 'Difficulty' },
+                { key: 'questionText', label: t('examPapers.question') || 'Question' },
+                { key: 'type', label: t('events.type') || 'Type' },
+                { key: 'difficulty', label: t('examPapers.difficulty') || 'Difficulty' },
                 { key: 'marks', label: t('questionBank.marks') || 'Marks' },
                 { key: 'subject', label: t('questionBank.subject') || 'Subject' },
-                { key: 'className', label: t('questionBank.class') || 'Class' },
-                { key: 'status', label: t('questionBank.status') || 'Status' },
+                { key: 'className', label: t('search.class') || 'Class' },
+                { key: 'status', label: t('events.status') || 'Status' },
                 { key: 'correctAnswer', label: t('questionBank.correctAnswer') || 'Correct Answer' },
               ]}
               reportKey="question_bank"
-              title={t('questionBank.title') || 'Question Bank'}
+              title={t('nav.questionBank') || 'Question Bank'}
               transformData={(data) => data.map((q: Question) => ({
                 questionText: q.text || '-',
                 type: typeConfig[q.type]?.label || q.type,
                 difficulty: difficultyConfig[q.difficulty]?.label || q.difficulty,
                 marks: q.marks || 0,
                 subject: q.subject?.name || '-',
-                className: q.classAcademicYear?.class?.name || t('common.all') || 'All',
-                status: q.isActive ? (t('common.active') || 'Active') : (t('common.inactive') || 'Inactive'),
+                className: q.classAcademicYear?.class?.name || t('subjects.all') || 'All',
+                status: q.isActive ? (t('events.active') || 'Active') : (t('events.inactive') || 'Inactive'),
                 correctAnswer: q.correctAnswer || '-',
               }))}
               buildFiltersSummary={() => {
@@ -1150,7 +1150,7 @@ export function QuestionBank() {
           {hasCreate && (
             <Button type="button" onClick={openCreateDialog}>
               <Plus className="h-4 w-4 mr-2" />
-              {t('questionBank.create') || 'Create Question'}
+              {t('events.create') || 'Create Question'}
             </Button>
           )}
         </div>
@@ -1164,7 +1164,7 @@ export function QuestionBank() {
             <div className="relative lg:col-span-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('questionBank.searchPlaceholder') || 'Search questions...'}
+                placeholder={t('assets.searchPlaceholder') || 'Search questions...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -1177,7 +1177,7 @@ export function QuestionBank() {
                 <SelectValue placeholder={t('questionBank.filterAcademicYear') || 'Academic Year'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('common.all') || 'All Academic Years'}</SelectItem>
+                <SelectItem value="all">{t('subjects.all') || 'All Academic Years'}</SelectItem>
                 {(academicYears || [])
                   .filter((ay): ay is NonNullable<typeof ay> => 
                     Boolean(ay?.id && ay?.name)
@@ -1207,7 +1207,7 @@ export function QuestionBank() {
                 } />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('common.all') || 'All Classes'}</SelectItem>
+                <SelectItem value="all">{t('subjects.all') || 'All Classes'}</SelectItem>
                 {(classAcademicYears || [])
                   .filter((cay): cay is NonNullable<typeof cay> => 
                     Boolean(cay?.id && cay?.class?.name)
@@ -1229,7 +1229,7 @@ export function QuestionBank() {
                 <SelectValue placeholder={t('questionBank.filterType') || 'Type'} />
               </SelectTrigger>
                 <SelectContent>
-                <SelectItem value="all">{t('common.all') || 'All Types'}</SelectItem>
+                <SelectItem value="all">{t('subjects.all') || 'All Types'}</SelectItem>
                 {QUESTION_TYPES
                   .filter((type): type is { value: QuestionType; label: string } => Boolean(type?.value))
                   .map((type, idx) => (
@@ -1249,7 +1249,7 @@ export function QuestionBank() {
                 <SelectValue placeholder={t('questionBank.filterDifficulty') || 'Difficulty'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('common.all') || 'All Difficulties'}</SelectItem>
+                <SelectItem value="all">{t('subjects.all') || 'All Difficulties'}</SelectItem>
                 {QUESTION_DIFFICULTIES
                   .filter((diff): diff is { value: QuestionDifficulty; label: string } => Boolean(diff?.value))
                   .map((diff, idx) => (
@@ -1350,7 +1350,7 @@ export function QuestionBank() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{t('questionBank.create') || 'Create Question'}</DialogTitle>
+            <DialogTitle>{t('events.create') || 'Create Question'}</DialogTitle>
             <DialogDescription>
               {t('questionBank.createDescription') || 'Add a new question to the question bank'}
             </DialogDescription>
@@ -1364,16 +1364,16 @@ export function QuestionBank() {
             if (firstError?.message) {
               showToast.error(firstError.message);
             } else {
-              showToast.error(t('common.validationError') || 'Please fix form errors');
+              showToast.error(t('events.validationError') || 'Please fix form errors');
             }
           })}>
             <QuestionFormFields />
             <DialogFooter className="mt-4">
               <Button type="button" variant="outline" onClick={() => { setIsCreateDialogOpen(false); resetForm(); }}>
-                {t('common.cancel') || 'Cancel'}
+                {t('events.cancel') || 'Cancel'}
               </Button>
               <Button type="submit" disabled={createQuestion.isPending || createQuestion.isError}>
-                {createQuestion.isPending ? (t('common.creating') || 'Creating...') : (t('common.create') || 'Create')}
+                {createQuestion.isPending ? (t('events.creating') || 'Creating...') : (t('events.create') || 'Create')}
               </Button>
             </DialogFooter>
           </form>
@@ -1384,7 +1384,7 @@ export function QuestionBank() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{t('questionBank.edit') || 'Edit Question'}</DialogTitle>
+            <DialogTitle>{t('events.edit') || 'Edit Question'}</DialogTitle>
             <DialogDescription>
               {t('questionBank.editDescription') || 'Update the question details'}
             </DialogDescription>
@@ -1393,10 +1393,10 @@ export function QuestionBank() {
             <QuestionFormFields isEdit />
             <DialogFooter className="mt-4">
               <Button type="button" variant="outline" onClick={() => { setIsEditDialogOpen(false); resetForm(); }}>
-                {t('common.cancel') || 'Cancel'}
+                {t('events.cancel') || 'Cancel'}
               </Button>
               <Button type="submit" disabled={updateQuestion.isPending || updateQuestion.isError}>
-                {updateQuestion.isPending ? (t('common.updating') || 'Updating...') : (t('common.update') || 'Update')}
+                {updateQuestion.isPending ? (t('events.updating') || 'Updating...') : (t('events.update') || 'Update')}
               </Button>
             </DialogFooter>
           </form>
@@ -1416,9 +1416,9 @@ export function QuestionBank() {
                 {getDifficultyBadge(selectedQuestion.difficulty)}
                 <Badge variant="secondary">{selectedQuestion.marks} {t('questionBank.marks') || 'marks'}</Badge>
                 {selectedQuestion.isActive ? (
-                  <Badge variant="default">{t('common.active') || 'Active'}</Badge>
+                  <Badge variant="default">{t('events.active') || 'Active'}</Badge>
                 ) : (
-                  <Badge variant="outline">{t('common.inactive') || 'Inactive'}</Badge>
+                  <Badge variant="outline">{t('events.inactive') || 'Inactive'}</Badge>
                 )}
               </div>
               
@@ -1485,20 +1485,20 @@ export function QuestionBank() {
                   <p>{selectedQuestion.subject?.name || '—'}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">{t('questionBank.class') || 'Class'}</Label>
-                  <p>{selectedQuestion.classAcademicYear?.className || t('common.all') || 'All Classes'}</p>
+                  <Label className="text-muted-foreground">{t('search.class') || 'Class'}</Label>
+                  <p>{selectedQuestion.classAcademicYear?.className || t('subjects.all') || 'All Classes'}</p>
                 </div>
               </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-              {t('common.close') || 'Close'}
+              {t('events.close') || 'Close'}
             </Button>
             {hasUpdate && selectedQuestion && (
               <Button onClick={() => { setIsViewDialogOpen(false); openEditDialog(selectedQuestion); }}>
                 <Pencil className="h-4 w-4 mr-2" />
-                {t('common.edit') || 'Edit'}
+                {t('events.edit') || 'Edit'}
               </Button>
             )}
           </DialogFooter>
@@ -1509,18 +1509,18 @@ export function QuestionBank() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('questionBank.deleteConfirm') || 'Delete Question'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('assets.deleteConfirm') || 'Delete Question'}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('questionBank.deleteConfirmMessage') || 'Are you sure you want to delete this question? This action cannot be undone.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDelete} 
               className="bg-destructive text-destructive-foreground"
             >
-              {t('common.delete') || 'Delete'}
+              {t('events.delete') || 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

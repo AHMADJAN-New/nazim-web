@@ -148,14 +148,14 @@ export function GlobalSearchCommand({
           </div>
         )}
         {!isLoading && !hasResults && localQuery.trim().length >= 2 && (
-          <CommandEmpty>{t('search.noResults')}</CommandEmpty>
+          <CommandEmpty>{t('events.noResults')}</CommandEmpty>
         )}
         {!isLoading && localQuery.trim().length < 2 && (
           <CommandEmpty>{t('search.startTyping')}</CommandEmpty>
         )}
         
         {safeResults.students.length > 0 && (
-          <CommandGroup heading={t('search.students')}>
+          <CommandGroup heading={t('table.students')}>
             {safeResults.students.map((student) => (
               <CommandItem
                 key={student.id}
@@ -167,7 +167,7 @@ export function GlobalSearchCommand({
                   <span>{student.name}</span>
                   {student.admission_no && (
                     <span className="text-xs text-muted-foreground">
-                      {t('search.admissionNo')}: {student.admission_no}
+                      {t('examReports.admissionNo')}: {student.admission_no}
                     </span>
                   )}
                 </div>
@@ -177,7 +177,7 @@ export function GlobalSearchCommand({
         )}
 
         {safeResults.classes.length > 0 && (
-          <CommandGroup heading={t('search.classes')}>
+          <CommandGroup heading={t('nav.classes')}>
             {safeResults.classes.map((classItem) => (
               <CommandItem
                 key={classItem.id}
@@ -189,7 +189,7 @@ export function GlobalSearchCommand({
                   <span>{classItem.name}</span>
                   {classItem.code && (
                     <span className="text-xs text-muted-foreground">
-                      {t('search.code')}: {classItem.code}
+                      {t('events.code')}: {classItem.code}
                     </span>
                   )}
                 </div>
@@ -199,7 +199,7 @@ export function GlobalSearchCommand({
         )}
 
         {safeResults.staff.length > 0 && (
-          <CommandGroup heading={t('search.staff')}>
+          <CommandGroup heading={t('settings.staff')}>
             {safeResults.staff.map((staff) => (
               <CommandItem
                 key={staff.id}
@@ -221,7 +221,7 @@ export function GlobalSearchCommand({
         )}
 
         {safeResults.subjects.length > 0 && (
-          <CommandGroup heading={t('search.subjects')}>
+          <CommandGroup heading={t('events.subjects')}>
             {safeResults.subjects.map((subject) => (
               <CommandItem
                 key={subject.id}
@@ -233,7 +233,7 @@ export function GlobalSearchCommand({
                   <span>{subject.name}</span>
                   {subject.code && (
                     <span className="text-xs text-muted-foreground">
-                      {t('search.code')}: {subject.code}
+                      {t('events.code')}: {subject.code}
                     </span>
                   )}
                 </div>

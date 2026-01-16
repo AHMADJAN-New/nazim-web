@@ -16,6 +16,6 @@
     },
     "dependencies": {
         "@dnd-kit/sortable": "^10.0.0",
-        "puppeteer": "^24.33.0"
+        "puppeteer": "^24.34.0"
     }
 }

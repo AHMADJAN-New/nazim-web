@@ -11,13 +11,17 @@ import MaintenanceHistory from './pages/admin/MaintenanceHistory';
 import OrganizationSubscriptionDetail from './pages/admin/OrganizationSubscriptionDetail';
 import SubscriptionAdminDashboard from './pages/admin/SubscriptionAdminDashboard';
 import PlansManagement from './pages/admin/PlansManagement';
+import PlanRequestsPage from './pages/admin/PlanRequestsPage';
 import RenewalReviewPage from './pages/admin/RenewalReviewPage';
 import PlatformSettings from './pages/admin/PlatformSettings';
+import MaintenanceFeesManagement from './pages/admin/MaintenanceFeesManagement';
+import LicenseFeesManagement from './pages/admin/LicenseFeesManagement';
+import DesktopLicenseGeneration from './pages/admin/DesktopLicenseGeneration';
 import { PlatformAdminDashboard } from './pages/PlatformAdminDashboard';
 import { PlatformAdminLogin } from './pages/PlatformAdminLogin';
 import { PlatformPermissionGroupsManagement } from './pages/PlatformPermissionGroupsManagement';
 
-import { TranslationsManagement } from '@/components/LazyComponents';
+import { TranslationsManagement, OrganizationRevenueHistory } from '@/components/LazyComponents';
 import { PageSkeleton } from '@/components/ui/loading';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Toaster } from '@/components/ui/sonner';
@@ -167,10 +171,26 @@ export function PlatformAdminApp() {
               <Route path="organizations" element={<PlatformAdminDashboard />} />
               <Route path="subscriptions" element={<SubscriptionAdminDashboard />} />
               <Route path="plans" element={<PlansManagement />} />
+              <Route path="plan-requests" element={<PlanRequestsPage />} />
               <Route path="discount-codes" element={<DiscountCodesManagement />} />
               <Route path="renewals/:renewalId" element={<RenewalReviewPage />} />
               <Route path="pending" element={<SubscriptionAdminDashboard />} />
               <Route path="admins" element={<PlatformAdminDashboard />} />
+              <Route path="revenue-history" element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <OrganizationRevenueHistory />
+                </Suspense>
+              } />
+              <Route path="maintenance-fees" element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <MaintenanceFeesManagement />
+                </Suspense>
+              } />
+              <Route path="license-fees" element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <LicenseFeesManagement />
+                </Suspense>
+              } />
               <Route path="permission-groups" element={<PlatformPermissionGroupsManagement />} />
               {/* CRITICAL: More specific routes must come before less specific ones */}
               <Route path="settings/translations" element={
@@ -181,6 +201,7 @@ export function PlatformAdminApp() {
               <Route path="settings" element={<PlatformSettings />} />
               <Route path="help-center" element={<HelpCenterManagement />} />
               <Route path="maintenance-history" element={<MaintenanceHistory />} />
+              <Route path="desktop-licenses" element={<DesktopLicenseGeneration />} />
 
               {/* Fallback inside platform */}
               <Route path="*" element={<Navigate to="dashboard" replace />} />

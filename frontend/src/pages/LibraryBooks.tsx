@@ -295,7 +295,7 @@ export default function LibraryBooks() {
         },
         {
             accessorKey: 'category',
-            header: t('library.category'),
+            header: t('assets.category'),
             cell: ({ row }) => {
                 const book = row.original;
                 const category = Array.isArray(categories)
@@ -318,7 +318,7 @@ export default function LibraryBooks() {
         },
         {
             accessorKey: 'copies',
-            header: t('library.copies'),
+            header: t('assets.copies'),
             cell: ({ row }) => {
                 const book = row.original;
                 return (
@@ -344,7 +344,7 @@ export default function LibraryBooks() {
         },
         {
             id: 'actions',
-            header: () => <div className={cn("text-right", isRTL && "text-left")}>{t('common.actions')}</div>,
+            header: () => <div className={cn("text-right", isRTL && "text-left")}>{t('events.actions')}</div>,
             cell: ({ row }) => {
                 const book = row.original;
                 return (
@@ -357,7 +357,7 @@ export default function LibraryBooks() {
                                 setViewBook(book);
                                 setIsViewPanelOpen(true);
                             }}
-                            title={t('library.viewDetails')}
+                            title={t('events.viewDetails')}
                         >
                             <Eye className="h-4 w-4" />
                         </Button>
@@ -454,7 +454,7 @@ export default function LibraryBooks() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        <FilterPanel title={t('common.filters') || 'Search & Filter'}>
+                        <FilterPanel title={t('events.filters') || 'Search & Filter'}>
                             <div className="flex flex-col md:flex-row gap-4 items-end">
                                 <div className="relative flex-1 max-w-md w-full">
                                     <Label htmlFor="search" className="mb-2 block">Search</Label>
@@ -597,7 +597,7 @@ export default function LibraryBooks() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <Label htmlFor="category_id">
-                                        {t('library.category')} <span className="text-destructive">*</span>
+                                        {t('assets.category')} <span className="text-destructive">*</span>
                                     </Label>
                                     <Controller
                                         control={control}
@@ -640,11 +640,11 @@ export default function LibraryBooks() {
                             </div>
 
                             <div>
-                                <Label htmlFor="description">{t('library.description')}</Label>
+                                <Label htmlFor="description">{t('events.description')}</Label>
                                 <Textarea
                                     id="description"
                                     {...register('description')}
-                                    placeholder={t('library.descriptionPlaceholder')}
+                                    placeholder={t('permissions.descriptionPlaceholder')}
                                     rows={3}
                                 />
                                 {errors.description && (
@@ -775,13 +775,13 @@ export default function LibraryBooks() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={createBook.isPending || updateBook.isPending}
                             >
-                                {selectedBook ? t('library.update') : t('library.create')}
+                                {selectedBook ? t('events.update') : t('events.create')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -800,13 +800,13 @@ export default function LibraryBooks() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDelete}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             disabled={deleteBook.isPending}
                         >
-                            {deleteBook.isPending ? t('library.deleting') : t('common.delete')}
+                            {deleteBook.isPending ? t('events.deleting') : t('events.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -828,7 +828,7 @@ export default function LibraryBooks() {
                             <Tabs defaultValue="info" className="mt-6">
                                 <TabsList className="grid w-full grid-cols-2">
                                     <TabsTrigger value="info">{t('library.bookInformation')}</TabsTrigger>
-                                    <TabsTrigger value="history">{t('library.history')}</TabsTrigger>
+                                    <TabsTrigger value="history">{t('assets.history')}</TabsTrigger>
                                 </TabsList>
                                 
                                 <TabsContent value="info" className="space-y-4 mt-4">

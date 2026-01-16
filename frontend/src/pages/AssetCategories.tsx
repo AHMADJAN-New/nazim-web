@@ -106,7 +106,7 @@ export default function AssetCategories() {
             code: category.code || '',
             description: category.description || '',
             display_order: category.display_order ?? 0,
-            status: category.is_active ? 'Active' : 'Inactive',
+            status: category.is_active ? t('events.active') : t('events.inactive'),
         }));
     };
 
@@ -114,9 +114,9 @@ export default function AssetCategories() {
     const buildFiltersSummary = (): string => {
         const parts: string[] = [];
         if (searchQuery) {
-            parts.push(`Search: ${searchQuery}`);
+            parts.push(`${t('common.search') || 'Search'}: ${searchQuery}`);
         }
-        return parts.length > 0 ? parts.join(' | ') : 'All categories';
+        return parts.length > 0 ? parts.join(' | ') : t('assets.categories');
     };
 
     const handleOpenDialog = (categoryId?: string) => {
@@ -222,14 +222,14 @@ export default function AssetCategories() {
                 <div className="flex items-center gap-3">
                     <Package className="h-8 w-8" />
                     <div>
-                        <h1 className="text-2xl font-semibold">Asset Categories</h1>
-                        <p className="text-sm text-muted-foreground">Manage asset categories for organizing your assets</p>
+                        <h1 className="text-2xl font-semibold">{t('assets.categories')}</h1>
+                        <p className="text-sm text-muted-foreground">{t('assets.categoriesDescription')}</p>
                     </div>
                 </div>
                 {hasCreatePermission && (
                     <Button onClick={() => handleOpenDialog()}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Category
+                        {t('assets.addCategory')}
                     </Button>
                 )}
             </div>
@@ -238,22 +238,22 @@ export default function AssetCategories() {
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <div>
-                            <CardTitle>Categories</CardTitle>
+                            <CardTitle>{t('assets.categories')}</CardTitle>
                             <CardDescription>
-                                {Array.isArray(categories) ? categories.length : 0} total categories
+                                {Array.isArray(categories) ? categories.length : 0} {t('assets.totalCategoriesLabel')}
                             </CardDescription>
                         </div>
                         <ReportExportButtons
                             data={filteredCategories}
                             columns={[
-                                { key: 'name', label: 'Name', align: 'left' },
-                                { key: 'code', label: 'Code', align: 'left' },
-                                { key: 'description', label: 'Description', align: 'left' },
-                                { key: 'display_order', label: 'Order', align: 'left' },
-                                { key: 'status', label: 'Status', align: 'left' },
+                                { key: 'name', label: t('assets.name'), align: 'left' },
+                                { key: 'code', label: t('assets.categoryCode'), align: 'left' },
+                                { key: 'description', label: t('assets.categoryDescription'), align: 'left' },
+                                { key: 'display_order', label: t('assets.categoryOrder'), align: 'left' },
+                                { key: 'status', label: t('assets.status'), align: 'left' },
                             ]}
                             reportKey="asset_categories"
-                            title="Asset Categories Report"
+                            title={t('assets.categories')}
                             transformData={transformCategoriesForExport}
                             buildFiltersSummary={buildFiltersSummary}
                             templateType="asset_categories"
@@ -280,19 +280,19 @@ export default function AssetCategories() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Code</TableHead>
-                                    <TableHead>Description</TableHead>
-                                    <TableHead>Order</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>{t('assets.name')}</TableHead>
+                                    <TableHead>{t('assets.categoryCode')}</TableHead>
+                                    <TableHead>{t('assets.categoryDescription')}</TableHead>
+                                    <TableHead>{t('assets.categoryOrder')}</TableHead>
+                                    <TableHead>{t('assets.status')}</TableHead>
+                                    <TableHead className="text-right">{t('events.actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredCategories.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                            {searchQuery ? 'No categories found matching your search.' : 'No categories yet. Create your first category to get started.'}
+                                            {searchQuery ? t('assets.noCategoriesFound') : t('assets.noCategoriesMessage')}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -312,7 +312,7 @@ export default function AssetCategories() {
                                             <TableCell>{category.display_order}</TableCell>
                                             <TableCell>
                                                 <Badge variant={category.is_active ? 'default' : 'secondary'}>
-                                                    {category.is_active ? 'Active' : 'Inactive'}
+                                                    {category.is_active ? t('events.active') : t('events.inactive')}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
@@ -351,24 +351,24 @@ export default function AssetCategories() {
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>
-                            {selectedCategory ? 'Edit Category' : 'Create Category'}
+                            {selectedCategory ? t('assets.editCategory') : t('assets.createCategory')}
                         </DialogTitle>
                         <DialogDescription>
                             {selectedCategory
-                                ? 'Update the category information below.'
-                                : 'Add a new category to organize your assets.'}
+                                ? t('assets.editCategory')
+                                : t('assets.categoriesDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <div className="space-y-4 py-4">
                             <div>
                                 <Label htmlFor="name">
-                                    Name <span className="text-destructive">*</span>
+                                    {t('assets.name')} <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="name"
                                     {...register('name')}
-                                    placeholder={t('common.exampleCategories')}
+                                    placeholder={t('events.exampleCategories')}
                                 />
                                 {errors.name && (
                                     <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
@@ -376,7 +376,7 @@ export default function AssetCategories() {
                             </div>
 
                             <div>
-                                <Label htmlFor="code">Code</Label>
+                                <Label htmlFor="code">{t('assets.categoryCode')}</Label>
                                 <Input
                                     id="code"
                                     {...register('code')}
@@ -388,7 +388,7 @@ export default function AssetCategories() {
                             </div>
 
                             <div>
-                                <Label htmlFor="description">Description</Label>
+                                <Label htmlFor="description">{t('assets.categoryDescription')}</Label>
                                 <Textarea
                                     id="description"
                                     {...register('description')}
@@ -402,7 +402,7 @@ export default function AssetCategories() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="display_order">Display Order</Label>
+                                    <Label htmlFor="display_order">{t('assets.categoryOrder')}</Label>
                                     <Input
                                         id="display_order"
                                         type="number"
@@ -421,20 +421,20 @@ export default function AssetCategories() {
                                         onCheckedChange={(checked) => setValue('is_active', checked)}
                                     />
                                     <Label htmlFor="is_active" className="cursor-pointer">
-                                        Active
+                                        {t('events.active')}
                                     </Label>
                                 </div>
                             </div>
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                                Cancel
+                                {t('events.cancel')}
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={createCategory.isPending || updateCategory.isPending}
                             >
-                                {selectedCategory ? 'Update' : 'Create'}
+                                {selectedCategory ? t('events.update') : t('events.create')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -445,20 +445,19 @@ export default function AssetCategories() {
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('assets.deleteConfirm')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will delete the category. Assets using this category will have their category set to null.
-                            This action cannot be undone.
+                            {t('assets.noCategoriesMessage')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDelete}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             disabled={deleteCategory.isPending}
                         >
-                            {deleteCategory.isPending ? 'Deleting...' : 'Delete'}
+                            {deleteCategory.isPending ? t('events.deleting') || 'Deleting...' : t('events.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

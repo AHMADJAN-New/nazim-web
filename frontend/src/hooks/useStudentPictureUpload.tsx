@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
+import { imageCache } from '@/lib/imageCache';
 
 export interface UploadStudentPictureArgs {
     studentId: string;
@@ -47,8 +48,10 @@ export const useStudentPictureUpload = () => {
                 picturePath: response.picture_path,
             };
         },
-        onSuccess: async () => {
+        onSuccess: async (data, variables) => {
             showToast.success('toast.pictureUploaded');
+            // Invalidate image cache for this student
+            imageCache.invalidateImage('student', variables.studentId, data.picturePath);
             // Invalidate and refetch student queries to refresh the data immediately
             await queryClient.invalidateQueries({ queryKey: ['students'] });
             await queryClient.refetchQueries({ queryKey: ['students'] });

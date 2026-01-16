@@ -107,28 +107,51 @@ export function CalendarFormField<
     <FormField
       control={control}
       name={name}
-      render={({ field }) => (
-        <FormItem className={className}>
-          {label && (
-            <FormLabel>
-              {label}
-              {required && <span className="text-destructive ml-1">*</span>}
-            </FormLabel>
-          )}
-          <FormControl>
-            <CalendarDatePicker
-              date={field.value}
-              onDateChange={field.onChange}
-              placeholder={placeholder}
-              disabled={disabled}
-              minDate={minDate}
-              maxDate={maxDate}
-            />
-          </FormControl>
-          {description && <FormDescription>{description}</FormDescription>}
-          <FormMessage />
-        </FormItem>
-      )}
+      render={({ field }) => {
+        // Transform string value to Date for the picker
+        const dateValue = React.useMemo(() => {
+          if (!field.value) return undefined;
+          if (field.value instanceof Date) return field.value;
+          if (typeof field.value === 'string' && field.value.trim()) {
+            const date = new Date(field.value);
+            return isNaN(date.getTime()) ? undefined : date;
+          }
+          return undefined;
+        }, [field.value]);
+
+        // Transform Date from picker to string for the form
+        const handleDateChange = (date: Date | undefined) => {
+          if (date) {
+            // Convert Date to ISO string format (YYYY-MM-DD)
+            field.onChange(date.toISOString().split('T')[0]);
+          } else {
+            field.onChange('');
+          }
+        };
+
+        return (
+          <FormItem className={className}>
+            {label && (
+              <FormLabel>
+                {label}
+                {required && <span className="text-destructive ml-1">*</span>}
+              </FormLabel>
+            )}
+            <FormControl>
+              <CalendarDatePicker
+                date={dateValue}
+                onDateChange={handleDateChange}
+                placeholder={placeholder}
+                disabled={disabled}
+                minDate={minDate}
+                maxDate={maxDate}
+              />
+            </FormControl>
+            {description && <FormDescription>{description}</FormDescription>}
+            <FormMessage />
+          </FormItem>
+        );
+      }}
     />
   );
 }

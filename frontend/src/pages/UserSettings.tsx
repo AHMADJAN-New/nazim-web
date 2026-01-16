@@ -52,11 +52,11 @@ export default function UserSettings() {
     const strength = checks.filter(Boolean).length;
 
     if (strength === 0) return { strength: 0, label: t('resetPassword.passwordStrength'), color: 'bg-red-500' };
-    if (strength === 1) return { strength: 20, label: t('common.weak'), color: 'bg-red-400' };
-    if (strength === 2) return { strength: 40, label: t('common.fair'), color: 'bg-yellow-500' };
-    if (strength === 3) return { strength: 60, label: t('common.good'), color: 'bg-yellow-400' };
-    if (strength === 4) return { strength: 80, label: t('common.strong'), color: 'bg-green-400' };
-    return { strength: 100, label: t('common.veryStrong'), color: 'bg-green-500' };
+    if (strength === 1) return { strength: 20, label: t('events.weak'), color: 'bg-red-400' };
+    if (strength === 2) return { strength: 40, label: t('events.fair'), color: 'bg-yellow-500' };
+    if (strength === 3) return { strength: 60, label: t('events.good'), color: 'bg-yellow-400' };
+    if (strength === 4) return { strength: 80, label: t('events.strong'), color: 'bg-green-400' };
+    return { strength: 100, label: t('events.veryStrong'), color: 'bg-green-500' };
   };
 
   const passwordStrength = getPasswordStrength(newPassword || '');
@@ -122,13 +122,13 @@ export default function UserSettings() {
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 {/* Current Password */}
                 <div className="space-y-2">
-                  <Label htmlFor="current_password">{t('common.currentPassword')} *</Label>
+                  <Label htmlFor="current_password">{t('events.currentPassword')} *</Label>
                   <div className="relative">
                     <Input
                       id="current_password"
                       type={showCurrentPassword ? 'text' : 'password'}
                       {...register('current_password')}
-                      placeholder={t('common.enterCurrentPassword')}
+                      placeholder={t('events.enterCurrentPassword')}
                       disabled={isSubmitting}
                       className="pr-10"
                     />
@@ -154,13 +154,13 @@ export default function UserSettings() {
 
                 {/* New Password */}
                 <div className="space-y-2">
-                  <Label htmlFor="new_password">{t('resetPassword.newPassword')} *</Label>
+                  <Label htmlFor="new_password">{t('userManagement.newPassword')} *</Label>
                   <div className="relative">
                     <Input
                       id="new_password"
                       type={showNewPassword ? 'text' : 'password'}
                       {...register('new_password')}
-                      placeholder={t('common.enterNewPassword')}
+                      placeholder={t('events.enterNewPassword')}
                       disabled={isSubmitting}
                       className="pr-10"
                     />
@@ -201,13 +201,13 @@ export default function UserSettings() {
 
                 {/* Confirm New Password */}
                 <div className="space-y-2">
-                  <Label htmlFor="new_password_confirmation">{t('resetPassword.confirmPassword')} *</Label>
+                  <Label htmlFor="new_password_confirmation">{t('auth.confirmPassword')} *</Label>
                   <div className="relative">
                     <Input
                       id="new_password_confirmation"
                       type={showConfirmPassword ? 'text' : 'password'}
                       {...register('new_password_confirmation')}
-                      placeholder={t('resetPassword.confirmPassword')}
+                      placeholder={t('auth.confirmPassword')}
                       disabled={isSubmitting}
                       className="pr-10"
                     />

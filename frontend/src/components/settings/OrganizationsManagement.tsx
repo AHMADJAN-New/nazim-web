@@ -235,9 +235,23 @@ export function OrganizationsManagement() {
   };
 
   const onSubmit = (data: OrganizationFormData) => {
+    // Transform establishedDate from Date to string if needed
+    const transformedData = {
+      ...data,
+      establishedDate: data.establishedDate instanceof Date
+        ? data.establishedDate.toISOString().slice(0, 10)
+        : data.establishedDate || null,
+      // Auto-add https:// to website if missing
+      website: data.website && data.website !== ''
+        ? (data.website.startsWith('http://') || data.website.startsWith('https://'))
+          ? data.website
+          : `https://${data.website}`
+        : null,
+    };
+
     if (selectedOrganization) {
       updateOrganization.mutate(
-        { id: selectedOrganization, ...data },
+        { id: selectedOrganization, ...transformedData },
         {
           onSuccess: () => {
             handleCloseDialog();
@@ -248,11 +262,11 @@ export function OrganizationsManagement() {
       if (data.name && data.slug) {
         // For platform admins, include admin fields
         const createData = isPlatformAdminRoute ? {
-          ...data,
+          ...transformedData,
           admin_email: data.admin_email || '',
           admin_password: data.admin_password || '',
           admin_full_name: data.admin_full_name || '',
-        } : data;
+        } : transformedData;
         
         createOrganization.mutate(createData as any, {
           onSuccess: () => {
@@ -317,7 +331,7 @@ export function OrganizationsManagement() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -335,142 +349,155 @@ export function OrganizationsManagement() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <Card>
+    <div className="space-y-6 overflow-x-hidden">
+      <Card className="overflow-hidden">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Building2 className="h-5 w-5 hidden sm:inline-flex" />
                 {t('organizations.title')}
               </CardTitle>
-              <CardDescription>{t('organizations.subtitle')}</CardDescription>
+              <CardDescription className="hidden md:block text-sm mt-1">{t('organizations.subtitle')}</CardDescription>
             </div>
             {canCreateOrganization && (
-              <Button onClick={() => handleOpenDialog()}>
-                <Plus className="h-4 w-4 mr-2" />
-                {t('organizations.addOrganization')}
+              <Button onClick={() => handleOpenDialog()} size="sm" className="flex-shrink-0" aria-label={t('organizations.addOrganization')}>
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">{t('organizations.addOrganization')}</span>
               </Button>
             )}
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t('organizations.searchPlaceholder')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+        <CardContent className="p-4 sm:p-6">
+          <div className="mb-4 flex flex-col sm:flex-row items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground hidden sm:block" />
+            <Input
+              placeholder={t('assets.searchPlaceholder')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 sm:pl-10"
+            />
           </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('organizations.name')}</TableHead>
-                  <TableHead>{t('organizations.slug')}</TableHead>
-                  <TableHead>{t('organizations.settings')}</TableHead>
-                  <TableHead>{t('organizations.createdAt')}</TableHead>
-                  <TableHead>{t('organizations.updatedAt')}</TableHead>
-                  <TableHead className="text-right">{t('organizations.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredOrganizations.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
-                      {searchQuery ? t('organizations.noOrganizationsFound') : t('organizations.noOrganizationsMessage')}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredOrganizations.map((org) => {
-                    const hasSettings = org.settings && Object.keys(org.settings).length > 0;
-                    return (
-                      <TableRow key={org.id}>
-                        <TableCell className="font-medium">{org.name}</TableCell>
-                        <TableCell>
-                          <code className="text-sm bg-muted px-2 py-1 rounded">{org.slug}</code>
-                        </TableCell>
-                        <TableCell>
-                          {hasSettings ? (
-                            <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                              <SettingsIcon className="h-3 w-3" />
-                              {Object.keys(org.settings).length} setting{Object.keys(org.settings).length !== 1 ? 's' : ''}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">No settings</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-sm">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                            {formatDate(org.createdAt)}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-sm">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                            {formatDate(org.updatedAt)}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedOrganization(org.id);
-                                setIsDetailsDialogOpen(true);
-                              }}
-                              title={t('organizations.viewDetails')}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            {isPlatformAdminRoute && hasSubscriptionAdminPermission && (
+          {filteredOrganizations.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {searchQuery ? t('auth.noOrganizationsFound') : t('organizations.noOrganizationsMessage')}
+            </div>
+          ) : (
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                <Table className="min-w-[800px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">{t('events.name')}</TableHead>
+                      <TableHead className="hidden md:table-cell whitespace-nowrap">{t('organizations.slug')}</TableHead>
+                      <TableHead className="hidden lg:table-cell whitespace-nowrap">{t('organizations.settings')}</TableHead>
+                      <TableHead className="hidden md:table-cell whitespace-nowrap">{t('events.createdAt')}</TableHead>
+                      <TableHead className="hidden lg:table-cell whitespace-nowrap">{t('events.updatedAt')}</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">{t('events.actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredOrganizations.map((org) => {
+                      const hasSettings = org.settings && Object.keys(org.settings).length > 0;
+                      return (
+                        <TableRow key={org.id}>
+                          <TableCell className="font-medium">
+                            <div>
+                              {org.name}
+                              <div className="md:hidden mt-1">
+                                <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{org.slug}</code>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <code className="text-sm bg-muted px-2 py-1 rounded">{org.slug}</code>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            {hasSettings ? (
+                              <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                                <SettingsIcon className="h-3 w-3" />
+                                {Object.keys(org.settings).length} setting{Object.keys(org.settings).length !== 1 ? 's' : ''}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">No settings</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <div className="flex items-center gap-1 text-sm">
+                              <Calendar className="h-3 w-3 text-muted-foreground" />
+                              {formatDate(org.createdAt)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            <div className="flex items-center gap-1 text-sm">
+                              <Calendar className="h-3 w-3 text-muted-foreground" />
+                              {formatDate(org.updatedAt)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1.5 sm:gap-2">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                asChild
-                                title="View Subscription & Features"
+                                onClick={() => {
+                                  setSelectedOrganization(org.id);
+                                  setIsDetailsDialogOpen(true);
+                                }}
+                                title={t('events.viewDetails')}
+                                className="flex-shrink-0"
+                                aria-label={t('events.viewDetails')}
                               >
-                                <Link to={`/platform/organizations/${org.id}/subscription`}>
-                                  <Package className="h-4 w-4" />
-                                </Link>
+                                <Eye className="h-4 w-4" />
                               </Button>
-                            )}
-                            {canUpdateOrganization && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenDialog(org.id)}
-                                title={t('organizations.edit')}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {canDeleteOrganization && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteClick(org.id)}
-                                title={t('organizations.delete')}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                              {isPlatformAdminRoute && hasSubscriptionAdminPermission && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  asChild
+                                  title="View Subscription & Features"
+                                  className="flex-shrink-0"
+                                  aria-label="View Subscription & Features"
+                                >
+                                  <Link to={`/platform/organizations/${org.id}/subscription`}>
+                                    <Package className="h-4 w-4" />
+                                  </Link>
+                                </Button>
+                              )}
+                              {canUpdateOrganization && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleOpenDialog(org.id)}
+                                  title={t('events.edit')}
+                                  className="flex-shrink-0"
+                                  aria-label={t('events.edit')}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {canDeleteOrganization && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteClick(org.id)}
+                                  title={t('events.delete')}
+                                  className="flex-shrink-0"
+                                  aria-label={t('events.delete')}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -489,14 +516,32 @@ export function OrganizationsManagement() {
               </DialogDescription>
             </DialogHeader>
             <Tabs defaultValue="basic" className="w-full mt-4">
-              <TabsList className={`grid w-full ${isPlatformAdminRoute && !selectedOrganization ? 'grid-cols-6' : 'grid-cols-5'}`}>
-                <TabsTrigger value="basic">Basic</TabsTrigger>
-                <TabsTrigger value="contact">Contact</TabsTrigger>
-                <TabsTrigger value="address">Address</TabsTrigger>
-                <TabsTrigger value="legal">Legal</TabsTrigger>
-                <TabsTrigger value="additional">Additional</TabsTrigger>
+              <TabsList className={`grid w-full ${isPlatformAdminRoute && !selectedOrganization ? 'grid-cols-3 sm:grid-cols-6' : 'grid-cols-3 sm:grid-cols-5'}`}>
+                <TabsTrigger value="basic" className="flex items-center gap-2">
+                  <span className="hidden sm:inline">Basic</span>
+                  <span className="sm:hidden">Basic</span>
+                </TabsTrigger>
+                <TabsTrigger value="contact" className="flex items-center gap-2">
+                  <span className="hidden sm:inline">Contact</span>
+                  <span className="sm:hidden">Contact</span>
+                </TabsTrigger>
+                <TabsTrigger value="address" className="flex items-center gap-2">
+                  <span className="hidden sm:inline">Address</span>
+                  <span className="sm:hidden">Address</span>
+                </TabsTrigger>
+                <TabsTrigger value="legal" className="flex items-center gap-2">
+                  <span className="hidden sm:inline">Legal</span>
+                  <span className="sm:hidden">Legal</span>
+                </TabsTrigger>
+                <TabsTrigger value="additional" className="flex items-center gap-2">
+                  <span className="hidden sm:inline">Additional</span>
+                  <span className="sm:hidden">More</span>
+                </TabsTrigger>
                 {isPlatformAdminRoute && !selectedOrganization && (
-                  <TabsTrigger value="admin">Admin User</TabsTrigger>
+                  <TabsTrigger value="admin" className="flex items-center gap-2">
+                    <span className="hidden sm:inline">Admin User</span>
+                    <span className="sm:hidden">Admin</span>
+                  </TabsTrigger>
                 )}
               </TabsList>
 
@@ -647,7 +692,7 @@ export function OrganizationsManagement() {
                       <p className="text-sm text-destructive">{errors.streetAddress.message}</p>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="city">City</Label>
                       <Input
@@ -671,7 +716,7 @@ export function OrganizationsManagement() {
                       )}
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="country">Country</Label>
                       <Input
@@ -754,7 +799,7 @@ export function OrganizationsManagement() {
                           <p className="text-sm text-destructive">{errors.contactPersonName.message}</p>
                         )}
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="grid gap-2">
                           <Label htmlFor="contactPersonEmail">Contact Person Email</Label>
                           <Input
@@ -866,10 +911,10 @@ export function OrganizationsManagement() {
             </Tabs>
             <DialogFooter className="mt-6">
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                {t('organizations.cancel')}
+                {t('events.cancel')}
               </Button>
               <Button type="submit" disabled={createOrganization.isPending || updateOrganization.isPending}>
-                {selectedOrganization ? t('organizations.update') : t('organizations.create')}
+                {selectedOrganization ? t('events.update') : t('events.create')}
               </Button>
             </DialogFooter>
           </form>
@@ -892,10 +937,10 @@ export function OrganizationsManagement() {
             <div className="space-y-6 py-4">
               {/* Basic Information */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">{t('organizations.basicInformation')}</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <h3 className="font-semibold text-lg">{t('events.basicInformation')}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-muted-foreground">{t('organizations.name')}</Label>
+                    <Label className="text-muted-foreground">{t('events.name')}</Label>
                     <p className="font-medium">{selectedOrg.name}</p>
                   </div>
                   <div>
@@ -909,11 +954,11 @@ export function OrganizationsManagement() {
                     <p className="text-sm font-mono text-muted-foreground break-all">{selectedOrg.id}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">{t('organizations.createdAt')}</Label>
+                    <Label className="text-muted-foreground">{t('events.createdAt')}</Label>
                     <p className="text-sm">{formatDateTime(selectedOrg.createdAt)}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">{t('organizations.updatedAt')}</Label>
+                    <Label className="text-muted-foreground">{t('events.updatedAt')}</Label>
                     <p className="text-sm">{formatDateTime(selectedOrg.updatedAt)}</p>
                   </div>
                 </div>
@@ -952,7 +997,7 @@ export function OrganizationsManagement() {
                           <GraduationCap className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.studentCount}</p>
-                            <p className="text-sm text-muted-foreground">{t('organizations.students')}</p>
+                            <p className="text-sm text-muted-foreground">{t('table.students')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -963,7 +1008,7 @@ export function OrganizationsManagement() {
                           <BookOpen className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.classCount}</p>
-                            <p className="text-sm text-muted-foreground">{t('organizations.classes')}</p>
+                            <p className="text-sm text-muted-foreground">{t('nav.classes')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -974,7 +1019,7 @@ export function OrganizationsManagement() {
                           <UserCheck className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.staffCount}</p>
-                            <p className="text-sm text-muted-foreground">{t('organizations.staff')}</p>
+                            <p className="text-sm text-muted-foreground">{t('settings.staff')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -985,7 +1030,7 @@ export function OrganizationsManagement() {
                           <Building className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.buildingCount}</p>
-                            <p className="text-sm text-muted-foreground">{t('organizations.buildings')}</p>
+                            <p className="text-sm text-muted-foreground">{t('dashboard.buildings')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -996,7 +1041,7 @@ export function OrganizationsManagement() {
                           <DoorOpen className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.roomCount}</p>
-                            <p className="text-sm text-muted-foreground">{t('organizations.rooms')}</p>
+                            <p className="text-sm text-muted-foreground">{t('hostel.rooms')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -1022,7 +1067,7 @@ export function OrganizationsManagement() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
-              {t('organizations.close')}
+              {t('events.close')}
             </Button>
             <Button onClick={() => {
               setIsDetailsDialogOpen(false);
@@ -1045,12 +1090,12 @@ export function OrganizationsManagement() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('organizations.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('organizations.delete')}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

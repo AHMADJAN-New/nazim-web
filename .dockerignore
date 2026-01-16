@@ -1,0 +1,27 @@
+**/.git
+**/.gitignore
+**/.DS_Store
+**/.idea
+**/.vscode
+**/.cursor
+
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/.vite
+
+# Backend
+backend/vendor
+backend/storage
+backend/bootstrap/cache
+
+# Logs / temp / backups
+backups
+**/*.log
+**/storage/logs
+**/storage/framework
+
+# Audit dumps / archives
+nazim_audit_*
+**/*.tar.gz
+

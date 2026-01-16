@@ -165,6 +165,7 @@ export const useCreateBuilding = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['buildings'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
       showToast.success('buildings.buildingCreated');
     },
     onError: (error: Error) => {
@@ -207,6 +208,7 @@ export const useUpdateBuilding = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['buildings'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
       showToast.success('buildings.buildingUpdated');
     },
     onError: (error: Error) => {

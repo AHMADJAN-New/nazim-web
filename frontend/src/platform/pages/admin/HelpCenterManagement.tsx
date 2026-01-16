@@ -102,6 +102,7 @@ interface ArticleFormData {
   excerpt: string;
   content: string;
   content_type: 'markdown' | 'html';
+  language: 'en' | 'ps' | 'fa' | 'ar';
   featured_image_url: string;
   status: 'draft' | 'published' | 'archived';
   visibility: 'public' | 'org_users' | 'staff_only';
@@ -121,6 +122,7 @@ const initialArticleFormData: ArticleFormData = {
   excerpt: '',
   content: '',
   content_type: 'html',
+  language: 'en',
   featured_image_url: '',
   status: 'draft',
   visibility: 'public',
@@ -311,6 +313,7 @@ export default function HelpCenterManagement() {
       excerpt: article.excerpt || '',
       content: article.content,
       content_type: article.content_type,
+      language: article.language || 'en',
       featured_image_url: article.featured_image_url || '',
       status: article.status || (article.is_published ? 'published' : 'draft'),
       visibility: article.visibility || 'public',
@@ -334,6 +337,7 @@ export default function HelpCenterManagement() {
         excerpt: articleFormData.excerpt || undefined,
         content: articleFormData.content,
         content_type: articleFormData.content_type,
+        language: articleFormData.language,
         featured_image_url: articleFormData.featured_image_url || undefined,
         status: articleFormData.status,
         visibility: articleFormData.visibility,
@@ -411,13 +415,13 @@ export default function HelpCenterManagement() {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             {t('helpCenter.title.helpCenterManagement') || 'Help Center Management'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             {t('helpCenter.subtitle') || 'Manage help center articles and categories'}
           </p>
         </div>
@@ -428,7 +432,7 @@ export default function HelpCenterManagement() {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
         <Input
           type="text"
-          placeholder={t('helpCenter.searchPlaceholder') || 'Search articles and categories...'}
+          placeholder={t('assets.searchPlaceholder') || 'Search articles and categories...'}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
@@ -480,9 +484,9 @@ export default function HelpCenterManagement() {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0 sm:p-6">
                 {filteredArticles.length === 0 ? (
-                  <div className="py-12 text-center">
+                  <div className="py-12 text-center px-4 sm:px-0">
                     <HelpCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2">
                       {t('helpCenter.noArticlesFound') || 'No articles found'}
@@ -492,23 +496,32 @@ export default function HelpCenterManagement() {
                     </p>
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Visibility</TableHead>
-                        <TableHead>Views</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
+                  <div className="overflow-x-auto -mx-4 sm:mx-0">
+                    <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                      <Table className="min-w-[800px]">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Title</TableHead>
+                            <TableHead className="hidden md:table-cell">Category</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="hidden lg:table-cell">Visibility</TableHead>
+                            <TableHead className="hidden md:table-cell">Views</TableHead>
+                            <TableHead className="hidden lg:table-cell">Created</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
                     <TableBody>
                       {filteredArticles.map((article) => (
                         <TableRow key={article.id}>
-                          <TableCell className="font-medium">{article.title}</TableCell>
-                          <TableCell>
+                          <TableCell className="font-medium">
+                            <div>
+                              {article.title}
+                              <div className="md:hidden mt-1">
+                                {categories.find((c) => c.id === article.category_id)?.name || 'N/A'}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
                             {categories.find((c) => c.id === article.category_id)?.name || 'N/A'}
                           </TableCell>
                           <TableCell>
@@ -517,19 +530,20 @@ export default function HelpCenterManagement() {
                               (article.is_published ? 'published' : 'draft')
                             )}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden lg:table-cell">
                             {getVisibilityBadge(article.visibility || 'public')}
                           </TableCell>
-                          <TableCell>{article.view_count || 0}</TableCell>
-                          <TableCell>
+                          <TableCell className="hidden md:table-cell">{article.view_count || 0}</TableCell>
+                          <TableCell className="hidden lg:table-cell">
                             {article.created_at ? formatDate(new Date(article.created_at)) : 'N/A'}
                           </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
+                          <TableCell className="text-right">
+                            <div className="flex items-center gap-2 justify-end">
                               <Button 
                                 variant="ghost" 
                                 size="sm"
                                 onClick={() => window.open(`/help-center/article/${article.id}`, '_blank')}
+                                aria-label="View article"
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -537,6 +551,7 @@ export default function HelpCenterManagement() {
                                 variant="ghost" 
                                 size="sm"
                                 onClick={() => handleEditArticle(article)}
+                                aria-label="Edit article"
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -544,6 +559,7 @@ export default function HelpCenterManagement() {
                                 variant="ghost" 
                                 size="sm"
                                 onClick={() => setDeleteArticleId(article.id)}
+                                aria-label="Delete article"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -553,6 +569,8 @@ export default function HelpCenterManagement() {
                       ))}
                     </TableBody>
                   </Table>
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -809,7 +827,19 @@ export default function HelpCenterManagement() {
                 </Label>
                 <Select
                   value={articleFormData.category_id}
-                  onValueChange={(value) => setArticleFormData({ ...articleFormData, category_id: value })}
+                  onValueChange={(value) => {
+                    const selectedCategory = categories.find((c) => c.id === value);
+                    // Auto-populate slug from category slug when creating new article (only if slug is empty)
+                    if (selectedCategory && !editingArticle && selectedCategory.slug && !articleFormData.slug) {
+                      setArticleFormData({ 
+                        ...articleFormData, 
+                        category_id: value,
+                        slug: selectedCategory.slug 
+                      });
+                    } else {
+                      setArticleFormData({ ...articleFormData, category_id: value });
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
@@ -865,7 +895,7 @@ export default function HelpCenterManagement() {
                 placeholder="article-slug"
               />
               <p className="text-xs text-muted-foreground">
-                Leave empty to auto-generate from title
+                Auto-populated from selected category. Leave empty to auto-generate from title.
               </p>
             </div>
 
@@ -893,7 +923,29 @@ export default function HelpCenterManagement() {
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="article-language">
+                  Language <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={articleFormData.language}
+                  onValueChange={(value: 'en' | 'ps' | 'fa' | 'ar') => 
+                    setArticleFormData({ ...articleFormData, language: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="ps">پښتو (Pashto)</SelectItem>
+                    <SelectItem value="fa">فارسی (Farsi)</SelectItem>
+                    <SelectItem value="ar">العربية (Arabic)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="article-visibility">Visibility</Label>
                 <Select

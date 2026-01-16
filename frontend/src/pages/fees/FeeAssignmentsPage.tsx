@@ -459,13 +459,13 @@ export default function FeeAssignmentsPage() {
             data={assignments}
             columns={[
               { key: 'studentName', label: t('fees.student'), align: 'left' },
-              { key: 'className', label: t('fees.class'), align: 'left' },
+              { key: 'className', label: t('search.class'), align: 'left' },
               { key: 'structureName', label: t('fees.structure'), align: 'left' },
               { key: 'assignedAmount', label: t('fees.amountAssigned'), align: 'right' },
               { key: 'paidAmount', label: t('fees.paid'), align: 'right' },
               { key: 'remainingAmount', label: t('fees.remaining'), align: 'right' },
               { key: 'dueDate', label: t('fees.dueDate'), align: 'left' },
-              { key: 'status', label: t('fees.status'), align: 'center' },
+              { key: 'status', label: t('events.status'), align: 'center' },
             ]}
             reportKey="fee_assignments"
             title={t('fees.assignments') || 'Fee Assignments'}
@@ -487,7 +487,7 @@ export default function FeeAssignmentsPage() {
               if (ay) parts.push(`${t('fees.academicYear')}: ${ay.name}`);
               if (filterClassAy !== 'all') {
                 const cay = classAcademicYears.find(c => c.id === filterClassAy);
-                if (cay) parts.push(`${t('fees.class')}: ${cay.class?.name || filterClassAy}`);
+                if (cay) parts.push(`${t('search.class')}: ${cay.class?.name || filterClassAy}`);
               }
               return parts.join(' | ');
             }}
@@ -545,7 +545,7 @@ export default function FeeAssignmentsPage() {
                     name="class_academic_year_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('fees.class')}</FormLabel>
+                        <FormLabel>{t('search.class')}</FormLabel>
                         <FormControl>
                           <Select
                             value={field.value || ''}
@@ -557,7 +557,7 @@ export default function FeeAssignmentsPage() {
                             disabled={!!editingAssignment}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder={t('fees.selectClass')} />
+                              <SelectValue placeholder={t('events.selectClass')} />
                             </SelectTrigger>
                             <SelectContent>
                               {classAcademicYears.map((cay) => (
@@ -634,7 +634,7 @@ export default function FeeAssignmentsPage() {
                   name="notes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('fees.notes')}</FormLabel>
+                      <FormLabel>{t('events.notes')}</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -653,14 +653,14 @@ export default function FeeAssignmentsPage() {
                     }}
                     disabled={createMutation.isPending || updateMutation.isPending}
                   >
-                    {t('common.cancel')}
+                    {t('events.cancel')}
                   </Button>
                   <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
                     {createMutation.isPending || updateMutation.isPending
-                      ? t('common.saving')
+                      ? t('events.saving')
                       : editingAssignment
-                        ? t('common.update')
-                        : t('common.save')}
+                        ? t('events.update')
+                        : t('events.save')}
                   </Button>
                 </div>
               </form>
@@ -668,7 +668,7 @@ export default function FeeAssignmentsPage() {
             </DialogContent>
           </Dialog>
 
-      <FilterPanel title={t('fees.filters')}>
+      <FilterPanel title={t('events.filters')}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <span className="text-sm font-medium">{t('fees.academicYear')}</span>
@@ -694,7 +694,7 @@ export default function FeeAssignmentsPage() {
             </Select>
           </div>
           <div>
-            <span className="text-sm font-medium">{t('fees.class')}</span>
+            <span className="text-sm font-medium">{t('search.class')}</span>
             <Select
               value={filterClassAy}
               onValueChange={async (val) => {
@@ -704,10 +704,10 @@ export default function FeeAssignmentsPage() {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t('fees.selectClass')} />
+                <SelectValue placeholder={t('events.selectClass')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('fees.allClasses')}</SelectItem>
+                <SelectItem value="all">{t('students.allClasses')}</SelectItem>
                 {classAcademicYears.map((cay) => (
                   <SelectItem key={cay.id} value={cay.id}>
                     {cay.class?.name ?? cay.id}
@@ -727,7 +727,7 @@ export default function FeeAssignmentsPage() {
           </TabsTrigger>
           <TabsTrigger value="students" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            {t('fees.students') || 'Students'}
+            {t('table.students') || 'Students'}
           </TabsTrigger>
         </TabsList>
 
@@ -740,20 +740,20 @@ export default function FeeAssignmentsPage() {
               {isLoading ? (
                 <p>{t('common.loading')}</p>
               ) : assignmentsByClass.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">{t('common.noData') || 'No data available'}</p>
+                <p className="text-muted-foreground text-center py-8">{t('events.noData') || 'No data available'}</p>
               ) : (
                 <>
                   <div className="overflow-x-auto">
                     <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('fees.class')}</TableHead>
+                      <TableHead>{t('search.class')}</TableHead>
                       <TableHead>{t('fees.structure')}</TableHead>
                       <TableHead className="text-right">{t('fees.amountAssigned')}</TableHead>
                       <TableHead className="text-right">{t('fees.paid')}</TableHead>
                       <TableHead className="text-right">{t('fees.remaining')}</TableHead>
-                      <TableHead>{t('fees.status')}</TableHead>
-                      <TableHead className="text-right">{t('common.actions')}</TableHead>
+                      <TableHead>{t('events.status')}</TableHead>
+                      <TableHead className="text-right">{t('events.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -851,13 +851,13 @@ export default function FeeAssignmentsPage() {
         <TabsContent value="students">
           <Card>
             <CardHeader>
-              <CardTitle>{t('fees.students') || 'Students'}</CardTitle>
+              <CardTitle>{t('table.students') || 'Students'}</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <p>{t('common.loading')}</p>
               ) : assignments.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">{t('common.noData') || 'No data available'}</p>
+                <p className="text-muted-foreground text-center py-8">{t('events.noData') || 'No data available'}</p>
               ) : (
                 <>
                   <div className="overflow-x-auto">
@@ -865,13 +865,13 @@ export default function FeeAssignmentsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('fees.student')}</TableHead>
-                      <TableHead>{t('fees.class')}</TableHead>
+                      <TableHead>{t('search.class')}</TableHead>
                       <TableHead>{t('fees.structure')}</TableHead>
                       <TableHead className="text-right">{t('fees.amountAssigned')}</TableHead>
                       <TableHead className="text-right">{t('fees.paid')}</TableHead>
                       <TableHead className="text-right">{t('fees.remaining')}</TableHead>
-                      <TableHead>{t('fees.status')}</TableHead>
-                      <TableHead className="text-right">{t('common.actions')}</TableHead>
+                      <TableHead>{t('events.status')}</TableHead>
+                      <TableHead className="text-right">{t('events.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -979,17 +979,17 @@ export default function FeeAssignmentsPage() {
       <AlertDialog open={!!deletingAssignment} onOpenChange={(open) => !open && setDeletingAssignment(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('events.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('fees.deleteAssignmentConfirm') || 'Are you sure you want to delete this fee assignment? This action cannot be undone.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeletingAssignment(null)}>
-              {t('common.cancel')}
+              {t('events.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {t('common.delete')}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1053,7 +1053,7 @@ export default function FeeAssignmentsPage() {
 
               {/* Class Information */}
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold">{t('fees.class') || 'Class'}</h3>
+                <h3 className="text-lg font-semibold">{t('search.class') || 'Class'}</h3>
                 <div>
                   <p className="text-sm text-muted-foreground">{t('fees.className') || 'Class Name'}</p>
                   <p className="font-medium">
@@ -1091,7 +1091,7 @@ export default function FeeAssignmentsPage() {
                 <h3 className="text-lg font-semibold">{t('fees.statusAndDates') || 'Status & Dates'}</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">{t('fees.status') || 'Status'}</p>
+                    <p className="text-sm text-muted-foreground">{t('events.status') || 'Status'}</p>
                     <p className="font-medium capitalize">{viewingAssignment.status}</p>
                   </div>
                   <div>
@@ -1124,7 +1124,7 @@ export default function FeeAssignmentsPage() {
               {/* Notes */}
               {viewingAssignment.notes && (
                 <div className="space-y-2">
-                  <h3 className="text-lg font-semibold">{t('fees.notes') || 'Notes'}</h3>
+                  <h3 className="text-lg font-semibold">{t('events.notes') || 'Notes'}</h3>
                   <p className="text-sm text-muted-foreground">{viewingAssignment.notes}</p>
                 </div>
               )}
@@ -1140,7 +1140,7 @@ export default function FeeAssignmentsPage() {
                   }}
                 >
                   <Pencil className="h-4 w-4 mr-2" />
-                  {t('common.edit') || 'Edit'}
+                  {t('events.edit') || 'Edit'}
                 </Button>
                 <Button
                   variant="outline"
@@ -1151,7 +1151,7 @@ export default function FeeAssignmentsPage() {
                   }}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  {t('common.delete') || 'Delete'}
+                  {t('events.delete') || 'Delete'}
                 </Button>
               </div>
             </div>

@@ -9,14 +9,37 @@ use App\Models\OrganizationFeatureAddon;
 use App\Models\OrganizationLimitOverride;
 use App\Models\OrganizationSubscription;
 use App\Models\PaymentRecord;
+use App\Models\PlanFeature;
 use App\Models\RenewalRequest;
 use App\Models\SubscriptionHistory;
 use App\Models\SubscriptionPlan;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class SubscriptionService
 {
+    /**
+     * Lock the organization row to serialize subscription state changes.
+     */
+    private function lockOrganizationForUpdate(string $organizationId): void
+    {
+        Organization::where('id', $organizationId)->lockForUpdate()->first();
+    }
+
+    /**
+     * Get current subscription row locked for update.
+     * Must be called inside a DB transaction.
+     */
+    private function getCurrentSubscriptionLocked(string $organizationId): ?OrganizationSubscription
+    {
+        return OrganizationSubscription::where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->orderBy('created_at', 'desc')
+            ->lockForUpdate()
+            ->first();
+    }
+
     /**
      * Get the current subscription for an organization
      */
@@ -102,29 +125,99 @@ class SubscriptionService
         float $amountPaid = 0,
         int $additionalSchools = 0,
         ?string $performedBy = null,
-        ?string $notes = null
+        ?string $notes = null,
+        bool $licensePaid = false,
+        ?string $licensePaymentId = null
     ): OrganizationSubscription {
+        return DB::transaction(function () use (
+            $organizationId,
+            $planId,
+            $currency,
+            $amountPaid,
+            $additionalSchools,
+            $performedBy,
+            $notes,
+            $licensePaid,
+            $licensePaymentId
+        ) {
+            return $this->activateSubscriptionInTransaction(
+                $organizationId,
+                $planId,
+                $currency,
+                $amountPaid,
+                $additionalSchools,
+                $performedBy,
+                $notes,
+                $licensePaid,
+                $licensePaymentId
+            );
+        }, 3);
+    }
+
+    /**
+     * Internal activation implementation.
+     * Must be called inside a DB transaction.
+     */
+    private function activateSubscriptionInTransaction(
+        string $organizationId,
+        string $planId,
+        string $currency = 'AFN',
+        float $amountPaid = 0,
+        int $additionalSchools = 0,
+        ?string $performedBy = null,
+        ?string $notes = null,
+        bool $licensePaid = false,
+        ?string $licensePaymentId = null
+    ): OrganizationSubscription {
+        $this->lockOrganizationForUpdate($organizationId);
+
         $plan = SubscriptionPlan::findOrFail($planId);
-        $currentSubscription = $this->getCurrentSubscription($organizationId);
+        if (!$plan->is_active) {
+            throw new \Exception('Selected plan is not active');
+        }
+        $currentSubscription = $this->getCurrentSubscriptionLocked($organizationId);
 
         $startsAt = now();
-        $expiresAt = Carbon::now()->addYear();
+        
+        // Calculate expiry based on billing period
+        $billingPeriodDays = $plan->getBillingPeriodDays();
+        $expiresAt = Carbon::now()->addDays($billingPeriodDays);
 
         // Determine action type
         $action = SubscriptionHistory::ACTION_ACTIVATED;
         $fromPlanId = null;
         $fromStatus = null;
+        $lockedFeatures = [];
+        $metadata = $currentSubscription?->metadata ?? [];
 
         if ($currentSubscription) {
             $fromPlanId = $currentSubscription->plan_id;
             $fromStatus = $currentSubscription->status;
 
             if ($currentSubscription->plan_id !== $planId) {
+                if (!$currentSubscription->relationLoaded('plan')) {
+                    $currentSubscription->load('plan');
+                }
                 $currentPlan = $currentSubscription->plan;
-                if ($currentPlan && $plan->price_yearly_afn > $currentPlan->price_yearly_afn) {
+                // Compare total costs (license + maintenance) for upgrade/downgrade determination
+                $newTotalCost = $plan->getTotalInitialCost($currency, $additionalSchools);
+                $currentTotalCost = $currentPlan ? $currentPlan->getTotalInitialCost($currency, $currentSubscription->additional_schools ?? 0) : 0;
+                
+                if ($currentPlan && $newTotalCost > $currentTotalCost) {
                     $action = SubscriptionHistory::ACTION_UPGRADED;
-                } elseif ($currentPlan && $plan->price_yearly_afn < $currentPlan->price_yearly_afn) {
+                } elseif ($currentPlan && $newTotalCost < $currentTotalCost) {
                     $action = SubscriptionHistory::ACTION_DOWNGRADED;
+                }
+
+                if ($action === SubscriptionHistory::ACTION_DOWNGRADED && $currentPlan) {
+                    $lockedFeatures = $this->getRemovedFeaturesForDowngrade($organizationId, $currentPlan, $plan);
+                    if (!empty($lockedFeatures)) {
+                        $metadata['locked_features'] = $lockedFeatures;
+                        $metadata['locked_at'] = now()->toISOString();
+                        $metadata['locked_reason'] = 'plan_downgrade';
+                    }
+                } else {
+                    unset($metadata['locked_features'], $metadata['locked_at'], $metadata['locked_reason']);
                 }
             } elseif (in_array($currentSubscription->status, [
                 OrganizationSubscription::STATUS_PENDING_RENEWAL,
@@ -139,6 +232,9 @@ class SubscriptionService
             $currentSubscription->delete();
         }
 
+        // Calculate next maintenance due date
+        $nextMaintenanceDueAt = Carbon::now()->addDays($billingPeriodDays);
+
         $subscription = OrganizationSubscription::create([
             'organization_id' => $organizationId,
             'plan_id' => $planId,
@@ -149,6 +245,13 @@ class SubscriptionService
             'amount_paid' => $amountPaid,
             'additional_schools' => $additionalSchools,
             'notes' => $notes,
+            'metadata' => !empty($metadata) ? $metadata : null,
+            // New billing fields
+            'billing_period' => $plan->billing_period ?? 'yearly',
+            'next_maintenance_due_at' => $nextMaintenanceDueAt,
+            'last_maintenance_paid_at' => $startsAt,
+            'license_paid_at' => $licensePaid ? $startsAt : null,
+            'license_payment_id' => $licensePaymentId,
         ]);
 
         SubscriptionHistory::log(
@@ -163,7 +266,65 @@ class SubscriptionService
             $notes
         );
 
+        // Invalidate org-scoped entitlement caches
+        Cache::forget("subscription:enabled-features:v1:{$organizationId}");
+
         return $subscription;
+    }
+
+    private function getPlanInheritanceChain(string $planSlug): array
+    {
+        $order = config('subscription_features.plan_order', []);
+        $index = array_search($planSlug, $order, true);
+
+        if ($index === false) {
+            return [$planSlug];
+        }
+
+        return array_slice($order, 0, $index + 1);
+    }
+
+    private function getPlanFeatureKeysWithInheritance(SubscriptionPlan $plan): array
+    {
+        $slugs = $this->getPlanInheritanceChain($plan->slug);
+
+        if (count($slugs) === 1) {
+            return $plan->enabledFeatures()->pluck('feature_key')->toArray();
+        }
+
+        $planIds = SubscriptionPlan::whereIn('slug', $slugs)->pluck('id')->toArray();
+
+        return PlanFeature::whereIn('plan_id', $planIds)
+            ->where('is_enabled', true)
+            ->pluck('feature_key')
+            ->toArray();
+    }
+
+    private function getRemovedFeaturesForDowngrade(
+        string $organizationId,
+        SubscriptionPlan $fromPlan,
+        SubscriptionPlan $toPlan
+    ): array {
+        $fromFeatures = $this->getPlanFeatureKeysWithInheritance($fromPlan);
+        $toFeatures = $this->getPlanFeatureKeysWithInheritance($toPlan);
+
+        $removed = array_values(array_diff($fromFeatures, $toFeatures));
+
+        if (empty($removed)) {
+            return [];
+        }
+
+        $addonFeatures = OrganizationFeatureAddon::where('organization_id', $organizationId)
+            ->where('is_enabled', true)
+            ->whereNull('deleted_at')
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->pluck('feature_key')
+            ->toArray();
+
+        return array_values(array_diff($removed, $addonFeatures));
     }
 
     /**
@@ -171,103 +332,111 @@ class SubscriptionService
      */
     public function processSubscriptionStatusTransitions(): array
     {
-        $processed = [
-            'to_grace_period' => 0,
-            'to_readonly' => 0,
-            'to_expired' => 0,
-        ];
+        return DB::transaction(function () {
+            $processed = [
+                'to_grace_period' => 0,
+                'to_readonly' => 0,
+                'to_expired' => 0,
+            ];
 
-        // Trial/Active → Grace Period (expired but within grace period)
-        $toGracePeriod = OrganizationSubscription::whereIn('status', [
-                OrganizationSubscription::STATUS_TRIAL,
-                OrganizationSubscription::STATUS_ACTIVE,
-                OrganizationSubscription::STATUS_PENDING_RENEWAL,
-            ])
-            ->where('expires_at', '<', now())
-            ->whereNull('deleted_at')
-            ->get();
+            // Trial/Active → Grace Period (expired but within grace period)
+            $toGracePeriod = OrganizationSubscription::with('plan')
+                ->whereIn('status', [
+                    OrganizationSubscription::STATUS_TRIAL,
+                    OrganizationSubscription::STATUS_ACTIVE,
+                    OrganizationSubscription::STATUS_PENDING_RENEWAL,
+                ])
+                ->where('expires_at', '<', now())
+                ->whereNull('deleted_at')
+                ->lockForUpdate()
+                ->get();
 
-        foreach ($toGracePeriod as $subscription) {
-            $plan = $subscription->plan;
-            $gracePeriodDays = $plan ? $plan->grace_period_days : 14;
-            
-            $subscription->update([
-                'status' => OrganizationSubscription::STATUS_GRACE_PERIOD,
-                'grace_period_ends_at' => Carbon::now()->addDays($gracePeriodDays),
-            ]);
+            foreach ($toGracePeriod as $subscription) {
+                $oldStatus = $subscription->status;
+                $plan = $subscription->plan;
+                $gracePeriodDays = $plan ? $plan->grace_period_days : 14;
 
-            SubscriptionHistory::log(
-                $subscription->organization_id,
-                SubscriptionHistory::ACTION_GRACE_PERIOD,
-                $subscription->id,
-                null,
-                null,
-                OrganizationSubscription::STATUS_ACTIVE,
-                OrganizationSubscription::STATUS_GRACE_PERIOD,
-                null,
-                "Subscription entered {$gracePeriodDays}-day grace period"
-            );
+                $subscription->update([
+                    'status' => OrganizationSubscription::STATUS_GRACE_PERIOD,
+                    'grace_period_ends_at' => Carbon::now()->addDays($gracePeriodDays),
+                ]);
 
-            $processed['to_grace_period']++;
-        }
+                SubscriptionHistory::log(
+                    $subscription->organization_id,
+                    SubscriptionHistory::ACTION_GRACE_PERIOD,
+                    $subscription->id,
+                    null,
+                    null,
+                    $oldStatus,
+                    OrganizationSubscription::STATUS_GRACE_PERIOD,
+                    null,
+                    "Subscription entered {$gracePeriodDays}-day grace period"
+                );
 
-        // Grace Period → Readonly (grace period ended but within readonly period)
-        $toReadonly = OrganizationSubscription::where('status', OrganizationSubscription::STATUS_GRACE_PERIOD)
-            ->where('grace_period_ends_at', '<', now())
-            ->whereNull('deleted_at')
-            ->get();
+                $processed['to_grace_period']++;
+            }
 
-        foreach ($toReadonly as $subscription) {
-            $plan = $subscription->plan;
-            $readonlyPeriodDays = $plan ? $plan->readonly_period_days : 60;
+            // Grace Period → Readonly (grace period ended but within readonly period)
+            $toReadonly = OrganizationSubscription::with('plan')
+                ->where('status', OrganizationSubscription::STATUS_GRACE_PERIOD)
+                ->where('grace_period_ends_at', '<', now())
+                ->whereNull('deleted_at')
+                ->lockForUpdate()
+                ->get();
 
-            $subscription->update([
-                'status' => OrganizationSubscription::STATUS_READONLY,
-                'readonly_period_ends_at' => Carbon::now()->addDays($readonlyPeriodDays),
-            ]);
+            foreach ($toReadonly as $subscription) {
+                $plan = $subscription->plan;
+                $readonlyPeriodDays = $plan ? $plan->readonly_period_days : 60;
 
-            SubscriptionHistory::log(
-                $subscription->organization_id,
-                SubscriptionHistory::ACTION_READONLY,
-                $subscription->id,
-                null,
-                null,
-                OrganizationSubscription::STATUS_GRACE_PERIOD,
-                OrganizationSubscription::STATUS_READONLY,
-                null,
-                "Subscription entered {$readonlyPeriodDays}-day readonly period"
-            );
+                $subscription->update([
+                    'status' => OrganizationSubscription::STATUS_READONLY,
+                    'readonly_period_ends_at' => Carbon::now()->addDays($readonlyPeriodDays),
+                ]);
 
-            $processed['to_readonly']++;
-        }
+                SubscriptionHistory::log(
+                    $subscription->organization_id,
+                    SubscriptionHistory::ACTION_READONLY,
+                    $subscription->id,
+                    null,
+                    null,
+                    OrganizationSubscription::STATUS_GRACE_PERIOD,
+                    OrganizationSubscription::STATUS_READONLY,
+                    null,
+                    "Subscription entered {$readonlyPeriodDays}-day readonly period"
+                );
 
-        // Readonly → Expired (readonly period ended)
-        $toExpired = OrganizationSubscription::where('status', OrganizationSubscription::STATUS_READONLY)
-            ->where('readonly_period_ends_at', '<', now())
-            ->whereNull('deleted_at')
-            ->get();
+                $processed['to_readonly']++;
+            }
 
-        foreach ($toExpired as $subscription) {
-            $subscription->update([
-                'status' => OrganizationSubscription::STATUS_EXPIRED,
-            ]);
+            // Readonly → Expired (readonly period ended)
+            $toExpired = OrganizationSubscription::where('status', OrganizationSubscription::STATUS_READONLY)
+                ->where('readonly_period_ends_at', '<', now())
+                ->whereNull('deleted_at')
+                ->lockForUpdate()
+                ->get();
 
-            SubscriptionHistory::log(
-                $subscription->organization_id,
-                SubscriptionHistory::ACTION_EXPIRED,
-                $subscription->id,
-                null,
-                null,
-                OrganizationSubscription::STATUS_READONLY,
-                OrganizationSubscription::STATUS_EXPIRED,
-                null,
-                "Subscription expired after readonly period"
-            );
+            foreach ($toExpired as $subscription) {
+                $subscription->update([
+                    'status' => OrganizationSubscription::STATUS_EXPIRED,
+                ]);
 
-            $processed['to_expired']++;
-        }
+                SubscriptionHistory::log(
+                    $subscription->organization_id,
+                    SubscriptionHistory::ACTION_EXPIRED,
+                    $subscription->id,
+                    null,
+                    null,
+                    OrganizationSubscription::STATUS_READONLY,
+                    OrganizationSubscription::STATUS_EXPIRED,
+                    null,
+                    "Subscription expired after readonly period"
+                );
 
-        return $processed;
+                $processed['to_expired']++;
+            }
+
+            return $processed;
+        }, 3);
     }
 
     /**
@@ -284,6 +453,11 @@ class SubscriptionService
         
         if (!$subscription) {
             throw new \Exception('No active subscription found');
+        }
+
+        $plan = SubscriptionPlan::findOrFail($planId);
+        if (!$plan->is_active) {
+            throw new \Exception('Selected plan is not active');
         }
 
         $discountCodeId = null;
@@ -312,59 +486,123 @@ class SubscriptionService
         string $paymentRecordId,
         string $performedBy
     ): OrganizationSubscription {
-        $request = RenewalRequest::findOrFail($requestId);
-        
-        if (!$request->isPending()) {
-            throw new \Exception('Renewal request is not pending');
-        }
+        return DB::transaction(function () use ($requestId, $paymentRecordId, $performedBy) {
+            $request = RenewalRequest::where('id', $requestId)->lockForUpdate()->firstOrFail();
 
-        $paymentRecord = PaymentRecord::findOrFail($paymentRecordId);
-        
-        // Confirm the payment
-        $paymentRecord->update([
-            'status' => PaymentRecord::STATUS_CONFIRMED,
-            'confirmed_by' => $performedBy,
-            'confirmed_at' => now(),
-        ]);
+            // Idempotency: if already approved with this payment, return the linked subscription.
+            if ($request->status === RenewalRequest::STATUS_APPROVED) {
+                if ($request->payment_record_id && $request->payment_record_id !== $paymentRecordId) {
+                    throw new \Exception('Renewal request already approved with a different payment');
+                }
 
-        // Apply discount code if used
-        if ($request->discount_code_id) {
-            $discountCode = DiscountCode::find($request->discount_code_id);
-            if ($discountCode) {
-                $discountCode->incrementUsage();
-                
-                DiscountCodeUsage::create([
-                    'discount_code_id' => $discountCode->id,
-                    'organization_id' => $request->organization_id,
-                    'payment_record_id' => $paymentRecord->id,
-                    'discount_applied' => $paymentRecord->discount_amount,
+                $paymentRecord = PaymentRecord::where('id', $paymentRecordId)->lockForUpdate()->firstOrFail();
+                if ($paymentRecord->subscription_id) {
+                    $existing = OrganizationSubscription::find($paymentRecord->subscription_id);
+                    if ($existing) {
+                        return $existing;
+                    }
+                }
+
+                $current = $this->getCurrentSubscription($request->organization_id);
+                if ($current) {
+                    return $current;
+                }
+            }
+
+            if (!$request->isPending()) {
+                throw new \Exception('Renewal request is not pending');
+            }
+
+            $this->lockOrganizationForUpdate($request->organization_id);
+
+            $paymentRecord = PaymentRecord::where('id', $paymentRecordId)->lockForUpdate()->firstOrFail();
+
+            if ($paymentRecord->organization_id !== $request->organization_id) {
+                throw new \Exception('Payment does not belong to this organization');
+            }
+
+            if ($paymentRecord->isRejected()) {
+                throw new \Exception('Payment was rejected');
+            }
+
+            // Validate payment amount matches expected total (within tolerance)
+            $discountCodeStr = null;
+            if ($request->discount_code_id) {
+                $discountCodeStr = DiscountCode::find($request->discount_code_id)?->code;
+            }
+
+            $priceInfo = $this->calculatePrice(
+                $request->requested_plan_id,
+                $request->additional_schools,
+                $discountCodeStr,
+                $paymentRecord->currency,
+                $request->organization_id
+            );
+
+            $expectedTotal = (float) ($priceInfo['total'] ?? 0);
+            $submittedAmount = (float) $paymentRecord->amount;
+            $tolerance = 0.01;
+
+            if (abs($submittedAmount - $expectedTotal) > $tolerance) {
+                throw new \Exception("Payment amount does not match expected total. Expected {$expectedTotal} {$paymentRecord->currency}.");
+            }
+
+            // Confirm payment (idempotent)
+            if ($paymentRecord->isPending()) {
+                $paymentRecord->update([
+                    'status' => PaymentRecord::STATUS_CONFIRMED,
+                    'confirmed_by' => $performedBy,
+                    'confirmed_at' => now(),
                 ]);
             }
-        }
 
-        // Activate the new subscription
-        $subscription = $this->activateSubscription(
-            $request->organization_id,
-            $request->requested_plan_id,
-            $paymentRecord->currency,
-            $paymentRecord->getNetAmount(),
-            $request->additional_schools,
-            $performedBy,
-            "Renewed via request #{$request->id}"
-        );
+            $currentSubscription = $this->getCurrentSubscriptionLocked($request->organization_id);
 
-        // Update the request
-        $request->update([
-            'status' => RenewalRequest::STATUS_APPROVED,
-            'processed_by' => $performedBy,
-            'processed_at' => now(),
-            'payment_record_id' => $paymentRecord->id,
-        ]);
+            // Apply discount code if used (idempotent per payment record)
+            if ($request->discount_code_id) {
+                $alreadyLogged = DiscountCodeUsage::where('payment_record_id', $paymentRecord->id)->exists();
+                if (!$alreadyLogged) {
+                    $discountCode = DiscountCode::find($request->discount_code_id);
+                    if ($discountCode) {
+                        $discountCode->incrementUsage();
 
-        // Link payment to new subscription
-        $paymentRecord->update(['subscription_id' => $subscription->id]);
+                        DiscountCodeUsage::create([
+                            'discount_code_id' => $discountCode->id,
+                            'organization_id' => $request->organization_id,
+                            'payment_record_id' => $paymentRecord->id,
+                            'discount_applied' => $paymentRecord->discount_amount,
+                        ]);
+                    }
+                }
+            }
 
-        return $subscription;
+            // Activate the new subscription (within the same transaction)
+            $subscription = $this->activateSubscriptionInTransaction(
+                $request->organization_id,
+                $request->requested_plan_id,
+                $paymentRecord->currency,
+                $paymentRecord->amount,
+                $request->additional_schools,
+                $performedBy,
+                "Renewed via request #{$request->id}",
+                // Preserve license payment state across renewals/upgrades
+                !empty($currentSubscription?->license_paid_at),
+                $currentSubscription?->license_payment_id
+            );
+
+            // Update the request
+            $request->update([
+                'status' => RenewalRequest::STATUS_APPROVED,
+                'processed_by' => $performedBy,
+                'processed_at' => now(),
+                'payment_record_id' => $paymentRecord->id,
+            ]);
+
+            // Link payment to new subscription
+            $paymentRecord->update(['subscription_id' => $subscription->id]);
+
+            return $subscription;
+        }, 3);
     }
 
     /**
@@ -504,6 +742,8 @@ class SubscriptionService
             ['feature_key' => $featureKey, 'price_paid' => $pricePaid]
         );
 
+        Cache::forget("subscription:enabled-features:v1:{$organizationId}");
+
         return $addon;
     }
 
@@ -551,6 +791,8 @@ class SubscriptionService
 
     /**
      * Calculate price for a plan with addons and discount
+     * 
+     * @deprecated Use calculatePriceWithFees() for new fee separation model
      */
     public function calculatePrice(
         string $planId,
@@ -593,6 +835,138 @@ class SubscriptionService
             'discount_amount' => $discountAmount,
             'discount_info' => $discountInfo,
             'total' => $total,
+        ];
+    }
+
+    /**
+     * Calculate price with separate license and maintenance fees
+     * 
+     * This is the new fee separation model:
+     * - License fee: One-time payment
+     * - Maintenance fee: Recurring based on billing period
+     */
+    public function calculatePriceWithFees(
+        string $planId,
+        int $additionalSchools = 0,
+        ?string $discountCode = null,
+        string $currency = 'AFN',
+        ?string $organizationId = null,
+        bool $includeLicenseFee = true
+    ): array {
+        $plan = SubscriptionPlan::findOrFail($planId);
+
+        // License fee (one-time)
+        $licenseFee = $includeLicenseFee ? $plan->getLicenseFee($currency) : 0;
+        
+        // Maintenance fee (recurring per billing period)
+        $maintenanceFee = $plan->getMaintenanceFee($currency);
+        $perSchoolMaintenanceFee = $plan->getPerSchoolMaintenanceFee($currency);
+        $schoolsMaintenanceFee = $additionalSchools * $perSchoolMaintenanceFee;
+        $totalMaintenanceFee = $maintenanceFee + $schoolsMaintenanceFee;
+        
+        // Subtotal (license + maintenance for first period)
+        $subtotal = $licenseFee + $totalMaintenanceFee;
+
+        $discountAmount = 0;
+        $discountInfo = null;
+
+        if ($discountCode && $organizationId) {
+            $code = DiscountCode::where('code', strtoupper($discountCode))->first();
+            if ($code && $code->canBeUsedByOrganization($organizationId) && $code->appliesToPlan($planId)) {
+                // Apply discount to maintenance fee only (license is one-time)
+                $discountAmount = $code->calculateDiscount($totalMaintenanceFee, $currency);
+                $discountInfo = [
+                    'code' => $code->code,
+                    'type' => $code->discount_type,
+                    'value' => $code->discount_value,
+                    'applied_to' => 'maintenance_fee',
+                ];
+            }
+        }
+
+        $total = $subtotal - $discountAmount;
+
+        return [
+            'plan_id' => $planId,
+            'plan_name' => $plan->name,
+            'currency' => $currency,
+            'billing_period' => $plan->billing_period ?? 'yearly',
+            'billing_period_label' => $plan->getBillingPeriodLabel(),
+            'billing_period_days' => $plan->getBillingPeriodDays(),
+            
+            // License fee breakdown
+            'license_fee' => $licenseFee,
+            'license_fee_included' => $includeLicenseFee,
+            
+            // Maintenance fee breakdown
+            'maintenance_fee' => $maintenanceFee,
+            'per_school_maintenance_fee' => $perSchoolMaintenanceFee,
+            'additional_schools' => $additionalSchools,
+            'schools_maintenance_fee' => $schoolsMaintenanceFee,
+            'total_maintenance_fee' => $totalMaintenanceFee,
+            
+            // Totals
+            'subtotal' => $subtotal,
+            'discount_amount' => $discountAmount,
+            'discount_info' => $discountInfo,
+            'total' => $total,
+            
+            // Legacy fields for backward compatibility
+            'base_price' => $plan->getPrice($currency),
+            'schools_price' => $additionalSchools * $plan->getPerSchoolPrice($currency),
+        ];
+    }
+
+    /**
+     * Calculate renewal price (maintenance fee only, no license fee)
+     */
+    public function calculateRenewalPrice(
+        string $planId,
+        int $additionalSchools = 0,
+        ?string $discountCode = null,
+        string $currency = 'AFN',
+        ?string $organizationId = null
+    ): array {
+        // Renewal doesn't include license fee
+        return $this->calculatePriceWithFees(
+            $planId,
+            $additionalSchools,
+            $discountCode,
+            $currency,
+            $organizationId,
+            false // Don't include license fee
+        );
+    }
+
+    /**
+     * Get fee breakdown for a plan
+     */
+    public function getPlanFeeBreakdown(string $planId, string $currency = 'AFN'): array
+    {
+        $plan = SubscriptionPlan::findOrFail($planId);
+        
+        return [
+            'plan_id' => $planId,
+            'plan_name' => $plan->name,
+            'currency' => $currency,
+            'billing_period' => $plan->billing_period ?? 'yearly',
+            'billing_period_label' => $plan->getBillingPeriodLabel(),
+            'billing_period_days' => $plan->getBillingPeriodDays(),
+            'custom_billing_days' => $plan->custom_billing_days,
+            
+            'license_fee' => $plan->getLicenseFee($currency),
+            'has_license_fee' => $plan->hasLicenseFee(),
+            
+            'maintenance_fee' => $plan->getMaintenanceFee($currency),
+            'per_school_maintenance_fee' => $plan->getPerSchoolMaintenanceFee($currency),
+            'has_maintenance_fee' => $plan->hasMaintenanceFee(),
+            
+            // Monthly equivalent (for display)
+            'monthly_equivalent' => $plan->getMaintenanceFeeForPeriod($currency, 'monthly'),
+            
+            // Legacy fields
+            'price_yearly' => $plan->getPrice($currency),
+            'per_school_price' => $plan->getPerSchoolPrice($currency),
         ];
     }
 

@@ -314,7 +314,7 @@ export default function IdCardExport() {
     <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4">
       <Card>
         <CardHeader>
-          <CardTitle>{t('idCards.export') || 'ID Card Export'}</CardTitle>
+          <CardTitle>{t('events.export') || 'ID Card Export'}</CardTitle>
           <CardDescription>
             {t('idCards.export.description') || 'Export ID cards as ZIP or PDF files'}
           </CardDescription>
@@ -342,7 +342,7 @@ export default function IdCardExport() {
               <CardContent className="pt-4">
                 <div className="text-2xl font-bold">{statistics.feePaid}</div>
                 <div className="text-sm text-muted-foreground">
-                  {t('idCards.feePaid') || 'Fee Paid'} ({statistics.feePaidPercentage}%)
+                  {t('courses.feePaid') || 'Fee Paid'} ({statistics.feePaidPercentage}%)
                 </div>
               </CardContent>
             </Card>
@@ -361,7 +361,7 @@ export default function IdCardExport() {
           {/* Filter Section */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">{t('common.filters') || 'Filters'}</CardTitle>
+              <CardTitle className="text-lg">{t('events.filters') || 'Filters'}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -369,7 +369,7 @@ export default function IdCardExport() {
                   <Label>{t('academic.academicYears.academicYear') || 'Academic Year'}</Label>
                   <Select value={academicYearId} onValueChange={setAcademicYearId}>
                     <SelectTrigger>
-                      <SelectValue placeholder={t('common.select') || 'Select'} />
+                      <SelectValue placeholder={t('events.select') || 'Select'} />
                     </SelectTrigger>
                     <SelectContent>
                       {academicYears.map(year => (
@@ -385,10 +385,10 @@ export default function IdCardExport() {
                   <Label>{t('schools.school') || 'School'}</Label>
                   <Select value={schoolIdForSelect} onValueChange={(value) => setSchoolId(value === 'all' ? '' : value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder={t('common.all') || 'All'} />
+                      <SelectValue placeholder={t('subjects.all') || 'All'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                      <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
                       {schools.map(school => (
                         <SelectItem key={school.id} value={school.id}>
                           {school.schoolName}
@@ -399,13 +399,13 @@ export default function IdCardExport() {
                 </div>
 
                 <div>
-                  <Label>{t('classes.class') || 'Class'}</Label>
+                  <Label>{t('search.class') || 'Class'}</Label>
                   <Select value={classIdForSelect} onValueChange={(value) => setClassId(value === 'all' ? '' : value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder={t('common.all') || 'All'} />
+                      <SelectValue placeholder={t('subjects.all') || 'All'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                      <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
                       {classes.map(cls => (
                         <SelectItem key={cls.id} value={cls.id}>
                           {cls.name}
@@ -419,10 +419,10 @@ export default function IdCardExport() {
                   <Label>{t('idCards.template') || 'Template'}</Label>
                   <Select value={templateIdForSelect} onValueChange={(value) => setTemplateId(value === 'all' ? '' : value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder={t('common.all') || 'All'} />
+                      <SelectValue placeholder={t('subjects.all') || 'All'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                      <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
                       {templates.map(template => (
                         <SelectItem key={template.id} value={template.id}>
                           {template.name}
@@ -439,9 +439,9 @@ export default function IdCardExport() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
-                      <SelectItem value="active">{t('students.active') || 'Active'}</SelectItem>
-                      <SelectItem value="inactive">{t('students.inactive') || 'Inactive'}</SelectItem>
+                      <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                      <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
+                      <SelectItem value="inactive">{t('events.inactive') || 'Inactive'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -453,7 +453,7 @@ export default function IdCardExport() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                      <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
                       <SelectItem value="printed">{t('idCards.printed') || 'Printed'}</SelectItem>
                       <SelectItem value="unprinted">{t('idCards.unprinted') || 'Unprinted'}</SelectItem>
                     </SelectContent>
@@ -467,17 +467,17 @@ export default function IdCardExport() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
-                      <SelectItem value="paid">{t('idCards.feePaid') || 'Paid'}</SelectItem>
+                      <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                      <SelectItem value="paid">{t('courses.feePaid') || 'Paid'}</SelectItem>
                       <SelectItem value="unpaid">{t('idCards.feeUnpaid') || 'Unpaid'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="md:col-span-2">
-                  <Label>{t('common.search') || 'Search'}</Label>
+                  <Label>{t('events.search') || 'Search'}</Label>
                   <Input
-                    placeholder={t('common.search') || 'Search students...'}
+                    placeholder={t('events.search') || 'Search students...'}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -525,7 +525,7 @@ export default function IdCardExport() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="front">{t('idCards.front') || 'Front Only'}</SelectItem>
-                      <SelectItem value="back">{t('idCards.back') || 'Back Only'}</SelectItem>
+                      <SelectItem value="back">{t('events.back') || 'Back Only'}</SelectItem>
                       <SelectItem value="both">{t('idCards.both') || 'Both Sides'}</SelectItem>
                     </SelectContent>
                   </Select>
@@ -604,12 +604,12 @@ export default function IdCardExport() {
                       {selectedCardIds.size === filteredCards.length ? (
                         <>
                           <Square className="h-4 w-4 mr-1" />
-                          {t('common.deselectAll') || 'Deselect All'}
+                          {t('events.deselectAll') || 'Deselect All'}
                         </>
                       ) : (
                         <>
                           <CheckSquare className="h-4 w-4 mr-1" />
-                          {t('common.selectAll') || 'Select All'}
+                          {t('events.selectAll') || 'Select All'}
                         </>
                       )}
                     </Button>
@@ -642,8 +642,8 @@ export default function IdCardExport() {
                           />
                         </TableHead>
                         <TableHead>{t('students.student') || 'Student'}</TableHead>
-                        <TableHead>{t('students.admissionNo') || 'Admission No'}</TableHead>
-                        <TableHead>{t('classes.class') || 'Class'}</TableHead>
+                        <TableHead>{t('examReports.admissionNo') || 'Admission No'}</TableHead>
+                        <TableHead>{t('search.class') || 'Class'}</TableHead>
                         <TableHead>{t('idCards.template') || 'Template'}</TableHead>
                         <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
                         <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
@@ -683,7 +683,7 @@ export default function IdCardExport() {
                               <TableCell>
                                 <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
                                   {card.cardFeePaid
-                                    ? t('idCards.feePaid') || 'Paid'
+                                    ? t('courses.feePaid') || 'Paid'
                                     : t('idCards.feeUnpaid') || 'Unpaid'}
                                 </Badge>
                               </TableCell>
@@ -729,7 +729,7 @@ export default function IdCardExport() {
                 >
                   <Download className="h-4 w-4 mr-2" />
                   {exportCards.isPending
-                    ? t('common.processing') || 'Processing...'
+                    ? t('events.processing') || 'Processing...'
                     : t('idCards.export.exportSelected') || `Export Selected (${selectedCardIds.size})`}
                 </Button>
               </div>

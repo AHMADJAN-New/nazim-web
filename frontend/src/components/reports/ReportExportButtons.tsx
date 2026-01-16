@@ -10,6 +10,7 @@ import { useProfile } from '@/hooks/useProfiles';
 import { useReportTemplates } from '@/hooks/useReportTemplates';
 import { useSchool } from '@/hooks/useSchools';
 import { useServerReport } from '@/hooks/useServerReport';
+import { useHasFeature } from '@/hooks/useSubscription';
 import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
 import { showToast } from '@/lib/toast';
 
@@ -97,7 +98,12 @@ export function ReportExportButtons<T extends Record<string, any>>({
   // This ensures reports work correctly when users switch schools
   const effectiveSchoolId = schoolId || selectedSchoolId || profile?.default_school_id;
   const { data: school } = useSchool(effectiveSchoolId || '');
-  const { data: templates } = useReportTemplates(effectiveSchoolId);
+  
+  // Only load report templates if report_templates feature is enabled
+  const hasReportTemplatesFeature = useHasFeature('report_templates');
+  const { data: templates } = useReportTemplates(
+    hasReportTemplatesFeature ? effectiveSchoolId : undefined
+  );
   
   // Report generation hook
   const {
@@ -113,8 +119,10 @@ export function ReportExportButtons<T extends Record<string, any>>({
   
   const [showReportProgress, setShowReportProgress] = useState(false);
 
-  // Find default template for the report type
+  // Find default template for the report type (only if report_templates feature is enabled)
   const defaultTemplate = useMemo(() => {
+    // If feature is disabled, don't use custom templates
+    if (!hasReportTemplatesFeature) return null;
     if (!templates || !templateType) return null;
     return (
       templates.find(
@@ -123,7 +131,7 @@ export function ReportExportButtons<T extends Record<string, any>>({
       templates.find((t) => t.template_type === templateType && t.is_active) ||
       null
     );
-  }, [templates, templateType]);
+  }, [hasReportTemplatesFeature, templates, templateType]);
 
   // Build filters summary
   const filtersSummary = buildFiltersSummary?.() || '';
@@ -133,14 +141,14 @@ export function ReportExportButtons<T extends Record<string, any>>({
     // Validation
     if (!school) {
       showToast.error(
-        errorNoSchool || t('common.exportErrorNoSchool') || 'School is required for export'
+        errorNoSchool || t('events.exportErrorNoSchool') || 'School is required for export'
       );
       return;
     }
 
     if (!data || data.length === 0) {
       showToast.error(
-        errorNoData || t('common.exportErrorNoData') || 'No data to export'
+        errorNoData || t('events.exportErrorNoData') || 'No data to export'
       );
       return;
     }
@@ -151,6 +159,7 @@ export function ReportExportButtons<T extends Record<string, any>>({
         schoolId: school.id,
         schoolName: school.school_name,
         brandingId: school.id,
+        hasReportTemplatesFeature,
         hasTemplate: !!defaultTemplate,
         templateId: defaultTemplate?.id,
         dataCount: data.length,
@@ -166,6 +175,8 @@ export function ReportExportButtons<T extends Record<string, any>>({
       resetReport();
 
       // Generate report using central reporting system
+      // Only use custom template if report_templates feature is enabled and template exists
+      // Otherwise pass null to use default templates
       await generateReport({
         reportKey,
         reportType,
@@ -173,7 +184,7 @@ export function ReportExportButtons<T extends Record<string, any>>({
         columns,
         rows: reportData,
         brandingId: school.id, // School.id IS the branding_id (School = SchoolBranding)
-        reportTemplateId: defaultTemplate?.id,
+        reportTemplateId: hasReportTemplatesFeature && defaultTemplate ? defaultTemplate.id : null,
         parameters: {
           filters_summary: filtersSummary || undefined,
           ...parameters,
@@ -187,8 +198,8 @@ export function ReportExportButtons<T extends Record<string, any>>({
         onComplete: () => {
           const successMessage =
             reportType === 'pdf'
-              ? successPdf || t('common.exportSuccessPdf') || 'PDF report generated successfully'
-              : successExcel || t('common.exportSuccessExcel') || 'Excel report generated successfully';
+              ? successPdf || t('events.exportSuccessPdf') || 'PDF report generated successfully'
+              : successExcel || t('events.exportSuccessExcel') || 'Excel report generated successfully';
           
           showToast.success(successMessage);
           
@@ -203,8 +214,8 @@ export function ReportExportButtons<T extends Record<string, any>>({
         onError: (error) => {
           const errorMessage =
             reportType === 'pdf'
-              ? error || errorPdf || t('common.exportErrorPdf') || 'Failed to generate PDF report'
-              : error || errorExcel || t('common.exportErrorExcel') || 'Failed to generate Excel report';
+              ? error || errorPdf || t('events.exportErrorPdf') || 'Failed to generate PDF report'
+              : error || errorExcel || t('events.exportErrorExcel') || 'Failed to generate Excel report';
           
           showToast.error(errorMessage);
           setShowReportProgress(false);
@@ -217,8 +228,8 @@ export function ReportExportButtons<T extends Record<string, any>>({
       
       const errorMessage =
         reportType === 'pdf'
-          ? errorPdf || t('common.exportErrorPdf') || 'Failed to generate PDF report'
-          : errorExcel || t('common.exportErrorExcel') || 'Failed to generate Excel report';
+          ? errorPdf || t('events.exportErrorPdf') || 'Failed to generate PDF report'
+          : errorExcel || t('events.exportErrorExcel') || 'Failed to generate Excel report';
       
       showToast.error(
         error instanceof Error ? error.message : errorMessage
@@ -233,8 +244,8 @@ export function ReportExportButtons<T extends Record<string, any>>({
   // Determine if buttons should be disabled
   const isDisabled = disabled || !data || data.length === 0 || !school || isGenerating;
 
-  const excelLabel = t('common.exportExcel') || 'Export Excel';
-  const pdfLabel = t('common.exportPdf') || 'Export PDF';
+  const excelLabel = t('events.exportExcel') || 'Export Excel';
+  const pdfLabel = t('events.exportPdf') || 'Export PDF';
 
   return (
     <TooltipProvider>

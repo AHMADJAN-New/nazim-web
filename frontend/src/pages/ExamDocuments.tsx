@@ -47,13 +47,14 @@ import { useExams } from '@/hooks/useExams';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
 
+// Document types will be translated in component using t() function
 const DOCUMENT_TYPES = [
-  { value: 'question_paper', label: 'Question Paper' },
-  { value: 'answer_key', label: 'Answer Key' },
-  { value: 'instruction', label: 'Instruction' },
-  { value: 'result', label: 'Result' },
-  { value: 'grade_sheet', label: 'Grade Sheet' },
-  { value: 'other', label: 'Other' },
+  { value: 'question_paper' },
+  { value: 'answer_key' },
+  { value: 'instruction' },
+  { value: 'result' },
+  { value: 'grade_sheet' },
+  { value: 'other' },
 ];
 
 const getFileIcon = (mimeType: string | null) => {
@@ -110,7 +111,7 @@ export function ExamDocuments() {
 
   // Get exam name
   const getExamName = (id: string) => {
-    return exams.find((e) => e.id === id)?.name || 'Unknown Exam';
+    return exams.find((e) => e.id === id)?.name || t('exams.documents.unknownExam');
   };
 
   const handleOpenDialog = (examId: string, examName: string) => {
@@ -171,10 +172,10 @@ export function ExamDocuments() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
             <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 hidden md:inline-flex" />
-            Exam Documents
+            {t('exams.documents.title')}
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1 hidden md:block">
-            Manage exam-related documents
+            {t('exams.documents.description')}
           </p>
         </div>
         <Button
@@ -183,8 +184,8 @@ export function ExamDocuments() {
           className="flex-shrink-0 w-full sm:w-auto"
         >
           <Plus className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">Upload Document</span>
-          <span className="sm:hidden">Upload</span>
+          <span className="hidden sm:inline">{t('exams.documents.uploadDocument')}</span>
+          <span className="sm:hidden">{t('exams.documents.upload')}</span>
         </Button>
       </div>
 
@@ -193,13 +194,13 @@ export function ExamDocuments() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5 hidden md:inline-flex" />
-            Filter
+            {t('exams.documents.filter')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Exam</Label>
+              <Label>{t('exams.documents.exam')}</Label>
               <Select
                 value={examId}
                 onValueChange={(value) => {
@@ -208,10 +209,10 @@ export function ExamDocuments() {
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="All Exams" />
+                  <SelectValue placeholder={t('exams.documents.allExams')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Exams</SelectItem>
+                  <SelectItem value="all">{t('exams.documents.allExams')}</SelectItem>
                   {exams.map((exam) => (
                     <SelectItem key={exam.id} value={exam.id}>
                       {exam.name}
@@ -222,7 +223,7 @@ export function ExamDocuments() {
             </div>
 
             <div className="space-y-2">
-              <Label>Document Type</Label>
+              <Label>{t('exams.documents.documentType')}</Label>
               <Select
                 value={documentType}
                 onValueChange={(value) => {
@@ -231,13 +232,13 @@ export function ExamDocuments() {
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="All Types" />
+                  <SelectValue placeholder={t('exams.documents.allTypes')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="all">{t('exams.documents.allTypes')}</SelectItem>
                   {DOCUMENT_TYPES.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
-                      {type.label}
+                      {t(`exams.documents.${type.value}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -245,11 +246,11 @@ export function ExamDocuments() {
             </div>
 
             <div className="space-y-2">
-              <Label>Search</Label>
+              <Label>{t('exams.documents.search')}</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search documents..."
+                  placeholder={t('exams.documents.searchPlaceholder')}
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);
@@ -266,7 +267,7 @@ export function ExamDocuments() {
       {/* Documents Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Documents ({filteredDocuments.length})</CardTitle>
+          <CardTitle>{t('exams.documents.documents')} ({filteredDocuments.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -276,8 +277,8 @@ export function ExamDocuments() {
           ) : filteredDocuments.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
               <FileText className="h-12 w-12 mb-4 opacity-50" />
-              <p className="text-lg font-medium">No documents found</p>
-              <p className="text-sm">Upload documents to get started</p>
+              <p className="text-lg font-medium">{t('exams.documents.noDocumentsFound')}</p>
+              <p className="text-sm">{t('exams.documents.uploadDocumentsToGetStarted')}</p>
             </div>
           ) : (
             <div className="rounded-md border overflow-hidden">
@@ -285,12 +286,12 @@ export function ExamDocuments() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Document</TableHead>
-                      <TableHead className="hidden sm:table-cell">Exam</TableHead>
-                      <TableHead className="hidden md:table-cell">Type</TableHead>
-                      <TableHead className="hidden lg:table-cell">Size</TableHead>
-                      <TableHead className="hidden lg:table-cell">Uploaded</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t('exams.documents.document')}</TableHead>
+                      <TableHead className="hidden sm:table-cell">{t('exams.documents.exam')}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t('exams.documents.type')}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('exams.documents.size')}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('exams.documents.uploaded')}</TableHead>
+                      <TableHead className="text-right">{t('exams.documents.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                 <TableBody>
@@ -312,7 +313,7 @@ export function ExamDocuments() {
                               </p>
                               <div className="flex flex-wrap gap-1">
                                 <Badge variant="outline" className="text-xs">
-                                  {DOCUMENT_TYPES.find(t => t.value === doc.document_type)?.label || doc.document_type}
+                                  {t(`exams.documents.${doc.document_type}`) || doc.document_type}
                                 </Badge>
                                 <span className="text-xs text-muted-foreground">{formatFileSize(doc.file_size)}</span>
                                 <span className="text-xs text-muted-foreground">•</span>
@@ -336,7 +337,7 @@ export function ExamDocuments() {
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <Badge variant="outline">
-                          {DOCUMENT_TYPES.find(t => t.value === doc.document_type)?.label || doc.document_type}
+                          {t(`exams.documents.${doc.document_type}`) || doc.document_type}
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">{formatFileSize(doc.file_size)}</TableCell>
@@ -383,14 +384,14 @@ export function ExamDocuments() {
       <Dialog open={isExamSelectDialogOpen} onOpenChange={setIsExamSelectDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Select Exam</DialogTitle>
+            <DialogTitle>{t('exams.documents.selectExam')}</DialogTitle>
           </DialogHeader>
           
           {/* Search Input */}
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search exams by name, academic year, or type..."
+              placeholder={t('exams.documents.searchExamsPlaceholder')}
               value={examSearch}
               onChange={(e) => setExamSearch(e.target.value)}
               className="pl-10"
@@ -433,8 +434,8 @@ export function ExamDocuments() {
                 return (
                   <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
                     <BookOpen className="h-12 w-12 mb-4 opacity-50" />
-                    <p className="text-lg font-medium">No exams found</p>
-                    <p className="text-sm">Try adjusting your search</p>
+                    <p className="text-lg font-medium">{t('exams.documents.noExamsFound')}</p>
+                    <p className="text-sm">{t('exams.documents.tryAdjustingSearch')}</p>
                   </div>
                 );
               }
@@ -540,14 +541,14 @@ export function ExamDocuments() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Document</AlertDialogTitle>
+            <AlertDialogTitle>{t('exams.documents.deleteDocument')}</AlertDialogTitle>
             <AlertDialogDescription className="hidden md:block">
-              Are you sure you want to delete this document? This action cannot be undone.
+              {t('exams.documents.deleteConfirmMessage')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="w-full sm:w-auto">Delete</AlertDialogAction>
+            <AlertDialogCancel className="w-full sm:w-auto">{t('exams.documents.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="w-full sm:w-auto">{t('exams.documents.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

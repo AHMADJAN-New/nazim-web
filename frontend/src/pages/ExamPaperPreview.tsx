@@ -57,7 +57,7 @@ export function ExamPaperPreview() {
       <div className="container mx-auto p-6">
         <Card>
           <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground">{t('common.noPermission') || 'You do not have permission to view this page.'}</p>
+            <p className="text-muted-foreground">{t('events.noPermission') || 'You do not have permission to view this page.'}</p>
           </CardContent>
         </Card>
       </div>
@@ -75,7 +75,7 @@ export function ExamPaperPreview() {
           <div>
             <h1 className="text-2xl font-semibold">{t('examPaperPreview.title') || 'Paper Preview'}</h1>
             <p className="text-sm text-muted-foreground">
-              {template?.title || t('examPaperPreview.loading') || 'Loading...'}
+              {template?.title || t('common.loading') || 'Loading...'}
             </p>
           </div>
         </div>
@@ -97,7 +97,7 @@ export function ExamPaperPreview() {
 
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-2" />
-            {t('common.print') || 'Print'}
+            {t('events.print') || 'Print'}
           </Button>
         </div>
       </div>
@@ -166,7 +166,7 @@ export function ExamPaperPreview() {
           {/* Summary (Teacher View Only) */}
           {viewMode === 'teacher' && (
             <div className="p-6 border-t bg-gray-50 dark:bg-gray-800 print:hidden">
-              <h3 className="font-semibold mb-4">{t('examPaperPreview.summary') || 'Summary'}</h3>
+              <h3 className="font-semibold mb-4">{t('examReports.summary') || 'Summary'}</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-sm">
                   <p className="text-sm text-muted-foreground">{t('examPaperPreview.totalQuestions') || 'Total Questions'}</p>
@@ -195,10 +195,10 @@ export function ExamPaperPreview() {
           <CardContent className="py-8 text-center">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
-              {t('examPaperPreview.notFound') || 'Preview not available. Please check if the template has questions.'}
+              {t('events.notFound') || 'Preview not available. Please check if the template has questions.'}
             </p>
             <Button variant="outline" className="mt-4" onClick={() => navigate(-1)}>
-              {t('common.goBack') || 'Go Back'}
+              {t('events.goBack') || 'Go Back'}
             </Button>
           </CardContent>
         </Card>
@@ -250,7 +250,7 @@ function ExamPaperHeader({ header }: ExamPaperHeaderProps) {
         )}
         {header.className && (
           <div>
-            <span className="text-muted-foreground">{t('examPaperPreview.class') || 'Class'}:</span>
+            <span className="text-muted-foreground">{t('search.class') || 'Class'}:</span>
             <span className="font-medium ml-1">{header.className}</span>
           </div>
         )}
@@ -277,7 +277,7 @@ function ExamPaperHeader({ header }: ExamPaperHeaderProps) {
           <span className="flex-1 border-b border-gray-400"></span>
         </div>
         <div className="flex items-center gap-2">
-          <span>{t('examPaperPreview.rollNumber') || 'Roll No'}:</span>
+          <span>{t('students.rollNumber') || 'Roll No'}:</span>
           <span className="flex-1 border-b border-gray-400"></span>
         </div>
       </div>
@@ -304,7 +304,7 @@ function ExamSection({ section, sectionIndex, showAnswers, isRtl }: ExamSectionP
       {section.label && (
         <div className="flex items-center justify-between border-b pb-2">
           <h2 className="text-lg font-semibold">
-            {t('examPaperPreview.section') || 'Section'} {section.label}
+            {t('events.section') || 'Section'} {section.label}
           </h2>
           <span className="text-sm text-muted-foreground">
             {section.questions.length} {t('examPaperPreview.questions') || 'questions'} • {sectionMarks} {t('examPaperPreview.marks') || 'marks'}
@@ -374,7 +374,7 @@ function QuestionDisplay({ question, questionNumber, showAnswers, isRtl }: Quest
             )}
             {!question.isMandatory && (
               <Badge variant="outline" className="text-xs">
-                {t('examPaperPreview.optional') || 'Optional'}
+                {t('events.optional') || 'Optional'}
               </Badge>
             )}
           </div>
@@ -437,7 +437,7 @@ function QuestionDisplay({ question, questionNumber, showAnswers, isRtl }: Quest
           {/* Notes (if any) */}
           {showAnswers && question.notes && (
             <div className="mt-2 text-xs text-amber-600 dark:text-amber-400">
-              <span className="font-medium">{t('examPaperPreview.notes') || 'Notes'}:</span> {question.notes}
+              <span className="font-medium">{t('events.notes') || 'Notes'}:</span> {question.notes}
             </div>
           )}
         </div>

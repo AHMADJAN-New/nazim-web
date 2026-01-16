@@ -156,7 +156,7 @@ export default function FeePaymentsPage() {
         
         return {
           value: assignment.id,
-          label: `${structureName} - ${className ?? t('common.notAvailable')} - ${studentName} (${t('fees.remaining')}: ${remaining})`,
+          label: `${structureName} - ${className ?? t('events.notAvailable')} - ${studentName} (${t('fees.remaining')}: ${remaining})`,
           studentId: assignment.studentId,
           studentAdmissionId: assignment.studentAdmissionId,
           assignment: assignment, // Include full assignment for form use
@@ -225,7 +225,7 @@ export default function FeePaymentsPage() {
   };
 
   const formatDate = (value: Date | string | undefined) => {
-    if (!value) return t('common.notAvailable');
+    if (!value) return t('events.notAvailable');
     const date = typeof value === 'string' ? new Date(value) : value;
     return format(date, 'yyyy-MM-dd');
   };
@@ -253,7 +253,7 @@ export default function FeePaymentsPage() {
             data={filteredPayments}
             columns={[
               { key: 'studentName', label: t('fees.student'), align: 'left' },
-              { key: 'className', label: t('fees.class'), align: 'left' },
+              { key: 'className', label: t('search.class'), align: 'left' },
               { key: 'structureName', label: t('fees.structure'), align: 'left' },
               { key: 'paymentDate', label: t('fees.paymentDate'), align: 'left' },
               { key: 'amount', label: t('fees.amount'), align: 'right' },
@@ -293,7 +293,7 @@ export default function FeePaymentsPage() {
               if (ay) parts.push(`${t('fees.academicYear')}: ${ay.name}`);
               if (filterClassAy) {
                 const cay = classAcademicYears.find((c) => c.id === filterClassAy);
-                if (cay) parts.push(`${t('fees.class')}: ${cay.class?.name || filterClassAy}`);
+                if (cay) parts.push(`${t('search.class')}: ${cay.class?.name || filterClassAy}`);
               }
               return parts.join(' | ');
             }}
@@ -348,17 +348,17 @@ export default function FeePaymentsPage() {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">{t('fees.class')}</label>
+              <label className="text-sm font-medium mb-2 block">{t('search.class')}</label>
               <Select 
                 value={filterClassAy || 'all'} 
                 onValueChange={(val) => setFilterClassAy(val === 'all' ? undefined : val)}
                 disabled={!filterAcademicYear}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={filterAcademicYear ? t('fees.selectClass') : t('fees.selectAcademicYearFirst') || 'Select academic year first'} />
+                  <SelectValue placeholder={filterAcademicYear ? t('events.selectClass') : t('fees.selectAcademicYearFirst') || 'Select academic year first'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('fees.allClasses') || 'All Classes'}</SelectItem>
+                  <SelectItem value="all">{t('students.allClasses') || 'All Classes'}</SelectItem>
                   {classAcademicYears.map((cay) => (
                     <SelectItem key={cay.id} value={cay.id}>
                       {cay.class?.name ?? cay.id}
@@ -379,7 +379,7 @@ export default function FeePaymentsPage() {
         </DialogContent>
       </Dialog>
 
-      <FilterPanel title={t('fees.filters')}>
+      <FilterPanel title={t('events.filters')}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div>
             <span className="text-sm font-medium">{t('fees.academicYear')}</span>
@@ -403,13 +403,13 @@ export default function FeePaymentsPage() {
             </Select>
           </div>
           <div>
-            <span className="text-sm font-medium">{t('fees.class')}</span>
+            <span className="text-sm font-medium">{t('search.class')}</span>
             <Select value={filterClassAy || 'all'} onValueChange={(val) => setFilterClassAy(val === 'all' ? undefined : val)}>
               <SelectTrigger>
-                <SelectValue placeholder={t('fees.selectClass')} />
+                <SelectValue placeholder={t('events.selectClass')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('fees.allClasses') || 'All Classes'}</SelectItem>
+                <SelectItem value="all">{t('students.allClasses') || 'All Classes'}</SelectItem>
                 {classAcademicYears.map((cay) => (
                   <SelectItem key={cay.id} value={cay.id}>
                     {cay.class?.name ?? cay.id}
@@ -434,14 +434,14 @@ export default function FeePaymentsPage() {
                 <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('fees.class')}</TableHead>
+                    <TableHead>{t('search.class')}</TableHead>
                     <TableHead>{t('fees.structure')}</TableHead>
                     <TableHead>{t('fees.paymentDate')}</TableHead>
                     <TableHead>{t('fees.amount')}</TableHead>
                     <TableHead>{t('fees.method')}</TableHead>
                     <TableHead>{t('fees.reference')}</TableHead>
                     <TableHead>{t('fees.account')}</TableHead>
-                    <TableHead className="text-right">{t('common.actions')}</TableHead>
+                    <TableHead className="text-right">{t('events.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -472,7 +472,7 @@ export default function FeePaymentsPage() {
                               {className}
                             </Badge>
                           ) : (
-                            <span className="text-muted-foreground">{t('common.notAvailable')}</span>
+                            <span className="text-muted-foreground">{t('events.notAvailable')}</span>
                           )}
                         </TableCell>
                         <TableCell>
@@ -505,7 +505,7 @@ export default function FeePaymentsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>{t('common.actions')}</DropdownMenuLabel>
+                              <DropdownMenuLabel>{t('events.actions')}</DropdownMenuLabel>
                               <DropdownMenuItem
                                 onClick={() => {
                                   setViewingPayment(payment);
@@ -513,7 +513,7 @@ export default function FeePaymentsPage() {
                                 }}
                               >
                                 <Eye className="h-4 w-4 mr-2" />
-                                {t('common.view')}
+                                {t('events.view')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -606,7 +606,7 @@ export default function FeePaymentsPage() {
                         {studentsById[viewingPayment.studentId] ? (
                           <>
                             <div>
-                              <p className="text-sm font-medium text-muted-foreground">{t('students.fullName')}</p>
+                              <p className="text-sm font-medium text-muted-foreground">{t('userManagement.fullName')}</p>
                               <p className="text-sm font-medium">{studentsById[viewingPayment.studentId].fullName}</p>
                             </div>
                             <div>
@@ -616,7 +616,7 @@ export default function FeePaymentsPage() {
                           </>
                         ) : (
                           <div>
-                            <p className="text-sm text-muted-foreground">{t('common.notAvailable')}</p>
+                            <p className="text-sm text-muted-foreground">{t('events.notAvailable')}</p>
                           </div>
                         )}
                       </div>
@@ -633,7 +633,7 @@ export default function FeePaymentsPage() {
                       <div className="grid grid-cols-2 gap-4">
                         {assignmentsById[viewingPayment.feeAssignmentId].classAcademicYearId && (
                           <div>
-                            <p className="text-sm font-medium text-muted-foreground">{t('fees.class')}</p>
+                            <p className="text-sm font-medium text-muted-foreground">{t('search.class')}</p>
                             {classAyById[assignmentsById[viewingPayment.feeAssignmentId].classAcademicYearId] ? (
                               <Badge variant="outline" className="bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300">
                                 {classAyById[assignmentsById[viewingPayment.feeAssignmentId].classAcademicYearId]?.class?.name}
@@ -674,7 +674,7 @@ export default function FeePaymentsPage() {
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-muted-foreground">{t('fees.status')}</p>
+                          <p className="text-sm font-medium text-muted-foreground">{t('events.status')}</p>
                           <Badge variant="outline" className="capitalize">
                             {assignmentsById[viewingPayment.feeAssignmentId].status}
                           </Badge>
@@ -776,7 +776,7 @@ export default function FeePaymentsPage() {
                 {viewingPayment.notes && (
                   <>
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">{t('common.notes')}</h3>
+                      <h3 className="text-lg font-semibold">{t('events.notes')}</h3>
                       <p className="text-sm">{viewingPayment.notes}</p>
                     </div>
                     <Separator />
@@ -785,17 +785,17 @@ export default function FeePaymentsPage() {
 
                 {/* Metadata */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">{t('common.metadata')}</h3>
+                  <h3 className="text-lg font-semibold">{t('events.metadata')}</h3>
                   <div className="grid grid-cols-2 gap-4">
                     {viewingPayment.createdAt && (
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground">{t('common.createdAt')}</p>
+                        <p className="text-sm font-medium text-muted-foreground">{t('events.createdAt')}</p>
                         <p className="text-sm">{format(viewingPayment.createdAt, 'PPP p')}</p>
                       </div>
                     )}
                     {viewingPayment.updatedAt && (
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground">{t('common.updatedAt')}</p>
+                        <p className="text-sm font-medium text-muted-foreground">{t('events.updatedAt')}</p>
                         <p className="text-sm">{format(viewingPayment.updatedAt, 'PPP p')}</p>
                       </div>
                     )}

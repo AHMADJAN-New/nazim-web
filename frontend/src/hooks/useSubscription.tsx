@@ -99,12 +99,20 @@ function mapWarningsApiToDomain(api: SubscriptionApi.UsageWarning[]): UsageWarni
 }
 
 function mapFeatureApiToDomain(api: SubscriptionApi.FeatureStatus): FeatureInfo {
+  const accessLevel = api.access_level ?? (api.is_enabled ? 'full' : 'none');
+  const isAccessible = api.is_accessible ?? accessLevel !== 'none';
+
   return {
     featureKey: api.feature_key,
     name: api.name,
     description: api.description,
     category: api.category,
     isEnabled: api.is_enabled,
+    isAccessible,
+    accessLevel,
+    missingDependencies: api.missing_dependencies ?? [],
+    requiredPlan: api.required_plan ?? null,
+    parentFeature: api.parent_feature ?? null,
     isAddon: api.is_addon,
     canPurchaseAddon: api.can_purchase_addon,
     addonPriceAfn: Number(api.addon_price_afn),
@@ -149,6 +157,146 @@ export const useSubscriptionPlans = () => {
   });
 };
 
+// =====================================================
+// GATE STATUS TYPES (for subscription gating)
+// =====================================================
+
+export interface SubscriptionGateStatus {
+  status: string;
+  accessLevel: string;
+  canRead: boolean;
+  canWrite: boolean;
+  trialEndsAt: Date | null;
+  gracePeriodEndsAt: Date | null;
+  readonlyPeriodEndsAt: Date | null;
+  message: string;
+}
+
+interface SubscriptionGateStatusApiResponse {
+  status: string;
+  access_level: string;
+  can_read: boolean;
+  can_write: boolean;
+  trial_ends_at: string | null;
+  grace_period_ends_at: string | null;
+  readonly_period_ends_at: string | null;
+  message: string;
+}
+
+function mapGateStatusApiToDomain(api: SubscriptionGateStatusApiResponse): SubscriptionGateStatus {
+  return {
+    status: api.status,
+    accessLevel: api.access_level,
+    canRead: api.can_read,
+    canWrite: api.can_write,
+    trialEndsAt: api.trial_ends_at ? new Date(api.trial_ends_at) : null,
+    gracePeriodEndsAt: api.grace_period_ends_at ? new Date(api.grace_period_ends_at) : null,
+    readonlyPeriodEndsAt: api.readonly_period_ends_at ? new Date(api.readonly_period_ends_at) : null,
+    message: api.message,
+  };
+}
+
+/**
+ * Get subscription gate status (lite version - NO permission required)
+ * 
+ * CRITICAL: This hook is used for frontend access gating and is accessible to ALL authenticated users.
+ * It returns only the minimal information needed for access control decisions:
+ * - status: current subscription status (trial, active, grace_period, readonly, expired, suspended, cancelled)
+ * - accessLevel: access level (full, grace, readonly, blocked, none)
+ * - canRead: whether user can read data
+ * - canWrite: whether user can write data
+ * - trialEndsAt, gracePeriodEndsAt, readonlyPeriodEndsAt: relevant dates
+ * - message: human-readable status message
+ * 
+ * Use this hook in ProtectedRoute, SmartSidebar, and other gating components.
+ * For full subscription details (plan, pricing, usage), use useSubscriptionStatus instead.
+ */
+export const useSubscriptionGateStatus = () => {
+  const { user, profile } = useAuth();
+
+  return useQuery<SubscriptionGateStatus | null>({
+    queryKey: ['subscription-gate-status', profile?.organization_id],
+    queryFn: async () => {
+      if (!user || !profile?.organization_id) return null;
+
+      try {
+        const response = await apiClient.request<{ data: SubscriptionGateStatusApiResponse }>(
+          '/subscription/status-lite',
+          { method: 'GET' }
+        );
+        return mapGateStatusApiToDomain(response.data);
+      } catch (error: any) {
+        // If it's a 403 error (no organization), return null gracefully
+        if (error?.status === 403) {
+          if (import.meta.env.DEV) {
+            console.log('[useSubscriptionGateStatus] User not in organization, returning null');
+          }
+          return null;
+        }
+        throw error;
+      }
+    },
+    // CRITICAL: No permission check - this is accessible to ALL authenticated users
+    enabled: !!user && !!profile?.organization_id,
+    staleTime: 5 * 60 * 1000, // 5 minutes - same as other subscription queries
+    refetchOnWindowFocus: false, // CRITICAL: Prevent constant refetches on tab switch
+    refetchOnReconnect: false, // Prevent refetch on network reconnect
+    retry: (failureCount, error: any) => {
+      // Don't retry on 403 errors
+      if (error?.status === 403) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    placeholderData: null,
+  });
+};
+
+/**
+ * Convenience hook for subscription access control
+ * 
+ * CRITICAL: Use this hook to check if user can read/write based on subscription status.
+ * This is the recommended hook for UI components that need to enable/disable actions.
+ * 
+ * Returns:
+ * - canRead: whether user can read data
+ * - canWrite: whether user can write data (create, update, delete)
+ * - isBlocked: whether subscription is completely blocked
+ * - isReadonly: whether subscription is in readonly mode
+ * - isLoading: whether subscription status is still loading
+ * - status: current subscription status string
+ * - accessLevel: current access level string
+ * - message: human-readable status message
+ */
+export const useSubscriptionAccess = () => {
+  const { data: gateStatus, isLoading } = useSubscriptionGateStatus();
+  
+  // Derive access states from gate status
+  const canRead = gateStatus?.canRead ?? false;
+  const canWrite = gateStatus?.canWrite ?? false;
+  const status = gateStatus?.status ?? 'none';
+  const accessLevel = gateStatus?.accessLevel ?? 'none';
+  const message = gateStatus?.message ?? '';
+  
+  // Check if subscription is blocked (no access at all)
+  const isBlocked = !canRead && !canWrite;
+  
+  // Check if subscription is in readonly mode (can read but not write)
+  const isReadonly = canRead && !canWrite;
+  
+  return {
+    canRead,
+    canWrite,
+    isBlocked,
+    isReadonly,
+    isLoading,
+    status,
+    accessLevel,
+    message,
+    gateStatus,
+  };
+};
+
 /**
  * Get current subscription status
  * CRITICAL: Only accessible to users with subscription.read permission (admin and organization_admin)
@@ -181,7 +329,8 @@ export const useSubscriptionStatus = () => {
     },
     enabled: !!user && !!profile?.organization_id && hasSubscriptionRead === true,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false, // CRITICAL: Prevent constant refetches on tab switch
+    refetchOnReconnect: false, // Prevent refetch on network reconnect
     retry: (failureCount, error: any) => {
       // Don't retry on 403 errors (permission denied)
       if (error?.status === 403 || error?.message?.includes('unauthorized') || error?.message?.includes('Forbidden')) {
@@ -230,10 +379,11 @@ export const useUsage = () => {
       }
     },
     enabled: !!user && !!profile?.organization_id && hasSubscriptionRead === true,
-    staleTime: 0, // Always refetch - usage changes frequently
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    refetchInterval: 60 * 1000, // Refetch every minute in case of background changes
+    staleTime: 2 * 60 * 1000, // 2 minutes - usage changes but not that frequently
+    refetchOnWindowFocus: false, // CRITICAL: Prevent constant refetches on tab switch
+    refetchOnReconnect: false, // Prevent refetch on network reconnect
+    refetchOnMount: true, // Still refetch on mount to get fresh data
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes (reduced from 1 minute for better performance)
     retry: (failureCount, error: any) => {
       // Don't retry on 403 errors (permission denied)
       if (error?.status === 403 || error?.message?.includes('unauthorized') || error?.message?.includes('Forbidden')) {
@@ -409,7 +559,7 @@ export const useHasFeature = (featureKey: string): boolean => {
   if (!features) return false;
   
   const feature = features.find((f) => f.featureKey === featureKey);
-  return feature?.isEnabled ?? false;
+  return feature?.isAccessible ?? feature?.isEnabled ?? false;
 };
 
 /**
@@ -446,7 +596,7 @@ export const useResourceUsage = (resourceKey: string) => {
   
   return {
     ...usage,
-    canCreate: usage.isUnlimited || usage.current < usage.limit,
+    canCreate: usage.isUnlimited || (usage.limit !== -1 && usage.current < usage.limit),
   };
 };
 

@@ -24,6 +24,7 @@ class ClassSubjectTemplate extends Model
         'class_id',
         'subject_id',
         'organization_id',
+        'school_id',
         'is_required',
         'credits',
         'hours_per_week',

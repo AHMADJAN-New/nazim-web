@@ -130,6 +130,18 @@ class ApiClient {
       }
     }
     
+    // Automatically add language parameter for help center endpoints
+    // This ensures articles are filtered by user's language preference
+    if (typeof window !== 'undefined' && endpoint.includes('/help-center/')) {
+      const userLanguage = localStorage.getItem('nazim-language') || 'en';
+      if (!options.params) {
+        options.params = {};
+      }
+      if (!options.params.lang) {
+        options.params.lang = userLanguage;
+      }
+    }
+    
     // CRITICAL: Extract params BEFORE destructuring to ensure it's a plain object
     const params = options.params ? { ...options.params } : undefined;
     const { params: _, ...fetchOptions } = options;
@@ -159,7 +171,33 @@ class ApiClient {
       });
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: response.statusText }));
+        // Check content type before parsing
+        const contentType = response.headers.get('content-type') || '';
+        let error: any = { message: response.statusText };
+        
+        if (contentType.includes('application/json')) {
+          // Try to parse as JSON
+          try {
+            error = await response.json();
+          } catch (e) {
+            // If JSON parsing fails, use status text
+            error = { message: response.statusText };
+          }
+        } else {
+          // If response is HTML (error page), try to extract error message
+          try {
+            const text = await response.text();
+            // Try to extract error message from HTML if it's a PHP error
+            const errorMatch = text.match(/<b>(.*?)<\/b>/i) || text.match(/Fatal error: (.*?)(?:\n|<)/i);
+            if (errorMatch) {
+              error = { message: `Server error: ${errorMatch[1]}` };
+            } else {
+              error = { message: `Server error (${response.status}): ${response.statusText}` };
+            }
+          } catch (e) {
+            error = { message: `Server error (${response.status}): ${response.statusText}` };
+          }
+        }
 
         // Suppress console errors for expected 401 when no token (user not logged in)
         // This is normal behavior, not an error
@@ -177,7 +215,10 @@ class ApiClient {
           const details = Object.entries(validationErrors)
             .map(([key, messages]) => `${key}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
             .join('; ');
-          throw new Error(error.message || 'Validation failed' + (details ? ` - ${details}` : ''));
+          const validationError = new Error(error.message || 'Validation failed' + (details ? ` - ${details}` : ''));
+          // Attach errors object so hooks can access it
+          (validationError as any).errors = validationErrors;
+          throw validationError;
         }
 
         // Handle 402 subscription errors (feature not available, limit reached, etc.)
@@ -190,6 +231,8 @@ class ApiClient {
           (subscriptionError as any).accessLevel = error.access_level;
           (subscriptionError as any).resourceKey = error.resource_key;
           (subscriptionError as any).featureKey = error.feature_key;
+          (subscriptionError as any).missingDependencies = error.missing_dependencies;
+          (subscriptionError as any).requiredPlan = error.required_plan;
           (subscriptionError as any).upgradeRequired = error.upgrade_required;
           (subscriptionError as any).current = error.current;
           (subscriptionError as any).limit = error.limit;
@@ -213,6 +256,8 @@ class ApiClient {
                   message: error.message || error.error,
                   resourceKey: error.resource_key,
                   featureKey: error.feature_key,
+                  missingDependencies: error.missing_dependencies,
+                  requiredPlan: error.required_plan,
                   current: error.current,
                   limit: error.limit,
                   subscriptionStatus: error.subscription_status,
@@ -309,6 +354,14 @@ class ApiClient {
       // Handle 204 No Content responses (no body)
       if (response.status === 204) {
         return null as T;
+      }
+
+      // Check content type before parsing JSON
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        // If response is not JSON, try to get text and throw meaningful error
+        const text = await response.text();
+        throw new Error(`Expected JSON response but got ${contentType}. Response: ${text.substring(0, 200)}`);
       }
 
       return response.json();
@@ -446,6 +499,9 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient(API_URL);
+
+// Re-export user tours API
+export { userToursApi } from './userTours';
 
 // Maintenance API (public - no auth required)
 export const maintenanceApi = {
@@ -728,6 +784,25 @@ export const schoolsApi = {
 
   get: async (id: string) => {
     return apiClient.get(`/schools/${id}`);
+  },
+
+  /**
+   * Get a logo for a school (with HTTP caching)
+   * @param id School ID
+   * @param type Logo type: 'primary', 'secondary', or 'ministry'
+   * @returns Blob URL string or null if logo doesn't exist
+   */
+  getLogo: async (id: string, type: 'primary' | 'secondary' | 'ministry'): Promise<string | null> => {
+    try {
+      const { blob } = await apiClient.requestFile(`/schools/${id}/logos/${type}`, { method: 'GET' });
+      return URL.createObjectURL(blob);
+    } catch (error: any) {
+      // 204 No Content means logo doesn't exist
+      if (error?.status === 204 || error?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   },
 
   create: async (data: {
@@ -1724,6 +1799,10 @@ export const studentsApi = {
     return apiClient.post(`/students/${id}/picture`, formData, {
       headers: {}, // Let browser set Content-Type with boundary
     });
+  },
+
+  printProfile: async (studentId: string) => {
+    return apiClient.requestFile(`/students/${studentId}/print-profile`, { method: 'GET' });
   },
 };
 
@@ -4443,6 +4522,7 @@ export const helpCenterArticlesApi = {
     excerpt?: string | null;
     content: string;
     content_type?: 'markdown' | 'html';
+    language?: 'en' | 'ps' | 'fa' | 'ar';
     featured_image_url?: string | null;
     is_published?: boolean;
     is_featured?: boolean;
@@ -4463,6 +4543,7 @@ export const helpCenterArticlesApi = {
     excerpt?: string | null;
     content?: string;
     content_type?: 'markdown' | 'html';
+    language?: 'en' | 'ps' | 'fa' | 'ar';
     featured_image_url?: string | null;
     is_published?: boolean;
     is_featured?: boolean;

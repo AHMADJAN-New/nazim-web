@@ -31,7 +31,7 @@ export function FeeStatement({ assignments, payments, structureNames }: FeeState
                 <TableHead>{t('fees.amountAssigned')}</TableHead>
                 <TableHead>{t('fees.paid')}</TableHead>
                 <TableHead>{t('fees.remaining')}</TableHead>
-                <TableHead>{t('fees.status')}</TableHead>
+                <TableHead>{t('events.status')}</TableHead>
                 <TableHead>{t('fees.dueDate')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -43,7 +43,7 @@ export function FeeStatement({ assignments, payments, structureNames }: FeeState
                   <TableCell>{assignment.paidAmount.toFixed(2)}</TableCell>
                   <TableCell>{assignment.remainingAmount.toFixed(2)}</TableCell>
                   <TableCell className="capitalize">{assignment.status}</TableCell>
-                  <TableCell>{formatDate(assignment.dueDate, t('common.notAvailable'))}</TableCell>
+                  <TableCell>{formatDate(assignment.dueDate, t('events.notAvailable'))}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -68,7 +68,7 @@ export function FeeStatement({ assignments, payments, structureNames }: FeeState
             <TableBody>
               {payments.map((payment) => (
                 <TableRow key={payment.id}>
-                  <TableCell>{formatDate(payment.paymentDate, t('common.notAvailable'))}</TableCell>
+                  <TableCell>{formatDate(payment.paymentDate, t('events.notAvailable'))}</TableCell>
                   <TableCell>{payment.amount.toFixed(2)}</TableCell>
                   <TableCell className="capitalize">{payment.paymentMethod}</TableCell>
                   <TableCell>{payment.referenceNo || '-'}</TableCell>

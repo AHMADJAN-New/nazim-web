@@ -34,6 +34,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
   Table,
@@ -52,15 +59,23 @@ import {
   useCreatePlatformPlan,
   useUpdatePlatformPlan,
 } from '@/platform/hooks/usePlatformAdmin';
-import { usePlatformFeatureDefinitions } from '@/platform/hooks/usePlatformAdminComplete';
+import { usePlatformFeatureDefinitions, usePlatformLimitDefinitions } from '@/platform/hooks/usePlatformAdminComplete';
 import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
+
+type BillingPeriod = 'monthly' | 'quarterly' | 'yearly' | 'custom';
 
 interface PlanFormData {
   name: string;
   slug: string;
   description: string;
-  price_yearly_afn: number;
-  price_yearly_usd: number;
+  // New fee separation fields
+  billing_period: BillingPeriod;
+  license_fee_afn: number;
+  license_fee_usd: number;
+  maintenance_fee_afn: number;
+  maintenance_fee_usd: number;
+  custom_billing_days: number | null;
+  // Other fields
   trial_days: number;
   grace_period_days: number;
   readonly_period_days: number;
@@ -70,14 +85,19 @@ interface PlanFormData {
   sort_order: number;
   is_default: boolean;
   features: Record<string, boolean>;
+  limits: Record<string, number>;
 }
 
 const initialFormData: PlanFormData = {
   name: '',
   slug: '',
   description: '',
-  price_yearly_afn: 0,
-  price_yearly_usd: 0,
+  billing_period: 'yearly',
+  license_fee_afn: 0,
+  license_fee_usd: 0,
+  maintenance_fee_afn: 0,
+  maintenance_fee_usd: 0,
+  custom_billing_days: null,
   trial_days: 0,
   grace_period_days: 14,
   readonly_period_days: 60,
@@ -87,6 +107,7 @@ const initialFormData: PlanFormData = {
   sort_order: 0,
   is_default: false,
   features: {},
+  limits: {},
 };
 
 export default function PlansManagement() {
@@ -99,6 +120,7 @@ export default function PlansManagement() {
   const { data: permissions, isLoading: permissionsLoading } = usePlatformAdminPermissions();
   const { data: plans, isLoading } = usePlatformPlans();
   const { data: featureDefinitions, isLoading: featuresLoading, error: featuresError } = usePlatformFeatureDefinitions();
+  const { data: limitDefinitions, isLoading: limitsLoading, error: limitsError } = usePlatformLimitDefinitions();
   const createPlan = useCreatePlatformPlan();
   const updatePlan = useUpdatePlatformPlan();
 
@@ -134,7 +156,12 @@ export default function PlansManagement() {
     featureDefinitions?.forEach((feature) => {
       features[feature.feature_key] = false;
     });
-    setFormData({ ...initialFormData, features });
+    // Initialize limits object with all limits set to -1 (unlimited)
+    const limits: Record<string, number> = {};
+    limitDefinitions?.forEach((limit) => {
+      limits[limit.resource_key] = -1; // -1 = unlimited
+    });
+    setFormData({ ...initialFormData, features, limits });
     setEditingPlan(null);
     setIsDialogOpen(true);
   };
@@ -146,12 +173,24 @@ export default function PlansManagement() {
       // Check if this feature is enabled in the plan
       features[feature.feature_key] = plan.features?.includes(feature.feature_key) || false;
     });
+    // Initialize limits object from plan limits
+    const limits: Record<string, number> = {};
+    limitDefinitions?.forEach((limit) => {
+      // Get limit value from plan limits, default to -1 (unlimited) if not set
+      limits[limit.resource_key] = plan.limits?.[limit.resource_key] ?? -1;
+    });
     setFormData({
       name: plan.name,
       slug: plan.slug,
       description: plan.description || '',
-      price_yearly_afn: plan.priceYearlyAfn,
-      price_yearly_usd: plan.priceYearlyUsd,
+      // New fee separation fields
+      billing_period: plan.billingPeriod || 'yearly',
+      license_fee_afn: plan.licenseFeeAfn || 0,
+      license_fee_usd: plan.licenseFeeUsd || 0,
+      maintenance_fee_afn: plan.maintenanceFeeAfn || plan.priceYearlyAfn || 0,
+      maintenance_fee_usd: plan.maintenanceFeeUsd || plan.priceYearlyUsd || 0,
+      custom_billing_days: plan.customBillingDays || null,
+      // Other fields
       trial_days: plan.trialDays,
       grace_period_days: plan.gracePeriodDays,
       readonly_period_days: plan.readonlyPeriodDays,
@@ -161,6 +200,7 @@ export default function PlansManagement() {
       sort_order: plan.sortOrder,
       is_default: plan.isDefault,
       features,
+      limits,
     });
     setEditingPlan(plan.id);
     setIsDialogOpen(true);
@@ -168,10 +208,38 @@ export default function PlansManagement() {
 
   const handleSubmit = async () => {
     try {
-      const { features, ...planData } = formData;
+      const { features, limits, ...planData } = formData;
+      
+      // Auto-calculate price_yearly_* from maintenance_fee_* for backward compatibility
+      // Only set if billing_period is yearly (for legacy API compatibility)
+      let price_yearly_afn = 0;
+      let price_yearly_usd = 0;
+      
+      if (planData.billing_period === 'yearly') {
+        // For yearly billing, price_yearly equals maintenance_fee
+        price_yearly_afn = planData.maintenance_fee_afn;
+        price_yearly_usd = planData.maintenance_fee_usd;
+      } else {
+        // For other periods, calculate yearly equivalent
+        let multiplier = 1;
+        if (planData.billing_period === 'monthly') {
+          multiplier = 12;
+        } else if (planData.billing_period === 'quarterly') {
+          multiplier = 4;
+        } else if (planData.billing_period === 'custom' && planData.custom_billing_days) {
+          multiplier = 365 / planData.custom_billing_days;
+        }
+        price_yearly_afn = planData.maintenance_fee_afn * multiplier;
+        price_yearly_usd = planData.maintenance_fee_usd * multiplier;
+      }
+      
       const payload = {
         ...planData,
+        // Auto-calculate legacy fields for backward compatibility
+        price_yearly_afn,
+        price_yearly_usd,
         features: features || {},
+        limits: limits || {},
       };
       
       if (editingPlan) {
@@ -201,19 +269,19 @@ export default function PlansManagement() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Subscription Plans
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Manage available subscription plans
           </p>
         </div>
-        <Button onClick={handleOpenCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Plan
+        <Button onClick={handleOpenCreate} size="sm" className="flex-shrink-0">
+          <Plus className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Add Plan</span>
         </Button>
       </div>
 
@@ -227,20 +295,22 @@ export default function PlansManagement() {
             Click on a plan row to view details, or use the edit button to modify
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Slug</TableHead>
-                <TableHead className="text-right">AFN/Year</TableHead>
-                <TableHead className="text-right">USD/Year</TableHead>
-                <TableHead className="text-center">Max Schools</TableHead>
-                <TableHead className="text-center">Trial Days</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+        <CardContent className="p-0 sm:p-6">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+              <Table className="min-w-[800px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead className="hidden md:table-cell">Billing</TableHead>
+                  <TableHead className="hidden lg:table-cell text-right">License (AFN)</TableHead>
+                  <TableHead className="hidden lg:table-cell text-right">Maintenance (AFN)</TableHead>
+                  <TableHead className="hidden md:table-cell text-center">Max Schools</TableHead>
+                  <TableHead className="hidden lg:table-cell text-center">Features</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {plans?.map((plan) => (
                 <TableRow 
@@ -256,31 +326,47 @@ export default function PlansManagement() {
                   }}
                 >
                   <TableCell className="font-medium">
-                    {plan.name}
-                    {plan.isDefault && (
-                      <Badge variant="secondary" className="ml-2">
-                        Default
-                      </Badge>
+                    <div>
+                      {plan.name}
+                      {plan.isDefault && (
+                        <Badge variant="secondary" className="ml-2">
+                          Default
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{plan.slug}</div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">
+                      {plan.billingPeriodLabel || 'Yearly'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {plan.hasLicenseFee ? (
+                      <div>
+                        <div>{plan.licenseFeeAfn?.toLocaleString() || 0}</div>
+                        <div className="text-xs text-muted-foreground">(one-time)</div>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {plan.slug}
-                  </TableCell>
                   <TableCell className="text-right">
-                    {plan.priceYearlyAfn.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ${plan.priceYearlyUsd.toLocaleString()}
+                    {plan.hasMaintenanceFee ? (
+                      <div>
+                        <div>{plan.maintenanceFeeAfn?.toLocaleString() || plan.priceYearlyAfn?.toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground">/{plan.billingPeriod || 'year'}</div>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-center">
                     {plan.maxSchools === -1 ? 'Unlimited' : plan.maxSchools}
                   </TableCell>
                   <TableCell className="text-center">
-                    {plan.trialDays}
-                  </TableCell>
-                  <TableCell className="text-center">
                     <Badge variant="outline">
-                      {plan.features?.length || 0} feature{plan.features?.length !== 1 ? 's' : ''}
+                      {plan.features?.length || 0}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center">
@@ -309,6 +395,8 @@ export default function PlansManagement() {
               ))}
             </TableBody>
           </Table>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -339,6 +427,15 @@ export default function PlansManagement() {
                   {featureDefinitions && featureDefinitions.length > 0 && (
                     <Badge variant="secondary" className="ml-1">
                       {Object.values(formData.features).filter(Boolean).length}/{featureDefinitions.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="limits" className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Limits
+                  {limitDefinitions && limitDefinitions.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {Object.values(formData.limits).filter((v) => v !== undefined && v !== -1).length}/{limitDefinitions.length}
                     </Badge>
                   )}
                 </TabsTrigger>
@@ -383,40 +480,143 @@ export default function PlansManagement() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="price_afn">Yearly Price (AFN) *</Label>
-                    <Input
-                      id="price_afn"
-                      type="number"
-                      step="0.01"
-                      value={formData.price_yearly_afn}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          price_yearly_afn: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="price_usd">Yearly Price (USD) *</Label>
-                    <Input
-                      id="price_usd"
-                      type="number"
-                      step="0.01"
-                      value={formData.price_yearly_usd}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          price_yearly_usd: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      placeholder="0.00"
-                    />
+                {/* Billing Period Selection */}
+                <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
+                  <h4 className="font-medium text-sm flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Billing Configuration
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="billing_period">Billing Period *</Label>
+                      <Select
+                        value={formData.billing_period}
+                        onValueChange={(value: BillingPeriod) =>
+                          setFormData({ ...formData, billing_period: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select billing period" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="quarterly">Quarterly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {formData.billing_period === 'custom' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="custom_billing_days">Custom Days *</Label>
+                        <Input
+                          id="custom_billing_days"
+                          type="number"
+                          value={formData.custom_billing_days || ''}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              custom_billing_days: parseInt(e.target.value) || null,
+                            })
+                          }
+                          placeholder="e.g., 180"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {/* License Fee (One-time) */}
+                <div className="space-y-4 p-4 rounded-lg border bg-blue-50/50 dark:bg-blue-950/20">
+                  <h4 className="font-medium text-sm flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-blue-600" />
+                    License Fee (One-time)
+                    <Badge variant="secondary" className="text-xs">One-time payment</Badge>
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="license_fee_afn">License Fee (AFN)</Label>
+                      <Input
+                        id="license_fee_afn"
+                        type="number"
+                        step="0.01"
+                        value={formData.license_fee_afn}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            license_fee_afn: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="license_fee_usd">License Fee (USD)</Label>
+                      <Input
+                        id="license_fee_usd"
+                        type="number"
+                        step="0.01"
+                        value={formData.license_fee_usd}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            license_fee_usd: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Maintenance Fee (Recurring) */}
+                <div className="space-y-4 p-4 rounded-lg border bg-green-50/50 dark:bg-green-950/20">
+                  <h4 className="font-medium text-sm flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-green-600" />
+                    Maintenance Fee (Recurring)
+                    <Badge variant="secondary" className="text-xs">
+                      {formData.billing_period === 'monthly' ? 'Monthly' :
+                       formData.billing_period === 'quarterly' ? 'Quarterly' :
+                       formData.billing_period === 'yearly' ? 'Yearly' :
+                       `Every ${formData.custom_billing_days || '?'} days`}
+                    </Badge>
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="maintenance_fee_afn">Maintenance Fee (AFN) *</Label>
+                      <Input
+                        id="maintenance_fee_afn"
+                        type="number"
+                        step="0.01"
+                        value={formData.maintenance_fee_afn}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            maintenance_fee_afn: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="maintenance_fee_usd">Maintenance Fee (USD) *</Label>
+                      <Input
+                        id="maintenance_fee_usd"
+                        type="number"
+                        step="0.01"
+                        value={formData.maintenance_fee_usd}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            maintenance_fee_usd: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                </div>
+
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
@@ -691,6 +891,160 @@ export default function PlansManagement() {
                   </div>
                 )}
               </TabsContent>
+
+              <TabsContent value="limits" className="flex-1 overflow-y-auto px-6 py-4 mt-4 space-y-4">
+                <div className="flex items-center justify-between pb-4 border-b">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Building2 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">Plan Limits</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {limitDefinitions && limitDefinitions.length > 0
+                          ? `Set resource limits for this plan. Use -1 for unlimited.`
+                          : 'No limits available. Please create limit definitions first.'}
+                      </p>
+                    </div>
+                  </div>
+                  {limitDefinitions && !limitsLoading && (
+                    <div className="text-right bg-primary/10 rounded-lg px-4 py-2 border border-primary/20">
+                      <div className="text-2xl font-bold text-primary">
+                        {Object.values(formData.limits).filter((v) => v !== undefined && v !== -1).length}
+                      </div>
+                      <div className="text-xs text-muted-foreground font-medium">
+                        of {limitDefinitions.length} configured
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {limitsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <span className="ml-3 text-sm text-muted-foreground">Loading limits...</span>
+                  </div>
+                ) : limitsError ? (
+                  <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+                    <p className="text-sm font-medium text-destructive">Error loading limits</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {limitsError instanceof Error ? limitsError.message : 'Unknown error occurred'}
+                    </p>
+                  </div>
+                ) : limitDefinitions && limitDefinitions.length > 0 ? (
+                  <div className="space-y-4">
+                    {(() => {
+                      const grouped = limitDefinitions.reduce((acc, limit) => {
+                        const category = limit.category || 'Other';
+                        if (!acc[category]) {
+                          acc[category] = [];
+                        }
+                        acc[category].push(limit);
+                        return acc;
+                      }, {} as Record<string, typeof limitDefinitions>);
+
+                      const sortedCategories = Object.keys(grouped).sort();
+
+                      return (
+                        <div className="space-y-4">
+                          {sortedCategories.map((category) => {
+                            const categoryLimits = grouped[category].sort(
+                              (a, b) => (a.sort_order || 0) - (b.sort_order || 0)
+                            );
+                            const configuredCount = categoryLimits.filter(
+                              (l) => formData.limits[l.resource_key] !== undefined && formData.limits[l.resource_key] !== -1
+                            ).length;
+
+                            return (
+                              <Card key={category} className="overflow-hidden">
+                                <CardHeader className="pb-3">
+                                  <div className="flex items-center justify-between">
+                                    <CardTitle className="text-base capitalize">{category}</CardTitle>
+                                    <Badge variant="outline" className="text-xs">
+                                      {configuredCount} / {categoryLimits.length} configured
+                                    </Badge>
+                                  </div>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                  {categoryLimits.map((limit) => {
+                                    const limitValue = formData.limits[limit.resource_key] ?? -1;
+                                    const isUnlimited = limitValue === -1 || limitValue === undefined;
+                                    const unit = limit.unit === 'count' ? '' : limit.unit.toUpperCase();
+                                    
+                                    return (
+                                      <div
+                                        key={limit.resource_key}
+                                        className={cn(
+                                          'flex items-center justify-between p-3 rounded-lg border transition-all',
+                                          !isUnlimited
+                                            ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-800'
+                                            : 'bg-background border-border hover:border-primary/50'
+                                        )}
+                                      >
+                                        <div className="flex-1 min-w-0 mr-4">
+                                          <div className="flex items-center gap-2">
+                                            <Building2 className={cn(
+                                              'h-4 w-4 flex-shrink-0',
+                                              !isUnlimited ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'
+                                            )} />
+                                            <div className="font-medium text-sm capitalize">
+                                              {limit.name || limit.resource_key.replace(/_/g, ' ')}
+                                            </div>
+                                          </div>
+                                          {limit.description && (
+                                            <p className="text-xs text-muted-foreground ml-6 mt-1">
+                                              {limit.description}
+                                            </p>
+                                          )}
+                                          <p className="text-xs text-muted-foreground ml-6 mt-1">
+                                            Unit: {unit || 'count'} • Reset: {limit.reset_period || 'never'}
+                                          </p>
+                                        </div>
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                          <Input
+                                            type="number"
+                                            value={isUnlimited ? '' : limitValue}
+                                            onChange={(e) => {
+                                              const value = e.target.value === '' ? -1 : parseInt(e.target.value) || -1;
+                                              setFormData({
+                                                ...formData,
+                                                limits: {
+                                                  ...formData.limits,
+                                                  [limit.resource_key]: value,
+                                                },
+                                              });
+                                            }}
+                                            placeholder="Unlimited"
+                                            min={-1}
+                                            className="w-32"
+                                          />
+                                          {limit.unit !== 'count' && (
+                                            <span className="text-xs text-muted-foreground">{unit}</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-muted bg-muted/30 p-12 text-center">
+                    <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                    <p className="text-sm font-medium text-muted-foreground">
+                      No limits available
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Please create limit definitions first
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
             </Tabs>
           </div>
 
@@ -786,26 +1140,89 @@ export default function PlansManagement() {
                   </CardContent>
                 </Card>
 
-                {/* Pricing Information */}
+                {/* Billing & Pricing Information */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
                       <DollarSign className="h-5 w-5" />
-                      Pricing
+                      Billing & Pricing
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm text-muted-foreground">Yearly Price (AFN)</Label>
-                        <p className="font-medium text-lg">{viewingPlan.priceYearlyAfn.toLocaleString()} AFN</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm text-muted-foreground">Yearly Price (USD)</Label>
-                        <p className="font-medium text-lg">${viewingPlan.priceYearlyUsd.toLocaleString()} USD</p>
+                    {/* Billing Period */}
+                    <div>
+                      <Label className="text-sm text-muted-foreground">Billing Period</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline">{viewingPlan.billingPeriodLabel || 'Yearly'}</Badge>
+                        {viewingPlan.billingPeriod === 'custom' && viewingPlan.customBillingDays && (
+                          <span className="text-sm text-muted-foreground">
+                            ({viewingPlan.customBillingDays} days)
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+
+                    {/* License Fee (One-time) */}
+                    {viewingPlan.hasLicenseFee && (
+                      <div className="p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">One-time</Badge>
+                          <Label className="text-sm font-medium">License Fee</Label>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-muted-foreground">AFN</p>
+                            <p className="font-medium text-lg">{viewingPlan.licenseFeeAfn?.toLocaleString() || 0} AFN</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">USD</p>
+                            <p className="font-medium text-lg">${viewingPlan.licenseFeeUsd?.toLocaleString() || 0} USD</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Maintenance Fee (Recurring) */}
+                    {viewingPlan.hasMaintenanceFee && (
+                      <div className="p-3 rounded-lg bg-green-50/50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                            {viewingPlan.billingPeriodLabel || 'Yearly'}
+                          </Badge>
+                          <Label className="text-sm font-medium">Maintenance Fee</Label>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-muted-foreground">AFN</p>
+                            <p className="font-medium text-lg">{viewingPlan.maintenanceFeeAfn?.toLocaleString() || 0} AFN</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">USD</p>
+                            <p className="font-medium text-lg">${viewingPlan.maintenanceFeeUsd?.toLocaleString() || 0} USD</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Total First Year */}
+                    {(viewingPlan.hasLicenseFee || viewingPlan.hasMaintenanceFee) && (
+                      <div className="p-3 rounded-lg bg-muted/50 border">
+                        <Label className="text-sm font-medium">Total (First Year)</Label>
+                        <div className="grid grid-cols-2 gap-4 mt-2">
+                          <div>
+                            <p className="text-xs text-muted-foreground">AFN</p>
+                            <p className="font-bold text-xl">{viewingPlan.totalFeeAfn?.toLocaleString() || 0} AFN</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">USD</p>
+                            <p className="font-bold text-xl">${viewingPlan.totalFeeUsd?.toLocaleString() || 0} USD</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Per School Pricing */}
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t">
                       <div>
                         <Label className="text-sm text-muted-foreground">Per School Price (AFN)</Label>
                         <p className="font-medium">{viewingPlan.perSchoolPriceAfn.toLocaleString()} AFN</p>
@@ -815,6 +1232,7 @@ export default function PlansManagement() {
                         <p className="font-medium">${viewingPlan.perSchoolPriceUsd.toLocaleString()} USD</p>
                       </div>
                     </div>
+
                   </CardContent>
                 </Card>
 

@@ -150,7 +150,7 @@ export function FinanceDocumentsDialog({
           {/* Title */}
           <div className="space-y-2">
             <Label htmlFor="title">
-              {t('finance.documentTitle')} <span className="text-destructive">*</span>
+              {t('courses.documentTitle')} <span className="text-destructive">*</span>
             </Label>
             <Input
               id="title"
@@ -164,7 +164,7 @@ export function FinanceDocumentsDialog({
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">{t('finance.documentDescription')}</Label>
+            <Label htmlFor="description">{t('courses.documentDescription')}</Label>
             <Textarea
               id="description"
               {...register('description')}
@@ -276,18 +276,18 @@ export function FinanceDocumentsDialog({
               onClick={handleClose}
               disabled={isSubmitting}
             >
-              {t('common.cancel')}
+              {t('events.cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {t('common.uploading')}
+                  {t('events.uploading')}
                 </>
               ) : (
                 <>
                   <Upload className="h-4 w-4 mr-2" />
-                  {t('common.upload')}
+                  {t('events.upload')}
                 </>
               )}
             </Button>

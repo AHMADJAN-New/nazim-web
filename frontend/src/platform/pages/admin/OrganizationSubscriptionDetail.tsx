@@ -6,8 +6,13 @@ import {
   Package,
   RefreshCw,
   XCircle,
+  Lock,
+  CreditCard,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useParams, Link, Navigate } from 'react-router-dom';
 
 import { OrganizationPermissionManagement } from '@/components/settings/OrganizationPermissionManagement';
@@ -49,6 +54,9 @@ import {
   usePlatformToggleFeature,
 } from '@/platform/hooks/usePlatformAdminComplete';
 import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
+import { platformApi } from '@/platform/lib/platformApi';
+import { showToast } from '@/lib/toast';
+import { useQueryClient } from '@tanstack/react-query';
 import type * as SubscriptionApi from '@/types/api/subscription';
 
 export default function OrganizationSubscriptionDetail() {
@@ -66,9 +74,12 @@ export default function OrganizationSubscriptionDetail() {
   const activateSubscription = usePlatformActivateSubscription();
   const suspendSubscription = usePlatformSuspendSubscription();
   const toggleFeature = usePlatformToggleFeature();
+  const queryClient = useQueryClient();
 
   const [isActivateDialogOpen, setIsActivateDialogOpen] = useState(false);
   const [isSuspendDialogOpen, setIsSuspendDialogOpen] = useState(false);
+  const [isLicensePaymentDialogOpen, setIsLicensePaymentDialogOpen] = useState(false);
+  const [isMaintenancePaymentDialogOpen, setIsMaintenancePaymentDialogOpen] = useState(false);
   const [activateFormData, setActivateFormData] = useState({
     plan_id: '',
     currency: 'AFN' as 'AFN' | 'USD',
@@ -77,6 +88,36 @@ export default function OrganizationSubscriptionDetail() {
     notes: '',
   });
   const [suspendReason, setSuspendReason] = useState('');
+
+  // Payment form schemas
+  const paymentFormSchema = z.object({
+    amount: z.number().min(0.01, 'Amount must be greater than 0'),
+    currency: z.enum(['AFN', 'USD']),
+    payment_method: z.enum(['bank_transfer', 'cash', 'check', 'mobile_money', 'other']),
+    payment_reference: z.string().optional(),
+    payment_date: z.string().min(1, 'Payment date is required'),
+    notes: z.string().optional(),
+  });
+
+  type PaymentFormData = z.infer<typeof paymentFormSchema>;
+
+  const licensePaymentForm = useForm<PaymentFormData>({
+    resolver: zodResolver(paymentFormSchema),
+    defaultValues: {
+      currency: 'AFN',
+      payment_method: 'bank_transfer',
+      payment_date: new Date().toISOString().split('T')[0],
+    },
+  });
+
+  const maintenancePaymentForm = useForm<PaymentFormData>({
+    resolver: zodResolver(paymentFormSchema),
+    defaultValues: {
+      currency: 'AFN',
+      payment_method: 'bank_transfer',
+      payment_date: new Date().toISOString().split('T')[0],
+    },
+  });
 
   // Show loading while checking permissions
   if (permissionsLoading) {
@@ -231,20 +272,20 @@ export default function OrganizationSubscriptionDetail() {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
             <Link to="/platform/organizations">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
               Subscription Management
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
               {organization ? (
                 <>Manage subscription for <strong>{organization.name}</strong></>
               ) : (
@@ -436,6 +477,415 @@ export default function OrganizationSubscriptionDetail() {
         </CardContent>
       </Card>
 
+      {/* License & Maintenance Fees */}
+      {subscription && (
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* License Fee Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5" />
+                License Fee Status
+              </CardTitle>
+              <CardDescription>
+                One-time payment for software access
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {subscription.license_paid_at ? (
+                <>
+                  <div className="flex items-center gap-2 text-green-600">
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="font-medium">License Paid</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Paid on: {formatDate(new Date(subscription.license_paid_at))}
+                  </div>
+                  {subscription.plan && (
+                    <div className="text-sm text-muted-foreground">
+                      Amount: {subscription.currency === 'AFN' 
+                        ? `${subscription.plan.license_fee_afn.toLocaleString()} AFN`
+                        : `${subscription.plan.license_fee_usd.toLocaleString()} USD`}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 text-orange-600">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="font-medium">License Unpaid</span>
+                  </div>
+                  {subscription.plan && (
+                    <div className="text-sm text-muted-foreground">
+                      Amount Due: {subscription.currency === 'AFN' 
+                        ? `${subscription.plan.license_fee_afn.toLocaleString()} AFN`
+                        : `${subscription.plan.license_fee_usd.toLocaleString()} USD`}
+                    </div>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      licensePaymentForm.setValue('amount', subscription.currency === 'AFN' 
+                        ? subscription.plan.license_fee_afn 
+                        : subscription.plan.license_fee_usd);
+                      licensePaymentForm.setValue('currency', subscription.currency);
+                      setIsLicensePaymentDialogOpen(true);
+                    }}
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Record License Payment
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Maintenance Fee Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5" />
+                Maintenance Fee Status
+              </CardTitle>
+              <CardDescription>
+                Recurring payment for support, updates, and hosting
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {subscription.next_maintenance_due_at ? (
+                <>
+                  {(() => {
+                    const nextDue = new Date(subscription.next_maintenance_due_at);
+                    const now = new Date();
+                    const isOverdue = nextDue < now;
+                    const daysDiff = Math.floor((nextDue.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                    
+                    return (
+                      <>
+                        {isOverdue ? (
+                          <div className="flex items-center gap-2 text-red-600">
+                            <AlertTriangle className="h-4 w-4" />
+                            <span className="font-medium">Overdue</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 text-blue-600">
+                            <Clock className="h-4 w-4" />
+                            <span className="font-medium">Next Due</span>
+                          </div>
+                        )}
+                        <div className="text-sm text-muted-foreground">
+                          {formatDate(nextDue)}
+                          {!isOverdue && daysDiff >= 0 && (
+                            <span className="ml-2">({daysDiff} days remaining)</span>
+                          )}
+                          {isOverdue && (
+                            <span className="ml-2 text-red-600">({Math.abs(daysDiff)} days overdue)</span>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
+                  {subscription.last_maintenance_paid_at && (
+                    <div className="text-sm text-muted-foreground">
+                      Last paid: {formatDate(new Date(subscription.last_maintenance_paid_at))}
+                    </div>
+                  )}
+                  {subscription.plan && (
+                    <div className="text-sm text-muted-foreground">
+                      Amount: {subscription.currency === 'AFN' 
+                        ? `${subscription.plan.maintenance_fee_afn.toLocaleString()} AFN`
+                        : `${subscription.plan.maintenance_fee_usd.toLocaleString()} USD`}
+                      {subscription.billing_period && (
+                        <span className="ml-1">
+                          ({subscription.billing_period === 'monthly' ? 'Monthly' :
+                            subscription.billing_period === 'quarterly' ? 'Quarterly' :
+                            subscription.billing_period === 'yearly' ? 'Yearly' :
+                            'Custom'})
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      maintenancePaymentForm.setValue('amount', subscription.currency === 'AFN' 
+                        ? subscription.plan.maintenance_fee_afn 
+                        : subscription.plan.maintenance_fee_usd);
+                      maintenancePaymentForm.setValue('currency', subscription.currency);
+                      setIsMaintenancePaymentDialogOpen(true);
+                    }}
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Record Maintenance Payment
+                  </Button>
+                </>
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                  <p className="text-sm">No maintenance due</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* License Payment Dialog */}
+      <Dialog open={isLicensePaymentDialogOpen} onOpenChange={setIsLicensePaymentDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Record License Payment</DialogTitle>
+            <DialogDescription>
+              Enter payment details for the license fee
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={licensePaymentForm.handleSubmit(async (data) => {
+              if (!subscription?.id || !organizationId) return;
+              try {
+                await platformApi.subscriptions.submitLicensePayment(organizationId, {
+                  subscription_id: subscription.id,
+                  ...data,
+                });
+                showToast.success('License payment recorded successfully');
+                setIsLicensePaymentDialogOpen(false);
+                licensePaymentForm.reset();
+                // Refresh subscription data
+                await queryClient.invalidateQueries({ queryKey: ['platform-organization-subscription', organizationId] });
+              } catch (error) {
+                showToast.error(error instanceof Error ? error.message : 'Failed to record license payment');
+              }
+            })}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="license-amount">Amount</Label>
+              <Input
+                id="license-amount"
+                type="number"
+                step="0.01"
+                {...licensePaymentForm.register('amount', { valueAsNumber: true })}
+              />
+              {licensePaymentForm.formState.errors.amount && (
+                <p className="text-sm text-destructive">
+                  {licensePaymentForm.formState.errors.amount.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="license-currency">Currency</Label>
+              <Select
+                value={licensePaymentForm.watch('currency')}
+                onValueChange={(value) => licensePaymentForm.setValue('currency', value as 'AFN' | 'USD')}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AFN">AFN</SelectItem>
+                  <SelectItem value="USD">USD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="license-payment-method">Payment Method</Label>
+              <Select
+                value={licensePaymentForm.watch('payment_method')}
+                onValueChange={(value) => licensePaymentForm.setValue('payment_method', value as any)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="check">Check</SelectItem>
+                  <SelectItem value="mobile_money">Mobile Money</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="license-payment-reference">Payment Reference (Optional)</Label>
+              <Input
+                id="license-payment-reference"
+                {...licensePaymentForm.register('payment_reference')}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="license-payment-date">Payment Date</Label>
+              <Input
+                id="license-payment-date"
+                type="date"
+                {...licensePaymentForm.register('payment_date')}
+              />
+              {licensePaymentForm.formState.errors.payment_date && (
+                <p className="text-sm text-destructive">
+                  {licensePaymentForm.formState.errors.payment_date.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="license-notes">Notes (Optional)</Label>
+              <Textarea
+                id="license-notes"
+                {...licensePaymentForm.register('notes')}
+                rows={3}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsLicensePaymentDialogOpen(false);
+                  licensePaymentForm.reset();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">
+                Submit Payment
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Maintenance Payment Dialog */}
+      <Dialog open={isMaintenancePaymentDialogOpen} onOpenChange={setIsMaintenancePaymentDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Record Maintenance Payment</DialogTitle>
+            <DialogDescription>
+              Enter payment details for the maintenance fee
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={maintenancePaymentForm.handleSubmit(async (data) => {
+              if (!subscription?.id || !organizationId) return;
+              try {
+                await platformApi.subscriptions.submitMaintenancePayment(organizationId, {
+                  subscription_id: subscription.id,
+                  ...data,
+                });
+                showToast.success('Maintenance payment recorded successfully');
+                setIsMaintenancePaymentDialogOpen(false);
+                maintenancePaymentForm.reset();
+                // Refresh subscription data
+                await queryClient.invalidateQueries({ queryKey: ['platform-organization-subscription', organizationId] });
+              } catch (error) {
+                showToast.error(error instanceof Error ? error.message : 'Failed to record maintenance payment');
+              }
+            })}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="maintenance-amount">Amount</Label>
+              <Input
+                id="maintenance-amount"
+                type="number"
+                step="0.01"
+                {...maintenancePaymentForm.register('amount', { valueAsNumber: true })}
+              />
+              {maintenancePaymentForm.formState.errors.amount && (
+                <p className="text-sm text-destructive">
+                  {maintenancePaymentForm.formState.errors.amount.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="maintenance-currency">Currency</Label>
+              <Select
+                value={maintenancePaymentForm.watch('currency')}
+                onValueChange={(value) => maintenancePaymentForm.setValue('currency', value as 'AFN' | 'USD')}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AFN">AFN</SelectItem>
+                  <SelectItem value="USD">USD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="maintenance-payment-method">Payment Method</Label>
+              <Select
+                value={maintenancePaymentForm.watch('payment_method')}
+                onValueChange={(value) => maintenancePaymentForm.setValue('payment_method', value as any)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="check">Check</SelectItem>
+                  <SelectItem value="mobile_money">Mobile Money</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="maintenance-payment-reference">Payment Reference (Optional)</Label>
+              <Input
+                id="maintenance-payment-reference"
+                {...maintenancePaymentForm.register('payment_reference')}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="maintenance-payment-date">Payment Date</Label>
+              <Input
+                id="maintenance-payment-date"
+                type="date"
+                {...maintenancePaymentForm.register('payment_date')}
+              />
+              {maintenancePaymentForm.formState.errors.payment_date && (
+                <p className="text-sm text-destructive">
+                  {maintenancePaymentForm.formState.errors.payment_date.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="maintenance-notes">Notes (Optional)</Label>
+              <Textarea
+                id="maintenance-notes"
+                {...maintenancePaymentForm.register('notes')}
+                rows={3}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsMaintenancePaymentDialogOpen(false);
+                  maintenancePaymentForm.reset();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">
+                Submit Payment
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Usage Card */}
       <Card>
         <CardHeader>
@@ -474,7 +924,7 @@ export default function OrganizationSubscriptionDetail() {
                             ? 'bg-destructive'
                             : info.limit && info.current / info.limit > 0.75
                             ? 'bg-yellow-500'
-                            : 'bg-primary'
+                            : ''
                         )}
                         style={{
                           width: `${
@@ -485,6 +935,11 @@ export default function OrganizationSubscriptionDetail() {
                                 )
                               : 0
                           }%`,
+                          backgroundColor: info.limit && info.current / info.limit > 0.9
+                            ? undefined // Use bg-destructive class
+                            : info.limit && info.current / info.limit > 0.75
+                            ? undefined // Use bg-yellow-500 class
+                            : '#f59e0b', // amber-500 - vibrant yellow/amber color
                         }}
                       />
                     </div>

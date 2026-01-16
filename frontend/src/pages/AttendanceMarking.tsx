@@ -88,10 +88,18 @@ export default function AttendanceMarking() {
     );
   };
 
-  const { sessions, isLoading: sessionsLoading } = useAttendanceSessions({}, false);
+  // Load all open sessions - use pagination with large page size to get all sessions
+  const { sessions, pagination, pageSize, setPageSize, isLoading: sessionsLoading } = useAttendanceSessions({ status: 'open' }, true);
   const { session } = useAttendanceSession(selectedSessionId || undefined);
 
-  // Filter sessions: today, yesterday, and active/open only
+  // Set large page size on mount to load all sessions
+  useEffect(() => {
+    if (pageSize < 100) {
+      setPageSize(100);
+    }
+  }, [pageSize, setPageSize]);
+
+  // Filter and sort sessions: prioritize today and yesterday, but show all open sessions
   const filteredSessions = useMemo(() => {
     if (!sessions || sessions.length === 0) return [];
     
@@ -100,18 +108,38 @@ export default function AttendanceMarking() {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     
-    return (sessions as any[]).filter((item) => {
-      // Only show active/open sessions
-      if (item.status !== 'open') return false;
+    // Filter to only open sessions (in case API returns some closed ones)
+    const allOpenSessions = (sessions as any[]).filter((item) => item.status === 'open');
+    
+    // Sort: today first (most recent first within today), then yesterday, then others (most recent first)
+    return allOpenSessions.sort((a, b) => {
+      const dateA = new Date(a.sessionDate);
+      dateA.setHours(0, 0, 0, 0);
+      const dateB = new Date(b.sessionDate);
+      dateB.setHours(0, 0, 0, 0);
       
-      // Check if session date is today or yesterday
-      const sessionDate = new Date(item.sessionDate);
-      sessionDate.setHours(0, 0, 0, 0);
+      const aIsToday = dateA.getTime() === today.getTime();
+      const aIsYesterday = dateA.getTime() === yesterday.getTime();
+      const bIsToday = dateB.getTime() === today.getTime();
+      const bIsYesterday = dateB.getTime() === yesterday.getTime();
       
-      const isToday = sessionDate.getTime() === today.getTime();
-      const isYesterday = sessionDate.getTime() === yesterday.getTime();
+      // Today sessions first
+      if (aIsToday && !bIsToday) return -1;
+      if (!aIsToday && bIsToday) return 1;
       
-      return isToday || isYesterday;
+      // If both are today, sort by creation time (most recent first)
+      if (aIsToday && bIsToday) {
+        const timeA = new Date(a.sessionDate).getTime();
+        const timeB = new Date(b.sessionDate).getTime();
+        return timeB - timeA; // Most recent first
+      }
+      
+      // Yesterday sessions second
+      if (aIsYesterday && !bIsYesterday && !bIsToday) return -1;
+      if (!aIsYesterday && bIsYesterday && !aIsToday) return 1;
+      
+      // Then sort by date (most recent first)
+      return dateB.getTime() - dateA.getTime();
     });
   }, [sessions]);
 
@@ -202,16 +230,50 @@ export default function AttendanceMarking() {
     }
   }, [roster, session]);
 
-  // Check for session query param and auto-select session
+  // Auto-select session: first check query param, then auto-select latest today session
   useEffect(() => {
-    const sessionId = searchParams.get('session');
-    if (sessionId && sessions.length > 0) {
-      const foundSession = sessions.find(s => s.id === sessionId);
-      if (foundSession) {
-        setSelectedSessionId(sessionId);
+    if (!sessions || sessions.length === 0 || sessionsLoading) return;
+    
+    // First priority: session from query param
+    const sessionIdFromParam = searchParams.get('session');
+    if (sessionIdFromParam) {
+      const foundSession = sessions.find(s => s.id === sessionIdFromParam);
+      if (foundSession && selectedSessionId !== sessionIdFromParam) {
+        setSelectedSessionId(sessionIdFromParam);
+        return;
       }
     }
-  }, [searchParams, sessions]);
+    
+    // Second priority: auto-select latest today session if no session is selected
+    // Only run if we don't have a selected session or the selected session is not in the filtered list
+    const hasValidSelection = selectedSessionId && filteredSessions.some(s => s.id === selectedSessionId);
+    if (!hasValidSelection && filteredSessions.length > 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Find the latest today session
+      const todaySessions = filteredSessions.filter((item) => {
+        const sessionDate = new Date(item.sessionDate);
+        sessionDate.setHours(0, 0, 0, 0);
+        return sessionDate.getTime() === today.getTime();
+      });
+      
+      if (todaySessions.length > 0) {
+        // Already sorted by most recent first, so take the first one
+        const latestTodaySessionId = todaySessions[0].id;
+        if (selectedSessionId !== latestTodaySessionId) {
+          setSelectedSessionId(latestTodaySessionId);
+        }
+        return;
+      }
+      
+      // Fallback: select the first (most recent) session if no today session exists
+      const firstSessionId = filteredSessions[0].id;
+      if (selectedSessionId !== firstSessionId) {
+        setSelectedSessionId(firstSessionId);
+      }
+    }
+  }, [searchParams, sessions, filteredSessions, sessionsLoading, selectedSessionId]);
 
   const handleUpdateState = (studentId: string, status: AttendanceRecordInsert['status']) => {
     setAttendanceState(prev => ({
@@ -288,7 +350,7 @@ export default function AttendanceMarking() {
     
     const foundStudent = studentCache.get(scannedValue);
     if (!foundStudent && roster && roster.length > 0) {
-      setScanError(t('attendancePage.studentNotFound') || 'Student not found');
+      setScanError(t('leave.studentNotFound') || 'Student not found');
       setTimeout(() => setScanError(null), 2000);
       setScanCardNumber('');
       if (scanInputRef.current) {
@@ -312,7 +374,7 @@ export default function AttendanceMarking() {
           setScanNote('');
         },
         onError: (error: any) => {
-          setScanError(error.message || t('common.error') || 'Failed to scan');
+          setScanError(error.message || t('events.error') || 'Failed to scan');
           setTimeout(() => setScanError(null), 2000);
         },
       }
@@ -329,7 +391,7 @@ export default function AttendanceMarking() {
           <div className="flex items-center gap-3">
             <ClipboardList className="h-5 w-5 text-muted-foreground" />
             <div>
-              <CardTitle>{t('attendancePage.markAttendance') || 'Mark Attendance'}</CardTitle>
+              <CardTitle>{t('dashboard.markAttendance') || 'Mark Attendance'}</CardTitle>
               <CardDescription className="hidden md:block">
                 {t('attendancePage.markAttendanceDescription') || 'Track attendance with manual marking or barcode scans'}
               </CardDescription>
@@ -356,8 +418,18 @@ export default function AttendanceMarking() {
           <CollapsibleContent>
             <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>{t('attendancePage.selectSession') || 'Select Session'}</Label>
-            <Popover open={isSessionSelectOpen} onOpenChange={setIsSessionSelectOpen}>
+            <div className="flex items-center justify-between">
+              <Label>{t('attendancePage.selectSession') || 'Select Session'}</Label>
+              {!sessionsLoading && filteredSessions.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {filteredSessions.length} {t('attendancePage.openSessions') || 'open session(s)'}
+                  {pagination && pagination.total > filteredSessions.length && (
+                    <span className="ml-1">({pagination.total} total)</span>
+                  )}
+                </span>
+              )}
+            </div>
+            <Popover open={isSessionSelectOpen} onOpenChange={setIsSessionSelectOpen} modal={false}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -389,57 +461,107 @@ export default function AttendanceMarking() {
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-50" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
                 <Command shouldFilter={false}>
                   <CommandInput 
                     placeholder={t('attendancePage.searchSessions') || 'Search sessions...'} 
                     value={sessionSearchTerm}
                     onValueChange={setSessionSearchTerm}
                   />
-                  <CommandList>
+                  <CommandList className="max-h-[300px]">
                     <CommandEmpty>
                       {sessionsLoading 
                         ? (t('common.loading') || 'Loading...')
-                        : (t('attendancePage.noSessions') || 'No sessions available')}
+                        : searchableSessions.length === 0 && filteredSessions.length > 0
+                        ? (t('attendancePage.noSessionsMatchSearch') || 'No sessions match your search')
+                        : (t('attendancePage.noSessions') || 'No open sessions available')}
                     </CommandEmpty>
                     <CommandGroup>
-                      {searchableSessions.map((item) => (
-                        <CommandItem
-                          key={item.id}
-                          value={`${item.className || ''} ${item.classes?.map((c: any) => c.name).join(' ') || ''} ${format(item.sessionDate, 'PPP')}`}
-                          onSelect={() => {
-                            setSelectedSessionId(item.id);
-                            setIsSessionSelectOpen(false);
-                            setSessionSearchTerm('');
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedSessionId === item.id ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          <div className="flex flex-col gap-1 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {item.classes && item.classes.length > 0 ? (
-                                item.classes.map((cls: any) => (
-                                  <Badge key={cls.id} variant="outline" className="text-xs">
-                                    {cls.name}
-                                  </Badge>
-                                ))
-                              ) : (
-                                <span className="font-medium text-sm">{item.className || 'Class'}</span>
+                      {searchableSessions.length > 0 ? (
+                        searchableSessions.map((item) => (
+                          <CommandItem
+                            key={item.id}
+                            value={`${item.className || ''} ${item.classes?.map((c: any) => c.name).join(' ') || ''} ${format(item.sessionDate, 'PPP')}`}
+                            onSelect={() => {
+                              setSelectedSessionId(item.id);
+                              setIsSessionSelectOpen(false);
+                              setSessionSearchTerm('');
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedSessionId === item.id ? "opacity-100" : "opacity-0"
                               )}
+                            />
+                            <div className="flex flex-col gap-1 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {item.classes && item.classes.length > 0 ? (
+                                  item.classes.map((cls: any) => (
+                                    <Badge key={cls.id} variant="outline" className="text-xs">
+                                      {cls.name}
+                                    </Badge>
+                                  ))
+                                ) : (
+                                  <span className="font-medium text-sm">{item.className || 'Class'}</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span>{format(item.sessionDate, 'PPP')}</span>
+                                <Badge variant="secondary" className="text-xs">
+                                  {item.method === 'manual' ? t('attendancePage.manualTab') : t('attendancePage.barcodeTab')}
+                                </Badge>
+                                {new Date(item.sessionDate).setHours(0, 0, 0, 0) === new Date().setHours(0, 0, 0, 0) && (
+                                  <Badge variant="default" className="text-xs">Today</Badge>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span>{format(item.sessionDate, 'PPP')}</span>
-                              <Badge variant="secondary" className="text-xs">
-                                {item.method === 'manual' ? t('attendancePage.manualTab') : t('attendancePage.barcodeTab')}
-                              </Badge>
+                          </CommandItem>
+                        ))
+                      ) : filteredSessions.length > 0 ? (
+                        filteredSessions.map((item) => (
+                          <CommandItem
+                            key={item.id}
+                            value={`${item.className || ''} ${item.classes?.map((c: any) => c.name).join(' ') || ''} ${format(item.sessionDate, 'PPP')}`}
+                            onSelect={() => {
+                              setSelectedSessionId(item.id);
+                              setIsSessionSelectOpen(false);
+                              setSessionSearchTerm('');
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedSessionId === item.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-col gap-1 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {item.classes && item.classes.length > 0 ? (
+                                  item.classes.map((cls: any) => (
+                                    <Badge key={cls.id} variant="outline" className="text-xs">
+                                      {cls.name}
+                                    </Badge>
+                                  ))
+                                ) : (
+                                  <span className="font-medium text-sm">{item.className || 'Class'}</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span>{format(item.sessionDate, 'PPP')}</span>
+                                <Badge variant="secondary" className="text-xs">
+                                  {item.method === 'manual' ? t('attendancePage.manualTab') : t('attendancePage.barcodeTab')}
+                                </Badge>
+                                {new Date(item.sessionDate).setHours(0, 0, 0, 0) === new Date().setHours(0, 0, 0, 0) && (
+                                  <Badge variant="default" className="text-xs">Today</Badge>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </CommandItem>
-                      ))}
+                          </CommandItem>
+                        ))
+                      ) : null}
                     </CommandGroup>
                   </CommandList>
                 </Command>
@@ -479,7 +601,7 @@ export default function AttendanceMarking() {
       {selectedSessionId ? (
         <Card>
           <CardHeader>
-            <CardTitle>{t('attendancePage.markAttendance') || 'Mark Attendance'}</CardTitle>
+            <CardTitle>{t('dashboard.markAttendance') || 'Mark Attendance'}</CardTitle>
             <CardDescription>{t('attendancePage.markAttendanceDescription') || 'Track attendance with manual marking or barcode scans'}</CardDescription>
           </CardHeader>
           <CardContent>

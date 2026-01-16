@@ -5,11 +5,37 @@ import { LoadingSpinner } from '@/components/ui/loading';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
-import { useSubscriptionStatus } from '@/hooks/useSubscription';
+import { useSubscriptionGateStatus } from '@/hooks/useSubscription';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireOrganization?: boolean;
+}
+
+/**
+ * Helper function to determine if subscription access is blocked
+ * CRITICAL: This is the single source of truth for subscription access gating
+ */
+function isSubscriptionBlocked(gateStatus: { status: string; accessLevel: string; trialEndsAt: Date | null } | null): boolean {
+  if (!gateStatus) return false;
+  
+  const { status, accessLevel, trialEndsAt } = gateStatus;
+  
+  // Check if trial is expired (trial_ends_at is in the past and status is 'trial')
+  const isTrialExpired = status === 'trial' && 
+    trialEndsAt && 
+    trialEndsAt < new Date();
+  
+  // Blocked when:
+  // - status is suspended, expired, or cancelled
+  // - accessLevel is 'blocked' or 'none'
+  // - trial has expired
+  return status === 'suspended' || 
+    status === 'expired' || 
+    status === 'cancelled' ||
+    isTrialExpired ||
+    accessLevel === 'blocked' || 
+    accessLevel === 'none';
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
@@ -20,7 +46,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const navigate = useNavigate();
   const { user, loading, profile, profileLoading } = useAuth();
   const { data: profileData, isLoading: profileQueryLoading } = useProfile();
-  const { data: subscriptionStatus, isLoading: subscriptionLoading } = useSubscriptionStatus();
+  // CRITICAL: Use the lite gate status hook (no permission required) for access gating
+  const { data: gateStatus, isLoading: gateStatusLoading } = useSubscriptionGateStatus();
   const [loadingTimeout, setLoadingTimeout] = useState(false);
   const hasRedirectedRef = React.useRef(false); // Track if we've already redirected
   const subscriptionRedirectRef = React.useRef(false); // Track subscription redirect
@@ -39,41 +66,31 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return () => clearTimeout(timer);
   }, [loading, profileLoading, profile, profileData]);
 
-  // CRITICAL: Check subscription status and redirect if suspended/expired
-  // This must run BEFORE platform admin check to prevent suspended users from accessing anything
+  // CRITICAL: Check subscription gate status and redirect if blocked/expired/trial ended
+  // This uses the lite endpoint (no permission required) for ALL authenticated users
   useEffect(() => {
     // Early returns
     if (subscriptionRedirectRef.current) return; // Already redirected
     if (!user) return; // No user, skip
-    if (subscriptionLoading) return; // Still loading subscription status
+    if (gateStatusLoading) return; // Still loading gate status
     if (!profile && !profileData) return; // No profile yet
     
-    // Don't redirect if already on subscription page
-    const isOnSubscriptionPage = typeof window !== 'undefined' && 
-      (window.location.pathname.startsWith('/subscription') || 
-       window.location.pathname === '/subscription');
-    
-    if (isOnSubscriptionPage) {
-      return;
-    }
-    
-    // Check subscription status
-    if (subscriptionStatus) {
-      const status = subscriptionStatus.status;
-      const accessLevel = subscriptionStatus.accessLevel;
+    // Check subscription gate status using the centralized helper
+    if (isSubscriptionBlocked(gateStatus)) {
+      subscriptionRedirectRef.current = true; // Mark as redirected
       
-      // CRITICAL: Redirect if subscription is suspended, expired, blocked, or readonly with no access
-      // These statuses mean the organization has no access to features
-      if (status === 'suspended' || status === 'expired' || 
-          accessLevel === 'blocked' || accessLevel === 'none' ||
-          (status === 'readonly' && accessLevel === 'none')) {
-        subscriptionRedirectRef.current = true; // Mark as redirected
+      // Don't redirect if already on subscription page
+      const isOnSubscriptionPage = typeof window !== 'undefined' && 
+        (window.location.pathname.startsWith('/subscription') || 
+         window.location.pathname === '/subscription');
+      
+      if (!isOnSubscriptionPage) {
         // Use hard redirect to prevent hooks from continuing to fetch
         window.location.href = '/subscription';
-        return;
       }
+      return;
     }
-  }, [user, subscriptionStatus, subscriptionLoading, profile, profileData, navigate]);
+  }, [user, gateStatus, gateStatusLoading, profile, profileData, navigate]);
 
   // CRITICAL: Check if user is in platform admin session
   // Only redirect if we're on a main app route (not already on platform routes)
@@ -120,7 +137,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // NOW we can do early returns after all hooks have been called
   if (isLoading) {
-    return <LoadingSpinner size="lg" text={t('guards.loading')} fullScreen />;
+    return <LoadingSpinner size="lg" text={t('common.loading')} fullScreen />;
   }
 
   // Only allow authenticated users
@@ -139,13 +156,28 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       return (
         <div className="container mx-auto p-6">
           <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">{t('guards.organizationRequired')}</h2>
+            <h2 className="text-xl font-semibold mb-2">{t('toast.organizationRequired')}</h2>
             <p className="text-muted-foreground">
               {t('guards.organizationRequiredMessage')}
             </p>
           </div>
         </div>
       );
+    }
+  }
+
+  // CRITICAL: Prevent navigation away from subscription page when subscription/trial is expired
+  // This check runs after gate status is loaded and uses the centralized helper
+  if (gateStatus && !gateStatusLoading) {
+    if (isSubscriptionBlocked(gateStatus)) {
+      // Check if user is trying to navigate away from subscription page
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+      const isOnSubscriptionPage = currentPath.startsWith('/subscription') || currentPath === '/subscription';
+      
+      // If not on subscription page, redirect to it
+      if (!isOnSubscriptionPage) {
+        return <Navigate to="/subscription" replace />;
+      }
     }
   }
 

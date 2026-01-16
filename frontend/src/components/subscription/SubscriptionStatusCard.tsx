@@ -226,7 +226,7 @@ export function SubscriptionStatusCard() {
             </Button>
           )}
           <Button variant="outline" asChild className="flex-1">
-            <Link to="/subscription">Manage</Link>
+            <Link to="/subscription/plans">Manage</Link>
           </Button>
         </div>
       </CardContent>

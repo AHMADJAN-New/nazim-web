@@ -1,7 +1,9 @@
 import { HelpCircle } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+// Lazy load react-markdown to reduce initial bundle size (351 KB)
+const ReactMarkdown = lazy(() => import('react-markdown'));
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -43,7 +45,7 @@ export function ContextualHelpButton({
     if (isOpen && !isLoading && !error && !article && data) {
       // Only show toast if no article was found (match_type === 'none')
       if (data.match_type === 'none') {
-        showToast.info(t('help.noArticleFound') || 'No help article found for this page. Opening Help Center...');
+        showToast.info(t('helpCenter.noArticleFound') || 'No help article found for this page. Opening Help Center...');
       }
     }
   }, [isOpen, isLoading, error, article, data, t]);
@@ -51,12 +53,17 @@ export function ContextualHelpButton({
   // Show toast on error
   useEffect(() => {
     if (isOpen && error && !isLoading) {
-      showToast.error(t('help.errorLoading') || 'Error loading help article');
+      showToast.error(t('helpCenter.errorLoading') || 'Error loading help article');
     }
   }, [isOpen, error, isLoading, t]);
 
   const handleOpenHelpCenter = () => {
-    if (article?.category?.slug && article?.slug) {
+    if (article?.id) {
+      // Use ID-based URL for article access
+      navigate(`/help-center/article/${article.id}`);
+      setIsOpen(false);
+    } else if (article?.category?.slug && article?.slug) {
+      // Fallback to slug-based URL if ID is not available
       navigate(`/help-center/s/${article.category.slug}/${article.slug}`);
       setIsOpen(false);
     } else {
@@ -69,7 +76,7 @@ export function ContextualHelpButton({
     setIsOpen(true);
     // If we already have data and no article, show toast immediately
     if (!isLoading && !error && !article && data?.match_type === 'none') {
-      showToast.info(t('help.noArticleFound') || 'No help article found for this page. Opening Help Center...');
+      showToast.info(t('helpCenter.noArticleFound') || 'No help article found for this page. Opening Help Center...');
     }
   };
 
@@ -80,7 +87,7 @@ export function ContextualHelpButton({
         size={size}
         className={className}
         onClick={handleClick}
-        title={t('help.contextualHelp') || 'Get help'}
+        title={t('helpCenter.contextualHelp') || 'Get help'}
       >
         <HelpCircle className="h-4 w-4" />
       </Button>
@@ -88,11 +95,11 @@ export function ContextualHelpButton({
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{t('help.contextualHelp') || 'Help'}</SheetTitle>
+            <SheetTitle>{t('helpCenter.contextualHelp') || 'Help'}</SheetTitle>
             <SheetDescription>
               {article
-                ? t('help.articleFound') || 'Here is the help article for this page'
-                : t('help.noArticleFound') || 'No specific help article found for this page'}
+                ? t('helpCenter.articleFound') || 'Here is the help article for this page'
+                : t('helpCenter.noArticleFound') || 'No specific help article found for this page'}
             </SheetDescription>
           </SheetHeader>
 
@@ -105,9 +112,9 @@ export function ContextualHelpButton({
 
             {error && !isLoading && (
               <div className="text-center py-8 text-muted-foreground">
-                <p className="mb-4">{t('help.errorLoading') || 'Error loading help article'}</p>
+                <p className="mb-4">{t('helpCenter.errorLoading') || 'Error loading help article'}</p>
                 <Button onClick={() => navigate('/help-center')} variant="outline">
-                  {t('help.browseHelpCenter') || 'Browse Help Center'}
+                  {t('helpCenter.browseHelpCenter') || 'Browse Help Center'}
                 </Button>
               </div>
             )}
@@ -133,7 +140,9 @@ export function ContextualHelpButton({
                       className="help-content"
                     />
                   ) : (
-                    <ReactMarkdown>{article.content}</ReactMarkdown>
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <ReactMarkdown>{article.content}</ReactMarkdown>
+                    </Suspense>
                   )}
                 </div>
 
@@ -141,12 +150,12 @@ export function ContextualHelpButton({
                   <div className="text-sm text-muted-foreground">
                     {article.published_at && (
                       <span>
-                        {t('common.published') || 'Published'}: {formatDate(new Date(article.published_at))}
+                        {t('events.published') || 'Published'}: {formatDate(new Date(article.published_at))}
                       </span>
                     )}
                   </div>
                   <Button onClick={handleOpenHelpCenter} variant="outline" size="sm">
-                    {t('help.viewFullArticle') || 'View Full Article'}
+                    {t('helpCenter.viewFullArticle') || 'View Full Article'}
                   </Button>
                 </div>
               </div>
@@ -155,10 +164,10 @@ export function ContextualHelpButton({
             {!isLoading && !error && !article && (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">
-                  {t('help.noArticleFound') || 'No specific help article found for this page'}
+                  {t('helpCenter.noArticleFound') || 'No specific help article found for this page'}
                 </p>
                 <Button onClick={() => navigate('/help-center')} variant="outline">
-                  {t('help.browseHelpCenter') || 'Browse Help Center'}
+                  {t('helpCenter.browseHelpCenter') || 'Browse Help Center'}
                 </Button>
               </div>
             )}

@@ -189,37 +189,37 @@ export default function AssetAssignmentsTab() {
   };
 
   const getAssigneeName = (assignment: AssetAssignmentDomain) => {
-    if (!assignment.assignedToId) return 'Unspecified';
+    if (!assignment.assignedToId) return t('assets.unspecified');
     
     if (assignment.assignedToType === 'staff') {
       const staffMember = staff?.find((s) => s.id === assignment.assignedToId);
-      if (!staffMember) return 'Unknown Staff';
+      if (!staffMember) return t('assets.unknownStaff');
       // Try fullName first, then profile.fullName, then employeeId
-      return staffMember.fullName || staffMember.profile?.fullName || staffMember.employeeId || 'Unknown Staff';
+      return staffMember.fullName || staffMember.profile?.fullName || staffMember.employeeId || t('assets.unknownStaff');
     }
     
     if (assignment.assignedToType === 'student') {
       const student = students?.find((s) => s.id === assignment.assignedToId);
-      if (!student) return 'Unknown Student';
-      return student.fullName || 'Unknown Student';
+      if (!student) return t('assets.unknownStudent');
+      return student.fullName || t('assets.unknownStudent');
     }
     
     if (assignment.assignedToType === 'room') {
       const room = rooms?.find((r) => r.id === assignment.assignedToId);
-      if (!room) return 'Unknown Room';
+      if (!room) return t('assets.unknownRoom');
       return room.roomNumber 
         ? `${room.roomNumber}${room.building?.buildingName ? ` (${room.building.buildingName})` : ''}`
-        : 'Unknown Room';
+        : t('assets.unknownRoom');
     }
     
-    return 'Other';
+    return t('assets.other');
   };
 
   const columns: ColumnDef<typeof filteredAssignments[0]>[] = useMemo(
     () => [
       {
         accessorKey: 'asset',
-        header: 'Asset',
+        header: t('assets.name'),
         cell: ({ row }) => {
           const asset = assets.find(a => a.id === row.original.assetId);
           const totalCopies = asset?.totalCopiesCount ?? asset?.totalCopies ?? 1;
@@ -228,17 +228,17 @@ export default function AssetAssignmentsTab() {
           return (
             <div>
               <p className="font-semibold">{row.original.assetName}</p>
-              <p className="text-xs text-muted-foreground">Tag: {row.original.assetTag}</p>
+              <p className="text-xs text-muted-foreground">{t('assets.tag')}: {row.original.assetTag}</p>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="outline" className="text-xs">
-                  Available: {availableCopies}
+                  {t('assets.availableCopies')}: {availableCopies}
                 </Badge>
                 <Badge variant="secondary" className="text-xs">
-                  Total: {totalCopies}
+                  {t('assets.totalCopies')}: {totalCopies}
                 </Badge>
                 {assignedCopies > 0 && (
                   <Badge variant="default" className="text-xs bg-blue-500 hover:bg-blue-600 text-white">
-                    Assigned: {assignedCopies}
+                    {t('assets.assignedCopies')}: {assignedCopies}
                   </Badge>
                 )}
               </div>
@@ -248,7 +248,7 @@ export default function AssetAssignmentsTab() {
       },
       {
         accessorKey: 'assignedTo',
-        header: 'Assigned To',
+        header: t('assets.assignedTo'),
         cell: ({ row }) => {
           const assigneeName = getAssigneeName(row.original.data);
           const assigneeType = row.original.data.assignedToType;
@@ -262,25 +262,25 @@ export default function AssetAssignmentsTab() {
       },
       {
         accessorKey: 'assignedOn',
-        header: 'Assigned On',
+        header: t('assets.assignedOn'),
         cell: ({ row }) => (
           <span className="text-sm">
-            {row.original.data.assignedOn ? formatDate(row.original.data.assignedOn) : 'N/A'}
+            {row.original.data.assignedOn ? formatDate(row.original.data.assignedOn) : t('assets.notAvailable')}
           </span>
         ),
       },
       {
         accessorKey: 'expectedReturn',
-        header: 'Expected Return',
+        header: t('assets.expectedReturn'),
         cell: ({ row }) => (
           <span className="text-sm">
-            {row.original.data.expectedReturnDate ? formatDate(row.original.data.expectedReturnDate) : 'N/A'}
+            {row.original.data.expectedReturnDate ? formatDate(row.original.data.expectedReturnDate) : t('assets.notAvailable')}
           </span>
         ),
       },
       {
         accessorKey: 'status',
-        header: 'Status',
+        header: t('assets.status'),
         cell: ({ row }) => {
           const status = row.original.data.status;
           let variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'secondary';
@@ -306,7 +306,7 @@ export default function AssetAssignmentsTab() {
       },
       {
         id: 'actions',
-        header: () => <div className="text-right">Actions</div>,
+        header: () => <div className="text-right">{t('assets.actions')}</div>,
         cell: ({ row }) => (
           <div className="flex justify-end gap-2">
             {canUpdate && (
@@ -372,8 +372,8 @@ export default function AssetAssignmentsTab() {
         <div className="flex items-center gap-3">
           <ShieldCheck className="h-8 w-8" />
           <div>
-            <h1 className="text-2xl font-semibold">Asset Assignments</h1>
-            <p className="text-sm text-muted-foreground">Manage and track all asset assignments</p>
+            <h1 className="text-2xl font-semibold">{t('assets.assetAssignments')}</h1>
+            <p className="text-sm text-muted-foreground">{t('assets.assetAssignmentsDescription')}</p>
           </div>
         </div>
       </div>
@@ -383,19 +383,19 @@ export default function AssetAssignmentsTab() {
         <div className="flex gap-3 items-center">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Filter by status" />
+              <SelectValue placeholder={t('assets.filterByStatus')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="returned">Returned</SelectItem>
-              <SelectItem value="transferred">Transferred</SelectItem>
+              <SelectItem value="all">{t('assets.allStatuses')}</SelectItem>
+              <SelectItem value="active">{t('assets.active')}</SelectItem>
+              <SelectItem value="returned">{t('assets.returned')}</SelectItem>
+              <SelectItem value="transferred">{t('assets.transferred')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         {canUpdate && (
           <Button onClick={openCreate} className="gap-2">
-            <Plus className="h-4 w-4" /> New Assignment
+            <Plus className="h-4 w-4" /> {t('assets.newAssignment')}
           </Button>
         )}
       </div>
@@ -405,8 +405,8 @@ export default function AssetAssignmentsTab() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Asset Assignments</CardTitle>
-              <CardDescription>Track all asset assignments across your organization</CardDescription>
+              <CardTitle>{t('assets.assetAssignments')}</CardTitle>
+              <CardDescription>{t('assets.trackAssignments')}</CardDescription>
             </div>
             <ReportExportButtons
               data={filteredAssignments}
@@ -434,7 +434,7 @@ export default function AssetAssignmentsTab() {
         <CardContent>
           {filteredAssignments.length === 0 ? (
             <div className="flex h-24 items-center justify-center text-muted-foreground">
-              No assignments found
+              {t('assets.noAssignmentsFound')}
             </div>
           ) : (
             <div className="space-y-4">
@@ -456,7 +456,7 @@ export default function AssetAssignmentsTab() {
                   {table.getRowModel().rows.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={columns.length} className="text-center text-muted-foreground py-8">
-                        No assignments found
+                        {t('assets.noAssignmentsFound')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -487,22 +487,22 @@ export default function AssetAssignmentsTab() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingAssignment ? 'Update Assignment' : 'Create Assignment'}</DialogTitle>
+            <DialogTitle>{editingAssignment ? t('assets.updateAssignment') : t('assets.createAssignment')}</DialogTitle>
             <DialogDescription>
-              {editingAssignment ? 'Update the asset assignment details.' : 'Assign an asset to a staff member, student, or room.'}
+              {editingAssignment ? t('assets.updateAssignmentDescription') : t('assets.createAssignmentDescription')}
             </DialogDescription>
           </DialogHeader>
           <FormProvider {...formMethods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               {!editingAssignment && (
               <div>
-                <Label>Asset *</Label>
+                <Label>{t('assets.name')} *</Label>
                 <Select
                   value={watch('assetId') || 'none'}
                   onValueChange={(value) => setValue('assetId', value === 'none' ? undefined : value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select asset" />
+                    <SelectValue placeholder={t('assets.selectAsset')} />
                   </SelectTrigger>
                   <SelectContent>
                     {assets.map((asset) => (
@@ -517,33 +517,33 @@ export default function AssetAssignmentsTab() {
             )}
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
-                <Label>Type *</Label>
+                <Label>{t('assets.type')} *</Label>
                 <Select
                   value={watch('assignedToType')}
                   onValueChange={(value) => setValue('assignedToType', value as any)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Type" />
+                    <SelectValue placeholder={t('assets.type')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="staff">Staff</SelectItem>
-                    <SelectItem value="student">Student</SelectItem>
-                    <SelectItem value="room">Room</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="staff">{t('common.staff') || 'Staff'}</SelectItem>
+                    <SelectItem value="student">{t('common.students') || 'Student'}</SelectItem>
+                    <SelectItem value="room">{t('common.room') || 'Room'}</SelectItem>
+                    <SelectItem value="other">{t('assets.other')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Assignee</Label>
+                <Label>{t('assets.assignee')}</Label>
                 <Select
                   value={watch('assignedToId') || 'none'}
                   onValueChange={(value) => setValue('assignedToId', value === 'none' ? null : value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select assignee" />
+                    <SelectValue placeholder={t('assets.selectAssignee')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Unspecified</SelectItem>
+                    <SelectItem value="none">{t('assets.unspecified')}</SelectItem>
                     {watch('assignedToType') === 'staff' &&
                       staff?.map((s) => (
                         <SelectItem key={s.id} value={s.id}>
@@ -566,24 +566,22 @@ export default function AssetAssignmentsTab() {
                 </Select>
               </div>
               <div>
-                <Label>Assigned On</Label>
-                <CalendarFormField control={control} name="assignedOn" label="Assigned On" />
+                <CalendarFormField control={control} name="assignedOn" label={t('assets.assignedOn')} />
               </div>
               <div>
-                <Label>Expected Return Date</Label>
-                <CalendarFormField control={control} name="expectedReturnDate" label="Expected Return Date" />
+                <CalendarFormField control={control} name="expectedReturnDate" label={t('assets.expectedReturnDate')} />
               </div>
             </div>
             <div>
-              <Label>Notes</Label>
+              <Label>{t('assets.notes')}</Label>
               <Textarea rows={3} {...register('notes')} />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
+                {t('assets.cancel')}
               </Button>
               <Button type="submit" disabled={(editingAssignment ? updateAssignment.isPending : assignAsset.isPending) || !canUpdate}>
-                {editingAssignment ? 'Update' : 'Create'}
+                {editingAssignment ? t('assets.update') : t('assets.create')}
               </Button>
             </DialogFooter>
             </form>

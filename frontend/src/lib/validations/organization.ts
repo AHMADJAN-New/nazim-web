@@ -16,7 +16,27 @@ export const organizationSchema = z.object({
   // Contact Information
   email: optionalEmailSchema,
   phone: phoneSchema,
-  website: z.string().url('Invalid website URL').optional().nullable().or(z.literal('')),
+  website: z.string()
+    .optional()
+    .nullable()
+    .refine(
+      (val) => {
+        if (!val || val === '') return true;
+        // Accept URLs with or without protocol
+        // Auto-add https:// if missing for validation
+        const urlWithProtocol = val.startsWith('http://') || val.startsWith('https://') 
+          ? val 
+          : `https://${val}`;
+        try {
+          new URL(urlWithProtocol);
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      { message: 'Invalid website URL' }
+    )
+    .or(z.literal('')),
   
   // Address Information
   streetAddress: optionalStringLength(500, 'Street address'),
@@ -33,7 +53,12 @@ export const organizationSchema = z.object({
   // Organization Details
   type: optionalStringLength(100, 'Organization type'),
   description: z.string().max(2000, 'Description must be 2000 characters or less').optional().nullable(),
-  establishedDate: dateStringSchema,
+  establishedDate: z.union([
+    z.string(),
+    z.date(),
+    z.null(),
+    z.undefined(),
+  ]).optional().nullable(),
   isActive: z.boolean().default(true),
   
   // Contact Person Information
@@ -52,6 +77,8 @@ export const organizationSchema = z.object({
 });
 
 export type OrganizationFormData = z.infer<typeof organizationSchema>;
+
+
 
 
 

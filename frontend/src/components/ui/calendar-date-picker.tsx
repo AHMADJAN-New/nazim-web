@@ -512,7 +512,7 @@ export function CalendarDatePicker({
             disabled={isTodayDisabled}
             className="h-8 text-xs"
           >
-            {t('common.today') || 'Today'}
+            {t('events.today') || 'Today'}
           </Button>
         </div>
       </PopoverContent>

@@ -1,0 +1,9 @@
+# DMS Letterheads
+
+**مقاله ډېر ژر چمتو کیږي**
+
+دا مقاله اوسمهال چمتو کیږي. منځپانګه به ژر تر ژره شتون ولري.
+
+---
+
+*Category: `dms/letterheads` | Language: `ps`*

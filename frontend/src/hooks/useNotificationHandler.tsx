@@ -5,6 +5,8 @@ import { StudentProfileView } from '@/components/students/StudentProfileView';
 import { studentsApi, studentAdmissionsApi } from '@/lib/api/client';
 import { mapStudentAdmissionApiToDomain } from '@/mappers/studentAdmissionMapper';
 import { mapStudentApiToDomain } from '@/mappers/studentMapper';
+import { showToast } from '@/lib/toast';
+import { useLanguage } from '@/hooks/useLanguage';
 import type { Student } from '@/types/domain/student';
 import type { NotificationItem } from '@/types/notification';
 
@@ -113,6 +115,7 @@ const ENTITY_HANDLERS: Record<string, {
 
 export function useNotificationHandler() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [studentToView, setStudentToView] = useState<Student | null>(null);
   const [isStudentDialogOpen, setIsStudentDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -166,11 +169,26 @@ export function useNotificationHandler() {
             }
           }
         }
-      } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error('[useNotificationHandler] Error fetching entity:', error);
+      } catch (error: any) {
+        // Check if entity was not found (404 - entity deleted)
+        const errorMessage = error?.message || '';
+        const isNotFound = errorMessage.toLowerCase().includes('not found') || 
+                          errorMessage.toLowerCase().includes('does not exist');
+        
+        if (isNotFound) {
+          // Entity was deleted - show user-friendly info message
+          // Don't log to console as this is expected behavior (entity was deleted)
+          showToast.info('The item in this notification has been deleted.', undefined, { duration: 3000 });
+        } else {
+          // Other errors - log in dev mode only
+          if (import.meta.env.DEV) {
+            console.error('[useNotificationHandler] Error fetching entity:', error);
+          }
+          // Show error toast for unexpected errors
+          showToast.error(errorMessage || 'Failed to open notification');
         }
-        // Fallback to URL navigation on error
+        
+        // Always fallback to URL navigation on error
         if (notification.url) {
           navigate(notification.url);
         }

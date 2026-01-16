@@ -67,7 +67,7 @@ export function HostelReports() {
     const map = new Map<string, { buildings: Set<string>; rooms: number; students: number }>();
 
     hostelOverview.rooms.forEach((room: HostelRoom) => {
-      const staffName = room.staffName || 'Not assigned';
+      const staffName = room.staffName || t('hostel.notAssigned');
 
       if (!map.has(staffName)) {
         map.set(staffName, { buildings: new Set<string>(), rooms: 0, students: 0 });
@@ -316,45 +316,45 @@ export function HostelReports() {
       <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Boarders</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('hostel.reports.boardersCardTitle')}</CardTitle>
             <BedDouble className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totals.boarders}</div>
-            <p className="text-xs text-muted-foreground">{totals.assignedBoarders} assigned to rooms</p>
+            <p className="text-xs text-muted-foreground">{totals.assignedBoarders} {t('hostel.reports.assignedToRooms')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Unassigned boarders</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('hostel.reports.unassignedBoardersCardTitle')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totals.unassignedBoarders}</div>
-            <p className="text-xs text-muted-foreground">Waiting for room placement</p>
+            <p className="text-xs text-muted-foreground">{t('hostel.reports.waitingForRoomPlacement')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Buildings tracked</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('hostel.reports.buildingsTracked')}</CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totals.buildings}</div>
-            <p className="text-xs text-muted-foreground">Across {totals.roomsCount} rooms</p>
+            <p className="text-xs text-muted-foreground">{t('hostel.reports.acrossRooms').replace('{count}', totals.roomsCount.toString())}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Wardens with assignments</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('hostel.reports.wardensWithAssignments')}</CardTitle>
             <ShieldCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totals.wardens}</div>
-            <p className="text-xs text-muted-foreground">Rooms currently supervised</p>
+            <p className="text-xs text-muted-foreground">{t('hostel.reports.roomsCurrentlySupervised')}</p>
           </CardContent>
         </Card>
       </div>
@@ -364,19 +364,19 @@ export function HostelReports() {
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 h-auto p-1">
           <TabsTrigger value="building-utilization" className="flex items-center gap-1 sm:gap-2">
             <Building2 className="h-4 w-4 flex-shrink-0" />
-            <span className="text-xs sm:text-sm">Buildings</span>
+            <span className="text-xs sm:text-sm">{t('hostel.reports.buildingsTab')}</span>
           </TabsTrigger>
           <TabsTrigger value="warden-coverage" className="flex items-center gap-1 sm:gap-2">
             <ShieldCheck className="h-4 w-4 flex-shrink-0" />
-            <span className="text-xs sm:text-sm">Wardens</span>
+            <span className="text-xs sm:text-sm">{t('hostel.reports.wardensTab')}</span>
           </TabsTrigger>
           <TabsTrigger value="room-buildings" className="flex items-center gap-1 sm:gap-2">
             <MapPin className="h-4 w-4 flex-shrink-0" />
-            <span className="text-xs sm:text-sm">Rooms</span>
+            <span className="text-xs sm:text-sm">{t('hostel.reports.roomsTab')}</span>
           </TabsTrigger>
           <TabsTrigger value="assigned-boarders" className="flex items-center gap-1 sm:gap-2">
             <UserCheck className="h-4 w-4 flex-shrink-0" />
-            <span className="text-xs sm:text-sm">Assigned</span>
+            <span className="text-xs sm:text-sm">{t('hostel.reports.assignedTab')}</span>
             {allAssignedBoarders.length > 0 && (
               <Badge variant="secondary" className="ml-1 text-xs flex-shrink-0">
                 {allAssignedBoarders.length}
@@ -385,7 +385,7 @@ export function HostelReports() {
           </TabsTrigger>
           <TabsTrigger value="unassigned-boarders" className="flex items-center gap-1 sm:gap-2">
             <Users className="h-4 w-4 flex-shrink-0" />
-            <span className="text-xs sm:text-sm">Unassigned</span>
+            <span className="text-xs sm:text-sm">{t('hostel.reports.unassignedTab')}</span>
             {totals.unassignedBoarders > 0 && (
               <Badge variant="destructive" className="ml-1 text-xs flex-shrink-0">
                 {totals.unassignedBoarders}
@@ -403,7 +403,7 @@ export function HostelReports() {
                 <CardDescription className="hidden md:block">{t('hostel.reports.buildingUtilizationDescription') || 'Rooms, occupancy, and warden coverage by building.'}</CardDescription>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <Badge variant="outline" className="hidden sm:inline-flex">{buildingReports.length} buildings</Badge>
+                <Badge variant="outline" className="hidden sm:inline-flex">{t('hostel.reports.buildingsCount').replace('{count}', buildingReports.length.toString())}</Badge>
                 <ReportExportButtons
                   data={buildingReports}
                   columns={[
@@ -432,19 +432,19 @@ export function HostelReports() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Building</TableHead>
-                          <TableHead>Rooms</TableHead>
-                          <TableHead>Occupied</TableHead>
-                          <TableHead>Boarders</TableHead>
-                          <TableHead>Rooms with wardens</TableHead>
-                          <TableHead>Utilization</TableHead>
+                          <TableHead>{t('hostel.reports.buildingHeader')}</TableHead>
+                          <TableHead>{t('hostel.reports.roomsHeader')}</TableHead>
+                          <TableHead>{t('hostel.reports.occupiedHeader')}</TableHead>
+                          <TableHead>{t('hostel.reports.boardersHeader')}</TableHead>
+                          <TableHead>{t('hostel.reports.roomsWithWardensHeader')}</TableHead>
+                          <TableHead>{t('hostel.reports.utilizationHeader')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {buildingReports.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={6} className="text-center text-muted-foreground">
-                              No building data available.
+                              {t('hostel.reports.noBuildingDataAvailable')}
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -456,7 +456,7 @@ export function HostelReports() {
                                 <TableCell>{row.totalRooms}</TableCell>
                                 <TableCell>
                                   <Badge variant={row.occupiedRooms > 0 ? 'default' : 'secondary'}>
-                                    {row.occupiedRooms} of {row.totalRooms}
+                                    {t('hostel.reports.occupiedOfTotal').replace('{occupied}', row.occupiedRooms.toString()).replace('{total}', row.totalRooms.toString())}
                                   </Badge>
                                 </TableCell>
                                 <TableCell>{row.boardersAssigned}</TableCell>
@@ -496,11 +496,11 @@ export function HostelReports() {
                 <CardDescription className="hidden md:block">{t('hostel.reports.wardenCoverageDescription') || 'Room assignments and student counts per warden.'}</CardDescription>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <Badge variant="outline" className="hidden sm:inline-flex">{wardenCoverage.length} wardens</Badge>
+                <Badge variant="outline" className="hidden sm:inline-flex">{t('hostel.reports.wardensCount').replace('{count}', wardenCoverage.length.toString())}</Badge>
                 <ReportExportButtons
                   data={wardenCoverage}
                   columns={[
-                    { key: 'warden_name', label: t('hostel.reports.wardenName') || t('hostel.warden') || 'Warden', align: 'left' },
+                    { key: 'warden_name', label: t('hostel.reports.wardenName') || t('settings.warden') || 'Warden', align: 'left' },
                     { key: 'buildings', label: t('hostel.reports.buildingsColumn') || t('hostel.reports.buildings') || 'Buildings', align: 'left' },
                     { key: 'rooms', label: t('hostel.reports.roomsColumn') || t('hostel.reports.rooms') || 'Rooms', align: 'left' },
                     { key: 'students', label: t('hostel.reports.studentsLabel') || t('hostel.reports.students') || 'Boarders', align: 'left' },
@@ -523,18 +523,18 @@ export function HostelReports() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Warden</TableHead>
-                          <TableHead>Buildings</TableHead>
-                          <TableHead>Rooms</TableHead>
-                          <TableHead>Boarders</TableHead>
-                          <TableHead>Coverage</TableHead>
+                          <TableHead>{t('hostel.reports.wardenHeader')}</TableHead>
+                          <TableHead>{t('hostel.reports.buildingsHeader')}</TableHead>
+                          <TableHead>{t('hostel.reports.roomsHeader')}</TableHead>
+                          <TableHead>{t('hostel.reports.boardersHeader')}</TableHead>
+                          <TableHead>{t('hostel.reports.coverageHeader')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {wardenCoverage.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={5} className="text-center text-muted-foreground">
-                              No wardens assigned to rooms yet.
+                              {t('hostel.reports.noWardensAssigned')}
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -546,7 +546,7 @@ export function HostelReports() {
                               <TableCell>{warden.students}</TableCell>
                               <TableCell>
                                 <Badge variant={warden.students > 0 ? 'default' : 'secondary'}>
-                                  {warden.students} students
+                                  {t('hostel.reports.studentsCount').replace('{count}', warden.students.toString())}
                                 </Badge>
                               </TableCell>
                             </TableRow>
@@ -571,7 +571,7 @@ export function HostelReports() {
             <CardContent>
               <div className="space-y-6">
                 {buildingsForFilter.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No buildings available.</p>
+                  <p className="text-center text-muted-foreground py-8">{t('hostel.reports.noBuildingsAvailable')}</p>
                 ) : (
                   buildingsForFilter.map((building) => {
                     const buildingRooms = hostelOverview?.rooms.filter((r) => r.buildingId === building.id) || [];
@@ -588,11 +588,11 @@ export function HostelReports() {
                               <span className="truncate">{building.buildingName}</span>
                             </h3>
                             <p className="text-xs sm:text-sm text-muted-foreground">
-                              {buildingRooms.length} rooms • {totalStudentsInBuilding} boarders
+                              {t('hostel.reports.roomsAndBoarders').replace('{rooms}', buildingRooms.length.toString()).replace('{boarders}', totalStudentsInBuilding.toString())}
                             </p>
                           </div>
                           <Badge variant="outline" className="self-start sm:self-auto">
-                            {building.occupiedRooms}/{building.roomCount} occupied
+                            {t('hostel.reports.occupiedCount').replace('{occupied}', building.occupiedRooms.toString()).replace('{total}', building.roomCount.toString())}
                           </Badge>
                         </div>
 
@@ -603,15 +603,15 @@ export function HostelReports() {
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
                                     <MapPin className="h-4 w-4 text-muted-foreground" />
-                                    <CardTitle className="text-base">Room {room.roomNumber}</CardTitle>
+                                    <CardTitle className="text-base">{t('hostel.reports.roomNumber').replace('{number}', room.roomNumber)}</CardTitle>
                                     {room.staffName && (
                                       <Badge variant="secondary" className="text-xs">
-                                        Warden: {room.staffName}
+                                        {t('hostel.reports.wardenLabel').replace('{name}', room.staffName)}
                                       </Badge>
                                     )}
                                   </div>
                                   <Badge variant={room.occupants.length > 0 ? 'default' : 'secondary'}>
-                                    {room.occupants.length} boarders
+                                    {t('hostel.reports.boardersCount').replace('{count}', room.occupants.length.toString())}
                                   </Badge>
                                 </div>
                               </CardHeader>
@@ -625,7 +625,7 @@ export function HostelReports() {
                                       >
                                         <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                         <div className="flex-1 min-w-0">
-                                          <p className="text-sm font-medium truncate">{occupant.studentName || 'Student'}</p>
+                                          <p className="text-sm font-medium truncate">{occupant.studentName || t('hostel.reports.student')}</p>
                                           <p className="text-xs text-muted-foreground truncate">
                                             {occupant.admissionNumber || '—'}
                                           </p>
@@ -678,18 +678,18 @@ export function HostelReports() {
             </CardHeader>
             <CardContent className="space-y-4">
               <FilterPanel 
-                title={t('common.filters') || 'Search & Filter'}
+                title={t('events.filters') || 'Search & Filter'}
                 defaultOpenDesktop={true}
                 defaultOpenMobile={false}
               >
                 <div className="flex flex-col gap-4 md:flex-row md:items-end">
                   <div className="flex-1 min-w-0">
-                    <Label htmlFor="assigned-search">Search</Label>
+                    <Label htmlFor="assigned-search">{t('events.search')}</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="assigned-search"
-                        placeholder="Search by name, admission number, room, or building..."
+                        placeholder={t('hostel.reports.searchPlaceholder')}
                         value={assignedSearchQuery}
                         onChange={(e) => setAssignedSearchQuery(e.target.value)}
                         className="pl-10"
@@ -707,16 +707,16 @@ export function HostelReports() {
                     </div>
                   </div>
                   <div className="w-full md:w-[200px]">
-                    <Label htmlFor="building-filter">Building</Label>
+                    <Label htmlFor="building-filter">{t('hostel.building')}</Label>
                     <Select value={selectedBuilding} onValueChange={(value) => {
                       setSelectedBuilding(value);
                       setSelectedRoom('all'); // Reset room when building changes
                     }}>
                       <SelectTrigger id="building-filter">
-                        <SelectValue placeholder="All buildings" />
+                        <SelectValue placeholder={t('hostel.reports.allBuildings')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All buildings</SelectItem>
+                        <SelectItem value="all">{t('hostel.reports.allBuildings')}</SelectItem>
                         {buildingsForFilter.map((building) => (
                           <SelectItem key={building.id} value={building.id}>
                             {building.buildingName}
@@ -726,16 +726,16 @@ export function HostelReports() {
                     </Select>
                   </div>
                   <div className="w-full md:w-[200px]">
-                    <Label htmlFor="room-filter">Room</Label>
+                    <Label htmlFor="room-filter">{t('hostel.room')}</Label>
                     <Select value={selectedRoom} onValueChange={setSelectedRoom}>
                       <SelectTrigger id="room-filter">
-                        <SelectValue placeholder="All rooms" />
+                        <SelectValue placeholder={t('hostel.reports.allRooms')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All rooms</SelectItem>
+                        <SelectItem value="all">{t('hostel.reports.allRooms')}</SelectItem>
                         {roomsForFilter.map((room) => (
                           <SelectItem key={room.id} value={room.id}>
-                            Room {room.roomNumber}
+                            {t('hostel.reports.roomNumber').replace('{number}', room.roomNumber)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -750,11 +750,11 @@ export function HostelReports() {
                     <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Admission #</TableHead>
-                      <TableHead>Building</TableHead>
-                      <TableHead>Room</TableHead>
-                      <TableHead>Admission Year</TableHead>
+                      <TableHead>{t('hostel.reports.studentHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.admissionNumberHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.buildingHeaderAssigned')}</TableHead>
+                      <TableHead>{t('hostel.reports.roomHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.admissionYearHeader')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -762,18 +762,18 @@ export function HostelReports() {
                       <TableRow>
                         <TableCell colSpan={5} className="text-center text-muted-foreground">
                           {allAssignedBoarders.length === 0
-                            ? 'No boarders assigned to rooms yet.'
-                            : 'No boarders found matching your search criteria.'}
+                            ? t('hostel.reports.noBoardersAssignedYet')
+                            : t('hostel.reports.noBoardersFoundMatching')}
                         </TableCell>
                       </TableRow>
                     ) : (
                       paginatedAssignedBoarders.map((boarder) => (
                         <TableRow key={boarder.id}>
-                          <TableCell className="font-medium">{boarder.studentName || 'Student'}</TableCell>
+                          <TableCell className="font-medium">{boarder.studentName || t('hostel.reports.student')}</TableCell>
                           <TableCell>{boarder.admissionNumber || '—'}</TableCell>
                           <TableCell>{boarder.buildingName || '—'}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">Room {boarder.roomNumber}</Badge>
+                            <Badge variant="outline">{t('hostel.reports.roomNumber').replace('{number}', boarder.roomNumber)}</Badge>
                           </TableCell>
                           <TableCell>{boarder.admissionYear || '—'}</TableCell>
                         </TableRow>
@@ -787,7 +787,10 @@ export function HostelReports() {
               {filteredAssignedBoarders.length > 0 && assignedTotalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Showing {(assignedPage - 1) * assignedPageSize + 1} to {Math.min(assignedPage * assignedPageSize, filteredAssignedBoarders.length)} of {filteredAssignedBoarders.length} boarders
+                    {t('hostel.reports.showingBoarders')
+                      .replace('{start}', ((assignedPage - 1) * assignedPageSize + 1).toString())
+                      .replace('{end}', Math.min(assignedPage * assignedPageSize, filteredAssignedBoarders.length).toString())
+                      .replace('{total}', filteredAssignedBoarders.length.toString())}
                   </div>
                   <div className="flex items-center gap-2">
                     <Select value={assignedPageSize.toString()} onValueChange={(value) => setAssignedPageSize(Number(value))}>
@@ -795,10 +798,10 @@ export function HostelReports() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="10">10 per page</SelectItem>
-                        <SelectItem value="25">25 per page</SelectItem>
-                        <SelectItem value="50">50 per page</SelectItem>
-                        <SelectItem value="100">100 per page</SelectItem>
+                        <SelectItem value="10">{t('hostel.reports.perPage').replace('{count}', '10')}</SelectItem>
+                        <SelectItem value="25">{t('hostel.reports.perPage').replace('{count}', '25')}</SelectItem>
+                        <SelectItem value="50">{t('hostel.reports.perPage').replace('{count}', '50')}</SelectItem>
+                        <SelectItem value="100">{t('hostel.reports.perPage').replace('{count}', '100')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Pagination>
@@ -877,18 +880,18 @@ export function HostelReports() {
             </CardHeader>
             <CardContent className="space-y-4">
               <FilterPanel 
-                title={t('common.filters') || 'Search & Filter'}
+                title={t('events.filters') || 'Search & Filter'}
                 defaultOpenDesktop={true}
                 defaultOpenMobile={false}
               >
                 <div className="flex flex-col gap-4 md:flex-row md:items-end">
                   <div className="flex-1 min-w-0">
-                    <Label htmlFor="unassigned-search">Search</Label>
+                    <Label htmlFor="unassigned-search">{t('events.search')}</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="unassigned-search"
-                        placeholder="Search by name, admission number, or class..."
+                        placeholder={t('hostel.reports.searchUnassignedPlaceholder')}
                         value={unassignedSearchQuery}
                         onChange={(e) => setUnassignedSearchQuery(e.target.value)}
                         className="pl-10"
@@ -914,10 +917,10 @@ export function HostelReports() {
                     <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Admission #</TableHead>
-                      <TableHead>Class</TableHead>
-                      <TableHead>Residency Type</TableHead>
+                      <TableHead>{t('hostel.reports.studentHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.admissionNumberHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.classHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.residencyTypeHeader')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -925,18 +928,18 @@ export function HostelReports() {
                       <TableRow>
                         <TableCell colSpan={4} className="text-center text-muted-foreground">
                           {unassignedBoarders.length === 0
-                            ? 'All boarders have been placed in rooms.'
-                            : 'No boarders found matching your search criteria.'}
+                            ? t('hostel.reports.allBoardersPlaced')
+                            : t('hostel.reports.noBoardersFoundMatchingUnassigned')}
                         </TableCell>
                       </TableRow>
                     ) : (
                       paginatedUnassignedBoarders.map((admission) => (
                         <TableRow key={admission.id}>
-                          <TableCell className="font-medium">{admission.studentName || 'Student'}</TableCell>
+                          <TableCell className="font-medium">{admission.studentName || t('hostel.reports.student')}</TableCell>
                           <TableCell>{admission.admissionNumber || '—'}</TableCell>
                           <TableCell>{admission.className || '—'}</TableCell>
                           <TableCell>
-                            <Badge variant="secondary">{admission.residencyTypeName || 'Boarder'}</Badge>
+                            <Badge variant="secondary">{admission.residencyTypeName || t('hostel.boarders')}</Badge>
                           </TableCell>
                         </TableRow>
                       ))
@@ -949,7 +952,10 @@ export function HostelReports() {
               {filteredUnassignedBoarders.length > 0 && unassignedTotalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Showing {(unassignedPage - 1) * unassignedPageSize + 1} to {Math.min(unassignedPage * unassignedPageSize, filteredUnassignedBoarders.length)} of {filteredUnassignedBoarders.length} boarders
+                    {t('hostel.reports.showingBoarders')
+                      .replace('{start}', ((unassignedPage - 1) * unassignedPageSize + 1).toString())
+                      .replace('{end}', Math.min(unassignedPage * unassignedPageSize, filteredUnassignedBoarders.length).toString())
+                      .replace('{total}', filteredUnassignedBoarders.length.toString())}
                   </div>
                   <div className="flex items-center gap-2">
                     <Select value={unassignedPageSize.toString()} onValueChange={(value) => setUnassignedPageSize(Number(value))}>
@@ -957,10 +963,10 @@ export function HostelReports() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="10">10 per page</SelectItem>
-                        <SelectItem value="25">25 per page</SelectItem>
-                        <SelectItem value="50">50 per page</SelectItem>
-                        <SelectItem value="100">100 per page</SelectItem>
+                        <SelectItem value="10">{t('hostel.reports.perPage').replace('{count}', '10')}</SelectItem>
+                        <SelectItem value="25">{t('hostel.reports.perPage').replace('{count}', '25')}</SelectItem>
+                        <SelectItem value="50">{t('hostel.reports.perPage').replace('{count}', '50')}</SelectItem>
+                        <SelectItem value="100">{t('hostel.reports.perPage').replace('{count}', '100')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Pagination>

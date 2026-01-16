@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { EventTypeFormDialog } from './EventTypeFormDialog';
+import { useLanguage } from '@/hooks/useLanguage';
 
 import {
   AlertDialog,
@@ -36,6 +37,7 @@ interface EventTypesListProps {
 }
 
 export function EventTypesList({ schoolId, onDesignFields }: EventTypesListProps) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingEventType, setEditingEventType] = useState<EventType | null>(null);
@@ -50,11 +52,11 @@ export function EventTypesList({ schoolId, onDesignFields }: EventTypesListProps
     mutationFn: (id: string) => eventTypesApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event-types'] });
-      showToast.success('toast.eventTypeDeleted');
+      showToast.success(t('toast.eventTypeDeleted') || 'Event type deleted successfully');
       setDeletingEventType(null);
     },
     onError: (error: Error) => {
-      showToast.error(error.message || 'toast.eventTypeDeleteFailed');
+      showToast.error(error.message || t('toast.eventTypeDeleteFailed') || 'Failed to delete event type');
     },
   });
 
@@ -74,10 +76,10 @@ export function EventTypesList({ schoolId, onDesignFields }: EventTypesListProps
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>Event Types</CardTitle>
+          <CardTitle>{t('events.eventTypes.title') || 'Event Types'}</CardTitle>
           <Button onClick={() => setShowCreateDialog(true)} size="sm">
             <Plus className="h-4 w-4 mr-2" />
-            Add Event Type
+            {t('events.eventTypes.addEventType') || 'Add Event Type'}
           </Button>
         </CardHeader>
         <CardContent>
@@ -85,10 +87,10 @@ export function EventTypesList({ schoolId, onDesignFields }: EventTypesListProps
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('events.eventTypes.name') || 'Name'}</TableHead>
+                  <TableHead>{t('events.eventTypes.description') || 'Description'}</TableHead>
+                  <TableHead>{t('events.eventTypes.status') || 'Status'}</TableHead>
+                  <TableHead className="text-right">{t('events.eventTypes.actions') || 'Actions'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -100,7 +102,7 @@ export function EventTypesList({ schoolId, onDesignFields }: EventTypesListProps
                     </TableCell>
                     <TableCell>
                       <Badge variant={eventType.is_active ? 'default' : 'secondary'}>
-                        {eventType.is_active ? 'Active' : 'Inactive'}
+                        {eventType.is_active ? (t('events.eventTypes.active') || 'Active') : (t('events.eventTypes.inactive') || 'Inactive')}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -112,7 +114,7 @@ export function EventTypesList({ schoolId, onDesignFields }: EventTypesListProps
                             onClick={() => onDesignFields(eventType.id)}
                           >
                             <Settings2 className="h-4 w-4 mr-1" />
-                            Fields
+                            {t('events.eventTypes.fields') || 'Fields'}
                           </Button>
                         )}
                         <Button
@@ -137,8 +139,8 @@ export function EventTypesList({ schoolId, onDesignFields }: EventTypesListProps
             </Table>
           ) : (
             <div className="text-center py-10 text-muted-foreground">
-              <p>No event types found.</p>
-              <p className="text-sm mt-1">Create your first event type to get started.</p>
+              <p>{t('events.eventTypes.noEventTypesFound') || 'No event types found.'}</p>
+              <p className="text-sm mt-1">{t('events.eventTypes.createFirstEventType') || 'Create your first event type to get started.'}</p>
             </div>
           )}
         </CardContent>
@@ -168,19 +170,20 @@ export function EventTypesList({ schoolId, onDesignFields }: EventTypesListProps
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Event Type</AlertDialogTitle>
+            <AlertDialogTitle>{t('events.eventTypes.deleteEventType') || 'Delete Event Type'}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deletingEventType?.name}"? This action cannot be undone.
-              Any events using this type will lose their association.
+              {deletingEventType?.name
+                ? t('events.eventTypes.deleteConfirm', { name: deletingEventType.name }) || `Are you sure you want to delete "${deletingEventType.name}"? This action cannot be undone. Any events using this type will lose their association.`
+                : t('events.eventTypes.deleteConfirmDescription') || 'Are you sure you want to delete this event type? This action cannot be undone. Any events using this type will lose their association.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.eventTypes.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletingEventType && deleteMutation.mutate(deletingEventType.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+              {deleteMutation.isPending ? (t('events.eventTypes.deleting') || 'Deleting...') : (t('events.eventTypes.deleteButton') || 'Delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

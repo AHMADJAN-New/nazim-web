@@ -12,6 +12,9 @@ export interface Profile {
   default_school_id: string | null;
   event_id?: string | null;
   is_event_user?: boolean;
+  has_completed_onboarding?: boolean;
+  has_completed_tour?: boolean;
+  onboarding_completed_at?: string | null;
   created_at?: string;
   updated_at?: string;
   deleted_at?: string | null;

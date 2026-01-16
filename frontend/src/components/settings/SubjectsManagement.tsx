@@ -123,7 +123,7 @@ export function SubjectsManagement() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedClassId, setSelectedClassId] = useState<string | undefined>();
     const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | undefined>();
-    const [selectedClassAcademicYearId, setSelectedClassAcademicYearId] = useState<string | undefined>();
+    const [selectedClassAcademicYearId, setSelectedClassAcademicYearId] = useState<string>('');
     const [copyFromClassYearId, setCopyFromClassYearId] = useState<string | undefined>();
 
     // Data hooks - use user's organization
@@ -142,17 +142,25 @@ export function SubjectsManagement() {
         setPageSize,
     } = useSubjects(profile?.organization_id, true);
     
-    // Get class_id from selectedClassAcademicYearId for Step 2, or use selectedClassId for Step 1
+    // For Step 1, use selectedClassId directly. For Step 2, get classId from selectedClassAcademicYearId
     const classIdForTemplates = useMemo(() => {
-        if (selectedClassAcademicYearId && classAcademicYears) {
-            const selectedClassAcademicYear = classAcademicYears.find(cay => cay.id === selectedClassAcademicYearId);
-            return selectedClassAcademicYear?.classId || selectedClassId;
+        // In Step 1 (Class Subjects tab), use selectedClassId
+        if (activeTab === 'classSubjects' && selectedClassId) {
+            return selectedClassId;
         }
-        return selectedClassId;
-    }, [selectedClassAcademicYearId, classAcademicYears, selectedClassId]);
+        // In Step 2, get classId from selectedClassAcademicYearId
+        if (selectedClassAcademicYearId && selectedClassAcademicYearId !== '' && classAcademicYears) {
+            const selectedClassAcademicYear = classAcademicYears.find(cay => cay.id === selectedClassAcademicYearId);
+            return selectedClassAcademicYear?.classId;
+        }
+        return undefined;
+    }, [activeTab, selectedClassId, selectedClassAcademicYearId, classAcademicYears]);
     
     const { data: classSubjectTemplates, isLoading: classSubjectTemplatesLoading } = useClassSubjectTemplates(classIdForTemplates, profile?.organization_id);
-    const { data: classSubjects, isLoading: classSubjectsLoading } = useClassSubjects(selectedClassAcademicYearId, profile?.organization_id);
+    const { data: classSubjects, isLoading: classSubjectsLoading } = useClassSubjects(
+        selectedClassAcademicYearId || undefined, 
+        profile?.organization_id
+    );
     const { data: rooms } = useRooms(undefined, profile?.organization_id);
     const { data: teachers } = useUsers({
         organization_id: profile?.organization_id || undefined,
@@ -317,7 +325,7 @@ export function SubjectsManagement() {
         },
         {
             id: 'actions',
-            header: () => <div className="text-right">{t('common.actions')}</div>,
+            header: () => <div className="text-right">{t('events.actions')}</div>,
             cell: ({ row }) => (
                 <div className="flex items-center justify-end space-x-2">
                     {hasUpdatePermission && (
@@ -630,12 +638,12 @@ export function SubjectsManagement() {
                         </CardHeader>
                         <CardContent>
                             <FilterPanel
-                                title={t('common.filters') || 'Filters'}
+                                title={t('events.filters') || 'Filters'}
                                 defaultOpenDesktop={true}
                                 defaultOpenMobile={false}
                             >
                                 <div>
-                                    <Label>{t('common.search') || 'Search'}</Label>
+                                    <Label>{t('events.search') || 'Search'}</Label>
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                         <Input
@@ -722,15 +730,15 @@ export function SubjectsManagement() {
                 <TabsContent value="classSubjects" className="space-y-4">
                     {/* Step 1: Assign Subjects to Classes */}
                     <Card>
-                        <CardHeader>
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <CardTitle>Step 1: Assign Subjects to Classes</CardTitle>
-                                    <CardDescription className="hidden md:block">
-                                        First, assign subjects to classes. These subjects will appear in all academic years for the selected class.
+                        <CardHeader className="pb-4">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="flex-1">
+                                    <CardTitle className="text-xl mb-2">{t('academic.subjects.step1Title')}</CardTitle>
+                                    <CardDescription className="text-sm leading-relaxed">
+                                        {t('academic.subjects.step1Description')}
                                     </CardDescription>
                                 </div>
-                                <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:flex-shrink-0">
                                     {classSubjectTemplates && classSubjectTemplates.length > 0 && selectedClassId && (
                                         <ReportExportButtons
                                             data={classSubjectTemplates}
@@ -755,13 +763,13 @@ export function SubjectsManagement() {
                                     )}
                                     {hasAssignPermission && selectedClassId && (
                                         <>
-                                            <Button variant="outline" onClick={handleOpenBulkAssignToClassDialog} className="flex-shrink-0">
+                                            <Button variant="outline" onClick={handleOpenBulkAssignToClassDialog} className="flex-shrink-0 whitespace-nowrap h-9">
                                                 <Plus className="h-4 w-4 sm:mr-2" />
-                                                <span className="hidden sm:inline">Bulk Assign</span>
+                                                <span className="hidden sm:inline">{t('academic.subjects.bulkAssign')}</span>
                                             </Button>
-                                            <Button onClick={handleOpenAssignToClassDialog} className="flex-shrink-0">
+                                            <Button onClick={handleOpenAssignToClassDialog} className="flex-shrink-0 whitespace-nowrap h-9">
                                                 <Plus className="h-4 w-4 sm:mr-2" />
-                                                <span className="hidden sm:inline">Assign Subject</span>
+                                                <span className="hidden sm:inline">{t('academic.subjects.assignSubject')}</span>
                                             </Button>
                                         </>
                                     )}
@@ -769,78 +777,142 @@ export function SubjectsManagement() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="mb-4">
-                                <Label className="mb-2 block">{t('common.selectClass')}</Label>
-                                <Select
-                                    value={selectedClassId || undefined}
-                                    onValueChange={(value) => {
-                                        setSelectedClassId(value);
-                                    }}
-                                >
-                                    <SelectTrigger className="w-full sm:w-[300px]">
-                                        <SelectValue placeholder={t('common.selectClass')} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {classes?.map((cls) => (
-                                            <SelectItem key={cls.id} value={cls.id}>
-                                                {cls.name} ({cls.code})
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                            <div className="mb-6 space-y-3">
+                                <div>
+                                    <Label className="mb-2 block text-base font-semibold">{t('events.selectClass')}</Label>
+                                    <Select
+                                        value={selectedClassId || undefined}
+                                        onValueChange={(value) => {
+                                            setSelectedClassId(value);
+                                        }}
+                                    >
+                                        <SelectTrigger className="w-full sm:w-[300px] h-10">
+                                            <SelectValue placeholder={t('events.selectClass')} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {classes?.filter(c => c.isActive).map((cls) => (
+                                                <SelectItem key={cls.id} value={cls.id}>
+                                                    {cls.name} ({cls.code})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                    {t('academic.subjects.step1SelectClassMessage')}
+                                </p>
                             </div>
 
                             {!selectedClassId ? (
-                                <div className="text-center py-8 text-muted-foreground">
-                                    <p>Please select a class to view and manage its subjects</p>
+                                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                                    <GraduationCap className="mx-auto h-16 w-16 mb-4 opacity-30" />
+                                    <p className="text-base font-medium mb-2">{t('academic.subjects.step1SelectClassMessage')}</p>
+                                    <p className="text-sm">Select a class above to view and manage its subjects</p>
                                 </div>
                             ) : classSubjectTemplatesLoading ? (
-                                <div className="text-center py-8">{t('common.loading')}</div>
+                                <div className="text-center py-12">
+                                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-2"></div>
+                                    <p className="text-muted-foreground">{t('common.loading')}</p>
+                                </div>
                             ) : !classSubjectTemplates || classSubjectTemplates.length === 0 ? (
-                                <div className="text-center py-8 text-muted-foreground">
-                                    <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                                    <p className="text-lg font-medium">No subjects assigned to this class</p>
-                                    <p className="text-sm">Assign subjects to this class to get started</p>
+                                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                                    <BookOpen className="mx-auto h-16 w-16 mb-4 opacity-30" />
+                                    <p className="text-lg font-medium mb-2">{t('academic.subjects.noSubjectsAssigned')}</p>
+                                    <p className="text-sm mb-4">{t('academic.subjects.step1NoSubjectsMessage')}</p>
+                                    {hasAssignPermission && (
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Button variant="outline" onClick={handleOpenBulkAssignToClassDialog} size="sm">
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                {t('academic.subjects.bulkAssign')}
+                                            </Button>
+                                            <Button onClick={handleOpenAssignToClassDialog} size="sm">
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                {t('academic.subjects.assignSubject')}
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto -mx-4 md:mx-0">
-                                    <div className="inline-block min-w-full align-middle px-4 md:px-0">
-                                        <div className="rounded-md border">
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow>
-                                                        <TableHead>{t('academic.subjects.code')}</TableHead>
-                                                        <TableHead>{t('academic.subjects.name')}</TableHead>
-                                                        <TableHead className="text-right">{t('common.actions')}</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {classSubjectTemplates.map((template) => (
-                                                        <TableRow key={template.id}>
-                                                            <TableCell className="font-mono">{template.subject?.code}</TableCell>
-                                                            <TableCell className="font-medium">{template.subject?.name}</TableCell>
-                                                            <TableCell className="text-right">
-                                                                <div className="flex items-center justify-end space-x-2">
-                                                                    {hasDeletePermission && (
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="sm"
-                                                                            onClick={() => {
-                                                                                setSelectedClassSubject(template.id);
-                                                                                setIsRemoveDialogOpen(true);
-                                                                            }}
-                                                                        >
-                                                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                                                        </Button>
-                                                                    )}
-                                                                </div>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                    </div>
+                                <div className="space-y-4">
+                                    {(() => {
+                                        // Filter templates for the selected class
+                                        const filteredTemplates = classSubjectTemplates?.filter(
+                                            template => template.classId === selectedClassId
+                                        ) || [];
+                                        
+                                        if (filteredTemplates.length === 0) {
+                                            return (
+                                                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                                                    <BookOpen className="mx-auto h-16 w-16 mb-4 opacity-30" />
+                                                    <p className="text-lg font-medium mb-2">{t('academic.subjects.noSubjectsAssigned')}</p>
+                                                    <p className="text-sm mb-4">{t('academic.subjects.step1NoSubjectsMessage')}</p>
+                                                    {hasAssignPermission && (
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <Button variant="outline" onClick={handleOpenBulkAssignToClassDialog} size="sm">
+                                                                <Plus className="h-4 w-4 mr-2" />
+                                                                {t('academic.subjects.bulkAssign')}
+                                                            </Button>
+                                                            <Button onClick={handleOpenAssignToClassDialog} size="sm">
+                                                                <Plus className="h-4 w-4 mr-2" />
+                                                                {t('academic.subjects.assignSubject')}
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+                                        
+                                        return (
+                                            <>
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <p className="text-sm font-medium text-muted-foreground">
+                                                            {t('academic.subjects.subjectsAssignedCount').replace('{count}', filteredTemplates.length.toString())}
+                                                        </p>
+                                                    </div>
+                                                    <div className="rounded-lg border bg-card">
+                                                        <div className="overflow-x-auto">
+                                                            <Table>
+                                                                <TableHeader>
+                                                                    <TableRow className="hover:bg-transparent">
+                                                                        <TableHead className="font-semibold">{t('academic.subjects.code')}</TableHead>
+                                                                        <TableHead className="font-semibold">{t('academic.subjects.name')}</TableHead>
+                                                                        <TableHead className="text-right w-[100px] font-semibold">{t('events.actions')}</TableHead>
+                                                                    </TableRow>
+                                                                </TableHeader>
+                                                                <TableBody>
+                                                                    {filteredTemplates.map((template, index) => (
+                                                                        <TableRow key={template.id} className={index % 2 === 0 ? 'bg-muted/30' : ''}>
+                                                                            <TableCell className="font-mono text-sm">{template.subject?.code || '-'}</TableCell>
+                                                                            <TableCell className="font-medium">{template.subject?.name || '-'}</TableCell>
+                                                                            <TableCell>
+                                                                                <div className="flex items-center justify-end gap-2">
+                                                                                    {hasDeletePermission && (
+                                                                                        <Button
+                                                                                            variant="ghost"
+                                                                                            size="sm"
+                                                                                            onClick={() => {
+                                                                                                setSelectedClassSubject(template.id);
+                                                                                                setIsRemoveDialogOpen(true);
+                                                                                            }}
+                                                                                            className="h-8 w-8 p-0 hover:bg-destructive/10"
+                                                                                            title={t('events.delete')}
+                                                                                        >
+                                                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                                                        </Button>
+                                                                                    )}
+                                                                                </div>
+                                                                            </TableCell>
+                                                                        </TableRow>
+                                                                    ))}
+                                                                </TableBody>
+                                                            </Table>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             )}
                         </CardContent>
@@ -848,16 +920,16 @@ export function SubjectsManagement() {
 
                     {/* Step 2: Customize Subjects per Academic Year */}
                     <Card>
-                        <CardHeader>
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <CardTitle>Step 2: Customize Subjects per Academic Year</CardTitle>
-                                    <CardDescription className="hidden md:block">
-                                        Customize teacher, room, and hours for subjects in specific academic years.
+                        <CardHeader className="pb-4">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="flex-1">
+                                    <CardTitle className="text-xl mb-2">{t('academic.subjects.step2Title')}</CardTitle>
+                                    <CardDescription className="text-sm leading-relaxed">
+                                        {t('academic.subjects.step2Description')}
                                     </CardDescription>
                                 </div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    {classSubjects && classSubjects.length > 0 && selectedClassAcademicYearId && (
+                                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:flex-shrink-0">
+                                    {classSubjects && classSubjects.length > 0 && selectedClassAcademicYearId && selectedClassAcademicYearId !== '' && (
                                         <ReportExportButtons
                                             data={classSubjects}
                                             columns={[
@@ -890,13 +962,13 @@ export function SubjectsManagement() {
                                             disabled={!classSubjects || classSubjects.length === 0}
                                         />
                                     )}
-                                    {hasAssignPermission && selectedClassAcademicYearId && (
+                                    {hasAssignPermission && selectedClassAcademicYearId && selectedClassAcademicYearId !== '' && (
                                         <>
-                                            <Button variant="outline" onClick={handleOpenBulkAssignDialog} disabled={!subjects || subjects.length === 0} className="flex-shrink-0">
+                                            <Button variant="outline" onClick={handleOpenBulkAssignDialog} disabled={!subjects || subjects.length === 0} className="flex-shrink-0 whitespace-nowrap h-9">
                                                 <Plus className="h-4 w-4 sm:mr-2" />
                                                 <span className="hidden sm:inline">{t('academic.subjects.bulkAssignSubjects')}</span>
                                             </Button>
-                                            <Button onClick={handleOpenAssignDialog} disabled={!subjects || subjects.length === 0} className="flex-shrink-0">
+                                            <Button onClick={handleOpenAssignDialog} disabled={!subjects || subjects.length === 0} className="flex-shrink-0 whitespace-nowrap h-9">
                                                 <Plus className="h-4 w-4 sm:mr-2" />
                                                 <span className="hidden sm:inline">{t('academic.subjects.assignToClass')}</span>
                                             </Button>
@@ -906,41 +978,37 @@ export function SubjectsManagement() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <FilterPanel
-                                title={t('common.filters') || 'Filters'}
-                                defaultOpenDesktop={true}
-                                defaultOpenMobile={false}
-                            >
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <Label className="mb-2 block">{t('academic.subjects.selectAcademicYear')}</Label>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-base font-semibold">{t('academic.subjects.selectAcademicYear')}</Label>
                                         <Select
                                             value={selectedAcademicYearId || undefined}
                                             onValueChange={(value) => {
                                                 setSelectedAcademicYearId(value);
-                                                setSelectedClassAcademicYearId(undefined);
+                                                setSelectedClassAcademicYearId('');
                                             }}
                                         >
-                                            <SelectTrigger className="w-full">
+                                            <SelectTrigger className="w-full h-10">
                                                 <SelectValue placeholder={t('academic.subjects.selectAcademicYear')} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {academicYears?.map((year) => (
                                                     <SelectItem key={year.id} value={year.id}>
-                                                        {year.name}
+                                                        {year.name} {year.isCurrent && `(${t('academic.academicYears.current')})`}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
                                     {selectedAcademicYearId && (
-                                        <div>
-                                            <Label className="mb-2 block">{t('academic.subjects.selectClass')}</Label>
+                                        <div className="space-y-2">
+                                            <Label className="text-base font-semibold">{t('academic.subjects.selectClass')}</Label>
                                             <Select
-                                                value={selectedClassAcademicYearId || undefined}
-                                                onValueChange={setSelectedClassAcademicYearId}
+                                                value={selectedClassAcademicYearId || ''}
+                                                onValueChange={(value) => setSelectedClassAcademicYearId(value || '')}
                                             >
-                                                <SelectTrigger className="w-full">
+                                                <SelectTrigger className="w-full h-10">
                                                     <SelectValue placeholder={t('academic.subjects.selectClass')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -952,76 +1020,90 @@ export function SubjectsManagement() {
                                                         ))
                                                     ) : (
                                                         <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                                            No classes available for this year
+                                                            {t('academic.subjects.noClassesForYear')}
                                                         </div>
                                                     )}
                                                 </SelectContent>
                                             </Select>
                                         </div>
                                     )}
-                                    {selectedClassAcademicYearId && hasCopyPermission && (
-                                        <div className="flex items-end">
-                                            <Button variant="outline" onClick={handleOpenCopyDialog} className="w-full">
-                                                <Copy className="h-4 w-4 sm:mr-2" />
-                                                <span className="hidden sm:inline">{t('academic.subjects.copyBetweenYears')}</span>
+                                </div>
+                                {selectedClassAcademicYearId && selectedClassAcademicYearId !== '' && hasCopyPermission && (
+                                    <div>
+                                        <Button variant="outline" onClick={handleOpenCopyDialog} className="w-full sm:w-auto h-9">
+                                            <Copy className="h-4 w-4 sm:mr-2" />
+                                            <span>{t('academic.subjects.copyBetweenYears')}</span>
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {!selectedClassAcademicYearId || selectedClassAcademicYearId === '' ? (
+                                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                                    <BookOpen className="mx-auto h-16 w-16 mb-4 opacity-30" />
+                                    <p className="text-base font-medium mb-2">{t('academic.subjects.step2SelectMessage')}</p>
+                                    <p className="text-sm">{t('academic.subjects.step2SelectDescription')}</p>
+                                </div>
+                            ) : classSubjectsLoading ? (
+                                <div className="text-center py-12">
+                                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-2"></div>
+                                    <p className="text-muted-foreground">{t('common.loading')}</p>
+                                </div>
+                            ) : !classSubjects || classSubjects.length === 0 ? (
+                                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                                    <BookOpen className="mx-auto h-16 w-16 mb-4 opacity-30" />
+                                    <p className="text-lg font-medium mb-2">{t('academic.subjects.noSubjectsAssigned')}</p>
+                                    <p className="text-sm mb-4">Subjects assigned to the class in Step 1 will appear here. You can customize teacher, room, and hours per academic year.</p>
+                                    {hasAssignPermission && (
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Button variant="outline" onClick={handleOpenBulkAssignDialog} size="sm" disabled={!subjects || subjects.length === 0}>
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                {t('academic.subjects.bulkAssignSubjects')}
+                                            </Button>
+                                            <Button onClick={handleOpenAssignDialog} size="sm" disabled={!subjects || subjects.length === 0}>
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                {t('academic.subjects.assignSubject')}
                                             </Button>
                                         </div>
                                     )}
                                 </div>
-                            </FilterPanel>
-
-                            {!selectedClassAcademicYearId ? (
-                                <div className="text-center py-8 text-muted-foreground">
-                                    <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-30" />
-                                    <p className="text-base font-medium mb-2">Select Academic Year and Class</p>
-                                    <p className="text-sm">Choose an academic year and class instance above to view and manage year-specific subject assignments.</p>
-                                </div>
-                            ) : classSubjectsLoading ? (
-                                <div className="text-center py-8">
-                                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                                    <p className="mt-2 text-muted-foreground">{t('common.loading')}</p>
-                                </div>
-                            ) : !classSubjects || classSubjects.length === 0 ? (
-                                <div className="text-center py-8 text-muted-foreground">
-                                    <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-30" />
-                                    <p className="text-lg font-medium mb-2">{t('academic.subjects.noSubjectsAssigned')}</p>
-                                    <p className="text-sm mb-4">Subjects assigned to the class will appear here. You can customize teacher, room, and hours per academic year.</p>
-                                    {hasAssignPermission && (
-                                        <Button onClick={handleOpenAssignDialog} variant="outline">
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            Assign Subject
-                                        </Button>
-                                    )}
-                                </div>
                             ) : (
-                                <div className="overflow-x-auto -mx-4 md:mx-0">
-                                    <div className="inline-block min-w-full align-middle px-4 md:px-0">
-                                        <div className="rounded-md border">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-sm font-medium text-muted-foreground">
+                                            {t('academic.subjects.subjectsAssignedCountStep2').replace('{count}', classSubjects.length.toString())}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-lg border bg-card">
+                                        <div className="overflow-x-auto">
                                             <Table>
                                                 <TableHeader>
-                                                    <TableRow>
-                                                        <TableHead>{t('academic.subjects.code')}</TableHead>
-                                                        <TableHead>{t('academic.subjects.name')}</TableHead>
-                                                        <TableHead>{t('academic.subjects.teacher')}</TableHead>
-                                                        <TableHead>{t('academic.subjects.room')}</TableHead>
-                                                        <TableHead>{t('academic.subjects.weeklyHours')}</TableHead>
-                                                        <TableHead className="text-right">{t('common.actions')}</TableHead>
+                                                    <TableRow className="hover:bg-transparent">
+                                                        <TableHead className="font-semibold">{t('academic.subjects.code')}</TableHead>
+                                                        <TableHead className="font-semibold">{t('academic.subjects.name')}</TableHead>
+                                                        <TableHead className="font-semibold">{t('academic.subjects.teacher')}</TableHead>
+                                                        <TableHead className="font-semibold">{t('academic.subjects.room')}</TableHead>
+                                                        <TableHead className="font-semibold">{t('academic.subjects.weeklyHours')}</TableHead>
+                                                        <TableHead className="text-right w-[100px] font-semibold">{t('events.actions')}</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
-                                                    {classSubjects.map((cs) => (
-                                                        <TableRow key={cs.id}>
-                                                            <TableCell className="font-mono">{cs.subject?.code}</TableCell>
-                                                            <TableCell className="font-medium">{cs.subject?.name}</TableCell>
+                                                    {classSubjects.map((cs, index) => (
+                                                        <TableRow key={cs.id} className={index % 2 === 0 ? 'bg-muted/30' : ''}>
+                                                            <TableCell className="font-mono text-sm">{cs.subject?.code || '-'}</TableCell>
+                                                            <TableCell className="font-medium">{cs.subject?.name || '-'}</TableCell>
                                                             <TableCell>{cs.teacher?.fullName || '-'}</TableCell>
                                                             <TableCell>{cs.room?.roomNumber || '-'}</TableCell>
-                                                            <TableCell className="text-right">
-                                                                <div className="flex items-center justify-end space-x-2">
+                                                            <TableCell>{cs.hoursPerWeek || '-'}</TableCell>
+                                                            <TableCell>
+                                                                <div className="flex items-center justify-end gap-2">
                                                                     {hasUpdatePermission && (
                                                                         <Button
                                                                             variant="ghost"
                                                                             size="sm"
                                                                             onClick={() => handleEditClassSubject(cs)}
+                                                                            className="h-8 w-8 p-0 hover:bg-primary/10"
+                                                                            title={t('academic.subjects.editSubject')}
                                                                         >
                                                                             <Pencil className="h-4 w-4" />
                                                                         </Button>
@@ -1031,6 +1113,8 @@ export function SubjectsManagement() {
                                                                             variant="ghost"
                                                                             size="sm"
                                                                             onClick={() => handleRemoveClick(cs.id)}
+                                                                            className="h-8 w-8 p-0 hover:bg-destructive/10"
+                                                                            title={t('events.delete')}
                                                                         >
                                                                             <Trash2 className="h-4 w-4 text-destructive" />
                                                                         </Button>
@@ -1058,7 +1142,7 @@ export function SubjectsManagement() {
                             {selectedSubject ? t('academic.subjects.editSubject') : t('academic.subjects.addSubject')}
                         </DialogTitle>
                         <DialogDescription>
-                            {selectedSubject ? 'Update subject information' : 'Create a new subject'}
+                            {selectedSubject ? t('academic.subjects.updateSubjectDialogDescription') : t('academic.subjects.createSubjectDialogDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmitSubject(onSubmitSubject)} className="space-y-4">
@@ -1068,7 +1152,7 @@ export function SubjectsManagement() {
                                 <Input
                                     id="name"
                                     {...registerSubject('name')}
-                                    placeholder={t('common.example') + ' Mathematics'}
+                                    placeholder={t('events.example') + ' Mathematics'}
                                 />
                                 {subjectErrors.name && (
                                     <p className="text-sm text-destructive">{subjectErrors.name.message}</p>
@@ -1113,10 +1197,10 @@ export function SubjectsManagement() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseSubjectDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit" disabled={createSubject.isPending || updateSubject.isPending}>
-                                {t('common.save')}
+                                {t('events.save')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -1174,40 +1258,40 @@ export function SubjectsManagement() {
                                     return (
                                         <Select value={field.value || undefined} onValueChange={field.onChange} disabled={subjectsLoading || !subjects || subjects.length === 0 || !classIdForStep2}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder={
+                                                <SelectValue                                                 placeholder={
                                                     !classIdForStep2
-                                                        ? "Select a class first"
+                                                        ? t('academic.subjects.selectClassFirst')
                                                         : subjectsLoading 
-                                                        ? "Loading subjects..." 
+                                                        ? t('academic.subjects.loadingSubjects')
                                                         : !subjects || subjects.length === 0
-                                                        ? "No subjects available"
+                                                        ? t('academic.subjects.noSubjectsAvailable')
                                                         : classTemplateSubjectIds.length === 0
-                                                        ? "No subjects assigned to this class in Step 1"
+                                                        ? t('academic.subjects.noSubjectsInStep1')
                                                         : availableSubjects.length === 0 
-                                                        ? "All subjects assigned" 
+                                                        ? t('academic.subjects.allSubjectsAssigned')
                                                         : t('academic.subjects.selectSubject')
                                                 } />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {!classIdForStep2 ? (
                                                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                                        Please select a class first
+                                                        {t('academic.subjects.selectClassFirstMessage')}
                                                     </div>
                                                 ) : subjectsLoading ? (
                                                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                                        Loading subjects...
+                                                        {t('academic.subjects.loadingSubjects')}
                                                     </div>
                                                 ) : !subjects || subjects.length === 0 ? (
                                                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                                        No subjects available. Please create subjects first.
+                                                        {t('academic.subjects.noSubjectsAvailable')}
                                                     </div>
                                                 ) : classTemplateSubjectIds.length === 0 ? (
                                                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                                        No subjects assigned to this class in Step 1. Please assign subjects to the class first.
+                                                        {t('academic.subjects.noSubjectsInStep1Message')}
                                                     </div>
                                                 ) : availableSubjects.length === 0 ? (
                                                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                                        All subjects are already assigned to this class instance
+                                                        {t('academic.subjects.allSubjectsAssigned')}
                                                     </div>
                                                 ) : (
                                                     availableSubjects.map((subject) => (
@@ -1225,7 +1309,7 @@ export function SubjectsManagement() {
                                 <p className="text-sm text-destructive">{assignErrors.subject_id.message}</p>
                             )}
                             {subjectsLoading && (
-                                <p className="text-xs text-muted-foreground">Loading subjects...</p>
+                                <p className="text-xs text-muted-foreground">{t('academic.subjects.loadingSubjects')}</p>
                             )}
                         </div>
                         <div className="space-y-2">
@@ -1236,10 +1320,10 @@ export function SubjectsManagement() {
                                 render={({ field }) => (
                                     <Select value={field.value || undefined} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Leave empty to use class room" />
+                                            <SelectValue placeholder={t('academic.subjects.leaveEmptyForClassRoom')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">Use Class Room</SelectItem>
+                                            <SelectItem value="none">{t('academic.subjects.useClassRoom')}</SelectItem>
                                             {rooms?.map((room) => (
                                                 <SelectItem key={room.id} value={room.id}>
                                                     {room.roomNumber}
@@ -1249,24 +1333,24 @@ export function SubjectsManagement() {
                                     </Select>
                                 )}
                             />
-                            <p className="text-xs text-muted-foreground">If not specified, the class's room will be used automatically</p>
+                            <p className="text-xs text-muted-foreground">{t('academic.subjects.leaveEmptyForClassRoom')}</p>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="notes">{t('academic.subjects.notes')}</Label>
                             <Textarea
                                 id="notes"
                                 {...registerAssign('notes')}
-                                placeholder="Optional notes"
+                                placeholder={t('academic.subjects.optionalNotes')}
                                 rows={3}
                             />
                         </div>
                         <input type="hidden" {...registerAssign('class_academic_year_id')} value={selectedClassAcademicYearId || ''} />
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseAssignDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit" disabled={assignSubject.isPending}>
-                                {t('common.save')}
+                                {t('events.save')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -1287,7 +1371,7 @@ export function SubjectsManagement() {
                             <Label>{t('academic.subjects.selectSubjects')} *</Label>
                             {subjectsLoading ? (
                                 <div className="border rounded-md p-4 text-center text-muted-foreground">
-                                    Loading subjects...
+                                    {t('academic.subjects.loadingSubjects')}
                                 </div>
                             ) : (
                                 <>
@@ -1318,7 +1402,7 @@ export function SubjectsManagement() {
                                             if (!classIdForStep2) {
                                                 return (
                                                     <div className="text-center py-4 text-muted-foreground">
-                                                        Please select a class first
+                                                        {t('academic.subjects.selectClassFirstMessage')}
                                                     </div>
                                                 );
                                             }
@@ -1326,7 +1410,7 @@ export function SubjectsManagement() {
                                             if (classTemplateSubjectIds.length === 0) {
                                                 return (
                                                     <div className="text-center py-4 text-muted-foreground">
-                                                        No subjects assigned to this class in Step 1. Please assign subjects to the class first.
+                                                        {t('academic.subjects.noSubjectsInStep1Message')}
                                                     </div>
                                                 );
                                             }
@@ -1335,8 +1419,8 @@ export function SubjectsManagement() {
                                                 return (
                                                     <div className="text-center py-4 text-muted-foreground">
                                                         {subjects && subjects.length > 0 
-                                                            ? 'All subjects are already assigned to this class instance'
-                                                            : 'No active subjects available'}
+                                                            ? t('academic.subjects.allSubjectsAssigned')
+                                                            : t('academic.subjects.noSubjectsAvailable')}
                                                     </div>
                                                 );
                                             }
@@ -1384,10 +1468,10 @@ export function SubjectsManagement() {
                                 render={({ field }) => (
                                     <Select value={field.value || undefined} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Leave empty to use class room" />
+                                            <SelectValue placeholder={t('academic.subjects.leaveEmptyForClassRoom')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">Use Class Room</SelectItem>
+                                            <SelectItem value="none">{t('academic.subjects.useClassRoom')}</SelectItem>
                                             {rooms?.map((room) => (
                                                 <SelectItem key={room.id} value={room.id}>
                                                     {room.roomNumber}
@@ -1397,12 +1481,12 @@ export function SubjectsManagement() {
                                     </Select>
                                 )}
                             />
-                            <p className="text-xs text-muted-foreground">If not specified, the class's room will be used automatically</p>
+                            <p className="text-xs text-muted-foreground">{t('academic.subjects.leaveEmptyForClassRoom')}</p>
                         </div>
                         <input type="hidden" {...registerBulk('class_academic_year_id')} value={selectedClassAcademicYearId || ''} />
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseBulkAssignDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit" disabled={bulkAssignSubjects.isPending}>
                                 {t('academic.subjects.assignSubjects')}
@@ -1416,9 +1500,9 @@ export function SubjectsManagement() {
             <Dialog open={isAssignToClassDialogOpen} onOpenChange={setIsAssignToClassDialogOpen}>
                 <DialogContent className="w-[95vw] sm:max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>Assign Subject to Class</DialogTitle>
+                        <DialogTitle>{t('academic.subjects.assignSubject')}</DialogTitle>
                         <DialogDescription>
-                            Assign a subject to the selected class. This will make the subject available in all academic years for this class.
+                            {t('academic.subjects.assignToClassTemplateDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmitAssignToClass(onSubmitAssignToClass)} className="space-y-4">
@@ -1430,7 +1514,7 @@ export function SubjectsManagement() {
                                 render={({ field }) => (
                                     <Select value={field.value || undefined} onValueChange={field.onChange}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder={t('common.selectClass')} />
+                                            <SelectValue placeholder={t('events.selectClass')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {classes?.map((cls) => (
@@ -1472,10 +1556,10 @@ export function SubjectsManagement() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseAssignToClassDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit" disabled={assignSubjectToClass.isPending}>
-                                {t('common.save')}
+                                {t('events.save')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -1488,19 +1572,19 @@ export function SubjectsManagement() {
                     <DialogHeader>
                         <DialogTitle>{t('academic.subjects.bulkAssignSubjects')}</DialogTitle>
                         <DialogDescription>
-                            Assign multiple subjects to the selected class at once. These subjects will be available in all academic years for this class.
+                            {t('academic.subjects.bulkAssignToClassTemplateDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmitBulkToClass(onSubmitBulkAssignToClass)} className="space-y-4">
                         <div className="space-y-2">
-                            <Label>Class *</Label>
+                            <Label>{t('search.class')} *</Label>
                             <Controller
                                 name="class_id"
                                 control={controlBulkToClass}
                                 render={({ field }) => (
                                     <Select value={field.value || undefined} onValueChange={field.onChange}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder={t('common.selectClass')} />
+                                            <SelectValue placeholder={t('academic.subjects.selectClass')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {classes?.map((cls) => (
@@ -1518,44 +1602,82 @@ export function SubjectsManagement() {
                         </div>
                         <div className="space-y-2">
                             <Label>{t('academic.subjects.selectSubjects')} *</Label>
-                            <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
-                                {subjects?.filter(s => s.isActive).map((subject) => {
-                                    const selectedSubjects = watchBulkToClass('subject_ids') || [];
-                                    const isSelected = selectedSubjects.includes(subject.id);
-                                    return (
-                                        <div key={subject.id} className="flex items-center space-x-2 py-2">
-                                            <Checkbox
-                                                id={`subject-template-${subject.id}`}
-                                                checked={isSelected}
-                                                onCheckedChange={(checked) => {
-                                                    const current = selectedSubjects;
-                                                    if (checked) {
-                                                        setValueBulkToClass('subject_ids', [...current, subject.id]);
-                                                    } else {
-                                                        setValueBulkToClass('subject_ids', current.filter(id => id !== subject.id));
-                                                    }
-                                                }}
-                                            />
-                                            <Label
-                                                htmlFor={`subject-template-${subject.id}`}
-                                                className="cursor-pointer flex-1"
-                                            >
-                                                {subject.code} - {subject.name}
-                                            </Label>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            {bulkToClassErrors.subject_ids && (
-                                <p className="text-sm text-destructive">{bulkToClassErrors.subject_ids.message}</p>
+                            {subjectsLoading ? (
+                                <div className="border rounded-md p-8 text-center text-muted-foreground">
+                                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary mb-2"></div>
+                                    <p className="text-sm">{t('academic.subjects.loadingSubjects')}</p>
+                                </div>
+                            ) : !subjects || subjects.length === 0 ? (
+                                <div className="border rounded-md p-8 text-center text-muted-foreground">
+                                    <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-30" />
+                                    <p className="text-sm">{t('academic.subjects.noSubjectsAvailable')}</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
+                                        {subjects?.filter(s => s.isActive).length === 0 ? (
+                                            <div className="text-center py-4 text-muted-foreground text-sm">
+                                                {t('academic.subjects.noActiveSubjects')}
+                                            </div>
+                                        ) : (
+                                            subjects?.filter(s => s.isActive).map((subject) => {
+                                                const selectedSubjects = watchBulkToClass('subject_ids') || [];
+                                                const isSelected = selectedSubjects.includes(subject.id);
+                                                return (
+                                                    <div key={subject.id} className="flex items-center space-x-2 py-2 hover:bg-muted/50 rounded px-2">
+                                                        <Checkbox
+                                                            id={`subject-template-${subject.id}`}
+                                                            checked={isSelected}
+                                                            onCheckedChange={(checked) => {
+                                                                const current = selectedSubjects;
+                                                                if (checked) {
+                                                                    setValueBulkToClass('subject_ids', [...current, subject.id]);
+                                                                } else {
+                                                                    setValueBulkToClass('subject_ids', current.filter(id => id !== subject.id));
+                                                                }
+                                                            }}
+                                                        />
+                                                        <Label
+                                                            htmlFor={`subject-template-${subject.id}`}
+                                                            className="cursor-pointer flex-1 font-normal"
+                                                        >
+                                                            <span className="font-mono text-sm">{subject.code}</span> - {subject.name}
+                                                        </Label>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                    {watchBulkToClass('subject_ids') && watchBulkToClass('subject_ids').length > 0 && (
+                                        <p className="text-xs text-muted-foreground">
+                                            {watchBulkToClass('subject_ids').length} {watchBulkToClass('subject_ids').length === 1 ? 'subject' : 'subjects'} selected
+                                        </p>
+                                    )}
+                                    {bulkToClassErrors.subject_ids && (
+                                        <p className="text-sm text-destructive">{bulkToClassErrors.subject_ids.message}</p>
+                                    )}
+                                </>
                             )}
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseBulkAssignToClassDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
-                            <Button type="submit" disabled={bulkAssignSubjectsToClass.isPending}>
-                                {t('academic.subjects.assignSubjects')}
+                            <Button 
+                                type="submit" 
+                                disabled={bulkAssignSubjectsToClass.isPending || !watchBulkToClass('subject_ids') || watchBulkToClass('subject_ids').length === 0}
+                            >
+                                {bulkAssignSubjectsToClass.isPending ? (
+                                    <>
+                                        <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                        {t('common.loading')}
+                                    </>
+                                ) : (
+                                    <>
+                                        {t('academic.subjects.assignSubjects')} 
+                                        {watchBulkToClass('subject_ids') && watchBulkToClass('subject_ids').length > 0 && ` (${watchBulkToClass('subject_ids').length})`}
+                                    </>
+                                )}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -1568,7 +1690,7 @@ export function SubjectsManagement() {
                     <DialogHeader>
                         <DialogTitle>{t('academic.subjects.copyBetweenYears')}</DialogTitle>
                         <DialogDescription>
-                            Copy subject assignments from one class to another
+                            {t('academic.subjects.copySubjectsDialogDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmitCopy(onSubmitCopy)} className="space-y-4">
@@ -1638,7 +1760,7 @@ export function SubjectsManagement() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseCopyDialog}>
-                                {t('common.cancel')}
+                                {t('events.cancel')}
                             </Button>
                             <Button type="submit" disabled={copySubjects.isPending}>
                                 {t('academic.subjects.copyBetweenYears')}
@@ -1652,18 +1774,18 @@ export function SubjectsManagement() {
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('events.delete')}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('academic.subjects.deleteConfirm')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDeleteConfirm}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            {t('common.delete')}
+                            {t('events.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -1673,18 +1795,18 @@ export function SubjectsManagement() {
             <AlertDialog open={isRemoveDialogOpen} onOpenChange={setIsRemoveDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('events.delete')}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('academic.subjects.removeConfirm')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleRemoveConfirm}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            {t('common.delete')}
+                            {t('events.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

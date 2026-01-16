@@ -28,7 +28,7 @@ export function TeacherTimetableTable({
 	const dayHeaders = allYear ? (['all_year'] as DayName[]) : days;
 	return (
 		<div className="overflow-auto">
-			<table className="min-w-full border">
+			<table className="min-w-full border text-center">
 				<thead>
 					<tr className="bg-primary text-primary-foreground">
 						<th className="p-2 border">{t('timetable.teacher') || 'Teacher'}</th>

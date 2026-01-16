@@ -22,7 +22,8 @@ import {
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, ChartSkeleton } from '@/components/charts/LazyChart';
+import { Suspense } from 'react';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
@@ -196,7 +197,7 @@ export default function LibraryDashboard() {
                 icon={<BookOpen className="h-5 w-5" />}
                 secondaryActions={[
                     {
-                        label: t('library.viewReports') || 'View Reports',
+                        label: t('dashboard.viewReports') || 'View Reports',
                         onClick: () => navigate('/library/reports'),
                         icon: <BarChart3 className="h-4 w-4" />,
                         variant: "outline",
@@ -206,7 +207,7 @@ export default function LibraryDashboard() {
                     <Button
                         variant="outline"
                         size="icon"
-                        aria-label={t('common.download') || 'Download'}
+                        aria-label={t('events.download') || 'Download'}
                     >
                         <Download className="h-4 w-4" />
                     </Button>
@@ -493,7 +494,7 @@ export default function LibraryDashboard() {
                                 size="sm"
                                 onClick={() => navigate('/library/reports')}
                             >
-                                {t('library.viewReport') || 'View Report'}
+                                {t('examReports.viewReport') || 'View Report'}
                             </Button>
                         </CardHeader>
                         <CardContent>

@@ -40,8 +40,11 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useLanguage } from '@/hooks/useLanguage';
+import { formatStaffName } from '@/lib/utils/formatStaffName';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
+import { cn } from '@/lib/utils';
 import { StaffProfile } from '@/components/staff/StaffProfile';
+import { StaffPictureUpload } from '@/components/staff/StaffPictureUpload';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -52,8 +55,9 @@ import { useOrganizations } from '@/hooks/useOrganizations';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
-import { useStaff, useDeleteStaff, useStaffStats, useCreateStaff, useUpdateStaff, useStaffTypes } from '@/hooks/useStaff';
+import { useStaff, useDeleteStaff, useStaffStats, useCreateStaff, useUpdateStaff, useStaffTypes, useUploadStaffPicture } from '@/hooks/useStaff';
 import type { Staff } from '@/types/domain/staff';
+import { PictureCell } from '@/components/shared/PictureCell';
 
 const staffSchema = z.object({
     employee_id: z.string().min(1, 'Employee ID is required').max(50, 'Employee ID must be 50 characters or less'),
@@ -66,7 +70,18 @@ const staffSchema = z.object({
     grandfather_name: z.string().max(100, 'Grandfather name must be 100 characters or less').optional().nullable(),
     tazkira_number: z.string().max(50, 'Tazkira number must be 50 characters or less').optional().nullable(),
     birth_year: z.string().max(10, 'Birth year must be 10 characters or less').optional().nullable(),
-    birth_date: z.string().optional().nullable(),
+    birth_date: z
+        .union([z.date(), z.string()])
+        .nullable()
+        .optional()
+        .transform((val) => {
+            if (!val) return null;
+            if (val instanceof Date) {
+                // Convert Date to ISO string format (YYYY-MM-DD)
+                return val.toISOString().split('T')[0];
+            }
+            return val;
+        }),
     phone_number: z.string().max(20, 'Phone number must be 20 characters or less').optional().nullable(),
     email: z.string().email('Invalid email address').optional().nullable().or(z.literal('')),
     home_address: z.string().max(255, 'Home address must be 255 characters or less').optional().nullable(),
@@ -96,8 +111,32 @@ const staffSchema = z.object({
 
 type StaffFormData = z.infer<typeof staffSchema>;
 
+// Component for displaying staff picture in table cell
+// Uses centralized PictureCell component with image caching
+function StaffPictureCell({ staff }: { staff: Staff }) {
+  const { t, isRTL } = useLanguage();
+  const formattedName = formatStaffName(
+    staff.firstName,
+    staff.fatherName,
+    staff.grandfatherName,
+    t('staff.sonOf'),
+    isRTL
+  ) || staff.fullName;
+
+  return (
+    <PictureCell
+      type="staff"
+      entityId={staff.id}
+      picturePath={staff.pictureUrl}
+      alt={formattedName}
+      size="sm"
+      className="overflow-hidden"
+    />
+  );
+}
+
 export function StaffList() {
-    const { t } = useLanguage();
+    const { t, isRTL } = useLanguage();
     const { data: profile } = useProfile();
     const hasCreatePermission = useHasPermission('staff.create');
     
@@ -129,8 +168,9 @@ export function StaffList() {
     const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
     const [viewingProfile, setViewingProfile] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState(1);
+    const [selectedPictureFile, setSelectedPictureFile] = useState<File | null>(null);
     const steps = [
-        { id: 1, label: t('staff.basicInformation'), icon: User, description: t('staff.basicInformationDescription') },
+        { id: 1, label: t('events.basicInformation'), icon: User, description: t('staff.basicInformationDescription') },
         { id: 2, label: t('staff.personalDetails'), icon: User, description: t('staff.personalDetailsDescription') },
         { id: 3, label: t('staff.contactLocation'), icon: MapPin, description: t('staff.contactLocationDescription') },
         { id: 4, label: t('staff.education'), icon: GraduationCap, description: t('staff.educationDescription') },
@@ -166,6 +206,7 @@ export function StaffList() {
     const deleteStaff = useDeleteStaff();
     const createStaff = useCreateStaff();
     const updateStaff = useUpdateStaff();
+    const uploadPicture = useUploadStaffPicture();
 
     const formMethods = useForm<StaffFormData>({
         resolver: zodResolver(staffSchema),
@@ -212,26 +253,23 @@ export function StaffList() {
             accessorKey: 'photo',
             header: t('staff.photo'),
             cell: ({ row }) => {
-                const pictureUrl = row.original.pictureUrl 
-                    ? (row.original.pictureUrl.startsWith('http') 
-                        ? row.original.pictureUrl 
-                        : `${import.meta.env.VITE_API_URL || ''}/storage/${row.original.pictureUrl}`)
-                    : null;
-                return (
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden">
-                        {pictureUrl ? (
-                            <img src={pictureUrl} alt={row.original.fullName} className="w-full h-full object-cover" />
-                        ) : (
-                            <Users className="w-6 h-6 text-muted-foreground" />
-                        )}
-                    </div>
-                );
+                return <StaffPictureCell staff={row.original} />;
             },
         },
         {
             accessorKey: 'fullName',
-            header: t('staff.name'),
-            cell: ({ row }) => <span className="font-medium">{row.original.fullName}</span>,
+            header: t('events.name'),
+            cell: ({ row }) => {
+                const staff = row.original;
+                const formattedName = formatStaffName(
+                    staff.firstName,
+                    staff.fatherName,
+                    staff.grandfatherName,
+                    t('staff.sonOf'),
+                    isRTL
+                );
+                return <span className="font-medium">{formattedName || staff.fullName}</span>;
+            },
         },
         {
             accessorKey: 'staffCode',
@@ -244,12 +282,12 @@ export function StaffList() {
         },
         {
             accessorKey: 'employeeId',
-            header: t('staff.employeeId'),
+            header: t('search.employeeId'),
             cell: ({ row }) => row.original.employeeId,
         },
         {
             accessorKey: 'staffType',
-            header: t('staff.type'),
+            header: t('events.type'),
             cell: ({ row }) => {
                 const type = staffTypes?.find(t => t.id === row.original.staffTypeId);
                 return type ? <Badge variant="outline">{type.name}</Badge> : '-';
@@ -257,7 +295,7 @@ export function StaffList() {
         },
         {
             accessorKey: 'status',
-            header: t('staff.status'),
+            header: t('events.status'),
             cell: ({ row }) => {
                 const statusColors: Record<string, string> = {
                     active: 'default',
@@ -283,7 +321,7 @@ export function StaffList() {
         },
         {
             accessorKey: 'contact',
-            header: t('staff.contact'),
+            header: t('events.contact'),
             cell: ({ row }) => (
                 <div className="text-sm">
                     {row.original.email && <div>{row.original.email}</div>}
@@ -293,7 +331,7 @@ export function StaffList() {
         },
         {
             id: 'actions',
-            header: () => <div className="text-right">{t('staff.actions')}</div>,
+            header: () => <div className="text-right">{t('events.actions')}</div>,
             cell: ({ row }) => (
                 <div className="flex justify-end gap-2">
                     <Button
@@ -318,7 +356,7 @@ export function StaffList() {
                                     grandfather_name: row.original.grandfatherName || null,
                                     tazkira_number: row.original.tazkiraNumber || null,
                                     birth_year: row.original.birthYear || null,
-                                    birth_date: row.original.birthDate || null,
+                                    birth_date: row.original.dateOfBirth || null,
                                     phone_number: row.original.phoneNumber || null,
                                     email: row.original.email || null,
                                     home_address: row.original.homeAddress || null,
@@ -414,16 +452,6 @@ export function StaffList() {
         }
     };
 
-    const getPictureUrl = (staffMember: Staff) => {
-        if (!staffMember.pictureUrl) return null;
-        // Construct URL from Laravel API storage path
-        // Laravel API returns full URLs or paths that can be accessed via /storage/ endpoint
-        const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
-        const schoolPath = staffMember.schoolId ? `${staffMember.schoolId}/` : '';
-        const path = `${staffMember.organizationId}/${schoolPath}${staffMember.id}/picture/${staffMember.pictureUrl}`;
-        // Laravel typically serves files from /storage/ path
-        return `${baseUrl.replace('/api', '')}/storage/staff-files/${path}`;
-    };
 
     if (!hasReadPermission) {
         return (
@@ -466,7 +494,7 @@ export function StaffList() {
                                 e.stopPropagation();
                                 // Ensure profile has organization_id
                                 if (!profile?.organization_id) {
-                                    toast.error(t('common.notAssignedToOrganization'));
+                                    toast.error(t('events.notAssignedToOrganization'));
                                     return;
                                 }
                                 if (import.meta.env.DEV) {
@@ -499,7 +527,7 @@ export function StaffList() {
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">{t('staff.active')}</CardTitle>
+                            <CardTitle className="text-sm font-medium">{t('events.active')}</CardTitle>
                             <Users className="h-4 w-4 text-green-600" />
                         </CardHeader>
                         <CardContent>
@@ -552,7 +580,7 @@ export function StaffList() {
                         <div className="relative flex-1 min-w-0 w-full sm:min-w-[200px] sm:w-auto">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder={t('staff.searchPlaceholder')}
+                                placeholder={t('assets.searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10 w-full min-w-0"
@@ -560,10 +588,10 @@ export function StaffList() {
                         </div>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className="w-full sm:w-[150px] min-w-0">
-                                <SelectValue placeholder={t('staff.status')} />
+                                <SelectValue placeholder={t('events.status')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">{t('staff.allStatus')}</SelectItem>
+                                <SelectItem value="all">{t('userManagement.allStatus')}</SelectItem>
                                 <SelectItem value="active">{t('staff.statusActive')}</SelectItem>
                                 <SelectItem value="inactive">{t('staff.statusInactive')}</SelectItem>
                                 <SelectItem value="on_leave">{t('staff.statusOnLeave')}</SelectItem>
@@ -573,7 +601,7 @@ export function StaffList() {
                         </Select>
                         <Select value={typeFilter} onValueChange={setTypeFilter}>
                             <SelectTrigger className="w-full sm:w-[150px] min-w-0">
-                                <SelectValue placeholder={t('staff.type')} />
+                                <SelectValue placeholder={t('events.type')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">{t('staff.allTypes')}</SelectItem>
@@ -590,7 +618,7 @@ export function StaffList() {
                                 <SelectValue placeholder={t('staff.school')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">{t('staff.allSchools')}</SelectItem>
+                                <SelectItem value="all">{t('leave.allSchools')}</SelectItem>
                                     {schools.map((school) => (
                                         <SelectItem key={school.id} value={school.id}>
                                             {school.schoolName}
@@ -611,7 +639,7 @@ export function StaffList() {
                                 }}
                             >
                                 <X className="w-4 h-4 mr-2" />
-                                {t('staff.clear')}
+                                {t('events.clear')}
                             </Button>
                         )}
                     </div>
@@ -703,23 +731,32 @@ export function StaffList() {
                 if (!open) {
                     reset();
                     setCurrentStep(1);
+                    setSelectedPictureFile(null);
                 }
             }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
                     <FormProvider {...formMethods}>
-                      <form onSubmit={handleSubmit(async (data) => {
-                        // Wait for profile to load
-                        if (!profile) {
-                            toast.error(t('staff.pleaseWait'));
+                      <form onSubmit={(e) => {
+                        e.preventDefault();
+                        // Only submit if we're on the last step
+                        if (currentStep !== steps.length) {
+                            // If not on last step, go to next step instead
+                            setCurrentStep(Math.min(currentStep + 1, steps.length));
                             return;
                         }
+                        handleSubmit(async (data) => {
+                            // Wait for profile to load
+                            if (!profile) {
+                                toast.error(t('staff.pleaseWait'));
+                                return;
+                            }
 
-                        // Validation is handled by react-hook-form, but double-check required fields
-                        if (!data.staff_type_id || data.staff_type_id === 'none') {
-                            toast.error(t('staff.pleaseSelectStaffType'));
-                            setCurrentStep(1); // Go back to step 1 to show the error
-                            return;
-                        }
+                            // Validation is handled by react-hook-form, but double-check required fields
+                            if (!data.staff_type_id || data.staff_type_id === 'none') {
+                                toast.error(t('staff.pleaseSelectStaffType'));
+                                setCurrentStep(1); // Go back to step 1 to show the error
+                                return;
+                            }
 
                         // Ensure school_id is null if it's 'none' or empty string
                         const schoolId = data.school_id && data.school_id !== 'none' && data.school_id !== ''
@@ -738,7 +775,7 @@ export function StaffList() {
                             }
                             
                             if (!organizationId) {
-                                toast.error(t('common.pleaseSelectOrganization'));
+                                toast.error(t('events.pleaseSelectOrganization'));
                                 return;
                             }
                         } else {
@@ -748,7 +785,7 @@ export function StaffList() {
                             
                             if (!organizationId) {
                                 // This shouldn't happen - backend assigns org on login/register
-                                toast.error(t('common.notAssignedToOrganization'));
+                                toast.error(t('events.notAssignedToOrganization'));
                                 console.error('Profile missing organization_id. Profile:', profile);
                                 return;
                             }
@@ -809,10 +846,23 @@ export function StaffList() {
                         };
 
                         createStaff.mutate(staffData, {
-                            onSuccess: () => {
+                            onSuccess: async (createdStaff) => {
+                                // Upload picture if one was selected
+                                if (selectedPictureFile && createdStaff?.id) {
+                                    try {
+                                        await uploadPicture.mutateAsync({
+                                            staffId: createdStaff.id,
+                                            file: selectedPictureFile,
+                                        });
+                                    } catch (error) {
+                                        console.error('Error uploading picture:', error);
+                                        // Don't fail the whole operation if picture upload fails
+                                    }
+                                }
                                 setIsCreateDialogOpen(false);
                                 reset();
                                 setCurrentStep(1);
+                                setSelectedPictureFile(null);
                                 // Force refetch to show the new staff member immediately
                                 // This ensures it appears even when "all" organizations filter is active
                                 refetchStaff();
@@ -822,7 +872,8 @@ export function StaffList() {
                                 toast.error(error.message || t('staff.failedToCreate'));
                             },
                         });
-                    })}>
+                        })(e);
+                      }}>
                         <DialogHeader>
                             <DialogTitle>{t('staff.createEmployee')}</DialogTitle>
                             <DialogDescription className="hidden md:block">
@@ -837,7 +888,7 @@ export function StaffList() {
 
                         <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-6 py-4">
                             {/* Step Navigation - Vertical Sidebar (Desktop Only) */}
-                            <div className="hidden md:block border-r pr-6">
+                            <div className={cn("hidden md:block pr-6", isRTL ? "border-l pl-6 pr-0" : "border-r")}>
                                 <div className="flex flex-col">
                                     {steps.map((step, index) => {
                                         const StepIcon = step.icon;
@@ -938,9 +989,9 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <User className="h-5 w-5" />
-                                                    Basic Information
+                                                    {t('events.basicInformation')}
                                                 </CardTitle>
-                                                <CardDescription className="hidden md:block">Core employee identification and status information</CardDescription>
+                                                <CardDescription className="hidden md:block">{t('staff.basicInformationDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -975,7 +1026,7 @@ export function StaffList() {
                                                                 control={control}
                                                                 render={({ field }) => (
                                                                     <Select value={field.value || 'none'} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
-                                                                        <SelectTrigger><SelectValue placeholder={t('staff.selectSchool')} /></SelectTrigger>
+                                                                        <SelectTrigger><SelectValue placeholder={t('common.selectSchool')} /></SelectTrigger>
                                                                         <SelectContent>
                                                                             <SelectItem value="none">{t('staff.noSchool')}</SelectItem>
                                                                             {schools.map((school) => <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>)}
@@ -1017,19 +1068,19 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <User className="h-5 w-5" />
-                                                    Personal Details
+                                                    {t('staff.personalDetails')}
                                                 </CardTitle>
-                                                <CardDescription className="hidden md:block">Personal information and identification</CardDescription>
+                                                <CardDescription className="hidden md:block">{t('staff.personalDetailsDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="first_name">{t('staff.firstName')} *</Label>
+                                                        <Label htmlFor="first_name">{t('events.firstName')} *</Label>
                                                         <Input id="first_name" {...register('first_name')} />
                                                         {errors.first_name && <p className="text-sm text-destructive">{errors.first_name.message}</p>}
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="father_name">{t('staff.fatherName')} *</Label>
+                                                        <Label htmlFor="father_name">{t('examReports.fatherName')} *</Label>
                                                         <Input id="father_name" {...register('father_name')} />
                                                         {errors.father_name && <p className="text-sm text-destructive">{errors.father_name.message}</p>}
                                                     </div>
@@ -1047,10 +1098,16 @@ export function StaffList() {
                                                         <Input id="birth_year" {...register('birth_year')} placeholder="e.g., 1990" />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="birth_date">{t('staff.dateOfBirth')}</Label>
                                                         <CalendarFormField control={control} name="birth_date" label={t('staff.dateOfBirth')} />
                                                         <p className="text-xs text-muted-foreground">{t('staff.dateOfBirthHelper')}</p>
                                                     </div>
+                                                </div>
+                                                {/* Picture Upload */}
+                                                <div className="mt-4 pt-4 border-t">
+                                                    <StaffPictureUpload
+                                                        onFileSelected={setSelectedPictureFile}
+                                                        allowUploadWithoutStaff={true}
+                                                    />
                                                 </div>
                                             </CardContent>
                                         </Card>
@@ -1064,14 +1121,14 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <MapPin className="h-5 w-5" />
-                                                    Contact & Location
+                                                    {t('staff.contactLocation')}
                                                 </CardTitle>
-                                                <CardDescription className="hidden md:block">Contact information and addresses</CardDescription>
+                                                <CardDescription className="hidden md:block">{t('staff.contactLocationDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="email">{t('staff.email')}</Label>
+                                                        <Label htmlFor="email">{t('events.email')}</Label>
                                                         <Input id="email" type="email" {...register('email')} />
                                                         {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
                                                     </div>
@@ -1110,11 +1167,11 @@ export function StaffList() {
                                                                 <Input id="current_province" {...register('current_province')} />
                                                             </div>
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="current_district">District</Label>
+                                                                <Label htmlFor="current_district">{t('staff.district')}</Label>
                                                                 <Input id="current_district" {...register('current_district')} />
                                                             </div>
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="current_village">Village</Label>
+                                                                <Label htmlFor="current_village">{t('staff.village')}</Label>
                                                                 <Input id="current_village" {...register('current_village')} />
                                                             </div>
                                                         </div>
@@ -1132,9 +1189,9 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <GraduationCap className="h-5 w-5" />
-                                                    Education
+                                                    {t('staff.education')}
                                                 </CardTitle>
-                                                <CardDescription className="hidden md:block">Educational background and qualifications</CardDescription>
+                                                <CardDescription className="hidden md:block">{t('staff.educationDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-6">
                                                 <div>
@@ -1159,22 +1216,22 @@ export function StaffList() {
                                                     </div>
                                                 </div>
                                                 <div className="pt-4 border-t">
-                                                    <h4 className="font-medium mb-3">Modern Education</h4>
+                                                    <h4 className="font-medium mb-3">{t('staff.modernEducationSection')}</h4>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="modern_education">Education Level</Label>
+                                                            <Label htmlFor="modern_education">{t('staff.educationLevel')}</Label>
                                                             <Input id="modern_education" {...register('modern_education')} />
                                                         </div>
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="modern_school_university">School/University</Label>
+                                                            <Label htmlFor="modern_school_university">{t('staff.modernSchoolUniversity')}</Label>
                                                             <Input id="modern_school_university" {...register('modern_school_university')} />
                                                         </div>
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="modern_graduation_year">Graduation Year</Label>
+                                                            <Label htmlFor="modern_graduation_year">{t('staff.graduationYear')}</Label>
                                                             <Input id="modern_graduation_year" {...register('modern_graduation_year')} />
                                                         </div>
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="modern_department">Department</Label>
+                                                            <Label htmlFor="modern_department">{t('staff.department')}</Label>
                                                             <Input id="modern_department" {...register('modern_department')} />
                                                         </div>
                                                     </div>
@@ -1191,14 +1248,14 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <Briefcase className="h-5 w-5" />
-                                                    Employment
+                                                    {t('staff.employment')}
                                                 </CardTitle>
-                                                <CardDescription className="hidden md:block">Employment details and position information</CardDescription>
+                                                <CardDescription className="hidden md:block">{t('staff.employmentDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="position">{t('staff.position')}</Label>
+                                                        <Label htmlFor="position">{t('search.position')}</Label>
                                                         <Input id="position" {...register('position')} />
                                                     </div>
                                                     <div className="grid gap-2">
@@ -1214,7 +1271,7 @@ export function StaffList() {
                                                         <Input id="salary" {...register('salary')} />
                                                     </div>
                                                     <div className="grid gap-2 col-span-2">
-                                                        <Label htmlFor="notes">{t('staff.notes')}</Label>
+                                                        <Label htmlFor="notes">{t('events.notes')}</Label>
                                                         <Textarea id="notes" {...register('notes')} rows={3} placeholder={t('staff.notesPlaceholder')} />
                                                     </div>
                                                 </div>
@@ -1228,7 +1285,11 @@ export function StaffList() {
                             <div className="flex gap-2 w-full sm:w-auto">
                                 {currentStep > 1 && (
                                     <Button type="button" variant="outline" onClick={() => setCurrentStep(currentStep - 1)} className="flex-1 sm:flex-initial">
-                                        <ChevronLeft className="h-4 w-4 mr-2" />
+                                        {isRTL ? (
+                                            <ChevronRight className="h-4 w-4 ml-2" />
+                                        ) : (
+                                            <ChevronLeft className="h-4 w-4 mr-2" />
+                                        )}
                                         Previous
                                     </Button>
                                 )}
@@ -1244,12 +1305,31 @@ export function StaffList() {
                                     }}
                                     className="flex-1 sm:flex-initial"
                                 >
-                                    {t('common.cancel')}
+                                    {t('events.cancel')}
                                 </Button>
                                 {currentStep < steps.length ? (
-                                    <Button type="button" onClick={() => setCurrentStep(currentStep + 1)} className="flex-1 sm:flex-initial">
-                                        {t('staff.next')}
-                                        <ChevronRight className="h-4 w-4 ml-2" />
+                                    <Button 
+                                        type="button" 
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (currentStep < steps.length) {
+                                                setCurrentStep(currentStep + 1);
+                                            }
+                                        }} 
+                                        className="flex-1 sm:flex-initial"
+                                    >
+                                        {isRTL ? (
+                                            <>
+                                                <ChevronLeft className="h-4 w-4 mr-2" />
+                                                {t('events.next')}
+                                            </>
+                                        ) : (
+                                            <>
+                                                {t('events.next')}
+                                                <ChevronRight className="h-4 w-4 ml-2" />
+                                            </>
+                                        )}
                                     </Button>
                                 ) : (
                                     <Button
@@ -1257,7 +1337,7 @@ export function StaffList() {
                                         disabled={createStaff.isPending || !staffUsage.canCreate}
                                         className="flex-1 sm:flex-initial"
                                     >
-                                        {createStaff.isPending ? t('staff.creating') : t('staff.addStaff')}
+                                        {createStaff.isPending ? t('events.creating') : t('staff.addStaff')}
                                     </Button>
                                 )}
                             </div>
@@ -1274,15 +1354,24 @@ export function StaffList() {
                     setEditingStaff(null);
                     reset();
                     setCurrentStep(1);
+                    setSelectedPictureFile(null);
                 }
             }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <FormProvider {...formMethods}>
-                      <form onSubmit={handleSubmit(async (data) => {
-                        if (!editingStaff || !data.staff_type_id) {
-                            toast.error(t('staff.pleaseSelectStaffType'));
+                      <form onSubmit={(e) => {
+                        e.preventDefault();
+                        // Only submit if we're on the last step
+                        if (currentStep !== steps.length) {
+                            // If not on last step, go to next step instead
+                            setCurrentStep(Math.min(currentStep + 1, steps.length));
                             return;
                         }
+                        handleSubmit(async (data) => {
+                            if (!editingStaff || !data.staff_type_id) {
+                                toast.error(t('staff.pleaseSelectStaffType'));
+                                return;
+                            }
 
                         // Convert form data (snake_case) to domain model (camelCase)
                         const schoolId = data.school_id && data.school_id !== 'none' && data.school_id !== '' ? data.school_id : null;
@@ -1335,16 +1424,30 @@ export function StaffList() {
                         updateStaff.mutate(
                             { id: editingStaff.id, ...staffData },
                             {
-                                onSuccess: () => {
+                                onSuccess: async () => {
+                                    // Upload picture if one was selected
+                                    if (selectedPictureFile && editingStaff.id) {
+                                        try {
+                                            await uploadPicture.mutateAsync({
+                                                staffId: editingStaff.id,
+                                                file: selectedPictureFile,
+                                            });
+                                        } catch (error) {
+                                            console.error('Error uploading picture:', error);
+                                            // Don't fail the whole operation if picture upload fails
+                                        }
+                                    }
                                     setIsEditDialogOpen(false);
                                     setEditingStaff(null);
                                     reset();
                                     setCurrentStep(1);
+                                    setSelectedPictureFile(null);
                                     refetchStaff();
                                 },
                             }
                         );
-                    })}>
+                        })(e);
+                      }}>
                         <DialogHeader>
                             <DialogTitle>{t('staff.editEmployee')}</DialogTitle>
                             <DialogDescription>
@@ -1354,7 +1457,7 @@ export function StaffList() {
 
                         <div className="grid grid-cols-[250px_1fr] gap-6 py-4">
                             {/* Step Navigation - Vertical Sidebar */}
-                            <div className="border-r pr-6">
+                            <div className={cn("pr-6", isRTL ? "border-l pl-6 pr-0" : "border-r")}>
                                 <div className="flex flex-col">
                                     {steps.map((step, index) => {
                                         const StepIcon = step.icon;
@@ -1411,7 +1514,7 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <User className="h-5 w-5" />
-                                                    {t('staff.basicInformation')}
+                                                    {t('events.basicInformation')}
                                                 </CardTitle>
                                                 <CardDescription>{t('staff.basicInformationDescription')}</CardDescription>
                                             </CardHeader>
@@ -1424,15 +1527,15 @@ export function StaffList() {
                                                         {errors.employee_id && <p className="text-sm text-destructive">{errors.employee_id.message}</p>}
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_staff_type_id">Staff Type *</Label>
+                                                        <Label htmlFor="edit_staff_type_id">{t('staff.staffType')} *</Label>
                                                         <Controller
                                                             name="staff_type_id"
                                                             control={control}
                                                             render={({ field }) => (
                                                                 <Select value={field.value || 'none'} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
-                                                                    <SelectTrigger><SelectValue placeholder="Select staff type" /></SelectTrigger>
+                                                                    <SelectTrigger><SelectValue placeholder={t('staff.selectStaffType')} /></SelectTrigger>
                                                                     <SelectContent>
-                                                                        <SelectItem value="none">Select a type</SelectItem>
+                                                                        <SelectItem value="none">{t('staff.selectStaffTypePlaceholder')}</SelectItem>
                                                                         {staffTypes?.map((type) => <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>)}
                                                                     </SelectContent>
                                                                 </Select>
@@ -1448,7 +1551,7 @@ export function StaffList() {
                                                                 control={control}
                                                                 render={({ field }) => (
                                                                     <Select value={field.value || 'none'} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
-                                                                        <SelectTrigger><SelectValue placeholder={t('staff.selectSchool')} /></SelectTrigger>
+                                                                        <SelectTrigger><SelectValue placeholder={t('common.selectSchool')} /></SelectTrigger>
                                                                         <SelectContent>
                                                                             <SelectItem value="none">{t('staff.noSchool')}</SelectItem>
                                                                             {schools.map((school) => <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>)}
@@ -1490,40 +1593,48 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <User className="h-5 w-5" />
-                                                    Personal Details
+                                                    {t('staff.personalDetails')}
                                                 </CardTitle>
-                                                <CardDescription>Personal information and identification</CardDescription>
+                                                <CardDescription>{t('staff.personalDetailsDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-3 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_first_name">First Name *</Label>
+                                                        <Label htmlFor="edit_first_name">{t('events.firstName')} *</Label>
                                                         <Input id="edit_first_name" {...register('first_name')} />
                                                         {errors.first_name && <p className="text-sm text-destructive">{errors.first_name.message}</p>}
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_father_name">Father Name *</Label>
+                                                        <Label htmlFor="edit_father_name">{t('examReports.fatherName')} *</Label>
                                                         <Input id="edit_father_name" {...register('father_name')} />
                                                         {errors.father_name && <p className="text-sm text-destructive">{errors.father_name.message}</p>}
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_grandfather_name">Grandfather Name</Label>
+                                                        <Label htmlFor="edit_grandfather_name">{t('staff.grandfatherName')}</Label>
                                                         <Input id="edit_grandfather_name" {...register('grandfather_name')} />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_tazkira_number">Civil ID / Tazkira Number</Label>
+                                                        <Label htmlFor="edit_tazkira_number">{t('staff.civilId')}</Label>
                                                         <Input id="edit_tazkira_number" {...register('tazkira_number')} />
-                                                        <p className="text-xs text-muted-foreground">National identification number (Tazkira)</p>
+                                                        <p className="text-xs text-muted-foreground">{t('staff.civilIdHelper')}</p>
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_birth_year">Birth Year</Label>
+                                                        <Label htmlFor="edit_birth_year">{t('staff.birthYear')}</Label>
                                                         <Input id="edit_birth_year" {...register('birth_year')} placeholder="e.g., 1990" />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_birth_date">Date of Birth</Label>
-                                                        <CalendarFormField control={control} name="birth_date" label="Date of Birth" />
-                                                        <p className="text-xs text-muted-foreground">Employee must be at least 18 years old</p>
+                                                        <CalendarFormField control={control} name="birth_date" label={t('staff.dateOfBirth')} />
+                                                        <p className="text-xs text-muted-foreground">{t('staff.dateOfBirthHelper')}</p>
                                                     </div>
+                                                </div>
+                                                {/* Picture Upload */}
+                                                <div className="mt-4 pt-4 border-t">
+                                                    <StaffPictureUpload
+                                                        staffId={editingStaff?.id}
+                                                        currentPictureUrl={editingStaff?.pictureUrl}
+                                                        onFileSelected={setSelectedPictureFile}
+                                                        allowUploadWithoutStaff={false}
+                                                    />
                                                 </div>
                                             </CardContent>
                                         </Card>
@@ -1537,57 +1648,57 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <MapPin className="h-5 w-5" />
-                                                    Contact & Location
+                                                    {t('staff.contactLocation')}
                                                 </CardTitle>
-                                                <CardDescription>Contact information and addresses</CardDescription>
+                                                <CardDescription>{t('staff.contactLocationDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_email">Email Address</Label>
+                                                        <Label htmlFor="edit_email">{t('events.email')}</Label>
                                                         <Input id="edit_email" type="email" {...register('email')} />
                                                         {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_phone_number">Phone Number</Label>
+                                                        <Label htmlFor="edit_phone_number">{t('staff.phoneNumber')}</Label>
                                                         <Input id="edit_phone_number" {...register('phone_number')} />
                                                     </div>
                                                     <div className="grid gap-2 col-span-2">
-                                                        <Label htmlFor="edit_home_address">Home Address</Label>
+                                                        <Label htmlFor="edit_home_address">{t('staff.homeAddress')}</Label>
                                                         <Input id="edit_home_address" {...register('home_address')} />
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                                                     <div>
-                                                        <h4 className="font-medium mb-3">Origin Location</h4>
+                                                        <h4 className="font-medium mb-3">{t('staff.originLocation')}</h4>
                                                         <div className="grid grid-cols-3 gap-2">
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="edit_origin_province">Province</Label>
+                                                                <Label htmlFor="edit_origin_province">{t('staff.province')}</Label>
                                                                 <Input id="edit_origin_province" {...register('origin_province')} />
                                                             </div>
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="edit_origin_district">District</Label>
+                                                                <Label htmlFor="edit_origin_district">{t('staff.district')}</Label>
                                                                 <Input id="edit_origin_district" {...register('origin_district')} />
                                                             </div>
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="edit_origin_village">Village</Label>
+                                                                <Label htmlFor="edit_origin_village">{t('staff.village')}</Label>
                                                                 <Input id="edit_origin_village" {...register('origin_village')} />
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div>
-                                                        <h4 className="font-medium mb-3">Current Location</h4>
+                                                        <h4 className="font-medium mb-3">{t('staff.currentLocation')}</h4>
                                                         <div className="grid grid-cols-3 gap-2">
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="edit_current_province">Province</Label>
+                                                                <Label htmlFor="edit_current_province">{t('staff.province')}</Label>
                                                                 <Input id="edit_current_province" {...register('current_province')} />
                                                             </div>
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="edit_current_district">District</Label>
+                                                                <Label htmlFor="edit_current_district">{t('staff.district')}</Label>
                                                                 <Input id="edit_current_district" {...register('current_district')} />
                                                             </div>
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="edit_current_village">Village</Label>
+                                                                <Label htmlFor="edit_current_village">{t('staff.village')}</Label>
                                                                 <Input id="edit_current_village" {...register('current_village')} />
                                                             </div>
                                                         </div>
@@ -1664,31 +1775,31 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <Briefcase className="h-5 w-5" />
-                                                    Employment
+                                                    {t('staff.employment')}
                                                 </CardTitle>
-                                                <CardDescription>Employment details and position information</CardDescription>
+                                                <CardDescription>{t('staff.employmentDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_position">Position</Label>
+                                                        <Label htmlFor="edit_position">{t('search.position')}</Label>
                                                         <Input id="edit_position" {...register('position')} />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_teaching_section">Teaching Section</Label>
+                                                        <Label htmlFor="edit_teaching_section">{t('staff.teachingSection')}</Label>
                                                         <Input id="edit_teaching_section" {...register('teaching_section')} />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_duty">Duty</Label>
+                                                        <Label htmlFor="edit_duty">{t('staff.duty')}</Label>
                                                         <Input id="edit_duty" {...register('duty')} />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_salary">Salary</Label>
+                                                        <Label htmlFor="edit_salary">{t('staff.salary')}</Label>
                                                         <Input id="edit_salary" {...register('salary')} />
                                                     </div>
                                                     <div className="grid gap-2 col-span-2">
-                                                        <Label htmlFor="edit_notes">Notes</Label>
-                                                        <Textarea id="edit_notes" {...register('notes')} rows={3} placeholder="Additional notes about this staff member..." />
+                                                        <Label htmlFor="edit_notes">{t('events.notes')}</Label>
+                                                        <Textarea id="edit_notes" {...register('notes')} rows={3} placeholder={t('staff.notesPlaceholder')} />
                                                     </div>
                                                 </div>
                                             </CardContent>
@@ -1701,8 +1812,12 @@ export function StaffList() {
                             <div className="flex gap-2">
                                 {currentStep > 1 && (
                                     <Button type="button" variant="outline" onClick={() => setCurrentStep(currentStep - 1)}>
-                                        <ChevronLeft className="h-4 w-4 mr-2" />
-                                        {t('staff.previous')}
+                                        {isRTL ? (
+                                            <ChevronRight className="h-4 w-4 ml-2" />
+                                        ) : (
+                                            <ChevronLeft className="h-4 w-4 mr-2" />
+                                        )}
+                                        {t('events.previous')}
                                     </Button>
                                 )}
                             </div>
@@ -1717,16 +1832,34 @@ export function StaffList() {
                                         setCurrentStep(1);
                                     }}
                                 >
-                                    {t('common.cancel')}
+                                    {t('events.cancel')}
                                 </Button>
                                 {currentStep < steps.length ? (
-                                    <Button type="button" onClick={() => setCurrentStep(currentStep + 1)}>
-                                        {t('staff.next')}
-                                        <ChevronRight className="h-4 w-4 ml-2" />
+                                    <Button 
+                                        type="button" 
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (currentStep < steps.length) {
+                                                setCurrentStep(currentStep + 1);
+                                            }
+                                        }}
+                                    >
+                                        {isRTL ? (
+                                            <>
+                                                <ChevronLeft className="h-4 w-4 mr-2" />
+                                                {t('events.next')}
+                                            </>
+                                        ) : (
+                                            <>
+                                                {t('events.next')}
+                                                <ChevronRight className="h-4 w-4 ml-2" />
+                                            </>
+                                        )}
                                     </Button>
                                 ) : (
                                     <Button type="submit" disabled={updateStaff.isPending}>
-                                        {updateStaff.isPending ? t('staff.updating') : t('staff.updateStaff')}
+                                        {updateStaff.isPending ? t('events.updating') : t('staff.updateStaff')}
                                     </Button>
                                 )}
                             </div>
@@ -1740,18 +1873,18 @@ export function StaffList() {
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('events.delete')}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('staff.deleteConfirmMessage')} {t('staff.deleteConfirmDescription')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDeleteConfirm}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            {t('common.delete')}
+                            {t('events.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

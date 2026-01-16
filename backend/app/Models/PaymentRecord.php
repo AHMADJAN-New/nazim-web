@@ -36,6 +36,13 @@ class PaymentRecord extends Model
         'notes',
         'receipt_path',
         'metadata',
+        // New payment type fields
+        'payment_type',
+        'billing_period',
+        'is_recurring',
+        'invoice_number',
+        'invoice_generated_at',
+        'maintenance_invoice_id',
     ];
 
     protected $casts = [
@@ -45,6 +52,8 @@ class PaymentRecord extends Model
         'period_start' => 'date',
         'period_end' => 'date',
         'confirmed_at' => 'datetime',
+        'invoice_generated_at' => 'datetime',
+        'is_recurring' => 'boolean',
         'metadata' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -62,6 +71,17 @@ class PaymentRecord extends Model
     const METHOD_CHECK = 'check';
     const METHOD_MOBILE_MONEY = 'mobile_money';
     const METHOD_OTHER = 'other';
+
+    // Payment type constants
+    const TYPE_LICENSE = 'license';
+    const TYPE_MAINTENANCE = 'maintenance';
+    const TYPE_RENEWAL = 'renewal'; // Legacy - for backward compatibility
+
+    // Billing period constants
+    const BILLING_MONTHLY = 'monthly';
+    const BILLING_QUARTERLY = 'quarterly';
+    const BILLING_YEARLY = 'yearly';
+    const BILLING_CUSTOM = 'custom';
 
     protected static function boot()
     {
@@ -99,11 +119,72 @@ class PaymentRecord extends Model
     }
 
     /**
+     * Check if this is a license payment
+     */
+    public function isLicensePayment(): bool
+    {
+        return $this->payment_type === self::TYPE_LICENSE;
+    }
+
+    /**
+     * Check if this is a maintenance payment
+     */
+    public function isMaintenancePayment(): bool
+    {
+        return $this->payment_type === self::TYPE_MAINTENANCE;
+    }
+
+    /**
+     * Check if this is a legacy renewal payment
+     */
+    public function isRenewalPayment(): bool
+    {
+        return $this->payment_type === self::TYPE_RENEWAL;
+    }
+
+    /**
+     * Check if this is a recurring payment
+     */
+    public function isRecurring(): bool
+    {
+        return $this->is_recurring === true;
+    }
+
+    /**
      * Get net amount after discount
      */
     public function getNetAmount(): float
     {
-        return (float) $this->amount - (float) $this->discount_amount;
+        // "amount" represents the amount actually paid.
+        // discount_amount is informational (used for reporting / audit) and should NOT be subtracted.
+        return (float) $this->amount;
+    }
+
+    /**
+     * Get the payment type label
+     */
+    public function getPaymentTypeLabel(): string
+    {
+        return match($this->payment_type) {
+            self::TYPE_LICENSE => 'License Fee',
+            self::TYPE_MAINTENANCE => 'Maintenance Fee',
+            self::TYPE_RENEWAL => 'Renewal',
+            default => 'Payment',
+        };
+    }
+
+    /**
+     * Get the billing period label
+     */
+    public function getBillingPeriodLabel(): string
+    {
+        return match($this->billing_period) {
+            self::BILLING_MONTHLY => 'Monthly',
+            self::BILLING_QUARTERLY => 'Quarterly',
+            self::BILLING_YEARLY => 'Yearly',
+            self::BILLING_CUSTOM => 'Custom',
+            default => 'Yearly',
+        };
     }
 
     /**
@@ -139,6 +220,14 @@ class PaymentRecord extends Model
     }
 
     /**
+     * Get the maintenance invoice this payment is for
+     */
+    public function maintenanceInvoice()
+    {
+        return $this->belongsTo(MaintenanceInvoice::class, 'maintenance_invoice_id');
+    }
+
+    /**
      * Scope for pending payments
      */
     public function scopePending($query)
@@ -152,5 +241,94 @@ class PaymentRecord extends Model
     public function scopeConfirmed($query)
     {
         return $query->where('status', self::STATUS_CONFIRMED);
+    }
+
+    /**
+     * Scope for rejected payments
+     */
+    public function scopeRejected($query)
+    {
+        return $query->where('status', self::STATUS_REJECTED);
+    }
+
+    /**
+     * Scope for license payments
+     */
+    public function scopeLicensePayments($query)
+    {
+        return $query->where('payment_type', self::TYPE_LICENSE);
+    }
+
+    /**
+     * Scope for maintenance payments
+     */
+    public function scopeMaintenancePayments($query)
+    {
+        return $query->where('payment_type', self::TYPE_MAINTENANCE);
+    }
+
+    /**
+     * Scope for renewal payments (legacy)
+     */
+    public function scopeRenewalPayments($query)
+    {
+        return $query->where('payment_type', self::TYPE_RENEWAL);
+    }
+
+    /**
+     * Scope for recurring payments
+     */
+    public function scopeRecurring($query)
+    {
+        return $query->where('is_recurring', true);
+    }
+
+    /**
+     * Scope for one-time payments
+     */
+    public function scopeOneTime($query)
+    {
+        return $query->where('is_recurring', false);
+    }
+
+    /**
+     * Scope to filter by billing period
+     */
+    public function scopeByBillingPeriod($query, string $period)
+    {
+        return $query->where('billing_period', $period);
+    }
+
+    /**
+     * Scope to filter by payment type
+     */
+    public function scopeByPaymentType($query, string $type)
+    {
+        return $query->where('payment_type', $type);
+    }
+
+    /**
+     * Get all available payment types
+     */
+    public static function getPaymentTypes(): array
+    {
+        return [
+            self::TYPE_LICENSE => 'License Fee',
+            self::TYPE_MAINTENANCE => 'Maintenance Fee',
+            self::TYPE_RENEWAL => 'Renewal (Legacy)',
+        ];
+    }
+
+    /**
+     * Get all available billing periods
+     */
+    public static function getBillingPeriods(): array
+    {
+        return [
+            self::BILLING_MONTHLY => 'Monthly',
+            self::BILLING_QUARTERLY => 'Quarterly',
+            self::BILLING_YEARLY => 'Yearly',
+            self::BILLING_CUSTOM => 'Custom',
+        ];
     }
 }

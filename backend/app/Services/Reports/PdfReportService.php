@@ -37,7 +37,7 @@ class PdfReportService
         $this->reportProgress($progressCallback, 0, 'Starting PDF generation');
 
         // Render HTML
-        $html = $this->renderHtml($context);
+        $html = $this->renderHtml($context, $config);
         $this->reportProgress($progressCallback, 30, 'HTML rendered');
 
         // Generate PDF file
@@ -50,14 +50,25 @@ class PdfReportService
     /**
      * Render HTML from template
      */
-    private function renderHtml(array $context): string
+    private function renderHtml(array $context, ?ReportConfig $config = null): string
     {
-        $templateName = $context['template_name'] ?? 'table_a4_portrait';
+        // Get template name from context first, then from config, then default
+        $templateName = $context['template_name'] ?? $config?->templateName ?? 'table_a4_portrait';
         $viewName = "reports.{$templateName}";
+        $templatePath = resource_path("views/reports/{$templateName}.blade.php");
 
         // Check if view exists
-        if (!View::exists($viewName)) {
+        $viewExists = View::exists($viewName);
+        if (!$viewExists) {
+            \Log::warning("Template not found: {$viewName}, falling back to table_a4_portrait", [
+                'requested_template' => $templateName,
+                'view_name' => $viewName,
+            ]);
             $viewName = 'reports.table_a4_portrait';
+        } else {
+            \Log::debug("Using template: {$viewName}", [
+                'requested_template' => $templateName,
+            ]);
         }
 
         // Log font settings being passed to template
@@ -65,17 +76,24 @@ class PdfReportService
             'font_family' => $context['FONT_FAMILY'] ?? 'N/A',
             'font_size' => $context['FONT_SIZE'] ?? 'N/A',
             'template_name' => $viewName,
+            'template_found' => $viewExists,
+            'template_path' => $templatePath,
+            'template_mtime' => (file_exists($templatePath) ? date('c', filemtime($templatePath)) : null),
         ]);
 
         $html = View::make($viewName, $context)->render();
         
-        // Log a snippet of the rendered HTML to verify fonts are included
+        // Log a snippet of the rendered HTML to verify fonts are included and student-history sections are present
         if (config('app.debug')) {
             $fontFaceSnippet = substr($html, strpos($html, '@font-face') ?: 0, 500);
+            $hasStudentInfoMarker = strpos($html, 'NAZIM_STUDENT_HISTORY_DETAILS_MARKER') !== false;
+            $hasPersonalInfoHeading = (strpos($html, 'Personal Information') !== false) || (strpos($html, 'personalInfo') !== false);
             \Log::debug("PdfReportService: Font-face snippet from rendered HTML", [
                 'has_font_face' => strpos($html, '@font-face') !== false,
                 'font_face_snippet' => $fontFaceSnippet ?: 'NOT FOUND',
                 'html_length' => strlen($html),
+                'has_student_history_marker' => $hasStudentInfoMarker,
+                'has_personal_info_heading' => $hasPersonalInfoHeading,
             ]);
         }
         
@@ -112,12 +130,24 @@ class PdfReportService
                 'mm'
             )
             ->waitUntilNetworkIdle()
+            ->setDelay(2000) // Wait 2 seconds for fonts to load from base64 data URLs
             ->timeout(120)
             ->addChromiumArguments([
                 'no-sandbox',
                 'disable-setuid-sandbox',
                 'disable-web-security', // Allow loading fonts from data URLs
+                'disable-features=FontLoading', // Disable font loading restrictions
             ]); // Required for Linux environments without proper sandbox support (no -- prefix, Browsershot adds it)
+
+        // Set Chrome/Chromium path if puppeteer is installed
+        // Browsershot will use the Chrome from puppeteer if available
+        $chromePath = $this->findChromePath();
+        if ($chromePath) {
+            \Log::info("Using Chrome path: {$chromePath}");
+            $browsershot->setChromePath($chromePath);
+        } else {
+            \Log::warning("Chrome not found, Browsershot will try to find it automatically");
+        }
 
         // Set orientation
         if ($orientation === 'landscape') {
@@ -254,6 +284,81 @@ class PdfReportService
 </body>
 </html>
 HTML;
+    }
+
+    /**
+     * Find Chrome/Chromium executable path
+     * Checks puppeteer cache first, then system paths
+     * 
+     * Priority:
+     * 1. Environment variable PUPPETEER_CHROME_PATH
+     * 2. /home/nazim/.cache/puppeteer (where it was installed)
+     * 3. Other possible cache directories
+     * 4. System-installed Chrome/Chromium
+     */
+    private function findChromePath(): ?string
+    {
+        // Check environment variable first (allows override)
+        // Use env() helper for Laravel, fallback to getenv() for CLI
+        $envChromePath = env('PUPPETEER_CHROME_PATH') ?: getenv('PUPPETEER_CHROME_PATH');
+        if ($envChromePath && is_file($envChromePath) && is_executable($envChromePath)) {
+            \Log::info("Using Chrome from PUPPETEER_CHROME_PATH: {$envChromePath}");
+            return $envChromePath;
+        }
+        
+        // Check multiple possible locations for puppeteer cache
+        $possibleCacheDirs = [
+            '/home/nazim/.cache/puppeteer',  // User home directory (where it was installed)
+            '/var/www/.cache/puppeteer',      // Web server directory
+            getenv('HOME') . '/.cache/puppeteer' ?: null,
+            '/root/.cache/puppeteer',         // Root user
+        ];
+        
+        // Filter out null values and non-existent directories
+        $possibleCacheDirs = array_filter($possibleCacheDirs, function($dir) {
+            return $dir !== null && is_dir($dir);
+        });
+        
+        // Look for chrome-headless-shell in puppeteer cache
+        $chromePaths = [];
+        
+        foreach ($possibleCacheDirs as $puppeteerCache) {
+            // Try chrome-headless-shell first (newer, lighter)
+            $chromePaths[] = $puppeteerCache . '/chrome-headless-shell/linux-*/chrome-headless-shell-linux64/chrome-headless-shell';
+            // Fallback to full Chrome
+            $chromePaths[] = $puppeteerCache . '/chrome/linux-*/chrome-linux64/chrome';
+        }
+        
+        // Add system paths
+        $chromePaths = array_merge($chromePaths, [
+            '/usr/bin/google-chrome',
+            '/usr/bin/chromium',
+            '/usr/bin/chromium-browser',
+            '/snap/bin/chromium',
+            '/usr/bin/google-chrome-stable',
+        ]);
+
+        foreach ($chromePaths as $pattern) {
+            $matches = glob($pattern);
+            if (!empty($matches)) {
+                // Sort matches to get the latest version first
+                rsort($matches);
+                foreach ($matches as $chromePath) {
+                    if (is_file($chromePath) && is_executable($chromePath)) {
+                        \Log::info("Found Chrome at: {$chromePath}");
+                        return $chromePath;
+                    }
+                }
+            }
+        }
+
+        \Log::warning("Chrome not found in any of the checked paths", [
+            'checked_paths' => $chromePaths,
+            'possible_cache_dirs' => array_values($possibleCacheDirs),
+            'env_chrome_path' => $envChromePath,
+        ]);
+
+        return null;
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\SchoolBranding;
+use App\Services\TourAssignmentService;
 use App\Helpers\OrganizationHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -144,7 +145,8 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|unique:users,email|max:255',
+            // Email must be globally unique across all users (not per-organization)
+            'email' => ['required', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users', 'email')],
             'password' => 'required|string|min:8',
             'full_name' => 'required|string|max:255',
             'role' => 'required|string|max:255', // Changed: Allow any role name, validate existence later
@@ -304,6 +306,40 @@ class UserController extends Controller
                 // Spatie will use the organization context from EnsureOrganizationAccess middleware
                 $userModel->givePermissionTo('schools.access_all');
             }
+        }
+
+        // CRITICAL: Auto-assign tours to new users
+        // initialSetup tour should ALWAYS be assigned to all users, regardless of organization or permissions
+        try {
+            $tourService = app(TourAssignmentService::class);
+            
+            // CRITICAL: Always assign initialSetup tour first (no permissions required)
+            $tourService->assignInitialSetupTour($userId);
+            
+            // Then assign other tours based on permissions (if user has organization and permissions)
+            $userModel = \App\Models\User::find($userId);
+            if ($userModel && $organizationId) {
+                // Set organization context for permission checks
+                $userModel->setPermissionsTeamId($organizationId);
+                
+                // Get user's permissions (from roles and direct assignments)
+                $userPermissions = $userModel->getAllPermissions()->pluck('name')->toArray();
+                
+                // Assign other tours based on permissions (initialSetup already assigned above)
+                $assignedTours = $tourService->assignToursForUser($userId, $userPermissions);
+                
+                if (!empty($assignedTours) && config('app.debug')) {
+                    Log::info("Assigned tours to user {$userId}: " . implode(', ', $assignedTours));
+                }
+            } else {
+                // User created without organization - still assign initialSetup (already done above)
+                if (config('app.debug')) {
+                    Log::info("Assigned initialSetup tour to user {$userId} (no organization/permissions yet)");
+                }
+            }
+        } catch (\Exception $e) {
+            // Don't fail user creation if tour assignment fails
+            Log::warning("Failed to assign tours to user {$userId}: " . $e->getMessage());
         }
 
         $createdProfile = DB::table('profiles')->where('id', $userId)->first();

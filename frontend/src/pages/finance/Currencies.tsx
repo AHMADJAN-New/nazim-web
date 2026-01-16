@@ -1,5 +1,9 @@
 /**
  * Currencies Page - Manage currencies for multi-currency support
+ *
+ * This has been refactored to follow the same dialog pattern as IncomeCategories,
+ * with inline <form> elements inside the Dialogs (no nested form component),
+ * to avoid any focus/selection issues while typing.
  */
 
 import { Plus, Pencil, Trash2, Coins, Star } from 'lucide-react';
@@ -120,85 +124,8 @@ export default function Currencies() {
         );
     }
 
-    const CurrencyForm = ({ onSubmit, isLoading: loading }: { onSubmit: () => void; isLoading: boolean }) => (
-        <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="code">{t('finance.currencyCode') || 'Currency Code'} *</Label>
-                    <Input
-                        id="code"
-                        value={formData.code}
-                        onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                        placeholder="USD"
-                        maxLength={3}
-                        disabled={!!editCurrency}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                        {t('finance.currencyCodeHint') || 'ISO 4217 code (3 letters)'}
-                    </p>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
-                    <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder={t('finance.currencyNamePlaceholder') || 'e.g., US Dollar'}
-                    />
-                </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="symbol">{t('finance.currencySymbol') || 'Symbol'}</Label>
-                    <Input
-                        id="symbol"
-                        value={formData.symbol || ''}
-                        onChange={(e) => setFormData({ ...formData, symbol: e.target.value })}
-                        placeholder="$"
-                        maxLength={10}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="decimalPlaces">{t('finance.decimalPlaces') || 'Decimal Places'}</Label>
-                    <Input
-                        id="decimalPlaces"
-                        type="number"
-                        min="0"
-                        max="6"
-                        value={formData.decimalPlaces}
-                        onChange={(e) => setFormData({ ...formData, decimalPlaces: parseInt(e.target.value) || 2 })}
-                    />
-                </div>
-            </div>
-            <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                    <Switch
-                        id="isBase"
-                        checked={formData.isBase}
-                        onCheckedChange={(checked) => setFormData({ ...formData, isBase: checked })}
-                    />
-                    <Label htmlFor="isBase">{t('finance.baseCurrency') || 'Base Currency'}</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <Switch
-                        id="isActive"
-                        checked={formData.isActive}
-                        onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                    />
-                    <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
-                </div>
-            </div>
-            <DialogFooter>
-                <Button onClick={onSubmit} disabled={loading || !formData.code || !formData.name}>
-                    {loading ? <LoadingSpinner className="mr-2 h-4 w-4" /> : null}
-                    {editCurrency ? t('common.update') || 'Update' : t('common.create') || 'Create'}
-                </Button>
-            </DialogFooter>
-        </div>
-    );
-
     return (
-        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
             <PageHeader
                 title={t('finance.currencies') || 'Currencies'}
                 description={t('finance.currenciesDescription') || 'Manage currencies for multi-currency support'}
@@ -210,7 +137,14 @@ export default function Currencies() {
                 }}
             />
 
-            <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
+            {/* Create Currency Dialog (IncomeCategories-style inline form) */}
+            <Dialog
+                open={isCreateOpen}
+                onOpenChange={(open) => {
+                    setIsCreateOpen(open);
+                    if (!open) resetForm();
+                }}
+            >
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>{t('finance.addCurrency') || 'Add Currency'}</DialogTitle>
@@ -218,7 +152,105 @@ export default function Currencies() {
                             {t('finance.addCurrencyDescription') || 'Create a new currency'}
                         </DialogDescription>
                     </DialogHeader>
-                    <CurrencyForm onSubmit={handleCreate} isLoading={createCurrency.isPending} />
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleCreate();
+                        }}
+                        className="space-y-4"
+                    >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="code">{t('finance.currencyCode') || 'Currency Code'} *</Label>
+                                <Input
+                                    id="code"
+                                    value={formData.code}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            code: e.target.value.toUpperCase(),
+                                        })
+                                    }
+                                    placeholder="USD"
+                                    maxLength={3}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    {t('finance.currencyCodeHint') || 'ISO 4217 code (3 letters)'}
+                                </p>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="name">{t('events.name') || 'Name'} *</Label>
+                                <Input
+                                    id="name"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    placeholder={t('finance.currencyNamePlaceholder') || 'e.g., US Dollar'}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="symbol">{t('finance.currencySymbol') || 'Symbol'}</Label>
+                                <Input
+                                    id="symbol"
+                                    value={formData.symbol || ''}
+                                    onChange={(e) => setFormData({ ...formData, symbol: e.target.value })}
+                                    placeholder="$"
+                                    maxLength={10}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="decimalPlaces">{t('finance.decimalPlaces') || 'Decimal Places'}</Label>
+                                <Input
+                                    id="decimalPlaces"
+                                    type="number"
+                                    min="0"
+                                    max="6"
+                                    value={formData.decimalPlaces}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            decimalPlaces: Number.isNaN(parseInt(e.target.value, 10))
+                                                ? 2
+                                                : parseInt(e.target.value, 10),
+                                        })
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    id="isBase"
+                                    checked={formData.isBase}
+                                    onCheckedChange={(checked) =>
+                                        setFormData({ ...formData, isBase: checked })
+                                    }
+                                />
+                                <Label htmlFor="isBase">
+                                    {t('finance.baseCurrency') || 'Base Currency'}
+                                </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    id="isActive"
+                                    checked={formData.isActive}
+                                    onCheckedChange={(checked) =>
+                                        setFormData({ ...formData, isActive: checked })
+                                    }
+                                />
+                                <Label htmlFor="isActive">{t('events.active') || 'Active'}</Label>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                type="submit"
+                                disabled={createCurrency.isPending || !formData.code || !formData.name}
+                            >
+                                {t('events.create') || 'Create'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 
@@ -236,75 +268,92 @@ export default function Currencies() {
                 <CardContent>
                     <div className="overflow-x-auto">
                         <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>{t('finance.currencyCode') || 'Code'}</TableHead>
-                                <TableHead>{t('common.name') || 'Name'}</TableHead>
-                                <TableHead>{t('finance.currencySymbol') || 'Symbol'}</TableHead>
-                                <TableHead>{t('finance.decimalPlaces') || 'Decimals'}</TableHead>
-                                <TableHead>{t('finance.baseCurrency') || 'Base'}</TableHead>
-                                <TableHead>{t('common.status') || 'Status'}</TableHead>
-                                <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {currencies?.map((currency) => (
-                                <TableRow key={currency.id}>
-                                    <TableCell className="font-medium">{currency.code}</TableCell>
-                                    <TableCell>{currency.name}</TableCell>
-                                    <TableCell>{currency.symbol || '-'}</TableCell>
-                                    <TableCell>{currency.decimalPlaces}</TableCell>
-                                    <TableCell>
-                                        {currency.isBase ? (
-                                            <Badge variant="default" className="gap-1">
-                                                <Star className="h-3 w-3" />
-                                                {t('common.yes') || 'Yes'}
-                                            </Badge>
-                                        ) : (
-                                            <span className="text-muted-foreground">-</span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={currency.isActive ? 'default' : 'secondary'}>
-                                            {currency.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => openEditDialog(currency)}
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => setDeleteId(currency.id)}
-                                                disabled={currency.isBase}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {(!currencies || currencies.length === 0) && (
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                                        {t('finance.noCurrencies') || 'No currencies found'}
-                                    </TableCell>
+                                    <TableHead>{t('finance.currencyCode') || 'Code'}</TableHead>
+                                    <TableHead>{t('events.name') || 'Name'}</TableHead>
+                                    <TableHead>{t('finance.currencySymbol') || 'Symbol'}</TableHead>
+                                    <TableHead>{t('finance.decimalPlaces') || 'Decimals'}</TableHead>
+                                    <TableHead>{t('finance.baseCurrency') || 'Base'}</TableHead>
+                                    <TableHead>{t('events.status') || 'Status'}</TableHead>
+                                    <TableHead className="text-right">
+                                        {t('events.actions') || 'Actions'}
+                                    </TableHead>
                                 </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {currencies?.map((currency) => (
+                                    <TableRow key={currency.id}>
+                                        <TableCell className="font-medium">{currency.code}</TableCell>
+                                        <TableCell>{currency.name}</TableCell>
+                                        <TableCell>{currency.symbol || '-'}</TableCell>
+                                        <TableCell>{currency.decimalPlaces}</TableCell>
+                                        <TableCell>
+                                            {currency.isBase ? (
+                                                <Badge variant="default" className="gap-1">
+                                                    <Star className="h-3 w-3" />
+                                                    {t('events.yes') || 'Yes'}
+                                                </Badge>
+                                            ) : (
+                                                <span className="text-muted-foreground">-</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant={currency.isActive ? 'default' : 'secondary'}
+                                            >
+                                                {currency.isActive
+                                                    ? t('events.active') || 'Active'
+                                                    : t('events.inactive') || 'Inactive'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => openEditDialog(currency)}
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => setDeleteId(currency.id)}
+                                                    disabled={currency.isBase}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {(!currencies || currencies.length === 0) && (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={7}
+                                            className="text-center py-8 text-muted-foreground"
+                                        >
+                                            {t('finance.noCurrencies') || 'No currencies found'}
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Edit Dialog */}
-            <Dialog open={!!editCurrency} onOpenChange={(open) => { if (!open) { setEditCurrency(null); resetForm(); } }}>
+            {/* Edit Dialog - mirrors IncomeCategories edit dialog structure */}
+            <Dialog
+                open={!!editCurrency}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setEditCurrency(null);
+                        resetForm();
+                    }
+                }}
+            >
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>{t('finance.editCurrency') || 'Edit Currency'}</DialogTitle>
@@ -312,23 +361,143 @@ export default function Currencies() {
                             {t('finance.editCurrencyDescription') || 'Update currency details'}
                         </DialogDescription>
                     </DialogHeader>
-                    <CurrencyForm onSubmit={handleUpdate} isLoading={updateCurrency.isPending} />
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleUpdate();
+                        }}
+                        className="space-y-4"
+                    >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-code">
+                                    {t('finance.currencyCode') || 'Currency Code'} *
+                                </Label>
+                                <Input
+                                    id="edit-code"
+                                    value={formData.code}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            code: e.target.value.toUpperCase(),
+                                        })
+                                    }
+                                    placeholder="USD"
+                                    maxLength={3}
+                                    disabled
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    {t('finance.currencyCodeHint') || 'ISO 4217 code (3 letters)'}
+                                </p>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-name">{t('events.name') || 'Name'} *</Label>
+                                <Input
+                                    id="edit-name"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    placeholder={t('finance.currencyNamePlaceholder') || 'e.g., US Dollar'}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-symbol">
+                                    {t('finance.currencySymbol') || 'Symbol'}
+                                </Label>
+                                <Input
+                                    id="edit-symbol"
+                                    value={formData.symbol || ''}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, symbol: e.target.value })
+                                    }
+                                    placeholder="$"
+                                    maxLength={10}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-decimalPlaces">
+                                    {t('finance.decimalPlaces') || 'Decimal Places'}
+                                </Label>
+                                <Input
+                                    id="edit-decimalPlaces"
+                                    type="number"
+                                    min="0"
+                                    max="6"
+                                    value={formData.decimalPlaces}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            decimalPlaces: Number.isNaN(parseInt(e.target.value, 10))
+                                                ? 2
+                                                : parseInt(e.target.value, 10),
+                                        })
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    id="edit-isBase"
+                                    checked={formData.isBase}
+                                    onCheckedChange={(checked) =>
+                                        setFormData({ ...formData, isBase: checked })
+                                    }
+                                />
+                                <Label htmlFor="edit-isBase">
+                                    {t('finance.baseCurrency') || 'Base Currency'}
+                                </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    id="edit-isActive"
+                                    checked={formData.isActive}
+                                    onCheckedChange={(checked) =>
+                                        setFormData({ ...formData, isActive: checked })
+                                    }
+                                />
+                                <Label htmlFor="edit-isActive">
+                                    {t('events.active') || 'Active'}
+                                </Label>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                type="submit"
+                                disabled={updateCurrency.isPending || !formData.code || !formData.name}
+                            >
+                                {t('events.update') || 'Update'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 
             {/* Delete Confirmation */}
-            <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+            <AlertDialog
+                open={!!deleteId}
+                onOpenChange={(open) => {
+                    if (!open) setDeleteId(null);
+                }}
+            >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+                        <AlertDialogTitle>
+                            {t('events.confirmDelete') || 'Confirm Delete'}
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                            {t('finance.deleteCurrencyWarning') || 'Are you sure you want to delete this currency? This action cannot be undone.'}
+                            {t('finance.deleteCurrencyWarning') ||
+                                'Are you sure you want to delete this currency? This action cannot be undone.'}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                            {t('common.delete') || 'Delete'}
+                        <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDelete}
+                            className="bg-destructive text-destructive-foreground"
+                        >
+                            {t('events.delete') || 'Delete'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -336,5 +505,3 @@ export default function Currencies() {
         </div>
     );
 }
-
-

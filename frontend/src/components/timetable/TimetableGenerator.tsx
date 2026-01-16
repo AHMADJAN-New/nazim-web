@@ -707,7 +707,7 @@ export function TimetableGenerator() {
 		<div className="space-y-6">
 			<Card>
 				<CardHeader>
-					<CardTitle>{t('timetable.title') || 'Timetable Generation'}</CardTitle>
+					<CardTitle>{t('nav.timetable.title') || 'Timetable Generation'}</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					{/* Academic Year Selector */}
@@ -817,7 +817,7 @@ export function TimetableGenerator() {
 					{selectedAcademicYearId && (
 						<div className="flex items-center justify-between">
 							<div className="text-sm text-muted-foreground">
-								{t('timetable.summary') || 'Select classes, days, and periods, then click Generate.'}
+								{t('examReports.summary') || 'Select classes, days, and periods, then click Generate.'}
 							</div>
 							<Button onClick={generate} disabled={selectedClassIds.length === 0 || selectedSlotIds.length === 0}>
 								{t('timetable.generate') || 'Generate'}
@@ -843,21 +843,21 @@ export function TimetableGenerator() {
 			{entries.length > 0 && (
 				<Card className="print-timetable-section">
 					<CardHeader className="flex flex-row items-center justify-between">
-						<CardTitle>{t('timetable.results') || 'Results'}</CardTitle>
+						<CardTitle>{t('students.results') || 'Results'}</CardTitle>
 						<div className="flex items-center gap-2">
 							{entries.length > 0 && (
 								<ReportExportButtons
 									data={entries}
 									columns={[
-										{ key: 'day', label: t('timetable.day') || 'Day' },
+										{ key: 'day', label: t('exams.day') || 'Day' },
 										{ key: 'period', label: t('timetable.period') || 'Period' },
 										{ key: 'time', label: t('timetable.time') || 'Time' },
 										{ key: 'teacher', label: t('timetable.teacher') || 'Teacher' },
-										{ key: 'class', label: t('timetable.class') || 'Class' },
+										{ key: 'class', label: t('search.class') || 'Class' },
 										{ key: 'subject', label: t('timetable.subject') || 'Subject' },
 									]}
 									reportKey="timetable"
-									title={t('timetable.title') || 'Timetable Export'}
+									title={t('nav.timetable.title') || 'Timetable Export'}
 									transformData={(data) => {
 										const days = allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList);
 										const rows: Array<Record<string, any>> = [];
@@ -910,10 +910,10 @@ export function TimetableGenerator() {
 								size="sm"
 								onClick={handlePrint}
 								disabled={entries.length === 0}
-								title={t('timetable.print') || 'Print Timetable'}
+								title={t('events.print') || 'Print Timetable'}
 							>
 								<Printer className="h-4 w-4 mr-2" />
-								{t('timetable.print') || 'Print'}
+								{t('events.print') || 'Print'}
 							</Button>
 							<Button
 								onClick={() => {
@@ -929,7 +929,7 @@ export function TimetableGenerator() {
 								}}
 								disabled={saveEntries.length === 0 || !selectedAcademicYearId}
 							>
-								{t('timetable.save') || 'Save'}
+								{t('events.save') || 'Save'}
 							</Button>
 						</div>
 					</CardHeader>
@@ -948,7 +948,7 @@ export function TimetableGenerator() {
 									<div className="w-full overflow-x-auto max-w-full">
 										<div className="inline-block min-w-full align-middle">
 											{headerSlots.length > 0 ? (
-												<table className="min-w-full border">
+												<table className="min-w-full border text-center">
 													<thead>
 														<tr className="bg-primary text-primary-foreground">
 															<th className="p-2 border">{t('timetable.teacher') || 'Teacher'}</th>
@@ -1010,10 +1010,10 @@ export function TimetableGenerator() {
 							<TabsContent value="classes" className="mt-4">
 								<div className="w-full overflow-x-auto max-w-full">
 									<div className="inline-block min-w-full align-middle">
-										<table className="min-w-full border">
+										<table className="min-w-full border text-center">
 										<thead>
 											<tr className="bg-primary text-primary-foreground">
-												<th className="p-2 border">{t('timetable.class') || 'Class'}</th>
+												<th className="p-2 border">{t('search.class') || 'Class'}</th>
 													{(allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList)).flatMap((day) =>
 													headerSlots.map((s) => (
 														<th key={`${day}-${s.id}`} className="p-2 border">

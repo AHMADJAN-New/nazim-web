@@ -43,9 +43,9 @@ import { graduationBatchSchema, type GraduationBatchFormData } from '@/lib/valid
 const StatusBadge = ({ status }: { status: string }) => {
   const { t } = useLanguage();
   const variants: Record<string, { variant: 'default' | 'secondary' | 'outline'; label: string }> = {
-    draft: { variant: 'secondary', label: t('graduation.status.draft') || 'Draft' },
-    approved: { variant: 'default', label: t('graduation.status.approved') || 'Approved' },
-    issued: { variant: 'outline', label: t('graduation.status.issued') || 'Issued' },
+    draft: { variant: 'secondary', label: t('toast.graduation.status.draft') || 'Draft' },
+    approved: { variant: 'default', label: t('toast.graduation.status.approved') || 'Approved' },
+    issued: { variant: 'outline', label: t('toast.graduation.status.issued') || 'Issued' },
   };
   const config = variants[status] || variants.draft;
   return <Badge variant={config.variant}>{config.label}</Badge>;
@@ -380,14 +380,14 @@ export default function GraduationBatchesPage() {
   // Report export columns
   const reportColumns = useMemo(() => [
     { key: 'academic_year', label: t('fees.academicYear') || 'Academic Year' },
-    { key: 'class_name', label: t('fees.class') || 'Class' },
-    { key: 'graduation_type', label: t('graduation.graduationType') || 'Graduation Type' },
-    { key: 'class_transfer', label: t('graduation.classTransfer') || 'Class Transfer' },
+    { key: 'class_name', label: t('search.class') || 'Class' },
+    { key: 'graduation_type', label: t('toast.graduation.graduationType') || 'Graduation Type' },
+    { key: 'class_transfer', label: t('toast.graduation.classTransfer') || 'Class Transfer' },
     { key: 'exams', label: t('nav.exams') || 'Exams' },
-    { key: 'graduation_date', label: t('common.graduationDate') || 'Graduation Date' },
-    { key: 'status', label: t('common.statusLabel') || 'Status' },
-    { key: 'students_count', label: t('graduation.table.students') || 'Students' },
-    { key: 'created_at', label: t('common.createdAt') || 'Created At' },
+    { key: 'graduation_date', label: t('events.graduationDate') || 'Graduation Date' },
+    { key: 'status', label: t('events.statusLabel') || 'Status' },
+    { key: 'students_count', label: t('toast.graduation.table.students') || 'Students' },
+    { key: 'created_at', label: t('events.createdAt') || 'Created At' },
   ], [t]);
 
   // Transform data for report
@@ -396,11 +396,11 @@ export default function GraduationBatchesPage() {
       academic_year: batch.academic_year?.name || batch.academic_year_id || '-',
       class_name: batch.class?.name || batch.class_id || '-',
       graduation_type: batch.graduation_type === 'final_year'
-        ? (t('graduation.types.finalYear') || 'Final Year')
+        ? (t('toast.graduation.types.finalYear') || 'Final Year')
         : batch.graduation_type === 'promotion'
-          ? (t('graduation.types.promotion') || 'Promotion')
+          ? (t('toast.graduation.types.promotion') || 'Promotion')
           : batch.graduation_type === 'transfer'
-            ? (t('graduation.types.transfer') || 'Transfer')
+            ? (t('toast.graduation.types.transfer') || 'Transfer')
             : batch.graduation_type || '-',
       class_transfer: (batch.graduation_type === 'transfer' || batch.graduation_type === 'promotion') && batch.from_class_id && batch.to_class_id
         ? `${batch.from_class?.name || batch.from_class_id} → ${batch.to_class?.name || batch.to_class_id}`
@@ -410,11 +410,11 @@ export default function GraduationBatchesPage() {
         : '-',
       graduation_date: batch.graduation_date ? formatDate(batch.graduation_date) : '-',
       status: batch.status === 'draft'
-        ? (t('graduation.status.draft') || 'Draft')
+        ? (t('toast.graduation.status.draft') || 'Draft')
         : batch.status === 'approved'
-          ? (t('graduation.status.approved') || 'Approved')
+          ? (t('toast.graduation.status.approved') || 'Approved')
           : batch.status === 'issued'
-            ? (t('graduation.status.issued') || 'Issued')
+            ? (t('toast.graduation.status.issued') || 'Issued')
             : batch.status || '-',
       students_count: (batch.students_count || batch.students?.length || 0).toString(),
       created_at: batch.created_at ? formatDate(batch.created_at) : '-',
@@ -434,23 +434,23 @@ export default function GraduationBatchesPage() {
     }
     if (classId) {
       const cls = classes.find(c => c.id === classId);
-      if (cls) filters.push(`${t('fees.class') || 'Class'}: ${cls.name}`);
+      if (cls) filters.push(`${t('search.class') || 'Class'}: ${cls.name}`);
     }
     if (examId) {
       const exam = exams.find(e => e.id === examId);
       if (exam) filters.push(`${t('nav.exams') || 'Exam'}: ${exam.name}`);
     }
     if (statusFilter !== 'all') {
-      filters.push(`${t('common.statusLabel') || 'Status'}: ${statusFilter}`);
+      filters.push(`${t('events.statusLabel') || 'Status'}: ${statusFilter}`);
     }
     if (dateFrom) {
-      filters.push(`${t('graduation.filters.dateFrom') || 'From Date'}: ${formatDate(dateFrom)}`);
+      filters.push(`${t('toast.graduation.filters.dateFrom') || 'From Date'}: ${formatDate(dateFrom)}`);
     }
     if (dateTo) {
-      filters.push(`${t('graduation.filters.dateTo') || 'To Date'}: ${formatDate(dateTo)}`);
+      filters.push(`${t('toast.graduation.filters.dateTo') || 'To Date'}: ${formatDate(dateTo)}`);
     }
     if (searchQuery) {
-      filters.push(`${t('common.search') || 'Search'}: ${searchQuery}`);
+      filters.push(`${t('events.search') || 'Search'}: ${searchQuery}`);
     }
     return filters.join(', ');
   }, [schoolId, academicYearId, classId, examId, statusFilter, dateFrom, dateTo, searchQuery, schools, academicYears, classes, exams, t]);
@@ -461,7 +461,7 @@ export default function GraduationBatchesPage() {
       if (!data.academic_year_id || data.academic_year_id.trim() === '') {
         form.setError('academic_year_id', { 
           type: 'required', 
-          message: t('forms.required') || 'Academic year is required' 
+          message: t('events.required') || 'Academic year is required' 
         });
         return;
       }
@@ -471,7 +471,7 @@ export default function GraduationBatchesPage() {
         if (!data.class_id || data.class_id.trim() === '') {
           form.setError('class_id', { 
             type: 'required', 
-            message: t('forms.required') || 'Class is required' 
+            message: t('events.required') || 'Class is required' 
           });
           return;
         }
@@ -479,14 +479,14 @@ export default function GraduationBatchesPage() {
         if (!data.from_class_id || data.from_class_id.trim() === '') {
           form.setError('from_class_id', { 
             type: 'required', 
-            message: t('forms.required') || 'From class is required' 
+            message: t('events.required') || 'From class is required' 
           });
           return;
         }
         if (!data.to_class_id || data.to_class_id.trim() === '') {
           form.setError('to_class_id', { 
             type: 'required', 
-            message: t('forms.required') || 'To class is required' 
+            message: t('events.required') || 'To class is required' 
           });
           return;
         }
@@ -495,7 +495,7 @@ export default function GraduationBatchesPage() {
       if (!data.school_id || data.school_id.trim() === '') {
         form.setError('school_id', { 
           type: 'required', 
-          message: t('forms.required') || 'School is required' 
+          message: t('events.required') || 'School is required' 
         });
         return;
       }
@@ -504,7 +504,7 @@ export default function GraduationBatchesPage() {
       if (!data.exam_ids || data.exam_ids.length === 0) {
         form.setError('exam_ids', { 
           type: 'required', 
-          message: t('forms.required') || 'At least one exam is required' 
+          message: t('events.required') || 'At least one exam is required' 
         });
         return;
       }
@@ -692,7 +692,7 @@ export default function GraduationBatchesPage() {
       <div className="container mx-auto py-6 space-y-6">
         <PageHeader
           title={t('nav.graduation.batches') || 'Graduation Batches'}
-          description={t('graduation.batches.description') || 'Manage graduation batches, approve students, and issue certificates'}
+          description={t('toast.graduation.batches.description') || 'Manage graduation batches, approve students, and issue certificates'}
           icon={<GraduationCap className="h-5 w-5" />}
         />
         <Card>
@@ -702,7 +702,7 @@ export default function GraduationBatchesPage() {
               <div>
                 <h3 className="text-lg font-semibold">{t('common.selectSchool') || 'Select a School'}</h3>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {t('graduation.selectSchoolDescription') || 'Please select a school from the filters above to view graduation batches'}
+                  {t('toast.graduation.selectSchoolDescription') || 'Please select a school from the filters above to view graduation batches'}
                 </p>
               </div>
             </div>
@@ -716,10 +716,10 @@ export default function GraduationBatchesPage() {
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
         title={t('nav.graduation.batches') || 'Graduation Batches'}
-        description={t('graduation.batches.description') || 'Manage graduation batches, approve students, and issue certificates'}
+        description={t('toast.graduation.batches.description') || 'Manage graduation batches, approve students, and issue certificates'}
         icon={<GraduationCap className="h-5 w-5" />}
         primaryAction={{
-          label: t('common.create') || 'Create Batch',
+          label: t('events.create') || 'Create Batch',
           onClick: () => setCreateOpen(true),
           icon: <GraduationCap className="h-4 w-4" />,
         }}
@@ -785,7 +785,7 @@ export default function GraduationBatchesPage() {
             <DialogHeader>
               <DialogTitle>{t('nav.graduation.batches')}</DialogTitle>
               <DialogDescription>
-                {t('graduation.batches.description') || 'Create a new graduation batch. Configure the graduation type, select classes, exams, and set eligibility criteria.'}
+                {t('toast.graduation.batches.description') || 'Create a new graduation batch. Configure the graduation type, select classes, exams, and set eligibility criteria.'}
               </DialogDescription>
             </DialogHeader>
             <form className="space-y-4" onSubmit={form.handleSubmit(handleCreate)}>
@@ -793,7 +793,7 @@ export default function GraduationBatchesPage() {
                   {/* Graduation Type */}
                   <div>
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="graduation_type">{t('common.type') || 'Graduation Type'}</Label>
+                      <Label htmlFor="graduation_type">{t('events.type') || 'Graduation Type'}</Label>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger>
@@ -830,17 +830,17 @@ export default function GraduationBatchesPage() {
                           }}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder={t('common.type')} />
+                            <SelectValue placeholder={t('events.type')} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="final_year">
-                              {t('graduation.types.finalYear') || 'Final Year Graduation'}
+                              {t('toast.graduation.types.finalYear') || 'Final Year Graduation'}
                             </SelectItem>
                             <SelectItem value="promotion">
-                              {t('graduation.types.promotion') || 'Promotion'}
+                              {t('toast.graduation.types.promotion') || 'Promotion'}
                             </SelectItem>
                             <SelectItem value="transfer">
-                              {t('graduation.types.transfer') || 'Transfer'}
+                              {t('toast.graduation.types.transfer') || 'Transfer'}
                             </SelectItem>
                           </SelectContent>
                         </Select>
@@ -889,7 +889,7 @@ export default function GraduationBatchesPage() {
                   {/* Conditional class fields based on graduation type */}
                   {graduationType === 'final_year' ? (
                     <div>
-                      <Label>{t('fees.class')}</Label>
+                      <Label>{t('search.class')}</Label>
                       <Controller
                         control={form.control}
                         name="class_id"
@@ -901,7 +901,7 @@ export default function GraduationBatchesPage() {
                             }}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder={t('common.selectClass')} />
+                              <SelectValue placeholder={t('events.selectClass')} />
                             </SelectTrigger>
                             <SelectContent>
                               {classes.map((cls) => (
@@ -922,7 +922,7 @@ export default function GraduationBatchesPage() {
                   ) : (
                     <>
                       <div>
-                        <Label>{t('graduation.fromClass') || 'From Class'}</Label>
+                        <Label>{t('toast.graduation.fromClass') || 'From Class'}</Label>
                         <Controller
                           control={form.control}
                           name="from_class_id"
@@ -934,7 +934,7 @@ export default function GraduationBatchesPage() {
                               }}
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder={t('graduation.selectFromClass') || 'Select From Class'} />
+                                <SelectValue placeholder={t('toast.graduation.selectFromClass') || 'Select From Class'} />
                               </SelectTrigger>
                               <SelectContent>
                                 {classes.map((cls) => (
@@ -953,7 +953,7 @@ export default function GraduationBatchesPage() {
                         )}
                       </div>
                       <div>
-                        <Label>{t('graduation.toClass') || 'To Class'}</Label>
+                        <Label>{t('toast.graduation.toClass') || 'To Class'}</Label>
                         <Controller
                           control={form.control}
                           name="to_class_id"
@@ -965,7 +965,7 @@ export default function GraduationBatchesPage() {
                               }}
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder={t('graduation.selectToClass') || 'Select To Class'} />
+                                <SelectValue placeholder={t('toast.graduation.selectToClass') || 'Select To Class'} />
                               </SelectTrigger>
                               <SelectContent>
                                 {classes.filter((cls) => cls.id !== form.watch('from_class_id')).map((cls) => (
@@ -991,7 +991,7 @@ export default function GraduationBatchesPage() {
                     <Label>{t('nav.exams')}</Label>
                     <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
                       {exams.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">{t('common.noData') || 'No exams available'}</p>
+                        <p className="text-sm text-muted-foreground">{t('events.noData') || 'No exams available'}</p>
                       ) : (
                         exams.map((exam) => (
                           <div key={exam.id} className="flex items-center space-x-2">
@@ -1053,7 +1053,7 @@ export default function GraduationBatchesPage() {
 
                   {/* Attendance Settings */}
                   <div className="md:col-span-2">
-                    <Label>{t('graduation.attendance.title') || 'Attendance Requirements'}</Label>
+                    <Label>{t('toast.graduation.attendance.title') || 'Attendance Requirements'}</Label>
                     <AttendanceSettings
                       minAttendancePercentage={minAttendancePercentage}
                       requireAttendance={requireAttendance}
@@ -1068,7 +1068,7 @@ export default function GraduationBatchesPage() {
 
                   {/* Graduation Date */}
                   <div className="md:col-span-2">
-                    <Label>{t('common.graduationDate') ?? 'Graduation Date'}</Label>
+                    <Label>{t('events.graduationDate') ?? 'Graduation Date'}</Label>
                     <Controller
                       control={form.control}
                       name="graduation_date"
@@ -1088,10 +1088,10 @@ export default function GraduationBatchesPage() {
                 </div>
                 <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setCreateOpen(false)} className="w-full sm:w-auto">
-                    <span className="text-xs sm:text-sm">{t('common.cancel')}</span>
+                    <span className="text-xs sm:text-sm">{t('events.cancel')}</span>
                   </Button>
                   <Button type="submit" disabled={createBatch.isPending} className="w-full sm:w-auto">
-                    <span className="text-xs sm:text-sm">{createBatch.isPending ? t('common.processing') : t('common.save')}</span>
+                    <span className="text-xs sm:text-sm">{createBatch.isPending ? t('events.processing') : t('events.save')}</span>
                   </Button>
                 </div>
               </form>
@@ -1103,37 +1103,37 @@ export default function GraduationBatchesPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">{t('graduation.summary.totalBatches') || 'Total Batches'}</p>
+            <p className="text-xs text-muted-foreground">{t('toast.graduation.summary.totalBatches') || 'Total Batches'}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-500">{stats.draft}</div>
-            <p className="text-xs text-muted-foreground">{t('graduation.summary.draftBatches') || 'Draft'}</p>
+            <p className="text-xs text-muted-foreground">{t('toast.graduation.summary.draftBatches') || 'Draft'}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-blue-600 dark:text-blue-500">{stats.approved}</div>
-            <p className="text-xs text-muted-foreground">{t('graduation.summary.approvedBatches') || 'Approved'}</p>
+            <p className="text-xs text-muted-foreground">{t('toast.graduation.summary.approvedBatches') || 'Approved'}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-green-600 dark:text-green-500">{stats.issued}</div>
-            <p className="text-xs text-muted-foreground">{t('graduation.summary.issuedBatches') || 'Issued'}</p>
+            <p className="text-xs text-muted-foreground">{t('toast.graduation.summary.issuedBatches') || 'Issued'}</p>
           </CardContent>
         </Card>
       </div>
 
       <FilterPanel 
-        title={t('common.filters') || 'Search & Filter'}
+        title={t('events.filters') || 'Search & Filter'}
         defaultOpenDesktop={true}
         defaultOpenMobile={false}
       >
         <div className="space-y-4">
           <div>
-            <Label className="mb-2 block">{t('common.status') || 'Status'}</Label>
+            <Label className="mb-2 block">{t('events.status') || 'Status'}</Label>
             <div className="flex flex-wrap gap-2">
               <Button 
                 variant={statusFilter === 'all' ? 'default' : 'outline'}
@@ -1141,7 +1141,7 @@ export default function GraduationBatchesPage() {
                 onClick={() => setStatusFilter('all')}
                 className="text-xs sm:text-sm"
               >
-                {t('common.all') || 'All'} ({stats.total})
+                {t('subjects.all') || 'All'} ({stats.total})
               </Button>
               <Button 
                 variant={statusFilter === 'draft' ? 'default' : 'outline'}
@@ -1149,7 +1149,7 @@ export default function GraduationBatchesPage() {
                 onClick={() => setStatusFilter('draft')}
                 className="text-xs sm:text-sm"
               >
-                {t('graduation.status.draft') || 'Draft'} ({stats.draft})
+                {t('toast.graduation.status.draft') || 'Draft'} ({stats.draft})
               </Button>
               <Button 
                 variant={statusFilter === 'approved' ? 'default' : 'outline'}
@@ -1157,7 +1157,7 @@ export default function GraduationBatchesPage() {
                 onClick={() => setStatusFilter('approved')}
                 className="text-xs sm:text-sm"
               >
-                {t('graduation.status.approved') || 'Approved'} ({stats.approved})
+                {t('toast.graduation.status.approved') || 'Approved'} ({stats.approved})
               </Button>
               <Button 
                 variant={statusFilter === 'issued' ? 'default' : 'outline'}
@@ -1165,17 +1165,17 @@ export default function GraduationBatchesPage() {
                 onClick={() => setStatusFilter('issued')}
                 className="text-xs sm:text-sm"
               >
-                {t('graduation.status.issued') || 'Issued'} ({stats.issued})
+                {t('toast.graduation.status.issued') || 'Issued'} ({stats.issued})
               </Button>
             </div>
           </div>
 
           <div>
-            <Label className="mb-2 block">{t('common.search') || 'Search'}</Label>
+            <Label className="mb-2 block">{t('events.search') || 'Search'}</Label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('graduation.filters.searchPlaceholder') || 'Search by year, class, exam...'}
+                placeholder={t('toast.graduation.filters.searchPlaceholder') || 'Search by year, class, exam...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-10"
@@ -1186,7 +1186,7 @@ export default function GraduationBatchesPage() {
                   size="sm"
                   className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
                   onClick={() => setSearchQuery('')}
-                  aria-label={t('common.clear') || 'Clear'}
+                  aria-label={t('events.clear') || 'Clear'}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -1226,10 +1226,10 @@ export default function GraduationBatchesPage() {
               </Select>
             </div>
             <div>
-              <Label>{t('fees.class')}</Label>
+              <Label>{t('search.class')}</Label>
               <Select value={classId || ''} onValueChange={(val) => setClassId(val || undefined)}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('common.selectClass') ?? 'Select'} />
+                  <SelectValue placeholder={t('events.selectClass') ?? 'Select'} />
                 </SelectTrigger>
                 <SelectContent>
                   {classes.map((cls) => (
@@ -1256,11 +1256,11 @@ export default function GraduationBatchesPage() {
               </Select>
             </div>
             <div>
-              <Label>{t('graduation.filters.dateFrom') || 'From Date'}</Label>
+              <Label>{t('toast.graduation.filters.dateFrom') || 'From Date'}</Label>
               <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
             </div>
             <div>
-              <Label>{t('graduation.filters.dateTo') || 'To Date'}</Label>
+              <Label>{t('toast.graduation.filters.dateTo') || 'To Date'}</Label>
               <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
             </div>
           </div>
@@ -1283,10 +1283,10 @@ export default function GraduationBatchesPage() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold mb-2">
-                  {t('graduation.noBatches.title') || 'No Graduation Batches'}
+                  {t('toast.graduation.noBatches.title') || 'No Graduation Batches'}
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {t('graduation.noBatches.description') || 'Get started by creating your first graduation batch'}
+                  {t('toast.graduation.noBatches.description') || 'Get started by creating your first graduation batch'}
                 </p>
                 <div className="space-y-2 text-left bg-muted/50 p-4 rounded-lg">
                   <p className="text-sm font-medium">Quick Start:</p>
@@ -1300,7 +1300,7 @@ export default function GraduationBatchesPage() {
               </div>
               <Button onClick={() => setCreateOpen(true)}>
                 <GraduationCap className="h-4 w-4 sm:mr-2" />
-                <span className="text-xs sm:text-sm">{t('common.create') || 'Create Your First Batch'}</span>
+                <span className="text-xs sm:text-sm">{t('events.create') || 'Create Your First Batch'}</span>
               </Button>
             </div>
           </CardContent>
@@ -1312,7 +1312,7 @@ export default function GraduationBatchesPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">{year}</CardTitle>
-                  <Badge variant="outline">{items.length} {t('graduation.summary.totalBatches') || 'batches'}</Badge>
+                  <Badge variant="outline">{items.length} {t('toast.graduation.summary.totalBatches') || 'batches'}</Badge>
                 </div>
               </CardHeader>
               <CardContent>
@@ -1336,9 +1336,9 @@ export default function GraduationBatchesPage() {
                                 {batch.graduation_type !== 'final_year' && (
                                   <Badge variant="secondary" className="text-xs">
                                     {batch.graduation_type === 'promotion'
-                                      ? t('graduation.types.promotion') || 'Promotion'
+                                      ? t('toast.graduation.types.promotion') || 'Promotion'
                                       : batch.graduation_type === 'transfer'
-                                        ? t('graduation.types.transfer') || 'Transfer'
+                                        ? t('toast.graduation.types.transfer') || 'Transfer'
                                         : ''}
                                   </Badge>
                                 )}
@@ -1462,8 +1462,8 @@ export default function GraduationBatchesPage() {
                           )}
                         </Button>
                       </TableHead>
-                      <TableHead>{t('fees.class')}</TableHead>
-                      <TableHead>{t('graduation.classTransfer') || 'Class Transfer'}</TableHead>
+                      <TableHead>{t('search.class')}</TableHead>
+                      <TableHead>{t('toast.graduation.classTransfer') || 'Class Transfer'}</TableHead>
                       <TableHead>{t('nav.exams')}</TableHead>
                       <TableHead>
                         <Button 
@@ -1472,7 +1472,7 @@ export default function GraduationBatchesPage() {
                           className="h-8 px-2"
                           onClick={() => handleSort('graduation_date')}
                         >
-                          {t('common.graduationDate') || 'Date'}
+                          {t('events.graduationDate') || 'Date'}
                           {sortField === 'graduation_date' && (
                             <ArrowUpDown className="ml-2 h-3 w-3" />
                           )}
@@ -1485,14 +1485,14 @@ export default function GraduationBatchesPage() {
                           className="h-8 px-2"
                           onClick={() => handleSort('status')}
                         >
-                          {t('common.statusLabel')}
+                          {t('events.statusLabel')}
                           {sortField === 'status' && (
                             <ArrowUpDown className="ml-2 h-3 w-3" />
                           )}
                         </Button>
                       </TableHead>
-                      <TableHead>{t('graduation.table.students') || 'Students'}</TableHead>
-                      <TableHead>{t('common.actions')}</TableHead>
+                      <TableHead>{t('toast.graduation.table.students') || 'Students'}</TableHead>
+                      <TableHead>{t('events.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1542,8 +1542,8 @@ export default function GraduationBatchesPage() {
                             <StatusBadge status={batch.status} />
                             {batch.graduation_type && batch.graduation_type !== 'final_year' && (
                               <Badge variant="secondary" className="text-xs w-fit">
-                                {batch.graduation_type === 'transfer' ? (t('graduation.type.transfer') || 'Transfer') :
-                                 batch.graduation_type === 'promotion' ? (t('graduation.type.promotion') || 'Promotion') :
+                                {batch.graduation_type === 'transfer' ? (t('toast.graduation.type.transfer') || 'Transfer') :
+                                 batch.graduation_type === 'promotion' ? (t('toast.graduation.type.promotion') || 'Promotion') :
                                  ''}
                               </Badge>
                             )}
@@ -1582,7 +1582,7 @@ export default function GraduationBatchesPage() {
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-sm text-muted-foreground text-center sm:text-left">
-                {t('graduation.pagination.showing') || 'Showing'} {(page - 1) * 5 + 1}-{Math.min(page * 5, groupedBatches.length)} {t('graduation.pagination.of') || 'of'} {groupedBatches.length} {t('graduation.summary.totalBatches') || 'year groups'}
+                {t('toast.graduation.pagination.showing') || 'Showing'} {(page - 1) * 5 + 1}-{Math.min(page * 5, groupedBatches.length)} {t('toast.graduation.pagination.of') || 'of'} {groupedBatches.length} {t('toast.graduation.summary.totalBatches') || 'year groups'}
               </div>
               <div className="flex items-center gap-2 flex-wrap justify-center">
                 <Button
@@ -1592,7 +1592,7 @@ export default function GraduationBatchesPage() {
                   disabled={page === 1}
                   className="text-xs sm:text-sm"
                 >
-                  {t('common.previous') || 'Previous'}
+                  {t('events.previous') || 'Previous'}
                 </Button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -1626,7 +1626,7 @@ export default function GraduationBatchesPage() {
                   disabled={page === totalPages}
                   className="text-xs sm:text-sm"
                 >
-                  {t('common.next') || 'Next'}
+                  {t('events.next') || 'Next'}
                 </Button>
               </div>
             </div>
@@ -1663,7 +1663,7 @@ export default function GraduationBatchesPage() {
                           disabled={updateBatch.isPending}
                         >
                           <Edit className="h-4 w-4 sm:mr-2" />
-                          <span className="text-xs sm:text-sm">{t('common.edit')}</span>
+                          <span className="text-xs sm:text-sm">{t('events.edit')}</span>
                         </Button>
                         <Button
                           variant="destructive"
@@ -1672,14 +1672,14 @@ export default function GraduationBatchesPage() {
                           disabled={deleteBatch.isPending}
                         >
                           <Trash2 className="h-4 w-4 sm:mr-2" />
-                          <span className="text-xs sm:text-sm">{t('common.delete')}</span>
+                          <span className="text-xs sm:text-sm">{t('events.delete')}</span>
                         </Button>
                       </>
                     )}
                     <Button variant="outline" size="sm" asChild>
                       <Link to={`/graduation/batches/${selectedBatch.id}`}>
                         <Eye className="h-4 w-4 sm:mr-2" />
-                        <span className="text-xs sm:text-sm">{t('common.viewDetails') || 'View Details'}</span>
+                        <span className="text-xs sm:text-sm">{t('events.viewDetails') || 'View Details'}</span>
                       </Link>
                     </Button>
                   </div>
@@ -1705,7 +1705,7 @@ export default function GraduationBatchesPage() {
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm font-medium flex items-center gap-2">
                         <FileText className="h-4 w-4" />
-                        {t('fees.class')}
+                        {t('search.class')}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -1735,7 +1735,7 @@ export default function GraduationBatchesPage() {
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm font-medium flex items-center gap-2">
                         <GraduationCap className="h-4 w-4" />
-                        {t('common.graduationDate')}
+                        {t('events.graduationDate')}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -1749,7 +1749,7 @@ export default function GraduationBatchesPage() {
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm font-medium flex items-center gap-2">
                         <Users className="h-4 w-4" />
-                        {t('nav.students')}
+                        {t('table.students')}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -1790,7 +1790,7 @@ export default function GraduationBatchesPage() {
                         disabled={generateStudents.isPending}
                         className="w-full"
                       >
-                        {generateStudents.isPending ? t('common.processing') : t('common.generateStudents') || 'Generate Students'}
+                        {generateStudents.isPending ? t('events.processing') : t('events.generateStudents') || 'Generate Students'}
                       </Button>
                       <Button
                         variant="outline"
@@ -1798,7 +1798,7 @@ export default function GraduationBatchesPage() {
                         disabled={approveBatch.isPending || !selectedBatch.students_count}
                         className="w-full"
                       >
-                        {approveBatch.isPending ? t('common.processing') : t('common.approve')}
+                        {approveBatch.isPending ? t('events.processing') : t('events.approve')}
                       </Button>
                     </div>
                   </>
@@ -1813,19 +1813,19 @@ export default function GraduationBatchesPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('events.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('graduation.deleteConfirm') || 'Are you sure you want to delete this graduation batch? This action cannot be undone.'}
+              {t('assets.deleteConfirm') || 'Are you sure you want to delete this graduation batch? This action cannot be undone.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleteBatch.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteBatch.isPending ? t('common.processing') : t('common.delete')}
+              {deleteBatch.isPending ? t('events.processing') : t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1835,16 +1835,16 @@ export default function GraduationBatchesPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t('common.edit')} {t('nav.graduation.batches')}</DialogTitle>
+            <DialogTitle>{t('events.edit')} {t('nav.graduation.batches')}</DialogTitle>
             <DialogDescription>
-              {t('graduation.editBatchDescription') || 'Update the graduation batch settings. Some fields may be locked if students have already been generated.'}
+              {t('toast.graduation.editBatchDescription') || 'Update the graduation batch settings. Some fields may be locked if students have already been generated.'}
             </DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={editForm.handleSubmit(handleUpdate)}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Graduation Type - Read-only if batch has students */}
               <div>
-                <Label>{t('common.type') || 'Graduation Type'}</Label>
+                <Label>{t('events.type') || 'Graduation Type'}</Label>
                 <Controller
                   control={editForm.control}
                   name="graduation_type"
@@ -1865,16 +1865,16 @@ export default function GraduationBatchesPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="final_year">{t('graduation.types.finalYear') || 'Final Year'}</SelectItem>
-                        <SelectItem value="promotion">{t('graduation.types.promotion') || 'Promotion'}</SelectItem>
-                        <SelectItem value="transfer">{t('graduation.types.transfer') || 'Transfer'}</SelectItem>
+                        <SelectItem value="final_year">{t('toast.graduation.types.finalYear') || 'Final Year'}</SelectItem>
+                        <SelectItem value="promotion">{t('toast.graduation.types.promotion') || 'Promotion'}</SelectItem>
+                        <SelectItem value="transfer">{t('toast.graduation.types.transfer') || 'Transfer'}</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
                 />
                 {selectedBatch?.students_count > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    {t('graduation.cannotChangeTypeWithStudents') || 'Cannot change type when batch has students'}
+                    {t('toast.graduation.cannotChangeTypeWithStudents') || 'Cannot change type when batch has students'}
                   </p>
                 )}
                 {editForm.formState.errors.graduation_type && (
@@ -1913,14 +1913,14 @@ export default function GraduationBatchesPage() {
               {/* Conditional class fields based on graduation type */}
               {editGraduationType === 'final_year' ? (
                 <div>
-                  <Label>{t('fees.class')}</Label>
+                  <Label>{t('search.class')}</Label>
                   <Controller
                     control={editForm.control}
                     name="class_id"
                     render={({ field }) => (
                       <Select value={field.value} onValueChange={field.onChange}>
                         <SelectTrigger>
-                          <SelectValue placeholder={t('common.selectClass')} />
+                          <SelectValue placeholder={t('events.selectClass')} />
                         </SelectTrigger>
                         <SelectContent>
                           {classes.map((cls) => (
@@ -1941,14 +1941,14 @@ export default function GraduationBatchesPage() {
               ) : (
                 <>
                   <div>
-                    <Label>{t('graduation.fromClass') || 'From Class'}</Label>
+                    <Label>{t('toast.graduation.fromClass') || 'From Class'}</Label>
                     <Controller
                       control={editForm.control}
                       name="from_class_id"
                       render={({ field }) => (
                         <Select value={field.value} onValueChange={field.onChange}>
                           <SelectTrigger>
-                            <SelectValue placeholder={t('graduation.selectFromClass') || 'Select From Class'} />
+                            <SelectValue placeholder={t('toast.graduation.selectFromClass') || 'Select From Class'} />
                           </SelectTrigger>
                           <SelectContent>
                             {classes.map((cls) => (
@@ -1967,14 +1967,14 @@ export default function GraduationBatchesPage() {
                     )}
                   </div>
                   <div>
-                    <Label>{t('graduation.toClass') || 'To Class'}</Label>
+                    <Label>{t('toast.graduation.toClass') || 'To Class'}</Label>
                     <Controller
                       control={editForm.control}
                       name="to_class_id"
                       render={({ field }) => (
                         <Select value={field.value} onValueChange={field.onChange}>
                           <SelectTrigger>
-                            <SelectValue placeholder={t('graduation.selectToClass') || 'Select To Class'} />
+                            <SelectValue placeholder={t('toast.graduation.selectToClass') || 'Select To Class'} />
                           </SelectTrigger>
                           <SelectContent>
                             {classes.filter((cls) => cls.id !== editForm.watch('from_class_id')).map((cls) => (
@@ -2000,7 +2000,7 @@ export default function GraduationBatchesPage() {
                 <Label>{t('nav.exams')}</Label>
                 <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
                   {exams.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">{t('common.noData') || 'No exams available'}</p>
+                    <p className="text-sm text-muted-foreground">{t('events.noData') || 'No exams available'}</p>
                   ) : (
                     exams.map((exam) => (
                       <div key={exam.id} className="flex items-center space-x-2">
@@ -2062,7 +2062,7 @@ export default function GraduationBatchesPage() {
 
               {/* Attendance Settings */}
               <div className="md:col-span-2">
-                <Label>{t('graduation.attendance.title') || 'Attendance Requirements'}</Label>
+                <Label>{t('toast.graduation.attendance.title') || 'Attendance Requirements'}</Label>
                 <AttendanceSettings
                   minAttendancePercentage={editMinAttendancePercentage}
                   requireAttendance={editRequireAttendance}
@@ -2077,7 +2077,7 @@ export default function GraduationBatchesPage() {
               
               {/* Graduation Date */}
               <div className="md:col-span-2">
-                <Label htmlFor="edit-graduation_date">{t('common.graduationDate') ?? 'Graduation Date'}</Label>
+                <Label htmlFor="edit-graduation_date">{t('events.graduationDate') ?? 'Graduation Date'}</Label>
                 <Controller
                   control={editForm.control}
                   name="graduation_date"
@@ -2097,10 +2097,10 @@ export default function GraduationBatchesPage() {
             </div>
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                {t('common.cancel')}
+                {t('events.cancel')}
               </Button>
               <Button type="submit" disabled={updateBatch.isPending}>
-                {updateBatch.isPending ? t('common.processing') : t('common.save')}
+                {updateBatch.isPending ? t('events.processing') : t('events.save')}
               </Button>
             </div>
           </form>

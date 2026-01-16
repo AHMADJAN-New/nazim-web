@@ -295,7 +295,7 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
       },
       {
         accessorKey: 'roll_number',
-        header: t('examReports.rollNumber'),
+        header: t('students.rollNumber'),
         cell: ({ row }) => row.original.roll_number || '-',
       },
     ];
@@ -366,7 +366,7 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
       },
       {
         id: 'grade',
-        header: () => <div className="text-center">{t('examReports.grade')}</div>,
+        header: () => <div className="text-center">{t('studentReportCard.grade')}</div>,
         cell: ({ row }) => {
           const student = row.original;
           return (
@@ -392,12 +392,12 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
               {student.result === 'Pass' ? (
                 <Badge variant="default" className="gap-1">
                   <TrendingUp className="h-3 w-3" />
-                  {t('examReports.pass')}
+                  {t('events.pass')}
                 </Badge>
               ) : student.result === 'Fail' ? (
                 <Badge variant="destructive" className="gap-1">
                   <TrendingDown className="h-3 w-3" />
-                  {t('examReports.fail')}
+                  {t('events.fail')}
                 </Badge>
               ) : (
                 <Badge variant="outline">{t('examReports.incomplete') || 'Incomplete'}</Badge>
@@ -464,7 +464,7 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
           <CardContent className="py-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <p className="text-sm text-muted-foreground">{t('examReports.totalStudents')}</p>
+                <p className="text-sm text-muted-foreground">{t('students.totalStudents')}</p>
                 <p className="text-2xl font-bold">{report.summary.total_students}</p>
               </div>
               <div className="text-center">
@@ -533,9 +533,9 @@ function transformClassReportData(report: ReportData, t: (key: string) => string
       : '-';
     row.grade = student.grade || '-';
     row.result = student.result === 'Pass'
-      ? (t('examReports.pass') || 'Pass')
+      ? (t('events.pass') || 'Pass')
       : student.result === 'Fail'
-        ? (t('examReports.fail') || 'Fail')
+        ? (t('events.fail') || 'Fail')
         : (t('examReports.incomplete') || 'Incomplete');
     
     return row;
@@ -546,7 +546,7 @@ function transformClassReportData(report: ReportData, t: (key: string) => string
 function getExportColumns(report: ReportData, t: (key: string) => string): Array<{ key: string; label: string }> {
   return [
     { key: 'rank', label: t('examReports.rank') || 'Rank' },
-    { key: 'rollNumber', label: t('examReports.rollNumber') || 'Roll Number' },
+    { key: 'rollNumber', label: t('students.rollNumber') || 'Roll Number' },
     { key: 'studentName', label: t('examReports.studentName') || 'Student Name' },
     ...(report.subjects || []).map((subject: any) => ({
       key: `subject_${subject.id || subject.subject_id}`,
@@ -554,7 +554,7 @@ function getExportColumns(report: ReportData, t: (key: string) => string): Array
     })),
     { key: 'totalMarks', label: t('examReports.totalMarks') || 'Total Marks' },
     { key: 'percentage', label: t('examReports.percentage') || 'Percentage' },
-    { key: 'grade', label: t('examReports.grade') || 'Grade' },
+    { key: 'grade', label: t('studentReportCard.grade') || 'Grade' },
     { key: 'result', label: t('examReports.result') || 'Result' },
   ];
 }
@@ -623,7 +623,7 @@ export default function ConsolidatedMarkSheet() {
   }));
 
   const classOptions: ComboboxOption[] = (examClasses || []).map((cls) => {
-    const className = cls.classAcademicYear?.class?.name ?? t('classes.class') ?? 'Class';
+    const className = cls.classAcademicYear?.class?.name ?? t('search.class') ?? 'Class';
     const section = cls.classAcademicYear?.sectionName ? ` - ${cls.classAcademicYear.sectionName}` : '';
     return {
       value: cls.id,
@@ -643,7 +643,7 @@ export default function ConsolidatedMarkSheet() {
 
         if (!classReport?.students || classReport.students.length === 0) continue;
 
-        const baseClassName = examClass.classAcademicYear?.class?.name ?? t('classes.class') ?? 'Class';
+        const baseClassName = examClass.classAcademicYear?.class?.name ?? t('search.class') ?? 'Class';
         const sectionName = examClass.classAcademicYear?.sectionName ? ` - ${examClass.classAcademicYear.sectionName}` : '';
         const fullClassName = `${baseClassName}${sectionName}`;
 
@@ -668,7 +668,7 @@ export default function ConsolidatedMarkSheet() {
       <div className="container mx-auto py-6">
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <p className="text-muted-foreground">{t('common.noPermission')}</p>
+            <p className="text-muted-foreground">{t('events.noPermission')}</p>
           </CardContent>
         </Card>
       </div>
@@ -701,7 +701,7 @@ export default function ConsolidatedMarkSheet() {
                   setSelectedClassId(''); // Reset class when exam changes
                 }}
                 placeholder={t('examReports.selectExamPrompt')}
-                searchPlaceholder={t('common.search') || 'Search...'}
+                searchPlaceholder={t('events.search') || 'Search...'}
                 emptyText={t('exams.noExams') || 'No exams'}
                 disabled={examsLoading}
               />
@@ -710,13 +710,13 @@ export default function ConsolidatedMarkSheet() {
             {/* Class Selection filtered by exam - only show in single class tab */}
             {activeTab === 'single' && (
               <div className="space-y-2">
-                <Label htmlFor="class">{t('examReports.selectClass')}</Label>
+                <Label htmlFor="class">{t('events.selectClass')}</Label>
                 <Combobox
                   options={classOptions}
                   value={selectedClassId}
                   onValueChange={setSelectedClassId}
                   placeholder={t('examReports.selectClassPrompt')}
-                  searchPlaceholder={t('common.search') || 'Search...'}
+                  searchPlaceholder={t('events.search') || 'Search...'}
                   emptyText={selectedExamId ? (classesLoading ? t('common.loading') || 'Loading...' : t('classes.noClasses')) : t('examReports.selectExamFirst') || 'Select an exam first'}
                   disabled={!selectedExamId || classesLoading}
                 />
@@ -746,7 +746,7 @@ export default function ConsolidatedMarkSheet() {
                 }}
                 buildSections={async () => {
                   if (!report?.students || report.students.length === 0) return [];
-                  const className = report?.class?.name || classLabel || (t('classes.class') || 'Class');
+                  const className = report?.class?.name || classLabel || (t('search.class') || 'Class');
                   return [
                     {
                       title: className,
@@ -762,7 +762,7 @@ export default function ConsolidatedMarkSheet() {
                   data={report.students}
                   columns={[
                     { key: 'rank', label: t('examReports.rank') || 'Rank' },
-                    { key: 'rollNumber', label: t('examReports.rollNumber') || 'Roll Number' },
+                    { key: 'rollNumber', label: t('students.rollNumber') || 'Roll Number' },
                     { key: 'studentName', label: t('examReports.studentName') || 'Student Name' },
                     ...(report.subjects || []).map((subject: any) => ({
                       key: `subject_${subject.id || subject.subject_id}`,
@@ -770,7 +770,7 @@ export default function ConsolidatedMarkSheet() {
                     })),
                     { key: 'totalMarks', label: t('examReports.totalMarks') || 'Total Marks' },
                     { key: 'percentage', label: t('examReports.percentage') || 'Percentage' },
-                    { key: 'grade', label: t('examReports.grade') || 'Grade' },
+                    { key: 'grade', label: t('studentReportCard.grade') || 'Grade' },
                     { key: 'result', label: t('examReports.result') || 'Result' },
                   ]}
                   reportKey="consolidated_mark_sheet"
@@ -805,9 +805,9 @@ export default function ConsolidatedMarkSheet() {
                         : '-';
                       row.grade = student.grade || '-';
                       row.result = student.result === 'Pass'
-                        ? (t('examReports.pass') || 'Pass')
+                        ? (t('events.pass') || 'Pass')
                         : student.result === 'Fail'
-                          ? (t('examReports.fail') || 'Fail')
+                          ? (t('events.fail') || 'Fail')
                           : (t('examReports.incomplete') || 'Incomplete');
                       return row;
                     });
@@ -917,7 +917,7 @@ export default function ConsolidatedMarkSheet() {
                 <Tabs defaultValue={allExamClasses[0]?.id} className="w-full">
                   <TabsList className="w-full overflow-x-auto">
                     {allExamClasses.map((examClass) => {
-                      const className = examClass.classAcademicYear?.class?.name ?? t('classes.class') ?? 'Class';
+                      const className = examClass.classAcademicYear?.class?.name ?? t('search.class') ?? 'Class';
                       const section = examClass.classAcademicYear?.sectionName ? ` - ${examClass.classAcademicYear.sectionName}` : '';
                       return (
                         <TabsTrigger key={examClass.id} value={examClass.id} className="whitespace-nowrap">

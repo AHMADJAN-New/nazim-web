@@ -36,6 +36,7 @@ export interface HelpCenterArticle {
   excerpt: string | null;
   content: string;
   content_type: 'markdown' | 'html';
+  language: 'en' | 'ps' | 'fa' | 'ar'; // Article language
   featured_image_url: string | null;
   is_published: boolean;
   is_featured: boolean;

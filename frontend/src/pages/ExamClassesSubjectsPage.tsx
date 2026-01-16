@@ -256,7 +256,7 @@ export function ExamClassesSubjectsPage() {
     return (
       <div className="container mx-auto p-6">
         <div className="text-center py-12">
-          <p className="text-muted-foreground">{t('exams.notFound') || 'Exam not found'}</p>
+          <p className="text-muted-foreground">{t('events.notFound') || 'Exam not found'}</p>
           <Button variant="link" onClick={() => navigate('/exams')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             {t('exams.backToList') || 'Back to Exams'}
@@ -355,7 +355,7 @@ export function ExamClassesSubjectsPage() {
                           <GraduationCap className="h-4 w-4" />
                           <span className="font-medium">{displayName}</span>
                           <Badge variant="outline" className="ml-2">
-                            {subjects.length} {t('exams.subjects') || 'subjects'}
+                            {subjects.length} {t('events.subjects') || 'subjects'}
                           </Badge>
                         </div>
                         {subjects.length > 0 ? (
@@ -375,7 +375,7 @@ export function ExamClassesSubjectsPage() {
                                 <TableHead>{t('exams.subject') || 'Subject'}</TableHead>
                                 <TableHead>{t('exams.totalMarks') || 'Total Marks'}</TableHead>
                                 <TableHead>{t('exams.passingMarks') || 'Passing Marks'}</TableHead>
-                                <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                                <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -467,7 +467,7 @@ export function ExamClassesSubjectsPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>{t('exams.selectClass') || 'Select Class'}</Label>
+              <Label>{t('events.selectClass') || 'Select Class'}</Label>
               <Select value={selectedClassAcademicYearId} onValueChange={setSelectedClassAcademicYearId}>
                 <SelectTrigger>
                   <SelectValue placeholder={t('exams.selectClassPlaceholder') || 'Select a class'} />
@@ -494,13 +494,13 @@ export function ExamClassesSubjectsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddClassDialogOpen(false)}>
-              {t('common.cancel') || 'Cancel'}
+              {t('events.cancel') || 'Cancel'}
             </Button>
             <Button 
               onClick={handleAddClass} 
               disabled={!selectedClassAcademicYearId || assignClass.isPending}
             >
-              {t('common.add') || 'Add'}
+              {t('events.add') || 'Add'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -516,9 +516,9 @@ export function ExamClassesSubjectsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction onClick={handleRemoveClass} className="bg-destructive text-destructive-foreground">
-              {t('common.remove') || 'Remove'}
+              {t('events.remove') || 'Remove'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -582,13 +582,13 @@ export function ExamClassesSubjectsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setIsAddSubjectDialogOpen(false); resetSubjectForm(); }}>
-              {t('common.cancel') || 'Cancel'}
+              {t('events.cancel') || 'Cancel'}
             </Button>
             <Button 
               onClick={handleAddSubject} 
               disabled={!selectedClassSubjectId || enrollSubject.isPending}
             >
-              {t('common.add') || 'Add'}
+              {t('events.add') || 'Add'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -637,10 +637,10 @@ export function ExamClassesSubjectsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setIsEditSubjectDialogOpen(false); setSubjectToEdit(null); resetSubjectForm(); }}>
-              {t('common.cancel') || 'Cancel'}
+              {t('events.cancel') || 'Cancel'}
             </Button>
             <Button onClick={handleUpdateSubject} disabled={updateSubject.isPending}>
-              {t('common.update') || 'Update'}
+              {t('events.update') || 'Update'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -659,9 +659,9 @@ export function ExamClassesSubjectsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction onClick={handleRemoveSubject} className="bg-destructive text-destructive-foreground">
-              {t('common.remove') || 'Remove'}
+              {t('events.remove') || 'Remove'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

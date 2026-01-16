@@ -76,8 +76,9 @@ describe('useStudents', () => {
 
     const { result } = renderHook(() => useStudents(), { wrapper });
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.error).toBeFalsy();
     expect(result.current.data).toHaveLength(1);
-    expect(result.current.data?.[0]).toMatchObject({ admission_no: 'ADM-1', full_name: 'Test Student' });
+    expect(result.current.data?.[0]).toMatchObject({ admissionNumber: 'ADM-1', fullName: 'Test Student' });
   });
 });

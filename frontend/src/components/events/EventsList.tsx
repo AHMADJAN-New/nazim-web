@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/hooks/useLanguage';
 
 import { EventFormDialog } from './EventFormDialog';
 
@@ -72,6 +73,7 @@ export function EventsList({ schoolId }: EventsListProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: profile } = useProfile();
+  const { t } = useLanguage();
   const hasCheckinPermission = useHasPermission('event_checkins.create');
   const hasEventUpdatePermission = useHasPermission('events.update');
   const [search, setSearch] = useState('');
@@ -129,19 +131,19 @@ export function EventsList({ schoolId }: EventsListProps) {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">Events</h1>
-            <p className="text-muted-foreground">Manage your school events and guest lists</p>
+            <h1 className="text-2xl font-semibold">{t('events.title') || 'Events'}</h1>
+            <p className="text-muted-foreground">{t('events.description') || 'Manage your school events and guest lists'}</p>
           </div>
           <Button onClick={() => setShowCreateDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Create Event
+            {t('events.createEvent') || 'Create Event'}
           </Button>
         </div>
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <Input
-            placeholder="Search events..."
+            placeholder={t('events.searchPlaceholder') || 'Search events...'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="sm:max-w-[300px]"
@@ -151,10 +153,10 @@ export function EventsList({ schoolId }: EventsListProps) {
             onValueChange={(value) => setStatusFilter(value as EventStatus | 'all')}
           >
             <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="All statuses" />
+              <SelectValue placeholder={t('events.allStatuses') || 'All statuses'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="all">{t('events.allStatuses') || 'All statuses'}</SelectItem>
               {(Object.keys(EVENT_STATUS_LABELS) as EventStatus[]).map((status) => (
                 <SelectItem key={status} value={status}>
                   {EVENT_STATUS_LABELS[status]}
@@ -208,8 +210,8 @@ export function EventsList({ schoolId }: EventsListProps) {
         ) : events.length === 0 ? (
           <Card>
             <CardContent className="py-10 text-center text-muted-foreground">
-              <p>No events found.</p>
-              <p className="text-sm mt-1">Create your first event to get started.</p>
+              <p>{t('events.noEventsFound') || 'No events found.'}</p>
+              <p className="text-sm mt-1">{t('events.createFirstEvent') || 'Create your first event to get started.'}</p>
             </CardContent>
           </Card>
         ) : (

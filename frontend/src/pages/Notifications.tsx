@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useNotificationHandler } from "@/hooks/useNotificationHandler";
 import { useNotifications, useNotificationActions, useNotificationCount } from "@/hooks/useNotifications";
+import { getNotificationIcon } from "@/lib/notificationIcons";
 import { formatDateTime } from "@/lib/utils";
 import type { NotificationItem } from "@/types/notification";
 
@@ -133,7 +134,9 @@ export default function NotificationsPage() {
                 </div>
               )}
 
-              {notifications.map((notification, index) => (
+              {notifications.map((notification, index) => {
+                const Icon = getNotificationIcon(notification);
+                return (
                 <div key={notification.id} className="space-y-2">
                   <div 
                     className="flex items-start justify-between gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
@@ -141,13 +144,14 @@ export default function NotificationsPage() {
                   >
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         <p className="font-medium">{notification.title}</p>
                         <Badge variant={levelVariant(notification.level)} className="text-[11px]">
                           {LEVEL_COPY[notification.level ?? 'info'] ?? notification.level}
                         </Badge>
                         {!notification.read_at && (
                           <Badge variant="secondary" className="text-[11px]">
-                            {t('common.unread') ?? 'Unread'}
+                            {t('events.unread') ?? 'Unread'}
                           </Badge>
                         )}
                       </div>
@@ -198,7 +202,8 @@ export default function NotificationsPage() {
                   </div>
                   {index < notifications.length - 1 && <Separator />}
                 </div>
-              ))}
+              );
+              })}
 
               {totalPages > 1 && (
                 <Pagination className="pt-2">

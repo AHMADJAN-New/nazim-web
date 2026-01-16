@@ -11,11 +11,15 @@ import {
   Infinity as InfinityIcon,
   Receipt,
   FileText,
+  Lock,
+  RefreshCw,
+  HeadphonesIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
 import { SubscriptionStatusCard } from '@/components/subscription/SubscriptionStatusCard';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,23 +28,113 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
 import { 
   useSubscriptionStatus, 
+  useSubscriptionGateStatus,
   useUsage, 
   useFeatures,
   usePaymentHistory,
   useSubscriptionHistory,
 } from '@/hooks/useSubscription';
+import { 
+  useMaintenanceFees,
+  useLicenseFees,
+} from '@/hooks/useMaintenanceLicenseFees';
 import { formatDate } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 export default function SubscriptionPage() {
-  const { t: _t, isRTL } = useLanguage();
+  const { t, tUnsafe, isRTL } = useLanguage();
   const { data: status, isLoading: _statusLoading } = useSubscriptionStatus();
+  const { data: gateStatus } = useSubscriptionGateStatus();
   const { data: usageData, isLoading: usageLoading } = useUsage();
   const { data: features, isLoading: featuresLoading } = useFeatures();
   const { data: payments, isLoading: paymentsLoading } = usePaymentHistory();
   const { data: history, isLoading: historyLoading } = useSubscriptionHistory();
+  const { data: maintenanceStatus, isLoading: maintenanceLoading } = useMaintenanceFees();
+  const { data: licenseStatus, isLoading: licenseLoading } = useLicenseFees();
 
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Determine subscription status for messaging
+  const subscriptionAlert = useMemo(() => {
+    if (!gateStatus) return null;
+    
+    const { status: subStatus, accessLevel, trialEndsAt, message } = gateStatus;
+    
+    // Check if trial is expired
+    const isTrialExpired = subStatus === 'trial' && 
+      trialEndsAt && 
+      trialEndsAt < new Date();
+    
+    // Determine alert type based on status
+    if (isTrialExpired) {
+      return {
+        type: 'trialEnded' as const,
+        variant: 'destructive' as const,
+        icon: Clock,
+        // NOTE: Not in generated TranslationKey union yet, so use tUnsafe
+        title: tUnsafe('subscription.trialEnded'),
+        description: tUnsafe('subscription.trialEndedDescription'),
+        showRenewButton: true,
+      };
+    }
+    
+    if (subStatus === 'suspended') {
+      return {
+        type: 'suspended' as const,
+        variant: 'destructive' as const,
+        icon: XCircle,
+        title: t('subscription.suspended'),
+        description: message || t('subscription.suspendedDescription'),
+        showContactButton: true,
+      };
+    }
+    
+    if (subStatus === 'expired' || accessLevel === 'blocked' || accessLevel === 'none') {
+      return {
+        type: 'expired' as const,
+        variant: 'destructive' as const,
+        icon: XCircle,
+        title: t('subscription.expired'),
+        description: t('subscription.expiredDescription'),
+        showRenewButton: true,
+      };
+    }
+    
+    if (subStatus === 'cancelled') {
+      return {
+        type: 'cancelled' as const,
+        variant: 'destructive' as const,
+        icon: XCircle,
+        title: t('subscription.cancelled'),
+        description: t('subscription.cancelledDescription'),
+        showRenewButton: true,
+      };
+    }
+    
+    if (subStatus === 'readonly' || accessLevel === 'readonly') {
+      return {
+        type: 'readonly' as const,
+        variant: 'default' as const,
+        icon: Lock,
+        title: t('subscription.readOnlyMode'),
+        description: t('subscription.cannotMakeChanges'),
+        showRenewButton: true,
+      };
+    }
+    
+    if (subStatus === 'grace_period' || accessLevel === 'grace') {
+      return {
+        type: 'grace' as const,
+        variant: 'default' as const,
+        icon: AlertTriangle,
+        title: t('subscription.gracePeriod'),
+        description: t('subscription.gracePeriodDescription'),
+        showRenewButton: true,
+      };
+    }
+    
+    return null;
+  }, [gateStatus, t]);
 
   const groupedFeatures = features?.reduce((acc, feature) => {
     if (!acc[feature.category]) {
@@ -87,10 +181,64 @@ export default function SubscriptionPage() {
 
   return (
     <div className="container mx-auto py-6 space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Subscription Status Alert */}
+      {subscriptionAlert && (
+        <Alert 
+          variant={subscriptionAlert.variant} 
+          className={cn(
+            subscriptionAlert.variant === 'destructive' 
+              ? 'border-red-500/50 bg-red-50 dark:bg-red-950/20' 
+              : 'border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20'
+          )}
+        >
+          <subscriptionAlert.icon className={cn(
+            "h-5 w-5",
+            subscriptionAlert.variant === 'destructive' 
+              ? 'text-red-600 dark:text-red-500' 
+              : 'text-yellow-600 dark:text-yellow-500'
+          )} />
+          <AlertTitle className={cn(
+            "text-lg font-semibold",
+            subscriptionAlert.variant === 'destructive' 
+              ? 'text-red-800 dark:text-red-400' 
+              : 'text-yellow-800 dark:text-yellow-400'
+          )}>
+            {subscriptionAlert.title}
+          </AlertTitle>
+          <AlertDescription className={cn(
+            "mt-2",
+            subscriptionAlert.variant === 'destructive' 
+              ? 'text-red-700 dark:text-red-300' 
+              : 'text-yellow-700 dark:text-yellow-300'
+          )}>
+            <p className="mb-4">{subscriptionAlert.description}</p>
+            <div className="flex gap-2">
+              {subscriptionAlert.showRenewButton && (
+                <Button size="sm" asChild>
+                  <Link to="/subscription/renew">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    {t('subscription.renewNow')}
+                  </Link>
+                </Button>
+              )}
+              {subscriptionAlert.showContactButton && (
+                <Button size="sm" variant="outline" asChild>
+                  <a href="mailto:support@nazim.app">
+                    <HeadphonesIcon className="h-4 w-4 mr-2" />
+                    {t('subscription.contactSupport')}
+                  </a>
+                </Button>
+              )}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Subscription</h1>
-          <p className="text-muted-foreground">Manage your subscription and usage</p>
+          {/* NOTE: Not in generated TranslationKey union yet, so use tUnsafe */}
+          <h1 className="text-3xl font-bold">{tUnsafe('subscription.subscriptionManagement')}</h1>
+          <p className="text-muted-foreground">{tUnsafe('subscription.yourSubscriptionStatus')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
@@ -162,6 +310,139 @@ export default function SubscriptionPage() {
             </Card>
           </div>
 
+          {/* License & Maintenance Fees */}
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* License Fee Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="h-5 w-5" />
+                  {t('subscription.licenseFee') || 'License Fee'}
+                </CardTitle>
+                <CardDescription>
+                  {t('subscription.licenseFeeDescription') || 'One-time payment for software access'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {licenseLoading ? (
+                  <div className="animate-pulse space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                ) : licenseStatus ? (
+                  <>
+                    {licenseStatus.licensePaid ? (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span className="font-medium">{t('subscription.licensePaid') || 'License Paid'}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-orange-600">
+                        <AlertTriangle className="h-4 w-4" />
+                        <span className="font-medium">{t('subscription.licenseUnpaid') || 'License Unpaid'}</span>
+                      </div>
+                    )}
+                    {licenseStatus.licensePaidAt && (
+                      <div className="text-sm text-muted-foreground">
+                        {t('subscription.paidOn') || 'Paid on'}: {formatDate(licenseStatus.licensePaidAt)}
+                      </div>
+                    )}
+                    {licenseStatus.licenseAmount && (
+                      <div className="text-sm text-muted-foreground">
+                        {t('common.amount') || 'Amount'}: {licenseStatus.licenseAmount.toLocaleString()} {licenseStatus.currency}
+                      </div>
+                    )}
+                    {!licenseStatus.licensePaid && (
+                      <Button size="sm" variant="outline" asChild className="w-full">
+                        <Link to="/subscription/license-fees">
+                          {t('subscription.payLicense') || 'Pay License Fee'}
+                        </Link>
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" asChild className="w-full">
+                      <Link to="/subscription/license-fees">
+                        {t('subscription.viewLicenseHistory') || 'View License History'}
+                      </Link>
+                    </Button>
+                  </>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <p className="text-sm">{t('subscription.noSubscription') || 'No subscription found'}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Maintenance Fee Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <RefreshCw className="h-5 w-5" />
+                  {t('subscription.maintenanceFee') || 'Maintenance Fee'}
+                </CardTitle>
+                <CardDescription>
+                  {t('subscription.maintenanceFeeDescription') || 'Recurring payment for support, updates, and hosting'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {maintenanceLoading ? (
+                  <div className="animate-pulse space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                ) : maintenanceStatus ? (
+                  <>
+                    {maintenanceStatus.isOverdue ? (
+                      <div className="flex items-center gap-2 text-red-600">
+                        <AlertTriangle className="h-4 w-4" />
+                        <span className="font-medium">{t('subscription.maintenanceOverdue') || 'Overdue'}</span>
+                      </div>
+                    ) : maintenanceStatus.nextDueDate ? (
+                      <div className="flex items-center gap-2 text-blue-600">
+                        <Clock className="h-4 w-4" />
+                        <span className="font-medium">{t('subscription.nextMaintenanceDue') || 'Next Due'}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span className="font-medium">{t('subscription.noMaintenanceDue') || 'No Maintenance Due'}</span>
+                      </div>
+                    )}
+                    {maintenanceStatus.nextDueDate && (
+                      <div className="text-sm text-muted-foreground">
+                        {formatDate(maintenanceStatus.nextDueDate)}
+                        {maintenanceStatus.daysUntilDue !== null && maintenanceStatus.daysUntilDue !== undefined && (
+                          <span className="ml-2">
+                            ({maintenanceStatus.daysUntilDue} {t('subscription.daysUntilDue') || 'days'})
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {maintenanceStatus.lastPaidDate && (
+                      <div className="text-sm text-muted-foreground">
+                        {t('subscription.lastPaid') || 'Last paid'}: {formatDate(maintenanceStatus.lastPaidDate)}
+                      </div>
+                    )}
+                    {maintenanceStatus.amount && (
+                      <div className="text-sm text-muted-foreground">
+                        {t('common.amount') || 'Amount'}: {maintenanceStatus.amount.toLocaleString()} {maintenanceStatus.currency}
+                      </div>
+                    )}
+                    <Button size="sm" variant="outline" asChild className="w-full">
+                      <Link to="/subscription/maintenance-fees">
+                        {t('subscription.viewMaintenanceInvoices') || 'View Maintenance Invoices'}
+                      </Link>
+                    </Button>
+                  </>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <p className="text-sm">{t('subscription.noSubscription') || 'No subscription found'}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Recent Payments */}
           {payments && payments.length > 0 && (
             <Card>
@@ -184,6 +465,15 @@ export default function SubscriptionPage() {
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {formatDate(payment.paymentDate)}
+                          {payment.paymentType && (
+                            <span className="ml-2">
+                              ({payment.paymentType === 'license' 
+                                ? t('subscription.licensePayment') || 'License'
+                                : payment.paymentType === 'maintenance'
+                                ? t('subscription.maintenancePayment') || 'Maintenance'
+                                : t('subscription.renewalPayment') || 'Renewal'})
+                            </span>
+                          )}
                         </div>
                       </div>
                       {getPaymentStatusBadge(payment.status)}
@@ -245,7 +535,10 @@ export default function SubscriptionPage() {
                                 item.isWarning && 'text-yellow-700',
                                 item.percentage >= 100 && 'text-red-700'
                               )}>
-                                {item.current.toLocaleString()} / {item.limit.toLocaleString()}
+                                {item.resourceKey === 'storage_gb' 
+                                  ? `${Number(item.current).toFixed(2)} / ${item.limit === -1 ? '∞' : Number(item.limit).toFixed(2)} GB`
+                                  : `${item.current.toLocaleString()} / ${item.limit === -1 ? '∞' : item.limit.toLocaleString()}${item.unit ? ` ${item.unit}` : ''}`
+                                }
                               </div>
                               <div className="text-sm text-muted-foreground">
                                 {item.percentage.toFixed(1)}%
@@ -300,32 +593,48 @@ export default function SubscriptionPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-3 md:grid-cols-2">
-                    {categoryFeatures?.map((feature) => (
-                      <div 
-                        key={feature.featureKey}
-                        className={cn(
-                          'flex items-center justify-between p-3 rounded-lg border',
-                          feature.isEnabled ? 'bg-green-50 border-green-200' : 'bg-gray-50'
-                        )}
-                      >
-                        <div>
-                          <div className="font-medium">{feature.name}</div>
-                          {feature.description && (
-                            <div className="text-sm text-muted-foreground">{feature.description}</div>
+                    {categoryFeatures?.map((feature) => {
+                      const isReadonly = feature.accessLevel === 'readonly';
+                      const isFull = feature.accessLevel === 'full';
+
+                      return (
+                        <div 
+                          key={feature.featureKey}
+                          className={cn(
+                            'flex items-center justify-between p-3 rounded-lg border',
+                            isFull
+                              ? 'bg-green-50 border-green-200'
+                              : isReadonly
+                              ? 'bg-yellow-50 border-yellow-200'
+                              : 'bg-gray-50'
                           )}
+                        >
+                          <div>
+                            <div className="font-medium">{feature.name}</div>
+                            {feature.description && (
+                              <div className="text-sm text-muted-foreground">{feature.description}</div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {feature.isAddon && (
+                              <Badge variant="outline" className="text-xs">Add-on</Badge>
+                            )}
+                            {isReadonly && (
+                              <Badge variant="outline" className="text-xs text-yellow-700 border-yellow-300">
+                                Read-only
+                              </Badge>
+                            )}
+                            {isFull ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            ) : isReadonly ? (
+                              <Lock className="h-5 w-5 text-yellow-500" />
+                            ) : (
+                              <XCircle className="h-5 w-5 text-gray-400" />
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {feature.isAddon && (
-                            <Badge variant="outline" className="text-xs">Add-on</Badge>
-                          )}
-                          {feature.isEnabled ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-500" />
-                          ) : (
-                            <XCircle className="h-5 w-5 text-gray-400" />
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>

@@ -2,6 +2,7 @@ import { apiClient } from '@/lib/api/client';
 import type * as HelpCenterApi from '@/types/api/helpCenter';
 import type * as OrganizationApi from '@/types/api/organization';
 import type * as SubscriptionApi from '@/types/api/subscription';
+import type * as DesktopLicenseApi from '@/types/api/desktopLicense';
 
 /**
  * Platform Admin API Client
@@ -50,6 +51,9 @@ export const platformApi = {
         }
       }>(`/platform/organizations/${organizationId}/subscription`);
     },
+    getRevenueHistory: async (organizationId: string) => {
+      return apiClient.get<{ data: SubscriptionApi.OrganizationRevenueHistory }>(`/platform/organizations/${organizationId}/revenue-history`);
+    },
     activate: async (organizationId: string, data: SubscriptionApi.ActivateSubscriptionData) => {
       return apiClient.post<{ data: SubscriptionApi.OrganizationSubscription }>(`/platform/organizations/${organizationId}/activate`, data);
     },
@@ -67,6 +71,35 @@ export const platformApi = {
     },
     recalculateUsage: async (organizationId: string) => {
       return apiClient.post(`/platform/organizations/${organizationId}/recalculate-usage`);
+    },
+    submitLicensePayment: async (organizationId: string, data: {
+      subscription_id: string;
+      amount: number;
+      currency: 'AFN' | 'USD';
+      payment_method: string;
+      payment_reference?: string;
+      payment_date: string;
+      notes?: string;
+    }) => {
+      return apiClient.post<{ data: SubscriptionApi.PaymentRecord }>(
+        `/platform/organizations/${organizationId}/license-payment`,
+        data
+      );
+    },
+    submitMaintenancePayment: async (organizationId: string, data: {
+      subscription_id: string;
+      invoice_id?: string;
+      amount: number;
+      currency: 'AFN' | 'USD';
+      payment_method: string;
+      payment_reference?: string;
+      payment_date: string;
+      notes?: string;
+    }) => {
+      return apiClient.post<{ data: SubscriptionApi.PaymentRecord }>(
+        `/platform/organizations/${organizationId}/maintenance-payment`,
+        data
+      );
     },
   },
 
@@ -477,6 +510,72 @@ export const platformApi = {
       } }>('/platform/contact-messages/stats');
     },
   },
+  planRequests: {
+    list: async (params?: { search?: string; page?: number; per_page?: number }) => {
+      return apiClient.get<{
+        data: Array<{
+          id: string;
+          requested_plan_id?: string | null;
+          organization_name: string;
+          school_name: string;
+          school_page_url?: string | null;
+          contact_name: string;
+          contact_email: string;
+          contact_phone?: string | null;
+          contact_whatsapp?: string | null;
+          contact_position?: string | null;
+          number_of_schools?: number | null;
+          student_count?: number | null;
+          staff_count?: number | null;
+          city?: string | null;
+          country?: string | null;
+          message?: string | null;
+          created_at: string;
+          updated_at: string;
+          requested_plan?: {
+            id: string;
+            name: string;
+            slug: string;
+          } | null;
+        }>;
+        pagination: {
+          current_page: number;
+          last_page: number;
+          per_page: number;
+          total: number;
+        };
+      }>('/platform/plan-requests', params);
+    },
+    get: async (id: string) => {
+      return apiClient.get<{
+        data: {
+          id: string;
+          requested_plan_id?: string | null;
+          organization_name: string;
+          school_name: string;
+          school_page_url?: string | null;
+          contact_name: string;
+          contact_email: string;
+          contact_phone?: string | null;
+          contact_whatsapp?: string | null;
+          contact_position?: string | null;
+          number_of_schools?: number | null;
+          student_count?: number | null;
+          staff_count?: number | null;
+          city?: string | null;
+          country?: string | null;
+          message?: string | null;
+          created_at: string;
+          updated_at: string;
+          requested_plan?: {
+            id: string;
+            name: string;
+            slug: string;
+          } | null;
+        };
+      }>(`/platform/plan-requests/${id}`);
+    },
+  },
 
   // Generic request method for custom endpoints
   request: async function<T = any>(endpoint: string, options?: { method?: string; body?: string | object; params?: Record<string, string> }) {
@@ -556,6 +655,103 @@ export const platformApi = {
     },
   },
 
+  // Maintenance Fees (Platform Admin)
+  maintenanceFees: {
+    list: async (params?: { 
+      billing_period?: string; 
+      status?: string; 
+      page?: number; 
+      per_page?: number;
+    }) => {
+      return apiClient.get<{
+        data: Array<{
+          organization_id: string;
+          organization_name: string;
+          subscription_id: string;
+          billing_period: SubscriptionApi.BillingPeriod;
+          next_due_date: string | null;
+          last_paid_date: string | null;
+          is_overdue: boolean;
+          days_until_due: number | null;
+          days_overdue: number;
+          amount: number;
+          currency: 'AFN' | 'USD';
+        }>;
+        current_page: number;
+        last_page: number;
+        total: number;
+      }>('/platform/maintenance-fees', params);
+    },
+    overdue: async () => {
+      return apiClient.get<{
+        data: Array<{
+          organization_id: string;
+          organization_name: string;
+          subscription_id: string;
+          billing_period: SubscriptionApi.BillingPeriod;
+          next_due_date: string | null;
+          last_paid_date: string | null;
+          is_overdue: boolean;
+          days_overdue: number;
+          amount: number;
+          currency: 'AFN' | 'USD';
+        }>;
+      }>('/platform/maintenance-fees/overdue');
+    },
+    invoices: async (params?: {
+      organization_id?: string;
+      status?: string;
+      page?: number;
+      per_page?: number;
+    }) => {
+      return apiClient.get<{
+        data: SubscriptionApi.MaintenanceInvoice[];
+        current_page: number;
+        last_page: number;
+        total: number;
+      }>('/platform/maintenance-fees/invoices', params);
+    },
+    generateInvoices: async (data?: {
+      organization_ids?: string[];
+      billing_period?: SubscriptionApi.BillingPeriod;
+    }) => {
+      return apiClient.post<{
+        data: {
+          generated: number;
+          skipped: number;
+          invoices: SubscriptionApi.MaintenanceInvoice[];
+        };
+      }>('/platform/maintenance-fees/generate-invoices', data);
+    },
+    confirmPayment: async (paymentId: string) => {
+      return apiClient.post(`/platform/maintenance-fees/payments/${paymentId}/confirm`);
+    },
+  },
+
+  // License Fees (Platform Admin)
+  licenseFees: {
+    unpaid: async (params?: {
+      page?: number;
+      per_page?: number;
+    }) => {
+      return apiClient.get<{
+        data: Array<{
+          organization_id: string;
+          organization_name: string;
+          subscription_id: string;
+          license_paid: boolean;
+          license_paid_at: string | null;
+          license_pending: boolean;
+          license_amount: number;
+          currency: 'AFN' | 'USD';
+        }>;
+        current_page: number;
+        last_page: number;
+        total: number;
+      }>('/platform/license-fees/unpaid', params);
+    },
+  },
+
   // Maintenance Mode
   maintenance: {
     getStatus: async () => {
@@ -617,6 +813,59 @@ export const platformApi = {
           } | null;
         }>;
       }>('/platform/maintenance/history');
+    },
+  },
+
+  // Desktop License Management
+  desktopLicenses: {
+    // License Keys
+    keys: {
+      list: async () => {
+        return apiClient.get<{ data: DesktopLicenseApi.LicenseKey[] }>('/platform/desktop-licenses/keys');
+      },
+      generate: async (data: DesktopLicenseApi.GenerateKeyPairRequest) => {
+        return apiClient.post<{ data: DesktopLicenseApi.LicenseKey }>('/platform/desktop-licenses/keys', data);
+      },
+      get: async (id: string) => {
+        return apiClient.get<{ data: DesktopLicenseApi.LicenseKey }>(`/platform/desktop-licenses/keys/${id}`);
+      },
+      update: async (id: string, data: DesktopLicenseApi.UpdateKeyRequest) => {
+        return apiClient.put<{ data: DesktopLicenseApi.LicenseKey }>(`/platform/desktop-licenses/keys/${id}`, data);
+      },
+      delete: async (id: string) => {
+        return apiClient.delete(`/platform/desktop-licenses/keys/${id}`);
+      },
+    },
+    // License Operations
+    sign: async (data: DesktopLicenseApi.SignLicenseRequest) => {
+      return apiClient.post<{ data: DesktopLicenseApi.SignedLicenseResponse }>('/platform/desktop-licenses/sign', data);
+    },
+    verify: async (data: DesktopLicenseApi.VerifyLicenseRequest) => {
+      return apiClient.post<{ data: DesktopLicenseApi.VerifyLicenseResponse }>('/platform/desktop-licenses/verify', data);
+    },
+    // Desktop Licenses
+    list: async () => {
+      return apiClient.get<{ data: DesktopLicenseApi.DesktopLicense[] }>('/platform/desktop-licenses');
+    },
+    get: async (id: string) => {
+      return apiClient.get<{ data: DesktopLicenseApi.DesktopLicense }>(`/platform/desktop-licenses/${id}`);
+    },
+    download: async (id: string) => {
+      const { blob, filename } = await apiClient.requestFile(
+        `/platform/desktop-licenses/${id}/download`,
+        { method: 'GET' }
+      );
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || `license-${id}.dat`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    },
+    delete: async (id: string) => {
+      return apiClient.delete(`/platform/desktop-licenses/${id}`);
     },
   },
 };

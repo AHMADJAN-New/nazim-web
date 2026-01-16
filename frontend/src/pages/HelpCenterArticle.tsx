@@ -9,9 +9,11 @@ import {
   BookOpen,
   Share2,
 } from 'lucide-react';
-import { useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import { useState, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+
+// Lazy load react-markdown to reduce initial bundle size (351 KB)
+const ReactMarkdown = lazy(() => import('react-markdown'));
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -219,7 +221,9 @@ export default function HelpCenterArticle() {
         <CardContent className="p-8">
           <div className="prose prose-slate dark:prose-invert max-w-none">
             {article.content_type === 'markdown' ? (
-              <ReactMarkdown>{article.content}</ReactMarkdown>
+              <Suspense fallback={<LoadingSpinner />}>
+                <ReactMarkdown>{article.content}</ReactMarkdown>
+              </Suspense>
             ) : (
               <div dangerouslySetInnerHTML={{ __html: article.content }} />
             )}
@@ -240,7 +244,7 @@ export default function HelpCenterArticle() {
               disabled={hasMarkedHelpful || hasMarkedNotHelpful}
             >
               <ThumbsUp className="h-4 w-4 mr-2" />
-              {t('helpCenter.yes') || 'Yes'} ({article.helpful_count})
+              {t('events.yes') || 'Yes'} ({article.helpful_count})
             </Button>
             <Button
               variant={hasMarkedNotHelpful ? 'default' : 'outline'}
@@ -248,7 +252,7 @@ export default function HelpCenterArticle() {
               disabled={hasMarkedHelpful || hasMarkedNotHelpful}
             >
               <ThumbsDown className="h-4 w-4 mr-2" />
-              {t('helpCenter.no') || 'No'} ({article.not_helpful_count})
+              {t('events.no') || 'No'} ({article.not_helpful_count})
             </Button>
           </div>
         </CardContent>
@@ -289,4 +293,6 @@ export default function HelpCenterArticle() {
     </div>
   );
 }
+
+
 

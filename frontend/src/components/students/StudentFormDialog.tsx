@@ -42,6 +42,7 @@ import { useHasPermission } from '@/hooks/usePermissions';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
 import { useLanguage } from '@/hooks/useLanguage';
 import { studentSchema, type StudentFormData } from '@/lib/validations';
+import { showToast } from '@/lib/toast';
 import type { Student } from '@/types/domain/student';
 
 export interface StudentFormDialogProps {
@@ -229,6 +230,14 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
     }, [open, student, reset, schools]);
 
     const onSubmit = async (values: StudentFormValues) => {
+        // Check subscription limits for new students
+        if (!isEdit && !studentUsage.canCreate) {
+            const errorMessage = t('students.limitReached') || 
+                `Student limit reached (${studentUsage.current}/${studentUsage.limit}). Please upgrade your plan to create more students.`;
+            showToast.error(errorMessage);
+            return;
+        }
+
         // Duplicate check only for new students (not for updates)
         if (!isEdit) {
             try {
@@ -257,12 +266,28 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
         }
 
         if (onSubmitData) {
-            // Pass the selected picture file to the parent so it can upload after student creation
-            await onSubmitData(values, isEdit, selectedPictureFile);
+            try {
+                // Pass the selected picture file to the parent so it can upload after student creation
+                await onSubmitData(values, isEdit, selectedPictureFile);
+                // Only close dialog and call onSuccess if submission was successful
+                onSuccess?.();
+                setSelectedPictureFile(null);
+                onOpenChange(false);
+            } catch (error) {
+                // Error handling is done in the parent component (onDialogSubmit)
+                // Don't close the dialog if there was an error
+                if (import.meta.env.DEV) {
+                    console.error('Error submitting student form:', error);
+                }
+                // Re-throw to let parent handle it
+                throw error;
+            }
+        } else {
+            // If no onSubmitData, just close the dialog
+            onSuccess?.();
+            setSelectedPictureFile(null);
+            onOpenChange(false);
         }
-        onSuccess?.();
-        setSelectedPictureFile(null);
-        onOpenChange(false);
     };
 
     return (
@@ -291,7 +316,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                 aria-describedby="student-form-description"
             >
                 <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex-shrink-0">
-                    <DialogTitle className="text-lg sm:text-xl">{isEdit ? t('students.editStudent') || 'Edit Student' : t('students.add') || 'Register Student'}</DialogTitle>
+                    <DialogTitle className="text-lg sm:text-xl">{isEdit ? t('students.editStudent') || 'Edit Student' : t('events.add') || 'Register Student'}</DialogTitle>
                     <DialogDescription id="student-form-description" className="text-sm">
                         {isEdit ? t('students.updateDescription') || 'Update registration and guardian details.' : t('students.addDescription') || 'Capture admission details with guardian and residency information.'}
                     </DialogDescription>
@@ -304,7 +329,34 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+                <form onSubmit={handleSubmit(onSubmit, (errors) => {
+                    if (import.meta.env.DEV) {
+                        console.error('[StudentFormDialog] Form validation errors:', errors);
+                    }
+                    // Show first validation error to user
+                    const firstError = Object.values(errors)[0];
+                    if (firstError?.message) {
+                        showToast.error(firstError.message);
+                    } else {
+                        showToast.error(t('events.validationError') || 'Please fix form errors before submitting');
+                    }
+                    // Switch to the tab containing the first error
+                    if (firstError) {
+                        const errorField = Object.keys(errors)[0];
+                        // Map field names to tabs
+                        if (['admission_no', 'card_number', 'applying_grade', 'admission_year', 'school_id'].includes(errorField)) {
+                            setActiveTab('admission');
+                        } else if (['full_name', 'father_name', 'grandfather_name', 'mother_name', 'gender', 'birth_year', 'birth_date', 'age', 'preferred_language', 'nationality', 'previous_school'].includes(errorField)) {
+                            setActiveTab('personal');
+                        } else if (['orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district', 'curr_village', 'home_address'].includes(errorField)) {
+                            setActiveTab('address');
+                        } else if (['guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_tazkira', 'zamin_name', 'zamin_phone', 'zamin_tazkira', 'zamin_address'].includes(errorField)) {
+                            setActiveTab('guardian');
+                        } else {
+                            setActiveTab('additional');
+                        }
+                    }
+                })} className="flex flex-col flex-1 min-h-0">
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0 px-4 sm:px-6">
                         <TabsList className="flex w-full gap-1 h-auto mb-3 sm:mb-4 flex-shrink-0 overflow-x-auto pb-1 scrollbar-hide">
                             <TabsTrigger value="admission" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
@@ -337,7 +389,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                             render={({ field }) => (
                                                 <Select value={field.value || ''} onValueChange={field.onChange}>
                                                     <SelectTrigger>
-                                                        <SelectValue placeholder={t('students.selectSchool') || 'Select school'} />
+                                                        <SelectValue placeholder={t('common.selectSchool') || 'Select school'} />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         {schools.map((s) => (
@@ -355,7 +407,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <Label>
-                                            {t('students.admissionNo') || 'Admission No'}
+                                            {t('examReports.admissionNo') || 'Admission No'}
                                             <span className="text-destructive ml-1">*</span>
                                         </Label>
                                         <Input 
@@ -368,7 +420,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                         )}
                                     </div>
                                     <div>
-                                        <Label>{t('students.cardNumber') || 'Card Number'}</Label>
+                                        <Label>{t('attendanceReports.cardNumber') || 'Card Number'}</Label>
                                         <Input placeholder="Card-1001" {...register('card_number')} />
                                     </div>
                                     <div>
@@ -387,11 +439,11 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <Label>
-                                            {t('students.fullName') || 'Full Name'}
+                                            {t('userManagement.fullName') || 'Full Name'}
                                             <span className="text-destructive ml-1">*</span>
                                         </Label>
                                         <StudentAutocompleteInput
-                                            placeholder={t('students.fullName') || 'Student full name'}
+                                            placeholder={t('userManagement.fullName') || 'Student full name'}
                                             suggestions={ac?.names || []}
                                             {...register('full_name')}
                                             className={errors.full_name ? 'border-destructive' : ''}
@@ -402,11 +454,11 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                     </div>
                                     <div>
                                         <Label>
-                                            {t('students.fatherName') || 'Father Name'}
+                                            {t('examReports.fatherName') || 'Father Name'}
                                             <span className="text-destructive ml-1">*</span>
                                         </Label>
                                         <StudentAutocompleteInput
-                                            placeholder={t('students.fatherName') || 'Father name'}
+                                            placeholder={t('examReports.fatherName') || 'Father name'}
                                             suggestions={ac?.fatherNames || []}
                                             {...register('father_name')}
                                             className={errors.father_name ? 'border-destructive' : ''}
@@ -424,17 +476,20 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                         />
                                     </div>
                                     <div>
-                                        <Label>{t('students.motherName') || 'Mother Name'}</Label>
-                                        <Input placeholder={t('students.motherName') || 'Mother name'} {...register('mother_name')} />
+                                        <Label>{t('studentReportCard.motherName') || 'Mother Name'}</Label>
+                                        <Input placeholder={t('studentReportCard.motherName') || 'Mother name'} {...register('mother_name')} />
                                     </div>
                                     <div>
-                                        <Label>{t('students.gender') || 'Gender'}</Label>
+                                        <Label>
+                                            {t('students.gender') || 'Gender'}
+                                            <span className="text-destructive ml-1">*</span>
+                                        </Label>
                                         <Controller
                                             name="gender"
                                             control={control}
                                             render={({ field }) => (
                                                 <Select value={field.value} onValueChange={field.onChange}>
-                                                    <SelectTrigger>
+                                                    <SelectTrigger className={errors.gender ? 'border-destructive' : ''}>
                                                         <SelectValue placeholder={t('students.selectGender') || 'Select gender'} />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -444,6 +499,9 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                                 </Select>
                                             )}
                                         />
+                                        {errors.gender && (
+                                            <p className="text-sm text-destructive mt-1">{errors.gender.message}</p>
+                                        )}
                                     </div>
                                     <div>
                                         <Label>{t('students.birthYear') || 'Birth Year'}</Label>
@@ -455,7 +513,23 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                     </div>
                                     <div>
                                         <Label>{t('students.age') || 'Age'}</Label>
-                                        <Input type="number" placeholder="15" {...register('age', { valueAsNumber: true })} />
+                                        <Input 
+                                            type="number" 
+                                            placeholder="15" 
+                                            {...register('age', { 
+                                                valueAsNumber: true,
+                                                setValueAs: (value) => {
+                                                    if (value === '' || value === null || value === undefined || isNaN(value)) {
+                                                        return undefined;
+                                                    }
+                                                    return Number(value);
+                                                }
+                                            })} 
+                                            className={errors.age ? 'border-destructive' : ''}
+                                        />
+                                        {errors.age && (
+                                            <p className="text-sm text-destructive mt-1">{errors.age.message}</p>
+                                        )}
                                     </div>
                                     <div>
                                         <Label>{t('students.preferredLanguage') || 'Preferred Language'}</Label>
@@ -556,7 +630,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                             </div>
                                             <div>
                                                 <Label>{t('students.guardianPhone') || 'Guardian Phone'}</Label>
-                                                <Input placeholder={t('students.phone') || 'Phone'} {...register('guardian_phone')} />
+                                                <Input placeholder={t('events.phone') || 'Phone'} {...register('guardian_phone')} />
                                             </div>
                                             <div>
                                                 <Label>{t('students.guardianTazkira') || 'Guardian Tazkira'}</Label>
@@ -581,7 +655,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                             </div>
                                             <div>
                                                 <Label>{t('students.zaminPhone') || 'Zamin Phone'}</Label>
-                                                <Input placeholder={t('students.phone') || 'Phone'} {...register('zamin_phone')} />
+                                                <Input placeholder={t('events.phone') || 'Phone'} {...register('zamin_phone')} />
                                             </div>
                                             <div>
                                                 <Label>{t('students.zaminTazkira') || 'Zamin Tazkira'}</Label>
@@ -638,19 +712,19 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                             />
                                         </div>
                                         <div>
-                                            <Label>{t('students.status') || 'Student Status'}</Label>
+                                            <Label>{t('students.status.label') || 'Student Status'}</Label>
                                             <Controller
                                                 control={control}
                                                 name="student_status"
                                                 render={({ field }) => (
                                                     <Select value={field.value} onValueChange={field.onChange}>
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder={t('students.status') || 'Status'} />
+                                                            <SelectValue placeholder={t('students.status.label') || 'Status'} />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             <SelectItem value="applied">{t('students.applied') || 'Applied'}</SelectItem>
                                                             <SelectItem value="admitted">{t('students.admitted') || 'Admitted'}</SelectItem>
-                                                            <SelectItem value="active">{t('students.active') || 'Active'}</SelectItem>
+                                                            <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
                                                             <SelectItem value="withdrawn">{t('students.withdrawn') || 'Withdrawn'}</SelectItem>
                                                         </SelectContent>
                                                     </Select>
@@ -758,7 +832,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                             }}
                                             className="flex-1 sm:flex-initial text-sm"
                                         >
-                                            {t('common.previous') || 'Previous'}
+                                            {t('events.previous') || 'Previous'}
                                         </Button>
                                     )}
                                     {activeTab !== 'additional' && (
@@ -774,7 +848,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                             }}
                                             className="flex-1 sm:flex-initial text-sm"
                                         >
-                                            {t('common.next') || 'Next'}
+                                            {t('events.next') || 'Next'}
                                         </Button>
                                     )}
                                 </div>
@@ -783,7 +857,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                     className="w-full sm:w-auto sm:min-w-[150px] order-1 sm:order-2 text-sm"
                                     disabled={!isEdit && !studentUsage.canCreate}
                                 >
-                                    {isEdit ? t('common.save') || 'Update Student' : t('students.add') || 'Register Student'}
+                                    {isEdit ? t('events.save') || 'Update Student' : t('events.add') || 'Register Student'}
                                 </Button>
                             </div>
                         </DialogFooter>

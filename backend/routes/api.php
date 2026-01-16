@@ -36,6 +36,7 @@ use App\Http\Controllers\StudentImportController;
 use App\Http\Controllers\StudentDocumentController;
 use App\Http\Controllers\StudentEducationalHistoryController;
 use App\Http\Controllers\StudentDisciplineRecordController;
+use App\Http\Controllers\StudentHistoryController;
 use App\Http\Controllers\TeacherTimetablePreferenceController;
 use App\Http\Controllers\StudentReportController;
 use App\Http\Controllers\StaffReportController;
@@ -70,10 +71,21 @@ use App\Http\Controllers\ExamAttendanceController;
 use App\Http\Controllers\ExamNumberController;
 use App\Http\Controllers\ExamTypeController;
 use App\Http\Controllers\ExamDocumentController;
+use App\Http\Controllers\ExamPaperTemplateController;
+use App\Http\Controllers\ExamPaperTemplateFileController;
+use App\Http\Controllers\ExamPaperPreviewController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\FinanceDocumentController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\GraduationBatchController;
+
+// Lightweight health check for reverse proxy (/api/*) setups
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'service' => 'Nazim API',
+    ]);
+});
 use App\Http\Controllers\Certificates\IssuedCertificateController;
 use App\Http\Controllers\Dms\ArchiveSearchController;
 use App\Http\Controllers\Dms\DepartmentsController as DmsDepartmentsController;
@@ -91,6 +103,9 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\HelpCenterCategoryController;
 use App\Http\Controllers\HelpCenterArticleController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\MaintenanceFeeController;
+use App\Http\Controllers\LicenseFeeController;
+use App\Http\Controllers\DesktopLicenseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -148,6 +163,23 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
     Route::get('/permissions/user', [PermissionController::class, 'userPermissions']);
 });
 
+// Public Help Center routes (accessible without authentication for public articles)
+// These routes allow both authenticated and unauthenticated access
+// The controller handles visibility and permission filtering
+Route::prefix('help-center')->group(function () {
+    // Context-based article lookup (must come before {id} route to avoid conflict)
+    Route::get('/articles/context', [\App\Http\Controllers\HelpCenterArticleController::class, 'getByContext']);
+    
+    // Public article access by ID (for frontend routes like /help-center/article/{id})
+    Route::get('/articles/{id}', [\App\Http\Controllers\HelpCenterArticleController::class, 'show']);
+    
+    // Slug-based public routes (under /s prefix to avoid conflicts)
+    Route::prefix('s')->group(function () {
+        Route::get('/{categorySlug}', [\App\Http\Controllers\HelpCenterArticleController::class, 'showCategoryBySlug']);
+        Route::get('/{categorySlug}/{articleSlug}', [\App\Http\Controllers\HelpCenterArticleController::class, 'showBySlug']);
+    });
+});
+
 // Protected routes (organization context is mandatory everywhere)
 // All routes require subscription:read for basic access (allows read during grace/readonly periods)
 Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(function () {
@@ -186,12 +218,37 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     Route::apiResource('profiles', ProfileController::class);
     Route::get('/profiles/me', [ProfileController::class, 'me']);
 
+    // User Tours
+    Route::get('/user-tours/my', [\App\Http\Controllers\UserTourController::class, 'myTours']);
+    Route::get('/user-tours/for-route', [\App\Http\Controllers\UserTourController::class, 'toursForRoute']);
+    Route::apiResource('user-tours', \App\Http\Controllers\UserTourController::class);
+    Route::post('/user-tours/{id}/complete', [\App\Http\Controllers\UserTourController::class, 'complete']);
+    Route::post('/user-tours/{id}/progress', [\App\Http\Controllers\UserTourController::class, 'saveProgress']);
+
     // Users (user management)
-    Route::apiResource('users', UserController::class);
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{user}', [UserController::class, 'show']);
+    Route::middleware(['subscription:write'])->group(function () {
+        Route::post('/users', [UserController::class, 'store'])->middleware('limit:users');
+        Route::put('/users/{user}', [UserController::class, 'update']);
+        Route::delete('/users/{user}', [UserController::class, 'destroy']);
+    });
     Route::post('/users/{id}/reset-password', [UserController::class, 'resetPassword']);
 
     // Schools (school branding)
-    Route::apiResource('schools', SchoolBrandingController::class);
+    Route::get('/schools', [SchoolBrandingController::class, 'index']);
+    // Logo endpoint must come before {school} route to avoid route conflicts
+    Route::get('/schools/{school}/logos/{type}', [SchoolBrandingController::class, 'logo'])
+        ->where('type', 'primary|secondary|ministry');
+    Route::get('/schools/{school}', [SchoolBrandingController::class, 'show']);
+    Route::middleware(['subscription:write'])->group(function () {
+        Route::post('/schools', [SchoolBrandingController::class, 'store'])
+            ->middleware(['feature:multi_school', 'limit:schools']);
+        Route::put('/schools/{school}', [SchoolBrandingController::class, 'update']);
+        Route::patch('/schools/{school}', [SchoolBrandingController::class, 'update']);
+        Route::delete('/schools/{school}', [SchoolBrandingController::class, 'destroy'])
+            ->middleware(['feature:multi_school']);
+    });
 
     // Watermarks (for school branding)
     Route::get('/watermarks', [\App\Http\Controllers\WatermarkController::class, 'index']);
@@ -245,7 +302,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::get('/articles/featured', [HelpCenterArticleController::class, 'featured']);
         Route::get('/articles/popular', [HelpCenterArticleController::class, 'popular']);
         Route::get('/articles/context', [HelpCenterArticleController::class, 'getByContext']); // Contextual help
-        Route::get('/articles/{id}', [HelpCenterArticleController::class, 'show']); // Keep for admin CRUD - redirects to slug if accessed
+        // Note: GET /articles/{id} is moved to public routes above to allow unauthenticated access for public articles
         Route::post('/articles/{id}/helpful', [HelpCenterArticleController::class, 'markHelpful']);
         Route::post('/articles/{id}/not-helpful', [HelpCenterArticleController::class, 'markNotHelpful']);
         Route::middleware(['subscription:write'])->group(function () {
@@ -255,12 +312,6 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::post('/articles/{id}/publish', [HelpCenterArticleController::class, 'publish']);
             Route::post('/articles/{id}/unpublish', [HelpCenterArticleController::class, 'unpublish']);
             Route::post('/articles/{id}/archive', [HelpCenterArticleController::class, 'archive']);
-        });
-
-        // Slug-based public routes (under /s prefix to avoid conflicts)
-        Route::prefix('s')->group(function () {
-            Route::get('/{categorySlug}', [HelpCenterArticleController::class, 'showCategoryBySlug']);
-            Route::get('/{categorySlug}/{articleSlug}', [HelpCenterArticleController::class, 'showBySlug']);
         });
     });
 
@@ -301,6 +352,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::get('/staff/report/export', [StaffReportController::class, 'export']);
         Route::get('/staff', [StaffController::class, 'index']);
         Route::get('/staff/{staff}', [StaffController::class, 'show']);
+        Route::get('/staff/{id}/picture', [StaffController::class, 'getPicture']);
         Route::middleware(['subscription:write'])->group(function () {
             Route::post('/staff/{id}/picture', [StaffController::class, 'uploadPicture']);
             Route::post('/staff/{id}/document', [StaffController::class, 'uploadDocument']);
@@ -330,15 +382,17 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::delete('/residency-types/{residency_type}', [ResidencyTypeController::class, 'destroy']);
         });
 
-        // Report Templates (core feature)
-        Route::get('/report-templates/school/{schoolId}', [ReportTemplateController::class, 'bySchool']);
-        Route::get('/report-templates/default', [ReportTemplateController::class, 'getDefault']);
-        Route::get('/report-templates', [ReportTemplateController::class, 'index']);
-        Route::get('/report-templates/{report_template}', [ReportTemplateController::class, 'show']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/report-templates', [ReportTemplateController::class, 'store']);
-            Route::put('/report-templates/{report_template}', [ReportTemplateController::class, 'update']);
-            Route::delete('/report-templates/{report_template}', [ReportTemplateController::class, 'destroy']);
+        // Report Templates (requires report_templates feature)
+        Route::middleware(['feature:report_templates'])->group(function () {
+            Route::get('/report-templates/school/{schoolId}', [ReportTemplateController::class, 'bySchool']);
+            Route::get('/report-templates/default', [ReportTemplateController::class, 'getDefault']);
+            Route::get('/report-templates', [ReportTemplateController::class, 'index']);
+            Route::get('/report-templates/{report_template}', [ReportTemplateController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/report-templates', [ReportTemplateController::class, 'store']);
+                Route::put('/report-templates/{report_template}', [ReportTemplateController::class, 'update']);
+                Route::delete('/report-templates/{report_template}', [ReportTemplateController::class, 'destroy']);
+            });
         });
 
         // Staff Documents (core feature)
@@ -392,6 +446,20 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::delete('/student-discipline-records/{id}', [StudentDisciplineRecordController::class, 'destroy']);
             Route::post('/student-discipline-records/{id}/resolve', [StudentDisciplineRecordController::class, 'resolve']);
         });
+
+        // Student Profile Print
+        Route::get('/students/{student}/print-profile', [StudentController::class, 'printProfile']);
+
+        // Student Lifetime History (core feature)
+        Route::get('/students/{student}/history', [StudentHistoryController::class, 'index']);
+        Route::get('/students/{student}/history/{section}', [StudentHistoryController::class, 'section']);
+        Route::post('/students/{student}/history/export/pdf', [StudentHistoryController::class, 'exportPdf']);
+        Route::post('/students/{student}/history/export/excel', [StudentHistoryController::class, 'exportExcel']);
+        
+        // Preview route for student history template (development only)
+        // Supports token in query parameter for easy browser testing
+        Route::get('/reports/student-history/preview', [StudentHistoryController::class, 'previewTemplate'])
+            ->middleware(['token.from.query', 'auth:sanctum', 'organization', 'school.context']);
 
         // Student Admissions (core feature)
         Route::get('/student-admissions/stats', [StudentAdmissionController::class, 'stats']);
@@ -474,8 +542,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             });
         });
 
-        // Exam Types (requires exams feature)
-        Route::middleware(['feature:exams'])->group(function () {
+        // Exam Types (requires exams full)
+        Route::middleware(['feature:exams_full'])->group(function () {
             Route::get('/exam-types', [ExamTypeController::class, 'index']);
             Route::get('/exam-types/{exam_type}', [ExamTypeController::class, 'show']);
             Route::middleware(['subscription:write'])->group(function () {
@@ -504,8 +572,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         });
     });
 
-    // Exam Timetable (requires exams feature)
-    Route::middleware(['feature:exams'])->group(function () {
+    // Exam Timetable (requires exams full)
+    Route::middleware(['feature:exams_full'])->group(function () {
         Route::get('/exams/{exam}/times', [ExamTimeController::class, 'index']);
         Route::middleware(['subscription:write'])->group(function () {
             Route::post('/exams/{exam}/times', [ExamTimeController::class, 'store']);
@@ -549,8 +617,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::get('/exams/{exam}/reports/classes/{class}/subjects/{subject}', [ExamReportController::class, 'classSubjectMarkSheet']);
     });
 
-    // Exam Documents (requires exams feature)
-    Route::middleware(['feature:exams'])->group(function () {
+    // Exam Documents (requires exams full)
+    Route::middleware(['feature:exams_full'])->group(function () {
         Route::get('/exam-documents/{id}/download', [ExamDocumentController::class, 'download']);
         Route::get('/exam-documents', [ExamDocumentController::class, 'index']);
         Route::get('/exam-documents/{exam_document}', [ExamDocumentController::class, 'show']);
@@ -573,8 +641,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         });
     });
 
-    // Exam Numbers (Roll Numbers & Secret Numbers) - requires exams feature
-    Route::middleware(['feature:exams'])->group(function () {
+    // Exam Numbers (Roll Numbers & Secret Numbers) - requires exams full
+    Route::middleware(['feature:exams_full'])->group(function () {
         Route::get('/exams/{exam}/students-with-numbers', [ExamNumberController::class, 'studentsWithNumbers']);
         Route::get('/exams/{exam}/roll-numbers/start-from', [ExamNumberController::class, 'rollNumberStartFrom']);
         Route::get('/exams/{exam}/secret-numbers/start-from', [ExamNumberController::class, 'secretNumberStartFrom']);
@@ -592,8 +660,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         });
     });
 
-    // Exam Attendance - requires exams feature
-    Route::middleware(['feature:exams'])->group(function () {
+    // Exam Attendance - requires exams full
+    Route::middleware(['feature:exams_full'])->group(function () {
         Route::get('/exams/{exam}/attendance', [ExamAttendanceController::class, 'index']);
         Route::get('/exams/{exam}/attendance/summary', [ExamAttendanceController::class, 'summary']);
         Route::get('/exams/{exam}/attendance/class/{classId}', [ExamAttendanceController::class, 'byClass']);
@@ -610,8 +678,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         });
     });
 
-    // Exam Questions (requires exams feature)
-    Route::middleware(['feature:exams'])->group(function () {
+    // Exam Questions (requires question bank)
+    Route::middleware(['feature:question_bank'])->group(function () {
         Route::get('/exam/questions', [QuestionController::class, 'index']);
         Route::get('/exam/questions/{question}', [QuestionController::class, 'show']);
         Route::middleware(['subscription:write'])->group(function () {
@@ -620,6 +688,44 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::delete('/exam/questions/{question}', [QuestionController::class, 'destroy']);
             Route::post('/exam/questions/{question}/duplicate', [QuestionController::class, 'duplicate']);
             Route::post('/exam/questions/bulk-update', [QuestionController::class, 'bulkUpdate']);
+        });
+    });
+
+    // Exam Paper Generator (requires exam_paper_generator)
+    Route::middleware(['feature:exam_paper_generator'])->group(function () {
+        Route::get('/exam/paper-templates', [ExamPaperTemplateController::class, 'index']);
+        Route::get('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'show']);
+        Route::get('/exam/paper-templates/{id}/preview', [ExamPaperTemplateController::class, 'preview']);
+        Route::get('/exams/{examId}/paper-stats', [ExamPaperTemplateController::class, 'examPaperStats']);
+        Route::post('/exam/paper-templates/{id}/generate', [ExamPaperTemplateController::class, 'generate']);
+        Route::post('/exam/paper-templates/{id}/generate-html', [ExamPaperTemplateController::class, 'generateHtml']);
+
+        Route::get('/exam/paper-template-files', [ExamPaperTemplateFileController::class, 'index']);
+        Route::get('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'show']);
+        Route::get('/exam/paper-template-files/{id}/preview', [ExamPaperTemplateFileController::class, 'preview']);
+
+        Route::get('/exam/paper-preview/{templateId}/student', [ExamPaperPreviewController::class, 'studentView']);
+        Route::get('/exam/paper-preview/{templateId}/teacher', [ExamPaperPreviewController::class, 'teacherView']);
+        Route::get('/exam-subjects/{examSubjectId}/paper-preview', [ExamPaperPreviewController::class, 'examSubjectPreview']);
+        Route::get('/exam-subjects/{examSubjectId}/available-templates', [ExamPaperPreviewController::class, 'availableTemplates']);
+
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/exam/paper-templates', [ExamPaperTemplateController::class, 'store']);
+            Route::put('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'update']);
+            Route::delete('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'destroy']);
+            Route::post('/exam/paper-templates/{id}/duplicate', [ExamPaperTemplateController::class, 'duplicate']);
+            Route::post('/exam/paper-templates/{id}/items', [ExamPaperTemplateController::class, 'addItem']);
+            Route::put('/exam/paper-templates/{id}/items/{itemId}', [ExamPaperTemplateController::class, 'updateItem']);
+            Route::delete('/exam/paper-templates/{id}/items/{itemId}', [ExamPaperTemplateController::class, 'removeItem']);
+            Route::post('/exam/paper-templates/{id}/reorder', [ExamPaperTemplateController::class, 'reorderItems']);
+            Route::post('/exam/paper-templates/{id}/print-status', [ExamPaperTemplateController::class, 'updatePrintStatus']);
+
+            Route::post('/exam/paper-template-files', [ExamPaperTemplateFileController::class, 'store']);
+            Route::put('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'update']);
+            Route::delete('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'destroy']);
+            Route::post('/exam/paper-template-files/{id}/set-default', [ExamPaperTemplateFileController::class, 'setDefault']);
+
+            Route::post('/exam-subjects/{examSubjectId}/set-default-template', [ExamPaperPreviewController::class, 'setDefaultTemplate']);
         });
     });
 
@@ -632,8 +738,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::delete('/academic-years/{academic_year}', [AcademicYearController::class, 'destroy']);
         });
 
-        // Grades (requires exams feature for grading system)
-        Route::middleware(['feature:exams'])->group(function () {
+        // Grades (requires exam details)
+        Route::middleware(['feature:grades'])->group(function () {
             Route::get('/grades', [GradeController::class, 'index']);
             Route::get('/grades/{grade}', [GradeController::class, 'show']);
             Route::middleware(['subscription:write'])->group(function () {
@@ -678,8 +784,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             });
         });
 
-        // Teacher Subject Assignments (requires subjects feature)
-        Route::middleware(['feature:subjects'])->group(function () {
+        // Teacher Subject Assignments (requires teacher assignments feature)
+        Route::middleware(['feature:teacher_subject_assignments'])->group(function () {
             Route::get('/teacher-subject-assignments', [TeacherSubjectAssignmentController::class, 'index']);
             Route::get('/teacher-subject-assignments/{teacher_subject_assignment}', [TeacherSubjectAssignmentController::class, 'show']);
             Route::middleware(['subscription:write'])->group(function () {
@@ -1131,7 +1237,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::get('/reports/{id}/status', [\App\Http\Controllers\ReportGenerationController::class, 'status']);
             Route::get('/reports/{id}/download', [\App\Http\Controllers\ReportGenerationController::class, 'download']);
             Route::middleware(['subscription:write'])->group(function () {
-                Route::post('/reports/generate', [\App\Http\Controllers\ReportGenerationController::class, 'generate'])->middleware('limit:reports');
+                Route::post('/reports/generate', [\App\Http\Controllers\ReportGenerationController::class, 'generate'])->middleware('limit:report_exports');
                 Route::delete('/reports/{id}', [\App\Http\Controllers\ReportGenerationController::class, 'destroy']);
             });
         });
@@ -1216,7 +1322,11 @@ Route::post('/contact', [ContactMessageController::class, 'store']);
 
 // Authenticated subscription routes (require organization context)
 Route::middleware(['auth:sanctum', 'organization'])->prefix('subscription')->group(function () {
-    // Current subscription status
+    // Current subscription status (lite version - no permission required, for all users)
+    // CRITICAL: This endpoint is used for frontend gating and must be accessible to ALL authenticated users
+    Route::get('/status-lite', [SubscriptionController::class, 'statusLite']);
+    
+    // Current subscription status (full version - requires subscription.read permission)
     Route::get('/status', [SubscriptionController::class, 'status']);
     Route::get('/usage', [SubscriptionController::class, 'usage']);
     Route::get('/features', [SubscriptionController::class, 'features']);
@@ -1235,6 +1345,23 @@ Route::middleware(['auth:sanctum', 'organization'])->prefix('subscription')->gro
     
     // History
     Route::get('/history', [SubscriptionController::class, 'subscriptionHistory']);
+    
+    // Maintenance Fees (recurring payments)
+    Route::prefix('maintenance-fees')->group(function () {
+        Route::get('/', [MaintenanceFeeController::class, 'status']);
+        Route::get('/upcoming', [MaintenanceFeeController::class, 'upcoming']);
+        Route::get('/invoices', [MaintenanceFeeController::class, 'invoices']);
+        Route::get('/invoices/{id}', [MaintenanceFeeController::class, 'showInvoice']);
+        Route::post('/pay', [MaintenanceFeeController::class, 'submitPayment']);
+        Route::get('/payment-history', [MaintenanceFeeController::class, 'paymentHistory']);
+    });
+    
+    // License Fees (one-time payments)
+    Route::prefix('license-fees')->group(function () {
+        Route::get('/', [LicenseFeeController::class, 'status']);
+        Route::post('/pay', [LicenseFeeController::class, 'submitPayment']);
+        Route::get('/payment-history', [LicenseFeeController::class, 'paymentHistory']);
+    });
 });
 
 // Platform Admin routes (requires subscription.admin permission - GLOBAL, not organization-scoped)
@@ -1251,6 +1378,7 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     // Organization subscriptions
     Route::get('/subscriptions', [SubscriptionAdminController::class, 'listSubscriptions']);
     Route::get('/organizations/{organizationId}/subscription', [SubscriptionAdminController::class, 'getOrganizationSubscription']);
+    Route::get('/organizations/{organizationId}/revenue-history', [SubscriptionAdminController::class, 'getOrganizationRevenueHistory']);
     Route::post('/organizations/{organizationId}/activate', [SubscriptionAdminController::class, 'activateSubscription']);
     Route::post('/organizations/{organizationId}/suspend', [SubscriptionAdminController::class, 'suspendSubscription']);
     Route::post('/organizations/{organizationId}/limit-override', [SubscriptionAdminController::class, 'addLimitOverride']);
@@ -1301,12 +1429,32 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::put('/discount-codes/{id}', [SubscriptionAdminController::class, 'updateDiscountCode']);
     Route::delete('/discount-codes/{id}', [SubscriptionAdminController::class, 'deleteDiscountCode']);
     
+    // Plan requests (Enterprise contact requests)
+    Route::get('/plan-requests', [\App\Http\Controllers\LandingController::class, 'listPlanRequests']);
+    Route::get('/plan-requests/{id}', [\App\Http\Controllers\LandingController::class, 'getPlanRequest']);
+    
     // Feature & Limit Definitions
     Route::get('/feature-definitions', [SubscriptionAdminController::class, 'listFeatureDefinitions']);
     Route::get('/limit-definitions', [SubscriptionAdminController::class, 'listLimitDefinitions']);
     
     // System Operations
     Route::post('/process-transitions', [SubscriptionAdminController::class, 'processStatusTransitions']);
+    
+    // Maintenance Fees (Platform Admin)
+    Route::prefix('maintenance-fees')->group(function () {
+        Route::get('/', [SubscriptionAdminController::class, 'listMaintenanceFees']);
+        Route::get('/overdue', [SubscriptionAdminController::class, 'listOverdueMaintenanceFees']);
+        Route::get('/invoices', [SubscriptionAdminController::class, 'listMaintenanceInvoices']);
+        Route::post('/generate-invoices', [SubscriptionAdminController::class, 'generateMaintenanceInvoices']);
+        Route::post('/payments/{paymentId}/confirm', [SubscriptionAdminController::class, 'confirmMaintenancePayment']);
+    });
+    
+    // License Fees (Platform Admin)
+    Route::prefix('license-fees')->group(function () {
+        Route::get('/unpaid', [SubscriptionAdminController::class, 'listUnpaidLicenseFees']);
+        Route::get('/payments', [SubscriptionAdminController::class, 'listLicensePayments']);
+        Route::post('/payments/{paymentId}/confirm', [SubscriptionAdminController::class, 'confirmLicensePayment']);
+    });
     
     // Platform admin permissions (global, not organization-scoped)
     Route::get('/permissions/platform-admin', [PermissionController::class, 'platformAdminPermissions']);
@@ -1359,6 +1507,26 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::post('/maintenance/enable', [App\Http\Controllers\MaintenanceController::class, 'enable']);
     Route::post('/maintenance/disable', [App\Http\Controllers\MaintenanceController::class, 'disable']);
     Route::get('/maintenance/history', [App\Http\Controllers\MaintenanceController::class, 'history']);
+    
+    // Desktop License Management
+    Route::prefix('desktop-licenses')->group(function () {
+        // License Keys
+        Route::get('/keys', [App\Http\Controllers\DesktopLicenseController::class, 'listKeys']);
+        Route::post('/keys', [App\Http\Controllers\DesktopLicenseController::class, 'generateKeyPair']);
+        Route::get('/keys/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'getKey']);
+        Route::put('/keys/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'updateKey']);
+        Route::delete('/keys/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'deleteKey']);
+        
+        // License Operations
+        Route::post('/sign', [App\Http\Controllers\DesktopLicenseController::class, 'signLicense']);
+        Route::post('/verify', [App\Http\Controllers\DesktopLicenseController::class, 'verifyLicense']);
+        
+        // Desktop Licenses
+        Route::get('/', [App\Http\Controllers\DesktopLicenseController::class, 'listLicenses']);
+        Route::get('/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'getLicense']);
+        Route::get('/{id}/download', [App\Http\Controllers\DesktopLicenseController::class, 'downloadLicense']);
+        Route::delete('/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'deleteLicense']);
+    });
 });
 
 // Legacy admin subscription routes (kept for backward compatibility, but will be deprecated)
@@ -1375,6 +1543,7 @@ Route::middleware(['auth:sanctum', 'organization'])->prefix('admin/subscription'
     // Organization subscriptions
     Route::get('/subscriptions', [SubscriptionAdminController::class, 'listSubscriptions']);
     Route::get('/organizations/{organizationId}/subscription', [SubscriptionAdminController::class, 'getOrganizationSubscription']);
+    Route::get('/organizations/{organizationId}/revenue-history', [SubscriptionAdminController::class, 'getOrganizationRevenueHistory']);
     Route::post('/organizations/{organizationId}/activate', [SubscriptionAdminController::class, 'activateSubscription']);
     Route::post('/organizations/{organizationId}/suspend', [SubscriptionAdminController::class, 'suspendSubscription']);
     Route::post('/organizations/{organizationId}/limit-override', [SubscriptionAdminController::class, 'addLimitOverride']);

@@ -29,6 +29,7 @@ class HelpCenterArticle extends Model
         'excerpt',
         'content',
         'content_type',
+        'language',
         'featured_image_url',
         'is_published', // Keep for backward compatibility
         'is_featured',
@@ -504,14 +505,9 @@ class HelpCenterArticle extends Model
     /**
      * Scope to include global and organization articles
      */
-    public function scopeForOrganization($query, $organizationId)
+    public function scopeForOrganization($query, $organizationId = null)
     {
-        if ($organizationId) {
-            return $query->where(function ($q) use ($organizationId) {
-                $q->where('organization_id', $organizationId)
-                    ->orWhereNull('organization_id');
-            });
-        }
+        // All articles are global now (organization_id = NULL)
         return $query->whereNull('organization_id');
     }
 

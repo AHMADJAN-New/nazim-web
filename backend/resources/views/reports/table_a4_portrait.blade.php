@@ -116,6 +116,11 @@
     @endif
 
     {{-- Data table --}}
+    @php
+        // Ensure COLUMNS is defined, default to empty array if not set
+        $COLUMNS = $COLUMNS ?? [];
+        $ROWS = $ROWS ?? [];
+    @endphp
     <table class="data-table">
         <thead>
             <tr>
@@ -137,8 +142,17 @@
                         @php
                             $key = is_array($column) ? ($column['key'] ?? $colIndex) : $colIndex;
                             $value = is_array($row) ? ($row[$key] ?? ($row[$colIndex] ?? '')) : '';
+                            // Convert value to string to avoid htmlspecialchars() errors with arrays
+                            if (is_array($value) || is_object($value)) {
+                                $value = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                            } else {
+                                $value = (string) $value;
+                            }
+                            // Only show non-empty values, otherwise show em dash
+                            // NOTE: "0" is a valid value and must be shown.
+                            $displayValue = ($value !== null && $value !== '') ? $value : '—';
                         @endphp
-                        <td>{{ $value !== null && $value !== '' ? $value : '—' }}</td>
+                        <td>{{ $displayValue }}</td>
                     @endforeach
                 </tr>
             @empty

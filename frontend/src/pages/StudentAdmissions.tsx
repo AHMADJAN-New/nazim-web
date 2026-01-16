@@ -1,102 +1,47 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import { ColumnDef } from '@tanstack/react-table';
-import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search, UserRound, DollarSign, X, AlertTriangle } from 'lucide-react';
+import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search, DollarSign, X, MoreVertical } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
-import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import * as z from 'zod';
+import { PictureCell } from '@/components/shared/PictureCell';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudents } from '@/hooks/useStudents';
-import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useResidencyTypes } from '@/hooks/useResidencyTypes';
 import { useRooms } from '@/hooks/useRooms';
 import {
   useAdmissionStats,
-  useCreateStudentAdmission,
   useDeleteStudentAdmission,
   useStudentAdmissions,
-  useUpdateStudentAdmission,
   useBulkDeactivateAdmissions,
   type StudentAdmission,
-  type StudentAdmissionInsert,
   type AdmissionStatus,
 } from '@/hooks/useStudentAdmissions';
-import { useResourceUsage, useUsage } from '@/hooks/useSubscription';
+import { useResourceUsage } from '@/hooks/useSubscription';
 import { showToast } from '@/lib/toast';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { useDataTable } from '@/hooks/use-data-table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CalendarFormField } from '@/components/ui/calendar-form-field';
-
-// Helper to convert empty strings to null for UUID fields
-const uuidOrNull = z.preprocess(
-  (val) => {
-    if (val === '' || val === null || val === undefined) return null;
-    return val;
-  },
-  z.string().uuid().nullable().optional()
-);
-
-const getAdmissionSchema = (t: ReturnType<typeof useLanguage>['t']) => z.object({
-  organization_id: z.string().uuid().optional(),
-  school_id: uuidOrNull,
-  student_id: z.string().uuid({ message: t('admissions.studentRequired') }),
-  academic_year_id: uuidOrNull,
-  class_id: uuidOrNull,
-  class_academic_year_id: uuidOrNull,
-  residency_type_id: uuidOrNull,
-  room_id: uuidOrNull,
-  admission_year: z.string().max(10, t('admissions.admissionYearMaxLength')).optional().nullable(),
-  admission_date: z.preprocess(
-    (val) => {
-      // Handle Date object from CalendarDatePicker
-      if (val instanceof Date) {
-        return val.toISOString().slice(0, 10);
-      }
-      // Handle string
-      if (typeof val === 'string') {
-        return val;
-      }
-      return val;
-    },
-    z.string().max(30, t('admissions.admissionDateTooLong')).optional()
-  ),
-  enrollment_status: z
-    .enum(['pending', 'admitted', 'active', 'inactive', 'suspended', 'withdrawn', 'graduated'] as [AdmissionStatus, ...AdmissionStatus[]])
-    .default('admitted'),
-  enrollment_type: z.string().max(50, t('admissions.enrollmentTypeTooLong')).optional().nullable(),
-  shift: z.string().max(50, t('admissions.shiftTooLong')).optional().nullable(),
-  is_boarder: z.boolean().default(false),
-  fee_status: z.string().max(50, t('admissions.feeStatusTooLong')).optional().nullable(),
-  placement_notes: z.string().max(500, t('admissions.placementNotesMaxLength')).optional().nullable(),
-});
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { AdmissionFormDialog } from '@/components/admissions/AdmissionFormDialog';
+import { AdmissionDetailsPanel } from '@/components/admissions/AdmissionDetailsPanel';
 
 const statusVariant = (status: AdmissionStatus) => {
   switch (status) {
@@ -147,24 +92,18 @@ export function StudentAdmissions() {
   const { stats } = useAdmissionStats(orgIdForQuery);
   const { data: students } = useStudents(orgIdForQuery);
   const { data: schools } = useSchools(orgIdForQuery);
-  const { data: academicYears } = useAcademicYears(orgIdForQuery);
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string | undefined>();
-  const { data: classAcademicYears } = useClassAcademicYears(selectedAcademicYear, orgIdForQuery);
   const { data: residencyTypes } = useResidencyTypes(orgIdForQuery);
   const { data: rooms } = useRooms(undefined, orgIdForQuery);
 
-  const createAdmission = useCreateStudentAdmission();
-  const updateAdmission = useUpdateStudentAdmission();
   const deleteAdmission = useDeleteStudentAdmission();
   const bulkDeactivate = useBulkDeactivateAdmissions();
   
   // Check subscription limits for students
   const studentUsage = useResourceUsage('students');
   const isLimitReached = !studentUsage.isUnlimited && studentUsage.remaining === 0;
-  const canCreateAdmission = !isLimitReached;
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEdit, setIsEdit] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedAdmission, setSelectedAdmission] = useState<StudentAdmission | null>(null);
   const [admissionToDelete, setAdmissionToDelete] = useState<StudentAdmission | null>(null);
   const [selectedAdmissionIds, setSelectedAdmissionIds] = useState<Set<string>>(new Set());
@@ -173,45 +112,6 @@ export function StudentAdmissions() {
   const [statusFilter, setStatusFilter] = useState<'all' | AdmissionStatus>('all');
   const [residencyFilter, setResidencyFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [activeTab, setActiveTab] = useState('basic');
-
-  const admissionSchema = getAdmissionSchema(t);
-
-  const formMethods = useForm<z.infer<typeof admissionSchema>>({
-    resolver: zodResolver(admissionSchema),
-    defaultValues: {
-      enrollment_status: 'admitted',
-      is_boarder: false,
-      admission_year: new Date().getFullYear().toString(),
-    },
-  });
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    setValue,
-    watch,
-    formState: { errors },
-  } = formMethods;
-
-  const formAcademicYear = watch('academic_year_id');
-  useEffect(() => {
-    if (formAcademicYear) {
-      setSelectedAcademicYear(formAcademicYear);
-    }
-  }, [formAcademicYear]);
-
-  // Auto-select school if only one exists
-  useEffect(() => {
-    if (schools && schools.length === 1 && !isEdit && !watch('school_id')) {
-      setValue('school_id', schools[0].id, { shouldValidate: false });
-    }
-  }, [schools, isEdit, setValue, watch]);
-
-  const admittedStudentIds = new Set((admissions || []).map((adm) => adm.student_id));
-  const availableStudents = (students || []).filter((student) => !admittedStudentIds.has(student.id));
 
   // Client-side filtering for search
   const filteredAdmissions = useMemo(() => {
@@ -249,83 +149,17 @@ export function StudentAdmissions() {
   }, [admissions, schoolFilter, statusFilter, residencyFilter, searchQuery]);
 
   // Component for displaying student picture in admission table cell
+  // Uses centralized PictureCell component with image caching
   const AdmissionPictureCell = ({ admission }: { admission: StudentAdmission }) => {
-    const [imageUrl, setImageUrl] = useState<string | null>(null);
-    const [imageError, setImageError] = useState(false);
     const student = admission.student;
-    
-    useEffect(() => {
-      // Only fetch if student exists, has picturePath, and it's not empty
-      const hasPicture = student?.picturePath && student.picturePath.trim() !== '' && student?.id;
-      
-      if (hasPicture) {
-        let currentBlobUrl: string | null = null;
-        
-        const fetchImage = async () => {
-          try {
-            const { apiClient } = await import('@/lib/api/client');
-            const token = apiClient.getToken();
-            const url = `/api/students/${student.id}/picture`;
-            
-            const response = await fetch(url, {
-              method: 'GET',
-              headers: {
-                'Accept': 'image/*',
-                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-              },
-              credentials: 'include',
-            });
-            
-            if (!response.ok) {
-              if (response.status === 404) {
-                setImageError(true);
-                return;
-              }
-              throw new Error(`Failed to fetch image: ${response.status}`);
-            }
-            
-            const blob = await response.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            currentBlobUrl = blobUrl;
-            setImageUrl(blobUrl);
-            setImageError(false);
-          } catch (error) {
-            if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
-              console.error('Failed to fetch student picture:', error);
-            }
-            setImageError(true);
-          }
-        };
-        
-        fetchImage();
-        
-        return () => {
-          if (currentBlobUrl) {
-            URL.revokeObjectURL(currentBlobUrl);
-          }
-        };
-      } else {
-        // No picture path or no student, show placeholder immediately
-        setImageUrl(null);
-        setImageError(true);
-      }
-    }, [student?.id, student?.picturePath]);
-    
     return (
-      <div className="flex items-center justify-center w-12 h-12">
-        {imageUrl && !imageError ? (
-          <img
-            src={imageUrl}
-            alt={student?.fullName || 'Student'}
-            className="w-12 h-12 rounded-full object-cover border-2 border-border"
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-border">
-            <UserRound className="h-6 w-6 text-muted-foreground" />
-          </div>
-        )}
-      </div>
+      <PictureCell
+        type="student"
+        entityId={student?.id}
+        picturePath={student?.picturePath}
+        alt={student?.fullName || 'Student'}
+        size="md"
+      />
     );
   };
 
@@ -403,11 +237,11 @@ export function StudentAdmissions() {
                 <Badge variant={statusVariant(admission.enrollmentStatus)} className="shrink-0 text-xs">
                   {admission.enrollmentStatus === 'pending' ? t('admissions.pending') :
                    admission.enrollmentStatus === 'admitted' ? t('admissions.admitted') :
-                   admission.enrollmentStatus === 'active' ? t('admissions.active') :
-                   admission.enrollmentStatus === 'inactive' ? t('admissions.inactive') :
-                   admission.enrollmentStatus === 'suspended' ? t('admissions.suspended') :
+                   admission.enrollmentStatus === 'active' ? t('events.active') :
+                   admission.enrollmentStatus === 'inactive' ? t('events.inactive') :
+                   admission.enrollmentStatus === 'suspended' ? t('students.suspended') :
                    admission.enrollmentStatus === 'withdrawn' ? t('admissions.withdrawn') :
-                   admission.enrollmentStatus === 'graduated' ? t('admissions.graduated') :
+                   admission.enrollmentStatus === 'graduated' ? t('students.graduated') :
                    admission.enrollmentStatus}
                 </Badge>
               )}
@@ -443,14 +277,14 @@ export function StudentAdmissions() {
     },
     {
       accessorKey: 'class',
-      header: t('admissions.class') || 'Class / Shift',
+      header: t('search.class') || 'Class / Shift',
       cell: ({ row }) => {
         const admission = row.original;
         const classInfo = admission.classAcademicYear;
         if (classInfo) {
           return (
             <div className="space-y-1 min-w-0 sm:min-w-[150px]">
-              <div className="font-medium break-words">{admission.class?.name || t('common.unknown')}</div>
+              <div className="font-medium break-words">{admission.class?.name || t('events.unknown')}</div>
               {classInfo.sectionName && (
                 <Badge variant="outline" className="text-xs shrink-0">
                   {classInfo.sectionName}
@@ -489,18 +323,18 @@ export function StudentAdmissions() {
     },
     {
       accessorKey: 'status',
-      header: t('admissions.status') || 'Status',
+      header: t('events.status') || 'Status',
       cell: ({ row }) => {
         const status = row.original.enrollmentStatus;
         return status ? (
           <Badge variant={statusVariant(status)}>
             {status === 'pending' ? t('admissions.pending') :
              status === 'admitted' ? t('admissions.admitted') :
-             status === 'active' ? t('admissions.active') :
-             status === 'inactive' ? t('admissions.inactive') :
-             status === 'suspended' ? t('admissions.suspended') :
+             status === 'active' ? t('events.active') :
+             status === 'inactive' ? t('events.inactive') :
+             status === 'suspended' ? t('students.suspended') :
              status === 'withdrawn' ? t('admissions.withdrawn') :
-             status === 'graduated' ? t('admissions.graduated') :
+             status === 'graduated' ? t('students.graduated') :
              status}
           </Badge>
         ) : '—';
@@ -508,39 +342,51 @@ export function StudentAdmissions() {
     },
     {
       id: 'actions',
-      header: () => <div className="text-right">{t('admissions.actions') || 'Actions'}</div>,
+      header: () => <div className="text-right">{t('events.actions') || 'Actions'}</div>,
       cell: ({ row }) => (
-        <div className="flex justify-end gap-1 flex-wrap">
-          {row.original.student_id && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(`/students/${row.original.student_id}/fees`)}
-              title={t('fees.studentFeeAssignments') || 'Fee Assignments'}
-            >
-              <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleEdit(row.original)}
-            title={t('common.edit') || 'Edit'}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleDelete(row.original)}
-            title={t('common.delete') || 'Delete'}
-          >
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
+        <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <MoreVertical className="h-4 w-4" />
+                <span className="sr-only">{t('events.actions') || 'Actions'}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {row.original.studentId && (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => navigate(`/students/${row.original.studentId}/fees`)}
+                  >
+                    <DollarSign className="h-4 w-4 mr-2 text-green-600 dark:text-green-400" />
+                    {t('fees.studentFeeAssignments') || 'Fee Assignments'}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem
+                onClick={() => handleEdit(row.original)}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                {t('events.edit') || 'Edit'}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleDelete(row.original)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {t('events.delete') || 'Delete'}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       ),
       meta: {
-        className: 'text-right w-[100px]',
+        className: 'text-right w-[60px]',
       },
     },
   ];
@@ -563,149 +409,14 @@ export function StudentAdmissions() {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof admissionSchema>) => {
-    // Check limit before submitting
-    if (!isEdit && isLimitReached) {
-      showToast.error(
-        t('admissions.limitReached') || 
-        `Student limit reached (${studentUsage.current}/${studentUsage.limit}). Please disable an old admission record first or upgrade your plan.`
-      );
-      return;
-    }
-    
-    // Convert admission_date to string if it's a Date object
-    let admissionDateStr: string | undefined = undefined;
-    if (data.admission_date) {
-      if (data.admission_date instanceof Date) {
-        admissionDateStr = data.admission_date.toISOString().slice(0, 10);
-      } else if (typeof data.admission_date === 'string') {
-        admissionDateStr = data.admission_date;
-      }
-    }
-    
-    // Helper to convert empty strings to null for optional fields (for clearing on update)
-    const toNullIfEmpty = (value: string | undefined | null): string | null | undefined => {
-      if (value === '' || value === null) return null;
-      return value || undefined;
-    };
-
-    const payload: StudentAdmissionInsert = {
-      studentId: data.student_id,
-      organizationId: data.organization_id || profile?.organization_id,
-      schoolId: data.school_id,
-      academicYearId: data.academic_year_id || undefined,
-      classId: toNullIfEmpty(data.class_id),
-      classAcademicYearId: toNullIfEmpty(data.class_academic_year_id),
-      residencyTypeId: toNullIfEmpty(data.residency_type_id),
-      roomId: toNullIfEmpty(data.room_id),
-      admissionYear: data.admission_year,
-      admissionDate: admissionDateStr,
-      enrollmentStatus: data.enrollment_status,
-      enrollmentType: data.enrollment_type,
-      shift: data.shift,
-      isBoarder: data.is_boarder,
-      feeStatus: data.fee_status,
-      placementNotes: data.placement_notes,
-    };
-
-    const selectedStudent = students?.find((student) => student.id === data.student_id);
-    if (!payload.schoolId && selectedStudent?.schoolId) {
-      payload.schoolId = selectedStudent.schoolId;
-    }
-
-    const selectedCay = classAcademicYears?.find((cay) => cay.id === data.class_academic_year_id);
-    if (selectedCay) {
-      // When a class is selected, use its class_id and academic_year_id
-      payload.classId = selectedCay.class_id;
-      payload.academicYearId = selectedCay.academic_year_id;
-      if (!payload.roomId && selectedCay.room_id) {
-        payload.roomId = selectedCay.room_id;
-      }
-    } else {
-      // When no class is selected (empty string or undefined), ensure class-related fields are cleared
-      // The toNullIfEmpty helper already handles this, but we need to ensure roomId is also cleared
-      // when class is cleared (unless it was explicitly set)
-      if (data.class_academic_year_id === '' || !data.class_academic_year_id) {
-        // If class was explicitly cleared, also clear roomId if it was tied to the class
-        // (This is a safety measure - the form already clears room_id when academic year changes)
-        if (data.room_id === '') {
-          payload.roomId = null;
-        }
-      }
-      // Keep academicYearId from form data (line above) - don't override it
-      // If academic year was changed, it should be in data.academic_year_id
-    }
-
-    if (selectedAdmission && isEdit) {
-      // Remove organizationId and schoolId from update payload as they cannot be updated
-      const { organizationId, schoolId, ...updatePayload } = payload;
-      
-      if (import.meta.env.DEV) {
-        console.log('[StudentAdmissions] Updating admission:', selectedAdmission.id);
-        console.log('[StudentAdmissions] Update payload:', updatePayload);
-      }
-      
-      updateAdmission.mutate(
-        { id: selectedAdmission.id, data: updatePayload },
-        {
-          onSuccess: () => {
-            if (import.meta.env.DEV) {
-              console.log('[StudentAdmissions] Update successful');
-            }
-            setIsDialogOpen(false);
-            setSelectedAdmission(null);
-            setIsEdit(false);
-            reset();
-          },
-          onError: (error: Error) => {
-            if (import.meta.env.DEV) {
-              console.error('[StudentAdmissions] Update error:', error);
-            }
-            // Error toast is handled by the mutation hook
-          },
-        },
-      );
-    } else {
-      createAdmission.mutate(payload, {
-        onSuccess: () => {
-          setIsDialogOpen(false);
-          reset();
-        },
-      });
-    }
+  const handleRowClick = (admission: StudentAdmission) => {
+    setSelectedAdmission(admission);
+    setIsPanelOpen(true);
   };
 
   const handleEdit = (admission: StudentAdmission) => {
     setSelectedAdmission(admission);
-    setIsEdit(true);
     setIsDialogOpen(true);
-    setActiveTab('basic');
-    // Clear delete state when editing
-    setAdmissionToDelete(null);
-    
-    // Set academic year first so classes load
-    if (admission.academicYearId) {
-      setSelectedAcademicYear(admission.academicYearId);
-    }
-    
-    reset({
-      organization_id: admission.organizationId,
-      school_id: admission.schoolId,
-      student_id: admission.studentId,
-      academic_year_id: admission.academicYearId,
-      class_id: admission.classId,
-      class_academic_year_id: admission.classAcademicYearId,
-      residency_type_id: admission.residencyTypeId,
-      room_id: admission.roomId,
-      admission_year: admission.admissionYear,
-      admission_date: admission.admissionDate ? new Date(admission.admissionDate).toISOString().slice(0, 10) : undefined,
-      enrollment_status: admission.enrollmentStatus,
-      enrollment_type: admission.enrollmentType,
-      shift: admission.shift,
-      is_boarder: admission.isBoarder,
-      fee_status: admission.feeStatus,
-      placement_notes: admission.placementNotes,
-    });
   };
 
   const handleDelete = (admission: StudentAdmission) => {
@@ -747,21 +458,16 @@ export function StudentAdmissions() {
     }
 
     setSelectedAdmission(null);
-    setIsEdit(false);
-    setAdmissionToDelete(null);
-    setSelectedAcademicYear(undefined);
-    setActiveTab('basic');
-    reset();
     setIsDialogOpen(true);
   };
 
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
       <PageHeader
-        title={t('admissions.title') || 'Student Admissions'}
-        description={t('admissions.subtitle') || 'Admit registered students into classes with residency and year tracking.'}
+        title={t('nav.admissions') || 'Student Admissions'}
+        description={t('admissions.listDescription') || 'Overview of class placements and residency tracking.'}
         primaryAction={{
-          label: t('admissions.add') || 'Admit Student',
+          label: t('events.add') || 'Admit Student',
           onClick: handleOpenCreateDialog,
           icon: <Plus className="h-4 w-4" />,
           disabled: isLimitReached,
@@ -781,469 +487,25 @@ export function StudentAdmissions() {
         }
       />
 
-      <Dialog 
-        open={isDialogOpen} 
+      <AdmissionFormDialog
+        open={isDialogOpen}
         onOpenChange={(open) => {
           setIsDialogOpen(open);
           if (!open) {
-            // Reset edit state when dialog closes
             setSelectedAdmission(null);
-            setIsEdit(false);
-            setSelectedAcademicYear(undefined);
-            setActiveTab('basic');
-            reset();
           }
         }}
-      >
-        <DialogContent 
-              className="max-w-5xl max-h-[100vh] h-[100vh] sm:max-h-[95vh] sm:h-[95vh] w-full sm:w-[95vw] md:w-[90vw] lg:w-full p-0 gap-0 flex flex-col m-0 sm:m-4 rounded-none sm:rounded-lg"
-              aria-describedby="admission-form-description"
-            >
-              <style>{`
-                @media (max-width: 639px) {
-                  [data-radix-dialog-content][data-state="open"] {
-                    position: fixed !important;
-                    left: 0 !important;
-                    top: 0 !important;
-                    right: 0 !important;
-                    bottom: 0 !important;
-                    transform: none !important;
-                    margin: 0 !important;
-                    max-width: 100% !important;
-                    width: 100% !important;
-                    height: 100vh !important;
-                    max-height: 100vh !important;
-                    border-radius: 0 !important;
-                  }
-                }
-              `}</style>
-              <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex-shrink-0">
-                <DialogTitle className="text-lg sm:text-xl">{isEdit ? (t('admissions.updateAdmission') || 'Update admission') : (t('admissions.admitStudentFromRegistration') || 'Admit student from registration')}</DialogTitle>
-                <DialogDescription id="admission-form-description" className="text-sm">
-                  {t('admissions.dialogDescription') || 'Map a registered learner into a class, academic year, and residency type with status tracking.'}
-                </DialogDescription>
-              </DialogHeader>
-              {!isEdit && isLimitReached && (
-                <div className="px-4 sm:px-6 pb-3 sm:pb-4 flex-shrink-0">
-                  <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      {t('admissions.limitReached') || 
-                       `Student limit reached (${studentUsage.current}/${studentUsage.limit}). Please disable an old admission record first or upgrade your plan to add new admissions.`}
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-              <FormProvider {...formMethods}>
-                <form onSubmit={handleSubmit(onSubmit, (errors) => {
-                  if (import.meta.env.DEV) {
-                    console.error('[StudentAdmissions] Form validation errors:', errors);
-                  }
-                  // Show first validation error
-                  const firstError = Object.values(errors)[0];
-                  if (firstError?.message) {
-                    showToast.error(firstError.message);
-                  }
-                })} className="flex flex-col flex-1 min-h-0">
-                  <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0 px-4 sm:px-6">
-                    <TabsList className="flex w-full gap-1 h-auto mb-3 sm:mb-4 flex-shrink-0 overflow-x-auto pb-1 scrollbar-hide">
-                      <TabsTrigger value="basic" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
-                        {t('admissions.basicInfo') || 'Basic Info'}
-                      </TabsTrigger>
-                      <TabsTrigger value="academic" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
-                        {t('admissions.academicInfo') || 'Academic'}
-                      </TabsTrigger>
-                      <TabsTrigger value="residency" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
-                        {t('admissions.residencyInfo') || 'Residency'}
-                      </TabsTrigger>
-                      <TabsTrigger value="additional" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
-                        {t('admissions.additionalInfo') || 'Additional'}
-                      </TabsTrigger>
-                    </TabsList>
-                    
-                    <div className="flex-1 overflow-y-auto pb-4 min-h-0">
-                      <TabsContent value="basic" className="space-y-4 mt-0">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {schools && schools.length > 1 && (
-                <div>
-                  <Label>{t('admissions.school') || 'School'}</Label>
-                  <Controller
-                    control={control}
-                    name="school_id"
-                    render={({ field }) => (
-                      <Select 
-                        value={field.value || ''} 
-                        onValueChange={field.onChange}
-                        disabled={!isEdit && !canCreateAdmission}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={t('admissions.selectSchool') || 'Select school'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {schools?.map((school) => (
-                            <SelectItem key={school.id} value={school.id}>
-                              {school.schoolName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
-              )}
-              <div>
-                <Label>
-                  {t('admissions.studentFromRegistration') || 'Student (from registration)'}
-                  <span className="text-destructive ml-1">*</span>
-                </Label>
-                <Controller
-                      control={control}
-                      name="student_id"
-                      render={({ field }) => {
-                        const studentOptions: ComboboxOption[] = (isEdit ? students : availableStudents)?.map((student) => ({
-                          value: student.id,
-                          label: `${student.fullName} (${student.admissionNumber})`,
-                        })) || [];
-                        
-                        return (
-                          <Combobox
-                            options={studentOptions}
-                            value={field.value || ''}
-                            onValueChange={field.onChange}
-                            placeholder={t('admissions.chooseStudent') || 'Choose student'}
-                            searchPlaceholder={t('admissions.searchStudent') || 'Search by name or admission number...'}
-                            emptyText={t('admissions.noStudentsFound') || 'No students found.'}
-                            disabled={isEdit || (!isEdit && !canCreateAdmission)}
-                            className={errors.student_id ? 'border-destructive' : ''}
-                          />
-                        );
-                      }}
-                    />
-                    {errors.student_id && <p className="text-destructive text-sm mt-1">{errors.student_id.message}</p>}
-                  </div>
-                    </div>
-                      </TabsContent>
-                      
-                      <TabsContent value="academic" className="space-y-4 mt-0">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>{t('admissions.academicYear') || 'Academic Year'}</Label>
-                    <Controller
-                      control={control}
-                      name="academic_year_id"
-                      render={({ field }) => (
-                        <Select
-                          value={field.value || ''}
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            setSelectedAcademicYear(value);
-                            // Clear class selection when academic year changes
-                            setValue('class_academic_year_id', '');
-                            setValue('class_id', '');
-                            setValue('room_id', '');
-                          }}
-                          disabled={!isEdit && !canCreateAdmission}
-                        >
-                          <SelectTrigger className={errors.academic_year_id ? 'border-destructive' : ''}>
-                            <SelectValue placeholder={t('admissions.selectAcademicYear') || 'Select academic year'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {academicYears?.map((year) => (
-                              <SelectItem key={year.id} value={year.id}>
-                                {year.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-                  <div>
-                    <Label>{t('admissions.classSection') || 'Class / Section'}</Label>
-                    <Controller
-                      control={control}
-                      name="class_academic_year_id"
-                      render={({ field }) => (
-                        <Select
-                          value={field.value || ''}
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            const selected = classAcademicYears?.find((cay) => cay.id === value);
-                            if (selected) {
-                              setValue('class_id', selected.class_id);
-                              setValue('academic_year_id', selected.academic_year_id);
-                              if (selected.room_id) {
-                                setValue('room_id', selected.room_id);
-                              }
-                            }
-                          }}
-                          disabled={!selectedAcademicYear || (!isEdit && !canCreateAdmission)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue 
-                              placeholder={
-                                !selectedAcademicYear 
-                                  ? t('admissions.selectAcademicYearFirst') || 'Select academic year first'
-                                  : t('admissions.selectClassSection') || 'Select class & section'
-                              } 
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {classAcademicYears && classAcademicYears.length > 0 ? (
-                              classAcademicYears.map((cay) => (
-                                <SelectItem key={cay.id} value={cay.id}>
-                                  {cay.class?.name || cay.class_id || t('admissions.class') || 'Class'}
-                                  {cay.section_name ? ` - ${cay.section_name}` : ''}
-                                  {cay.capacity && cay.current_student_count !== undefined && (
-                                    <span className="text-xs text-muted-foreground ml-2">
-                                      ({cay.current_student_count}/{cay.capacity})
-                                    </span>
-                                  )}
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                {selectedAcademicYear 
-                                  ? t('admissions.noClassesForYear') || 'No classes available for this academic year'
-                                  : t('admissions.selectAcademicYearFirst') || 'Please select an academic year first'}
-                              </div>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {!selectedAcademicYear && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {t('admissions.selectAcademicYearToSeeClasses') || 'Select an academic year above to see available classes'}
-                      </p>
-                    )}
-                    {selectedAcademicYear && classAcademicYears && classAcademicYears.length === 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {t('admissions.noClassesAssignedToYear') || 'No classes have been assigned to this academic year yet'}
-                      </p>
-                    )}
-                  </div>
-                        </div>
-                      </TabsContent>
-                      
-                      <TabsContent value="residency" className="space-y-4 mt-0">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>{t('admissions.residencyType') || 'Residency Type'}</Label>
-                    <Controller
-                      control={control}
-                      name="residency_type_id"
-                      render={({ field }) => (
-                        <Select 
-                          value={field.value || ''} 
-                          onValueChange={field.onChange}
-                          disabled={!isEdit && !canCreateAdmission}
-                        >
-                          <SelectTrigger className={errors.residency_type_id ? 'border-destructive' : ''}>
-                            <SelectValue placeholder={t('admissions.selectResidency') || 'Select residency'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {residencyTypes?.map((type) => (
-                              <SelectItem key={type.id} value={type.id}>
-                                {type.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-                  <div>
-                    <Label>{t('admissions.roomDorm') || 'Room / Dorm'}</Label>
-                    <Controller
-                      control={control}
-                      name="room_id"
-                      render={({ field }) => {
-                        const roomOptions: ComboboxOption[] = rooms?.map((room) => ({
-                          value: room.id,
-                          label: room.roomNumber || room.building?.buildingName ? 
-                            `${room.roomNumber}${room.building?.buildingName ? ` - ${room.building.buildingName}` : ''}` : 
-                            room.id,
-                        })) || [];
-                        
-                        return (
-                          <Combobox
-                            options={roomOptions}
-                            value={field.value || ''}
-                            onValueChange={field.onChange}
-                            placeholder={t('admissions.assignRoom') || 'Assign room'}
-                            searchPlaceholder={t('admissions.searchRoom') || 'Search rooms...'}
-                            emptyText={t('admissions.noRoomsFound') || 'No rooms found.'}
-                            disabled={!isEdit && !canCreateAdmission}
-                          />
-                        );
-                      }}
-                    />
-                  </div>
-                        </div>
-                      </TabsContent>
-                      
-                      <TabsContent value="additional" className="space-y-4 mt-0">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>{t('admissions.admissionYear') || 'Admission Year'}</Label>
-                    <Input 
-                      placeholder={new Date().getFullYear().toString()} 
-                      {...register('admission_year')}
-                      disabled={!isEdit && !canCreateAdmission}
-                      className={errors.admission_year ? 'border-destructive' : ''}
-                    />
-                  </div>
-                  <div>
-                    <Label>{t('admissions.admissionDate') || 'Admission Date'}</Label>
-                    <CalendarFormField 
-                      control={control} 
-                      name="admission_date" 
-                      label={t('admissions.admissionDate') || 'Admission Date'}
-                      disabled={!isEdit && !canCreateAdmission}
-                    />
-                  </div>
-                  <div>
-                    <Label>{t('admissions.enrollmentStatus') || 'Enrollment Status'}</Label>
-                    <Controller
-                      control={control}
-                      name="enrollment_status"
-                      render={({ field }) => (
-                        <Select 
-                          value={field.value} 
-                          onValueChange={field.onChange}
-                          disabled={!isEdit && !canCreateAdmission}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('admissions.status') || 'Status'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">{t('admissions.pending') || 'Pending'}</SelectItem>
-                            <SelectItem value="admitted">{t('admissions.admitted') || 'Admitted'}</SelectItem>
-                            <SelectItem value="active">{t('admissions.active') || 'Active'}</SelectItem>
-                            <SelectItem value="inactive">{t('admissions.inactive') || 'Inactive'}</SelectItem>
-                            <SelectItem value="suspended">{t('admissions.suspended') || 'Suspended'}</SelectItem>
-                            <SelectItem value="withdrawn">{t('admissions.withdrawn') || 'Withdrawn'}</SelectItem>
-                            <SelectItem value="graduated">{t('admissions.graduated') || 'Graduated'}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-                  <div>
-                    <Label>{t('admissions.enrollmentType') || 'Enrollment Type'}</Label>
-                    <Input 
-                      placeholder={t('admissions.enrollmentTypePlaceholder') || 'Boarder / Day scholar'} 
-                      {...register('enrollment_type')}
-                      disabled={!isEdit && !canCreateAdmission}
-                    />
-                  </div>
-                  <div>
-                    <Label>{t('admissions.shift') || 'Shift'}</Label>
-                    <Input 
-                      placeholder={t('admissions.shiftPlaceholder') || 'Morning / Evening'} 
-                      {...register('shift')}
-                      disabled={!isEdit && !canCreateAdmission}
-                    />
-                  </div>
-                  <div>
-                    <Label>{t('admissions.feeStatus') || 'Fee Status'}</Label>
-                    <Input 
-                      placeholder={t('admissions.feeStatusPlaceholder') || 'Paid / Partial / Waived'} 
-                      {...register('fee_status')}
-                      disabled={!isEdit && !canCreateAdmission}
-                    />
-                  </div>
-                  <div>
-                    <Label>{t('admissions.boarder') || 'Boarder'}</Label>
-                    <Controller
-                      control={control}
-                      name="is_boarder"
-                      render={({ field }) => (
-                        <Select 
-                          value={field.value ? 'yes' : 'no'} 
-                          onValueChange={(value) => field.onChange(value === 'yes')}
-                          disabled={!isEdit && !canCreateAdmission}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('admissions.boarder') || 'Boarder'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="yes">{t('admissions.boarderYes') || 'Boarder'}</SelectItem>
-                            <SelectItem value="no">{t('admissions.boarderNo') || 'Day scholar'}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-                </div>
+        admission={selectedAdmission}
+        admissions={admissions || []}
+      />
 
-                <div className="space-y-2">
-                  <Label>{t('admissions.placementNotes') || 'Placement Notes'}</Label>
-                  <Textarea 
-                    placeholder={t('admissions.placementNotesPlaceholder') || 'Health, guardian approvals, or special considerations'} 
-                    {...register('placement_notes')}
-                    disabled={!isEdit && !canCreateAdmission}
-                  />
-                  {errors.placement_notes && (
-                    <p className="text-destructive text-sm mt-1">{errors.placement_notes.message}</p>
-                  )}
-                </div>
-                      </TabsContent>
-                    </div>
-                  </Tabs>
-
-                <DialogFooter className="px-4 sm:px-6 pt-4 pb-4 sm:pb-6 flex-shrink-0 border-t">
-                  <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
-                    {activeTab !== 'basic' && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          const tabs = ['basic', 'academic', 'residency', 'additional'];
-                          const currentIndex = tabs.indexOf(activeTab);
-                          if (currentIndex > 0) {
-                            setActiveTab(tabs[currentIndex - 1]);
-                          }
-                        }}
-                        className="w-full sm:w-auto"
-                      >
-                        {t('common.previous') || 'Previous'}
-                      </Button>
-                    )}
-                    {activeTab !== 'additional' ? (
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          const tabs = ['basic', 'academic', 'residency', 'additional'];
-                          const currentIndex = tabs.indexOf(activeTab);
-                          if (currentIndex < tabs.length - 1) {
-                            setActiveTab(tabs[currentIndex + 1]);
-                          }
-                        }}
-                        className="w-full sm:w-auto"
-                      >
-                        {t('common.next') || 'Next'}
-                      </Button>
-                    ) : (
-                      <Button 
-                        type="submit" 
-                        className="w-full sm:w-auto"
-                        disabled={(!isEdit && !canCreateAdmission) || updateAdmission.isPending || createAdmission.isPending}
-                      >
-                        {updateAdmission.isPending || createAdmission.isPending
-                          ? (t('common.saving') || 'Saving...')
-                          : isEdit 
-                            ? (t('admissions.updateAdmission') || 'Update admission') 
-                            : (t('admissions.admitStudent') || 'Admit student')}
-                      </Button>
-                    )}
-                  </div>
-                </DialogFooter>
-              </form>
-              </FormProvider>
-        </DialogContent>
-      </Dialog>
+      <AdmissionDetailsPanel
+        open={isPanelOpen}
+        onOpenChange={setIsPanelOpen}
+        admission={selectedAdmission}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card>
@@ -1278,7 +540,7 @@ export function StudentAdmissions() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t('admissions.boardersLabel')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('hostel.boardersLabel')}</CardTitle>
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -1293,7 +555,7 @@ export function StudentAdmissions() {
           <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={t('common.search') || 'Search by student name, admission number, class...'}
+              placeholder={t('events.search') || 'Search by student name, admission number, class...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -1304,7 +566,7 @@ export function StudentAdmissions() {
               <SelectValue placeholder={t('admissions.school') || 'School'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('admissions.allSchools') || 'All Schools'}</SelectItem>
+              <SelectItem value="all">{t('leave.allSchools') || 'All Schools'}</SelectItem>
               {schools?.map((school) => (
                 <SelectItem key={school.id} value={school.id}>
                   {school.school_name}
@@ -1314,17 +576,17 @@ export function StudentAdmissions() {
           </Select>
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as AdmissionStatus | 'all')}>
             <SelectTrigger className="w-full sm:w-[150px]">
-              <SelectValue placeholder={t('admissions.status') || 'Status'} />
+              <SelectValue placeholder={t('events.status') || 'Status'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('admissions.allStatus') || 'All Status'}</SelectItem>
+              <SelectItem value="all">{t('userManagement.allStatus') || 'All Status'}</SelectItem>
               <SelectItem value="pending">{t('admissions.pending') || 'Pending'}</SelectItem>
               <SelectItem value="admitted">{t('admissions.admitted') || 'Admitted'}</SelectItem>
-              <SelectItem value="active">{t('admissions.active') || 'Active'}</SelectItem>
-              <SelectItem value="inactive">{t('admissions.inactive') || 'Inactive'}</SelectItem>
-              <SelectItem value="suspended">{t('admissions.suspended') || 'Suspended'}</SelectItem>
+              <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
+              <SelectItem value="inactive">{t('events.inactive') || 'Inactive'}</SelectItem>
+              <SelectItem value="suspended">{t('students.suspended') || 'Suspended'}</SelectItem>
               <SelectItem value="withdrawn">{t('admissions.withdrawn') || 'Withdrawn'}</SelectItem>
-              <SelectItem value="graduated">{t('admissions.graduated') || 'Graduated'}</SelectItem>
+              <SelectItem value="graduated">{t('students.graduated') || 'Graduated'}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={residencyFilter} onValueChange={(value) => setResidencyFilter(value)}>
@@ -1357,7 +619,7 @@ export function StudentAdmissions() {
             <div className="flex flex-col items-center justify-center py-8 space-y-2">
               <p className="text-destructive font-medium">Error loading admissions</p>
               <p className="text-sm text-muted-foreground">
-                {admissionsError instanceof Error ? admissionsError.message : t('common.unexpectedError')}
+                {admissionsError instanceof Error ? admissionsError.message : t('events.unexpectedError')}
               </p>
               <p className="text-xs text-muted-foreground mt-2">
                 Please ensure the migration <code className="bg-muted px-1 rounded">20250205000034_fix_student_admissions_rls_policies.sql</code> has been applied.
@@ -1402,7 +664,12 @@ export function StudentAdmissions() {
                       </TableRow>
                     ) : (
                       table.getRowModel().rows.map((row) => (
-                        <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                        <TableRow 
+                          key={row.id} 
+                          data-state={row.getIsSelected() && 'selected'}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => handleRowClick(row.original)}
+                        >
                           {row.getVisibleCells().map((cell) => {
                             const columnId = cell.column.id;
                             let cellClassName = '';
@@ -1453,8 +720,8 @@ export function StudentAdmissions() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>{t('common.delete')}</AlertDialogAction>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>{t('events.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1470,14 +737,14 @@ export function StudentAdmissions() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={bulkDeactivate.isPending}>
-              {t('common.cancel')}
+              {t('events.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleBulkDeactivate}
               disabled={bulkDeactivate.isPending}
             >
               {bulkDeactivate.isPending 
-                ? (t('common.processing') || 'Processing...') 
+                ? (t('events.processing') || 'Processing...') 
                 : (t('admissions.deactivate') || 'Deactivate')}
             </AlertDialogAction>
           </AlertDialogFooter>

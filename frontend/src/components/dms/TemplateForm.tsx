@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useLetterTypes } from "@/hooks/useLetterTypes";
+import { useLanguage } from "@/hooks/useLanguage";
 import { dmsApi } from "@/lib/api/client";
 import { sanitize } from "@/lib/security-utils";
 import { letterTemplateSchema, type LetterTemplateFormData } from "@/lib/validations/dms";
@@ -50,6 +51,7 @@ export function TemplateForm({
   onCancel,
   isLoading = false,
 }: TemplateFormProps) {
+  const { t } = useLanguage();
   const [showPreview, setShowPreview] = useState(true);
   const [previewMode, setPreviewMode] = useState<"designer" | "actual">("actual");
   const [actualPreviewHtml, setActualPreviewHtml] = useState<string>("");
@@ -698,16 +700,22 @@ export function TemplateForm({
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
           {/* Basic Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Basic Information</h3>
+            <h3 className="text-lg font-semibold">
+              {t("dms.templatesForm.basicInfoTitle") || "Basic Information"}
+            </h3>
 
             <div className="space-y-2">
               <Label htmlFor="name">
-                Template Name <span className="text-destructive">*</span>
+                {t("dms.templatesForm.templateNameLabel") || "Template Name"}{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="name"
                 {...register("name")}
-                placeholder="e.g., Student Enrollment Confirmation"
+                placeholder={
+                  t("dms.templatesForm.templateNamePlaceholder") ||
+                  "e.g., Student Enrollment Confirmation"
+                }
               />
               {errors.name && (
                 <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -717,7 +725,8 @@ export function TemplateForm({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="category">
-                  Category <span className="text-destructive">*</span>
+                  {t("dms.templatesForm.categoryLabel") || "Category"}{" "}
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Controller
                   name="category"
@@ -730,7 +739,7 @@ export function TemplateForm({
                       <SelectContent>
                         {categoryOptions.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                            {t(option.label) || option.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -743,7 +752,9 @@ export function TemplateForm({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="page_layout">Page Layout</Label>
+                <Label htmlFor="page_layout">
+                  {t("dms.templatesForm.pageLayoutLabel") || "Page Layout"}
+                </Label>
                 <Controller
                   name="page_layout"
                   control={control}
@@ -755,7 +766,7 @@ export function TemplateForm({
                       <SelectContent>
                         {pageLayoutOptions.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                            {t(option.label) || option.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -766,7 +777,10 @@ export function TemplateForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="letter_type">Letter Type (Optional)</Label>
+              <Label htmlFor="letter_type">
+                {t("dms.templatesForm.letterTypeOptionalLabel") ||
+                  "Letter Type (Optional)"}
+              </Label>
               <Controller
                 name="letter_type"
                 control={control}
@@ -779,10 +793,19 @@ export function TemplateForm({
                     disabled={letterTypesLoading}
                   >
                     <SelectTrigger id="letter_type">
-                      <SelectValue placeholder={letterTypesLoading ? "Loading..." : "Select letter type"} />
+                        <SelectValue
+                          placeholder={
+                            letterTypesLoading
+                              ? t("common.loading") || "Loading..."
+                              : t("dms.templatesForm.letterTypePlaceholder") ||
+                                "Select letter type"
+                          }
+                        />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__">None</SelectItem>
+                        <SelectItem value="__none__">
+                          {t("common.none") || "None"}
+                        </SelectItem>
                       {letterTypes.map((lt) => (
                         <SelectItem key={lt.id} value={lt.key}>
                           {lt.name}
@@ -799,10 +822,16 @@ export function TemplateForm({
 
           {/* Letterhead & Watermark */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Letterhead & Watermark</h3>
+            <h3 className="text-lg font-semibold">
+              {t("dms.templatesForm.letterheadSectionTitle") ||
+                "Letterhead & Watermark"}
+            </h3>
 
             <div className="space-y-2">
-              <Label htmlFor="letterhead_id">Background Letterhead</Label>
+              <Label htmlFor="letterhead_id">
+                {t("dms.templatesForm.backgroundLetterheadLabel") ||
+                  "Background Letterhead"}
+              </Label>
               <Controller
                 name="letterhead_id"
                 control={control}
@@ -813,10 +842,20 @@ export function TemplateForm({
                     disabled={letterheadsLoading}
                   >
                     <SelectTrigger id="letterhead_id">
-                      <SelectValue placeholder={letterheadsLoading ? "Loading..." : "Select background"} />
+                      <SelectValue
+                        placeholder={
+                          letterheadsLoading
+                            ? t("common.loading") || "Loading..."
+                            : t(
+                                "dms.templatesForm.backgroundLetterheadPlaceholder",
+                              ) || "Select background"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__">None</SelectItem>
+                      <SelectItem value="__none__">
+                        {t("common.none") || "None"}
+                      </SelectItem>
                       {backgroundLetterheads.map((letterhead) => (
                         <SelectItem key={letterhead.id} value={letterhead.id}>
                           {letterhead.name}
@@ -827,12 +866,16 @@ export function TemplateForm({
                 )}
               />
               <p className="text-xs text-muted-foreground">
-                Background image/PDF that appears on all pages
+                {t("dms.templatesForm.backgroundLetterheadHelp") ||
+                  "Background image/PDF that appears on all pages"}
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="watermark_id">Watermark (Optional)</Label>
+              <Label htmlFor="watermark_id">
+                {t("dms.templatesForm.watermarkLabel") ||
+                  "Watermark (Optional)"}
+              </Label>
               <Controller
                 name="watermark_id"
                 control={control}
@@ -843,10 +886,19 @@ export function TemplateForm({
                     disabled={letterheadsLoading}
                   >
                     <SelectTrigger id="watermark_id">
-                      <SelectValue placeholder={letterheadsLoading ? "Loading..." : "Select watermark"} />
+                      <SelectValue
+                        placeholder={
+                          letterheadsLoading
+                            ? t("common.loading") || "Loading..."
+                            : t("dms.templatesForm.watermarkPlaceholder") ||
+                              "Select watermark"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__">None</SelectItem>
+                      <SelectItem value="__none__">
+                        {t("common.none") || "None"}
+                      </SelectItem>
                       {watermarkLetterheads.map((watermark) => (
                         <SelectItem key={watermark.id} value={watermark.id}>
                           {watermark.name}
@@ -857,7 +909,8 @@ export function TemplateForm({
                 )}
               />
               <p className="text-xs text-muted-foreground">
-                Centered overlay with low opacity behind text
+                {t("dms.templatesForm.watermarkHelp") ||
+                  "Centered overlay with low opacity behind text"}
               </p>
             </div>
 
@@ -873,7 +926,10 @@ export function TemplateForm({
                   />
                 )}
               />
-              <Label htmlFor="repeat_letterhead_on_pages">Repeat letterhead on all pages</Label>
+              <Label htmlFor="repeat_letterhead_on_pages">
+                {t("dms.templatesForm.repeatLetterheadLabel") ||
+                  "Repeat letterhead on all pages"}
+              </Label>
             </div>
           </div>
 
@@ -882,7 +938,9 @@ export function TemplateForm({
           {/* Body Text */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Letter Body</h3>
+              <h3 className="text-lg font-semibold">
+                {t("dms.templatesForm.letterBodyTitle") || "Letter Body"}
+              </h3>
               <Button
                 type="button"
                 variant="ghost"
@@ -892,12 +950,12 @@ export function TemplateForm({
                 {showPreview ? (
                   <>
                     <EyeOff className="h-4 w-4 mr-2" />
-                    Hide Preview
+                    {t("dms.templatesForm.hidePreview") || "Hide Preview"}
                   </>
                 ) : (
                   <>
                     <Eye className="h-4 w-4 mr-2" />
-                    Show Preview
+                    {t("dms.templatesForm.showPreview") || "Show Preview"}
                   </>
                 )}
               </Button>
@@ -907,16 +965,23 @@ export function TemplateForm({
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2">
                 <Switch checked={useBlocks} onCheckedChange={setUseBlocks} id="use_blocks" />
-                <Label htmlFor="use_blocks">Use multiple text blocks</Label>
+                <Label htmlFor="use_blocks">
+                  {t("dms.templatesForm.useMultipleBlocks") ||
+                    "Use multiple text blocks"}
+                </Label>
               </div>
               {!useBlocks && (
                 <div className="flex items-center gap-2">
                   <Switch checked={useRichText} onCheckedChange={setUseRichText} id="use_rich_text" />
-                  <Label htmlFor="use_rich_text">Rich text</Label>
+                  <Label htmlFor="use_rich_text">
+                    {t("dms.templatesForm.richText") || "Rich text"}
+                  </Label>
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <Label className="text-sm text-muted-foreground">Font</Label>
+                <Label className="text-sm text-muted-foreground">
+                  {t("dms.templatesForm.fontLabel") || "Font"}
+                </Label>
                 <Select value={fontFamily} onValueChange={setFontFamily}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue />
@@ -936,7 +1001,9 @@ export function TemplateForm({
                 </Select>
               </div>
               <div className="flex items-center gap-2">
-                <Label className="text-sm text-muted-foreground">Font size</Label>
+                <Label className="text-sm text-muted-foreground">
+                  {t("dms.templatesForm.fontSizeLabel") || "Font size"}
+                </Label>
                 <input
                   type="range"
                   min={8}
@@ -944,14 +1011,18 @@ export function TemplateForm({
                   value={fontSize}
                   onChange={(e) => setFontSize(parseInt(e.target.value) || 14)}
                 />
-                <span className="text-xs text-muted-foreground w-10 text-right">{fontSize}px</span>
+                <span className="text-xs text-muted-foreground w-10 text-right">
+                  {fontSize}
+                  {t("dms.templatesForm.fontSizeSuffix") || "px"}
+                </span>
               </div>
             </div>
 
             {!useBlocks && (
               <div className="space-y-2">
                 <Label htmlFor="body_text">
-                  Body Text <span className="text-destructive">*</span>
+                  {t("dms.templatesForm.bodyTextLabel") || "Body Text"}{" "}
+                  <span className="text-destructive">*</span>
                 </Label>
                 {useRichText ? (
                   <Controller
@@ -962,7 +1033,7 @@ export function TemplateForm({
                         ref={bodyRichRef}
                         value={field.value || ""}
                         onChange={field.onChange}
-                        placeholder="Type your letter content here (rich text supported). Use the field selector below to insert placeholders like {{student_name}}."
+                        placeholder={t("dms.templatesForm.bodyTextRichPlaceholder") || "Type your letter content here (rich text supported). Use the field selector below to insert placeholders like {{student_name}}."}
                         dir="rtl"
                         fontFamily={fontFamily}
                         fontSize={fontSize}
@@ -989,7 +1060,10 @@ export function TemplateForm({
                       : `${fontFamily}, sans-serif`,
                     fontSize: `${fontSize}px`,
                   }}
-                  placeholder="اداره تصدیق کوي چې {{student_name}} د {{father_name}} زوی..."
+                  placeholder={
+                    t("dms.templatesForm.bodyTextPlaceholder") ||
+                    "اداره تصدیق کوي چې {{student_name}} د {{father_name}} زوی..."
+                  }
                   onFocus={(e) => {
                     // Store cursor position when textarea is focused
                     const textarea = e.target as HTMLTextAreaElement;
@@ -1017,7 +1091,8 @@ export function TemplateForm({
                 />
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Type your letter text. Use the field selector below to insert database fields.
+                  {t("dms.templatesForm.bodyTextHelper") ||
+                    "Type your letter text. Use the field selector below to insert database fields."}
                 </p>
               </div>
             )}
@@ -1025,15 +1100,21 @@ export function TemplateForm({
             {useBlocks && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label>Text Blocks</Label>
+                  <Label>
+                    {t("dms.templatesForm.textBlocksLabel") || "Text Blocks"}
+                  </Label>
                   <Button type="button" variant="outline" size="sm" onClick={handleAddBlock}>
-                    Add Block
+                    {t("dms.templatesForm.addBlock") || "Add Block"}
                   </Button>
                 </div>
                 {blocks.map((block, idx) => (
                   <div key={block.id} className="space-y-2 border rounded-md p-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Block {idx + 1}</span>
+                        <span className="text-sm font-medium">
+                          {t("dms.templatesForm.blockLabel", {
+                            index: idx + 1,
+                          }) || `Block ${idx + 1}`}
+                        </span>
                       {blocks.length > 1 && (
                         <Button
                           type="button"
@@ -1041,7 +1122,7 @@ export function TemplateForm({
                           size="sm"
                           onClick={() => handleRemoveBlock(block.id)}
                         >
-                          Remove
+                          {t("common.remove") || "Remove"}
                         </Button>
                       )}
                     </div>
@@ -1051,7 +1132,7 @@ export function TemplateForm({
                       }}
                       value={block.text}
                       onChange={(value) => handleBlockChange(block.id, value)}
-                      placeholder="Enter text for this block..."
+                      placeholder={t("dms.templatesForm.blockPlaceholder") || "Enter text for this block..."}
                       dir="rtl"
                       fontFamily={fontFamily}
                       fontSize={fontSize}
@@ -1064,13 +1145,16 @@ export function TemplateForm({
             {/* Field Placeholder Selector - Always visible for easy access to all fields */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Available Fields</h3>
+                <h3 className="text-lg font-semibold">
+                  {t("dms.templatesForm.availableFieldsTitle") ||
+                    "Available Fields"}
+                </h3>
               </div>
               <Card>
                 <CardContent className="p-4">
                   <p className="text-sm text-muted-foreground mb-4">
-                    Insert common fields from <strong>students</strong>, <strong>staff</strong>, <strong>applicants</strong>, and <strong>general information</strong>. 
-                    All system fields are available regardless of template category.
+                    {t("dms.templatesForm.availableFieldsHelper") ||
+                      "Insert common fields from students, staff, applicants, and general information. All system fields are available regardless of template category."}
                   </p>
                   <FieldPlaceholderSelector
                     recipientType={category}
@@ -1086,7 +1170,9 @@ export function TemplateForm({
 
           {/* Options */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Options</h3>
+            <h3 className="text-lg font-semibold">
+              {t("dms.templatesForm.optionsTitle") || "Options"}
+            </h3>
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Controller
@@ -1100,7 +1186,10 @@ export function TemplateForm({
                     />
                   )}
                 />
-                <Label htmlFor="supports_tables">Include table structure</Label>
+                <Label htmlFor="supports_tables">
+                  {t("dms.templatesForm.includeTableStructure") ||
+                    "Include table structure"}
+                </Label>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -1115,7 +1204,10 @@ export function TemplateForm({
                     />
                   )}
                 />
-                <Label htmlFor="is_mass_template">Mass template (for announcements)</Label>
+                <Label htmlFor="is_mass_template">
+                  {t("dms.templatesForm.massTemplateLabel") ||
+                    "Mass template (for announcements)"}
+                </Label>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -1130,7 +1222,9 @@ export function TemplateForm({
                     />
                   )}
                 />
-                <Label htmlFor="active">Active</Label>
+                <Label htmlFor="active">
+                  {t("dms.templatesForm.activeLabel") || "Active"}
+                </Label>
               </div>
             </div>
           </div>
@@ -1139,19 +1233,19 @@ export function TemplateForm({
           <div className="flex items-center justify-end gap-2 pt-4 border-t">
             {onCancel && (
               <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
-                Cancel
+                {t("common.cancel") || "Cancel"}
               </Button>
             )}
             <Button type="submit" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
+                  {t("common.saving") || "Saving..."}
                 </>
               ) : template ? (
-                "Update Template"
+                t("dms.templatesForm.updateTemplate") || "Update Template"
               ) : (
-                "Create Template"
+                t("dms.templatesForm.createTemplate") || "Create Template"
               )}
             </Button>
           </div>
@@ -1162,7 +1256,9 @@ export function TemplateForm({
       {showPreview && (
         <div className="space-y-4 lg:sticky lg:top-4 lg:h-fit">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Live Preview & Positioning</h3>
+            <h3 className="text-lg font-semibold">
+              {t("dms.templatesForm.livePreviewTitle") || "Live Preview & Positioning"}
+            </h3>
             <div className="flex items-center gap-2">
               <Button
                 type="button"
@@ -1175,7 +1271,7 @@ export function TemplateForm({
                 }}
                 style={{ zIndex: 1000, pointerEvents: 'auto' }}
               >
-                Actual Preview
+                {t("dms.templatesForm.actualPreviewLabel") || "Actual Preview"}
               </Button>
               <Button
                 type="button"
@@ -1188,7 +1284,7 @@ export function TemplateForm({
                 }}
                 style={{ zIndex: 1000, pointerEvents: 'auto' }}
               >
-                Designer
+                {t("dms.templatesForm.designerPreviewLabel") || "Designer"}
               </Button>
             </div>
             {previewMode === "designer" && bodyText && selectedLetterhead && (
@@ -1204,7 +1300,9 @@ export function TemplateForm({
                 style={{ zIndex: 1000, pointerEvents: 'auto' }}
               >
                 <MapPin className="h-4 w-4 mr-2" />
-                {showPositionEditor ? "Disable Positioning" : "Enable Positioning"}
+                {showPositionEditor
+                  ? t("dms.templatesForm.disablePositioning") || "Disable Positioning"
+                  : t("dms.templatesForm.enablePositioning") || "Enable Positioning"}
               </Button>
             )}
           </div>
@@ -1213,7 +1311,9 @@ export function TemplateForm({
             <Card className="border-2">
               <CardHeader className="py-3">
                 <CardTitle className="text-sm flex items-center justify-between">
-                  <span>Server Render (actual)</span>
+                  <span>
+                    {t("dms.templatesForm.serverRenderTitle") || "Server Render (actual)"}
+                  </span>
                   <Button
                     type="button"
                     variant="outline"
@@ -1242,7 +1342,9 @@ export function TemplateForm({
                     />
                   </div>
                 ) : (
-                  <div className="p-6 text-sm text-muted-foreground">Preview will appear here</div>
+                  <div className="p-6 text-sm text-muted-foreground">
+                    {t("dms.templatesForm.previewEmpty") || "Preview will appear here"}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -1460,7 +1562,7 @@ export function TemplateForm({
                           </div>
                         ) : (
                           <p className="text-muted-foreground italic text-center mt-20">
-                            Add a text block and start typing...
+                            {t("dms.templatesForm.addBlockAndType") || "Add a text block and start typing..."}
                           </p>
                         )
                       ) : bodyText ? (
@@ -1478,7 +1580,7 @@ export function TemplateForm({
                         </div>
                       ) : (
                         <p className="text-muted-foreground italic text-center mt-20">
-                          Your letter text will appear here as you type...
+                          {t("dms.templatesForm.letterTextWillAppear") || "Your letter text will appear here as you type..."}
                         </p>
                       )}
                     </div>
@@ -1487,7 +1589,7 @@ export function TemplateForm({
                   {/* Repeat indicator */}
                   {repeatLetterhead && selectedLetterhead && (
                     <div className="absolute bottom-2 right-2 text-xs bg-black/50 text-white px-2 py-1 rounded">
-                      Letterhead repeats on all pages
+                      {t("dms.templatesForm.letterheadRepeats") || "Letterhead repeats on all pages"}
                     </div>
                   )}
                 </div>
@@ -1497,10 +1599,13 @@ export function TemplateForm({
 
           <p className="text-xs text-muted-foreground text-center">
             {previewMode === "designer" && showPositionEditor && bodyText && selectedLetterhead
-              ? "Drag text blocks to position them on the letterhead. Click a block to edit its properties. Drag the blue resize handles to adjust size."
+              ? t("dms.templatesForm.positioningHelp") ||
+                "Drag text blocks to position them on the letterhead. Click a block to edit its properties. Drag the blue resize handles to adjust size."
               : previewMode === "designer"
-                ? "This preview shows an editor view with letterhead/watermark layers."
-                : "This preview is rendered by the backend (same renderer used for printing)."
+                ? t("dms.templatesForm.designerHelp") ||
+                  "This preview shows an editor view with letterhead/watermark layers."
+                : t("dms.templatesForm.actualHelp") ||
+                  "This preview is rendered by the backend (same renderer used for printing)."
             }
           </p>
 
@@ -1508,10 +1613,10 @@ export function TemplateForm({
           {showPositionEditor && selectedBlockId && selectedBlockPosition && (
             <Card>
               <CardContent className="p-4">
-                <h4 className="text-sm font-semibold mb-3">Edit: {selectedBlockId}</h4>
+                <h4 className="text-sm font-semibold mb-3">{t("dms.templatesForm.editBlock", { blockId: selectedBlockId }) || `Edit: ${selectedBlockId}`}</h4>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>Font Size</Label>
+                    <Label>{t("dms.templatesForm.fontSize") || "Font Size"}</Label>
                     <Input
                       type="number"
                       min="8"
@@ -1521,7 +1626,7 @@ export function TemplateForm({
                     />
                   </div>
                   <div>
-                    <Label>Font Family</Label>
+                    <Label>{t("dms.templatesForm.fontFamily") || "Font Family"}</Label>
                     <Select
                       value={selectedBlockPosition.fontFamily || 'Arial'}
                       onValueChange={(value) => updateBlockProperty(selectedBlockId, 'fontFamily', value)}
@@ -1543,7 +1648,7 @@ export function TemplateForm({
                     </Select>
                   </div>
                   <div>
-                    <Label>Text Align</Label>
+                    <Label>{t("dms.templatesForm.textAlign") || "Text Align"}</Label>
                     <Select
                       value={selectedBlockPosition.textAlign || 'right'}
                       onValueChange={(value) => updateBlockProperty(selectedBlockId, 'textAlign', value)}
@@ -1559,7 +1664,7 @@ export function TemplateForm({
                     </Select>
                   </div>
                   <div>
-                    <Label>Color</Label>
+                    <Label>{t("dms.templatesForm.color") || "Color"}</Label>
                     <Input
                       type="color"
                       value={selectedBlockPosition.color || '#000000'}
@@ -1567,7 +1672,7 @@ export function TemplateForm({
                     />
                   </div>
                   <div>
-                    <Label>Width (%)</Label>
+                    <Label>{t("dms.templatesForm.widthPercent") || "Width (%)"}</Label>
                     <Input
                       type="number"
                       min="5"
@@ -1578,7 +1683,7 @@ export function TemplateForm({
                     />
                   </div>
                   <div>
-                    <Label>Height (%)</Label>
+                    <Label>{t("dms.templatesForm.heightPercent") || "Height (%)"}</Label>
                     <Input
                       type="number"
                       min="2"

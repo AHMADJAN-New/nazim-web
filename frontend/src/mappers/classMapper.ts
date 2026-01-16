@@ -127,5 +127,12 @@ export function mapClassAcademicYearDomainToInsert(domain: Partial<ClassAcademic
  * Convert Domain ClassAcademicYear model to API ClassAcademicYearUpdate payload
  */
 export function mapClassAcademicYearDomainToUpdate(domain: Partial<ClassAcademicYear>): ClassApi.ClassAcademicYearUpdate {
-    return mapClassAcademicYearDomainToInsert(domain);
+    return {
+        section_name: domain.sectionName !== undefined ? (domain.sectionName || null) : undefined,
+        room_id: domain.roomId !== undefined ? (domain.roomId || null) : undefined,
+        capacity: domain.capacity !== undefined ? domain.capacity : undefined,
+        teacher_id: domain.teacherId !== undefined ? (domain.teacherId || null) : undefined,
+        is_active: domain.isActive !== undefined ? domain.isActive : undefined,
+        notes: domain.notes !== undefined ? (domain.notes || null) : undefined,
+    };
 }

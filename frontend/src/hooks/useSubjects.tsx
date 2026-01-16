@@ -852,27 +852,51 @@ export const useBulkAssignSubjectsToClassTemplate = () => {
                 throw new Error('User not authenticated');
             }
 
-            // Create templates one by one
+            // Create templates one by one, skip duplicates
             const created: ClassSubjectTemplate[] = [];
+            const skipped: string[] = [];
+            
             for (const subjectId of bulkData.subjectIds) {
-                const insertData = mapClassSubjectTemplateDomainToInsert({
-                    classId: bulkData.classId,
-                    subjectId,
-                    organizationId: profile.organization_id || null,
-                    isRequired: bulkData.isRequired ?? false,
-                    credits: bulkData.credits || null,
-                    hoursPerWeek: bulkData.hoursPerWeek || null,
-                });
+                try {
+                    const insertData = mapClassSubjectTemplateDomainToInsert({
+                        classId: bulkData.classId,
+                        subjectId,
+                        organizationId: profile.organization_id || null,
+                        isRequired: bulkData.isRequired ?? false,
+                        credits: bulkData.credits || null,
+                        hoursPerWeek: bulkData.hoursPerWeek || null,
+                    });
 
-                const apiTemplate = await classSubjectTemplatesApi.create(insertData);
-                created.push(mapClassSubjectTemplateApiToDomain(apiTemplate as SubjectApi.ClassSubjectTemplate));
+                    const apiTemplate = await classSubjectTemplatesApi.create(insertData);
+                    created.push(mapClassSubjectTemplateApiToDomain(apiTemplate as SubjectApi.ClassSubjectTemplate));
+                } catch (error: any) {
+                    // If it's a duplicate error (422), skip it silently
+                    if (error?.response?.status === 422) {
+                        skipped.push(subjectId);
+                        continue;
+                    }
+                    // For other errors, throw immediately
+                    throw error;
+                }
             }
 
-            return created;
+            // If all were skipped, throw an error
+            if (created.length === 0 && skipped.length > 0) {
+                throw new Error('All selected subjects are already assigned to this class');
+            }
+
+            return { created, skipped: skipped.length };
         },
-        onSuccess: () => {
+        onSuccess: (result) => {
             queryClient.invalidateQueries({ queryKey: ['class-subject-templates'] });
             queryClient.invalidateQueries({ queryKey: ['subjects'] });
+            if (result.created.length > 0) {
+                if (result.skipped > 0) {
+                    showToast.success(`Successfully assigned ${result.created.length} subject(s). ${result.skipped} subject(s) were already assigned.`);
+                } else {
+                    showToast.success(`Successfully assigned ${result.created.length} subject(s).`);
+                }
+            }
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'toast.subjectAssignFailed');

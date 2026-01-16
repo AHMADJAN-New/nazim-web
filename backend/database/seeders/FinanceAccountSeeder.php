@@ -133,31 +133,73 @@ class FinanceAccountSeeder extends Seeder
         ];
 
         foreach ($accounts as $accountData) {
-            // Check if account already exists for this school (by code, organization_id, and school_id)
-            $exists = FinanceAccount::where('organization_id', $organizationId)
-                ->where('school_id', $schoolId)
-                ->where('code', $accountData['code'])
-                ->whereNull('deleted_at')
-                ->exists();
+            // Use firstOrCreate to handle duplicates gracefully
+            // This will create if doesn't exist, or return existing if it does (even if soft-deleted)
+            $account = FinanceAccount::withTrashed()
+                ->firstOrCreate(
+                    [
+                        'organization_id' => $organizationId,
+                        'school_id' => $schoolId,
+                        'code' => $accountData['code'],
+                    ],
+                    [
+                        'currency_id' => $currencyId,
+                        'name' => $accountData['name'],
+                        'type' => $accountData['type'],
+                        'description' => $accountData['description'],
+                        'opening_balance' => $accountData['opening_balance'],
+                        'current_balance' => $accountData['opening_balance'],
+                        'is_active' => true,
+                    ]
+                );
 
-            if (!$exists) {
-                FinanceAccount::create([
-                    'organization_id' => $organizationId,
-                    'school_id' => $schoolId,
+            // If account was soft-deleted, restore it and update fields
+            if ($account->trashed()) {
+                $account->restore();
+                $account->update([
                     'currency_id' => $currencyId,
                     'name' => $accountData['name'],
-                    'code' => $accountData['code'],
                     'type' => $accountData['type'],
                     'description' => $accountData['description'],
-                    'opening_balance' => $accountData['opening_balance'],
-                    'current_balance' => $accountData['opening_balance'],
                     'is_active' => true,
                 ]);
-
+                $this->command->info("    ↻ Restored and updated account: {$accountData['name']} ({$accountData['name_en']})");
+                $createdCount++;
+            } elseif ($account->wasRecentlyCreated) {
                 $createdCount++;
                 $this->command->info("    ✓ Created account: {$accountData['name']} ({$accountData['name_en']})");
             } else {
-                $this->command->info("    ⊘ Account {$accountData['code']} already exists for this school");
+                // Account exists and is not deleted - update if needed
+                $needsUpdate = false;
+                $updates = [];
+
+                if ($account->currency_id !== $currencyId) {
+                    $updates['currency_id'] = $currencyId;
+                    $needsUpdate = true;
+                }
+                if ($account->name !== $accountData['name']) {
+                    $updates['name'] = $accountData['name'];
+                    $needsUpdate = true;
+                }
+                if ($account->description !== $accountData['description']) {
+                    $updates['description'] = $accountData['description'];
+                    $needsUpdate = true;
+                }
+                if ($account->type !== $accountData['type']) {
+                    $updates['type'] = $accountData['type'];
+                    $needsUpdate = true;
+                }
+                if (!$account->is_active) {
+                    $updates['is_active'] = true;
+                    $needsUpdate = true;
+                }
+
+                if ($needsUpdate) {
+                    $account->update($updates);
+                    $this->command->info("    ↻ Updated account: {$accountData['name']} ({$accountData['name_en']})");
+                } else {
+                    $this->command->info("    ⊘ Account {$accountData['code']} already exists for this school");
+                }
             }
         }
 

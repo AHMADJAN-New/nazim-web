@@ -469,13 +469,13 @@ class ClassController extends Controller
         }
 
         // Prepare bulk insert data
-        $insertData = array_map(function ($section) use ($request, $class, $organizationId, $roomId) {
+        $insertData = array_map(function ($section) use ($request, $class, $organizationId, $roomId, $currentSchoolId) {
             return [
                 'id' => (string) \Illuminate\Support\Str::uuid(),
                 'class_id' => $request->class_id,
                 'academic_year_id' => $request->academic_year_id,
                 'organization_id' => $organizationId,
-                'school_id' => $request->get('current_school_id'),
+                'school_id' => $currentSchoolId,
                 'section_name' => trim($section) ?: null,
                 'room_id' => $roomId,
                 'capacity' => $request->default_capacity ?? $class->default_capacity,

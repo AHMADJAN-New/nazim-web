@@ -246,7 +246,7 @@ export function ExamNumberReportsPage() {
     return (
       <div className="container mx-auto p-6">
         <div className="text-center py-12">
-          <p className="text-muted-foreground">{t('common.noPermission') || 'You do not have permission to view this page'}</p>
+          <p className="text-muted-foreground">{t('events.noPermission') || 'You do not have permission to view this page'}</p>
           <Button variant="link" onClick={() => navigate('/exams')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             {t('exams.backToList') || 'Back to Exams'}
@@ -350,9 +350,9 @@ export function ExamNumberReportsPage() {
                         { key: 'rollNumber', label: t('exams.rollNumbers.rollNumber') || 'Roll Number' },
                         { key: 'studentCode', label: t('exams.studentCode') || 'Student Code' },
                         { key: 'studentName', label: t('exams.studentName') || 'Name' },
-                        { key: 'fatherName', label: t('exams.fatherName') || 'Father Name' },
-                        { key: 'className', label: t('exams.class') || 'Class' },
-                        { key: 'section', label: t('common.section') || 'Section' },
+                        { key: 'fatherName', label: t('examReports.fatherName') || 'Father Name' },
+                        { key: 'className', label: t('search.class') || 'Class' },
+                        { key: 'section', label: t('events.section') || 'Section' },
                         ...(hasSecretNumberViewPermission ? [{ key: 'secretNumber', label: t('exams.secretNumbers.secretNumber') || 'Secret Number' }] : []),
                       ]}
                       reportKey="exam_roll_numbers"
@@ -391,16 +391,16 @@ export function ExamNumberReportsPage() {
             <CardContent>
               <div className="flex items-center gap-4">
                 <div className="w-64">
-                  <Label className="sr-only">{t('exams.class') || 'Class'}</Label>
+                  <Label className="sr-only">{t('search.class') || 'Class'}</Label>
                   <Select
                     value={selectedClassId || 'all'}
                     onValueChange={(v) => setSelectedClassId(v === 'all' ? undefined : v)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('exams.allClasses') || 'All Classes'} />
+                      <SelectValue placeholder={t('students.allClasses') || 'All Classes'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">{t('exams.allClasses') || 'All Classes'}</SelectItem>
+                      <SelectItem value="all">{t('students.allClasses') || 'All Classes'}</SelectItem>
                       {examClasses?.map((ec) => (
                         <SelectItem key={ec.id} value={ec.id}>
                           {ec.classAcademicYear?.class?.name || 'Unknown'}
@@ -413,7 +413,7 @@ export function ExamNumberReportsPage() {
                 <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder={t('common.search') || 'Search by name, roll number, code...'}
+                    placeholder={t('events.search') || 'Search by name, roll number, code...'}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-9"
@@ -451,8 +451,8 @@ export function ExamNumberReportsPage() {
                         <TableHead>{t('exams.rollNumbers.rollNumber') || 'Roll Number'}</TableHead>
                         <TableHead>{t('exams.studentCode') || 'Student Code'}</TableHead>
                         <TableHead>{t('exams.studentName') || 'Name'}</TableHead>
-                        <TableHead>{t('exams.fatherName') || 'Father Name'}</TableHead>
-                        <TableHead>{t('exams.class') || 'Class'}</TableHead>
+                        <TableHead>{t('examReports.fatherName') || 'Father Name'}</TableHead>
+                        <TableHead>{t('search.class') || 'Class'}</TableHead>
                         {hasSecretNumberViewPermission && (
                           <TableHead>
                             <div className="flex items-center gap-2">
@@ -462,7 +462,7 @@ export function ExamNumberReportsPage() {
                                 size="sm"
                                 className="h-6 w-6 p-0"
                                 onClick={() => setShowSecretNumbers(!showSecretNumbers)}
-                                title={showSecretNumbers ? (t('common.hide') || 'Hide') : (t('common.show') || 'Show')}
+                                title={showSecretNumbers ? (t('events.hide') || 'Hide') : (t('events.show') || 'Show')}
                               >
                                 {showSecretNumbers ? (
                                   <EyeOff className="h-4 w-4" />
@@ -610,7 +610,7 @@ export function ExamNumberReportsPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>{t('exams.class') || 'Class'}</TableHead>
+                            <TableHead>{t('search.class') || 'Class'}</TableHead>
                             <TableHead className="text-center">{t('exams.numberReports.totalStudents') || 'Total'}</TableHead>
                             <TableHead className="text-center">{t('exams.numberReports.withRollNumber') || 'Roll #'}</TableHead>
                             <TableHead className="text-center">{t('exams.numberReports.withSecretNumber') || 'Secret #'}</TableHead>
@@ -638,11 +638,11 @@ export function ExamNumberReportsPage() {
                               <TableCell className="text-center">
                                 {cs.withRollNumber === cs.total && cs.withSecretNumber === cs.total ? (
                                   <Badge variant="default" className="bg-green-600">
-                                    {t('common.yes') || 'Yes'}
+                                    {t('events.yes') || 'Yes'}
                                   </Badge>
                                 ) : (
                                   <Badge variant="outline" className="text-amber-600 border-amber-300">
-                                    {t('common.no') || 'No'}
+                                    {t('events.no') || 'No'}
                                   </Badge>
                                 )}
                               </TableCell>
@@ -690,7 +690,7 @@ export function ExamNumberReportsPage() {
                       setShowPrintPreview(false);
                       setTimeout(() => setShowPrintPreview(true), 100);
                     }}>
-                      {t('common.retry') || 'Retry'}
+                      {t('events.retry') || 'Retry'}
                     </Button>
                   </div>
                 ) : (
@@ -709,11 +709,11 @@ export function ExamNumberReportsPage() {
 
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowPrintPreview(false)}>
-                  {t('common.cancel') || 'Cancel'}
+                  {t('events.cancel') || 'Cancel'}
                 </Button>
                 <Button onClick={executePrint} disabled={rollSlipsLoading || secretLabelsLoading}>
                   <Printer className="h-4 w-4 mr-2" />
-                  {t('common.print') || 'Print'}
+                  {t('events.print') || 'Print'}
                 </Button>
               </DialogFooter>
             </DialogContent>

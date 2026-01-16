@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ColumnDef } from '@tanstack/react-table';
-import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search, MoreHorizontal, DollarSign } from 'lucide-react';
+import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search, MoreHorizontal, DollarSign, History } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +22,7 @@ import {
   useUpdateStudent,
   useStudentEducationalHistory,
   useStudentDisciplineRecords,
+  usePrintStudentProfile,
 } from '@/hooks/useStudents';
 import type { Student } from '@/types/domain/student';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
@@ -55,9 +56,10 @@ import StudentProfileView from '@/components/students/StudentProfileView';
 import { StudentDocumentsDialog } from '@/components/students/StudentDocumentsDialog';
 import { StudentEducationalHistoryDialog } from '@/components/students/StudentEducationalHistoryDialog';
 import { StudentDisciplineRecordsDialog } from '@/components/students/StudentDisciplineRecordsDialog';
-import { generateStudentProfilePdf } from '@/lib/studentProfilePdf';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
+import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
+import { PictureCell } from '@/components/shared/PictureCell';
 
 
 // Helper function to convert StudentFormData to domain Student format
@@ -208,82 +210,16 @@ const statusBadge = (status: Student['status']) => {
 };
 
 // Component for displaying student picture in table cell
+// Uses centralized PictureCell component with image caching
 function StudentPictureCell({ student }: { student: Student }) {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageError, setImageError] = useState(false);
-  
-  useEffect(() => {
-    // Only fetch if picturePath exists and is not empty
-    const hasPicture = student.picturePath && student.picturePath.trim() !== '' && student.id;
-    
-    if (hasPicture) {
-      let currentBlobUrl: string | null = null;
-      
-      const fetchImage = async () => {
-        try {
-          const { apiClient } = await import('@/lib/api/client');
-          const token = apiClient.getToken();
-          const url = `/api/students/${student.id}/picture`;
-          
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'Accept': 'image/*',
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-            },
-            credentials: 'include',
-          });
-          
-          if (!response.ok) {
-            if (response.status === 404) {
-              setImageError(true);
-              return;
-            }
-            throw new Error(`Failed to fetch image: ${response.status}`);
-          }
-          
-          const blob = await response.blob();
-          const blobUrl = URL.createObjectURL(blob);
-          currentBlobUrl = blobUrl;
-          setImageUrl(blobUrl);
-          setImageError(false);
-        } catch (error) {
-          if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
-            console.error('Failed to fetch student picture:', error);
-          }
-          setImageError(true);
-        }
-      };
-      
-      fetchImage();
-      
-      return () => {
-        if (currentBlobUrl) {
-          URL.revokeObjectURL(currentBlobUrl);
-        }
-      };
-    } else {
-      // No picture path, show placeholder immediately
-      setImageUrl(null);
-      setImageError(true);
-    }
-  }, [student.id, student.picturePath]);
-  
   return (
-    <div className="flex items-center justify-center w-12 h-12">
-      {imageUrl && !imageError ? (
-        <img
-          src={imageUrl}
-          alt={student.fullName}
-          className="w-12 h-12 rounded-full object-cover border-2 border-border"
-          onError={() => setImageError(true)}
-        />
-      ) : (
-        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-border">
-          <UserRound className="h-6 w-6 text-muted-foreground" />
-        </div>
-      )}
-    </div>
+    <PictureCell
+      type="student"
+      entityId={student.id}
+      picturePath={student.picturePath}
+      alt={student.fullName}
+      size="md"
+    />
   );
 }
 
@@ -311,6 +247,7 @@ export function Students() {
   const updateStudent = useUpdateStudent();
   const deleteStudent = useDeleteStudent();
   const pictureUpload = useStudentPictureUpload();
+  const printProfile = usePrintStudentProfile();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -361,8 +298,14 @@ export function Students() {
       }
     }
     if (!organizationId) {
+      const errorMessage = t('students.organizationRequired') || 'Organization is required to create a student. Please select an organization.';
+      toast.error(errorMessage);
       if (import.meta.env.DEV) {
-        console.warn('Organization is required to create/update student');
+        console.error('Organization is required to create/update student', {
+          profile,
+          cleanedData,
+          schools,
+        });
       }
       return;
     }
@@ -574,7 +517,13 @@ export function Students() {
             }
             resolve();
           },
-          onError: () => reject()
+          onError: (error) => {
+            if (import.meta.env.DEV) {
+              console.error('Failed to create student:', error);
+            }
+            // Error toast is already shown by useCreateStudent hook
+            reject(error);
+          }
         });
       });
     }
@@ -647,40 +596,7 @@ export function Students() {
 
   const handlePrint = async (student: Student) => {
     try {
-      // Get school name
-      const schoolName = schools?.find(s => s.id === student.schoolId)?.school_name || student.school?.schoolName || null;
-
-      // Get student picture URL
-      let pictureUrl: string | null = null;
-      if (student.picturePath && student.organizationId) {
-        // Construct URL from Laravel API storage path
-        const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
-        const schoolPath = student.schoolId ? `${student.schoolId}/` : '';
-        const path = `${student.organizationId}/${schoolPath}${student.id}/picture/${student.picturePath}`;
-        // Laravel typically serves files from /storage/ path
-        pictureUrl = `${baseUrl.replace('/api', '')}/storage/student-files/${path}`;
-      }
-
-      // Get guardian picture URL
-      let guardianPictureUrl: string | null = null;
-      if (student.guardianPicturePath?.startsWith('http')) {
-        guardianPictureUrl = student.guardianPicturePath;
-      }
-
-      // TODO: Migrate to Laravel API endpoints for educational history and discipline records
-      // For now, return empty arrays until endpoints are implemented
-      const educationalHistory: any[] = [];
-      const disciplineRecords: any[] = [];
-
-      await generateStudentProfilePdf({
-        student,
-        schoolName,
-        pictureUrl,
-        guardianPictureUrl,
-        isRTL,
-        educationalHistory,
-        disciplineRecords,
-      });
+      await printProfile.mutateAsync(student.id);
     } catch (error) {
       console.error('Error generating student profile PDF:', error);
       toast.error('Failed to generate student profile PDF.');
@@ -746,7 +662,7 @@ export function Students() {
               <Badge variant={statusBadge(student.status)} className="shrink-0">
                 {student.status === 'applied' ? t('students.applied') :
                  student.status === 'admitted' ? t('students.admitted') :
-                 student.status === 'active' ? t('students.active') :
+                 student.status === 'active' ? t('events.active') :
                  student.status === 'withdrawn' ? t('students.withdrawn') :
                  student.status}
               </Badge>
@@ -790,7 +706,7 @@ export function Students() {
     },
     {
       id: 'actions',
-      header: () => <div className="text-right">{t('students.actions') || 'Actions'}</div>,
+      header: () => <div className="text-right">{t('events.actions') || 'Actions'}</div>,
       cell: ({ row }) => (
         <div className="text-right">
           <DropdownMenu>
@@ -800,7 +716,7 @@ export function Students() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('events.actions') || 'Actions'}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleView(row.original)}>
                 <Eye className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -823,17 +739,21 @@ export function Students() {
                 <AlertTriangle className="mr-2 h-4 w-4 text-orange-600 dark:text-orange-400" />
                 {t('students.disciplineRecords') || 'Discipline Records'}
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate(`/students/${row.original.id}/history`)}>
+                <History className="mr-2 h-4 w-4 text-teal-600 dark:text-teal-400" />
+                {t('students.viewHistory') || 'View History'}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleEdit(row.original)}>
                 <Pencil className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
-                {t('common.edit') || 'Edit'}
+                {t('events.edit') || 'Edit'}
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => handleDelete(row.original)}
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                {t('common.delete') || 'Delete'}
+                {t('events.delete') || 'Delete'}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -863,16 +783,16 @@ export function Students() {
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
         <PageHeader
-          title={t('students.title') || 'Students'}
-          description={t('students.subtitle') || 'Manage admissions with complete Afghan student records'}
+          title={t('nav.students') || 'Students'}
+          description={t('students.listDescription') || 'Search, filter and update admissions.'}
           primaryAction={{
-            label: t('students.add') || 'Register Student',
+            label: t('events.add') || 'Register Student',
             onClick: () => setIsCreateOpen(true),
             icon: <Plus className="h-4 w-4" />,
           }}
           secondaryActions={[
             {
-              label: t('studentReport.title') || 'Student Registration Report',
+              label: t('nav.students') || 'Student Registration Report',
               href: '/reports/student-registrations',
               icon: <FileText className="h-4 w-4" />,
               variant: 'outline',
@@ -889,7 +809,7 @@ export function Students() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('students.total') || 'Total Students'}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('events.total') || 'Total Students'}</CardTitle>
             <UserRound className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -929,12 +849,12 @@ export function Students() {
         </Card>
       </div>
 
-      <FilterPanel title={t('common.filters')}>
+      <FilterPanel title={t('events.filters')}>
         <div className="flex flex-wrap gap-2 items-center">
           <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={t('students.searchPlaceholder') || 'Search by name, admission number, father name...'}
+              placeholder={t('assets.searchPlaceholder') || 'Search by name, admission number, father name...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 w-full"
@@ -945,7 +865,7 @@ export function Students() {
               <SelectValue placeholder={t('students.school') || 'School'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('students.allSchools') || 'All Schools'}</SelectItem>
+              <SelectItem value="all">{t('leave.allSchools') || 'All Schools'}</SelectItem>
               {schools?.map((school) => (
                 <SelectItem key={school.id} value={school.id}>
                   {school.schoolName}
@@ -955,13 +875,13 @@ export function Students() {
           </Select>
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
             <SelectTrigger className="w-full sm:w-[150px]">
-              <SelectValue placeholder={t('students.status') || 'Status'} />
+              <SelectValue placeholder={t('students.status.label') || 'Status'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('students.allStatus') || 'All Status'}</SelectItem>
+              <SelectItem value="all">{t('userManagement.allStatus') || 'All Status'}</SelectItem>
               <SelectItem value="applied">{t('students.applied') || 'Applied'}</SelectItem>
               <SelectItem value="admitted">{t('students.admitted') || 'Admitted'}</SelectItem>
-              <SelectItem value="active">{t('students.active') || 'Active'}</SelectItem>
+              <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
               <SelectItem value="withdrawn">{t('students.withdrawn') || 'Withdrawn'}</SelectItem>
             </SelectContent>
           </Select>
@@ -995,12 +915,12 @@ export function Students() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[60px]">{t('students.picture') || 'Picture'}</TableHead>
-                        <TableHead className="hidden sm:table-cell">{t('students.admissionNo') || 'Admission #'}</TableHead>
+                        <TableHead className="hidden sm:table-cell">{t('examReports.admissionNo') || 'Admission #'}</TableHead>
                         <TableHead className="min-w-[200px]">{t('students.student') || 'Student'}</TableHead>
                         <TableHead className="hidden md:table-cell">{t('students.school') || 'School'}</TableHead>
                         <TableHead className="hidden lg:table-cell">{t('students.gender') || 'Gender'}</TableHead>
                         <TableHead className="hidden lg:table-cell">{t('students.applyingGrade') || 'Applying Grade'}</TableHead>
-                        <TableHead className="text-right w-[100px]">{t('students.actions') || 'Actions'}</TableHead>
+                        <TableHead className="text-right w-[100px]">{t('events.actions') || 'Actions'}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1022,7 +942,7 @@ export function Students() {
                                   <Badge variant={statusBadge(student.status)} className="shrink-0 text-xs">
                                     {student.status === 'applied' ? t('students.applied') :
                                      student.status === 'admitted' ? t('students.admitted') :
-                                     student.status === 'active' ? t('students.active') :
+                                     student.status === 'active' ? t('events.active') :
                                      student.status === 'withdrawn' ? t('students.withdrawn') :
                                      student.status}
                                   </Badge>
@@ -1040,7 +960,7 @@ export function Students() {
                                 </div>
                                 {/* Show admission number on mobile */}
                                 <div className="text-xs text-muted-foreground sm:hidden">
-                                  {t('students.admissionNo') || 'Admission #'}: {student.admissionNumber}
+                                  {t('examReports.admissionNo') || 'Admission #'}: {student.admissionNumber}
                                 </div>
                               </div>
                             </TableCell>
@@ -1061,7 +981,7 @@ export function Students() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+                                  <DropdownMenuLabel>{t('events.actions') || 'Actions'}</DropdownMenuLabel>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => handleView(student)}>
                                     <Eye className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -1088,17 +1008,21 @@ export function Students() {
                                     <DollarSign className="mr-2 h-4 w-4 text-green-600 dark:text-green-400" />
                                     {t('fees.studentFeeAssignments') || 'Fee Assignments'}
                                   </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => navigate(`/students/${student.id}/history`)}>
+                                    <History className="mr-2 h-4 w-4 text-teal-600 dark:text-teal-400" />
+                                    {t('students.viewHistory') || 'View History'}
+                                  </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => handleEdit(student)}>
                                     <Pencil className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                    {t('common.edit') || 'Edit'}
+                                    {t('events.edit') || 'Edit'}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={() => handleDelete(student)}
                                     className="text-destructive focus:text-destructive"
                                   >
                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    {t('common.delete') || 'Delete'}
+                                    {t('events.delete') || 'Delete'}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -1159,8 +1083,8 @@ export function Students() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>{t('common.delete') || 'Delete'}</AlertDialogAction>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>{t('events.delete') || 'Delete'}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1184,6 +1108,28 @@ export function Students() {
         open={!!disciplineDialogStudent}
         onOpenChange={(open) => !open && setDisciplineDialogStudent(null)}
         student={disciplineDialogStudent}
+      />
+
+      {/* Report Progress Dialog for Print */}
+      <ReportProgressDialog
+        open={printProfile.isGenerating || printProfile.status !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            printProfile.reset();
+          }
+        }}
+        status={printProfile.status}
+        progress={printProfile.progress}
+        fileName={printProfile.fileName}
+        error={printProfile.error}
+        onDownload={() => {
+          printProfile.downloadReport();
+          // Also open print dialog
+          printProfile.openPrintDialog();
+        }}
+        onClose={() => {
+          printProfile.reset();
+        }}
       />
     </div>
   );

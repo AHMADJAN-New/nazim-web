@@ -205,7 +205,7 @@ export default function FinanceDocuments() {
             data={filteredDocuments}
             columns={[
               { key: 'document_type', label: t('finance.documentType') },
-              { key: 'title', label: t('finance.documentTitle') },
+              { key: 'title', label: t('courses.documentTitle') },
               { key: 'reference_number', label: t('finance.referenceNumber') },
               { key: 'amount', label: t('finance.amount') },
               { key: 'document_date', label: t('finance.documentDate') },
@@ -233,13 +233,13 @@ export default function FinanceDocuments() {
                 filters.push(`${t('finance.documentType')}: ${getDocumentTypeLabel(documentType)}`);
               }
               if (startDate) {
-                filters.push(`${t('finance.startDate')}: ${formatDate(new Date(startDate))}`);
+                filters.push(`${t('events.startDate')}: ${formatDate(new Date(startDate))}`);
               }
               if (endDate) {
-                filters.push(`${t('finance.endDate')}: ${formatDate(new Date(endDate))}`);
+                filters.push(`${t('events.endDate')}: ${formatDate(new Date(endDate))}`);
               }
               if (search) {
-                filters.push(`${t('common.search')}: ${search}`);
+                filters.push(`${t('events.search')}: ${search}`);
               }
               return filters.join(', ');
             }}
@@ -298,7 +298,7 @@ export default function FinanceDocuments() {
         </Card>
       </div>
 
-      <FilterPanel title={t('common.filters') || 'Filters'}>
+      <FilterPanel title={t('events.filters') || 'Filters'}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2">
             <Label>{t('finance.documentType')}</Label>
@@ -310,10 +310,10 @@ export default function FinanceDocuments() {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t('common.all')} />
+                <SelectValue placeholder={t('subjects.all')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('common.all')}</SelectItem>
+                <SelectItem value="all">{t('subjects.all')}</SelectItem>
                 {DOCUMENT_TYPES.map((type) => (
                   <SelectItem key={type.value} value={type.value}>
                     {t(type.labelKey)}
@@ -324,7 +324,7 @@ export default function FinanceDocuments() {
           </div>
 
           <div className="space-y-2">
-            <Label>{t('finance.startDate')}</Label>
+            <Label>{t('events.startDate')}</Label>
             <CalendarDatePicker
               date={startDate ? new Date(startDate) : undefined}
               onDateChange={(date) => {
@@ -332,12 +332,12 @@ export default function FinanceDocuments() {
                 setStartDate(dateStr);
                 handleFilterChange('start_date', dateStr);
               }}
-              placeholder={t('finance.startDate') || 'Start date'}
+              placeholder={t('events.startDate') || 'Start date'}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>{t('finance.endDate')}</Label>
+            <Label>{t('events.endDate')}</Label>
             <CalendarDatePicker
               date={endDate ? new Date(endDate) : undefined}
               onDateChange={(date) => {
@@ -345,16 +345,16 @@ export default function FinanceDocuments() {
                 setEndDate(dateStr);
                 handleFilterChange('end_date', dateStr);
               }}
-              placeholder={t('finance.endDate') || 'End date'}
+              placeholder={t('events.endDate') || 'End date'}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>{t('common.search')}</Label>
+            <Label>{t('events.search')}</Label>
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('finance.searchPlaceholder')}
+                placeholder={t('assets.searchPlaceholder')}
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -370,7 +370,7 @@ export default function FinanceDocuments() {
       {/* Documents Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('finance.documents')}</CardTitle>
+          <CardTitle>{t('students.documents')}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -386,14 +386,14 @@ export default function FinanceDocuments() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('finance.documentType')}</TableHead>
-                    <TableHead>{t('finance.documentTitle')}</TableHead>
+                    <TableHead>{t('courses.documentTitle')}</TableHead>
                     <TableHead>{t('finance.referenceNumber')}</TableHead>
                     <TableHead>{t('finance.amount')}</TableHead>
                     <TableHead>{t('finance.documentDate')}</TableHead>
                     <TableHead>{t('finance.fileName')}</TableHead>
                     <TableHead>{t('finance.fileSize')}</TableHead>
                     <TableHead>{t('finance.uploadedAt')}</TableHead>
-                    <TableHead className="text-right">{t('common.actions')}</TableHead>
+                    <TableHead className="text-right">{t('events.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -465,7 +465,7 @@ export default function FinanceDocuments() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDownload(doc.id)}
-                            title={t('common.download')}
+                            title={t('events.download')}
                           >
                             <Download className="h-4 w-4" />
                           </Button>
@@ -476,7 +476,7 @@ export default function FinanceDocuments() {
                               setDocumentToDelete(doc.id);
                               setIsDeleteDialogOpen(true);
                             }}
-                            title={t('common.delete')}
+                            title={t('events.delete')}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -514,12 +514,12 @@ export default function FinanceDocuments() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('common.delete')}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

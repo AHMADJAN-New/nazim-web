@@ -28,7 +28,8 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
+import { PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, ChartSkeleton } from '@/components/charts/LazyChart';
+import { Suspense } from 'react';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
@@ -107,7 +108,7 @@ export default function FinanceDashboard() {
     if (error) {
         return (
             <div className="text-center py-8 text-destructive">
-                {t('common.error') || 'An error occurred'}: {(error as Error).message}
+                {t('events.error') || 'An error occurred'}: {(error as Error).message}
             </div>
         );
     }
@@ -115,7 +116,7 @@ export default function FinanceDashboard() {
     if (!dashboard) {
         return (
             <div className="text-center py-8 text-muted-foreground">
-                {t('common.noData') || 'No data available'}
+                {t('events.noData') || 'No data available'}
             </div>
         );
     }
@@ -149,7 +150,7 @@ export default function FinanceDashboard() {
                             variant="outline"
                             size="icon"
                             className="self-start sm:self-auto"
-                            aria-label={t('common.download') || 'Download'}
+                            aria-label={t('events.download') || 'Download'}
                         >
                             <Download className="h-4 w-4" />
                         </Button>
@@ -239,7 +240,7 @@ export default function FinanceDashboard() {
                                 {balanceChange.toFixed(1)}%
                             </span>
                             <span className="text-muted-foreground break-words">
-                                vs last month
+                                {t('finance.vsLastMonth') || 'vs last month'}
                             </span>
                         </div>
                     </CardContent>
@@ -277,7 +278,7 @@ export default function FinanceDashboard() {
                                 {incomeChange.toFixed(1)}%
                             </span>
                             <span className="text-muted-foreground break-words">
-                                vs last month
+                                {t('finance.vsLastMonth') || 'vs last month'}
                             </span>
                         </div>
                     </CardContent>
@@ -372,7 +373,7 @@ export default function FinanceDashboard() {
                                 {Math.abs(expenseChange).toFixed(1)}%
                             </span>
                             <span className="text-muted-foreground break-words">
-                                vs last month
+                                {t('finance.vsLastMonth') || 'vs last month'}
                             </span>
                         </div>
                     </CardContent>
@@ -396,7 +397,7 @@ export default function FinanceDashboard() {
                         <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                             <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
                             <span className="text-muted-foreground break-words">
-                                {dashboard.summary.activeDonors} active donors
+                                {dashboard.summary.activeDonors} {t('finance.activeDonorsText') || 'active donors'}
                             </span>
                         </div>
                     </CardContent>
@@ -422,7 +423,7 @@ export default function FinanceDashboard() {
                         <div className="flex items-center gap-2">
                             <TrendingUp className="h-4 w-4 text-green-500 flex-shrink-0" />
                             <span className="text-xs sm:text-sm text-green-600 dark:text-green-400 font-medium">
-                                {incomeChange.toFixed(1)}% compared to last month
+                                {incomeChange.toFixed(1)}% {t('finance.comparedToLastMonth') || 'compared to last month'}
                             </span>
                         </div>
                         
@@ -430,7 +431,7 @@ export default function FinanceDashboard() {
                         <div className="space-y-2">
                             <Progress value={100} className="h-2" />
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                <span>Total Income Distribution</span>
+                                <span>{t('finance.totalIncomeDistribution') || 'Total Income Distribution'}</span>
                             </div>
                         </div>
 
@@ -471,7 +472,7 @@ export default function FinanceDashboard() {
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div className="min-w-0 flex-1">
                             <CardTitle className="text-lg">{t('finance.monthlyExpenses') || 'Monthly Expenses'}</CardTitle>
-                            <CardDescription className="hidden sm:block">Last 6 months</CardDescription>
+                            <CardDescription className="hidden sm:block">{t('finance.last6Months') || 'Last 6 months'}</CardDescription>
                         </div>
                         <Button 
                             variant="outline" 
@@ -479,7 +480,7 @@ export default function FinanceDashboard() {
                             className="hidden sm:flex flex-shrink-0 ml-2"
                             onClick={() => navigate('/finance/reports')}
                         >
-                            {t('finance.viewReport') || 'View Report'}
+                            {t('examReports.viewReport') || 'View Report'}
                         </Button>
                     </CardHeader>
                     <CardContent>
@@ -528,11 +529,11 @@ export default function FinanceDashboard() {
                         <div className="flex items-center gap-2 mt-3 sm:mt-4 text-xs sm:text-sm">
                             <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
                             <span className="text-green-600 dark:text-green-400 font-medium">
-                                Trending up by 5.2% this month
+                                {(t('finance.trendingUpByThisMonth') || 'Trending up by {percentage}% this month').replace('{percentage}', Math.abs(expenseChange).toFixed(1))}
                             </span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-2 hidden sm:block">
-                            Showing data from the last 6 months
+                            {t('finance.showingDataFromLast6Months') || 'Showing data from the last 6 months'}
                         </p>
                     </CardContent>
                 </Card>
@@ -541,9 +542,9 @@ export default function FinanceDashboard() {
                 <Card className="lg:col-span-1">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div className="min-w-0 flex-1">
-                            <CardTitle className="text-lg">Summary</CardTitle>
+                            <CardTitle className="text-lg">{t('finance.summary') || 'Summary'}</CardTitle>
                             <CardDescription className="hidden sm:block">
-                                Data from {formatDate(startDate)} - {formatDate(endDate)}
+                                {(t('finance.dataFromTo') || 'Data from {startDate} - {endDate}').replace('{startDate}', formatDate(startDate)).replace('{endDate}', formatDate(endDate))}
                             </CardDescription>
                         </div>
                         <Button variant="ghost" size="icon" className="hidden sm:flex flex-shrink-0 ml-2">
@@ -592,7 +593,7 @@ export default function FinanceDashboard() {
                             <div className="flex items-center justify-center h-[150px] sm:h-[180px] md:h-[200px] text-muted-foreground">
                                 <div className="text-center">
                                     <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 opacity-50" />
-                                    <p className="text-xs sm:text-sm">No expenses data</p>
+                                    <p className="text-xs sm:text-sm">{t('finance.noExpensesData') || 'No expenses data'}</p>
                                 </div>
                             </div>
                         )}
@@ -633,7 +634,7 @@ export default function FinanceDashboard() {
                                 navigate('/finance/income');
                             }}
                         >
-                            {t('finance.viewAll') || 'View All'}
+                            {t('events.viewAll') || 'View All'}
                         </Button>
                     </CardHeader>
                     <CardContent>
@@ -708,7 +709,7 @@ export default function FinanceDashboard() {
                                                 {isIncome ? '+' : '-'}{formatCurrency(entry.amount)}
                                             </Badge>
                                             <Badge variant="outline" className="text-xs">
-                                                {isIncome ? 'Income' : 'Expenses'}
+                                                {isIncome ? (t('finance.income') || 'Income') : (t('finance.expenses') || 'Expenses')}
                                             </Badge>
                                         </div>
                                     </div>
@@ -752,7 +753,7 @@ export default function FinanceDashboard() {
                                     <div className="flex items-center gap-2">
                                         <CreditCard className="h-4 w-4" />
                                         <span className="text-sm font-medium opacity-90">
-                                            {account.type === 'cash' ? 'Cash Account' : 'Fund Account'}
+                                            {account.type === 'cash' ? (t('finance.cashAccount') || 'Cash Account') : (t('finance.fundAccount') || 'Fund Account')}
                                         </span>
                                     </div>
                                     <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/20">
