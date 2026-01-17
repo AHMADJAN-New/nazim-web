@@ -3,14 +3,46 @@
 
 export type Language = 'en' | 'ps' | 'fa' | 'ar';
 
-// Re-export TranslationKeys type for convenience
-export type { TranslationKeys } from './translations/types';
-
 // Lazy load translations to reduce initial bundle size (3.3 MB total)
 // Only load the active language + English (fallback)
 let translationsCache: Record<Language, any> | null = null;
 let loadedLanguages: Set<Language> = new Set();
 let loadingPromises: Map<Language, Promise<any>> = new Map();
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isLanguageCacheReady(lang: Language): boolean {
+  if (lang === 'en') return true;
+  const cached = translationsCache?.[lang];
+  return isRecord(cached);
+}
+
+function lookupKey(translations: unknown, key: string): unknown {
+  const segments = key.split('.');
+  let value: unknown = translations;
+
+  for (let i = 0; i < segments.length; i++) {
+    if (!isRecord(value)) return undefined;
+
+    // Try the longest remaining path first (supports keys that intentionally include dots)
+    const remainingPath = segments.slice(i).join('.');
+    if (Object.prototype.hasOwnProperty.call(value, remainingPath)) {
+      return (value as Record<string, unknown>)[remainingPath];
+    }
+
+    const segment = segments[i];
+    if (Object.prototype.hasOwnProperty.call(value, segment)) {
+      value = (value as Record<string, unknown>)[segment];
+      continue;
+    }
+
+    return undefined;
+  }
+
+  return value;
+}
 
 // Load translation file dynamically
 export async function loadTranslation(lang: Language): Promise<any> {
@@ -24,31 +56,41 @@ export async function loadTranslation(lang: Language): Promise<any> {
   }
 
   const loadPromise = (async () => {
-    let translation: any;
-    switch (lang) {
-      case 'en':
-        translation = (await import('./translations/en')).en;
-        break;
-      case 'ps':
-        translation = (await import('./translations/ps')).ps;
-        break;
-      case 'fa':
-        translation = (await import('./translations/fa')).fa;
-        break;
-      case 'ar':
-        translation = (await import('./translations/ar')).ar;
-        break;
-      default:
-        translation = (await import('./translations/en')).en;
-    }
+    try {
+      let translation: any;
+      switch (lang) {
+        case 'en':
+          translation = (await import('./translations/en')).en;
+          break;
+        case 'ps':
+          translation = (await import('./translations/ps')).ps;
+          break;
+        case 'fa':
+          translation = (await import('./translations/fa')).fa;
+          break;
+        case 'ar':
+          translation = (await import('./translations/ar')).ar;
+          break;
+        default:
+          translation = (await import('./translations/en')).en;
+      }
 
-    if (!translationsCache) {
-      translationsCache = {} as Record<Language, any>;
+      // Defensive: don't mark a language as "loaded" unless we actually got an object.
+      // If the import path or export name is wrong, translation would be undefined and we'd
+      // end up treating English fallback as "missing in ps/fa/ar" (false positives).
+      if (!isRecord(translation)) {
+        throw new Error(`[i18n] Failed to load translations for "${lang}" (invalid module export)`);
+      }
+
+      if (!translationsCache) {
+        translationsCache = {} as Record<Language, any>;
+      }
+      translationsCache[lang] = translation;
+      loadedLanguages.add(lang);
+      return translation;
+    } finally {
+      loadingPromises.delete(lang);
     }
-    translationsCache[lang] = translation;
-    loadedLanguages.add(lang);
-    loadingPromises.delete(lang);
-    return translation;
   })();
 
   loadingPromises.set(lang, loadPromise);
@@ -75,7 +117,7 @@ loadedLanguages.add('en');
 
 // Synchronous access (may return English if language not loaded yet)
 function getTranslationsSync(lang: Language): Record<string, any> {
-  if (translationsCache?.[lang]) {
+  if (isLanguageCacheReady(lang) && translationsCache?.[lang]) {
     return translationsCache[lang];
   }
   // Return English as fallback if language not loaded
@@ -121,81 +163,58 @@ function humanizeKeyLastSegment(key: string): string {
 export function t(key: string, lang: Language = 'en', params?: Record<string, string | number>): string {
   // Always default to English if language is not available
   const safeLang = lang && ['en', 'ps', 'fa', 'ar'].includes(lang) ? lang : 'en';
-  const keys = key.split('.');
   
-  // Get translations (may trigger lazy load)
-  const langTranslations = getTranslationsSync(safeLang);
-  let value: unknown = langTranslations;
-  
-  // If language not loaded yet, trigger async load (but continue with English)
-  if (!loadedLanguages.has(safeLang) && safeLang !== 'en') {
+  const langReady = isLanguageCacheReady(safeLang);
+
+  // If language isn't loaded yet, trigger async load but DO NOT claim "English fallback"
+  // (otherwise we'd get false-positive warnings for keys that DO exist in ps/fa/ar).
+  if (!langReady && safeLang !== 'en') {
     loadTranslation(safeLang).catch(() => {
-      // Silently fail - will use English fallback
+      // Silently fail - English fallback will be used
     });
   }
 
-  // Try to get translation from requested language
-  for (let i = 0; i < keys.length; i++) {
-    if (typeof value !== 'object' || value === null) {
-      value = undefined;
-      break;
-    }
+  const langObj = langReady ? getTranslationsSync(safeLang) : getTranslationsSync('en');
+  const enObj = getTranslationsSync('en');
 
-    // 1. Try the longest possible remaining path as a quoted key first
-    // This handles "nav" -> "finance.fees.dashboard" if that key exists in nav
-    const remainingPath = keys.slice(i).join('.');
-    if (remainingPath in (value as Record<string, unknown>)) {
-      value = (value as Record<string, unknown>)[remainingPath];
-      // Found the exact translation or the remaining path as a key, break and return
-      i = keys.length; // End loop
-      break;
-    }
+  const langValue = lookupKey(langObj, key);
+  const enValue = lookupKey(enObj, key);
 
-    // 2. Otherwise, take the next segment and descend
-    const k = keys[i];
-    if (k in (value as Record<string, unknown>)) {
-      value = (value as Record<string, unknown>)[k];
-    } else {
-      value = undefined;
-      break;
-    }
+  const isLangString = typeof langValue === 'string';
+  const isEnString = typeof enValue === 'string';
+
+  const looksLikeHardcoded = !key.includes('.') && !isLangString;
+
+  // If language is ready and key missing there but exists in EN -> [EN] indicator
+  const usingEnglishFallback = safeLang !== 'en' && langReady && !isLangString && isEnString;
+
+  let finalValue: string | undefined;
+  if (isLangString) {
+    finalValue = langValue;
+  } else if (usingEnglishFallback) {
+    finalValue = enValue as string;
+  } else if (isEnString) {
+    // Language isn't ready yet (or it's en) — return EN without the [EN] marker to avoid noise.
+    finalValue = enValue as string;
   }
 
-  // If translation not found, try English fallback
-  if (typeof value !== 'string' && safeLang !== 'en') {
-    const enTranslations = getTranslationsSync('en');
-    value = enTranslations;
-    for (let i = 0; i < keys.length; i++) {
-      if (typeof value !== 'object' || value === null) {
-        value = undefined;
-        break;
+  if (typeof finalValue !== 'string') {
+    if (looksLikeHardcoded) {
+      // This looks like a hardcoded string (not a translation key)
+      if (!warnedMissingKeys.has(key)) {
+        warnedMissingKeys.add(key);
+        console.warn(`[i18n] Hardcoded string detected (not a translation key): "${key}". Use a translation key like "common.save" instead.`);
       }
-
-      const remainingPath = keys.slice(i).join('.');
-      if (remainingPath in (value as Record<string, unknown>)) {
-        value = (value as Record<string, unknown>)[remainingPath];
-        i = keys.length;
-        break;
-      }
-
-      const k = keys[i];
-      if (k in (value as Record<string, unknown>)) {
-        value = (value as Record<string, unknown>)[k];
-      } else {
-        value = undefined;
-        break;
-      }
+      // Return with [HARDCODED] prefix
+      return `[HARDCODED] ${key}`;
     }
-  }
-
-  // If still not found, return a readable version of the key
-  if (typeof value !== 'string') {
+    
     if (isStrictMissingKeyMode()) {
       if (!warnedMissingKeys.has(key)) {
         warnedMissingKeys.add(key);
-         
-        console.warn(`[i18n] Missing translation key: ${key}`);
+        console.warn(`[i18n] Missing translation key: ${key} (missing in both ${safeLang} and English)`);
       }
+      // Return with [MISSING:] prefix
       return `[MISSING: ${key}]`;
     }
 
@@ -204,13 +223,23 @@ export function t(key: string, lang: Language = 'en', params?: Record<string, st
   }
 
   // Replace parameters
+  let rendered = finalValue;
   if (params) {
-    return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
+    rendered = rendered.replace(/\{(\w+)\}/g, (match, paramKey) => {
       return params[paramKey]?.toString() || match;
     });
   }
 
-  return value;
+  // If using English fallback, add [EN] prefix (plain string, no styling)
+  if (usingEnglishFallback) {
+    if (!warnedMissingKeys.has(key)) {
+      warnedMissingKeys.add(key);
+      console.warn(`[i18n] Missing translation key in ${safeLang}: ${key} (using English fallback)`);
+    }
+    return `[EN] ${rendered}`;
+  }
+
+  return rendered;
 }
 
 // Check if language is RTL

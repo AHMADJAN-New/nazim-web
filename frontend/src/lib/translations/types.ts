@@ -88,6 +88,8 @@ export const TRANSLATION_KEYS = [
   "academic.classes.copyAssignments",
   "academic.classes.copyBetweenYears",
   "academic.classes.copyClasses",
+  "academic.classes.copyDescription",
+  "academic.classes.copyInstructions",
   "academic.classes.createSections",
   "academic.classes.defaultCapacity",
   "academic.classes.defaultRoom",
@@ -120,8 +122,6 @@ export const TRANSLATION_KEYS = [
   "academic.classes.toYear",
   "academic.classes.viewHistory",
   "academic.classes.yearClasses",
-  "academic.classes.copyDescription",
-  "academic.classes.copyInstructions",
   "academic.residencyTypes.active",
   "academic.residencyTypes.addResidencyType",
   "academic.residencyTypes.code",
@@ -189,68 +189,68 @@ export const TRANSLATION_KEYS = [
   "academic.staffTypes.updateStaffType",
   "academic.subjects.active",
   "academic.subjects.addSubject",
+  "academic.subjects.allSubjectsAssigned",
+  "academic.subjects.assignSubject",
+  "academic.subjects.assignSubjectDialogDescription",
   "academic.subjects.assignSubjects",
   "academic.subjects.assignToClass",
+  "academic.subjects.assignToClassTemplateDescription",
   "academic.subjects.baseSubjects",
+  "academic.subjects.bulkAssign",
   "academic.subjects.bulkAssignSubjects",
+  "academic.subjects.bulkAssignToClassTemplateDescription",
   "academic.subjects.classSubjects",
   "academic.subjects.code",
   "academic.subjects.copyAssignments",
   "academic.subjects.copyBetweenYears",
+  "academic.subjects.copySubjectsDialogDescription",
+  "academic.subjects.createSubjectDialogDescription",
   "academic.subjects.deleteConfirm",
   "academic.subjects.description",
   "academic.subjects.editSubject",
   "academic.subjects.fromYear",
   "academic.subjects.inactive",
   "academic.subjects.isActive",
+  "academic.subjects.leaveEmptyForClassRoom",
+  "academic.subjects.loadingSubjects",
   "academic.subjects.management",
   "academic.subjects.name",
+  "academic.subjects.noClassesForYear",
   "academic.subjects.noSubjectsAssigned",
+  "academic.subjects.noSubjectsAvailable",
   "academic.subjects.noSubjectsFound",
+  "academic.subjects.noSubjectsInStep1",
+  "academic.subjects.noSubjectsInStep1Message",
   "academic.subjects.noSubjectsMessage",
   "academic.subjects.notes",
+  "academic.subjects.optionalNotes",
   "academic.subjects.removeConfirm",
   "academic.subjects.room",
   "academic.subjects.searchPlaceholder",
   "academic.subjects.selectAcademicYear",
   "academic.subjects.selectClass",
+  "academic.subjects.selectClassFirst",
+  "academic.subjects.selectClassFirstMessage",
   "academic.subjects.selectSubject",
   "academic.subjects.selectSubjects",
+  "academic.subjects.step1Description",
+  "academic.subjects.step1NoSubjectsMessage",
+  "academic.subjects.step1SelectClassMessage",
+  "academic.subjects.step1Title",
+  "academic.subjects.step2Description",
+  "academic.subjects.step2SelectDescription",
+  "academic.subjects.step2SelectMessage",
+  "academic.subjects.step2Title",
   "academic.subjects.subject",
   "academic.subjects.subjects",
+  "academic.subjects.subjectsAssignedCount",
+  "academic.subjects.subjectsAssignedCountStep2",
   "academic.subjects.teacher",
   "academic.subjects.title",
   "academic.subjects.toYear",
-  "academic.subjects.weeklyHours",
-  "academic.subjects.step1Title",
-  "academic.subjects.step1Description",
-  "academic.subjects.step1SelectClassMessage",
-  "academic.subjects.step1NoSubjectsMessage",
-  "academic.subjects.step2Title",
-  "academic.subjects.step2Description",
-  "academic.subjects.step2SelectMessage",
-  "academic.subjects.step2SelectDescription",
-  "academic.subjects.createSubjectDialogDescription",
   "academic.subjects.updateSubjectDialogDescription",
-  "academic.subjects.bulkAssign",
-  "academic.subjects.assignSubject",
-  "academic.subjects.assignSubjectDialogDescription",
-  "academic.subjects.assignToClassTemplateDescription",
-  "academic.subjects.bulkAssignToClassTemplateDescription",
-  "academic.subjects.copySubjectsDialogDescription",
-  "academic.subjects.noClassesForYear",
-  "academic.subjects.selectClassFirst",
-  "academic.subjects.loadingSubjects",
-  "academic.subjects.noSubjectsAvailable",
-  "academic.subjects.noSubjectsInStep1",
-  "academic.subjects.noSubjectsInStep1Message",
-  "academic.subjects.allSubjectsAssigned",
-  "academic.subjects.selectClassFirstMessage",
   "academic.subjects.useClassRoom",
-  "academic.subjects.leaveEmptyForClassRoom",
-  "academic.subjects.optionalNotes",
-  "academic.subjects.subjectsAssignedCount",
-  "academic.subjects.subjectsAssignedCountStep2",
+  "academic.subjects.weeklyHours",
   "academic.timetable.day",
   "academic.timetable.days.friday",
   "academic.timetable.days.monday",
@@ -272,6 +272,8 @@ export const TRANSLATION_KEYS = [
   "admissions.add",
   "admissions.additionalInfo",
   "admissions.admissionDateTooLong",
+  "admissions.admissionDetails",
+  "admissions.admissionInformation",
   "admissions.admissionNumber",
   "admissions.admissionYear",
   "admissions.admissionYearMaxLength",
@@ -318,12 +320,16 @@ export const TRANSLATION_KEYS = [
   "admissions.noClassesForYear",
   "admissions.noDataFound",
   "admissions.noRoomsFound",
+  "admissions.noStudentsAvailable",
   "admissions.noStudentsFound",
+  "admissions.notRequired",
   "admissions.pending",
   "admissions.pendingAdmitted",
   "admissions.placementNotes",
   "admissions.placementNotesMaxLength",
   "admissions.placementNotesPlaceholder",
+  "admissions.quick",
+  "admissions.quickMode",
   "admissions.recentAdmissions",
   "admissions.records",
   "admissions.removeAdmission",
@@ -338,6 +344,7 @@ export const TRANSLATION_KEYS = [
   "admissions.residencyInfo",
   "admissions.residencyType",
   "admissions.room",
+  "admissions.roomDisabledWhenNotBoarder",
   "admissions.roomDorm",
   "admissions.school",
   "admissions.schoolBreakdown",
@@ -352,15 +359,19 @@ export const TRANSLATION_KEYS = [
   "admissions.selectAcademicYearToSeeClasses",
   "admissions.selectClassSection",
   "admissions.selectResidency",
+  "admissions.selectSchool",
   "admissions.shift",
   "admissions.shiftPlaceholder",
   "admissions.shiftTooLong",
+  "admissions.shortcutsHint",
+  "admissions.startOver",
   "admissions.status",
   "admissions.statusBreakdown",
   "admissions.student",
   "admissions.studentFromRegistration",
   "admissions.studentsWithAccommodation",
   "admissions.subtitle",
+  "admissions.summary",
   "admissions.suspended",
   "admissions.title",
   "admissions.totalAdmissions",
@@ -369,68 +380,141 @@ export const TRANSLATION_KEYS = [
   "admissions.withdrawn",
   "admissions.year",
   "articleFound",
+  "assets.actions",
   "assets.active",
+  "assets.addCategory",
+  "assets.allCategories",
+  "assets.allStatuses",
+  "assets.analyticsInsights",
+  "assets.assetAssignments",
+  "assets.assetAssignmentsDescription",
   "assets.assetReports",
   "assets.assetsByCategory",
+  "assets.assetsByCategoryTitle",
   "assets.assetsByFinanceAccount",
+  "assets.assetsByStatus",
+  "assets.assetsNeedingMaintenance",
   "assets.assigned",
   "assets.assignedAssets",
+  "assets.assignedCopies",
+  "assets.assignedLabel",
+  "assets.assignedOn",
+  "assets.assignedTo",
+  "assets.assignee",
   "assets.assignments",
   "assets.available",
+  "assets.availableCopies",
+  "assets.availableLabel",
+  "assets.cancel",
   "assets.categories",
+  "assets.categoriesDescription",
   "assets.category",
+  "assets.categoryBreakdown",
   "assets.categoryCode",
   "assets.categoryDescription",
   "assets.categoryDistribution",
   "assets.categoryName",
+  "assets.categoryOrder",
   "assets.copies",
+  "assets.count",
+  "assets.create",
+  "assets.createAssignment",
+  "assets.createAssignmentDescription",
+  "assets.createCategory",
   "assets.dashboard",
   "assets.dashboardDescription",
   "assets.deleteConfirm",
   "assets.description",
   "assets.disposed",
+  "assets.editCategory",
+  "assets.expectedReturn",
+  "assets.expectedReturnDate",
+  "assets.filterByCategory",
+  "assets.filterByStatus",
+  "assets.highestMaintenanceCosts",
+  "assets.highestPurchaseValue",
   "assets.history",
   "assets.inactive",
   "assets.inMaintenance",
+  "assets.issue",
   "assets.items",
+  "assets.lastMaintenance",
   "assets.linkedToAccounts",
   "assets.location",
   "assets.logMaintenance",
   "assets.lost",
   "assets.maintenance",
   "assets.maintenanceCost",
+  "assets.maintenanceCostLeaders",
+  "assets.maintenanceDescription",
+  "assets.maintenanceOverdue",
   "assets.maintenanceRecords",
   "assets.management",
   "assets.name",
+  "assets.needAttention",
+  "assets.needsMaintenance",
+  "assets.never",
+  "assets.newAssignment",
+  "assets.noAssetsNeedMaintenance",
   "assets.noAssignments",
+  "assets.noAssignmentsFound",
   "assets.noCategoriesFound",
   "assets.noCategoriesMessage",
+  "assets.noMaintenanceCosts",
+  "assets.notAvailable",
   "assets.notes",
+  "assets.other",
+  "assets.percentage",
+  "assets.priceTimesCopies",
   "assets.printPreview",
   "assets.recentAssignments",
   "assets.reports",
   "assets.requiresAttention",
   "assets.retired",
   "assets.returnDate",
+  "assets.returned",
   "assets.searchCategories",
   "assets.searchPlaceholder",
+  "assets.selectAsset",
+  "assets.selectAssignee",
   "assets.status",
   "assets.statusBreakdown",
+  "assets.statusDistribution",
   "assets.subtitle",
+  "assets.sumOfPrices",
+  "assets.tag",
   "assets.title",
+  "assets.topValuedAssets",
   "assets.totalAssets",
   "assets.totalAssetsDescription",
+  "assets.totalCategoriesLabel",
+  "assets.totalCopies",
+  "assets.totalCopiesLabel",
+  "assets.totalPrice",
   "assets.totalValue",
+  "assets.trackAssignments",
+  "assets.transferred",
+  "assets.type",
+  "assets.unknownRoom",
+  "assets.unknownStaff",
+  "assets.unknownStudent",
+  "assets.unspecified",
+  "assets.update",
+  "assets.updateAssignment",
+  "assets.updateAssignmentDescription",
   "assets.updateMaintenance",
   "assets.value",
+  "assets.valueAnalysis",
   "assets.vendor",
   "assets.viewAssets",
   "assets.viewAssignments",
   "assets.viewCategories",
+  "assets.warrantyExpired",
   "attendance.absent",
   "attendance.attendanceRate",
   "attendance.closed",
   "attendance.latestAttendanceSessions",
+  "attendance.minPercentage",
   "attendance.noSessions",
   "attendance.open",
   "attendance.present",
@@ -463,6 +547,7 @@ export const TRANSLATION_KEYS = [
   "attendancePage.noStudentsMatchSearch",
   "attendancePage.noteLabel",
   "attendancePage.notesLabel",
+  "attendancePage.openSessions",
   "attendancePage.recentSessions",
   "attendancePage.recentSessionsDescription",
   "attendancePage.recordScan",
@@ -486,6 +571,7 @@ export const TRANSLATION_KEYS = [
   "attendancePage.sessionClosed",
   "attendancePage.sessionHint",
   "attendancePage.sessionRequired",
+  "attendancePage.sessions",
   "attendancePage.statusAbsent",
   "attendancePage.statusExcused",
   "attendancePage.statusHeader",
@@ -509,6 +595,7 @@ export const TRANSLATION_KEYS = [
   "attendanceReports.school",
   "attendanceReports.schoolRequired",
   "attendanceReports.student",
+  "attendanceReports.subtitle",
   "attendanceTotalsReport.absenceHelper",
   "attendanceTotalsReport.absences",
   "attendanceTotalsReport.absent",
@@ -518,10 +605,13 @@ export const TRANSLATION_KEYS = [
   "attendanceTotalsReport.attendanceRateHelper",
   "attendanceTotalsReport.classBreakdown",
   "attendanceTotalsReport.classBreakdownHint",
+  "attendanceTotalsReport.classWise",
   "attendanceTotalsReport.dateRange",
+  "attendanceTotalsReport.exportOptions",
   "attendanceTotalsReport.filtersDescription",
   "attendanceTotalsReport.filtersTitle",
   "attendanceTotalsReport.generalRoom",
+  "attendanceTotalsReport.generating",
   "attendanceTotalsReport.generatingReport",
   "attendanceTotalsReport.invalidRange",
   "attendanceTotalsReport.invalidRangeDetail",
@@ -545,6 +635,7 @@ export const TRANSLATION_KEYS = [
   "attendanceTotalsReport.roomBreakdown",
   "attendanceTotalsReport.roomBreakdownHint",
   "attendanceTotalsReport.roomSessionsInfo",
+  "attendanceTotalsReport.roomWise",
   "attendanceTotalsReport.school",
   "attendanceTotalsReport.schoolBreakdown",
   "attendanceTotalsReport.schoolBreakdownHint",
@@ -552,7 +643,9 @@ export const TRANSLATION_KEYS = [
   "attendanceTotalsReport.statusBreakdown",
   "attendanceTotalsReport.statusBreakdownHint",
   "attendanceTotalsReport.studentsMarked",
+  "attendanceTotalsReport.subtitle",
   "attendanceTotalsReport.totalRecords",
+  "attendanceTotalsReport.totals",
   "attendanceTotalsReport.totalSessions",
   "auth.confirmPassword",
   "auth.email",
@@ -569,25 +662,66 @@ export const TRANSLATION_KEYS = [
   "auth.subtitle",
   "auth.title",
   "browseHelpCenter",
+  "buildings.buildingCreated",
+  "buildings.buildingDeleted",
+  "buildings.buildingUpdated",
   "certificates.issued",
   "certificates.noIssuedCertificates",
   "certificates.revoke",
   "certificates.revoked",
   "certificates.templateRequired",
   "certificates.templates",
+  "certificateTemplates.active",
+  "certificateTemplates.assignTemplateToCourse",
+  "certificateTemplates.background",
+  "certificateTemplates.backgroundImage",
+  "certificateTemplates.cancel",
   "certificateTemplates.certificateNumber",
   "certificateTemplates.course",
+  "certificateTemplates.courseOptional",
+  "certificateTemplates.created",
+  "certificateTemplates.createFirstTemplate",
+  "certificateTemplates.createTemplate",
+  "certificateTemplates.currentImageKept",
+  "certificateTemplates.default",
   "certificateTemplates.defaultTemplate",
+  "certificateTemplates.delete",
   "certificateTemplates.deleteTemplate",
+  "certificateTemplates.deleteTemplateConfirm",
+  "certificateTemplates.description",
+  "certificateTemplates.descriptionPlaceholder",
   "certificateTemplates.editLayout",
+  "certificateTemplates.editLayoutTitle",
+  "certificateTemplates.editTemplate",
+  "certificateTemplates.fontFamily",
+  "certificateTemplates.fontFamilyHint",
+  "certificateTemplates.fontSize",
   "certificateTemplates.hasBackgroundImage",
+  "certificateTemplates.inactive",
+  "certificateTemplates.layoutSettings",
+  "certificateTemplates.noFileChosen",
+  "certificateTemplates.none",
+  "certificateTemplates.noneGeneralTemplate",
+  "certificateTemplates.noTemplatesYet",
+  "certificateTemplates.rtlForPashtoArabic",
+  "certificateTemplates.saveTemplate",
+  "certificateTemplates.saving",
+  "certificateTemplates.selectCourseOptional",
+  "certificateTemplates.selectFontFamily",
   "certificateTemplates.selectTemplatePlaceholder",
   "certificateTemplates.setAsDefault",
+  "certificateTemplates.status",
   "certificateTemplates.templateCreated",
   "certificateTemplates.templateDeleted",
   "certificateTemplates.templateName",
+  "certificateTemplates.templateNamePlaceholder",
   "certificateTemplates.templateNameRequired",
+  "certificateTemplates.templates",
   "certificateTemplates.templateUpdated",
+  "certificateTemplates.textColor",
+  "certificateTemplates.title",
+  "certificateTemplates.yes",
+  "classes.noClasses",
   "common.actions",
   "common.active",
   "common.add",
@@ -598,6 +732,7 @@ export const TRANSLATION_KEYS = [
   "common.allStatuses",
   "common.allTypes",
   "common.allYears",
+  "common.amount",
   "common.applyFilters",
   "common.approve",
   "common.back",
@@ -644,7 +779,6 @@ export const TRANSLATION_KEYS = [
   "common.metadata",
   "common.more",
   "common.name",
-  "common.na",
   "common.next",
   "common.no",
   "common.none",
@@ -670,11 +804,14 @@ export const TRANSLATION_KEYS = [
   "common.rtl",
   "common.save",
   "common.saving",
+  "common.schoolManagement",
   "common.search",
   "common.searchAndFilters",
   "common.section",
   "common.select",
   "common.selected",
+  "common.selectLanguage",
+  "common.selectSchool",
   "common.show",
   "common.signature",
   "common.skip",
@@ -685,6 +822,7 @@ export const TRANSLATION_KEYS = [
   "common.title",
   "common.to",
   "common.today",
+  "common.toggleSidebar",
   "common.total",
   "common.type",
   "common.unassigned",
@@ -713,6 +851,7 @@ export const TRANSLATION_KEYS = [
   "courses.allTypes",
   "courses.assignToNewCourse",
   "courses.attendanceRate",
+  "courses.certificateNumber",
   "courses.certificates",
   "courses.certified",
   "courses.closeCourse",
@@ -726,6 +865,7 @@ export const TRANSLATION_KEYS = [
   "courses.course",
   "courses.courseAttendance",
   "courses.courseCertificates",
+  "courses.courseCertificatesDescription",
   "courses.courseDashboard",
   "courses.courseDocuments",
   "courses.courseList",
@@ -759,6 +899,7 @@ export const TRANSLATION_KEYS = [
   "courses.documentTypes.other",
   "courses.documentTypes.receipt",
   "courses.documentTypes.syllabus",
+  "courses.downloadPdf",
   "courses.draft",
   "courses.dropped",
   "courses.dropRate",
@@ -773,6 +914,7 @@ export const TRANSLATION_KEYS = [
   "courses.feeAmount",
   "courses.feePaid",
   "courses.feePayment",
+  "courses.filterByCourseOrSearch",
   "courses.filterByCourseStatus",
   "courses.generateCertificate",
   "courses.generated",
@@ -780,6 +922,8 @@ export const TRANSLATION_KEYS = [
   "courses.guardian",
   "courses.instructorName",
   "courses.issueCertificate",
+  "courses.issuedCertificates",
+  "courses.issuedDate",
   "courses.loadingStudents",
   "courses.location",
   "courses.manageDocuments",
@@ -788,6 +932,8 @@ export const TRANSLATION_KEYS = [
   "courses.markCompleted",
   "courses.markDropped",
   "courses.nameOrAdmission",
+  "courses.noCertificatesFound",
+  "courses.noCertificatesIssued",
   "courses.noCoursesFound",
   "courses.noCourseStudentsFound",
   "courses.noDocuments",
@@ -800,6 +946,7 @@ export const TRANSLATION_KEYS = [
   "courses.paid",
   "courses.paidOn",
   "courses.pdf",
+  "courses.previewCertificate",
   "courses.regDate",
   "courses.registered",
   "courses.registration",
@@ -808,6 +955,7 @@ export const TRANSLATION_KEYS = [
   "courses.reportType",
   "courses.retry",
   "courses.searchDocuments",
+  "courses.searchPlaceholderCertificates",
   "courses.selectFile",
   "courses.sessions",
   "courses.size",
@@ -822,6 +970,7 @@ export const TRANSLATION_KEYS = [
   "courses.subtitle",
   "courses.summary",
   "courses.title",
+  "courses.totalCertificates",
   "courses.totalCourses",
   "courses.unknownCourse",
   "courses.updateCourse",
@@ -855,12 +1004,150 @@ export const TRANSLATION_KEYS = [
   "deleteDocumentConfirm",
   "dms.addDocument",
   "dms.archive",
-  "dms.archiveSearch",
-  "dms.archiveSearchDescription",
-  "dms.dashboard",
+  "dms.archiveSearch.academicYear",
+  "dms.archiveSearch.allDocumentsInArchive",
+  "dms.archiveSearch.allLevels",
+  "dms.archiveSearch.allStatuses",
+  "dms.archiveSearch.allYears",
+  "dms.archiveSearch.applyFilters",
+  "dms.archiveSearch.clearAll",
+  "dms.archiveSearch.completed",
+  "dms.archiveSearch.confidential",
+  "dms.archiveSearch.date",
+  "dms.archiveSearch.description",
+  "dms.archiveSearch.documentNumber",
+  "dms.archiveSearch.draft",
+  "dms.archiveSearch.exportColumns.documentNumber",
+  "dms.archiveSearch.exportColumns.externalDocNumber",
+  "dms.archiveSearch.exportColumns.issueDate",
+  "dms.archiveSearch.exportColumns.pages",
+  "dms.archiveSearch.exportColumns.receivedDate",
+  "dms.archiveSearch.exportColumns.recipientType",
+  "dms.archiveSearch.exportColumns.securityLevel",
+  "dms.archiveSearch.exportColumns.senderName",
+  "dms.archiveSearch.exportColumns.senderOrg",
+  "dms.archiveSearch.exportColumns.status",
+  "dms.archiveSearch.exportColumns.subject",
+  "dms.archiveSearch.filterSummary.academicYear",
+  "dms.archiveSearch.filterSummary.allDocuments",
+  "dms.archiveSearch.filterSummary.from",
+  "dms.archiveSearch.filterSummary.search",
+  "dms.archiveSearch.filterSummary.security",
+  "dms.archiveSearch.filterSummary.status",
+  "dms.archiveSearch.filterSummary.to",
+  "dms.archiveSearch.fromDate",
+  "dms.archiveSearch.incomingDocuments",
+  "dms.archiveSearch.incomingDocumentsTab",
+  "dms.archiveSearch.internal",
+  "dms.archiveSearch.issued",
+  "dms.archiveSearch.issuedDocuments",
+  "dms.archiveSearch.loadingSearchResults",
+  "dms.archiveSearch.noIncomingDocumentsFound",
+  "dms.archiveSearch.none",
+  "dms.archiveSearch.noOutgoingDocumentsFound",
+  "dms.archiveSearch.noSubject",
+  "dms.archiveSearch.outgoingDocuments",
+  "dms.archiveSearch.outgoingDocumentsTab",
+  "dms.archiveSearch.pageInfo",
+  "dms.archiveSearch.pending",
+  "dms.archiveSearch.printed",
+  "dms.archiveSearch.public",
+  "dms.archiveSearch.receivedDocuments",
+  "dms.archiveSearch.recipient",
+  "dms.archiveSearch.search",
+  "dms.archiveSearch.searchAndFilter",
+  "dms.archiveSearch.searchPlaceholder",
+  "dms.archiveSearch.secret",
+  "dms.archiveSearch.security",
+  "dms.archiveSearch.securityLevel",
+  "dms.archiveSearch.sender",
+  "dms.archiveSearch.showingResults",
+  "dms.archiveSearch.status",
+  "dms.archiveSearch.subject",
+  "dms.archiveSearch.title",
+  "dms.archiveSearch.toDate",
+  "dms.archiveSearch.topSecret",
+  "dms.archiveSearch.totalDocuments",
+  "dms.archiveSearch.underReview",
+  "dms.archiveSearch.view",
+  "dms.archiveSearch.viewDialog.attachments",
+  "dms.archiveSearch.viewDialog.date",
+  "dms.archiveSearch.viewDialog.description",
+  "dms.archiveSearch.viewDialog.descriptionLabel",
+  "dms.archiveSearch.viewDialog.documentNumber",
+  "dms.archiveSearch.viewDialog.externalDocDate",
+  "dms.archiveSearch.viewDialog.externalDocNumber",
+  "dms.archiveSearch.viewDialog.incomingTitle",
+  "dms.archiveSearch.viewDialog.notes",
+  "dms.archiveSearch.viewDialog.outgoingTitle",
+  "dms.archiveSearch.viewDialog.pages",
+  "dms.archiveSearch.viewDialog.recipientType",
+  "dms.archiveSearch.viewDialog.securityLevel",
+  "dms.archiveSearch.viewDialog.senderAddress",
+  "dms.archiveSearch.viewDialog.senderName",
+  "dms.archiveSearch.viewDialog.senderOrganization",
+  "dms.archiveSearch.viewDialog.status",
+  "dms.archiveSearch.viewDialog.subject",
+  "dms.category",
+  "dms.createLetterhead",
+  "dms.createTemplate",
+  "dms.dashboard.confidentialAndHigher",
+  "dms.dashboard.description",
+  "dms.dashboard.incomingThisMonth",
+  "dms.dashboard.incomingThisWeek",
+  "dms.dashboard.manageHint",
+  "dms.dashboard.month",
+  "dms.dashboard.outgoingThisMonth",
+  "dms.dashboard.outgoingThisWeek",
+  "dms.dashboard.pendingRoutedDocuments",
+  "dms.dashboard.title",
+  "dms.dashboard.week",
+  "dms.defaultForLayout",
   "dms.deleteDocumentWarning",
   "dms.department",
   "dms.departments",
+  "dms.departmentsPage.actions",
+  "dms.departmentsPage.addDepartment",
+  "dms.departmentsPage.checkIncomingDocuments",
+  "dms.departmentsPage.created",
+  "dms.departmentsPage.createDialog.cancel",
+  "dms.departmentsPage.createDialog.create",
+  "dms.departmentsPage.createDialog.creating",
+  "dms.departmentsPage.createDialog.description",
+  "dms.departmentsPage.createDialog.nameHint",
+  "dms.departmentsPage.createDialog.nameLabel",
+  "dms.departmentsPage.createDialog.namePlaceholder",
+  "dms.departmentsPage.createDialog.title",
+  "dms.departmentsPage.createFirstDepartment",
+  "dms.departmentsPage.deleteDialog.cancel",
+  "dms.departmentsPage.deleteDialog.delete",
+  "dms.departmentsPage.deleteDialog.deleting",
+  "dms.departmentsPage.deleteDialog.description",
+  "dms.departmentsPage.deleteDialog.hasDocuments",
+  "dms.departmentsPage.deleteDialog.title",
+  "dms.departmentsPage.departmentName",
+  "dms.departmentsPage.departments",
+  "dms.departmentsPage.departmentsDescription",
+  "dms.departmentsPage.description",
+  "dms.departmentsPage.document",
+  "dms.departmentsPage.documents",
+  "dms.departmentsPage.documentsAssigned",
+  "dms.departmentsPage.documentsPlural",
+  "dms.departmentsPage.editDialog.description",
+  "dms.departmentsPage.editDialog.title",
+  "dms.departmentsPage.editDialog.update",
+  "dms.departmentsPage.editDialog.updating",
+  "dms.departmentsPage.filterSummary.allDepartments",
+  "dms.departmentsPage.filterSummary.search",
+  "dms.departmentsPage.incomingDocuments",
+  "dms.departmentsPage.loading",
+  "dms.departmentsPage.noDepartmentsFound",
+  "dms.departmentsPage.noDepartmentsYet",
+  "dms.departmentsPage.searchPlaceholder",
+  "dms.departmentsPage.title",
+  "dms.departmentsPage.totalDepartments",
+  "dms.departmentsPage.unassignedDocuments",
+  "dms.documents",
   "dms.fields.academic_info",
   "dms.fields.application_info",
   "dms.fields.available_fields",
@@ -883,12 +1170,55 @@ export const TRANSLATION_KEYS = [
   "dms.fields.search_fields",
   "dms.fields.select_field",
   "dms.fileType",
+  "dms.forms.incoming.academicYear",
+  "dms.forms.incoming.attachmentsCount",
+  "dms.forms.incoming.basicInfo",
+  "dms.forms.incoming.content",
+  "dms.forms.incoming.contentLabel",
+  "dms.forms.incoming.contentPlaceholder",
+  "dms.forms.incoming.description",
+  "dms.forms.incoming.documentNumber",
+  "dms.forms.incoming.externalDocDate",
+  "dms.forms.incoming.externalDocNumber",
+  "dms.forms.incoming.manualNumber",
+  "dms.forms.incoming.notes",
+  "dms.forms.incoming.pagesCount",
+  "dms.forms.incoming.receivedDate",
+  "dms.forms.incoming.routingDepartment",
+  "dms.forms.incoming.securityLevel",
+  "dms.forms.incoming.senderAddress",
+  "dms.forms.incoming.senderInfo",
+  "dms.forms.incoming.senderName",
+  "dms.forms.incoming.senderOrganization",
+  "dms.forms.incoming.status",
+  "dms.forms.incoming.subject",
+  "dms.forms.incoming.title",
+  "dms.forms.outgoing.academicYear",
+  "dms.forms.outgoing.attachmentsCount",
+  "dms.forms.outgoing.basicInfo",
+  "dms.forms.outgoing.content",
+  "dms.forms.outgoing.contentLabel",
+  "dms.forms.outgoing.contentPlaceholder",
+  "dms.forms.outgoing.description",
+  "dms.forms.outgoing.documentNumber",
+  "dms.forms.outgoing.externalDocDate",
+  "dms.forms.outgoing.externalDocNumber",
+  "dms.forms.outgoing.issueDate",
+  "dms.forms.outgoing.manualNumber",
+  "dms.forms.outgoing.notes",
+  "dms.forms.outgoing.pagesCount",
+  "dms.forms.outgoing.recipientType",
+  "dms.forms.outgoing.securityLevel",
+  "dms.forms.outgoing.status",
+  "dms.forms.outgoing.subject",
+  "dms.forms.outgoing.title",
   "dms.incoming",
   "dms.incomingDocuments",
   "dms.incomingDocumentsDescription",
   "dms.issueLetter.attachmentsNote",
   "dms.issueLetter.creatingDraft",
   "dms.issueLetter.downloadImage",
+  "dms.issueLetter.downloadPdf",
   "dms.issueLetter.draftCreated",
   "dms.issueLetter.draftCreateFailed",
   "dms.issueLetter.draftModeActive",
@@ -935,23 +1265,205 @@ export const TRANSLATION_KEYS = [
   "dms.issueLetter.uploadAttachments",
   "dms.issueLetter.uploadAttachmentsDescription",
   "dms.issueLetterNav",
-  "dms.letterheads",
+  "dms.layout",
+  "dms.letterhead",
+  "dms.letterheadForm.activeLabel",
+  "dms.letterheadForm.backgroundDescription",
+  "dms.letterheadForm.backgroundLabel",
+  "dms.letterheadForm.create",
+  "dms.letterheadForm.fileLabel",
+  "dms.letterheadForm.fileTypeLabel",
+  "dms.letterheadForm.fileTypesHint",
+  "dms.letterheadForm.letterheadTypeLabel",
+  "dms.letterheadForm.letterTypeOptionalLabel",
+  "dms.letterheadForm.nameLabel",
+  "dms.letterheadForm.namePlaceholder",
+  "dms.letterheadForm.selectLetterType",
+  "dms.letterheadForm.update",
+  "dms.letterheadForm.uploadHint",
+  "dms.letterheadForm.watermarkDescription",
+  "dms.letterheadForm.watermarkLabel",
+  "dms.letterheads.defaultLayout",
+  "dms.letterheads.deleteDescription",
+  "dms.letterheads.editDescription",
+  "dms.letterheads.editTitle",
+  "dms.letterheads.previewDescription",
+  "dms.letterheads.previewNotAvailable",
+  "dms.letterheads.previewTitle",
+  "dms.letterheads.viewDescription",
+  "dms.letterheads.viewTitle",
   "dms.letterheadsDescription",
+  "dms.letterheadsNoLetterheads",
+  "dms.letterheadsSearchPlaceholder",
+  "dms.letterheadsTitle",
   "dms.letterType",
   "dms.letterTypes",
+  "dms.letterTypesPage.actions",
+  "dms.letterTypesPage.active",
+  "dms.letterTypesPage.allStatus",
+  "dms.letterTypesPage.createButton",
+  "dms.letterTypesPage.createDialog.activeLabel",
+  "dms.letterTypesPage.createDialog.cancel",
+  "dms.letterTypesPage.createDialog.create",
+  "dms.letterTypesPage.createDialog.creating",
+  "dms.letterTypesPage.createDialog.description",
+  "dms.letterTypesPage.createDialog.descriptionLabel",
+  "dms.letterTypesPage.createDialog.descriptionPlaceholder",
+  "dms.letterTypesPage.createDialog.keyHint",
+  "dms.letterTypesPage.createDialog.keyLabel",
+  "dms.letterTypesPage.createDialog.keyPlaceholder",
+  "dms.letterTypesPage.createDialog.nameLabel",
+  "dms.letterTypesPage.createDialog.namePlaceholder",
+  "dms.letterTypesPage.createDialog.title",
+  "dms.letterTypesPage.delete",
+  "dms.letterTypesPage.deleteDialog.cancel",
+  "dms.letterTypesPage.deleteDialog.delete",
+  "dms.letterTypesPage.deleteDialog.description",
+  "dms.letterTypesPage.deleteDialog.title",
+  "dms.letterTypesPage.description",
+  "dms.letterTypesPage.edit",
+  "dms.letterTypesPage.editDialog.description",
+  "dms.letterTypesPage.editDialog.title",
+  "dms.letterTypesPage.editDialog.update",
+  "dms.letterTypesPage.editDialog.updating",
+  "dms.letterTypesPage.inactive",
+  "dms.letterTypesPage.key",
+  "dms.letterTypesPage.loading",
+  "dms.letterTypesPage.name",
+  "dms.letterTypesPage.noLetterTypesFound",
+  "dms.letterTypesPage.searchPlaceholder",
+  "dms.letterTypesPage.status",
+  "dms.letterTypesPage.title",
+  "dms.letterTypesPage.validation.descriptionMaxLength",
+  "dms.letterTypesPage.validation.keyInvalidFormat",
+  "dms.letterTypesPage.validation.keyMaxLength",
+  "dms.letterTypesPage.validation.keyRequired",
+  "dms.letterTypesPage.validation.nameMaxLength",
+  "dms.letterTypesPage.validation.nameRequired",
+  "dms.letterTypesPage.view",
+  "dms.letterTypesPage.viewDialog.title",
+  "dms.livePreview",
+  "dms.loadingDocuments",
+  "dms.noDocumentsFound",
   "dms.outgoing",
   "dms.outgoingDocuments",
   "dms.outgoingDocumentsDescription",
+  "dms.page",
+  "dms.pages",
+  "dms.position",
   "dms.recipientType",
   "dms.reports",
+  "dms.reportsPage.avgDays",
+  "dms.reportsPage.count",
+  "dms.reportsPage.department",
+  "dms.reportsPage.filterSummary",
+  "dms.reportsPage.incomingByDepartment",
+  "dms.reportsPage.level",
+  "dms.reportsPage.none",
+  "dms.reportsPage.notAvailable",
+  "dms.reportsPage.pendingAging",
+  "dms.reportsPage.securityDistribution",
+  "dms.reportsPage.status",
+  "dms.reportsPage.total",
+  "dms.reportsPage.unassigned",
   "dms.searchByName",
   "dms.searchBySender",
   "dms.searchBySubject",
   "dms.securityLevel",
   "dms.senderOrganization",
   "dms.settings",
+  "dms.settingsPage.incomingPrefix",
+  "dms.settingsPage.outgoingPrefix",
+  "dms.settingsPage.resetYearly",
+  "dms.settingsPage.saveFailed",
+  "dms.settingsPage.saveSettings",
+  "dms.settingsPage.settingsSaved",
+  "dms.settingsPage.title",
+  "dms.settingsPage.yearMode",
+  "dms.showingDocuments",
   "dms.subject",
-  "dms.templates",
+  "dms.tableHeaders.actions",
+  "dms.tableHeaders.department",
+  "dms.tableHeaders.description",
+  "dms.tableHeaders.externalDoc",
+  "dms.tableHeaders.issued",
+  "dms.tableHeaders.number",
+  "dms.tableHeaders.pages",
+  "dms.tableHeaders.received",
+  "dms.tableHeaders.recipient",
+  "dms.tableHeaders.security",
+  "dms.tableHeaders.sender",
+  "dms.tableHeaders.status",
+  "dms.tableHeaders.subject",
+  "dms.templates.deleteDescription",
+  "dms.templates.editDescription",
+  "dms.templates.editTitle",
+  "dms.templates.pageLayout",
+  "dms.templates.previewDescription",
+  "dms.templates.previewTitle",
+  "dms.templates.variables",
+  "dms.templates.viewDescription",
+  "dms.templates.viewTitle",
+  "dms.templatesDescription",
+  "dms.templatesForm.activeLabel",
+  "dms.templatesForm.actualPreviewLabel",
+  "dms.templatesForm.addBlock",
+  "dms.templatesForm.addBlockAndType",
+  "dms.templatesForm.availableFieldsHelper",
+  "dms.templatesForm.availableFieldsTitle",
+  "dms.templatesForm.backgroundLetterheadHelper",
+  "dms.templatesForm.backgroundLetterheadLabel",
+  "dms.templatesForm.basicInfoTitle",
+  "dms.templatesForm.blockLabel",
+  "dms.templatesForm.blockPlaceholder",
+  "dms.templatesForm.bodyTextHelper",
+  "dms.templatesForm.bodyTextLabel",
+  "dms.templatesForm.bodyTextPlaceholder",
+  "dms.templatesForm.bodyTextRichPlaceholder",
+  "dms.templatesForm.categoryLabel",
+  "dms.templatesForm.color",
+  "dms.templatesForm.createTemplate",
+  "dms.templatesForm.designerPreviewLabel",
+  "dms.templatesForm.disablePositioning",
+  "dms.templatesForm.editBlock",
+  "dms.templatesForm.enablePositioning",
+  "dms.templatesForm.fontFamily",
+  "dms.templatesForm.fontLabel",
+  "dms.templatesForm.fontSize",
+  "dms.templatesForm.fontSizeLabel",
+  "dms.templatesForm.fontSizeSuffix",
+  "dms.templatesForm.heightPercent",
+  "dms.templatesForm.hidePreview",
+  "dms.templatesForm.includeTableStructure",
+  "dms.templatesForm.letterBodyTitle",
+  "dms.templatesForm.letterheadRepeats",
+  "dms.templatesForm.letterheadWatermarkTitle",
+  "dms.templatesForm.letterTextWillAppear",
+  "dms.templatesForm.letterTypeOptionalLabel",
+  "dms.templatesForm.livePreviewTitle",
+  "dms.templatesForm.massTemplateLabel",
+  "dms.templatesForm.optionsTitle",
+  "dms.templatesForm.pageLayoutLabel",
+  "dms.templatesForm.previewHelpActual",
+  "dms.templatesForm.previewHelpDesigner",
+  "dms.templatesForm.previewHelpPositioning",
+  "dms.templatesForm.previewWillAppear",
+  "dms.templatesForm.repeatLetterheadLabel",
+  "dms.templatesForm.richText",
+  "dms.templatesForm.serverRenderTitle",
+  "dms.templatesForm.showPreview",
+  "dms.templatesForm.templateNameLabel",
+  "dms.templatesForm.templateNamePlaceholder",
+  "dms.templatesForm.textAlign",
+  "dms.templatesForm.textBlocksLabel",
+  "dms.templatesForm.updateTemplate",
+  "dms.templatesForm.useMultipleBlocks",
+  "dms.templatesForm.watermarkHelper",
+  "dms.templatesForm.watermarkOptionalLabel",
+  "dms.templatesForm.widthPercent",
+  "dms.templatesNoTemplates",
+  "dms.templatesSearchPlaceholder",
+  "dms.templatesTitle",
   "dms.uploadFiles",
   "dms.uploadLetterhead",
   "documentDescription",
@@ -974,13 +1486,219 @@ export const TRANSLATION_KEYS = [
   "errorBoundary.tryReloading",
   "errorBoundary.workingOnFix",
   "errorLoading",
-  "events.users.fillAllFields",
-  "events.users.userCreated",
-  "events.users.userCreateFailed",
-  "events.users.userDeleted",
-  "events.users.userDeleteFailed",
-  "events.users.userUpdated",
-  "events.users.userUpdateFailed",
+  "events.actions",
+  "events.active",
+  "events.add",
+  "events.addGuest",
+  "events.address",
+  "events.allAcademicYears",
+  "events.allStatuses",
+  "events.approve",
+  "events.auditLog",
+  "events.autoGenerated",
+  "events.back",
+  "events.base",
+  "events.basicInformation",
+  "events.body",
+  "events.breadcrumb",
+  "events.cancel",
+  "events.checkin",
+  "events.clear",
+  "events.clearFilters",
+  "events.close",
+  "events.code",
+  "events.confirm",
+  "events.confirmDelete",
+  "events.contact",
+  "events.courseNameExample",
+  "events.create",
+  "events.createdAt",
+  "events.createEvent",
+  "events.createFirstEvent",
+  "events.creating",
+  "events.currentPassword",
+  "events.date",
+  "events.dates",
+  "events.days",
+  "events.default",
+  "events.delete",
+  "events.deleting",
+  "events.description",
+  "events.deselectAll",
+  "events.displayOrder",
+  "events.download",
+  "events.downloadPdf",
+  "events.duplicate",
+  "events.edit",
+  "events.email",
+  "events.endDate",
+  "events.enterCurrentPassword",
+  "events.enterFullName",
+  "events.enterNewPassword",
+  "events.enterPhoneNumber",
+  "events.error",
+  "events.eventTypes.actions",
+  "events.eventTypes.active",
+  "events.eventTypes.activeDescription",
+  "events.eventTypes.activeLabel",
+  "events.eventTypes.addEventType",
+  "events.eventTypes.cancel",
+  "events.eventTypes.cancelButton",
+  "events.eventTypes.createButton",
+  "events.eventTypes.createEventType",
+  "events.eventTypes.createFirstEventType",
+  "events.eventTypes.deleteButton",
+  "events.eventTypes.deleteConfirm",
+  "events.eventTypes.deleteConfirmDescription",
+  "events.eventTypes.deleteEventType",
+  "events.eventTypes.deleting",
+  "events.eventTypes.description",
+  "events.eventTypes.descriptionLabel",
+  "events.eventTypes.descriptionPlaceholder",
+  "events.eventTypes.editEventType",
+  "events.eventTypes.fields",
+  "events.eventTypes.inactive",
+  "events.eventTypes.name",
+  "events.eventTypes.nameLabel",
+  "events.eventTypes.namePlaceholder",
+  "events.eventTypes.noEventTypesFound",
+  "events.eventTypes.saving",
+  "events.eventTypes.schoolLabel",
+  "events.eventTypes.selectSchool",
+  "events.eventTypes.status",
+  "events.eventTypes.title",
+  "events.eventTypes.updateButton",
+  "events.example",
+  "events.exampleCategories",
+  "events.export",
+  "events.exportErrorExcel",
+  "events.exportErrorNoData",
+  "events.exportErrorNoSchool",
+  "events.exportErrorPdf",
+  "events.exportExcel",
+  "events.exportPdf",
+  "events.exportSuccessExcel",
+  "events.exportSuccessPdf",
+  "events.fail",
+  "events.fair",
+  "events.filter",
+  "events.filterByGrade",
+  "events.filterByStatus",
+  "events.filters",
+  "events.first",
+  "events.firstName",
+  "events.from",
+  "events.generateStudents",
+  "events.goBack",
+  "events.good",
+  "events.gradeExample",
+  "events.graduationDate",
+  "events.hide",
+  "events.howToUse",
+  "events.import",
+  "events.inactive",
+  "events.kb",
+  "events.last",
+  "events.lastName",
+  "events.loading",
+  "events.mainNavigation",
+  "events.metadata",
+  "events.more",
+  "events.morePages",
+  "events.name",
+  "events.next",
+  "events.nextPage",
+  "events.no",
+  "events.noData",
+  "events.noDataToExport",
+  "events.noEventsFound",
+  "events.none",
+  "events.noPermission",
+  "events.noResults",
+  "events.notAssignedToOrganization",
+  "events.notAvailable",
+  "events.notes",
+  "events.notFound",
+  "events.of",
+  "events.on",
+  "events.optional",
+  "events.other",
+  "events.overrideCapacity",
+  "events.overrideCapacityAll",
+  "events.page",
+  "events.pageSize",
+  "events.pass",
+  "events.passRate",
+  "events.phone",
+  "events.pleaseSelectOrganization",
+  "events.preview",
+  "events.previous",
+  "events.previousPage",
+  "events.previousSlide",
+  "events.print",
+  "events.processing",
+  "events.published",
+  "events.refresh",
+  "events.remove",
+  "events.required",
+  "events.reset",
+  "events.resetToDefault",
+  "events.retry",
+  "events.rtl",
+  "events.save",
+  "events.saveAll",
+  "events.saving",
+  "events.scanCardNumber",
+  "events.schoolSwitched",
+  "events.search",
+  "events.searchPlaceholder",
+  "events.searchStudentPlaceholder",
+  "events.section",
+  "events.sectionExample",
+  "events.sectionsInputHint",
+  "events.select",
+  "events.selectAll",
+  "events.selectClass",
+  "events.selectCourse",
+  "events.selected",
+  "events.selectSchool",
+  "events.show",
+  "events.signature",
+  "events.startDate",
+  "events.status",
+  "events.statusLabel",
+  "events.strong",
+  "events.subjects",
+  "events.success",
+  "events.title",
+  "events.to",
+  "events.today",
+  "events.topPerformers",
+  "events.total",
+  "events.tryAgain",
+  "events.type",
+  "events.types",
+  "events.unauthorized",
+  "events.unexpectedError",
+  "events.unknown",
+  "events.unread",
+  "events.update",
+  "events.updatedAt",
+  "events.updating",
+  "events.upload",
+  "events.uploading",
+  "events.user",
+  "events.userCreateFailed",
+  "events.users",
+  "events.validationError",
+  "events.verify",
+  "events.veryStrong",
+  "events.view",
+  "events.viewAll",
+  "events.viewDetails",
+  "events.weak",
+  "events.years",
+  "events.yes",
   "examPaperPreview.academicYear",
   "examPaperPreview.answerHere",
   "examPaperPreview.duration",
@@ -995,6 +1713,7 @@ export const TRANSLATION_KEYS = [
   "examPaperPreview.studentView",
   "examPaperPreview.subject",
   "examPaperPreview.teacherView",
+  "examPaperPreview.title",
   "examPaperPreview.totalMarks",
   "examPaperPreview.totalQuestions",
   "examPapers.academicYear",
@@ -1055,6 +1774,7 @@ export const TRANSLATION_KEYS = [
   "examPapers.subjectsForClass",
   "examPapers.templateFile",
   "examPapers.templateFileHelp",
+  "examPapers.templateFiles",
   "examPapers.templateTitle",
   "examPapers.titlePlaceholder",
   "examPapers.totalMarks",
@@ -1190,6 +1910,53 @@ export const TRANSLATION_KEYS = [
   "exams.deleteTimeSlotConfirm",
   "exams.deleteTimeSlotConfirmMessage",
   "exams.description",
+  "exams.documents.actions",
+  "exams.documents.allExams",
+  "exams.documents.allTypes",
+  "exams.documents.answerKey",
+  "exams.documents.cancel",
+  "exams.documents.delete",
+  "exams.documents.deleteConfirmMessage",
+  "exams.documents.deleteDocument",
+  "exams.documents.description",
+  "exams.documents.descriptionLabel",
+  "exams.documents.descriptionPlaceholder",
+  "exams.documents.document",
+  "exams.documents.documents",
+  "exams.documents.documentsForExam",
+  "exams.documents.documentType",
+  "exams.documents.download",
+  "exams.documents.exam",
+  "exams.documents.examLabel",
+  "exams.documents.fileLabel",
+  "exams.documents.filter",
+  "exams.documents.gradeSheet",
+  "exams.documents.instruction",
+  "exams.documents.manageDocumentsDescription",
+  "exams.documents.noDocumentsFound",
+  "exams.documents.noDocumentsYet",
+  "exams.documents.noExamsFound",
+  "exams.documents.other",
+  "exams.documents.questionPaper",
+  "exams.documents.result",
+  "exams.documents.search",
+  "exams.documents.searchExamsPlaceholder",
+  "exams.documents.searchPlaceholder",
+  "exams.documents.selected",
+  "exams.documents.selectExam",
+  "exams.documents.size",
+  "exams.documents.title",
+  "exams.documents.titleLabel",
+  "exams.documents.titlePlaceholder",
+  "exams.documents.tryAdjustingSearch",
+  "exams.documents.type",
+  "exams.documents.unknownExam",
+  "exams.documents.upload",
+  "exams.documents.uploadDocument",
+  "exams.documents.uploadDocumentsToGetStarted",
+  "exams.documents.uploaded",
+  "exams.documents.uploading",
+  "exams.documents.uploadNewDocument",
   "exams.edit",
   "exams.editDescription",
   "exams.editSubject",
@@ -1213,6 +1980,7 @@ export const TRANSLATION_KEYS = [
   "exams.examsShown",
   "exams.examTimetable",
   "exams.examTimetableDescription",
+  "exams.examTimetables",
   "exams.examType",
   "exams.failed",
   "exams.filterByClass",
@@ -1224,6 +1992,7 @@ export const TRANSLATION_KEYS = [
   "exams.invigilator",
   "exams.list",
   "exams.listDescription",
+  "exams.lock",
   "exams.locked",
   "exams.management",
   "exams.marks",
@@ -1242,6 +2011,7 @@ export const TRANSLATION_KEYS = [
   "exams.noExamsFiltered",
   "exams.noExamsMatchFilter",
   "exams.noMarksData",
+  "exams.noPermissionToViewReports",
   "exams.noStudentsEnrolled",
   "exams.noStudentsHint1",
   "exams.noStudentsHint2",
@@ -1252,6 +2022,7 @@ export const TRANSLATION_KEYS = [
   "exams.noSubjectsEnrolled",
   "exams.notes",
   "exams.notesPlaceholder",
+  "exams.notFound",
   "exams.noTimeSlots",
   "exams.numberReports.classBreakdown",
   "exams.numberReports.complete",
@@ -1297,12 +2068,10 @@ export const TRANSLATION_KEYS = [
   "exams.removeSubjectConfirm",
   "exams.removeSubjectConfirmMessage",
   "exams.reports.errorLoading",
-  "exams.reports.filterSummaryExam",
   "exams.reports.filterSummaryAcademicYear",
-  "exams.reports.filterSummaryTotalEnrolled",
+  "exams.reports.filterSummaryExam",
   "exams.reports.filterSummaryOverallProgress",
-  "exams.notFound",
-  "exams.noPermissionToViewReports",
+  "exams.reports.filterSummaryTotalEnrolled",
   "exams.reportsDescription",
   "exams.results",
   "exams.resultsEntered",
@@ -1433,6 +2202,7 @@ export const TRANSLATION_KEYS = [
   "exams.totalClasses",
   "exams.totalMarks",
   "exams.totalSubjects",
+  "exams.unlock",
   "exams.unlocked",
   "examTypes.codePlaceholder",
   "examTypes.createDescription",
@@ -1600,19 +2370,29 @@ export const TRANSLATION_KEYS = [
   "fees.viewStudentFees",
   "finance.account",
   "finance.accountBalances",
+  "finance.accountCode",
   "finance.accountCodePlaceholder",
+  "finance.accountCurrencyHint",
   "finance.accountDescriptionPlaceholder",
   "finance.accountDetails",
+  "finance.accountInformation",
+  "finance.accountName",
   "finance.accountNamePlaceholder",
   "finance.accounts",
   "finance.accountsDescription",
   "finance.accountsFound",
+  "finance.accountType",
+  "finance.activeDonorsText",
   "finance.activeProjects",
   "finance.addAccount",
   "finance.addAccountDescription",
   "finance.addCategory",
+  "finance.addCurrency",
+  "finance.addCurrencyDescription",
   "finance.addDonor",
   "finance.addDonorDescription",
+  "finance.addExchangeRate",
+  "finance.addExchangeRateDescription",
   "finance.addExpense",
   "finance.addExpenseCategory",
   "finance.addExpenseCategoryDescription",
@@ -1621,40 +2401,70 @@ export const TRANSLATION_KEYS = [
   "finance.addIncomeCategory",
   "finance.addIncomeCategoryDescription",
   "finance.addIncomeDescription",
+  "finance.addNew",
   "finance.addProject",
   "finance.addProjectDescription",
   "finance.addressPlaceholder",
   "finance.allAccounts",
+  "finance.allCurrencies",
   "finance.allDonors",
+  "finance.allExchangeRates",
   "finance.allExpenseCategories",
   "finance.allIncomeCategories",
   "finance.amount",
   "finance.approved",
   "finance.approvedOnly",
+  "finance.assets",
+  "finance.assetsBreakdown",
+  "finance.assetsBreakdownDescription",
+  "finance.assetsByAccount",
+  "finance.assetsByCurrency",
   "finance.balance",
   "finance.balanceDistribution",
   "finance.bankTransfer",
+  "finance.baseCurrency",
+  "finance.budgetAmount",
+  "finance.budgetAmountPlaceholder",
   "finance.cash",
+  "finance.cashAccount",
+  "finance.cashBalance",
+  "finance.cashOnly",
   "finance.categoriesFound",
   "finance.category",
   "finance.categoryCodePlaceholder",
   "finance.categoryDescriptionPlaceholder",
+  "finance.categoryInformation",
   "finance.categoryNamePlaceholder",
   "finance.cheque",
   "finance.closingBalance",
+  "finance.comparedToLastMonth",
+  "finance.converted",
+  "finance.convertedValue",
   "finance.createFirstProject",
   "finance.currencies",
+  "finance.currenciesDescription",
+  "finance.currenciesFound",
+  "finance.currency",
+  "finance.currencyCode",
+  "finance.currencyCodeHint",
+  "finance.currencyInformation",
+  "finance.currencyNamePlaceholder",
+  "finance.currencySymbol",
   "finance.currentBalance",
   "finance.dailyCashbook",
   "finance.dashboard",
   "finance.dashboardDescription",
+  "finance.dataFromTo",
+  "finance.decimalPlaces",
   "finance.deficit",
   "finance.deleteAccountWarning",
   "finance.deleteCategoryWarning",
+  "finance.deleteCurrencyWarning",
   "finance.deleteDocument",
   "finance.deleteDocumentConfirmation",
   "finance.deleteDonorWarning",
   "finance.deleteEntryWarning",
+  "finance.deleteExchangeRateWarning",
   "finance.deleteProjectWarning",
   "finance.documentDate",
   "finance.documentDescriptionPlaceholder",
@@ -1675,27 +2485,39 @@ export const TRANSLATION_KEYS = [
   "finance.donationCount",
   "finance.donor",
   "finance.donorContributions",
+  "finance.donorInformation",
   "finance.donorNamePlaceholder",
   "finance.donors",
   "finance.donorsDescription",
   "finance.donorsFound",
   "finance.donorsSummary",
   "finance.donorSummary",
+  "finance.donorType",
   "finance.editAccount",
   "finance.editAccountDescription",
   "finance.editCategory",
   "finance.editCategoryDescription",
+  "finance.editCurrency",
+  "finance.editCurrencyDescription",
   "finance.editDonor",
   "finance.editDonorDescription",
+  "finance.editExchangeRate",
+  "finance.editExchangeRateDescription",
   "finance.editExpense",
   "finance.editExpenseDescription",
   "finance.editIncome",
   "finance.editIncomeDescription",
   "finance.editProject",
   "finance.editProjectDescription",
+  "finance.effectiveDate",
   "finance.emailPlaceholder",
   "finance.entriesFound",
+  "finance.entryDetails",
+  "finance.entryInformation",
+  "finance.exchangeRate",
+  "finance.exchangeRateHint",
   "finance.exchangeRates",
+  "finance.exchangeRatesDescription",
   "finance.expense",
   "finance.expenseByCategory",
   "finance.expenseCategories",
@@ -1703,18 +2525,17 @@ export const TRANSLATION_KEYS = [
   "finance.expenseDescriptionPlaceholder",
   "finance.expenseEntries",
   "finance.expenseEntriesDescription",
-  "finance.fees.assignments",
-  "finance.fees.dashboard",
-  "finance.fees.exceptions",
-  "finance.fees.payments",
-  "finance.fees.reports",
-  "finance.fees.structures",
+  "finance.expenses",
+  "finance.fees",
   "finance.file",
   "finance.fileName",
   "finance.fileSize",
   "finance.financeDocuments",
+  "finance.fromCurrency",
   "finance.fund",
+  "finance.fundAccount",
   "finance.fundingProgress",
+  "finance.includeAssetsAndBooks",
   "finance.income",
   "finance.incomeByCategory",
   "finance.incomeCategories",
@@ -1723,7 +2544,18 @@ export const TRANSLATION_KEYS = [
   "finance.incomeEntries",
   "finance.incomeEntriesDescription",
   "finance.incomeVsExpense",
+  "finance.incomeVsExpenseTrend",
   "finance.individual",
+  "finance.last30Days",
+  "finance.last6Months",
+  "finance.last7Days",
+  "finance.last90Days",
+  "finance.latestTransaction",
+  "finance.libraryBooks",
+  "finance.libraryBooksBreakdown",
+  "finance.libraryBooksBreakdownDescription",
+  "finance.libraryBooksByAccount",
+  "finance.libraryBooksByCurrency",
   "finance.manageFinanceDocuments",
   "finance.maxFileSize",
   "finance.monthlyExpenses",
@@ -1731,11 +2563,15 @@ export const TRANSLATION_KEYS = [
   "finance.netThisMonth",
   "finance.noAccountData",
   "finance.noAccounts",
+  "finance.noCashbookData",
   "finance.noCategories",
+  "finance.noCurrencies",
   "finance.noDocuments",
   "finance.noDonorData",
   "finance.noDonors",
+  "finance.noExchangeRates",
   "finance.noExpenses",
+  "finance.noExpensesData",
   "finance.noIncome",
   "finance.noProjectData",
   "finance.noProjects",
@@ -1744,6 +2580,7 @@ export const TRANSLATION_KEYS = [
   "finance.of",
   "finance.openingBalance",
   "finance.organization",
+  "finance.originalValue",
   "finance.other",
   "finance.paidTo",
   "finance.paidToPlaceholder",
@@ -1754,13 +2591,18 @@ export const TRANSLATION_KEYS = [
   "finance.previewNotAvailable",
   "finance.previewNotSupported",
   "finance.project",
+  "finance.projectBalance",
   "finance.projectComparison",
   "finance.projectDescriptionPlaceholder",
   "finance.projectDetails",
+  "finance.projectInformation",
   "finance.projectNamePlaceholder",
   "finance.projects",
   "finance.projectsDescription",
   "finance.projectSummary",
+  "finance.rateNotesPlaceholder",
+  "finance.ratesFound",
+  "finance.recentTransactions",
   "finance.referenceNo",
   "finance.referenceNoPlaceholder",
   "finance.referenceNumber",
@@ -1773,32 +2615,52 @@ export const TRANSLATION_KEYS = [
   "finance.searchDonors",
   "finance.selectAccount",
   "finance.selectCategory",
+  "finance.selectCurrency",
   "finance.selectDonor",
   "finance.selectProject",
+  "finance.selectTimeRange",
   "finance.settings",
   "finance.settingsDescription",
+  "finance.showingDataFromLast6Months",
+  "finance.showingProjectIncomeExpense",
+  "finance.showingTrendsForPeriod",
+  "finance.summary",
   "finance.surplus",
   "finance.thisMonth",
+  "finance.toCurrency",
   "finance.topDonors",
   "finance.totalAccounts",
   "finance.totalAmount",
+  "finance.totalAssetsValue",
   "finance.totalBalance",
   "finance.totalDocuments",
   "finance.totalDonated",
   "finance.totalDonations",
   "finance.totalDonors",
+  "finance.totalExpense",
   "finance.totalExpenses",
   "finance.totalIncome",
+  "finance.totalIncomeDistribution",
+  "finance.totalLibraryBooksValue",
   "finance.totalProjectExpense",
   "finance.totalProjectIncome",
   "finance.totalProjects",
+  "finance.transactionCount",
   "finance.transactions",
+  "finance.transactionSummary",
+  "finance.trendingUpByThisMonth",
   "finance.uploadDocument",
   "finance.uploadDocumentDescription",
   "finance.uploadedAt",
+  "finance.viewAccountDetails",
+  "finance.viewAccounts",
   "finance.viewAllAccounts",
   "finance.viewAllIncome",
+  "finance.viewAssets",
+  "finance.viewEntryDetails",
+  "finance.viewLibraryBooks",
   "finance.voucherNoPlaceholder",
+  "finance.vsLastMonth",
   "footer.aboutUs",
   "footer.careers",
   "footer.company",
@@ -1864,11 +2726,68 @@ export const TRANSLATION_KEYS = [
   "grades.title",
   "grades.updated",
   "grades.updateError",
+  "graduation.attendance.excludeLeaves",
+  "graduation.attendance.minPercentage",
+  "graduation.attendance.requireAttendance",
+  "graduation.attendance.title",
+  "graduation.batches",
+  "graduation.cannotChangeTypeWithStudents",
+  "graduation.classTransfer",
+  "graduation.dashboard.certificatesThisYear",
+  "graduation.dashboard.createBatch",
+  "graduation.dashboard.createBatchDesc",
+  "graduation.dashboard.currentYearBatches",
+  "graduation.dashboard.issuedCertificates",
+  "graduation.dashboard.issuedCertificatesDesc",
+  "graduation.dashboard.noPendingApprovals",
+  "graduation.dashboard.noSchools",
+  "graduation.dashboard.pendingApprovals",
+  "graduation.dashboard.quickActions",
+  "graduation.dashboard.recentBatches",
+  "graduation.dashboard.selectSchool",
+  "graduation.dashboard.title",
+  "graduation.dashboard.upcomingGraduations",
+  "graduation.dashboard.viewTemplates",
+  "graduation.dashboard.viewTemplatesDesc",
+  "graduation.editBatchDescription",
+  "graduation.exams.equalWeights",
+  "graduation.exams.totalWeight",
+  "graduation.exams.weights",
+  "graduation.filters.dateFrom",
+  "graduation.filters.dateTo",
+  "graduation.filters.searchPlaceholder",
+  "graduation.fromClass",
+  "graduation.graduationType",
+  "graduation.noBatches.description",
+  "graduation.noBatches.title",
+  "graduation.pagination.of",
+  "graduation.pagination.showing",
+  "graduation.selectFromClass",
+  "graduation.selectSchoolDescription",
+  "graduation.selectToClass",
+  "graduation.status.approved",
+  "graduation.status.draft",
+  "graduation.status.issued",
+  "graduation.summary.approvedBatches",
+  "graduation.summary.draftBatches",
+  "graduation.summary.issuedBatches",
+  "graduation.summary.totalBatches",
+  "graduation.table.students",
+  "graduation.toClass",
+  "graduation.transferringTo",
+  "graduation.type.finalYear",
+  "graduation.type.promotion",
+  "graduation.type.transfer",
+  "graduation.types.finalYear",
+  "graduation.types.promotion",
+  "graduation.types.transfer",
+  "graduation.validation.weightsMustSum100",
   "guards.accessDenied",
   "guards.checkingPermissions",
   "guards.loading",
   "guards.organizationRequiredMessage",
   "guards.requiredPermission",
+  "helpCenter.activeFilters",
   "helpCenter.allArticles",
   "helpCenter.allCategories",
   "helpCenter.articleFound",
@@ -1877,95 +2796,177 @@ export const TRANSLATION_KEYS = [
   "helpCenter.articles",
   "helpCenter.articlesFound",
   "helpCenter.backToHelpCenter",
+  "helpCenter.browseAll",
+  "helpCenter.browseCategories",
   "helpCenter.browseHelpCenter",
+  "helpCenter.category",
+  "helpCenter.categoryHint",
+  "helpCenter.contactSupport",
   "helpCenter.contextualHelp",
+  "helpCenter.continueReading",
   "helpCenter.errorLoading",
   "helpCenter.errorLoadingArticles",
   "helpCenter.errorLoadingCategories",
   "helpCenter.featuredArticles",
+  "helpCenter.filters",
   "helpCenter.linkCopied",
+  "helpCenter.minRead",
+  "helpCenter.needMoreHelp",
+  "helpCenter.needMoreHelpDesc",
   "helpCenter.noArticleFound",
   "helpCenter.noArticlesDescription",
   "helpCenter.noArticlesFound",
   "helpCenter.popularArticles",
   "helpCenter.relatedArticles",
+  "helpCenter.resetSearch",
+  "helpCenter.scanHint",
+  "helpCenter.search",
   "helpCenter.share",
+  "helpCenter.sortAZ",
+  "helpCenter.sortBy",
+  "helpCenter.sortPopular",
+  "helpCenter.sortRecent",
+  "helpCenter.subtitle",
   "helpCenter.thankYou",
+  "helpCenter.tipEnter",
   "helpCenter.title.helpCenterManagement",
+  "helpCenter.topMatches",
   "helpCenter.viewFullArticle",
   "helpCenter.views",
   "helpCenter.wasThisHelpful",
+  "hostel.acrossHostelNetwork",
+  "hostel.allBuildingsOption",
   "hostel.boarders",
   "hostel.boardersLabel",
+  "hostel.boardersWaitingForRooms",
   "hostel.building",
   "hostel.buildings",
+  "hostel.buildingsLabel",
   "hostel.export",
   "hostel.exportOccupancyCsv",
   "hostel.filterByBuilding",
+  "hostel.loadingHostelData",
+  "hostel.loadingHostelOccupancy",
   "hostel.management",
+  "hostel.monitorOccupancyAssignments",
   "hostel.noStudentsAssigned",
   "hostel.notAssigned",
   "hostel.occupancy",
   "hostel.occupied",
+  "hostel.overview",
+  "hostel.reports.acrossRooms",
   "hostel.reports.admissionNumberColumn",
+  "hostel.reports.admissionNumberHeader",
   "hostel.reports.admissionYearColumn",
+  "hostel.reports.admissionYearHeader",
+  "hostel.reports.allBoardersPlaced",
+  "hostel.reports.allBuildings",
+  "hostel.reports.allRooms",
   "hostel.reports.assignedBoarders",
   "hostel.reports.assignedBoardersDescription",
   "hostel.reports.assignedBoardersTitle",
+  "hostel.reports.assignedTab",
+  "hostel.reports.assignedToRooms",
   "hostel.reports.boardersAssigned",
+  "hostel.reports.boardersCardTitle",
   "hostel.reports.boardersColumn",
+  "hostel.reports.boardersCount",
+  "hostel.reports.boardersHeader",
   "hostel.reports.buildingColumn",
+  "hostel.reports.buildingHeader",
+  "hostel.reports.buildingHeaderAssigned",
   "hostel.reports.buildings",
   "hostel.reports.buildingsColumn",
+  "hostel.reports.buildingsCount",
+  "hostel.reports.buildingsHeader",
+  "hostel.reports.buildingsTab",
+  "hostel.reports.buildingsTracked",
   "hostel.reports.buildingUtilization",
   "hostel.reports.buildingUtilizationDescription",
   "hostel.reports.classColumn",
+  "hostel.reports.classHeader",
+  "hostel.reports.coverageHeader",
   "hostel.reports.hostelReporting",
   "hostel.reports.loadingHostelReports",
   "hostel.reports.monitorUtilization",
+  "hostel.reports.noBoardersAssignedYet",
+  "hostel.reports.noBoardersFoundMatching",
+  "hostel.reports.noBoardersFoundMatchingUnassigned",
+  "hostel.reports.noBuildingDataAvailable",
+  "hostel.reports.noBuildingsAvailable",
+  "hostel.reports.noWardensAssigned",
   "hostel.reports.occupiedColumn",
+  "hostel.reports.occupiedCount",
+  "hostel.reports.occupiedHeader",
+  "hostel.reports.occupiedOfTotal",
   "hostel.reports.occupiedRooms",
+  "hostel.reports.perPage",
   "hostel.reports.preparingReportData",
   "hostel.reports.residencyTypeColumn",
+  "hostel.reports.residencyTypeHeader",
   "hostel.reports.roomAndBuildingsDescription",
   "hostel.reports.roomAndBuildingsTitle",
+  "hostel.reports.roomHeader",
   "hostel.reports.roomLabel",
+  "hostel.reports.roomNumber",
   "hostel.reports.rooms",
+  "hostel.reports.roomsAndBoarders",
   "hostel.reports.roomsColumn",
+  "hostel.reports.roomsCurrentlySupervised",
+  "hostel.reports.roomsHeader",
+  "hostel.reports.roomsTab",
   "hostel.reports.roomsWithWardens",
+  "hostel.reports.roomsWithWardensHeader",
+  "hostel.reports.searchPlaceholder",
+  "hostel.reports.searchUnassignedPlaceholder",
+  "hostel.reports.showingBoarders",
   "hostel.reports.student",
+  "hostel.reports.studentHeader",
   "hostel.reports.students",
+  "hostel.reports.studentsCount",
   "hostel.reports.studentsLabel",
   "hostel.reports.unassignedBoarders",
+  "hostel.reports.unassignedBoardersCardTitle",
   "hostel.reports.unassignedBoardersDescription",
   "hostel.reports.unassignedBoardersTitle",
+  "hostel.reports.unassignedTab",
   "hostel.reports.utilizationColumn",
+  "hostel.reports.utilizationHeader",
+  "hostel.reports.waitingForRoomPlacement",
   "hostel.reports.wardenCoverage",
   "hostel.reports.wardenCoverageDescription",
+  "hostel.reports.wardenHeader",
+  "hostel.reports.wardenLabel",
   "hostel.reports.wardenName",
+  "hostel.reports.wardensCount",
+  "hostel.reports.wardensTab",
+  "hostel.reports.wardensWithAssignments",
   "hostel.room",
+  "hostel.roomOccupancy",
   "hostel.rooms",
+  "hostel.roomsOccupied",
+  "hostel.roomsWithAssignedWardens",
   "hostel.searchRoomsPlaceholder",
   "hostel.student",
   "hostel.studentPlural",
   "hostel.students",
+  "hostel.studentsInHostel",
   "hostel.subtitle",
   "hostel.title",
   "hostel.totalRooms",
+  "hostel.totalRoomsLabel",
+  "hostel.trackStudentsPerRoom",
   "hostel.unassigned",
   "hostel.warden",
+  "hostel.wardenCoverageLabel",
   "idCards.accountAndCategoryRequired",
   "idCards.active",
   "idCards.admissionNumber",
   "idCards.assign",
   "idCards.assigned",
   "idCards.assignedAt",
-  "idCards.assignedCards.description",
-  "idCards.assignedCards.title",
-  "idCards.assignment.assignTemplate",
-  "idCards.assignment.assignToStudents",
-  "idCards.assignment.confirmAssign",
-  "idCards.assignment.description",
+  "idCards.assignedCards",
+  "idCards.assignment",
   "idCards.auto",
   "idCards.autoBasedOnGlobal",
   "idCards.background",
@@ -2074,6 +3075,7 @@ export const TRANSLATION_KEYS = [
   "idCards.textColor",
   "idCards.totalCards",
   "idCards.totalFeeCollected",
+  "idCards.unprinted",
   "idCards.useGlobalFont",
   "idCards.width",
   "landing.benefits.cloudBased.description",
@@ -2134,11 +3136,30 @@ export const TRANSLATION_KEYS = [
   "landing.footer.support",
   "landing.footer.tagline",
   "landing.hero.badge",
+  "landing.hero.description",
   "landing.hero.startFreeTrial",
   "landing.hero.subtitle",
   "landing.hero.title",
   "landing.hero.titleHighlight",
   "landing.hero.watchDemo",
+  "landing.index.contactSection.contactInfo",
+  "landing.index.contactSection.tagline",
+  "landing.index.heroBadges.fullySecure",
+  "landing.index.heroBadges.multiLanguage",
+  "landing.index.heroBadges.permissionControl",
+  "landing.index.heroBadges.standardDesign",
+  "landing.index.heroBadges.strongSecurity",
+  "landing.index.stats.accurate.label",
+  "landing.index.stats.accurate.value",
+  "landing.index.stats.activeFeatures.label",
+  "landing.index.stats.activeFeatures.value",
+  "landing.index.stats.fastAttendance.label",
+  "landing.index.stats.fastAttendance.value",
+  "landing.index.stats.trusted.label",
+  "landing.index.stats.trusted.value",
+  "landing.index.valueBadges.allInOne",
+  "landing.index.valueBadges.savesTime",
+  "landing.index.valueBadges.transparentReports",
   "landing.nav.contact",
   "landing.nav.features",
   "landing.nav.finance",
@@ -2359,6 +3380,7 @@ export const TRANSLATION_KEYS = [
   "leave.year",
   "library.active",
   "library.activeLoans",
+  "library.activeLoansCount",
   "library.addBook",
   "library.addCategory",
   "library.addCopy",
@@ -2374,7 +3396,9 @@ export const TRANSLATION_KEYS = [
   "library.assignBookDescription",
   "library.author",
   "library.authorPlaceholder",
+  "library.available",
   "library.availableCopies",
+  "library.averagePrice",
   "library.book",
   "library.bookInformation",
   "library.bookNumber",
@@ -2383,10 +3407,11 @@ export const TRANSLATION_KEYS = [
   "library.booksByCategory",
   "library.booksLabel",
   "library.booksPastDue",
+  "library.booksReport",
+  "library.booksReportTab",
   "library.bookTitle",
   "library.borrower",
   "library.cannotUndo",
-  "library.confirmReturn",
   "library.categories",
   "library.category",
   "library.categoryCodeMaxLength",
@@ -2399,6 +3424,9 @@ export const TRANSLATION_KEYS = [
   "library.categoryUpdated",
   "library.code",
   "library.codePlaceholder",
+  "library.completeInventory",
+  "library.completeInventoryDescription",
+  "library.confirmReturn",
   "library.copies",
   "library.copy",
   "library.create",
@@ -2415,14 +3443,19 @@ export const TRANSLATION_KEYS = [
   "library.description",
   "library.details",
   "library.distribution",
-  "library.filters",
   "library.dueDate",
   "library.dueInNext7Days",
   "library.dueSoonBooks",
   "library.dueSoonCount",
+  "library.dueSoonDescription",
+  "library.dueSoonShort",
+  "library.dueSoonTab",
   "library.editBookTitle",
   "library.editCategory",
   "library.enterBookTitle",
+  "library.exportCsv",
+  "library.exportCSV",
+  "library.filters",
   "library.fromDate",
   "library.history",
   "library.inactive",
@@ -2430,13 +3463,13 @@ export const TRANSLATION_KEYS = [
   "library.inventory",
   "library.isbn",
   "library.isbnPlaceholder",
+  "library.itemsPerPage",
   "library.libraryCategories",
   "library.libraryReports",
   "library.loanDate",
   "library.loanHistory",
-  "library.loanHistoryTab",
   "library.loanHistoryDescription",
-  "library.noLoansInRange",
+  "library.loanHistoryTab",
   "library.loans",
   "library.manageBookCategories",
   "library.manageLoans",
@@ -2444,58 +3477,73 @@ export const TRANSLATION_KEYS = [
   "library.monthlyLoanTrends",
   "library.moreCategories",
   "library.mostBorrowedBooks",
-  "library.mostBorrowedTab",
   "library.mostBorrowedDescription",
   "library.mostBorrowedEmpty",
+  "library.mostBorrowedTab",
   "library.name",
   "library.namePlaceholder",
   "library.noActiveLoans",
-  "library.noLoansMatchFilters",
+  "library.noBooksAvailable",
   "library.noBooksDueSoon",
+  "library.noBooksFoundMatchingFilters",
+  "library.noBooksMatchingFilters",
   "library.noBooksMessage",
   "library.noCategoriesAvailable",
+  "library.noLoansInRange",
+  "library.noLoansMatchFilters",
   "library.noOverdue",
   "library.of",
   "library.onLoanLabel",
   "library.order",
   "library.overdue",
-  "library.overdueBooksTab",
   "library.overdueBooksDescription",
+  "library.overdueBooksTab",
   "library.overview",
+  "library.perBook",
   "library.perPage",
   "library.price",
+  "library.priceTimesTotalCopies",
   "library.reports",
   "library.reset",
   "library.return",
+  "library.returnBookConfirm",
+  "library.returnBookTitle",
   "library.returned",
   "library.returning",
   "library.returnLoan",
-  "library.returnBookTitle",
-  "library.returnBookConfirm",
   "library.saveBook",
   "library.searchBookPlaceholder",
-  "library.searchLoansPlaceholder",
+  "library.searchBooksPlaceholder",
   "library.searchCategories",
-  "library.searchStudents",
+  "library.searchLoansPlaceholder",
   "library.searchStaff",
+  "library.searchStudents",
   "library.selectCategory",
-  "library.selectStudent",
   "library.selectStaff",
+  "library.selectStudent",
   "library.showing",
+  "library.showingBooks",
+  "library.showingDueSoonBooks",
+  "library.showingLoans",
+  "library.showingOverdueBooks",
   "library.status",
   "library.subtitle",
+  "library.sumOfAllBookPrices",
   "library.title",
   "library.to",
   "library.toDate",
   "library.top5Books",
   "library.totalBooks",
+  "library.totalCategories",
   "library.totalCategoriesLabel",
   "library.totalCopies",
   "library.totalCopiesLabel",
   "library.totalCopiesLabel2",
+  "library.totalPrice",
   "library.totalValue",
   "library.totalValueDescription",
   "library.uncategorized",
+  "library.uniqueCategories",
   "library.update",
   "library.updateBookInfo",
   "library.updateCategoryInfo",
@@ -2504,18 +3552,6 @@ export const TRANSLATION_KEYS = [
   "library.viewFullReport",
   "library.volume",
   "library.volumePlaceholder",
-  "library.booksReportTab",
-  "library.totalCategories",
-  "library.uniqueCategories",
-  "library.sumOfAllBookPrices",
-  "library.priceTimesTotalCopies",
-  "library.averagePrice",
-  "library.perBook",
-  "library.completeInventoryDescription",
-  "library.exportCSV",
-  "library.searchBooksPlaceholder",
-  "library.noBooksMatchingFilters",
-  "library.noBooksAvailable",
   "maintenance.affectedServices",
   "maintenance.autoRefresh",
   "maintenance.defaultMessage",
@@ -2551,11 +3587,13 @@ export const TRANSLATION_KEYS = [
   "nav.attendanceReports",
   "nav.attendanceTotalsReport",
   "nav.authentication",
+  "nav.buildingsManagement",
   "nav.certificates.issued",
   "nav.certificates.templates",
   "nav.certificateTemplates",
   "nav.classes",
   "nav.classSubjectMarkSheet",
+  "nav.clearSearch",
   "nav.communication",
   "nav.consolidatedMarkSheet",
   "nav.courseAttendance",
@@ -2584,6 +3622,7 @@ export const TRANSLATION_KEYS = [
   "nav.events.addGuest",
   "nav.events.all",
   "nav.events.checkin",
+  "nav.events.export",
   "nav.events.types",
   "nav.events.users",
   "nav.examAnalytics",
@@ -2601,7 +3640,9 @@ export const TRANSLATION_KEYS = [
   "nav.exams",
   "nav.examSecretNumbers",
   "nav.examStudentEnrollment",
+  "nav.examTimetables",
   "nav.examTypes",
+  "nav.favorites",
   "nav.finance",
   "nav.finance.accounts",
   "nav.finance.dashboard",
@@ -2632,6 +3673,7 @@ export const TRANSLATION_KEYS = [
   "nav.idCards.assignment",
   "nav.idCards.export",
   "nav.idCards.templates",
+  "nav.keyboardShortcut",
   "nav.leaveReports",
   "nav.leaveRequests",
   "nav.library",
@@ -2641,10 +3683,21 @@ export const TRANSLATION_KEYS = [
   "nav.library.distribution",
   "nav.library.reports",
   "nav.markAttendance",
+  "nav.nav.reports",
+  "nav.noResults",
+  "nav.permissionsManagement",
   "nav.phoneBook",
+  "nav.pinItem",
+  "nav.profileManagement",
   "nav.questionBank",
   "nav.questionsAndPapers",
+  "nav.recent",
   "nav.reports",
+  "nav.reportTemplates",
+  "nav.rolesManagement",
+  "nav.roomsManagement",
+  "nav.schoolsManagement",
+  "nav.searchPlaceholder",
   "nav.sections.academic",
   "nav.sections.admin",
   "nav.sections.core",
@@ -2655,20 +3708,31 @@ export const TRANSLATION_KEYS = [
   "nav.staff",
   "nav.staffManagement",
   "nav.staffReports",
+  "nav.staffTypes",
+  "nav.status.issued",
   "nav.studentHistory",
   "nav.studentManagement",
   "nav.studentReportCard",
   "nav.studentReports",
   "nav.students",
+  "nav.students.management",
   "nav.studentsImport",
+  "nav.subjects.all",
   "nav.teacherSubjectAssignments.title",
+  "nav.teacherSubjectAssignments.title",
+  "nav.timetable.title",
   "nav.timetable.title",
   "nav.timetables",
   "nav.translations",
+  "nav.unpinItem",
+  "nav.userManagement",
+  "nav.userPermissions",
   "noArticleFound",
   "noDocuments",
   "notFound.goHome",
   "notFound.message",
+  "notFound.title",
+  "onboarding.actions.initialSetup",
   "onboarding.actions.skip",
   "onboarding.actions.takeTour",
   "onboarding.tour.academic",
@@ -2719,6 +3783,7 @@ export const TRANSLATION_KEYS = [
   "organizations.users",
   "organizations.viewCompleteInfo",
   "pagination.entries",
+  "pagination.filtered",
   "pagination.noEntries",
   "pagination.of",
   "pagination.rowsPerPage",
@@ -2867,7 +3932,10 @@ export const TRANSLATION_KEYS = [
   "reportTemplates.addTemplate",
   "reportTemplates.advancedOptions",
   "reportTemplates.advancedOptionsDescription",
+  "reportTemplates.attendance_report",
   "reportTemplates.belowSchoolName",
+  "reportTemplates.buildings",
+  "reportTemplates.class_report",
   "reportTemplates.configureHeaderFooter",
   "reportTemplates.deleteConfirmDescription",
   "reportTemplates.deleteConfirmTitle",
@@ -2877,11 +3945,14 @@ export const TRANSLATION_KEYS = [
   "reportTemplates.enterHeaderHtml",
   "reportTemplates.enterHeaderText",
   "reportTemplates.enterTemplateName",
+  "reportTemplates.exam_report",
+  "reportTemplates.fee_report",
   "reportTemplates.filterBySchool",
   "reportTemplates.footerHtml",
   "reportTemplates.footerHtmlDescription",
   "reportTemplates.footerText",
   "reportTemplates.footerTextDescription",
+  "reportTemplates.general_report",
   "reportTemplates.headerHtml",
   "reportTemplates.headerHtmlDescription",
   "reportTemplates.headerText",
@@ -2907,9 +3978,12 @@ export const TRANSLATION_KEYS = [
   "reportTemplates.setAsDefaultTemplate",
   "reportTemplates.showGenerationDate",
   "reportTemplates.showPageNumbers",
+  "reportTemplates.student_report",
+  "reportTemplates.subtitle",
   "reportTemplates.tableAlternatingColors",
   "reportTemplates.templateName",
   "reportTemplates.templateTypeRequired",
+  "reportTemplates.title",
   "reportTemplates.updateTemplateConfig",
   "reportTemplates.useDefaultWatermark",
   "reportTemplates.watermarkDescription",
@@ -2922,6 +3996,7 @@ export const TRANSLATION_KEYS = [
   "resetPassword.requirementNumber",
   "resetPassword.requirementSpecial",
   "resetPassword.requirementUppercase",
+  "resetPassword.subtitle",
   "resetPassword.updatePassword",
   "resetPassword.updatingPassword",
   "roles.actions",
@@ -2960,6 +4035,7 @@ export const TRANSLATION_KEYS = [
   "schools.both",
   "schools.calendarPreference",
   "schools.cancel",
+  "schools.certificates",
   "schools.close",
   "schools.currentLogo",
   "schools.delete",
@@ -2997,6 +4073,7 @@ export const TRANSLATION_KEYS = [
   "schools.none",
   "schools.noSchoolsFound",
   "schools.noSchoolsMessage",
+  "schools.official_documents",
   "schools.orEnterCustomFont",
   "schools.pashtoName",
   "schools.phone",
@@ -3007,6 +4084,7 @@ export const TRANSLATION_KEYS = [
   "schools.reportFontSizeHint",
   "schools.reportLogoSettings",
   "schools.reportLogoSettingsDesc",
+  "schools.reports",
   "schools.right",
   "schools.school",
   "schools.schoolDetails",
@@ -3073,6 +4151,20 @@ export const TRANSLATION_KEYS = [
   "settings.buildings.title",
   "settings.buildings.unknownSchool",
   "settings.buildings.update",
+  "settings.datePreferences.calendarSystem",
+  "settings.datePreferences.date",
+  "settings.datePreferences.dateTime",
+  "settings.datePreferences.description",
+  "settings.datePreferences.gregorian.description",
+  "settings.datePreferences.gregorian.label",
+  "settings.datePreferences.hijriQamari.description",
+  "settings.datePreferences.hijriQamari.label",
+  "settings.datePreferences.hijriShamsi.description",
+  "settings.datePreferences.hijriShamsi.label",
+  "settings.datePreferences.note",
+  "settings.datePreferences.noteText",
+  "settings.datePreferences.preview",
+  "settings.datePreferences.title",
   "settings.roomNumber",
   "settings.rooms.addRoom",
   "settings.rooms.building",
@@ -3130,6 +4222,7 @@ export const TRANSLATION_KEYS = [
   "staff.adminCount",
   "staff.admins",
   "staff.allStaffTypes",
+  "staff.allStatus",
   "staff.allTypes",
   "staff.basicInformationDescription",
   "staff.birthDate",
@@ -3209,10 +4302,12 @@ export const TRANSLATION_KEYS = [
   "staff.personalInformation",
   "staff.phoneNumber",
   "staff.photo",
+  "staff.pictureHelper",
   "staff.pleaseSelectStaffType",
   "staff.pleaseWait",
   "staff.position",
   "staff.previous",
+  "staff.profileSubtitle",
   "staff.province",
   "staff.registrationReport",
   "staff.religiousDepartment",
@@ -3230,6 +4325,7 @@ export const TRANSLATION_KEYS = [
   "staff.selectedSchoolNotBelong",
   "staff.selectStaffType",
   "staff.selectStaffTypePlaceholder",
+  "staff.sonOf",
   "staff.staffCode",
   "staff.staffRegistrationReport",
   "staff.staffRegistrationReportDescription",
@@ -3252,38 +4348,61 @@ export const TRANSLATION_KEYS = [
   "staff.updateStaff",
   "staff.updating",
   "staff.village",
+  "status.approved",
+  "status.draft",
+  "status.issued",
   "student",
   "studentHistory.absent",
   "studentHistory.academicInformation",
   "studentHistory.academicYear",
+  "studentHistory.admissionDate",
+  "studentHistory.admissionNo",
   "studentHistory.admissions",
+  "studentHistory.amount",
+  "studentHistory.assigned",
   "studentHistory.attendance",
   "studentHistory.attendanceRate",
+  "studentHistory.attendanceTrend",
+  "studentHistory.author",
+  "studentHistory.averagePercentage",
   "studentHistory.averageScore",
+  "studentHistory.boarder",
   "studentHistory.booksReturned",
+  "studentHistory.certificate",
+  "studentHistory.certificates",
   "studentHistory.charts",
+  "studentHistory.class",
   "studentHistory.cleared",
   "studentHistory.completed",
+  "studentHistory.completedOn",
+  "studentHistory.completionRate",
   "studentHistory.conditional",
   "studentHistory.contactInformation",
+  "studentHistory.courseHistory",
+  "studentHistory.courseName",
   "studentHistory.courses",
   "studentHistory.current",
   "studentHistory.currentClass",
   "studentHistory.currentLocation",
   "studentHistory.currentlyBorrowed",
+  "studentHistory.description",
   "studentHistory.dob",
   "studentHistory.dropped",
   "studentHistory.dueDate",
   "studentHistory.enrolled",
   "studentHistory.events",
+  "studentHistory.examPerformance",
   "studentHistory.exams",
   "studentHistory.failed",
+  "studentHistory.fee",
   "studentHistory.feeAssignments",
+  "studentHistory.feePaid",
   "studentHistory.feePayments",
   "studentHistory.fees",
   "studentHistory.feeStatus",
   "studentHistory.feeStructure",
   "studentHistory.feeTimeline",
+  "studentHistory.feeType",
   "studentHistory.financialInformation",
   "studentHistory.fullDetails",
   "studentHistory.generatedAt",
@@ -3299,32 +4418,62 @@ export const TRANSLATION_KEYS = [
   "studentHistory.lifetimeHistory",
   "studentHistory.loadError",
   "studentHistory.locationInformation",
+  "studentHistory.maxMarks",
   "studentHistory.maxPossible",
+  "studentHistory.method",
+  "studentHistory.month",
+  "studentHistory.monthlyBreakdown",
+  "studentHistory.noAdmissions",
   "studentHistory.noAttendanceRecords",
+  "studentHistory.noChartData",
   "studentHistory.noCourseRecords",
+  "studentHistory.noEventsFound",
   "studentHistory.noExamRecords",
+  "studentHistory.noFeeRecords",
   "studentHistory.noGraduationRecords",
+  "studentHistory.noIdCardRecords",
   "studentHistory.noLibraryRecords",
+  "studentHistory.note",
+  "studentHistory.obtained",
+  "studentHistory.of",
   "studentHistory.originLocation",
   "studentHistory.outstanding",
   "studentHistory.outstandingFees",
+  "studentHistory.overallProgress",
   "studentHistory.overdue",
   "studentHistory.paid",
   "studentHistory.passed",
+  "studentHistory.paymentHistory",
   "studentHistory.paymentProgress",
   "studentHistory.pending",
   "studentHistory.pendingPrint",
+  "studentHistory.percentage",
   "studentHistory.personalInformation",
+  "studentHistory.phone",
+  "studentHistory.present",
   "studentHistory.printed",
+  "studentHistory.printedOn",
   "studentHistory.printStatus",
+  "studentHistory.rate",
+  "studentHistory.receivedBy",
+  "studentHistory.recentRecords",
+  "studentHistory.recordedOn",
   "studentHistory.records",
+  "studentHistory.reference",
+  "studentHistory.registrationDate",
   "studentHistory.remaining",
+  "studentHistory.remarks",
   "studentHistory.residencyType",
+  "studentHistory.returned",
   "studentHistory.returnRate",
   "studentHistory.school",
   "studentHistory.searchTimeline",
   "studentHistory.sections",
   "studentHistory.shift",
+  "studentHistory.status",
+  "studentHistory.subject",
+  "studentHistory.subjectAveragePerformance",
+  "studentHistory.subjectPerformanceOverTime",
   "studentHistory.systemInformation",
   "studentHistory.template",
   "studentHistory.timeline",
@@ -3338,7 +4487,9 @@ export const TRANSLATION_KEYS = [
   "studentHistory.totalLoans",
   "studentHistory.totalMarks",
   "studentHistory.totalPaid",
+  "studentHistory.unknownBatch",
   "studentHistory.unknownClass",
+  "studentHistory.unknownExam",
   "studentHistory.unpaid",
   "studentHistory.yearsEnrolled",
   "studentHistory.zaminInformation",
@@ -3450,6 +4601,7 @@ export const TRANSLATION_KEYS = [
   "students.backToStudents",
   "students.birthDate",
   "students.birthYear",
+  "students.cardNumber",
   "students.class",
   "students.classSection",
   "students.classTemplates",
@@ -3486,6 +4638,7 @@ export const TRANSLATION_KEYS = [
   "students.disciplineRecordFormDescription",
   "students.disciplineRecords",
   "students.disciplineRecordsDescription",
+  "students.district",
   "students.documents",
   "students.documentsDescription",
   "students.documentType",
@@ -3506,6 +4659,7 @@ export const TRANSLATION_KEYS = [
   "students.enrollmentStatus",
   "students.familyIncome",
   "students.father",
+  "students.fatherName",
   "students.fee",
   "students.feeStatus",
   "students.female",
@@ -3513,6 +4667,8 @@ export const TRANSLATION_KEYS = [
   "students.fileName",
   "students.fileSize",
   "students.financialInfo",
+  "students.firstName",
+  "students.fullName",
   "students.gender",
   "students.grade",
   "students.gradeLevel",
@@ -3528,6 +4684,7 @@ export const TRANSLATION_KEYS = [
   "students.guardianName",
   "students.guardianPhone",
   "students.guardianPicturePath",
+  "students.guardianRelation",
   "students.guardianTazkira",
   "students.hasParents",
   "students.health",
@@ -3547,6 +4704,8 @@ export const TRANSLATION_KEYS = [
   "students.institutionName",
   "students.institutionPlaceholder",
   "students.invalid",
+  "students.isOrphan",
+  "students.lastName",
   "students.limitReached",
   "students.limitWarning",
   "students.list",
@@ -3555,6 +4714,7 @@ export const TRANSLATION_KEYS = [
   "students.management",
   "students.markResolved",
   "students.message",
+  "students.motherName",
   "students.name",
   "students.nationality",
   "students.needingSpecial",
@@ -3598,6 +4758,7 @@ export const TRANSLATION_KEYS = [
   "students.printProfile",
   "students.printTitle",
   "students.proceedCreate",
+  "students.province",
   "students.registeredFemale",
   "students.registeredMale",
   "students.registrationNumber",
@@ -3609,6 +4770,7 @@ export const TRANSLATION_KEYS = [
   "students.row",
   "students.rows",
   "students.school",
+  "students.searchPlaceholder",
   "students.section",
   "students.selectAcademicYear",
   "students.selectAcademicYearForClasses",
@@ -3622,14 +4784,9 @@ export const TRANSLATION_KEYS = [
   "students.severitySevere",
   "students.sheet",
   "students.stamp",
-  "students.status.active",
-  "students.status.admitted",
-  "students.status.applied",
-  "students.status.graduated",
-  "students.status.inactive",
-  "students.status.label",
-  "students.status.withdrawn",
+  "students.status",
   "students.student",
+  "students.studentCode",
   "students.studentDocuments",
   "students.studentFields",
   "students.studentId",
@@ -3654,6 +4811,7 @@ export const TRANSLATION_KEYS = [
   "students.uploadImport",
   "students.uploadImportHint",
   "students.valid",
+  "students.validate",
   "students.validateFile",
   "students.validationSummary",
   "students.validRows",
@@ -3661,6 +4819,7 @@ export const TRANSLATION_KEYS = [
   "students.viewDocumentError",
   "students.viewHistory",
   "students.viewProfile",
+  "students.village",
   "students.waived",
   "students.wasAdmitted",
   "students.willBeUploadedOnSave",
@@ -3669,28 +4828,88 @@ export const TRANSLATION_KEYS = [
   "students.zaminName",
   "students.zaminPhone",
   "students.zaminTazkira",
+  "subjects.all",
+  "subjects.noSubjects",
+  "subjects.subject",
   "subscription.accountBlocked",
   "subscription.approachingLimit",
   "subscription.approachingLimits",
+  "subscription.billingPeriod",
   "subscription.cannotCreateMore",
   "subscription.cannotMakeChanges",
   "subscription.currentPlan",
   "subscription.daysLeftToRenew",
+  "subscription.daysUntilDue",
+  "subscription.enterpriseContact.city",
+  "subscription.enterpriseContact.cityPlaceholder",
+  "subscription.enterpriseContact.contactEmail",
+  "subscription.enterpriseContact.contactEmailPlaceholder",
+  "subscription.enterpriseContact.contactName",
+  "subscription.enterpriseContact.contactNamePlaceholder",
+  "subscription.enterpriseContact.contactPhone",
+  "subscription.enterpriseContact.contactPhonePlaceholder",
+  "subscription.enterpriseContact.contactPosition",
+  "subscription.enterpriseContact.contactPositionPlaceholder",
+  "subscription.enterpriseContact.contactWhatsApp",
+  "subscription.enterpriseContact.contactWhatsAppPlaceholder",
+  "subscription.enterpriseContact.country",
+  "subscription.enterpriseContact.countryPlaceholder",
+  "subscription.enterpriseContact.description",
+  "subscription.enterpriseContact.numberOfSchools",
+  "subscription.enterpriseContact.numberOfSchoolsPlaceholder",
+  "subscription.enterpriseContact.organizationName",
+  "subscription.enterpriseContact.organizationNamePlaceholder",
+  "subscription.enterpriseContact.organizationNeeds",
+  "subscription.enterpriseContact.organizationNeedsPlaceholder",
+  "subscription.enterpriseContact.schoolName",
+  "subscription.enterpriseContact.schoolNamePlaceholder",
+  "subscription.enterpriseContact.staffCount",
+  "subscription.enterpriseContact.staffCountPlaceholder",
+  "subscription.enterpriseContact.studentCount",
+  "subscription.enterpriseContact.studentCountPlaceholder",
+  "subscription.enterpriseContact.submit",
+  "subscription.enterpriseContact.submitFailed",
+  "subscription.enterpriseContact.submitted",
+  "subscription.enterpriseContact.submitting",
+  "subscription.enterpriseContact.title",
   "subscription.featureNotAvailable",
   "subscription.featureNotAvailableMessage",
   "subscription.genericError",
   "subscription.gracePeriod",
   "subscription.isNotIncluded",
+  "subscription.lastMaintenancePaid",
+  "subscription.lastPaid",
+  "subscription.licenseFee",
+  "subscription.licenseFeeDescription",
+  "subscription.licenseFeeStatus",
+  "subscription.licensePaymentHistory",
+  "subscription.licenseUnpaid",
+  "subscription.licenseUnpaidDescription",
   "subscription.limitReached",
   "subscription.limitReachedCantCreate",
   "subscription.limitReachedMessage",
+  "subscription.maintenanceFee",
+  "subscription.maintenanceFeeDescription",
+  "subscription.maintenanceFees",
+  "subscription.maintenanceFeeStatus",
+  "subscription.maintenanceInvoices",
+  "subscription.maintenanceInvoicesDescription",
+  "subscription.maintenancePaymentHistory",
   "subscription.manageSubscription",
+  "subscription.nextMaintenanceDue",
+  "subscription.noInvoices",
+  "subscription.noMaintenanceDue",
+  "subscription.noPaymentHistory",
   "subscription.noSubscription",
+  "subscription.payLicense",
+  "subscription.paymentHistory",
   "subscription.purchaseAddon",
   "subscription.readAccessDenied",
   "subscription.readOnlyMode",
   "subscription.renewNow",
+  "subscription.status",
   "subscription.subscriptionExpired",
+  "subscription.subscriptionManagement",
   "subscription.trialEnding",
   "subscription.trialEndsIn",
   "subscription.trialPeriod",
@@ -3701,7 +4920,11 @@ export const TRANSLATION_KEYS = [
   "subscription.usageWarningMessage",
   "subscription.used",
   "subscription.viewFeatures",
+  "subscription.viewLicenseHistory",
+  "subscription.viewMaintenanceInvoices",
   "subscription.writeAccessDenied",
+  "subscription.yourSubscriptionStatus",
+  "table.students",
   "teacherSubjectAssignments.academicYear",
   "teacherSubjectAssignments.academicYearRequired",
   "teacherSubjectAssignments.allTeachers",
@@ -3743,10 +4966,12 @@ export const TRANSLATION_KEYS = [
   "teacherSubjectAssignments.selectSubjectsDescription",
   "teacherSubjectAssignments.selectTeacher",
   "teacherSubjectAssignments.subject",
+  "teacherSubjectAssignments.subtitle",
   "teacherSubjectAssignments.teacher",
   "teacherSubjectAssignments.teacherAndClasses",
   "teacherSubjectAssignments.teacherAndClassesDescription",
   "teacherSubjectAssignments.teacherRequired",
+  "teacherSubjectAssignments.title",
   "teacherSubjectAssignments.unknownClass",
   "teacherSubjectAssignments.unknownSubject",
   "teacherSubjectAssignments.unknownYear",
@@ -3816,6 +5041,7 @@ export const TRANSLATION_KEYS = [
   "timetable.noTimetableToPrint",
   "timetable.noValidSlotsFound",
   "timetable.parseDropTargetError",
+  "timetable.period",
   "timetable.periods",
   "timetable.print",
   "timetable.results",
@@ -3835,11 +5061,13 @@ export const TRANSLATION_KEYS = [
   "timetable.selectPeriods",
   "timetable.selectTeacher",
   "timetable.showOnlyClassesWithAssignments",
+  "timetable.subject",
   "timetable.summary",
   "timetable.teacher",
   "timetable.teacherPreferences",
   "timetable.teacherPreferencesDesc",
   "timetable.teacherView",
+  "timetable.time",
   "timetable.title",
   "timetable.unscheduledNotice",
   "title",
@@ -3919,6 +5147,10 @@ export const TRANSLATION_KEYS = [
   "toast.departmentNameRequired",
   "toast.departmentUpdated",
   "toast.departmentUpdateFailed",
+  "toast.discipline.created",
+  "toast.discipline.deleted",
+  "toast.discipline.resolved",
+  "toast.discipline.updated",
   "toast.disciplineRecordAdded",
   "toast.disciplineRecordDeleted",
   "toast.disciplineRecordResolved",
@@ -3932,6 +5164,9 @@ export const TRANSLATION_KEYS = [
   "toast.documentUpdated",
   "toast.documentUpdateFailed",
   "toast.documentUploaded",
+  "toast.donorCreated",
+  "toast.donorDeleted",
+  "toast.donorUpdated",
   "toast.educationalHistoryAdded",
   "toast.educationalHistoryDeleted",
   "toast.educationalHistoryUpdated",
@@ -3993,6 +5228,9 @@ export const TRANSLATION_KEYS = [
   "toast.exchangeRateDeleteFailed",
   "toast.exchangeRateUpdated",
   "toast.exchangeRateUpdateFailed",
+  "toast.expenseCategoryCreated",
+  "toast.expenseCategoryDeleted",
+  "toast.expenseCategoryUpdated",
   "toast.expenseEntryCreated",
   "toast.expenseEntryDeleted",
   "toast.expenseEntryUpdated",
@@ -4050,7 +5288,9 @@ export const TRANSLATION_KEYS = [
   "toast.graduation.batchApproveFailed",
   "toast.graduation.batchCreated",
   "toast.graduation.batchCreateFailed",
+  "toast.graduation.batchDeleted",
   "toast.graduation.batches.description",
+  "toast.graduation.batchUpdated",
   "toast.graduation.cannotChangeTypeWithStudents",
   "toast.graduation.certificatesIssued",
   "toast.graduation.classTransfer",
@@ -4134,10 +5374,23 @@ export const TRANSLATION_KEYS = [
   "toast.idCardTemplateUpdateFailed",
   "toast.idCardUpdated",
   "toast.idCardUpdateFailed",
+  "toast.incomeCategoryCreated",
+  "toast.incomeCategoryDeleted",
+  "toast.incomeCategoryUpdated",
   "toast.incomeEntryCreated",
   "toast.incomeEntryDeleted",
   "toast.incomeEntryUpdated",
   "toast.invalidCredentials",
+  "toast.keyDeleted",
+  "toast.keyDeleteFailed",
+  "toast.keyPairGenerated",
+  "toast.keyPairGenerationFailed",
+  "toast.keyUpdated",
+  "toast.keyUpdateFailed",
+  "toast.leaveRequests.approved",
+  "toast.leaveRequests.created",
+  "toast.leaveRequests.rejected",
+  "toast.leaveRequests.updated",
   "toast.letterheadCreated",
   "toast.letterheadCreateFailed",
   "toast.letterheadDeleted",
@@ -4164,19 +5417,16 @@ export const TRANSLATION_KEYS = [
   "toast.library.copyAddFailed",
   "toast.library.loanCreated",
   "toast.library.loanCreateFailed",
-  "toast.limitOverrideAdded",
-  "toast.licenseSigned",
-  "toast.licenseSignFailed",
-  "toast.licenseDownloaded",
-  "toast.licenseDownloadFailed",
+  "toast.libraryCategories.created",
+  "toast.libraryCategories.deleted",
+  "toast.libraryCategories.updated",
   "toast.licenseDeleted",
   "toast.licenseDeleteFailed",
-  "toast.keyPairGenerated",
-  "toast.keyPairGenerationFailed",
-  "toast.keyUpdated",
-  "toast.keyUpdateFailed",
-  "toast.keyDeleted",
-  "toast.keyDeleteFailed",
+  "toast.licenseDownloaded",
+  "toast.licenseDownloadFailed",
+  "toast.licenseSigned",
+  "toast.licenseSignFailed",
+  "toast.limitOverrideAdded",
   "toast.marksSaved",
   "toast.marksSaveFailed",
   "toast.organizationCreated",
@@ -4209,6 +5459,7 @@ export const TRANSLATION_KEYS = [
   "toast.permissionGroupUpdateFailed",
   "toast.permissionRemovedFromUser",
   "toast.permissionRemoveFailed",
+  "toast.permissionsUpdated",
   "toast.permissionUpdated",
   "toast.pictureUploaded",
   "toast.planCreated",
@@ -4236,6 +5487,10 @@ export const TRANSLATION_KEYS = [
   "toast.renewalRejected",
   "toast.renewalRequestFailed",
   "toast.renewalRequestSubmitted",
+  "toast.reportDownloaded",
+  "toast.reportGenerationFailed",
+  "toast.reportGenerationStarted",
+  "toast.reportGenerationTimeout",
   "toast.reportTemplateCreated",
   "toast.reportTemplateDeleted",
   "toast.reportTemplateUpdated",
@@ -4264,6 +5519,16 @@ export const TRANSLATION_KEYS = [
   "toast.secretNumbersAssignedWithErrors",
   "toast.secretNumberUpdated",
   "toast.secretNumberUpdateFailed",
+  "toast.staff.created",
+  "toast.staff.deleted",
+  "toast.staff.documentDeleted",
+  "toast.staff.updated",
+  "toast.staffTypes.created",
+  "toast.staffTypes.deleted",
+  "toast.staffTypes.updated",
+  "toast.studentAdmissions.admitted",
+  "toast.studentAdmissions.removed",
+  "toast.studentAdmissions.updated",
   "toast.studentEnrollFailed",
   "toast.studentInformationUpdated",
   "toast.studentRegistered",
@@ -4321,14 +5586,80 @@ export const TRANSLATION_KEYS = [
   "ui.sidebar.toggle",
   "uploadDocument",
   "uploaded",
+  "userManagement.actions",
+  "userManagement.active",
+  "userManagement.activeUsers",
+  "userManagement.addUser",
   "userManagement.allRoles",
   "userManagement.allStatus",
+  "userManagement.allStatuses",
+  "userManagement.autoSelected",
+  "userManagement.cancel",
+  "userManagement.create",
+  "userManagement.createNewUserAccount",
+  "userManagement.createUser",
+  "userManagement.defaultSchool",
+  "userManagement.defaultSchoolDescription",
+  "userManagement.deleteConfirm",
+  "userManagement.deleteConfirmDescription",
+  "userManagement.deleteUser",
+  "userManagement.editUser",
+  "userManagement.email",
+  "userManagement.emailPlaceholder",
+  "userManagement.emailRequired",
+  "userManagement.exportCsv",
   "userManagement.fullName",
   "userManagement.fullNameMaxLength",
+  "userManagement.fullNamePlaceholder",
   "userManagement.fullNameRequired",
+  "userManagement.inactive",
+  "userManagement.inactiveUsers",
+  "userManagement.invalidEmail",
+  "userManagement.loadingUsers",
+  "userManagement.management",
+  "userManagement.na",
+  "userManagement.name",
   "userManagement.newPassword",
+  "userManagement.noDefaultSchool",
+  "userManagement.noEmail",
+  "userManagement.noName",
+  "userManagement.noStaffMember",
   "userManagement.noUsersFound",
+  "userManagement.noUsersMessage",
+  "userManagement.onlyOneSchoolDescription",
+  "userManagement.password",
+  "userManagement.passwordMinLength",
+  "userManagement.passwordPlaceholder",
+  "userManagement.passwordRequired",
+  "userManagement.passwordReset",
+  "userManagement.phone",
+  "userManagement.phonePlaceholder",
+  "userManagement.resetPassword",
+  "userManagement.resetPasswordConfirm",
+  "userManagement.resetPasswordDescription",
+  "userManagement.resetting",
   "userManagement.role",
+  "userManagement.roleRequired",
+  "userManagement.roles",
+  "userManagement.schoolsAccessAll",
+  "userManagement.schoolsAccessAllDescription",
+  "userManagement.searchPlaceholder",
+  "userManagement.selectOne",
+  "userManagement.selectRole",
+  "userManagement.selectSchool",
+  "userManagement.selectStaffMember",
+  "userManagement.staffMember",
+  "userManagement.staffMemberDescription",
+  "userManagement.staffMemberOptional",
+  "userManagement.status",
+  "userManagement.subtitle",
+  "userManagement.title",
+  "userManagement.totalUsers",
+  "userManagement.update",
+  "userManagement.updateUserInformation",
+  "userManagement.userCreated",
+  "userManagement.userDeleted",
+  "userManagement.userUpdated",
   "userPermissions.accessDenied",
   "userPermissions.assignRole",
   "userPermissions.assignSpecificPermissions",
@@ -4355,6 +5686,16 @@ export const TRANSLATION_KEYS = [
   "userPermissions.permissionFromRole",
   "userPermissions.permissionRemoved",
   "userPermissions.removeRoleConfirm",
+  "userPermissions.roleAccountant",
+  "userPermissions.roleAdmin",
+  "userPermissions.roleAssetManager",
+  "userPermissions.roleHostelManager",
+  "userPermissions.roleLibrarian",
+  "userPermissions.roleStaff",
+  "userPermissions.roleTeacher",
+  "userPermissions.subtitle",
+  "userPermissions.title",
+  "userPermissions.user",
   "userPermissions.userRoles",
   "validation.ageMax",
   "validation.ageMin",
@@ -4432,7565 +5773,8 @@ export const TRANSLATION_KEYS = [
   "watermarks.updateWatermarkInfo",
 ] as const;
 
-  classes: {
-    class: string;
-    classes: string;
-    noClasses: string;
-    selectClass: string;
-    selectClassFirst: string;
-  };
-  events: {
-    actions: string;
-    active: string;
-    add: string;
-    address: string;
-    all: string;
-    allAcademicYears: string;
-    approve: string;
-    auditLog: string;
-    autoGenerated: string;
-    back: string;
-    base: string;
-    basicInformation: string;
-    body: string;
-    breadcrumb: string;
-    cancel: string;
-    clear: string;
-    clearFilters: string;
-    close: string;
-    code: string;
-    common: string;
-    confirm: string;
-    confirmDelete: string;
-    contact: string;
-    courseNameExample: string;
-    create: string;
-    createdAt: string;
-    creating: string;
-    currentPassword: string;
-    date: string;
-    dates: string;
-    days: string;
-    default: string;
-    delete: string;
-    deleting: string;
-    description: string;
-    deselectAll: string;
-    displayOrder: string;
-    download: string;
-    downloadPdf: string;
-    duplicate: string;
-    edit: string;
-    email: string;
-    endDate: string;
-    enterCurrentPassword: string;
-    enterFullName: string;
-    enterNewPassword: string;
-    enterPhoneNumber: string;
-    error: string;
-    example: string;
-    exampleCategories: string;
-    export: string;
-    exportErrorExcel: string;
-    exportErrorNoData: string;
-    exportErrorNoSchool: string;
-    exportErrorPdf: string;
-    exportExcel: string;
-    exportPdf: string;
-    exportSuccessExcel: string;
-    exportSuccessPdf: string;
-    fail: string;
-    fair: string;
-    filter: string;
-    filterByGrade: string;
-    filterByStatus: string;
-    filters: string;
-    firstName: string;
-    from: string;
-    generateStudents: string;
-    goBack: string;
-    good: string;
-    gradeExample: string;
-    graduationDate: string;
-    hide: string;
-    howToUse: string;
-    import: string;
-    inactive: string;
-    kb: string;
-    lastName: string;
-    loading: string;
-    mainNavigation: string;
-    metadata: string;
-    more: string;
-    morePages: string;
-    name: string;
-    next: string;
-    nextPage: string;
-    no: string;
-    noData: string;
-    noDataToExport: string;
-    noPermission: string;
-    noResults: string;
-    none: string;
-    notAssignedToOrganization: string;
-    notAvailable: string;
-    notFound: string;
-    notes: string;
-    notifications: string;
-    of: string;
-    on: string;
-    optional: string;
-    other: string;
-    overrideCapacity: string;
-    overrideCapacityAll: string;
-    pageSize: string;
-    pass: string;
-    passRate: string;
-    phone: string;
-    pleaseSelectOrganization: string;
-    preview: string;
-    previous: string;
-    previousPage: string;
-    previousSlide: string;
-    print: string;
-    processing: string;
-    published: string;
-    refresh: string;
-    remove: string;
-    required: string;
-    reset: string;
-    resetToDefault: string;
-    retry: string;
-    rtl: string;
-    save: string;
-    saveAll: string;
-    saving: string;
-    scanCardNumber: string;
-    schoolManagement: string;
-    schoolSwitched: string;
-    search: string;
-    searchStudentPlaceholder: string;
-    section: string;
-    sectionExample: string;
-    sectionsInputHint: string;
-    select: string;
-    selectAll: string;
-    selectClass: string;
-    selectCourse: string;
-    selectLanguage: string;
-    selectSchool: string;
-    selected: string;
-    show: string;
-    signature: string;
-    startDate: string;
-    status: string;
-    statusLabel: string;
-    strong: string;
-    subjects: string;
-    submit: string;
-    success: string;
-    title: string;
-    to: string;
-    today: string;
-    toggleSidebar: string;
-    topPerformers: string;
-    total: string;
-    tryAgain: string;
-    type: string;
-    unauthorized: string;
-    unexpectedError: string;
-    unknown: string;
-    unread: string;
-    update: string;
-    updatedAt: string;
-    updating: string;
-    upload: string;
-    uploading: string;
-    user: string;
-    validationError: string;
-    verify: string;
-    veryStrong: string;
-    view: string;
-    viewAll: string;
-    viewDetails: string;
-    weak: string;
-    years: string;
-    yes: string;
-    checkin: string;
-    addGuest: string;
-    types: string;
-    users: string | {
-      fillAllFields: string;
-      userCreateFailed: string;
-      userCreated: string;
-      userDeleteFailed: string;
-      userDeleted: string;
-      userUpdateFailed: string;
-      userUpdated: string;
-    };
-    description: string;
-    createEvent: string;
-    searchPlaceholder: string;
-    allStatuses: string;
-    noEventsFound: string;
-    createFirstEvent: string;
-    eventTypes: {
-      title: string;
-      addEventType: string;
-      name: string;
-      description: string;
-      status: string;
-      actions: string;
-      active: string;
-      inactive: string;
-      fields: string;
-      noEventTypesFound: string;
-      createFirstEventType: string;
-      deleteEventType: string;
-      deleteConfirm: string;
-      deleteConfirmDescription: string;
-      cancel: string;
-      deleting: string;
-      deleteButton: string;
-      editEventType: string;
-      createEventType: string;
-      nameLabel: string;
-      namePlaceholder: string;
-      schoolLabel: string;
-      selectSchool: string;
-      descriptionLabel: string;
-      descriptionPlaceholder: string;
-      activeLabel: string;
-      activeDescription: string;
-      cancelButton: string;
-      saving: string;
-      updateButton: string;
-      createButton: string;
-    };
-  };
-  subjects: {
-    noSubjects: string;
-    subject: string;
-    subjects: string;
-    actions: string;
-    active: string;
-    add: string;
-    address: string;
-    all: string;
-    allAcademicYears: string;
-    approve: string;
-    auditLog: string;
-    autoGenerated: string;
-    back: string;
-    base: string;
-    basicInformation: string;
-    body: string;
-    breadcrumb: string;
-    cancel: string;
-    clear: string;
-    clearFilters: string;
-    close: string;
-    code: string;
-    common: string;
-    confirm: string;
-    confirmDelete: string;
-    contact: string;
-    courseNameExample: string;
-    create: string;
-    createdAt: string;
-    creating: string;
-    currentPassword: string;
-    date: string;
-    dates: string;
-    days: string;
-    default: string;
-    delete: string;
-    deleting: string;
-    description: string;
-    deselectAll: string;
-    displayOrder: string;
-    download: string;
-    downloadPdf: string;
-    duplicate: string;
-    edit: string;
-    email: string;
-    endDate: string;
-    enterCurrentPassword: string;
-    enterFullName: string;
-    enterNewPassword: string;
-    enterPhoneNumber: string;
-    error: string;
-    example: string;
-    exampleCategories: string;
-    export: string;
-    exportErrorExcel: string;
-    exportErrorNoData: string;
-    exportErrorNoSchool: string;
-    exportErrorPdf: string;
-    exportExcel: string;
-    exportPdf: string;
-    exportSuccessExcel: string;
-    exportSuccessPdf: string;
-    fail: string;
-    fair: string;
-    filter: string;
-    filterByGrade: string;
-    filterByStatus: string;
-    filters: string;
-    firstName: string;
-    from: string;
-    generateStudents: string;
-    goBack: string;
-    good: string;
-    gradeExample: string;
-    graduationDate: string;
-    hide: string;
-    howToUse: string;
-    import: string;
-    inactive: string;
-    kb: string;
-    lastName: string;
-    loading: string;
-    mainNavigation: string;
-    metadata: string;
-    more: string;
-    morePages: string;
-    name: string;
-    next: string;
-    nextPage: string;
-    no: string;
-    noData: string;
-    noDataToExport: string;
-    noPermission: string;
-    noResults: string;
-    none: string;
-    notAssignedToOrganization: string;
-    notAvailable: string;
-    notFound: string;
-    notes: string;
-    notifications: string;
-    of: string;
-    on: string;
-    optional: string;
-    other: string;
-    overrideCapacity: string;
-    overrideCapacityAll: string;
-    pageSize: string;
-    pass: string;
-    passRate: string;
-    phone: string;
-    pleaseSelectOrganization: string;
-    preview: string;
-    previous: string;
-    previousPage: string;
-    previousSlide: string;
-    print: string;
-    processing: string;
-    published: string;
-    refresh: string;
-    remove: string;
-    required: string;
-    reset: string;
-    resetToDefault: string;
-    retry: string;
-    rtl: string;
-    save: string;
-    saveAll: string;
-    saving: string;
-    scanCardNumber: string;
-    schoolManagement: string;
-    schoolSwitched: string;
-    search: string;
-    searchStudentPlaceholder: string;
-    section: string;
-    sectionExample: string;
-    sectionsInputHint: string;
-    select: string;
-    selectAll: string;
-    selectClass: string;
-    selectCourse: string;
-    selectLanguage: string;
-    selectSchool: string;
-    selected: string;
-    show: string;
-    signature: string;
-    startDate: string;
-    status: string;
-    statusLabel: string;
-    strong: string;
-    submit: string;
-    success: string;
-    title: string;
-    to: string;
-    today: string;
-    toggleSidebar: string;
-    topPerformers: string;
-    total: string;
-    tryAgain: string;
-    type: string;
-    unauthorized: string;
-    unexpectedError: string;
-    unknown: string;
-    unread: string;
-    update: string;
-    updatedAt: string;
-    updating: string;
-    upload: string;
-    uploading: string;
-    user: string;
-    validationError: string;
-    verify: string;
-    veryStrong: string;
-    view: string;
-    viewAll: string;
-    viewDetails: string;
-    weak: string;
-    years: string;
-    yes: string;
-  };
-
-  // Common
-  common: {
-    loading: string;
-    save: string;
-    saveAll: string;
-    saving: string;
-    cancel: string;
-    delete: string;
-    edit: string;
-    view: string;
-    add: string;
-    search: string;
-    filter: string;
-    export: string;
-    import: string;
-    print: string;
-    close: string;
-    confirm: string;
-    yes: string;
-    no: string;
-    back: string;
-    next: string;
-    previous: string;
-    backToStudents: string;
-    submit: string;
-    reset: string;
-    all: string;
-    years: string;
-    upload: string;
-    uploading: string;
-    download: string;
-    refresh: string;
-    actions: string;
-    error: string;
-    success: string;
-    user: string;
-    unexpectedError: string;
-    optional: string;
-    kb: string;
-    on: string;
-    unknown: string;
-    signature: string;
-    selectLanguage: string;
-    notifications: string;
-    searchAndFilters: string;
-    openMenu: string;
-    schoolManagement: string;
-    mainNavigation: string;
-    filterByStatus: string;
-    filterByGrade: string;
-    selectClass: string;
-    selectCourse: string;
-    selectSchool: string;
-    schoolSwitched: string;
-    allAcademicYears: string;
-    example: string;
-    autoGenerated: string;
-    previousPage: string;
-    nextPage: string;
-    morePages: string;
-    toggleSidebar: string;
-    breadcrumb: string;
-    previousSlide: string;
-    enterCurrentPassword: string;
-    enterNewPassword: string;
-    currentPassword: string;
-    weak: string;
-    fair: string;
-    good: string;
-    strong: string;
-    veryStrong: string;
-    enterFullName: string;
-    enterPhoneNumber: string;
-    gradeExample: string;
-    searchStudentPlaceholder: string;
-    courseNameExample: string;
-    exampleCategories: string;
-    scanCardNumber: string;
-    sectionExample: string;
-    overrideCapacity: string;
-    overrideCapacityAll: string;
-    sectionsInputHint: string;
-    none: string;
-    statusLabel: string;
-    update: string;
-    create: string;
-    unauthorized: string;
-    to: string;
-    remove: string;
-    graduationDate: string;
-    approve: string;
-    total: string;
-    pass: string;
-    notes: string;
-    auditLog: string;
-    noData: string;
-    notFound: string;
-    title: string;
-    type: string;
-    active: string;
-    inactive: string;
-    body: string;
-    rtl: string;
-    pageSize: string;
-    finish: string;
-    open: string;
-    skip: string;
-    allStatuses: string;
-    allLevels: string;
-    allDepartments: string;
-    unassigned: string;
-    allTypes: string;
-    applyFilters: string;
-    clearAll: string;
-    allYears: string;
-    amount: string;
-    fromDate: string;
-    toDate: string;
-    date: string;
-    address: string;
-    base: string;
-    basicInformation: string;
-    clear: string;
-    code: string;
-    confirmDelete: string;
-    contact: string;
-    createdAt: string;
-    creating: string;
-    dates: string;
-    days: string;
-    default: string;
-    deleting: string;
-    description: string;
-    deselectAll: string;
-    displayOrder: string;
-    downloadPdf: string;
-    duplicate: string;
-    email: string;
-    endDate: string;
-    exportErrorExcel: string;
-    exportErrorNoData: string;
-    exportErrorNoSchool: string;
-    exportErrorPdf: string;
-    exportExcel: string;
-    exportPdf: string;
-    exportSuccessExcel: string;
-    exportSuccessPdf: string;
-    fail: string;
-    filters: string;
-    firstName: string;
-    generateStudents: string;
-    goBack: string;
-    hide: string;
-    howToUse: string;
-    lastName: string;
-    metadata: string;
-    more: string;
-    name: string;
-    noDataToExport: string;
-    noPermission: string;
-    noResults: string;
-    notAssignedToOrganization: string;
-    notAvailable: string;
-    of: string;
-    other: string;
-    passRate: string;
-    phone: string;
-    pleaseSelectOrganization: string;
-    preview: string;
-    processing: string;
-    published: string;
-    required: string;
-    resetToDefault: string;
-    retry: string;
-    section: string;
-    select: string;
-    selectAll: string;
-    selected: string;
-    show: string;
-    startDate: string;
-    today: string;
-    topPerformers: string;
-    tryAgain: string;
-    unread: string;
-    updatedAt: string;
-    updating: string;
-    validationError: string;
-    verify: string;
-    viewAll: string;
-    viewDetails: string;
-  };
-
-  // Pagination
-  pagination: {
-    showing: string;
-    to: string;
-    of: string;
-    entries: string;
-    total: string;
-    noEntries: string;
-    rowsPerPage: string;
-    perPage: string;
-  };
-
-  // Navigation
-  nav: {
-    dashboard: string;
-    students: string;
-    studentsImport: string;
-    admissions: string;
-    studentReports: string;
-    studentHistory: string;
-    studentManagement: string;
-    staffReports: string;
-    staffManagement: string;
-    phoneBook: string;
-    attendance: string;
-    markAttendance: string;
-    attendanceReports: string;
-    attendanceTotalsReport: string;
-    leaveRequests: string;
-    leaveReports: string;
-    classes: string;
-    exams: string;
-    examEnrollment: string;
-    examStudentEnrollment: string;
-    examMarks: string;
-    examReports: string;
-    examInsights: string;
-    examAnalytics: string;
-    examAttendance: string;
-    examManagement: string;
-    examRollNumbers: string;
-    examSecretNumbers: string;
-    questionsAndPapers: string;
-    questionBank: string;
-    examPaperTemplates: string;
-    graduationCertificates: string;
-    "graduation.batches": string;
-    "certificates.templates": string;
-    "certificates.issued": string;
-    "idCards.templates": string;
-    "idCards.assignment": string;
-    "idCards.export": string;
-    finance: string;
-    "finance.dashboard": string;
-    "finance.accounts": string;
-    "finance.income": string;
-    "finance.incomeCategories": string;
-    "finance.expenses": string;
-    "finance.expenseCategories": string;
-    "finance.projects": string;
-    "finance.donors": string;
-    "finance.financeDocuments": string;
-    "finance.reports": string;
-    "finance.settings": string;
-    "finance.fees": string;
-    "finance.fees.dashboard": string;
-    "finance.fees.structures": string;
-    "finance.fees.assignments": string;
-    "finance.fees.payments": string;
-    "finance.fees.exceptions": string;
-    "finance.fees.reports": string;
-    staff: string;
-    hostel: string;
-    "hostel.overview": string;
-    "hostel.reports": string;
-    library: string;
-    "library.dashboard": string;
-    "library.categories": string;
-    "library.books": string;
-    "library.distribution": string;
-    "library.reports": string;
-    assets: string;
-    "assets.dashboard": string;
-    "assets.categories": string;
-    "assets.management": string;
-    "assets.assignments": string;
-    "assets.reports": string;
-    communication: string;
-    reports: string;
-    admissionsReport: string;
-    settings: string;
-    schoolsManagement: string;
-    translations: string;
-    authentication: string;
-    academicSettings: string;
-    academicManagement: string;
-    shortTermCourses: string;
-    courses: string;
-    courseDashboard: string;
-    courseStudents: string;
-    courseAttendance: string;
-    courseCertificates: string;
-    certificateTemplates: string;
-    courseDocuments: string;
-    courseReports: string;
-    documentSystem: string;
-    "document-system": string;
-    "dms.dashboard": string;
-    "dms.incoming": string;
-    "dms.outgoing": string;
-    "dms.issueLetter": string;
-    "dms.issueLetterNav": string;
-    "dms.templates": string;
-    "dms.letterheads": string;
-    "dms.letterTypes": string;
-    "dms.departments": string;
-    "dms.archive": string;
-    "dms.reports": string;
-    "dms.settings": string;
-    events: string;
-    "events.all": string;
-    "events.checkin": string;
-    "events.addGuest": string;
-    "events.types": string;
-    "events.users": string;
-    examDocuments: string;
-    sections: {
-      core: string;
-      operations: string;
-      academic: string;
-      finance: string;
-      admin: string;
-    };
-    documents: string;
-    leaveRequests: string;
-  };
-
-  // Document Management System
-  dms: {
-    incomingDocuments: string;
-    incomingDocumentsDescription: string;
-    addDocument: string;
-    subject: string;
-    searchBySubject: string;
-    senderOrganization: string;
-    searchBySender: string;
-    securityLevel: string;
-    department: string;
-    category: string;
-    letterType: string;
-    letterhead: string;
-    layout: string;
-    createTemplate: string;
-    templatesTitle: string;
-    templatesDescription: string;
-    templatesSearchPlaceholder: string;
-    templatesNoTemplates: string;
-    createLetterhead: string;
-    letterheadsTitle: string;
-    letterheadsDescription: string;
-    letterheadsSearchPlaceholder: string;
-    letterheadsNoLetterheads: string;
-    position: string;
-    defaultForLayout: string;
-    livePreview: string;
-    outgoingDocuments: string;
-    outgoingDocumentsDescription: string;
-    recipientType: string;
-    letterheadsDescription: string;
-    uploadLetterhead: string;
-    searchByName: string;
-    letterType: string;
-    fileType: string;
-    archiveSearch: string;
-    archiveSearchDescription: string;
-    searchPlaceholder: string;
-    documents: string;
-    tableHeaders: {
-      number: string;
-      subject: string;
-      description: string;
-      sender: string;
-      recipient: string;
-      externalDoc: string;
-      pages: string;
-      security: string;
-      department: string;
-      status: string;
-      received: string;
-      issued: string;
-      actions: string;
-    };
-    loadingDocuments: string;
-    noDocumentsFound: string;
-    showingDocuments: string;
-    page: string;
-    pages: string;
-    forms: {
-      incoming: {
-        title: string;
-        description: string;
-        basicInfo: string;
-        academicYear: string;
-        receivedDate: string;
-        subject: string;
-        status: string;
-        securityLevel: string;
-        senderInfo: string;
-        senderName: string;
-        senderOrganization: string;
-        senderAddress: string;
-        content: string;
-        contentLabel: string;
-        contentPlaceholder: string;
-        pagesCount: string;
-        attachmentsCount: string;
-        documentNumber: string;
-        manualNumber: string;
-        externalDocNumber: string;
-        externalDocDate: string;
-        routingDepartment: string;
-        notes: string;
-      };
-      outgoing: {
-        title: string;
-        description: string;
-        basicInfo: string;
-        academicYear: string;
-        issueDate: string;
-        subject: string;
-        recipientType: string;
-        status: string;
-        securityLevel: string;
-        content: string;
-        contentLabel: string;
-        contentPlaceholder: string;
-        pagesCount: string;
-        attachmentsCount: string;
-        documentNumber: string;
-        manualNumber: string;
-        externalDocNumber: string;
-        externalDocDate: string;
-        notes: string;
-      };
-    };
-    issueLetter: {
-      tabs: {
-        issue: string;
-        allIssued: string;
-      };
-      issuedLetters: {
-        title: string;
-        searchPlaceholder: string;
-        noLettersFound: string;
-        documentNumber: string;
-        subject: string;
-        recipient: string;
-        issueDate: string;
-        security: string;
-        recipientType: string;
-        academicYear: string;
-        fromDate: string;
-        toDate: string;
-        noSubject: string;
-      };
-      letterDetails: {
-        title: string;
-        details: string;
-        preview: string;
-        attachments: string;
-        documentNumber: string;
-        issueDate: string;
-        subject: string;
-        status: string;
-        print: string;
-        recipient: string;
-        securityLevel: string;
-        address: string;
-        template: string;
-        description: string;
-        downloadPdf: string;
-        noPreview: string;
-        noAttachments: string;
-        downloadImage: string;
-      };
-      uploadAttachments: string;
-      uploadAttachmentsDescription: string;
-      attachmentsNote: string;
-      draftCreated: string;
-      draftCreateFailed: string;
-      creatingDraft: string;
-      draftModeActive: string;
-      issuing: string;
-      issueButton: string;
-      print: string;
-      printFailed: string;
-      generatingPdf: string;
-      selectTemplateFirst: string;
-      fillRequiredFields: string;
-      downloadImage: string;
-    };
-    deleteDocumentWarning: string;
-    uploadFiles: string;
-    fields: {
-      academic_info: string;
-      application_info: string;
-      available_fields: string;
-      basic_info: string;
-      common_fields: string;
-      contact_info: string;
-      custom_fields: string;
-      datetime_info: string;
-      document_info: string;
-      education_info: string;
-      employment_info: string;
-      guardian_info: string;
-      insert_field: string;
-      insert_field_help: string;
-      insert_field_placeholder: string;
-      inserted: string;
-      no_fields_found: string;
-      organization_info: string;
-      recipient_info: string;
-      search_fields: string;
-      select_field: string;
-    };
-    dashboard: {
-      title: string;
-      description: string;
-      incomingThisWeek: string;
-      incomingThisMonth: string;
-      outgoingThisWeek: string;
-      outgoingThisMonth: string;
-      pendingRoutedDocuments: string;
-      confidentialAndHigher: string;
-      week: string;
-      month: string;
-      manageHint: string;
-    };
-  };
-
-  certificates: {
-    templates: string;
-    issued: string;
-    revoked: string;
-    revoke: string;
-    noIssuedCertificates: string;
-    selectTemplate: string;
-    templateRequired: string;
-  };
-
-  fees: {
-    structures: string;
-    assignments: string;
-    payments: string;
-    exceptions: string;
-    studentFeeStatement: string;
-    addStructure: string;
-    addAssignment: string;
-    addException: string;
-    recordPayment: string;
-    name: string;
-    namePlaceholder: string;
-    code: string;
-    codePlaceholder: string;
-    feeType: string;
-    feeTypes: {
-      one_time: string;
-      monthly: string;
-      quarterly: string;
-      semester: string;
-      annual: string;
-      custom: string;
-    };
-    amount: string;
-    dueDate: string;
-    startDate: string;
-    endDate: string;
-    displayOrder: string;
-    description: string;
-    descriptionPlaceholder: string;
-    required: string;
-    active: string;
-    student: string;
-    structure: string;
-    assignment: string;
-    structureId: string;
-    studentId: string;
-    studentAdmissionId: string;
-    academicYear: string;
-    class: string;
-    selectClass: string;
-    selectAcademicYear: string;
-    selectStructure: string;
-    selectAssignment: string;
-    filters: string;
-    paymentPeriodStart: string;
-    paymentPeriodEnd: string;
-    amountAssigned: string;
-    paid: string;
-    remaining: string;
-    status: string;
-    paymentDate: string;
-    paymentMethod: string;
-    paymentMethods: {
-      cash: string;
-      bank_transfer: string;
-      cheque: string;
-      other: string;
-    };
-    reference: string;
-    referencePlaceholder: string;
-    notes: string;
-    notesPlaceholder: string;
-    account: string;
-    accountPlaceholder: string;
-    method: string;
-    exceptionType: string;
-    exceptionTypes: {
-      discount_percentage: string;
-      discount_fixed: string;
-      waiver: string;
-      custom: string;
-    };
-    exceptionAmount: string;
-    exceptionReason: string;
-    exceptionReasonPlaceholder: string;
-    validFrom: string;
-    validTo: string;
-    dashboard: string;
-    dashboardDescription: string;
-    reports: string;
-    reportsDescription: string;
-    totalAssigned: string;
-    totalPaid: string;
-    totalRemaining: string;
-    totalFee: string;
-    otherFees: string;
-    currentFeeOriginal: string;
-    afterException: string;
-    totalPayable: string;
-    totalValue: string;
-    reduction: string;
-    ofTotalAssigned: string;
-    assignmentStatus: string;
-    exceptionBreakdown: string;
-    activeExceptions: string;
-    originalTotal: string;
-    exceptionReduction: string;
-    adjustedTotal: string;
-    noExceptions: string;
-    viewAllExceptions: string;
-    viewAssignments: string;
-    viewReports: string;
-    viewExceptions: string;
-    viewAll: string;
-    quickActions: string;
-    manageFees: string;
-    overdue: string;
-    collectionProgress: string;
-    statusDistribution: string;
-    collectionByClass: string;
-    studentFees: string;
-    recentPayments: string;
-    noRecentPayments: string;
-    defaulters: string;
-    studentFeeStatus: string;
-    feeStructure: string;
-    assigned: string;
-    collected: string;
-    collectionRate: string;
-    classWiseSummary: string;
-    classWiseSummaryDescription: string;
-    studentWiseSummary: string;
-    studentWiseSummaryDescription: string;
-    totalClasses: string;
-    averageCollectionRate: string;
-    totalStudents: string;
-    noClassData: string;
-    students: string;
-    allClasses: string;
-    allStatuses: string;
-    summary: string;
-    fullyPaid: string;
-    partiallyPaid: string;
-    notPaid: string;
-    assignments: string;
-    allStudentFees: string;
-    financialSummary: string;
-    accountRequired: string;
-    amountRequired: string;
-    approvedAt: string;
-    approvedBy: string;
-    assignedAmount: string;
-    assignedClasses: string;
-    assignmentDetails: string;
-    assignmentInformation: string;
-    assignmentRequired: string;
-    className: string;
-    confirmDeleteException: string;
-    current: string;
-    currentUserWillBeApprover: string;
-    deleteAssignmentConfirm: string;
-    editAssignment: string;
-    editException: string;
-    exception: string;
-    exceptionDetails: string;
-    exceptionDetailsDescription: string;
-    exceptionsSummary: string;
-    financialDetails: string;
-    isActive: string;
-    isActiveDescription: string;
-    noAssignmentsAvailable: string;
-    originalAmount: string;
-    paidAmount: string;
-    paymentDateRequired: string;
-    paymentDetails: string;
-    paymentDetailsDescription: string;
-    paymentInformation: string;
-    recordPaymentDescription: string;
-    school: string;
-    selectAcademicYearAndClass: string;
-    selectAcademicYearFirst: string;
-    selectClassAndAcademicYearFirst: string;
-    selectSchool: string;
-    selectStudent: string;
-    statusAndDates: string;
-    structureDetails: string;
-    studentFeeAssignments: string;
-    studentName: string;
-    viewAssignmentDetails: string;
-    viewReport: string;
-    viewStudentFees: string;
-  };
-
-  attendancePage: {
-    title: string;
-    subtitle: string;
-    markAttendance: string;
-    classLabel: string;
-    dateLabel: string;
-    methodLabel: string;
-    schoolLabel: string;
-    notesLabel: string;
-    createButton: string;
-    recentSessions: string;
-    recentSessionsDescription: string;
-    noSessions: string;
-    manualTab: string;
-    barcodeTab: string;
-    markAllPresent: string;
-    markAllAbsent: string;
-    saveButton: string;
-    studentHeader: string;
-    admissionHeader: string;
-    cardHeader: string;
-    statusHeader: string;
-    emptyRoster: string;
-    cardNumberLabel: string;
-    noteLabel: string;
-    recordScan: string;
-    selectSessionForScan: string;
-    scanFeedTitle: string;
-    timeHeader: string;
-    focusScanner: string;
-    scanInProgress: string;
-    saveInProgress: string;
-    noScansYet: string;
-    sessionHint: string;
-    sessionRequired: string;
-    recordsRequired: string;
-    scanPrompt: string;
-    createSuccess: string;
-    saveSuccess: string;
-    scanSuccess: string;
-    closeSession: string;
-    sessionClosed: string;
-    statusPresent: string;
-    statusAbsent: string;
-    statusLate: string;
-    statusExcused: string;
-    statusSick: string;
-    statusLeave: string;
-    searchRosterPlaceholder: string;
-    noStudentsMatchSearch: string;
-    searchScans: string;
-    noScansMatchSearch: string;
-    class: string;
-    selectAtLeastOneClass: string;
-    studentNotFound: string;
-    markAttendanceDescription: string;
-    selectSession: string;
-    selectSessionPlaceholder: string;
-    currentSession: string;
-    selectSessionForMarking: string;
-    searchSessions: string;
-  };
-
-  attendanceReports: {
-    title: string;
-    subtitle: string;
-    export: string;
-    filters: string;
-    reset: string;
-    student: string;
-    class: string;
-    school: string;
-    status: string;
-    fromDate: string;
-    toDate: string;
-    allStudents: string;
-    allClasses: string;
-    allSchools: string;
-    allStatus: string;
-    cardNumber: string;
-    date: string;
-    method: string;
-    noRecords: string;
-    exportComingSoon: string;
-    generatingReport: string;
-    noRecordsToExport: string;
-    reportExported: string;
-    reportFailed: string;
-    reportGenerationFailed: string;
-    reportInProgress: string;
-    reportReady: string;
-    reportStatus: string;
-    schoolRequired: string;
-  };
-
-  attendanceTotalsReport: {
-    title: string;
-    subtitle: string;
-    filters: string;
-    filtersTitle: string;
-    filtersDescription: string;
-    reset: string;
-    invalidRange: string;
-    invalidRangeDetail: string;
-    school: string;
-    class: string;
-    academicYear: string;
-    status: string;
-    fromDate: string;
-    toDate: string;
-    loading: string;
-    allSchools: string;
-    allClasses: string;
-    allYears: string;
-    totalSessions: string;
-    studentsMarked: string;
-    totals: string;
-    attendanceRate: string;
-    attendanceRateHelper: string;
-    absences: string;
-    absenceHelper: string;
-    statusBreakdown: string;
-    statusBreakdownHint: string;
-    records: string;
-    classBreakdown: string;
-    classBreakdownHint: string;
-    classWise: string;
-    present: string;
-    absent: string;
-    totalRecords: string;
-    noClassData: string;
-    schoolBreakdown: string;
-    schoolBreakdownHint: string;
-    noSchoolData: string;
-    recentSessions: string;
-    recentSessionsHint: string;
-    date: string;
-    noRecentSessions: string;
-    noSchool: string;
-    roomBreakdown: string;
-    roomBreakdownHint: string;
-    roomSessionsInfo: string;
-    recentRoomSessions: string;
-    recentRoomSessionsHint: string;
-    noRecentRoomSessions: string;
-    generalRoom: string;
-    dateRange: string;
-    exportOptions: string;
-    generating: string;
-    generatingReport: string;
-    noDataToExport: string;
-    reportExported: string;
-    reportFailed: string;
-    reportGenerationFailed: string;
-    reportInProgress: string;
-    reportReady: string;
-    reportStatus: string;
-    room: string;
-    roomWise: string;
-    schoolRequired: string;
-  };
-
-  // Dashboard
-  dashboard: {
-    title: string;
-    totalStudents: string;
-    totalStaff: string;
-    totalClasses: string;
-    totalRooms: string;
-    totalBuildings: string;
-    activeStudents: string;
-    activeStaff: string;
-    activeClasses: string;
-    availableRooms: string;
-    schoolBuildings: string;
-    welcomeBack: string;
-    welcomeMessage: string;
-    genderDistribution: string;
-    studentsByClass: string;
-    buildings: string;
-    pendingFees: string;
-    todayAttendance: string;
-    upcomingExams: string;
-    recentActivity: string;
-    quickActions: string;
-    addStudent: string;
-    markAttendance: string;
-    viewReports: string;
-    manageClasses: string;
-    overview: string;
-    viewTabsForDetails: string;
-  };
-
-  // Students
-  // Students
-  students: {
-    title: string;
-    subtitle: string;
-    management: string;
-    add: string;
-    addDescription: string;
-    list: string;
-    listDescription: string;
-    addStudent: string;
-    studentProfile: string;
-    personalInfo: string;
-    guardianInfo: string;
-    academicInfo: string;
-    admissionInfo: string;
-    addressInfo: string;
-    otherInfo: string;
-    health: string;
-    documents: string;
-    name: string;
-    fatherName: string;
-    cnic: string;
-    phone: string;
-    email: string;
-    address: string;
-    admissionDate: string;
-    dateOfBirth: string;
-    class: string;
-    section: string;
-    rollNumber: string;
-    status: {
-      label: string;
-      active: string;
-      inactive: string;
-      graduated: string;
-      withdrawn: string;
-      applied: string;
-      admitted: string;
-    };
-    active: string;
-    inactive: string;
-    graduated: string;
-    transferred: string;
-    suspended: string;
-    searchPlaceholder: string;
-    allClasses: string;
-    allSections: string;
-    allStatus: string;
-    allGenders: string;
-    totalStudents: string;
-    enrolledStudents: string;
-    studentsList: string;
-    results: string;
-    student: string;
-    admissionNo: string;
-    rollNo: string;
-    classSection: string;
-    contact: string;
-    hostel: string;
-    actions: string;
-    admitted: string;
-    noClass: string;
-    notAvailable: string;
-    viewDetails: string;
-    editStudent: string;
-    deleteStudent: string;
-    deleteConfirm: string;
-    noStudentsFound: string;
-    noStudentsMessage: string;
-    applied: string;
-    withdrawn: string;
-    allSchools: string;
-    allOrganizations: string;
-    organization: string;
-    importTitle: string;
-    importSubtitle: string;
-    backToStudents: string;
-    templateBuilder: string;
-    uploadImport: string;
-    studentFields: string;
-    admissionFields: string;
-    templateFieldsHint: string;
-    admissionFieldsHint: string;
-    admissionDefaults: string;
-    admissionDefaultsHint: string;
-    defaultResidencyType: string;
-    defaultRoom: string;
-    academicYearOptional: string;
-    selectAcademicYear: string;
-    classTemplates: string;
-    selectAcademicYearForClasses: string;
-    noClassesForYear: string;
-    academicYearRequiredForClassTemplates: string;
-    downloadTemplate: string;
-    importRulesHint: string;
-    uploadImportHint: string;
-    selectXlsx: string;
-    validateFile: string;
-    importNow: string;
-    validationSummary: string;
-    validRows: string;
-    rows: string;
-    valid: string;
-    invalid: string;
-    sheet: string;
-    row: string;
-    field: string;
-    message: string;
-    limitReached: string;
-    limitWarning: string;
-    uploadDisabled: string;
-    importLimited: string;
-    acrossSelected: string;
-    registeredMale: string;
-    registeredFemale: string;
-    needingSpecial: string;
-    printProfile: string;
-    viewProfile: string;
-    applyingGrade: string;
-    school: string;
-    gender: string;
-    male: string;
-    female: string;
-    orphan: string;
-    total: string;
-    father: string;
-    guardian: string;
-    guardianName: string;
-    guardianPhone: string;
-    noDataFound: string;
-    deleteStudentRecord: string;
-    deleteStudentDescription: string;
-    updateDescription: string;
-    selectSchool: string;
-    potentialDuplicate: string;
-    proceedCreate: string;
-    fullName: string;
-    grandfatherName: string;
-    motherName: string;
-    birthYear: string;
-    birthDate: string;
-    age: string;
-    preferredLanguage: string;
-    nationality: string;
-    previousSchool: string;
-    originProvince: string;
-    originDistrict: string;
-    originVillage: string;
-    currentProvince: string;
-    currentDistrict: string;
-    currentVillage: string;
-    homeAddress: string;
-    relation: string;
-    guardianTazkira: string;
-    guardianPicturePath: string;
-    zaminName: string;
-    zaminPhone: string;
-    zaminTazkira: string;
-    zaminAddress: string;
-    studentPicture: string;
-    admissionFeeStatus: string;
-    orphanStatus: string;
-    disabilityStatus: string;
-    emergencyContactName: string;
-    emergencyContactPhone: string;
-    familyIncome: string;
-    educationalHistory: string;
-    studentDocuments: string;
-    disciplineRecords: string;
-    cardNumber: string;
-    admissionYear: string;
-    hasParents: string;
-    paid: string;
-    pending: string;
-    waived: string;
-    partial: string;
-    selectGender: string;
-    feeStatus: string;
-    originAddress: string;
-    currentAddress: string;
-    noOriginAddress: string;
-    noCurrentAddress: string;
-    noGuardianInfo: string;
-    guarantorInfo: string;
-    noGuarantorInfo: string;
-    emergencyInfo: string;
-    financialInfo: string;
-    noEmergencyInfo: string;
-    noFinancialInfo: string;
-    // Documents dialog
-    documentsDescription: string;
-    uploadDocument: string;
-    uploadDocumentDescription: string;
-    selectFile: string;
-    documentType: string;
-    documentTypePlaceholder: string;
-    description: string;
-    descriptionPlaceholder: string;
-    fileName: string;
-    fileSize: string;
-    uploadDate: string;
-    noDocuments: string;
-    deleteDocument: string;
-    deleteDocumentConfirm: string;
-    viewDocument: string;
-    viewDocumentError: string;
-    downloadDocumentError: string;
-    imageLoadError: string;
-    pdfLoadError: string;
-    unsupportedFileType: string;
-    noDocumentToView: string;
-    // Educational history dialog
-    educationalHistoryDescription: string;
-    addHistory: string;
-    editHistory: string;
-    deleteHistory: string;
-    deleteHistoryConfirm: string;
-    institutionName: string;
-    institutionPlaceholder: string;
-    academicYear: string;
-    academicYearPlaceholder: string;
-    gradeLevel: string;
-    gradeLevelPlaceholder: string;
-    period: string;
-    startDate: string;
-    endDate: string;
-    achievements: string;
-    achievementsPlaceholder: string;
-    notes: string;
-    notesPlaceholder: string;
-    noEducationalHistory: string;
-    educationalHistoryFormDescription: string;
-    // Discipline records dialog
-    disciplineRecordsDescription: string;
-    addDisciplineRecord: string;
-    editDisciplineRecord: string;
-    deleteDisciplineRecord: string;
-    deleteDisciplineConfirm: string;
-    incidentDate: string;
-    incidentType: string;
-    incidentTypePlaceholder: string;
-    severity: string;
-    severityMinor: string;
-    severityModerate: string;
-    severityMajor: string;
-    severitySevere: string;
-    actionTaken: string;
-    actionTakenPlaceholder: string;
-    resolved: string;
-    disciplinePending: string;
-    markResolved: string;
-    noDisciplineRecords: string;
-    disciplineRecordFormDescription: string;
-    disciplineDescriptionPlaceholder: string;
-    // Print and profile view
-    fee: string;
-    grade: string;
-    printTitle: string;
-    idNumber: string;
-    tazkiraNumber: string;
-    createdAt: string;
-    updatedAt: string;
-    commitmentsTitle: string;
-    commitmentTitle: string;
-    guaranteeTitle: string;
-    approvalTitle: string;
-    commitmentText1: string;
-    commitmentText2: string;
-    commitmentText3: string;
-    commitmentText4: string;
-    commitmentText5: string;
-    commitmentText6: string;
-    guaranteeText: string;
-    approvalAdmission: string;
-    approvalFee: string;
-    approvalDate: string;
-    approvalSignature: string;
-    approvalStamp: string;
-    guarantorSignature: string;
-    wasAdmitted: string;
-    stamp: string;
-    noImage: string;
-    selectPicture: string;
-    uploadPicture: string;
-    admissionNumber: string;
-    enrollmentStatus: string;
-    noStudents: string;
-    orphans: string;
-    picture: string;
-    registrationNumber: string;
-    studentId: string;
-    students: string;
-    viewDocumentDescription: string;
-    viewHistory: string;
-    willBeUploadedOnSave: string;
-  };
-
-  // Student History
-  studentHistory: {
-    lifetimeHistory: string;
-    description: string;
-    loadError: string;
-    admissionNo: string;
-    class: string;
-    dob: string;
-    phone: string;
-    generatedAt: string;
-    records: string;
-    sections: string;
-    timeline: string;
-    charts: string;
-    fullDetails: string;
-    personalInformation: string;
-    contactInformation: string;
-    locationInformation: string;
-    originLocation: string;
-    currentLocation: string;
-    guardianInformation: string;
-    zaminInformation: string;
-    academicInformation: string;
-    financialInformation: string;
-    systemInformation: string;
-    totalAcademicYears: string;
-    yearsEnrolled: string;
-    currentClass: string;
-    attendanceRate: string;
-    averageScore: string;
-    exams: string;
-    outstandingFees: string;
-    pending: string;
-    cleared: string;
-    libraryBooks: string;
-    totalLoans: string;
-    admissions: string;
-    attendance: string;
-    fees: string;
-    library: string;
-    idCards: string;
-    courses: string;
-    graduations: string;
-    unknownClass: string;
-    current: string;
-    admissionDate: string;
-    academicYear: string;
-    school: string;
-    residencyType: string;
-    shift: string;
-    feePayments: string;
-    libraryLoans: string;
-    events: string;
-    feeTimeline: string;
-    paid: string;
-    remaining: string;
-    present: string;
-    absent: string;
-    late: string;
-    noAttendanceRecords: string;
-    totalExams: string;
-    totalMarks: string;
-    maxPossible: string;
-    noExamRecords: string;
-    totalCards: string;
-    printed: string;
-    pendingPrint: string;
-    feePaid: string;
-    idCardHistory: string;
-    cardNumber: string;
-    template: string;
-    printStatus: string;
-    feeStatus: string;
-    issuedDate: string;
-    unpaid: string;
-    returned: string;
-    currentlyBorrowed: string;
-    overdue: string;
-    returnRate: string;
-    of: string;
-    booksReturned: string;
-    noLibraryRecords: string;
-    totalAssigned: string;
-    totalPaid: string;
-    outstanding: string;
-    totalDiscount: string;
-    paymentProgress: string;
-    feeAssignments: string;
-    feeStructure: string;
-    assigned: string;
-    dueDate: string;
-    status: string;
-    totalCourses: string;
-    completed: string;
-    enrolled: string;
-    dropped: string;
-    certificates: string;
-    noCourseRecords: string;
-    totalGraduations: string;
-    passed: string;
-    conditional: string;
-    failed: string;
-    noGraduationRecords: string;
-    searchTimeline: string;
-    // Summary Cards
-    summary: {
-      academicYears: string;
-      currentClass: string;
-      attendanceRate: string;
-      examAverage: string;
-      feesStatus: string;
-      libraryLoans: string;
-      idCards: string;
-      courses: string;
-      disciplineRecords: string;
-      graduations: string;
-      yearsEnrolled: string;
-      present: string;
-      absent: string;
-      late: string;
-      totalPaid: string;
-      totalDue: string;
-      activeLoans: string;
-      overdue: string;
-      issued: string;
-      completed: string;
-      incidents: string;
-    };
-    // Tabs
-    tabs: {
-      admissions: string;
-      attendance: string;
-      exams: string;
-      fees: string;
-      library: string;
-      idCards: string;
-      courses: string;
-      graduations: string;
-      educationalHistory: string;
-      disciplineRecords: string;
-    };
-    // Timeline
-    timelineView: {
-      title: string;
-      noEvents: string;
-      filterByYear: string;
-      filterByType: string;
-      allYears: string;
-      allTypes: string;
-      showDetails: string;
-      hideDetails: string;
-    };
-    // Event Types
-    eventTypes: {
-      admission: string;
-      attendance: string;
-      exam: string;
-      feePayment: string;
-      libraryLoan: string;
-      idCard: string;
-      course: string;
-      graduation: string;
-      discipline: string;
-      transfer: string;
-    };
-    // Section Labels
-    admissionsSection: {
-      title: string;
-      academicYear: string;
-      class: string;
-      admissionDate: string;
-      enrollmentStatus: string;
-      enrollmentType: string;
-      residencyType: string;
-      room: string;
-      rollNumber: string;
-      noRecords: string;
-    };
-    attendanceSection: {
-      title: string;
-      date: string;
-      status: string;
-      session: string;
-      class: string;
-      academicYear: string;
-      noRecords: string;
-      totalPresent: string;
-      totalAbsent: string;
-      totalLate: string;
-    };
-    examsSection: {
-      title: string;
-      examName: string;
-      examDate: string;
-      subject: string;
-      marks: string;
-      maxMarks: string;
-      percentage: string;
-      grade: string;
-      rank: string;
-      result: string;
-      pass: string;
-      fail: string;
-      absent: string;
-      noRecords: string;
-      totalExams: string;
-      averageScore: string;
-    };
-    feesSection: {
-      title: string;
-      feeType: string;
-      amount: string;
-      dueDate: string;
-      paidAmount: string;
-      paymentDate: string;
-      status: string;
-      balance: string;
-      noRecords: string;
-      totalAssigned: string;
-      totalPaid: string;
-      totalOutstanding: string;
-    };
-    librarySection: {
-      title: string;
-      bookTitle: string;
-      accessionNumber: string;
-      loanDate: string;
-      dueDate: string;
-      returnDate: string;
-      status: string;
-      fine: string;
-      noRecords: string;
-      totalLoans: string;
-      activeLoans: string;
-      overdueLoans: string;
-    };
-    idCardsSection: {
-      title: string;
-      cardNumber: string;
-      template: string;
-      academicYear: string;
-      class: string;
-      issueDate: string;
-      expiryDate: string;
-      status: string;
-      printed: string;
-      feePaid: string;
-      noRecords: string;
-    };
-    coursesSection: {
-      title: string;
-      courseName: string;
-      registrationDate: string;
-      completionDate: string;
-      status: string;
-      grade: string;
-      certificateIssued: string;
-      noRecords: string;
-      totalEnrolled: string;
-      totalCompleted: string;
-    };
-    graduationsSection: {
-      title: string;
-      batchName: string;
-      graduationDate: string;
-      finalResult: string;
-      certificateNumber: string;
-      noRecords: string;
-    };
-    educationalHistorySection: {
-      title: string;
-      institution: string;
-      gradeLevel: string;
-      period: string;
-      achievements: string;
-      notes: string;
-      noRecords: string;
-    };
-    disciplineSection: {
-      title: string;
-      incidentDate: string;
-      incidentType: string;
-      severity: string;
-      actionTaken: string;
-      status: string;
-      resolved: string;
-      pending: string;
-      noRecords: string;
-      totalIncidents: string;
-    };
-    // Charts
-    chartsView: {
-      attendanceTrend: string;
-      academicPerformance: string;
-      feeTimeline: string;
-      noDataAvailable: string;
-    };
-    // Export
-    export: {
-      pdf: string;
-      excel: string;
-      generating: string;
-      success: string;
-      failed: string;
-      noSchoolSelected: string;
-    };
-  };
-
-  // Admissions
-  admissions: {
-    title: string;
-    subtitle: string;
-    add: string;
-    list: string;
-    listDescription: string;
-    school: string;
-    allSchools: string;
-    status: string;
-    allStatus: string;
-    pending: string;
-    admitted: string;
-    active: string;
-    inactive: string;
-    suspended: string;
-    withdrawn: string;
-    graduated: string;
-    residency: string;
-    allResidency: string;
-    room: string;
-    class: string;
-    actions: string;
-    totalAdmissions: string;
-    noDataFound: string;
-    admissionNo: string;
-    year: string;
-    boarder: string;
-    filtersTitle: string;
-    reportFilters: string;
-    statusBreakdown: string;
-    schoolBreakdown: string;
-    academicYearBreakdown: string;
-    residencyBreakdown: string;
-    recentAdmissions: string;
-    recentAdmissionsSubtitle: string;
-    records: string;
-    admissionDetails: string;
-    schoolClass: string;
-    guardian: string;
-    guardianPhone: string;
-    contact: string;
-    callGuardian: string;
-    cardNumber: string;
-    fromDate: string;
-    toDate: string;
-    resetFilters: string;
-    boarderOnly: string;
-    boarderOnlyHint: string;
-    invalidDateRangeTitle: string;
-    invalidDateRangeDescription: string;
-    reportTitle: string;
-    reportSubtitle: string;
-    // Dialog
-    admitStudentFromRegistration: string;
-    updateAdmission: string;
-    admitStudent: string;
-    dialogDescription: string;
-    studentFromRegistration: string;
-    chooseStudent: string;
-    studentRequired: string;
-    selectSchool: string;
-    academicYear: string;
-    selectAcademicYear: string;
-    classSection: string;
-    selectClassSection: string;
-    residencyType: string;
-    selectResidency: string;
-    roomDorm: string;
-    assignRoom: string;
-    admissionYear: string;
-    admissionDate: string;
-    enrollmentStatus: string;
-    enrollmentType: string;
-    enrollmentTypePlaceholder: string;
-    shift: string;
-    shiftPlaceholder: string;
-    feeStatus: string;
-    feeStatusPlaceholder: string;
-    boarderYes: string;
-    boarderNo: string;
-    placementNotes: string;
-    placementNotesPlaceholder: string;
-    totalAdmissionsLabel: string;
-    acrossAllResidencyTypes: string;
-    activeStudents: string;
-    currentlyStudying: string;
-    pendingAdmitted: string;
-    awaitingActivation: string;
-    boardersLabel: string;
-    studentsWithAccommodation: string;
-    removeAdmission: string;
-    removeAdmissionDescription: string;
-    admissionDateTooLong: string;
-    enrollmentTypeTooLong: string;
-    shiftTooLong: string;
-    feeStatusTooLong: string;
-    admissionYearMaxLength: string;
-    placementNotesMaxLength: string;
-    limitReached: string;
-    academicInfo: string;
-    additionalInfo: string;
-    admissionNumber: string;
-    basicInfo: string;
-    bulkDeactivate: string;
-    bulkDeactivateDescription: string;
-    bulkDeactivateTitle: string;
-    deactivate: string;
-    exportFailed: string;
-    noClassesAssignedToYear: string;
-    noClassesForYear: string;
-    noDataToExport: string;
-    noRoomsFound: string;
-    noStudentsFound: string;
-    reportExported: string;
-    residencyInfo: string;
-    schoolRequiredForExport: string;
-    searchRoom: string;
-    searchStudent: string;
-    section: string;
-    selectAcademicYearFirst: string;
-    selectAcademicYearToSeeClasses: string;
-    student: string;
-  };
-
-  // Forms and validation
-  forms: {
-    required: string;
-    invalidEmail: string;
-    invalidPhone: string;
-    invalidCnic: string;
-    passwordMismatch: string;
-    minLength: string;
-    maxLength: string;
-  };
-
-  // Settings
-  settings: {
-    buildingsManagement: string;
-    roomsManagement: string;
-    buildingName: string;
-    roomNumber: string;
-    building: string;
-    staff: string;
-    warden: string;
-    noStaffAssigned: string;
-    addBuilding: string;
-    editBuilding: string;
-    addRoom: string;
-    editRoom: string;
-    buildingCreated: string;
-    buildingUpdated: string;
-    buildingDeleted: string;
-    roomCreated: string;
-    roomUpdated: string;
-    roomDeleted: string;
-    buildings: {
-      title: string;
-      management: string;
-      addBuilding: string;
-      editBuilding: string;
-      buildingName: string;
-      school: string;
-      rooms: string;
-      room: string;
-      roomsCount: string;
-      createdAt: string;
-      searchPlaceholder: string;
-      noBuildingsFound: string;
-      noBuildingsMessage: string;
-      selectSchool: string;
-      enterBuildingName: string;
-      buildingNameRequired: string;
-      schoolRequired: string;
-      deleteConfirm: string;
-      exportExcel: string;
-      exportPdf: string;
-      loadingBuildings: string;
-      update: string;
-      create: string;
-      unknownSchool: string;
-      reportTitle: string;
-      reportBuildingName: string;
-      reportSchoolName: string;
-      reportOrganization: string;
-      reportCreatedAt: string;
-      exportErrorNoSchool: string;
-      exportErrorNoBuildings: string;
-      na: string;
-      deleteConfirmRooms: string;
-      exportSuccessPdf: string;
-      exportSuccessExcel: string;
-      exportErrorPdf: string;
-      exportErrorExcel: string;
-      reportRoomsCount: string;
-    };
-    rooms: {
-      title: string;
-      management: string;
-      addRoom: string;
-      editRoom: string;
-      roomNumber: string;
-      building: string;
-      staffWarden: string;
-      staffWardenOptional: string;
-      selectStaff: string;
-      selectBuilding: string;
-      noStaffAssigned: string;
-      searchPlaceholder: string;
-      noRoomsFound: string;
-      noRoomsMessage: string;
-      roomNumberRequired: string;
-      buildingRequired: string;
-      deleteConfirm: string;
-      loadingRooms: string;
-      update: string;
-      create: string;
-      createdAt: string;
-      na: string;
-      deleteConfirmRooms: string;
-      exportErrorExcel: string;
-      exportErrorNoRooms: string;
-      exportErrorNoSchool: string;
-      exportErrorPdf: string;
-      exportSuccessExcel: string;
-      exportSuccessPdf: string;
-      reportTitle: string;
-    };
-    userSettings: {
-      title: string;
-      description: string;
-      preferences: string;
-      security: string;
-      changePassword: string;
-      changePasswordDescription: string;
-    };
-  };
-
-  // Academic Settings
-  academic: {
-    residencyTypes: {
-      title: string;
-      management: string;
-      addResidencyType: string;
-      editResidencyType: string;
-      deleteResidencyType: string;
-      name: string;
-      code: string;
-      description: string;
-      isActive: string;
-      active: string;
-      inactive: string;
-      searchPlaceholder: string;
-      noResidencyTypesFound: string;
-      noResidencyTypesMessage: string;
-      residencyTypeCreated: string;
-      residencyTypeUpdated: string;
-      residencyTypeDeleted: string;
-      deleteConfirm: string;
-      nameRequired: string;
-      codeRequired: string;
-      codeMaxLength: string;
-      nameMaxLength: string;
-      codeExists: string;
-      globalType: string;
-      organizationType: string;
-      cannotDeleteGlobal: string;
-    };
-    academicYears: {
-      title: string;
-      management: string;
-      addAcademicYear: string;
-      editAcademicYear: string;
-      deleteAcademicYear: string;
-      name: string;
-      startDate: string;
-      endDate: string;
-      description: string;
-      status: string;
-      isCurrent: string;
-      current: string;
-      setAsCurrent: string;
-      active: string;
-      archived: string;
-      planned: string;
-      searchPlaceholder: string;
-      noAcademicYearsFound: string;
-      noAcademicYearsMessage: string;
-      academicYearCreated: string;
-      academicYearUpdated: string;
-      academicYearDeleted: string;
-      academicYearSetAsCurrent: string;
-      deleteConfirm: string;
-      nameRequired: string;
-      startDateRequired: string;
-      endDateRequired: string;
-      nameMaxLength: string;
-      dateRangeError: string;
-      nameExists: string;
-      cannotDeleteCurrent: string;
-      globalType: string;
-      organizationType: string;
-      cannotDeleteGlobal: string;
-      academicYear: string;
-    };
-    classes: {
-      title: string;
-      management: string;
-      addClass: string;
-      editClass: string;
-      deleteClass: string;
-      assignToYear: string;
-      copyBetweenYears: string;
-      name: string;
-      code: string;
-      gradeLevel: string;
-      description: string;
-      defaultCapacity: string;
-      capacity: string;
-      isActive: string;
-      active: string;
-      inactive: string;
-      section: string;
-      sectionName: string;
-      teacher: string;
-      room: string;
-      studentCount: string;
-      notes: string;
-      searchPlaceholder: string;
-      noClassesFound: string;
-      noClassesMessage: string;
-      classCreated: string;
-      classUpdated: string;
-      classDeleted: string;
-      classAssigned: string;
-      classInstanceUpdated: string;
-      classRemoved: string;
-      classesCopied: string;
-      deleteConfirm: string;
-      removeConfirm: string;
-      nameRequired: string;
-      codeRequired: string;
-      nameMaxLength: string;
-      codeMaxLength: string;
-      codeExists: string;
-      cannotDeleteInUse: string;
-      cannotRemoveWithStudents: string;
-      selectAcademicYear: string;
-      selectClass: string;
-      selectTeacher: string;
-      selectRoom: string;
-      fromYear: string;
-      toYear: string;
-      selectClasses: string;
-      copyAssignments: string;
-      allSections: string;
-      baseClasses: string;
-      yearClasses: string;
-      copyClasses: string;
-      history: string;
-      viewHistory: string;
-      copyDescription: string;
-      copyInstructions: string;
-      bulkCreateSections: string;
-      createSections: string;
-      defaultTeacher: string;
-      defaultRoom: string;
-      sectionsInput: string;
-      noSections: string;
-      globalType: string;
-      organizationType: string;
-      cannotDeleteGlobal: string;
-      class: string;
-    classes: string;
-    noClasses: string;
-    selectClassFirst: string;
-    };
-    subjects: {
-      title: string;
-      management: string;
-      addSubject: string;
-      editSubject: string;
-      deleteSubject: string;
-      assignToClass: string;
-      copyBetweenYears: string;
-      name: string;
-      code: string;
-      gradeLevel: string;
-      description: string;
-      isActive: string;
-      active: string;
-      inactive: string;
-      teacher: string;
-      room: string;
-      weeklyHours: string;
-      notes: string;
-      searchPlaceholder: string;
-      noSubjectsFound: string;
-      noSubjectsMessage: string;
-      subjectCreated: string;
-      subjectUpdated: string;
-      subjectDeleted: string;
-      subjectAssigned: string;
-      subjectAssignmentUpdated: string;
-      subjectRemoved: string;
-      subjectsCopied: string;
-      deleteConfirm: string;
-      removeConfirm: string;
-      nameRequired: string;
-      codeRequired: string;
-      nameMaxLength: string;
-      codeMaxLength: string;
-      codeExists: string;
-      cannotDeleteInUse: string;
-      selectAcademicYear: string;
-      selectClass: string;
-      selectSubject: string;
-      selectSubjects: string;
-      fromYear: string;
-      toYear: string;
-      copyAssignments: string;
-      baseSubjects: string;
-      classSubjects: string;
-      assignSubjects: string;
-      bulkAssignSubjects: string;
-      weeklyHoursPlaceholder: string;
-      noClassSelected: string;
-      noSubjectsAssigned: string;
-      globalType: string;
-      organizationType: string;
-      cannotDeleteGlobal: string;
-    noSubjects: string;
-    subject: string;
-    subjects: string;
-    };
-    scheduleSlots: {
-      title: string;
-      management: string;
-      addSlot: string;
-      editSlot: string;
-      deleteSlot: string;
-      name: string;
-      code: string;
-      startTime: string;
-      endTime: string;
-      days: string;
-      duration: string;
-      academicYear: string;
-      school: string;
-      sortOrder: string;
-      isActive: string;
-      description: string;
-      active: string;
-      inactive: string;
-      global: string;
-      selectAcademicYear: string;
-      selectDaysHint: string;
-      academicYearHint: string;
-      schoolHint: string;
-      allSchools: string;
-      searchPlaceholder: string;
-      noSlotsFound: string;
-      noSlotsMessage: string;
-      slotCreated: string;
-      slotUpdated: string;
-      slotDeleted: string;
-      deleteConfirm: string;
-      nameRequired: string;
-      codeRequired: string;
-      codeMaxLength: string;
-      nameMaxLength: string;
-      timeRequired: string;
-      invalidTimeFormat: string;
-      endTimeAfterStart: string;
-      timeRange: string;
-      organizationWide: string;
-      updateSlot: string;
-      createSlot: string;
-      anyDay: string;
-      allDays: string;
-    };
-    timetable: {
-      days: {
-        title: string;
-        monday: string;
-        tuesday: string;
-        wednesday: string;
-        thursday: string;
-        friday: string;
-        saturday: string;
-        sunday: string;
-      };
-    day: string;
-    period: string;
-    subject: string;
-    time: string;
-    };
-    staffTypes: {
-      title: string;
-      management: string;
-      addStaffType: string;
-      editStaffType: string;
-      name: string;
-      code: string;
-      description: string;
-      displayOrder: string;
-      isActive: string;
-      active: string;
-      inactive: string;
-      searchPlaceholder: string;
-      noStaffTypesFound: string;
-      noStaffTypesMessage: string;
-      deleteConfirm: string;
-      nameRequired: string;
-      codeRequired: string;
-      codeMaxLength: string;
-      nameMaxLength: string;
-      updateStaffType: string;
-      createStaffType: string;
-    };
-    academicInformation: string;
-  };
-
-  // Timetable (UI strings used in generator and dialogs)
-  timetable: {
-    title: string;
-    generate: string;
-    save: string;
-    saveDesc: string;
-    load: string;
-    loadDesc: string;
-    selectClasses: string;
-    selectDays: string;
-    selectPeriods: string;
-    teacherPreferences: string;
-    teacherPreferencesDesc: string;
-    allYear: string;
-    summary: string;
-    unscheduledNotice: string;
-    results: string;
-    teacherView: string;
-    classView: string;
-    teacher: string;
-    class: string;
-    name: string;
-    description: string;
-    periods: string;
-    selectTeacher: string;
-    exportExcel: string;
-    exportPdf: string;
-    print: string;
-    academicYearLabel: string;
-    selectAcademicYear: string;
-    selectAcademicYearHint: string;
-    showOnlyClassesWithAssignments: string;
-    noClassesWithAssignments: string;
-    noClassesFound: string;
-    selectAcademicYearError: string;
-    selectAtLeastOneClass: string;
-    selectAtLeastOnePeriod: string;
-    selectAtLeastOneDay: string;
-    noAssignmentsFound: string;
-    noValidSlotsFound: string;
-    generatingTimetable: string;
-    noAssignmentsToSchedule: string;
-    generatedWithUnscheduled: string;
-    generatedSuccessfully: string;
-    generateFailed: string;
-    noTimetableToExport: string;
-    configureBrandingForPdf: string;
-    noTimetableToPrint: string;
-    noSlotsSelected: string;
-    noEntriesToSave: string;
-    selectAcademicYearBeforeSave: string;
-    entryMovedSuccessfully: string;
-    moveConflictError: string;
-    parseDropTargetError: string;
-    loadedSuccessfully: string;
-    exportedToExcelSuccessfully: string;
-    exportToExcelFailed: string;
-    exportedToPdfSuccessfully: string;
-    exportToPdfFailed: string;
-    current: string;
-    loadError: string;
-    loadingTimetables: string;
-    noSavedTimetables: string;
-    entries: string;
-    saveValidationError: string;
-    saveFailed: string;
-    dragToMove: string;
-  };
-
-  // Assets Management
-  assets: {
-    title: string;
-    subtitle: string;
-    management: string;
-    createAsset: string;
-    updateAsset: string;
-    deleteAsset: string;
-    name: string;
-    nameRequired: string;
-    assetTag: string;
-    assetTagRequired: string;
-    status: string;
-    category: string;
-    serialNumber: string;
-    purchasePrice: string;
-    purchaseDate: string;
-    warrantyExpiry: string;
-    vendor: string;
-    location: string;
-    description: string;
-    notes: string;
-    available: string;
-    assigned: string;
-    maintenance: string;
-    retired: string;
-    lost: string;
-    disposed: string;
-    active: string;
-    inactive: string;
-    searchPlaceholder: string;
-    noAssetsFound: string;
-    noAssetsMessage: string;
-    assetCreated: string;
-    assetUpdated: string;
-    assetDeleted: string;
-    deleteConfirm: string;
-    assignAsset: string;
-    assignedTo: string;
-    assignedToType: string;
-    assignedToStaff: string;
-    assignedToStudent: string;
-    assignmentDate: string;
-    returnDate: string;
-    assignmentNotes: string;
-    assetAssigned: string;
-    assetReturned: string;
-    maintenanceLog: string;
-    logMaintenance: string;
-    maintenanceType: string;
-    maintenanceDate: string;
-    maintenanceCost: string;
-    maintenanceNotes: string;
-    performedBy: string;
-    maintenanceLogged: string;
-    history: string;
-    assetHistory: string;
-    assignments: string;
-    maintenanceRecords: string;
-    value: string;
-    copies: string;
-    printLabel: string;
-    printPreview: string;
-    failedToCreatePreview: string;
-    failedToPrintLabel: string;
-    failedToLoadPreview: string;
-    noCategoriesFound: string;
-    noCategoriesMessage: string;
-    searchCategories: string;
-    categoryName: string;
-    categoryCode: string;
-    categoryDescription: string;
-    reports: string;
-    assetReports: string;
-    updateMaintenance: string;
-    categories: string;
-    assetsByCategory: string;
-    assetsByFinanceAccount: string;
-    assignedAssets: string;
-    categoryDistribution: string;
-    dashboard: string;
-    dashboardDescription: string;
-    inMaintenance: string;
-    items: string;
-    linkedToAccounts: string;
-    noAssignments: string;
-    recentAssignments: string;
-    requiresAttention: string;
-    statusBreakdown: string;
-    totalAssets: string;
-    totalAssetsDescription: string;
-    totalValue: string;
-    viewAll: string;
-    viewAssets: string;
-    viewAssignments: string;
-    viewCategories: string;
-  };
-
-  // Short-term Courses
-  courses: {
-    title: string;
-    subtitle: string;
-    management: string;
-    createCourse: string;
-    updateCourse: string;
-    editCourse: string;
-    deleteCourse: string;
-    courseName: string;
-    courseNameRequired: string;
-    description: string;
-    instructorName: string;
-    location: string;
-    startDate: string;
-    endDate: string;
-    durationDays: string;
-    maxStudents: string;
-    feeAmount: string;
-    status: string;
-    draft: string;
-    open: string;
-    closed: string;
-    completed: string;
-    selectStatus: string;
-    updateCourseButton: string;
-    createCourseButton: string;
-    fillDetails: string;
-    updateDetails: string;
-    courseCreated: string;
-    courseUpdated: string;
-    courseDeleted: string;
-    deleteConfirm: string;
-    courseDashboard: string;
-    courseStudents: string;
-    courseAttendance: string;
-    courseDocuments: string;
-    courseCertificates: string;
-    courseReports: string;
-    enrollStudent: string;
-    enrollFromMain: string;
-    selectCourse: string;
-    selectCourseToEnroll: string;
-    noOpenCourses: string;
-    noOpenCoursesMessage: string;
-    studentEnrolled: string;
-    studentUnenrolled: string;
-    documentTypes: {
-      syllabus: string;
-      material: string;
-      assignment: string;
-      certificate: string;
-      attendance: string;
-      grade: string;
-      receipt: string;
-      other: string;
-    };
-    allCourses: string;
-    allTypes: string;
-    searchDocuments: string;
-    unknownCourse: string;
-    uploadDocument: string;
-    documentTitle: string;
-    documentType: string;
-    documentDescription: string;
-    selectFile: string;
-    documentUploaded: string;
-    documentDeleted: string;
-    deleteDocumentConfirm: string;
-    downloadDocument: string;
-    viewDocument: string;
-    noDocuments: string;
-    studentDetails: string;
-    studentInformation: string;
-    enrollmentDate: string;
-    feePaid: string;
-    attendanceRecords: string;
-    generateCertificate: string;
-    certificateGenerated: string;
-    reports: string;
-    courseReportsDescription: string;
-    uploadDocumentsToGetStarted: string;
-    deleteDocument: string;
-    studentRoster: string;
-    reportType: string;
-    enrollment: string;
-    completion: string;
-    student: string;
-    course: string;
-    registration: string;
-    completionDate: string;
-    attendanceRate: string;
-    noStudentsFound: string;
-    dropped: string;
-    certified: string;
-    markCompleted: string;
-    markDropped: string;
-    issueCertificate: string;
-    copyToMain: string;
-    csv: string;
-    pdf: string;
-    allCoursesReport: string;
-    filterByCourseStatus: string;
-    nameOrAdmission: string;
-    errorLoadingStudents: string;
-    retry: string;
-    noCourseStudentsFound: string;
-    noStudentsMatchFilters: string;
-    assignToNewCourse: string;
-    manageEnrollments: string;
-    fatherName: string;
-    courseCertificatesDescription: string;
-    totalCertificates: string;
-    issuedCertificates: string;
-    filterByCourseOrSearch: string;
-    searchPlaceholderCertificates: string;
-    noCertificatesIssued: string;
-    noCertificatesFound: string;
-    certificateNumber: string;
-    issuedDate: string;
-    previewCertificate: string;
-    downloadPdf: string;
-    studentName: string;
-    regDate: string;
-    failed: string;
-    size: string;
-    uploaded: string;
-    document: string;
-    courseList: string;
-    totalStudents: string;
-    closeCourse: string;
-    reopenCourse: string;
-    allStatuses: string;
-    startFrom: string;
-    startTo: string;
-    clearFilters: string;
-    dates: string;
-    noCoursesFound: string;
-    enrolled: string;
-    certificates: string;
-    coursePeriod: string;
-    loadingStudents: string;
-    noStudentsEnrolled: string;
-    noStudentsEnrolledMessage: string;
-    father: string;
-    guardian: string;
-    admissionNo: string;
-    registered: string;
-    completedLabel: string;
-    grade: string;
-    feePayment: string;
-    paid: string;
-    paidOn: string;
-    days: string;
-    active: string;
-    addStudent: string;
-    all: string;
-    completionRate: string;
-    currentlyEnrolled: string;
-    delete: string;
-    documents: string;
-    dropRate: string;
-    edit: string;
-    manageDocuments: string;
-    sessions: string;
-    totalCourses: string;
-    viewDetails: string;
-    viewManageStudents: string;
-    viewStudents: string;
-  };
-
-  // Hostel Management
-  hostel: {
-    title: string;
-    subtitle: string;
-    management: string;
-    room: string;
-    building: string;
-    warden: string;
-    occupancy: string;
-    students: string;
-    unassigned: string;
-    notAssigned: string;
-    student: string;
-    roomNumber: string;
-    buildingName: string;
-    staffName: string;
-    reports: string;
-    hostelReports: string;
-    hostelReporting: string;
-    buildingReport: string;
-    wardenCoverage: string;
-    unassignedBoarders: string;
-    totalRooms: string;
-    occupiedRooms: string;
-    boardersAssigned: string;
-    wardensCovering: string;
-    wardenName: string;
-    buildings: string;
-    rooms: string;
-    studentsCount: string;
-    noStudentsAssigned: string;
-    filterByBuilding: string;
-    searchRoomsPlaceholder: string;
-    exportOccupancyCsv: string;
-    studentPlural: string;
-    // Hostel Reports Page
-    preparingReportData: string;
-    loadingHostelReports: string;
-    monitorUtilization: string;
-    exportBuildingReport: string;
-    boarders: string;
-    assignedToRooms: string;
-    waitingForRoomPlacement: string;
-    buildingsTracked: string;
-    acrossRooms: string;
-    wardensWithAssignments: string;
-    roomsCurrentlySupervised: string;
-    buildingUtilization: string;
-    buildingUtilizationTab: string;
-    wardenCoverageTab: string;
-    roomAndBuildings: string;
-    roomAndBuildingsTab: string;
-    assignedBoarders: string;
-    assignedBoardersTab: string;
-    unassignedTab: string;
-    buildingUtilizationDescription: string;
-    buildingUtilizationSubtitle: string;
-    buildingsCount: string;
-    export: string;
-    buildingColumn: string;
-    roomsColumn: string;
-    occupiedColumn: string;
-    boardersColumn: string;
-    roomsWithWardens: string;
-    utilizationColumn: string;
-    noBuildingData: string;
-    occupied: string;
-    wardenCoverageDescription: string;
-    wardenCoverageSubtitle: string;
-    wardensCount: string;
-    buildingsColumn: string;
-    coverageColumn: string;
-    noWardensAssigned: string;
-    studentsLabel: string;
-    roomAndBuildingsTitle: string;
-    roomAndBuildingsDescription: string;
-    noBuildingsAvailable: string;
-    boardersLabel: string;
-    occupiedStatus: string;
-    roomLabel: string;
-    assignedBoardersTitle: string;
-    assignedBoardersDescription: string;
-    searchByNameAdmission: string;
-    allBuildings: string;
-    allRooms: string;
-    admissionNumberColumn: string;
-    admissionYearColumn: string;
-    noBoardersAssignedYet: string;
-    noBoardersMatchingSearch: string;
-    showingBoarders: string;
-    perPage10: string;
-    perPage25: string;
-    perPage50: string;
-    perPage100: string;
-    unassignedBoardersTitle: string;
-    unassignedBoardersDescription: string;
-    searchByNameAdmissionClass: string;
-    classColumn: string;
-    residencyTypeColumn: string;
-    allBoardersPlaced: string;
-    // Hostel Management Page
-    loadingHostelData: string;
-    loadingHostelOccupancy: string;
-    monitorOccupancyAssignments: string;
-    roomsOccupied: string;
-    totalRoomsLabel: string;
-    studentsInHostel: string;
-    boardersWaitingForRooms: string;
-    buildingsLabel: string;
-    acrossHostelNetwork: string;
-    wardenCoverageLabel: string;
-    roomsWithAssignedWardens: string;
-    roomOccupancy: string;
-    trackStudentsPerRoom: string;
-    allBuildingsOption: string;
-    reports: {
-      admissionNumberColumn: string;
-      admissionYearColumn: string;
-      assignedBoarders: string;
-      assignedBoardersDescription: string;
-      assignedBoardersTitle: string;
-      boardersAssigned: string;
-      boardersColumn: string;
-      buildingColumn: string;
-      buildingUtilization: string;
-      buildingUtilizationDescription: string;
-      buildings: string;
-      buildingsColumn: string;
-      classColumn: string;
-      hostelReporting: string;
-      loadingHostelReports: string;
-      monitorUtilization: string;
-      occupiedColumn: string;
-      occupiedRooms: string;
-      preparingReportData: string;
-      residencyTypeColumn: string;
-      roomAndBuildingsDescription: string;
-      roomAndBuildingsTitle: string;
-      roomLabel: string;
-      rooms: string;
-      roomsColumn: string;
-      roomsWithWardens: string;
-      student: string;
-      students: string;
-      studentsLabel: string;
-      unassignedBoarders: string;
-      unassignedBoardersDescription: string;
-      unassignedBoardersTitle: string;
-      utilizationColumn: string;
-      wardenCoverage: string;
-      wardenCoverageDescription: string;
-      wardenName: string;
-    };
-  };
-
-  // Leave Management
-  leave: {
-    title: string;
-    subtitle: string;
-    management: string;
-    createRequest: string;
-    updateRequest: string;
-    deleteRequest: string;
-    student: string;
-    studentRequired: string;
-    startDate: string;
-    startDateRequired: string;
-    endDate: string;
-    endDateRequired: string;
-    reason: string;
-    reasonType: string;
-    reasonDescription: string;
-    status: string;
-    approved: string;
-    pending: string;
-    rejected: string;
-    cancelled: string;
-    sick: string;
-    gettingOutside: string;
-    familyEmergency: string;
-    unknown: string;
-    requestCreated: string;
-    requestUpdated: string;
-    requestDeleted: string;
-    deleteConfirm: string;
-    requiredFields: string;
-    reports: string;
-    leaveReports: string;
-    filters: string;
-    resetFilters: string;
-    dateFrom: string;
-    dateTo: string;
-    allStatus: string;
-    allStudents: string;
-    allClasses: string;
-    allSchools: string;
-    leaveGovernance: string;
-    qrReadySlips: string;
-    currentMonth: string;
-    approvedThisYear: string;
-    newRequest: string;
-    history: string;
-    createRequestDescription: string;
-    fastSearchScan: string;
-    scanCardPlaceholder: string;
-    scanCardHint: string;
-    selectClassPlaceholder: string;
-    searchClassesPlaceholder: string;
-    noClassesFound: string;
-    loadingAcademicYear: string;
-    showingClassesFor: string;
-    selectStudentPlaceholder: string;
-    selectClassFirst: string;
-    searchStudentPlaceholder: string;
-    noStudentsInClass: string;
-    selectClassFirstMessage: string;
-    selected: string;
-    leaveType: string;
-    typePlaceholder: string;
-    fullDay: string;
-    partialDay: string;
-    timeBound: string;
-    leaveDuration: string;
-    oneDay: string;
-    twoDays: string;
-    threeDays: string;
-    oneWeek: string;
-    twoWeeks: string;
-    oneMonth: string;
-    startTime: string;
-    endTime: string;
-    reasonPlaceholder: string;
-    approvalNote: string;
-    approvalNotePlaceholder: string;
-    clearForm: string;
-    creating: string;
-    leaveHistory: string;
-    filterDescription: string;
-    month: string;
-    year: string;
-    pageSize: string;
-    dates: string;
-    loadingLeaveRequests: string;
-    noLeaveRequestsYet: string;
-    pageOf: string;
-    prev: string;
-    next: string;
-    studentLeaveHistory: string;
-    viewLeaveTrend: string;
-    totalLeaves: string;
-    monthlyVolume: string;
-    noHistoryYet: string;
-    allLeaves: string;
-    loadingHistory: string;
-    noLeaveHistoryFound: string;
-    scanToVerify: string;
-    leaveRequest: string;
-    code: string;
-    datesLabel: string;
-    academicYearNotLoaded: string;
-    studentNotFound: string;
-    studentFound: string;
-    classNotAvailable: string;
-    studentNotEnrolled: string;
-    couldNotDetermineClass: string;
-    failedToSearchStudent: string;
-    medicalAppointment: string;
-    personal: string;
-    familyEvent: string;
-    travel: string;
-    religious: string;
-    // Reports page
-    reportsTitle: string;
-    reportsSubtitle: string;
-    totalRequests: string;
-    reportFilters: string;
-    filterDescription: string;
-    showFilters: string;
-    hideFilters: string;
-    allStatuses: string;
-    anyStudent: string;
-    anyClass: string;
-    anySchool: string;
-    rowsPerPage: string;
-    today: string;
-    thisMonth: string;
-    exportCsv: string;
-    allRequests: string;
-    dailyBreakdown: string;
-    allLeaveRequests: string;
-    completeListing: string;
-    entries: string;
-    export: string;
-    pendingRequests: string;
-    awaitingApproval: string;
-    noPendingRequests: string;
-    approvedRequests: string;
-    approvedDescription: string;
-    noApprovedRequests: string;
-    rejectedRequests: string;
-    rejectedDescription: string;
-    noRejectedRequests: string;
-    dailyBreakdownTitle: string;
-    dailyBreakdownDescription: string;
-    leaves: string;
-    noDailyRecords: string;
-    noRequestsToExport: string;
-    reportExported: string;
-    noRequestsMatchFilters: string;
-    loading: string;
-    class: string;
-    school: string;
-    from: string;
-    to: string;
-    approvalRate: string;
-    generating: string;
-    generatingReport: string;
-    latestLeaveRequests: string;
-    noRequests: string;
-    recentRequests: string;
-    reportFailed: string;
-    reportGenerationFailed: string;
-    reportInProgress: string;
-    reportReady: string;
-    reportStatus: string;
-    requests: string;
-    schoolRequired: string;
-  };
-
-  // Staff Management
-  staff: {
-    title: string;
-    subtitle: string;
-    management: string;
-    addStaff: string;
-    editStaff: string;
-    deleteStaff: string;
-    employeeId: string;
-    employeeIdRequired: string;
-    employeeIdMaxLength: string;
-    staffType: string;
-    staffTypeRequired: string;
-    firstName: string;
-    firstNameRequired: string;
-    firstNameMaxLength: string;
-    fatherName: string;
-    fatherNameRequired: string;
-    fatherNameMaxLength: string;
-    grandfatherName: string;
-    grandfatherNameMaxLength: string;
-    tazkiraNumber: string;
-    tazkiraNumberMaxLength: string;
-    birthYear: string;
-    birthYearMaxLength: string;
-    phoneNumber: string;
-    phoneNumberMaxLength: string;
-    email: string;
-    invalidEmail: string;
-    homeAddress: string;
-    homeAddressMaxLength: string;
-    originProvince: string;
-    provinceMaxLength: string;
-    originDistrict: string;
-    districtMaxLength: string;
-    originVillage: string;
-    villageMaxLength: string;
-    currentProvince: string;
-    currentDistrict: string;
-    currentVillage: string;
-    religiousEducation: string;
-    religiousEducationMaxLength: string;
-    religiousUniversity: string;
-    religiousUniversityMaxLength: string;
-    religiousGraduationYear: string;
-    religiousGraduationYearMaxLength: string;
-    religiousDepartment: string;
-    religiousDepartmentMaxLength: string;
-    modernEducation: string;
-    modernEducationMaxLength: string;
-    modernSchoolUniversity: string;
-    modernSchoolUniversityMaxLength: string;
-    modernGraduationYear: string;
-    modernGraduationYearMaxLength: string;
-    searchPlaceholder: string;
-    noStaffFound: string;
-    noStaffMessage: string;
-    staffCreated: string;
-    staffUpdated: string;
-    staffDeleted: string;
-    deleteConfirm: string;
-    reports: string;
-    staffReports: string;
-    // UI Labels
-    photo: string;
-    name: string;
-    id: string;
-    type: string;
-    status: string;
-    school: string;
-    contact: string;
-    actions: string;
-    // Stats
-    totalStaff: string;
-    active: string;
-    onLeave: string;
-    teachers: string;
-    admins: string;
-    // Form Steps
-    basicInformation: string;
-    basicInformationDescription: string;
-    personalDetails: string;
-    personalDetailsDescription: string;
-    contactLocation: string;
-    contactLocationDescription: string;
-    education: string;
-    educationDescription: string;
-    employment: string;
-    employmentDescription: string;
-    // Form Labels
-    createEmployee: string;
-    createEmployeeDescription: string;
-    editEmployee: string;
-    editEmployeeDescription: string;
-    employeeCode: string;
-    employeeCodePlaceholder: string;
-    employeeCodeHelper: string;
-    selectStaffType: string;
-    selectStaffTypePlaceholder: string;
-    selectSchool: string;
-    selectSchoolPlaceholder: string;
-    noSchool: string;
-    employmentStatus: string;
-    // Personal Details
-    civilId: string;
-    civilIdHelper: string;
-    dateOfBirth: string;
-    dateOfBirthHelper: string;
-    // Location
-    originLocation: string;
-    currentLocation: string;
-    province: string;
-    district: string;
-    village: string;
-    // Education
-    religiousEducationSection: string;
-    modernEducationSection: string;
-    educationLevel: string;
-    universityInstitution: string;
-    graduationYear: string;
-    department: string;
-    // Employment
-    position: string;
-    teachingSection: string;
-    duty: string;
-    salary: string;
-    notes: string;
-    notesPlaceholder: string;
-    // Buttons
-    previous: string;
-    next: string;
-    creating: string;
-    updating: string;
-    updateStaff: string;
-    // Filters
-    allStatus: string;
-    allTypes: string;
-    allSchools: string;
-    clear: string;
-    // Messages
-    loadingStaff: string;
-    noStaffMembersFound: string;
-    noStaffMembersAvailable: string;
-    noPermissionToView: string;
-    pleaseWait: string;
-    pleaseSelectStaffType: string;
-    selectedSchoolNotBelong: string;
-    failedToCreate: string;
-    deleteConfirmMessage: string;
-    deleteConfirmDescription: string;
-    // Status values
-    statusActive: string;
-    statusInactive: string;
-    statusOnLeave: string;
-    statusTerminated: string;
-    statusSuspended: string;
-    // Registration Report
-    registrationReport: string;
-    // Report Page
-    staffRegistrationReport: string;
-    staffRegistrationReportDescription: string;
-    filters: string;
-    searchByNamePlaceholder: string;
-    allStaffTypes: string;
-    staffCode: string;
-    viewDetails: string;
-    // Report Sections
-    personalInformation: string;
-    contactInformation: string;
-    locationInformation: string;
-    educationInformation: string;
-    employmentInformation: string;
-    professionalInformation: string;
-    // Report Labels
-    code: string;
-    fullName: string;
-    birthDate: string;
-    // Export Messages
-    schoolRequiredForExport: string;
-    reportExportedAs: string;
-    failedToExport: string;
-    // Additional
-    additionalInformation: string;
-    acrossSelected: string;
-    activeStaff: string;
-    adminCount: string;
-    list: string;
-    listDescription: string;
-    modernDepartment: string;
-    modernInstitution: string;
-    noDataToExport: string;
-    onLeaveStaff: string;
-    organization: string;
-    religiousInstitution: string;
-    reportTitle: string;
-    teacherCount: string;
-  };
-
-  // Student Report
-  studentReport: {
-    title: string;
-    subtitle: string;
-    filters: string;
-    searchPlaceholder: string;
-    allSchools: string;
-    allStatus: string;
-    allGenders: string;
-    applied: string;
-    admitted: string;
-    active: string;
-    withdrawn: string;
-    male: string;
-    female: string;
-    students: string;
-    loadingStudents: string;
-    noStudentsFound: string;
-    studentId: string;
-    fullName: string;
-    originLocation: string;
-    birthYear: string;
-    status: string;
-    schoolRequired: string;
-    reportExported: string;
-    exportFailed: string;
-    // Detail Sheet Sections
-    personalInformation: string;
-    guardianInformation: string;
-    academicInformation: string;
-    locationInformation: string;
-    additionalInformation: string;
-    // Detail Sheet Labels
-    fatherName: string;
-    gender: string;
-    age: string;
-    birthDate: string;
-    nationality: string;
-    guardianName: string;
-    relation: string;
-    guardianPhone: string;
-    contactPhone: string;
-    homeAddress: string;
-    school: string;
-    applyingGrade: string;
-    admissionYear: string;
-    admissionFeeStatus: string;
-    previousSchool: string;
-    currentLocation: string;
-    isOrphan: string;
-    yes: string;
-    no: string;
-    disabilityStatus: string;
-    emergencyContact: string;
-    // Detail Sheet Header Labels
-    idLabel: string;
-    admissionLabel: string;
-    cardLabel: string;
-    noDataToExport: string;
-  };
-
-  // Library Management
-  library: {
-    title: string;
-    subtitle: string;
-    management: string;
-    books: string;
-    loans: string;
-    overview: string;
-    addBook: string;
-    editBook: string;
-    deleteBook: string;
-    bookTitle: string;
-    author: string;
-    isbn: string;
-    category: string;
-    volume: string;
-    price: string;
-    defaultLoanDays: string;
-    initialCopies: string;
-    depositAmount: string;
-    availableCopies: string;
-    totalCopies: string;
-    onLoan: string;
-    searchPlaceholder: string;
-    noBooksFound: string;
-    noBooksMessage: string;
-    bookCreated: string;
-    bookUpdated: string;
-    bookDeleted: string;
-    deleteConfirm: string;
-    createLoan: string;
-    returnLoan: string;
-    borrowerType: string;
-    borrowerStudent: string;
-    borrowerStaff: string;
-    loanDate: string;
-    dueDate: string;
-    returnedDate: string;
-    loanCreated: string;
-    loanReturned: string;
-    dueSoon: string;
-    overdue: string;
-    categories: string;
-    libraryCategories: string;
-    addCategory: string;
-    editCategory: string;
-    deleteCategory: string;
-    categoryName: string;
-    categoryNameRequired: string;
-    categoryNameMaxLength: string;
-    categoryCode: string;
-    categoryCodeMaxLength: string;
-    categoryDescription: string;
-    categoryDescriptionMaxLength: string;
-    categoryCreated: string;
-    categoryUpdated: string;
-    categoryDeleted: string;
-    distribution: string;
-    libraryDistribution: string;
-    reports: string;
-    libraryReports: string;
-    // Additional keys for LibraryBooks page
-    bookNumber: string;
-    bookNumberPlaceholder: string;
-    description: string;
-    descriptionPlaceholder: string;
-    selectCategory: string;
-    selectCategoryOptional: string;
-    noCategoriesAvailable: string;
-    inventory: string;
-    addCopy: string;
-    copy: string;
-    copies: string;
-    saveBook: string;
-    editBookTitle: string;
-    addNewBookTitle: string;
-    updateBookInfo: string;
-    addNewBookInfo: string;
-    titleRequired: string;
-    enterBookTitle: string;
-    authorPlaceholder: string;
-    isbnPlaceholder: string;
-    bookNumberPlaceholder2: string;
-    volumePlaceholder: string;
-    pricePlaceholder: string;
-    defaultLoanDaysPlaceholder: string;
-    initialCopiesPlaceholder: string;
-    update: string;
-    create: string;
-    areYouSure: string;
-    deleteBookConfirm: string;
-    cannotUndo: string;
-    deleting: string;
-    viewDetails: string;
-    bookInformation: string;
-    history: string;
-    details: string;
-    totalCopiesLabel: string;
-    availableCopiesLabel: string;
-    defaultLoanDaysLabel: string;
-    loanHistory: string;
-    noLoanHistory: string;
-    borrower: string;
-    returned: string;
-    active: string;
-    // Additional keys for LibraryCategories page
-    manageBookCategories: string;
-    organizeLibrary: string;
-    createCategory: string;
-    updateCategoryInfo: string;
-    addNewCategoryInfo: string;
-    namePlaceholder: string;
-    codePlaceholder: string;
-    displayOrder: string;
-    inactive: string;
-    status: string;
-    order: string;
-    noCategoriesFound: string;
-    noCategoriesMessage: string;
-    searchCategoriesPlaceholder: string;
-    totalCategories: string;
-    name: string;
-    code: string;
-    deleteCategoryDescription: string;
-    totalCategoriesLabel: string;
-    categoryDescriptionPlaceholder: string;
-    searchCategories: string;
-    deleteCategoryConfirm: string;
-    categoryInUse: string;
-    // Additional keys for LibraryDistribution page
-    manageLoans: string;
-    assignBook: string;
-    activeLoans: string;
-    activeLoansCount: string;
-    noActiveLoans: string;
-    searchByBook: string;
-    searchByBookPlaceholder: string;
-    allCategories: string;
-    allBorrowers: string;
-    studentsOnly: string;
-    staffOnly: string;
-    reset: string;
-    book: string;
-    copyCode: string;
-    borrowerName: string;
-    deposit: string;
-    return: string;
-    assignBookTitle: string;
-    assignBookDescription: string;
-    bookRequired: string;
-    selectBook: string;
-    searchBookPlaceholder: string;
-    noBooksAvailable: string;
-    availableCopy: string;
-    availableCopiesCount: string;
-    ofTotal: string;
-    noAvailableCopies: string;
-    borrowerRequired: string;
-    selectBorrower: string;
-    selectStudent: string;
-    selectStaff: string;
-    searchStudents: string;
-    searchStaff: string;
-    noStudentsAvailable: string;
-    noStaffAvailable: string;
-    loanDateRequired: string;
-    confirmReturn: string;
-    returning: string;
-    returnBookTitle: string;
-    returnBookDescription: string;
-    // Additional keys for LibraryReports page
-    analytics: string;
-    totalBooks: string;
-    totalCopiesLabel2: string;
-    availableCopiesLabel2: string;
-    onLoanLabel: string;
-    overdueCount: string;
-    pastDueDate: string;
-    dueSoonCount: string;
-    dueInNext7Days: string;
-    loanHistoryCount: string;
-    inSelectedDateRange: string;
-    booksReport: string;
-    overdueBooks: string;
-    dueSoonBooks: string;
-    mostBorrowed: string;
-    booksReportTitle: string;
-    completeInventory: string;
-    exportCsv: string;
-    fromDate: string;
-    toDate: string;
-    allLoans: string;
-    noOverdueBooks: string;
-    noBooksDueSoon: string;
-    noLoanHistoryAvailable: string;
-    mostFrequentlyBorrowed: string;
-    totalCategories: string;
-    uniqueCategories: string;
-    totalPrice: string;
-    sumOfAllPrices: string;
-    totalValue: string;
-    priceTimesCopies: string;
-    averagePrice: string;
-    perBook: string;
-    booksWithNoCategory: string;
-    showing: string;
-    to: string;
-    of: string;
-    booksLabel: string;
-    perPage: string;
-    noBooksFoundMatching: string;
-    noBooksAvailable2: string;
-    allCategorized: string;
-    allCurrent: string;
-    booksByCategory: string;
-    booksPastDue: string;
-    dashboard: string;
-    dashboardDescription: string;
-    monthlyLoanTrends: string;
-    moreCategories: string;
-    mostBorrowedBooks: string;
-    noOverdue: string;
-    top5Books: string;
-    totalValueDescription: string;
-    uncategorized: string;
-    viewAllBooks: string;
-    viewAllCategories: string;
-    viewFullReport: string;
-    viewReport: string;
-    viewReports: string;
-  };
-
-  // User Management (Admin)
-  userManagement: {
-    title: string;
-    subtitle: string;
-    management: string;
-    addUser: string;
-    editUser: string;
-    deleteUser: string;
-    fullName: string;
-    fullNameRequired: string;
-    fullNameMaxLength: string;
-    fullNamePlaceholder: string;
-    email: string;
-    emailRequired: string;
-    emailPlaceholder: string;
-    invalidEmail: string;
-    password: string;
-    passwordRequired: string;
-    passwordMinLength: string;
-    passwordPlaceholder: string;
-    role: string;
-    roleRequired: string;
-    selectRole: string;
-    defaultSchool: string;
-    selectOne: string;
-    autoSelected: string;
-    selectSchool: string;
-    noDefaultSchool: string;
-    defaultSchoolDescription: string;
-    onlyOneSchoolDescription: string;
-    staffMember: string;
-    staffMemberOptional: string;
-    selectStaffMember: string;
-    noStaffMember: string;
-    staffMemberDescription: string;
-    schoolsAccessAll: string;
-    schoolsAccessAllDescription: string;
-    phone: string;
-    phonePlaceholder: string;
-    searchPlaceholder: string;
-    noUsersFound: string;
-    noUsersMessage: string;
-    userCreated: string;
-    userUpdated: string;
-    userDeleted: string;
-    deleteConfirm: string;
-    deleteConfirmDescription: string;
-    resetPassword: string;
-    resetPasswordConfirm: string;
-    resetPasswordDescription: string;
-    resetting: string;
-    newPassword: string;
-    passwordReset: string;
-    active: string;
-    inactive: string;
-    allRoles: string;
-    allStatus: string;
-    allStatuses: string;
-    status: string;
-    name: string;
-    actions: string;
-    noName: string;
-    noEmail: string;
-    na: string;
-    updateUserInformation: string;
-    createNewUserAccount: string;
-    createUser: string;
-    create: string;
-    update: string;
-    cancel: string;
-    exportCsv: string;
-    totalUsers: string;
-    activeUsers: string;
-    inactiveUsers: string;
-    roles: string;
-    loadingUsers: string;
-  };
-
-  // Certificate Templates
-  certificateTemplates: {
-    title: string;
-    subtitle: string;
-    management: string;
-    createTemplate: string;
-    updateTemplate: string;
-    deleteTemplate: string;
-    templateName: string;
-    templateNameRequired: string;
-    course: string;
-    isDefault: string;
-    layout: string;
-    editLayout: string;
-    preview: string;
-    generateCertificate: string;
-    certificateGenerated: string;
-    templateCreated: string;
-    templateUpdated: string;
-    templateDeleted: string;
-    deleteConfirm: string;
-    setAsDefault: string;
-    defaultTemplate: string;
-    selectTemplate: string;
-    selectTemplatePlaceholder: string;
-    hasBackgroundImage: string;
-    noTemplatesFound: string;
-    certificateNumber: string;
-    description: string;
-    editTemplate: string;
-    createTemplate: string;
-    templateNameRequired: string;
-    templateNamePlaceholder: string;
-    courseOptional: string;
-    selectCourseOptional: string;
-    noneGeneralTemplate: string;
-    assignTemplateToCourse: string;
-    backgroundImage: string;
-    noFileChosen: string;
-    currentImageKept: string;
-    descriptionPlaceholder: string;
-    layoutSettings: string;
-    fontSize: string;
-    fontFamily: string;
-    selectFontFamily: string;
-    fontFamilyHint: string;
-    textColor: string;
-    rtlForPashtoArabic: string;
-    setAsDefault: string;
-    active: string;
-    saving: string;
-    saveTemplate: string;
-    editLayoutTitle: string;
-    templates: string;
-    noTemplatesYet: string;
-    createFirstTemplate: string;
-    background: string;
-    status: string;
-    created: string;
-    default: string;
-    yes: string;
-    none: string;
-    inactive: string;
-    editLayout: string;
-    deleteTemplate: string;
-    deleteTemplateConfirm: string;
-    cancel: string;
-    delete: string;
-
-  // ID Cards
-  idCards: {
-    title: string;
-    templates: string;
-    generateIdCards: string;
-    generateIdCardsDescription: string;
-    selectTemplate: string;
-    selectTemplatePlaceholder: string;
-    selectStudents: string;
-    selectedCount: string;
-    preview: string;
-    frontSide: string;
-    backSide: string;
-    front: string;
-    back: string;
-    previewPlaceholder: string;
-    selectStudentForPreview: string;
-    selectStudentAndTemplate: string;
-    exportAsImages: string;
-    exportAsPdf: string;
-    exportSuccess: string;
-    exportFailed: string;
-    previewFailed: string;
-    downloadSuccess: string;
-    downloadFailed: string;
-    printPreview: string;
-    export: string;
-    // Assignment page
-    assignment: {
-      title: string;
-      subtitle: string;
-      filters: {
-        academicYear: string;
-        academicYearRequired: string;
-        class: string;
-        allClasses: string;
-        enrollmentStatus: string;
-        allStatuses: string;
-        active: string;
-        template: string;
-        allTemplates: string;
-        search: string;
-        searchPlaceholder: string;
-      };
-      studentList: {
-        title: string;
-        selectAll: string;
-        deselectAll: string;
-        noStudentsFound: string;
-        showing: string;
-        of: string;
-        students: string;
-      };
-      assignmentPanel: {
-        title: string;
-        templateSelection: string;
-        selectedStudents: string;
-        cardFee: string;
-        cardFeeOptional: string;
-        bulkAssign: string;
-        assignButton: string;
-        assigning: string;
-      };
-      preview: {
-        title: string;
-        selectStudent: string;
-        side: string;
-        front: string;
-        back: string;
-      };
-      managementTable: {
-        title: string;
-        studentName: string;
-        admissionNumber: string;
-        class: string;
-        template: string;
-        feeStatus: string;
-        printedStatus: string;
-        actions: string;
-        markPrinted: string;
-        markFeePaid: string;
-        edit: string;
-        delete: string;
-        bulkActions: string;
-        markSelectedPrinted: string;
-        markSelectedFeePaid: string;
-        exportSelected: string;
-        noCardsFound: string;
-      };
-      assignTemplate: string;
-      assignToStudents: string;
-      confirmAssign: string;
-      description: string;
-    };
-    // Export page
-    export: {
-      title: string;
-      subtitle: string;
-      filters: {
-        academicYear: string;
-        academicYearRequired: string;
-        class: string;
-        allClasses: string;
-        template: string;
-        allTemplates: string;
-        enrollmentStatus: string;
-        allStatuses: string;
-        active: string;
-        printedStatus: string;
-        all: string;
-        printed: string;
-        unprinted: string;
-        feeStatus: string;
-        paid: string;
-        unpaid: string;
-        dateRange: string;
-        from: string;
-        to: string;
-        search: string;
-        searchPlaceholder: string;
-      };
-      options: {
-        title: string;
-        exportFormat: string;
-        zipPng: string;
-        zipPdf: string;
-        singlePdf: string;
-        cardSides: string;
-        frontOnly: string;
-        backOnly: string;
-        bothSides: string;
-        cardsPerPage: string;
-        quality: string;
-        standard: string;
-        high: string;
-        includeUnprinted: string;
-        includeUnpaid: string;
-        fileNaming: string;
-      };
-      studentSelection: {
-        title: string;
-        selectAll: string;
-        deselectAll: string;
-        selectByClass: string;
-        selectByStatus: string;
-        selectedCount: string;
-        clearSelection: string;
-        noStudentsFound: string;
-      };
-      actions: {
-        exportSelected: string;
-        exportAllFiltered: string;
-        exportIndividual: string;
-        exporting: string;
-      };
-      statistics: {
-        title: string;
-        totalCards: string;
-        printed: string;
-        unprinted: string;
-        feePaid: string;
-        feeUnpaid: string;
-        totalFeeCollected: string;
-        totalFeePending: string;
-      };
-      description: string;
-      exportAll: string;
-      format: string;
-      options: string;
-      sides: string;
-      studentSelection: string;
-    };
-    // Status badges
-    status: {
-      assigned: string;
-      notAssigned: string;
-      printed: string;
-      unprinted: string;
-      feePaid: string;
-      feeUnpaid: string;
-    };
-    accountAndCategoryRequired: string;
-    assign: string;
-    assignedAt: string;
-    assignedCards: string;
-    assignment: string;
-    auto: string;
-    autoBasedOnGlobal: string;
-    backPreview: string;
-    background: string;
-    backgroundBack: string;
-    backgroundFront: string;
-    backgroundNotAvailable: string;
-    both: string;
-    cardNumber: string;
-    clickPreviewToGenerate: string;
-    createFirstTemplate: string;
-    createTemplate: string;
-    createTemplateDescription: string;
-    created: string;
-    currentImageKept: string;
-    default: string;
-    deleteConfirm: string;
-    deleteConfirmation: string;
-    deleteTemplate: string;
-    descriptionPlaceholder: string;
-    editCard: string;
-    editLayout: string;
-    editLayoutDescription: string;
-    editTemplate: string;
-    editTemplateDescription: string;
-    expiryDateDescription: string;
-    expiryDateValue: string;
-    export: string;
-    feeAmount: string;
-    fieldColorDescription: string;
-    fieldFontSettings: string;
-    fieldSettings: string;
-    fieldSpecificFontSettings: string;
-    fieldValue: string;
-    fields: string;
-    fontFamily: string;
-    fontSize: string;
-    frontPreview: string;
-    globalSettings: string;
-    height: string;
-    inactive: string;
-    layoutEditor: string;
-    layoutEditorDescription: string;
-    leaveEmptyToUseGlobal: string;
-    noCards: string;
-    noPreviewAvailable: string;
-    noPrintedCards: string;
-    noTemplates: string;
-    noUnprintedCards: string;
-    none: string;
-    notesDescription: string;
-    notesPlaceholder: string;
-    photoSize: string;
-    printedAt: string;
-    qrCodeSize: string;
-    qrCodeValueSource: string;
-    qrCodeValueSourceDescription: string;
-    rollNumber: string;
-    schoolNameDescription: string;
-    schoolNamePlaceholder: string;
-    schoolNameValue: string;
-    selectExpiryDate: string;
-    selectFont: string;
-    selectPrinted: string;
-    selectQrValueSource: string;
-    selectUnprinted: string;
-    selectUseGlobalFont: string;
-    selectedCards: string;
-    setAsDefault: string;
-    sizeDescription: string;
-    status: string;
-    studentCode: string;
-    studentId: string;
-    templateName: string;
-    templateNamePlaceholder: string;
-    templateNotLoaded: string;
-    textColor: string;
-    useGlobalFont: string;
-    width: string;
-    assignedCards: {
-      description: string;
-      title: string;
-    };
-  };
-
-  // Teacher Subject Assignments
-  teacherSubjectAssignments: {
-    title: string;
-    subtitle: string;
-    createAssignment: string;
-    searchPlaceholder: string;
-    filterByTeacher: string;
-    allTeachers: string;
-    noActiveStaff: string;
-    filterByAcademicYear: string;
-    allAcademicYears: string;
-    clear: string;
-    loadingAssignments: string;
-    noAssignmentsFound: string;
-    noAssignmentsAvailable: string;
-    teacher: string;
-    academicYear: string;
-    class: string;
-    subject: string;
-    scheduleSlots: string;
-    status: string;
-    actions: string;
-    active: string;
-    inactive: string;
-    deleteAssignment: string;
-    deleteConfirm: string;
-    cancel: string;
-    delete: string;
-    createDialogTitle: string;
-    editDialogTitle: string;
-    teacherAndClasses: string;
-    teacherAndClassesDescription: string;
-    teacherRequired: string;
-    selectTeacher: string;
-    loadingStaff: string;
-    errorLoadingStaff: string;
-    noActiveStaffMessage: string;
-    noStaffData: string;
-    academicYearRequired: string;
-    selectAcademicYear: string;
-    schoolOptional: string;
-    allSchools: string;
-    classesRequired: string;
-    noClassesFound: string;
-    scheduleSlotsRequired: string;
-    noScheduleSlotsFound: string;
-    selectSubjects: string;
-    selectSubjectsDescription: string;
-    noSubjectsFound: string;
-    notesOptional: string;
-    notesPlaceholder: string;
-    previous: string;
-    next: string;
-    creating: string;
-    createAssignments: string;
-    updateAssignmentDetails: string;
-    assignmentDetailsReadOnly: string;
-    unknown: string;
-    unknownYear: string;
-    unknownClass: string;
-    unknownSubject: string;
-    updating: string;
-    updateAssignment: string;
-    noPermission: string;
-    pleaseSelectTeacher: string;
-    pleaseSelectAcademicYear: string;
-    pleaseSelectAtLeastOneClass: string;
-    pleaseSelectAtLeastOneScheduleSlot: string;
-    pleaseCompleteStep1: string;
-    organizationIdRequired: string;
-    pleaseSelectAtLeastOneClassAndSlot: string;
-    pleaseSelectAtLeastOneSubject: string;
-    pleaseSelectAtLeastOneSubjectToAssign: string;
-  };
-
-  // Schools Management
-  schools: {
-    title: string;
-    subtitle: string;
-    addSchool: string;
-    searchPlaceholder: string;
-    schoolName: string;
-    arabicName: string;
-    pashtoName: string;
-    email: string;
-    phone: string;
-    status: string;
-    actions: string;
-    active: string;
-    inactive: string;
-    viewDetails: string;
-    edit: string;
-    noSchoolsFound: string;
-    noSchoolsMessage: string;
-    editSchool: string;
-    addNewSchool: string;
-    updateSchoolInfo: string;
-    enterSchoolDetails: string;
-    schoolNameRequired: string;
-    enterSchoolName: string;
-    enterArabicName: string;
-    enterPashtoName: string;
-    address: string;
-    enterSchoolAddress: string;
-    enterPhone: string;
-    enterEmail: string;
-    website: string;
-    enterWebsite: string;
-    primaryColor: string;
-    secondaryColor: string;
-    accentColor: string;
-    fontFamily: string;
-    calendarPreference: string;
-    selectCalendar: string;
-    gregorian: string;
-    hijri: string;
-    solar: string;
-    primaryLogo: string;
-    secondaryLogo: string;
-    ministryLogo: string;
-    primaryLogoUsage: string;
-    secondaryLogoUsage: string;
-    ministryLogoUsage: string;
-    selectUsage: string;
-    header: string;
-    footer: string;
-    both: string;
-    none: string;
-    schoolDetails: string;
-    viewCompleteInfo: string;
-    reportFontSize: string;
-    noSettings: string;
-    close: string;
-    editSchoolButton: string;
-    deleteConfirmTitle: string;
-    deleteConfirmDescription: string;
-    loadingSchools: string;
-    delete: string;
-    cancel: string;
-    logos: string;
-    noLogoUploaded: string;
-    usage: string;
-    reportLogoSettings: string;
-    reportLogoSettingsDesc: string;
-    headerText: string;
-    enterHeaderText: string;
-    headerTextDesc: string;
-    left: string;
-    right: string;
-    maxLogosReached: string;
-    selectFont: string;
-    orEnterCustomFont: string;
-    fontFamilyHint: string;
-    reportFontSizeHint: string;
-    currentLogo: string;
-    multiSchoolFeatureRequired: string;
-    school: string;
-  };
-
-  // Roles Management
-  roles: {
-    title: string;
-    subtitle: string;
-    createRole: string;
-    searchPlaceholder: string;
-    name: string;
-    description: string;
-    organization: string;
-    actions: string;
-    noRolesFound: string;
-    noRolesMessage: string;
-    organizationSpecific: string;
-    global: string;
-    noDescription: string;
-    edit: string;
-    delete: string;
-    totalRoles: string;
-    organizationRoles: string;
-    editRole: string;
-    createRoleDialog: string;
-    updateRoleInfo: string;
-    createNewRole: string;
-    roleNameRequired: string;
-    roleNamePlaceholder: string;
-    roleNameCannotChange: string;
-    descriptionPlaceholder: string;
-    cancel: string;
-    update: string;
-    create: string;
-    deleteRole: string;
-    deleteConfirm: string;
-    rolesAssignedCannotDelete: string;
-    noPermission: string;
-  };
-
-  // Permissions Management
-  permissions: {
-    title: string;
-    subtitle: string;
-    createPermission: string;
-    editMode: string;
-    cancelEdit: string;
-    searchPlaceholder: string;
-    allResources: string;
-    permissionName: string;
-    resource: string;
-    action: string;
-    description: string;
-    roles: string;
-    noDescription: string;
-    noPermissionsFound: string;
-    totalPermissions: string;
-    resources: string;
-    rolesCount: string;
-    createDialogTitle: string;
-    createDialogDescription: string;
-    permissionNamePlaceholder: string;
-    permissionNameFormat: string;
-    resourcePlaceholder: string;
-    actionPlaceholder: string;
-    descriptionPlaceholder: string;
-    creating: string;
-    createPermissionButton: string;
-    managingPermissionsFor: string;
-    viewGlobalAndManage: string;
-    accessDenied: string;
-    noPermissionMessage: string;
-    loadingPermissions: string;
-    permissionRolesUpdated: string;
-    failedToUpdate: string;
-    editRoles: string;
-    save: string;
-    cancel: string;
-    delete: string;
-    deleteConfirm: string;
-    failedToDelete: string;
-    globalBadge: string;
-    orgSpecificBadge: string;
-    fromRole: string;
-    userSpecific: string;
-    actions: string;
-  };
-
-  // Organizations Management
-  organizations: {
-    title: string;
-    subtitle: string;
-    addOrganization: string;
-    searchPlaceholder: string;
-    name: string;
-    slug: string;
-    settings: string;
-    createdAt: string;
-    updatedAt: string;
-    actions: string;
-    noOrganizationsFound: string;
-    noOrganizationsMessage: string;
-    viewDetails: string;
-    edit: string;
-    editOrganization: string;
-    addNewOrganization: string;
-    updateOrganizationInfo: string;
-    enterOrganizationDetails: string;
-    organizationName: string;
-    enterOrganizationName: string;
-    slugPlaceholder: string;
-    slugHint: string;
-    update: string;
-    create: string;
-    organizationDetails: string;
-    viewCompleteInfo: string;
-    id: string;
-    basicInformation: string;
-    statistics: string;
-    users: string;
-    schools: string;
-    students: string;
-    classes: string;
-    staff: string;
-    buildings: string;
-    rooms: string;
-    settingsTitle: string;
-    noSettingsConfigured: string;
-    close: string;
-    editOrganizationButton: string;
-    deleteConfirmTitle: string;
-    deleteConfirmDescription: string;
-    cancel: string;
-    delete: string;
-    loadingOrganizations: string;
-  };
-
-  // User Permissions Management
-  userPermissions: {
-    title: string;
-    subtitle: string;
-    searchPlaceholder: string;
-    filterByRole: string;
-    allRoles: string;
-    name: string;
-    email: string;
-    role: string;
-    status: string;
-    actions: string;
-    active: string;
-    inactive: string;
-    managePermissions: string;
-    noUsersFound: string;
-    noName: string;
-    noEmail: string;
-    user: string;
-    managePermissionsDialogTitle: string;
-    managePermissionsDialogDescription: string;
-    loadingPermissions: string;
-    noPermissionsAvailable: string;
-    loadingUserPermissions: string;
-    userRoles: string;
-    manageRolesDescription: string;
-    currentRoles: string;
-    noRolesAssigned: string;
-    assignRole: string;
-    directPermissions: string;
-    directPermissionsDescription: string;
-    close: string;
-    managingUserPermissionsFor: string;
-    assignSpecificPermissions: string;
-    accessDenied: string;
-    noPermissionMessage: string;
-    loading: string;
-    permissionRemoved: string;
-    permissionAssigned: string;
-    permissionFromRole: string;
-    failedToUpdate: string;
-    removeRoleConfirm: string;
-    failedToAssignRole: string;
-    failedToRemoveRole: string;
-    roleStaff: string;
-    roleAdmin: string;
-    roleTeacher: string;
-    roleAccountant: string;
-    roleLibrarian: string;
-    roleHostelManager: string;
-    roleAssetManager: string;
-  };
-
-  // Report Templates Management
-  reportTemplates: {
-    title: string;
-    subtitle: string;
-    addTemplate: string;
-    filterBySchool: string;
-    selectSchool: string;
-    searchPlaceholder: string;
-    templateName: string;
-    type: string;
-    school: string;
-    default: string;
-    status: string;
-    actions: string;
-    inactive: string;
-    noTemplatesFound: string;
-    noTemplatesMessage: string;
-    edit: string;
-    editReportTemplate: string;
-    addNewReportTemplate: string;
-    updateTemplateConfig: string;
-    configureHeaderFooter: string;
-    templateNameRequired: string;
-    enterTemplateName: string;
-    templateTypeRequired: string;
-    selectTemplateType: string;
-    studentReport: string;
-    attendanceReport: string;
-    feeReport: string;
-    examReport: string;
-    classReport: string;
-    generalReport: string;
-    schoolRequired: string;
-    headerText: string;
-    enterHeaderText: string;
-    headerHtml: string;
-    enterHeaderHtml: string;
-    footerText: string;
-    enterFooterText: string;
-    footerHtml: string;
-    enterFooterHtml: string;
-    reportLogoSelection: string;
-    selectLogo: string;
-    primaryLogo: string;
-    secondaryLogo: string;
-    ministryLogo: string;
-    allLogos: string;
-    noLogo: string;
-    reportFontSize: string;
-    showPageNumbers: string;
-    showGenerationDate: string;
-    tableAlternatingColors: string;
-    setAsDefaultTemplate: string;
-    update: string;
-    create: string;
-    deleteConfirmTitle: string;
-    deleteConfirmDescription: string;
-    loadingReportTemplates: string;
-    unknown: string;
-    active: string;
-    cancel: string;
-    delete: string;
-    aboveSchoolName: string;
-    advancedOptions: string;
-    advancedOptionsDescription: string;
-    belowSchoolName: string;
-    close: string;
-    footerHtmlDescription: string;
-    footerTextDescription: string;
-    headerHtmlDescription: string;
-    headerTextDescription: string;
-    headerTextPosition: string;
-    noWatermark: string;
-    previewDescription: string;
-    previewTemplate: string;
-    reportLogoSettings: string;
-    reportLogoSettingsDesc: string;
-    selectHeaderPosition: string;
-    selectSchoolFirst: string;
-    selectWatermark: string;
-    useDefaultWatermark: string;
-    watermarkDescription: string;
-  };
-
-  // Profile Management
-  profileManagement: {
-    title: string;
-    subtitle: string;
-    editMyProfile: string;
-    noName: string;
-    noEmail: string;
-    unknownOrg: string;
-    superAdmin: string;
-    edit: string;
-    allProfiles: string;
-    name: string;
-    email: string;
-    role: string;
-    status: string;
-    actions: string;
-    active: string;
-    inactive: string;
-    loadingProfiles: string;
-    noProfilesFound: string;
-    editMyProfileDialog: string;
-    editProfileDialog: string;
-    updateProfileInfo: string;
-    updateProfileInfoRestricted: string;
-    fullName: string;
-    enterFullName: string;
-    enterEmail: string;
-    phone: string;
-    enterPhoneNumber: string;
-    selectRole: string;
-    loadingRoles: string;
-    selectStatus: string;
-    cancel: string;
-    update: string;
-    loadingProfile: string;
-    fullNameRequired: string;
-    fullNameMaxLength: string;
-    invalidEmail: string;
-    phoneMaxLength: string;
-    editProfile: string;
-    updateOwnProfileDescription: string;
-    updateProfileDescription: string;
-  };
-
-  // Authentication
-  auth: {
-    title: string;
-    subtitle: string;
-    signIn: string;
-    signUp: string;
-    email: string;
-    password: string;
-    confirmPassword: string;
-    fullName: string;
-    phone: string;
-    role: string;
-    roleStudent: string;
-    roleTeacher: string;
-    roleParent: string;
-    roleStaff: string;
-    roleAdmin: string;
-    selectRole: string;
-    organization: string;
-    selectOrganization: string;
-    noOrganizationsAvailable: string;
-    noOrganizationsFound: string;
-    signingIn: string;
-    creatingAccount: string;
-    enterEmailAndPassword: string;
-    loggedInSuccessfully: string;
-    signInFailed: string;
-    invalidCredentials: string;
-    selectOrganizationRequired: string;
-    enterFullName: string;
-    enterEmail: string;
-    registrationSuccessful: string;
-    signUpFailed: string;
-    emailAlreadyRegistered: string;
-    invalidEmail: string;
-    networkError: string;
-  };
-
-  // Reset Password
-  resetPassword: {
-    title: string;
-    subtitle: string;
-    newPassword: string;
-    confirmPassword: string;
-    passwordStrength: string;
-    passwordRequirements: string;
-    requirement8Chars: string;
-    requirementUppercase: string;
-    requirementLowercase: string;
-    requirementNumber: string;
-    requirementSpecial: string;
-    updatingPassword: string;
-    updatePassword: string;
-    invalidResetLink: string;
-    passwordsDoNotMatch: string;
-  };
+export type TranslationKey = typeof TRANSLATION_KEYS[number];
 
 
-  // Error Boundary
-  errorBoundary: {
-    somethingWentWrong: string;
-    workingOnFix: string;
-    retry: string;
-    maxRetriesReached: string;
-    refreshOrContactSupport: string;
-    applicationError: string;
-    applicationCrashed: string;
-    technicalDetails: string;
-    refreshPage: string;
-    goHome: string;
-    reportBug: string;
-    componentError: string;
-    tryReloading: string;
-    errorDetailsDev: string;
-    report: string;
-    anErrorOccurred: string;
-    tryAgainLater: string;
-  };
-
-  // Guards
-  guards: {
-    checkingPermissions: string;
-    accessDenied: string;
-    noPermission: string;
-    requiredPermission: string;
-    loading: string;
-    organizationRequired: string;
-    organizationRequiredMessage: string;
-  };
-
-  onboarding: {
-    welcome: {
-      title: string;
-      description: string;
-    };
-    actions: {
-      takeTour: string;
-      readGuide: string;
-      skip: string;
-    };
-    dontShowAgain: string;
-    tour: {
-      dashboard: string;
-      sidebar: string;
-      users: string;
-      schools: string;
-      academic: string;
-      students: string;
-      staff: string;
-      settings: string;
-      subscription: string;
-      help: string;
-    };
-  };
-
-  // Validation Messages
-  validation: {
-    invalidUuid: string;
-    invalidEmail: string;
-    phoneMaxLength: string;
-    fieldMaxLength: string;
-    fieldRequired: string;
-    incidentDateRequired: string;
-    endDateAfterStart: string;
-    fileRequired: string;
-    fileSizeMax: string;
-    fileTypeInvalid: string;
-    currentPasswordRequired: string;
-    passwordMinLength: string;
-    passwordUppercase: string;
-    passwordLowercase: string;
-    passwordNumber: string;
-    passwordSpecial: string;
-    passwordConfirmationRequired: string;
-    passwordsDoNotMatch: string;
-    ageMin: string;
-    ageMax: string;
-    invalidClassInstance: string;
-    invalidSubject: string;
-    invalidTeacher: string;
-    invalidScheduleSlot: string;
-    invalidScheduleSlotId: string;
-    teacherRequired: string;
-    atLeastOneEntryRequired: string;
-  };
-
-  // UI Component Accessibility Labels
-  ui: {
-    pagination: {
-      previousPage: string;
-      nextPage: string;
-      morePages: string;
-    };
-    sidebar: {
-      toggle: string;
-    };
-    breadcrumb: {
-      label: string;
-    };
-    carousel: {
-      previousSlide: string;
-      nextSlide: string;
-    };
-  };
-
-  // Toast Messages
-  toast: {
-    // Common
-    success: string;
-    error: string;
-    // Profiles
-    profileUpdated: string;
-    profileUpdateFailed: string;
-    // System Settings
-    systemSettingsUpdated: string;
-    systemSettingsUpdateFailed: string;
-    // Student Picture
-    pictureUploaded: string;
-    pictureUploadFailed: string;
-    // File Upload/Download
-    fileUploaded: string;
-    fileUploadFailed: string;
-    fileDownloaded: string;
-    fileDownloadFailed: string;
-    studentsImported: string;
-    admissionsCreated: string;
-    // Report Templates
-    reportTemplateCreated: string;
-    reportTemplateUpdated: string;
-    reportTemplateDeleted: string;
-    reportTemplateCreateFailed: string;
-    reportTemplateUpdateFailed: string;
-    reportTemplateDeleteFailed: string;
-    // Permissions
-    roleCreated: string;
-    roleUpdated: string;
-    roleDeleted: string;
-    roleCreateFailed: string;
-    roleUpdateFailed: string;
-    roleDeleteFailed: string;
-    permissionCreated: string;
-    permissionUpdated: string;
-    permissionDeleted: string;
-    permissionCreateFailed: string;
-    permissionUpdateFailed: string;
-    permissionDeleteFailed: string;
-    permissionAssignedToUser: string;
-    permissionRemovedFromUser: string;
-    permissionAssignFailed: string;
-    permissionRemoveFailed: string;
-    roleAssignedToUser: string;
-    roleRemovedFromUser: string;
-    roleAssignFailed: string;
-    roleRemoveFailed: string;
-    feeStructureCreated: string;
-    feeStructureCreateFailed: string;
-    feeStructureUpdated: string;
-    feeStructureDeleted: string;
-    feeStructureDeleteFailed: string;
-    feeAssignmentCreated: string;
-    feeAssignmentCreateFailed: string;
-    feeAssignmentsNoStudentsForClass: string;
-    feePaymentRecorded: string;
-    feePaymentFailed: string;
-    feeExceptionCreated: string;
-    feeExceptionFailed: string;
-    organizationRequired: string;
-    // Organizations
-    organizationCreated: string;
-    organizationUpdated: string;
-    organizationDeleted: string;
-    organizationCreateFailed: string;
-    organizationUpdateFailed: string;
-    organizationDeleteFailed: string;
-    // Schools
-    schoolCreated: string;
-    schoolUpdated: string;
-    schoolDeleted: string;
-    schoolCreateFailed: string;
-    schoolUpdateFailed: string;
-    schoolDeleteFailed: string;
-    // Residency Types
-    residencyTypeCreated: string;
-    residencyTypeUpdated: string;
-    residencyTypeDeleted: string;
-    residencyTypeCreateFailed: string;
-    residencyTypeUpdateFailed: string;
-    residencyTypeDeleteFailed: string;
-    // Users
-    userCreated: string;
-    userUpdated: string;
-    userDeleted: string;
-    userCreateFailed: string;
-    userUpdateFailed: string;
-    userDeleteFailed: string;
-    passwordReset: string;
-    passwordResetFailed: string;
-    passwordChanged: string;
-    passwordChangeFailed: string;
-    // Schedule Slots
-    scheduleSlotCreated: string;
-    scheduleSlotUpdated: string;
-    scheduleSlotDeleted: string;
-    scheduleSlotCreateFailed: string;
-    scheduleSlotUpdateFailed: string;
-    scheduleSlotDeleteFailed: string;
-    // Rooms
-    roomCreated: string;
-    roomUpdated: string;
-    roomDeleted: string;
-    roomCreateFailed: string;
-    roomUpdateFailed: string;
-    roomDeleteFailed: string;
-    // Short Term Courses
-    courseSaved: string;
-    courseUpdated: string;
-    courseDeleted: string;
-    courseClosed: string;
-    courseReopened: string;
-    courseSaveFailed: string;
-    courseUpdateFailed: string;
-    courseDeleteFailed: string;
-    courseCloseFailed: string;
-    courseReopenFailed: string;
-    // Auth
-    invalidCredentials: string;
-    loginFailed: string;
-    passwordRequirementsNotMet: string;
-    // Timetables
-    timetableCreated: string;
-    timetableUpdated: string;
-    timetableDeleted: string;
-    timetableCreateFailed: string;
-    timetableUpdateFailed: string;
-    timetableDeleteFailed: string;
-    teacherPreferencesSaved: string;
-    teacherPreferenceDeleted: string;
-    teacherPreferencesSaveFailed: string;
-    teacherPreferenceDeleteFailed: string;
-    // Teacher Subject Assignments
-    teacherSubjectAssignmentCreated: string;
-    teacherSubjectAssignmentUpdated: string;
-    teacherSubjectAssignmentDeleted: string;
-    teacherSubjectAssignmentCreateFailed: string;
-    teacherSubjectAssignmentUpdateFailed: string;
-    teacherSubjectAssignmentDeleteFailed: string;
-    // Subjects
-    subjectCreated: string;
-    subjectUpdated: string;
-    subjectDeleted: string;
-    subjectAssignedToClass: string;
-    subjectAssignmentUpdated: string;
-    subjectRemovedFromClass: string;
-    subjectCreateFailed: string;
-    subjectUpdateFailed: string;
-    subjectDeleteFailed: string;
-    subjectAssignFailed: string;
-    subjectAssignmentUpdateFailed: string;
-    subjectRemoveFailed: string;
-    // Students
-    studentRegistered: string;
-    studentInformationUpdated: string;
-    studentRemoved: string;
-    studentRegisterFailed: string;
-    studentUpdateFailed: string;
-    studentRemoveFailed: string;
-    documentUploaded: string;
-    documentDeleted: string;
-    documentUploadFailed: string;
-    // Course Students
-    courseStudents: {
-      saved: string;
-      updated: string;
-      deleted: string;
-      saveFailed: string;
-      updateFailed: string;
-      deleteFailed: string;
-      enrolled: string;
-      enrollFailed: string;
-      markedCompleted: string;
-      markCompletedFailed: string;
-      markedDropped: string;
-      markDroppedFailed: string;
-      certificateIssued: string;
-      certificateIssueFailed: string;
-      copiedToMain: string;
-      copyFailed: string;
-      noStudentsEnrolled: string;
-    };
-    // DMS Documents
-    documentCreated: string;
-    documentUpdated: string;
-    documentCreateFailed: string;
-    documentUpdateFailed: string;
-    pdfGenerated: string;
-    pdfGenerateFailed: string;
-    documentDeleteFailed: string;
-    // DMS Templates
-    templateCreated: string;
-    templateUpdated: string;
-    templateDeleted: string;
-    templateDuplicated: string;
-    templateCreateFailed: string;
-    templateUpdateFailed: string;
-    templateDeleteFailed: string;
-    // DMS Letterheads
-    letterheadCreated: string;
-    letterheadUpdated: string;
-    letterheadDeleted: string;
-    letterheadCreateFailed: string;
-    letterheadUpdateFailed: string;
-    letterheadDeleteFailed: string;
-    // DMS Letters
-    letterIssued: string;
-    letterIssueFailed: string;
-    educationalHistoryAdded: string;
-    educationalHistoryUpdated: string;
-    educationalHistoryDeleted: string;
-    educationalHistoryAddFailed: string;
-    educationalHistoryUpdateFailed: string;
-    educationalHistoryDeleteFailed: string;
-    disciplineRecordAdded: string;
-    disciplineRecordUpdated: string;
-    disciplineRecordDeleted: string;
-    disciplineRecordResolved: string;
-    disciplineRecordAddFailed: string;
-    disciplineRecordUpdateFailed: string;
-    disciplineRecordDeleteFailed: string;
-    // Watermarks
-    watermarkCreated: string;
-    watermarkCreateFailed: string;
-    watermarkUpdated: string;
-    watermarkUpdateFailed: string;
-    watermarkDeleted: string;
-    watermarkDeleteFailed: string;
-    disciplineRecordResolveFailed: string;
-    // Asset Categories
-    assetCategories: {
-      created: string;
-      updated: string;
-      deleted: string;
-    };
-    // Assets
-    assets: {
-      saved: string;
-      updated: string;
-      removed: string;
-      assignmentSaved: string;
-      assignmentUpdated: string;
-      assignmentRemoved: string;
-      maintenanceSaved: string;
-      maintenanceUpdated: string;
-      maintenanceRemoved: string;
-    };
-    // Library
-    library: {
-      bookSaved: string;
-      bookUpdated: string;
-      bookRemoved: string;
-      bookSaveFailed: string;
-      bookUpdateFailed: string;
-      bookRemoveFailed: string;
-      copyAdded: string;
-      copyAddFailed: string;
-      loanCreated: string;
-      loanCreateFailed: string;
-      bookReturned: string;
-      bookReturnFailed: string;
-    };
-    // Certificate Templates
-    certificateTemplates: {
-      created: string;
-      updated: string;
-      deleted: string;
-      defaultUpdated: string;
-      generated: string;
-    };
-    // ID Card Templates
-    idCardTemplateCreated: string;
-    idCardTemplateUpdated: string;
-    idCardTemplateDeleted: string;
-    idCardTemplateSetDefault: string;
-    idCardTemplateCreateFailed: string;
-    idCardTemplateUpdateFailed: string;
-    idCardTemplateDeleteFailed: string;
-    idCardTemplateSetDefaultFailed: string;
-    // Student ID Cards
-    idCardsAssigned: string;
-    idCardAssignFailed: string;
-    idCardUpdated: string;
-    idCardUpdateFailed: string;
-    idCardMarkedPrinted: string;
-    idCardMarkPrintedFailed: string;
-    idCardFeeMarkedPaid: string;
-    idCardFeeMarkPaidFailed: string;
-    idCardDeleted: string;
-    idCardDeleteFailed: string;
-    idCardsExported: string;
-    idCardExportFailed: string;
-    idCardExported: string;
-    // Course Attendance
-    courseAttendance: {
-      sessionCreated: string;
-      sessionUpdated: string;
-      sessionDeleted: string;
-      recordsSaved: string;
-      sessionClosed: string;
-    };
-    // Course Documents
-    courseDocuments: {
-      uploaded: string;
-      deleted: string;
-      uploadFailed: string;
-      deleteFailed: string;
-      downloadFailed: string;
-    };
-    // Exam Documents
-    examDocuments: {
-      uploaded: string;
-      deleted: string;
-      uploadFailed: string;
-      deleteFailed: string;
-      downloadFailed: string;
-    };
-    // Finance
-    finance: {
-      accountCreated: string;
-      accountUpdated: string;
-      accountDeleted: string;
-      incomeCategoryCreated: string;
-      incomeCategoryUpdated: string;
-      incomeCategoryDeleted: string;
-      expenseCategoryCreated: string;
-      expenseCategoryUpdated: string;
-      expenseCategoryDeleted: string;
-      projectCreated: string;
-      projectUpdated: string;
-      projectDeleted: string;
-      donorCreated: string;
-      donorUpdated: string;
-      donorDeleted: string;
-      incomeCreated: string;
-      incomeUpdated: string;
-      incomeDeleted: string;
-      expenseCreated: string;
-      expenseUpdated: string;
-      expenseDeleted: string;
-    accountCode: string;
-    accountCurrencyHint: string;
-    accountInformation: string;
-    accountName: string;
-    accountType: string;
-    addCurrency: string;
-    addCurrencyDescription: string;
-    addExchangeRate: string;
-    addExchangeRateDescription: string;
-    addNew: string;
-    allCurrencies: string;
-    allExchangeRates: string;
-    assets: string;
-    assetsBreakdown: string;
-    assetsBreakdownDescription: string;
-    assetsByAccount: string;
-    assetsByCurrency: string;
-    baseCurrency: string;
-    budgetAmount: string;
-    budgetAmountPlaceholder: string;
-    cashBalance: string;
-    cashOnly: string;
-    categoryCode: string;
-    categoryInformation: string;
-    converted: string;
-    convertedValue: string;
-    currenciesDescription: string;
-    currenciesFound: string;
-    currency: string;
-    currencyCode: string;
-    currencyCodeHint: string;
-    currencyInformation: string;
-    currencyNamePlaceholder: string;
-    currencySymbol: string;
-    decimalPlaces: string;
-    deleteCurrencyWarning: string;
-    deleteDocument: string;
-    deleteDocumentConfirmation: string;
-    deleteExchangeRateWarning: string;
-    documentDate: string;
-    documentDescription: string;
-    documentDescriptionPlaceholder: string;
-    documentDetails: string;
-    documentTitle: string;
-    documentTitlePlaceholder: string;
-    documentType: string;
-    documentTypes: string;
-    documents: string;
-    donorInformation: string;
-    donorType: string;
-    editCurrency: string;
-    editCurrencyDescription: string;
-    editExchangeRate: string;
-    editExchangeRateDescription: string;
-    effectiveDate: string;
-    endDate: string;
-    entryDetails: string;
-    entryInformation: string;
-    exchangeRate: string;
-    exchangeRateHint: string;
-    exchangeRatesDescription: string;
-    file: string;
-    fileName: string;
-    fileSize: string;
-    financeDocuments: string;
-    fromCurrency: string;
-    includeAssetsAndBooks: string;
-    incomeVsExpenseTrend: string;
-    last30Days: string;
-    last7Days: string;
-    last90Days: string;
-    latestTransaction: string;
-    libraryBooks: string;
-    libraryBooksBreakdown: string;
-    libraryBooksBreakdownDescription: string;
-    libraryBooksByAccount: string;
-    libraryBooksByCurrency: string;
-    manageFinanceDocuments: string;
-    maxFileSize: string;
-    noCashbookData: string;
-    noCurrencies: string;
-    noDocuments: string;
-    noExchangeRates: string;
-    originalValue: string;
-    previewLoadError: string;
-    previewNotAvailable: string;
-    previewNotSupported: string;
-    projectBalance: string;
-    projectInformation: string;
-    rateNotesPlaceholder: string;
-    ratesFound: string;
-    recentTransactions: string;
-    referenceNumber: string;
-    referenceNumberPlaceholder: string;
-    searchPlaceholder: string;
-    selectCurrency: string;
-    selectTimeRange: string;
-    showingProjectIncomeExpense: string;
-    showingTrendsForPeriod: string;
-    startDate: string;
-    toCurrency: string;
-    totalAssetsValue: string;
-    totalDocuments: string;
-    totalExpense: string;
-    totalLibraryBooksValue: string;
-    transactionCount: string;
-    transactionSummary: string;
-    uploadDocument: string;
-    uploadDocumentDescription: string;
-    uploadedAt: string;
-    viewAccountDetails: string;
-    viewAccounts: string;
-    viewAssets: string;
-    viewEntryDetails: string;
-    viewLibraryBooks: string;
-    accounts: {
-      account: string;
-    };
-    incomeCategories: {
-      category: string;
-    };
-    };
-    // Finance Documents
-    financeDocumentCreated: string;
-    financeDocumentCreateFailed: string;
-    financeDocumentDeleted: string;
-    financeDocumentDeleteFailed: string;
-    financeDocumentDownloadFailed: string;
-    // Questions
-    questionCreated: string;
-    questionUpdated: string;
-    questionDeleted: string;
-    questionDuplicated: string;
-    questionsUpdated: string;
-    questionCreateFailed: string;
-    questionUpdateFailed: string;
-    questionDeleteFailed: string;
-    questionDuplicateFailed: string;
-    questionsUpdateFailed: string;
-    // Exam Paper Templates
-    examPaperTemplateCreated: string;
-    examPaperTemplateUpdated: string;
-    examPaperTemplateDeleted: string;
-    examPaperTemplateDuplicated: string;
-    examPaperTemplateCreateFailed: string;
-    examPaperTemplateUpdateFailed: string;
-    examPaperTemplateDeleteFailed: string;
-    examPaperTemplateDuplicateFailed: string;
-    questionAdded: string;
-    questionRemoved: string;
-    questionsReordered: string;
-    questionAddFailed: string;
-    questionRemoveFailed: string;
-    questionsReorderFailed: string;
-    defaultTemplateSet: string;
-    defaultTemplateSetFailed: string;
-    // Events
-    eventCreated: string;
-    eventUpdated: string;
-    eventDeleted: string;
-    eventCreateFailed: string;
-    eventUpdateFailed: string;
-    eventDeleteFailed: string;
-    eventTypeCreated: string;
-    eventTypeUpdated: string;
-    eventTypeDeleted: string;
-    eventTypeCreateFailed: string;
-    eventTypeUpdateFailed: string;
-    eventTypeDeleteFailed: string;
-    guestAdded: string;
-    guestUpdated: string;
-    guestDeleted: string;
-    guestAddFailed: string;
-    guestUpdateFailed: string;
-    guestDeleteFailed: string;
-    guestCheckedIn: string;
-    checkinFailed: string;
-    guestStatusUpdated: string;
-    guestStatusUpdateFailed: string;
-    fieldsSaved: string;
-    fieldsSaveFailed: string;
-    // Event Users
-    userCreated: string;
-    userUpdated: string;
-    userDeleted: string;
-    userCreateFailed: string;
-    userUpdateFailed: string;
-    userDeleteFailed: string;
-    fillAllFields: string;
-    allStudentsEnrolled: string;
-    articleCreateFailed: string;
-    articleCreated: string;
-    articleDeleteFailed: string;
-    articleDeleted: string;
-    articleUpdateFailed: string;
-    articleUpdated: string;
-    attendanceDeleteFailed: string;
-    attendanceDeleted: string;
-    attendanceMarkFailed: string;
-    attendanceMarked: string;
-    attendanceUpdateFailed: string;
-    attendanceUpdated: string;
-    categoryCreateFailed: string;
-    categoryCreated: string;
-    categoryDeleteFailed: string;
-    categoryDeleted: string;
-    categoryUpdateFailed: string;
-    categoryUpdated: string;
-    classAssignFailed: string;
-    classAssigned: string;
-    classRemoveFailed: string;
-    classRemoved: string;
-    currencyConversionFailed: string;
-    currencyCreateFailed: string;
-    currencyCreated: string;
-    currencyDeleteFailed: string;
-    currencyDeleted: string;
-    currencyUpdateFailed: string;
-    currencyUpdated: string;
-    departmentCreateFailed: string;
-    departmentCreated: string;
-    departmentDeleteFailed: string;
-    departmentDeleted: string;
-    departmentNameRequired: string;
-    departmentUpdateFailed: string;
-    departmentUpdated: string;
-    discountCodeCreated: string;
-    discountCodeDeleted: string;
-    discountCodeUpdated: string;
-    enrollAllFailed: string;
-    examCreateFailed: string;
-    examCreated: string;
-    examDeleteFailed: string;
-    examDeleted: string;
-    examResultDeleteFailed: string;
-    examResultDeleted: string;
-    examResultSaveFailed: string;
-    examResultSaved: string;
-    examResultUpdateFailed: string;
-    examResultUpdated: string;
-    examResultsSaveFailed: string;
-    examResultsSaved: string;
-    examStatusUpdateFailed: string;
-    examStatusUpdated: string;
-    examSubjectUpdateFailed: string;
-    examSubjectUpdated: string;
-    examTimeCreateFailed: string;
-    examTimeCreated: string;
-    examTimeDeleteFailed: string;
-    examTimeDeleted: string;
-    examTimeLockToggleFailed: string;
-    examTimeLockToggled: string;
-    examTimeLocked: string;
-    examTimeUnlocked: string;
-    examTimeUpdateFailed: string;
-    examTimeUpdated: string;
-    examUpdateFailed: string;
-    examUpdated: string;
-    exchangeRateCreateFailed: string;
-    exchangeRateCreated: string;
-    exchangeRateDeleteFailed: string;
-    exchangeRateDeleted: string;
-    exchangeRateUpdateFailed: string;
-    exchangeRateUpdated: string;
-    expenseEntryCreated: string;
-    expenseEntryDeleted: string;
-    expenseEntryUpdated: string;
-    featureAddonAdded: string;
-    feeAssignmentDeleteFailed: string;
-    feeAssignmentDeleted: string;
-    feeAssignmentUpdateFailed: string;
-    feeAssignmentUpdated: string;
-    feeExceptionDeleteFailed: string;
-    feeExceptionDeleted: string;
-    feeExceptionUpdateFailed: string;
-    feeExceptionUpdated: string;
-    feeStructureUpdateFailed: string;
-    financeAccountCreateFailed: string;
-    financeAccountCreated: string;
-    financeAccountDeleteFailed: string;
-    financeAccountDeleted: string;
-    financeAccountUpdateFailed: string;
-    financeAccountUpdated: string;
-    financeProjectCreated: string;
-    financeProjectDeleted: string;
-    financeProjectUpdated: string;
-    idCardDownloadFailed: string;
-    idCardPreviewFailed: string;
-    incomeEntryCreated: string;
-    incomeEntryDeleted: string;
-    incomeEntryUpdated: string;
-    letterTypeCreateFailed: string;
-    letterTypeCreated: string;
-    letterTypeDeleteFailed: string;
-    letterTypeDeleted: string;
-    letterTypeUpdateFailed: string;
-    letterTypeUpdated: string;
-    limitOverrideAdded: string;
-    marksSaveFailed: string;
-    marksSaved: string;
-    paymentConfirmed: string;
-    paymentFailed: string;
-    paymentRejected: string;
-    paymentSubmitted: string;
-    permissionGroupAssignFailed: string;
-    permissionGroupCreateFailed: string;
-    permissionGroupCreated: string;
-    permissionGroupDeleteFailed: string;
-    permissionGroupDeleted: string;
-    permissionGroupRemoveFailed: string;
-    permissionGroupUpdateFailed: string;
-    permissionGroupUpdated: string;
-    planCreated: string;
-    planUpdated: string;
-    previewFailed: string;
-    renewalApproved: string;
-    renewalRejected: string;
-    renewalRequestFailed: string;
-    renewalRequestSubmitted: string;
-    rollNumberAssignFailed: string;
-    rollNumberUpdateFailed: string;
-    rollNumberUpdated: string;
-    rollNumbersAssigned: string;
-    rollNumbersAssignedWithErrors: string;
-    secretNumberAssignFailed: string;
-    secretNumberUpdateFailed: string;
-    secretNumberUpdated: string;
-    secretNumbersAssigned: string;
-    secretNumbersAssignedWithErrors: string;
-    studentEnrollFailed: string;
-    studentEnrolled: string;
-    studentsEnrollFailed: string;
-    studentsEnrolled: string;
-    studentsEnrolledWithSkipped: string;
-    subjectEnrollFailed: string;
-    subjectEnrolled: string;
-    subjectRemoved: string;
-    subscriptionActivated: string;
-    subscriptionSuspended: string;
-    templateFileCreateFailed: string;
-    templateFileCreated: string;
-    templateFileDeleteFailed: string;
-    templateFileDeleted: string;
-    templateFileSetDefault: string;
-    templateFileSetDefaultFailed: string;
-    templateFileUpdateFailed: string;
-    templateFileUpdated: string;
-    examTypes: {
-      createFailed: string;
-      created: string;
-      deleteFailed: string;
-      deleted: string;
-      updateFailed: string;
-      updated: string;
-    };
-  };
-
-  // Finance Module
-  finance: {
-    dashboard: string;
-    dashboardDescription: string;
-    totalBalance: string;
-    acrossAllAccounts: string;
-    monthlyIncome: string;
-    monthlyExpenses: string;
-    thisMonth: string;
-    netThisMonth: string;
-    surplus: string;
-    deficit: string;
-    activeProjects: string;
-    activeDonors: string;
-    totalAssetsValue: string;
-    assetsIncludedInBalance: string;
-    assetsByAccount: string;
-    assetsByCurrency: string;
-    assetsBreakdown: string;
-    assetsBreakdownDescription: string;
-    viewAssets: string;
-    originalValue: string;
-    convertedValue: string;
-    currency: string;
-    exchangeRate: string;
-    incomeByCategory: string;
-    expenseByCategory: string;
-    noIncomeThisMonth: string;
-    noExpensesThisMonth: string;
-    accountBalances: string;
-    currentBalancesByAccount: string;
-    balance: string;
-    noAccounts: string;
-    recentIncome: string;
-    recentExpenses: string;
-    noRecentIncome: string;
-    noRecentExpenses: string;
-    accounts: string;
-    accountsDescription: string;
-    allAccounts: string;
-    accountsFound: string;
-    addAccount: string;
-    addAccountDescription: string;
-    editAccount: string;
-    editAccountDescription: string;
-    deleteAccountWarning: string;
-    accountNamePlaceholder: string;
-    accountCodePlaceholder: string;
-    accountDescriptionPlaceholder: string;
-    openingBalance: string;
-    currentBalance: string;
-    cash: string;
-    fund: string;
-    incomeCategories: string;
-    incomeCategoriesDescription: string;
-    allIncomeCategories: string;
-    categoriesFound: string;
-    addCategory: string;
-    addIncomeCategory: string;
-    addIncomeCategoryDescription: string;
-    editCategory: string;
-    editCategoryDescription: string;
-    deleteCategoryWarning: string;
-    categoryNamePlaceholder: string;
-    categoryCodePlaceholder: string;
-    categoryDescriptionPlaceholder: string;
-    restricted: string;
-    noCategories: string;
-    expenseCategories: string;
-    expenseCategoriesDescription: string;
-    allExpenseCategories: string;
-    addExpenseCategory: string;
-    addExpenseCategoryDescription: string;
-    incomeEntries: string;
-    incomeEntriesDescription: string;
-    addIncome: string;
-    addIncomeDescription: string;
-    editIncome: string;
-    editIncomeDescription: string;
-    deleteEntryWarning: string;
-    totalIncome: string;
-    entriesFound: string;
-    noIncome: string;
-    account: string;
-    category: string;
-    project: string;
-    donor: string;
-    amount: string;
-    referenceNo: string;
-    referenceNoPlaceholder: string;
-    paymentMethod: string;
-    cheque: string;
-    bankTransfer: string;
-    other: string;
-    incomeDescriptionPlaceholder: string;
-    selectAccount: string;
-    selectCategory: string;
-    selectProject: string;
-    selectDonor: string;
-    filterByCategory: string;
-    expenseEntries: string;
-    expenseEntriesDescription: string;
-    addExpense: string;
-    addExpenseDescription: string;
-    editExpense: string;
-    editExpenseDescription: string;
-    totalExpenses: string;
-    noExpenses: string;
-    paidTo: string;
-    paidToPlaceholder: string;
-    voucherNoPlaceholder: string;
-    expenseDescriptionPlaceholder: string;
-    filterByStatus: string;
-    approved: string;
-    pending: string;
-    rejected: string;
-    approvedOnly: string;
-    projects: string;
-    projectsDescription: string;
-    addProject: string;
-    addProjectDescription: string;
-    editProject: string;
-    editProjectDescription: string;
-    deleteProjectWarning: string;
-    projectNamePlaceholder: string;
-    projectDescriptionPlaceholder: string;
-    targetAmount: string;
-    targetAmountPlaceholder: string;
-    noProjects: string;
-    createFirstProject: string;
-    fundingProgress: string;
-    of: string;
-    income: string;
-    expense: string;
-    donors: string;
-    donorsDescription: string;
-    donorsSummary: string;
-    totalDonors: string;
-    totalDonated: string;
-    allDonors: string;
-    donorsFound: string;
-    addDonor: string;
-    addDonorDescription: string;
-    editDonor: string;
-    editDonorDescription: string;
-    deleteDonorWarning: string;
-    donorNamePlaceholder: string;
-    phonePlaceholder: string;
-    emailPlaceholder: string;
-    addressPlaceholder: string;
-    notesPlaceholder: string;
-    searchDonors: string;
-    noDonors: string;
-    individual: string;
-    organization: string;
-    reports: string;
-    reportsDescription: string;
-    dailyCashbook: string;
-    incomeVsExpense: string;
-    projectSummary: string;
-    donorSummary: string;
-    closingBalance: string;
-    transactions: string;
-    noTransactions: string;
-    netBalance: string;
-    noData: string;
-    accountDetails: string;
-    viewAccountDetails: string;
-    accountInformation: string;
-    latestTransaction: string;
-    transactionSummary: string;
-    recentTransactions: string;
-    totalExpense: string;
-    transactionCount: string;
-    totalProjects: string;
-    totalProjectIncome: string;
-    totalProjectExpense: string;
-    projectDetails: string;
-    projectComparison: string;
-    noProjectData: string;
-    totalDonations: string;
-    donorContributions: string;
-    donationCount: string;
-    totalAmount: string;
-    topDonors: string;
-    noDonorData: string;
-    donated: string;
-    accountDetails: string;
-    balanceDistribution: string;
-    noAccountData: string;
-    settings: string;
-    settingsDescription: string;
-    currencies: string;
-    exchangeRates: string;
-    viewAll: string;
-    viewReport: string;
-    viewAllIncome: string;
-    viewAllAccounts: string;
-    totalAccounts: string;
-    monthlyExpenses: string;
-    reverse: string;
-    vsLastMonth: string;
-    activeDonorsText: string;
-    comparedToLastMonth: string;
-    totalIncomeDistribution: string;
-    last6Months: string;
-    trendingUpByThisMonth: string;
-    showingDataFromLast6Months: string;
-    summary: string;
-    dataFromTo: string;
-    noExpensesData: string;
-    cashAccount: string;
-    fundAccount: string;
-    includeAssetsAndBooks: string;
-    totalLibraryBooksValue: string;
-    viewLibraryBooks: string;
-    libraryBooks: string;
-    libraryBooksBreakdown: string;
-    libraryBooksBreakdownDescription: string;
-    libraryBooksByAccount: string;
-    libraryBooksByCurrency: string;
-    entryDetails: string;
-    viewEntryDetails: string;
-    entryInformation: string;
-    accountInformation: string;
-    accountName: string;
-    accountType: string;
-    accountCode: string;
-    categoryInformation: string;
-    categoryCode: string;
-    projectInformation: string;
-    projectBalance: string;
-    budgetAmount: string;
-    donorInformation: string;
-    donorType: string;
-    currencyInformation: string;
-    currencySymbol: string;
-    totalDonated: string;
-    // Finance Documents
-    financeDocuments: string;
-    manageFinanceDocuments: string;
-    uploadDocument: string;
-    uploadDocumentDescription: string;
-    documentType: string;
-    documentTitle: string;
-    documentTitlePlaceholder: string;
-    documentDescription: string;
-    documentDescriptionPlaceholder: string;
-    referenceNumber: string;
-    referenceNumberPlaceholder: string;
-    documentDate: string;
-    file: string;
-    maxFileSize: string;
-    documents: string;
-    noDocuments: string;
-    fileName: string;
-    fileSize: string;
-    uploadedAt: string;
-    deleteDocument: string;
-    deleteDocumentConfirmation: string;
-    searchPlaceholder: string;
-    totalDocuments: string;
-    totalAmount: string;
-    documentTypes: string;
-    "documentTypes.invoice": string;
-    "documentTypes.receipt": string;
-    "documentTypes.budget": string;
-    "documentTypes.report": string;
-    "documentTypes.taxDocument": string;
-    "documentTypes.voucher": string;
-    "documentTypes.bankStatement": string;
-    "documentTypes.other": string;
-    startDate: string;
-    endDate: string;
-    documentDetails: string;
-    previewNotAvailable: string;
-    previewNotSupported: string;
-    previewLoadError: string;
-  };
-
-  // Exams
-  exams: {
-    management: string;
-    create: string;
-    edit: string;
-    list: string;
-    listDescription: string;
-    noExams: string;
-    name: string;
-    namePlaceholder: string;
-    academicYear: string;
-    selectAcademicYear: string;
-    description: string;
-    descriptionPlaceholder: string;
-    startDate: string;
-    endDate: string;
-    createDescription: string;
-    editDescription: string;
-    deleteConfirm: string;
-    deleteConfirmMessage: string;
-    enrollment: string;
-    enrollmentDescription: string;
-    selectExam: string;
-    selectExamPrompt: string;
-    selectExamHint: string;
-    searchExams: string;
-    filterByYear: string;
-    examsShown: string;
-    noExamsMatchFilter: string;
-    noExamsFound: string;
-    classes: string;
-    subjects: string;
-    configured: string;
-    scheduled: string;
-    assignClass: string;
-    classesAvailable: string;
-    classSection: string;
-    selectClassToAssign: string;
-    allClassesAssigned: string;
-    assignedClasses: string;
-    noClassesAssigned: string;
-    assignClassHint: string;
-    removeClass: string;
-    enrollSubject: string;
-    selectSubject: string;
-    allSubjectsEnrolled: string;
-    noSubjectsEnrolled: string;
-    selectSubjectToEnroll: string;
-    totalMarks: string;
-    passingMarks: string;
-    date: string;
-    bulkEnroll: string;
-    bulkAssign: string;
-    selected: string;
-    enrollSelected: string;
-    assignSelected: string;
-    forAcademicYear: string;
-    studentEnrollment: string;
-    studentEnrollmentDescription: string;
-    selectExamAndClass: string;
-    selectExamAndClassDescription: string;
-    selectExamAndClassPrompt: string;
-    selectExamAndClassHint: string;
-    selectExamFirst: string;
-    exam: string;
-    class: string;
-    enrollStudents: string;
-    studentsAvailable: string;
-    searchStudents: string;
-    noStudentsMatchSearch: string;
-    selectStudent: string;
-    selectStudentToEnroll: string;
-    enroll: string;
-    enrolledStudents: string;
-    enrolledStudentsDescription: string;
-    noStudentsEnrolled: string;
-    enrollStudentsHint: string;
-    removeStudent: string;
-    removeStudentConfirm: string;
-    enrolled: string;
-    available: string;
-    configure: string;
-    configureAndSchedule: string;
-    configureAndScheduleDescription: string;
-    startDateHint: string;
-    endDateHint: string;
-    examDuration: string;
-    day: string;
-    days: string;
-    scheduleNotes: string;
-    scheduleNotesPlaceholder: string;
-    saveSchedule: string;
-    availableStudents: string;
-    selectedStudents: string;
-    studentsSelected: string;
-    selectAll: string;
-    clearAll: string;
-    noStudentsSelected: string;
-    quickEnroll: string;
-    quickEnrollDescription: string;
-    examType: string;
-    selectExamType: string;
-    filterByExamType: string;
-    addClass: string;
-    addClassDescription: string;
-    addClassesFirst: string;
-    addSubject: string;
-    addSubjectDescription: string;
-    addTimeSlot: string;
-    addTimeSlotDescription: string;
-    allClasses: string;
-    allConfigured: string;
-    allStudentsEnrolled: string;
-    assignedClassesDescription: string;
-    backToList: string;
-    changeStatus: string;
-    changeStatusConfirm: string;
-    changeStatusConfirmMessage: string;
-    classesAssigned: string;
-    classesConfigured: string;
-    classesSubjects: string;
-    classesSubjectsDescription: string;
-    complete: string;
-    deleteTimeSlotConfirm: string;
-    deleteTimeSlotConfirmMessage: string;
-    editSubject: string;
-    editSubjectDescription: string;
-    editTimeSlot: string;
-    editTimeSlotDescription: string;
-    endTime: string;
-    enrollAllClasses: string;
-    enrollmentStatus: string;
-    enrollmentStatusDescription: string;
-    entered: string;
-    examTimetable: string;
-    examTimetableDescription: string;
-    examTimetables: string;
-    failed: string;
-    fatherName: string;
-    filterByClass: string;
-    filterByStatus: string;
-    incomplete: string;
-    invalidTimeRange: string;
-    invigilator: string;
-    locked: string;
-    markAttendance: string;
-    marks: string;
-    marksDescription: string;
-    marksEntry: string;
-    marksEntryProgress: string;
-    marksEntryProgressDescription: string;
-    noAvailableClasses: string;
-    noAvailableSubjects: string;
-    noEnrollmentData: string;
-    noExamsAvailable: string;
-    noExamsFiltered: string;
-    noMarksData: string;
-    noStudentsHint1: string;
-    noStudentsHint2: string;
-    noStudentsHint3: string;
-    noSubjectsConfigured: string;
-    noTimeSlots: string;
-    notFound: string;
-    notes: string;
-    notesPlaceholder: string;
-    overallEnrollment: string;
-    overallProgress: string;
-    passed: string;
-    pendingConfiguration: string;
-    percentage: string;
-    period: string;
-    possibleReasons: string;
-    removeClassConfirm: string;
-    removeClassConfirmMessage: string;
-    removeSubjectConfirm: string;
-    removeSubjectConfirmMessage: string;
-    reports: string;
-    reportsDescription: string;
-    results: string;
-    resultsEntered: string;
-    room: string;
-    searchPlaceholder: string;
-    selectClass: string;
-    selectClassPlaceholder: string;
-    selectExamDescription: string;
-    selectExamPlaceholder: string;
-    selectExamToStart: string;
-    selectExamToViewTimetable: string;
-    selectInvigilator: string;
-    selectRoom: string;
-    selectSubjectPlaceholder: string;
-    selectTimeSlot: string;
-    sessions: string;
-    startTime: string;
-    statistics: string;
-    status: string;
-    studentCode: string;
-    studentName: string;
-    students: string;
-    subject: string;
-    time: string;
-    timeSlot: string;
-    timetable: string;
-    timetableDescription: string;
-    total: string;
-    totalClasses: string;
-    totalSubjects: string;
-    unlocked: string;
-    attendance: {
-      barcode: string;
-      confirmUnlock: string;
-      focusScanner: string;
-      locked: string;
-      manual: string;
-      markAttendance: string;
-      multiSlotHint: string;
-      noScansMatch: string;
-      noScansYet: string;
-      note: string;
-      recordScan: string;
-      scanFeed: string;
-      scanRollNumber: string;
-      scanning: string;
-      searchScans: string;
-      seatNumber: string;
-      selectTimeSlots: string;
-      selectTimeslot: string;
-      selectTimeslotPrompt: string;
-      selectedSlots: string;
-      status: string;
-      time: string;
-      timeSlot: string;
-      title: string;
-      unlock: string;
-      unlockAttendance: string;
-      unlockExamMessage: string;
-      unlockMessage: string;
-    };
-    numberReports: {
-      classBreakdown: string;
-      complete: string;
-      description: string;
-      errorLoadingPreview: string;
-      errorLoadingPreviewDescription: string;
-      exportCsv: string;
-      filter: string;
-      filterDescription: string;
-      noStudents: string;
-      printPreviewDescription: string;
-      printRollSlips: string;
-      printSecretLabels: string;
-      progress: string;
-      rollNumberList: string;
-      rollNumberSummary: string;
-      rollSlipsPreview: string;
-      secretLabelsPreview: string;
-      secretNumberSummary: string;
-      students: string;
-      summary: string;
-      title: string;
-      totalStudents: string;
-      withRollNumber: string;
-      withSecretNumber: string;
-      withoutRollNumber: string;
-      withoutSecretNumber: string;
-    };
-    reports: {
-      errorLoading: string;
-    };
-    rollNumbers: {
-      andMore: string;
-      assigned: string;
-      autoAssign: string;
-      autoAssignDescription: string;
-      collision: string;
-      confirmAssign: string;
-      confirmOverride: string;
-      confirmOverrideButton: string;
-      confirmOverrideDescription: string;
-      current: string;
-      description: string;
-      entireExam: string;
-      missing: string;
-      new: string;
-      noStudents: string;
-      notAssigned: string;
-      options: string;
-      override: string;
-      overrideExisting: string;
-      previewAssignment: string;
-      previewDescription: string;
-      previewTitle: string;
-      progress: string;
-      rollNumber: string;
-      scope: string;
-      selectedClass: string;
-      startFrom: string;
-      studentList: string;
-      title: string;
-      toAssign: string;
-      totalStudents: string;
-      useSuggested: string;
-      willOverride: string;
-    };
-    secretNumbers: {
-      andMore: string;
-      assigned: string;
-      autoAssign: string;
-      autoAssignDescription: string;
-      collision: string;
-      confirmAssign: string;
-      confirmOverride: string;
-      confirmOverrideButton: string;
-      confirmOverrideDescription: string;
-      current: string;
-      description: string;
-      enterSecretNumber: string;
-      entireExam: string;
-      hide: string;
-      lookup: string;
-      lookupButton: string;
-      lookupDescription: string;
-      lookupResult: string;
-      missing: string;
-      new: string;
-      noStudents: string;
-      notAssigned: string;
-      notFound: string;
-      options: string;
-      override: string;
-      overrideExisting: string;
-      previewAssignment: string;
-      previewDescription: string;
-      previewTitle: string;
-      progress: string;
-      scope: string;
-      secretNumber: string;
-      selectedClass: string;
-      show: string;
-      startFrom: string;
-      studentList: string;
-      title: string;
-      toAssign: string;
-      totalStudents: string;
-      useSuggested: string;
-      willOverride: string;
-    };
-    status: {
-      archived: string;
-      completed: string;
-      draft: string;
-      in_progress: string;
-      scheduled: string;
-    };
-    documents: {
-      title: string;
-      description: string;
-      uploadDocument: string;
-      upload: string;
-      filter: string;
-      exam: string;
-      allExams: string;
-      documentType: string;
-      allTypes: string;
-      search: string;
-      searchPlaceholder: string;
-      documents: string;
-      noDocumentsFound: string;
-      uploadDocumentsToGetStarted: string;
-      document: string;
-      type: string;
-      size: string;
-      uploaded: string;
-      actions: string;
-      download: string;
-      delete: string;
-      deleteDocument: string;
-      deleteConfirmMessage: string;
-      cancel: string;
-      selectExam: string;
-      searchExamsPlaceholder: string;
-      noExamsFound: string;
-      tryAdjustingSearch: string;
-      examLabel: string;
-      other: string;
-      questionPaper: string;
-      answerKey: string;
-      instruction: string;
-      result: string;
-      gradeSheet: string;
-      unknownExam: string;
-      uploading: string;
-      uploadNewDocument: string;
-      titleLabel: string;
-      titlePlaceholder: string;
-      descriptionLabel: string;
-      descriptionPlaceholder: string;
-      fileLabel: string;
-      selected: string;
-      noDocumentsYet: string;
-      documentsForExam: string;
-      manageDocumentsDescription: string;
-    };
-  };
-
-  examTypes: {
-    title: string;
-    description: string;
-    name: string;
-    code: string;
-    description: string;
-    displayOrder: string;
-    isActive: string;
-    create: string;
-    createDescription: string;
-    edit: string;
-    editDescription: string;
-    deleteConfirm: string;
-    namePlaceholder: string;
-    codePlaceholder: string;
-    descriptionPlaceholder: string;
-  };
-
-  graduation: {
-    batches: string | {
-      description: string;
-    };
-    types: {
-      finalYear: string;
-      promotion: string;
-      transfer: string;
-    };
-    multipleExams: string;
-    examWeights: string;
-    fromClass: string;
-    toClass: string;
-    selectFromClass: string;
-    selectToClass: string;
-    minAttendancePercentage: string;
-    requireAttendance: string;
-    excludeApprovedLeaves: string;
-    cannotChangeTypeWithStudents: string;
-    createTransfer: string;
-    classTransfer: string;
-    selectSchoolDescription: string;
-    deleteConfirm: string;
-    noBatches: {
-      title: string;
-      description: string;
-    };
-    exams: {
-      weights: string;
-      totalWeight: string;
-      equalWeights: string;
-    };
-    attendance: {
-      title: string;
-      minPercentage: string;
-      requireAttendance: string;
-      excludeLeaves: string;
-    absent: string;
-    attendanceRate: string;
-    closed: string;
-    latestAttendanceSessions: string;
-    };
-    validation: {
-      weightsMustSum100: string;
-      fromToClassDifferent: string;
-    };
-    summary: {
-      totalBatches: string;
-      draftBatches: string;
-      approvedBatches: string;
-      issuedBatches: string;
-    };
-    status: {
-      draft: string;
-      approved: string;
-      issued: string;
-    };
-    filters: {
-      status: string;
-      dateFrom: string;
-      dateTo: string;
-      searchPlaceholder: string;
-    };
-    table: {
-      needsReview: string;
-      students: string;
-    };
-    pagination: {
-      showing: string;
-      of: string;
-    };
-    dashboard: {
-      title: string;
-      currentYearBatches: string;
-      certificatesThisYear: string;
-      quickActions: string;
-      createBatch: string;
-      createBatchDesc: string;
-      viewTemplates: string;
-      viewTemplatesDesc: string;
-      issuedCertificates: string;
-      issuedCertificatesDesc: string;
-      recentBatches: string;
-      pendingApprovals: string;
-      noPendingApprovals: string;
-      upcomingGraduations: string;
-      noSchools: string;
-      selectSchool: string;
-    };
-    editBatchDescription: string;
-    graduationType: string;
-    transferringTo: string;
-    batches: {
-      description: string;
-    };
-    type: {
-      finalYear: string;
-      promotion: string;
-      transfer: string;
-    };
-  };
-  // Grades
-  grades: {
-    management: string;
-    title: string;
-    list: string;
-    create: string;
-    edit: string;
-    delete: string;
-    name: string;
-    nameEn: string;
-    nameAr: string;
-    namePs: string;
-    nameFa: string;
-    minPercentage: string;
-    maxPercentage: string;
-    percentageRange: string;
-    order: string;
-    isPass: string;
-    passing: string;
-    failing: string;
-    created: string;
-    updated: string;
-    deleted: string;
-    createError: string;
-    updateError: string;
-    deleteError: string;
-    deleteConfirm: string;
-    deleteConfirmMessage: string;
-    noGrades: string;
-    rangeOverlap: string;
-    addGrade: string;
-    editGrade: string;
-    gradeDetails: string;
-    enterName: string;
-    enterPercentage: string;
-    orderHint: string;
-    passingGrade: string;
-    failingGrade: string;
-    createDescription: string;
-    editDescription: string;
-    managementDescription: string;
-    maxPercentagePlaceholder: string;
-    minPercentagePlaceholder: string;
-    nameArPlaceholder: string;
-    nameEnPlaceholder: string;
-    nameFaPlaceholder: string;
-    namePsPlaceholder: string;
-    noGradesDescription: string;
-    orderPlaceholder: string;
-  };
-
-  // Exam Reports
-  examReports: {
-    title: string;
-    hub: string;
-    selectReport: string;
-    consolidatedMarkSheet: string;
-    consolidatedMarkSheetDesc: string;
-    classSubjectMarkSheet: string;
-    classSubjectMarkSheetDesc: string;
-    selectExam: string;
-    selectClass: string;
-    selectSubject: string;
-    rollNumber: string;
-    studentName: string;
-    fatherName: string;
-    admissionNo: string;
-    marksObtained: string;
-    totalMarks: string;
-    percentage: string;
-    grade: string;
-    result: string;
-    pass: string;
-    fail: string;
-    incomplete: string;
-    absent: string;
-    rank: string;
-    secretNumber: string;
-    showSecretNumber: string;
-    showRank: string;
-    sortBy: string;
-    sortByRoll: string;
-    sortByMarks: string;
-    sortByFatherName: string;
-    sortOrder: string;
-    ascending: string;
-    descending: string;
-    summary: string;
-    totalStudents: string;
-    presentStudents: string;
-    absentStudents: string;
-    passCount: string;
-    failCount: string;
-    incompleteCount: string;
-    averageMarks: string;
-    highestMarks: string;
-    lowestMarks: string;
-    exportToPdf: string;
-    exportToExcel: string;
-    exportToCsv: string;
-    printReport: string;
-    viewReport: string;
-    generateReport: string;
-    noDataAvailable: string;
-    selectExamFirst: string;
-    selectClassFirst: string;
-    loadingReport: string;
-    reportGenerated: string;
-    subjectMarks: string;
-    allSubjects: string;
-    total: string;
-    present: string;
-    highest: string;
-    lowest: string;
-    average: string;
-    academicYear: string;
-    classAverage: string;
-    className: string;
-    classSubjectMarkSheetDescription: string;
-    consolidatedMarkSheetDescription: string;
-    consolidatedReport: string;
-    examName: string;
-    exportMultipleClasses: string;
-    exportMultipleClassesDescription: string;
-    hubDescription: string;
-    multipleClasses: string;
-    multipleSubjects: string;
-    multipleSubjectsDescription: string;
-    noMarksEntered: string;
-    obtainedMarks: string;
-    passPercentage: string;
-    passingMarks: string;
-    selectClassPrompt: string;
-    selectExamPrompt: string;
-    selectReportType: string;
-    selectSubjectPrompt: string;
-    singleClass: string;
-    singleSubject: string;
-    studentNotEnrolled: string;
-    studentStatistics: string;
-    studentsFailed: string;
-    studentsPassed: string;
-    subjectName: string;
-    subjectNotInClass: string;
-    subjectReport: string;
-    useExportButtons: string;
-  };
-
-  studentReportCard: {
-    title: string;
-    generateCard: string;
-    selectStudent: string;
-    selectStudentPrompt: string;
-    studentInformation: string;
-    studentPhoto: string;
-    studentDetails: string;
-    classSection: string;
-    sessionYear: string;
-    dateOfBirth: string;
-    admissionDate: string;
-    rollNo: string;
-    admissionNo: string;
-    fatherName: string;
-    motherName: string;
-    contactNumber: string;
-    address: string;
-    academicPerformance: string;
-    examResults: string;
-    subjectName: string;
-    maxMarks: string;
-    minMarks: string;
-    marksObtained: string;
-    grade: string;
-    percentage: string;
-    grandTotal: string;
-    overallPercentage: string;
-    overallGrade: string;
-    overallResult: string;
-    examWisePerformance: string;
-    noExamsFound: string;
-    attendanceRecord: string;
-    totalDays: string;
-    presentDays: string;
-    absentDays: string;
-    leaveDays: string;
-    attendancePercentage: string;
-    conduct: string;
-    conductGrade: string;
-    conductExcellent: string;
-    conductGood: string;
-    conductSatisfactory: string;
-    conductNeedsImprovement: string;
-    teacherRemarks: string;
-    principalRemarks: string;
-    remarksPlaceholder: string;
-    noRemarks: string;
-    achievements: string;
-    coActivities: string;
-    sports: string;
-    specialAchievements: string;
-    certificates: string;
-    awards: string;
-    signatures: string;
-    classTeacher: string;
-    principal: string;
-    parent: string;
-    dateIssued: string;
-    nextTerm: string;
-    promotedTo: string;
-    detained: string;
-    printCard: string;
-    downloadPDF: string;
-    shareCard: string;
-    cardTemplate: string;
-    selectTemplate: string;
-    templateClassic: string;
-    templateModern: string;
-    templateMinimal: string;
-    loading: string;
-    generating: string;
-    cardGenerated: string;
-    generationFailed: string;
-    watermark: string;
-    schoolLogo: string;
-    officialSeal: string;
-    verified: string;
-    confidential: string;
-  };
-
-  // Question Bank
-  questionBank: {
-    title: string;
-    description: string;
-    create: string;
-    createDescription: string;
-    edit: string;
-    editDescription: string;
-    viewQuestion: string;
-    deleteConfirm: string;
-    deleteConfirmMessage: string;
-    school: string;
-    selectSchool: string;
-    subject: string;
-    selectSubject: string;
-    classAcademicYear: string;
-    selectClass: string;
-    type: string;
-    "type.mcq": string;
-    "type.short": string;
-    "type.descriptive": string;
-    "type.true_false": string;
-    "type.essay": string;
-    difficulty: {
-      easy: string;
-      medium: string;
-      hard: string;
-    };
-    marks: string;
-    questionText: string;
-    questionTextPlaceholder: string;
-    rtl: string;
-    options: string;
-    optionPlaceholder: string;
-    correct: string;
-    addOption: string;
-    correctAnswer: string;
-    correctAnswerPlaceholder: string;
-    reference: string;
-    referencePlaceholder: string;
-    active: string;
-    searchPlaceholder: string;
-    filterSchool: string;
-    filterSubject: string;
-    filterType: string;
-    filterDifficulty: string;
-    questionsList: string;
-    totalQuestions: string;
-    question: string;
-    status: string;
-    activate: string;
-    deactivate: string;
-    class: string;
-    academicYear: string;
-    classSubject: string;
-    type: string;
-    "type.mcq": string;
-    "type.short": string;
-    "type.descriptive": string;
-    "type.true_false": string;
-    "type.essay": string;
-    difficulty: string;
-    filterAcademicYear: string;
-    filterClass: string;
-    loading: string;
-    selectAcademicYear: string;
-    selectAcademicYearFirst: string;
-    selectClassFirst: string;
-  };
-
-  // Exam Papers
-  examPapers: {
-    title: string;
-    description: string;
-    create: string;
-    createTemplate: string;
-    createDescription: string;
-    editTemplate: string;
-    editDescription: string;
-    deleteConfirm: string;
-    deleteConfirmMessage: string;
-    school: string;
-    selectSchool: string;
-    subject: string;
-    selectSubject: string;
-    exam: string;
-    selectExam: string;
-    genericTemplate: string;
-    templateTitle: string;
-    titlePlaceholder: string;
-    language: string;
-    duration: string;
-    totalMarks: string;
-    totalMarksPlaceholder: string;
-    instructions: string;
-    instructionsPlaceholder: string;
-    headerHtml: string;
-    headerHtmlPlaceholder: string;
-    footerHtml: string;
-    footerHtmlPlaceholder: string;
-    active: string;
-    defaultForExamSubject: string;
-    searchPlaceholder: string;
-    filterSchool: string;
-    filterSubject: string;
-    filterExam: string;
-    templatesList: string;
-    totalTemplates: string;
-    noTemplates: string;
-    noTemplatesFound: string;
-    questions: string;
-    marks: string;
-    status: string;
-    default: string;
-    generic: string;
-    preview: string;
-    editQuestions: string;
-    dragToReorder: string;
-    addQuestion: string;
-    noQuestionsInTemplate: string;
-    question: string;
-    section: string;
-    required: string;
-    selectQuestion: string;
-    selectQuestionDescription: string;
-    searchQuestions: string;
-    noQuestionsAvailable: string;
-    type: string;
-    difficulty: string;
-    marksDiscrepancy: string;
-    academicYear: string;
-    class: string;
-    classAcademicYear: string;
-    copiesPrinted: string;
-    createPaper: string;
-    editPaper: string;
-    filterPrintStatus: string;
-    generatePdf: string;
-    lastPrinted: string;
-    noPapers: string;
-    noPapersFound: string;
-    paperDetails: string;
-    paperDetailsDescription: string;
-    paperTitle: string;
-    papersList: string;
-    print: string;
-    printConfirmation: string;
-    printConfirmationDescription: string;
-    printNotes: string;
-    printStatus: string;
-    printStatusUpdateFailed: string;
-    printStatusUpdated: string;
-    printTracking: string;
-    printTrackingDescription: string;
-    printedBy: string;
-    search: string;
-    selectAcademicYear: string;
-    selectAcademicYearFirst: string;
-    selectClass: string;
-    selectClassFirst: string;
-    selectLanguage: string;
-    selectTemplateFile: string;
-    subjectsForClass: string;
-    templateFile: string;
-    templateFileHelp: string;
-    totalPapers: string;
-    useDefaultTemplate: string;
-    templateFiles: string;
-  };
-
-  // Exam Paper Preview
-  examPaperPreview: {
-    title: string;
-    loading: string;
-    studentView: string;
-    teacherView: string;
-    instructions: string;
-    summary: string;
-    totalQuestions: string;
-    totalMarks: string;
-    duration: string;
-    minutes: string;
-    sections: string;
-    section: string;
-    questions: string;
-    marks: string;
-    optional: string;
-    modelAnswer: string;
-    reference: string;
-    notes: string;
-    answerHere: string;
-    subject: string;
-    class: string;
-    academicYear: string;
-    studentName: string;
-    rollNumber: string;
-    notFound: string;
-  };
-
-  // Watermarks
-  watermarks: {
-    title: string;
-    subtitle: string;
-    addWatermark: string;
-    addFirstWatermark: string;
-    editWatermark: string;
-    updateWatermarkInfo: string;
-    enterWatermarkDetails: string;
-    type: string;
-    content: string;
-    reportKey: string;
-    position: string;
-    status: string;
-    actions: string;
-    noWatermarks: string;
-    text: string;
-    image: string;
-    enterText: string;
-    fontFamily: string;
-    enterFontFamily: string;
-    color: string;
-    imageRequired: string;
-    enterReportKey: string;
-    reportKeyHint: string;
-    repeatPattern: string;
-    opacity: string;
-    rotation: string;
-    scale: string;
-    positionX: string;
-    positionY: string;
-    sortOrder: string;
-    active: string;
-    inactive: string;
-    cancel: string;
-    create: string;
-    update: string;
-    delete: string;
-    deleteConfirmTitle: string;
-    deleteConfirmDescription: string;
-    center: string;
-    topLeft: string;
-    topRight: string;
-    bottomLeft: string;
-    bottomRight: string;
-    none: string;
-    repeat: string;
-    repeatX: string;
-    repeatY: string;
-    allReports: string;
-    manage: string;
-  };
-
-  // Phone Book
-  phoneBook: {
-    title: string;
-    subtitle: string;
-    name: string;
-    phone: string;
-    email: string;
-    category: string;
-    relation: string;
-    details: string;
-    address: string;
-    all: string;
-    students: string;
-    staff: string;
-    donors: string;
-    guests: string;
-    others: string;
-    studentGuardian: string;
-    studentEmergency: string;
-    studentZamin: string;
-    donor: string;
-    guest: string;
-    other: string;
-    allEntries: string;
-    allEntriesDescription: string;
-    studentContacts: string;
-    studentContactsDescription: string;
-    staffContacts: string;
-    staffContactsDescription: string;
-    donorContacts: string;
-    donorContactsDescription: string;
-    guestContacts: string;
-    guestContactsDescription: string;
-    searchPlaceholder: string;
-    student: string;
-    admissionNo: string;
-    employeeId: string;
-    guestCode: string;
-    contactPerson: string;
-    noDataToExport: string;
-  };
-
-  // Global Search
-  search: {
-    placeholder: string;
-    noResults: string;
-    startTyping: string;
-    keyboardShortcut: string;
-    students: string;
-    classes: string;
-    staff: string;
-    subjects: string;
-    academicYears: string;
-    schools: string;
-    admissionNo: string;
-    class: string;
-    position: string;
-    code: string;
-    employeeId: string;
-    cardNumber: string;
-    fatherName: string;
-  };
-  
-  // Subscription/SaaS system
-  subscription: {
-    // Status banners
-    trialPeriod: string;
-    trialEndsIn: string;
-    trialEnding: string;
-    upgradeToKeepAccess: string;
-    gracePeriod: string;
-    subscriptionExpired: string;
-    daysLeftToRenew: string;
-    renewNow: string;
-    readOnlyMode: string;
-    cannotMakeChanges: string;
-    accountBlocked: string;
-    contactSupport: string;
-    usageLimitsWarning: string;
-    approachingLimits: string;
-    manageSubscription: string;
-    upgrade: string;
-    
-    // Usage limits
-    limitReached: string;
-    limitReachedCantCreate: string;
-    approachingLimit: string;
-    cannotCreateMore: string;
-    usageWarningMessage: string;
-    used: string;
-    currentPlan: string;
-    upgradePlan: string;
-    
-    // Features
-    featureNotAvailable: string;
-    isNotIncluded: string;
-    purchaseAddon: string;
-    viewFeatures: string;
-    
-    // Errors
-    noSubscription: string;
-    limitReachedMessage: string;
-    featureNotAvailableMessage: string;
-    writeAccessDenied: string;
-    readAccessDenied: string;
-    genericError: string;
-    
-    // Subscription Management
-    subscriptionManagement: string;
-    yourSubscriptionStatus: string;
-    
-    // License Fees
-    licenseFee: string;
-    licenseFeeDescription: string;
-    licenseFeeStatus: string;
-    licenseUnpaid: string;
-    licenseUnpaidDescription: string;
-    licensePaymentHistory: string;
-    payLicense: string;
-    status: string;
-    viewLicenseHistory: string;
-    
-    // Maintenance Fees
-    maintenanceFee: string;
-    maintenanceFeeDescription: string;
-    maintenanceFees: string;
-    maintenanceFeeStatus: string;
-    nextMaintenanceDue: string;
-    noMaintenanceDue: string;
-    daysUntilDue: string;
-    lastPaid: string;
-    lastMaintenancePaid: string;
-    billingPeriod: string;
-    viewMaintenanceInvoices: string;
-    maintenanceInvoices: string;
-    maintenanceInvoicesDescription: string;
-    paymentHistory: string;
-    maintenancePaymentHistory: string;
-    noInvoices: string;
-    noPaymentHistory: string;
-    
-    // Enterprise Contact Form
-    enterpriseContact: {
-      title: string;
-      description: string;
-      organizationName: string;
-      organizationNamePlaceholder: string;
-      schoolName: string;
-      schoolNamePlaceholder: string;
-      contactName: string;
-      contactNamePlaceholder: string;
-      contactEmail: string;
-      contactEmailPlaceholder: string;
-      contactPhone: string;
-      contactPhonePlaceholder: string;
-      contactWhatsApp: string;
-      contactWhatsAppPlaceholder: string;
-      contactPosition: string;
-      contactPositionPlaceholder: string;
-      numberOfSchools: string;
-      numberOfSchoolsPlaceholder: string;
-      studentCount: string;
-      studentCountPlaceholder: string;
-      staffCount: string;
-      staffCountPlaceholder: string;
-      city: string;
-      cityPlaceholder: string;
-      country: string;
-      countryPlaceholder: string;
-      organizationNeeds: string;
-      organizationNeedsPlaceholder: string;
-      submit: string;
-      submitting: string;
-      submitted: string;
-      submitFailed: string;
-    };
-  };
-
-  // Landing Page
-  landing: {
-    features: {
-      students: {
-        title: string;
-        description: string;
-      };
-      attendance: {
-        title: string;
-        description: string;
-      };
-      classes: {
-        title: string;
-        description: string;
-      };
-      pdf_reports: {
-        title: string;
-        description: string;
-      };
-      subjects: {
-        title: string;
-        description: string;
-      };
-      exams: {
-        title: string;
-        description: string;
-      };
-      grades: {
-        title: string;
-        description: string;
-      };
-      question_bank: {
-        title: string;
-        description: string;
-      };
-      exam_paper_generator: {
-        title: string;
-        description: string;
-      };
-      timetables: {
-        title: string;
-        description: string;
-      };
-      graduation: {
-        title: string;
-        description: string;
-      };
-      finance: {
-        title: string;
-        description: string;
-      };
-      fees: {
-        title: string;
-        description: string;
-      };
-      multi_currency: {
-        title: string;
-        description: string;
-      };
-      dms: {
-        title: string;
-        description: string;
-      };
-      letter_templates: {
-        title: string;
-        description: string;
-      };
-      excel_export: {
-        title: string;
-        description: string;
-      };
-      library: {
-        title: string;
-        description: string;
-      };
-      assets: {
-        title: string;
-        description: string;
-      };
-      events: {
-        title: string;
-        description: string;
-      };
-      id_cards: {
-        title: string;
-        description: string;
-      };
-      custom_id_templates: {
-        title: string;
-        description: string;
-      };
-      custom_branding: {
-        title: string;
-        description: string;
-      };
-      short_courses: {
-        title: string;
-        description: string;
-      };
-      leave_management: {
-        title: string;
-        description: string;
-      };
-      hostel: {
-        title: string;
-        description: string;
-      };
-      multi_school: {
-        title: string;
-        description: string;
-      };
-      api_access: {
-        title: string;
-        description: string;
-      };
-      studentManagement: {
-        description: string;
-        title: string;
-      };
-    };
-    benefits: {
-      secureReliable: {
-        title: string;
-        description: string;
-      };
-      lightningFast: {
-        title: string;
-        description: string;
-      };
-      multiLanguage: {
-        title: string;
-        description: string;
-      };
-      mobileReady: {
-        title: string;
-        description: string;
-      };
-      cloudBased: {
-        title: string;
-        description: string;
-      };
-      support24x7: {
-        title: string;
-        description: string;
-      };
-    };
-      pricing: {
-        period: string;
-        noPlansAvailable: string;
-        comparisonTitle: string;
-        comparisonSubtitle: string;
-        feature: string;
-        starter: {
-        name: string;
-        description: string;
-        feature1: string;
-        feature2: string;
-        feature3: string;
-        feature4: string;
-        feature5: string;
-        feature6: string;
-      };
-      professional: {
-        name: string;
-        description: string;
-        feature1: string;
-        feature2: string;
-        feature3: string;
-        feature4: string;
-        feature5: string;
-        feature6: string;
-        feature7: string;
-        feature8: string;
-      };
-      enterprise: {
-        name: string;
-        description: string;
-        feature1: string;
-        feature2: string;
-        feature3: string;
-        feature4: string;
-        feature5: string;
-        feature6: string;
-        feature7: string;
-        feature8: string;
-      };
-      defaultDescription: string;
-      free: string;
-      periodYear: string;
-    };
-    stats: {
-      studentsManaged: string;
-      staffMembers: string;
-      uptimeGuarantee: string;
-      supportAvailable: string;
-    };
-    contact: {
-      messageSent: string;
-      messageSentDescription: string;
-      messageFailed: string;
-      messageFailedDescription: string;
-    };
-    nav: {
-      features: string;
-      finance: string;
-      pricing: string;
-      reviews: string;
-      contact: string;
-      signIn: string;
-      getStarted: string;
-    };
-    hero: {
-      badge: string;
-      title: string;
-      titleHighlight: string;
-      subtitle: string;
-      startFreeTrial: string;
-      watchDemo: string;
-    };
-    sections: {
-      features: {
-        badge: string;
-        title: string;
-        subtitle: string;
-      };
-      benefits: {
-        badge: string;
-        title: string;
-        subtitle: string;
-      };
-      pricing: {
-        badge: string;
-        title: string;
-        subtitle: string;
-        mostPopular: string;
-        getStarted: string;
-        startFreeTrial: string;
-        allPlansNote: string;
-        customPlanLink: string;
-        comparisonSubtitle: string;
-        comparisonTitle: string;
-        feature: string;
-      };
-      testimonials: {
-        badge: string;
-        title: string;
-        subtitle: string;
-      };
-      contact: {
-        badge: string;
-        title: string;
-        subtitle: string;
-        letsStartConversation: string;
-        conversationDescription: string;
-        phoneSupport: string;
-        whatsappSupport: string;
-        emailSupport: string;
-        officeAddress: string;
-        businessHours: string;
-        sendMessage: string;
-        formDescription: string;
-        firstName: string;
-        lastName: string;
-        emailAddress: string;
-        phoneNumber: string;
-        schoolName: string;
-        numberOfStudents: string;
-        message: string;
-        sendMessageButton: string;
-        sending: string;
-      };
-      cta: {
-        title: string;
-        subtitle: string;
-        startFreeTrial: string;
-        scheduleDemo: string;
-        note: string;
-      };
-    };
-    aboutUs: {
-      cta: {
-        button: string;
-        text: string;
-      };
-      mission: {
-        content: string;
-        title: string;
-      };
-      subtitle: string;
-      values: {
-        community: {
-          content: string;
-          title: string;
-        };
-        excellence: {
-          content: string;
-          title: string;
-        };
-        innovation: {
-          content: string;
-          title: string;
-        };
-        integrity: {
-          content: string;
-          title: string;
-        };
-      };
-      vision: {
-        content: string;
-        title: string;
-      };
-      whatWeOffer: {
-        affordable: {
-          content: string;
-          title: string;
-        };
-        comprehensive: {
-          content: string;
-          title: string;
-        };
-        support: {
-          content: string;
-          title: string;
-        };
-      };
-    };
-    footer: {
-      aboutUs: string;
-      careers: string;
-      company: string;
-      contactSupport: string;
-      cookiePolicy: string;
-      copyright: string;
-      features: string;
-      helpCenter: string;
-      pricing: string;
-      privacyPolicy: string;
-      product: string;
-      releaseNotes: string;
-      security: string;
-      support: string;
-      systemStatus: string;
-      tagline: string;
-      termsOfService: string;
-      trainingVideos: string;
-    };
-    planRequest: {
-      failed: string;
-      failedDescription: string;
-      sent: string;
-      sentDescription: string;
-    };
-    privacyPolicy: {
-      contact: {
-        content: string;
-        title: string;
-      };
-      dataRetention: {
-        content: string;
-        title: string;
-      };
-      dataSecurity: {
-        content: string;
-        title: string;
-      };
-      howWeUse: {
-        analytics: string;
-        communicate: string;
-        provide: string;
-        security: string;
-        support: string;
-        title: string;
-      };
-      informationWeCollect: {
-        personal: {
-          content: string;
-          title: string;
-        };
-        technical: {
-          content: string;
-          title: string;
-        };
-        usage: {
-          content: string;
-          title: string;
-        };
-      };
-      introduction: {
-        content: string;
-        title: string;
-      };
-      lastUpdated: string;
-      yourRights: {
-        access: string;
-        correct: string;
-        delete: string;
-        export: string;
-        intro: string;
-        object: string;
-        title: string;
-      };
-    };
-    termsOfService: {
-      acceptance: {
-        content: string;
-        title: string;
-      };
-      account: {
-        accurate: string;
-        intro: string;
-        maintain: string;
-        notify: string;
-        responsible: string;
-        title: string;
-      };
-      changes: {
-        content: string;
-        title: string;
-      };
-      contact: {
-        content: string;
-        title: string;
-      };
-      intellectualProperty: {
-        content: string;
-        title: string;
-      };
-      introduction: {
-        content: string;
-        title: string;
-      };
-      lastUpdated: string;
-      liability: {
-        content: string;
-        title: string;
-      };
-      subscription: {
-        cancellation: string;
-        content: string;
-        title: string;
-      };
-      termination: {
-        content: string;
-        title: string;
-      };
-      use: {
-        permitted: {
-          content: string;
-          title: string;
-        };
-        prohibited: {
-          interfere: string;
-          malicious: string;
-          title: string;
-          unauthorized: string;
-          violate: string;
-        };
-      };
-    };
-  };
-  helpCenter: {
-    title: string;
-    subtitle: string;
-      searchPlaceholder: string;
-      allCategories: string;
-      clearFilters: string;
-      featuredArticles: string;
-      popularArticles: string;
-      articles: string;
-      allArticles: string;
-      articlesFound: string;
-      noArticlesFound: string;
-      noArticlesDescription: string;
-      contextualHelp: string;
-      articleFound: string;
-      noArticleFound: string;
-      errorLoading: string;
-      viewFullArticle: string;
-      browseHelpCenter: string;
-    articleNotFound: string;
-    articleNotFoundDescription: string;
-    backToHelpCenter: string;
-    errorLoadingArticles: string;
-    errorLoadingCategories: string;
-    linkCopied: string;
-    no: string;
-    relatedArticles: string;
-    share: string;
-    thankYou: string;
-    views: string;
-    wasThisHelpful: string;
-    yes: string;
-    filters: string;
-    browseCategories: string;
-    sortBy: string;
-    sortRecent: string;
-    sortPopular: string;
-    sortAZ: string;
-    categoryHint: string;
-    scanHint: string;
-    needMoreHelp: string;
-    needMoreHelpDesc: string;
-    resetSearch: string;
-    contactSupport: string;
-    continueReading: string;
-    topMatches: string;
-    tipEnter: string;
-    activeFilters: string;
-    category: string;
-    search: string;
-    browseAll: string;
-    minRead: string;
-    title: {
-      helpCenterManagement: string;
-    };
-    };
-    footer: {
-      tagline: string;
-      product: string;
-      support: string;
-      company: string;
-      features: string;
-      pricing: string;
-      apiDocumentation: string;
-      integrations: string;
-      security: string;
-      helpCenter: string;
-      trainingVideos: string;
-      contactSupport: string;
-      systemStatus: string;
-      releaseNotes: string;
-      aboutUs: string;
-      careers: string;
-      privacyPolicy: string;
-      termsOfService: string;
-      cookiePolicy: string;
-      copyright: string;
-    };
-    aboutUs: {
-      title: string;
-      subtitle: string;
-      mission: {
-        title: string;
-        content: string;
-      };
-      vision: {
-        title: string;
-        content: string;
-      };
-      values: {
-        title: string;
-        innovation: {
-          title: string;
-          content: string;
-        };
-        integrity: {
-          title: string;
-          content: string;
-        };
-        excellence: {
-          title: string;
-          content: string;
-        };
-        community: {
-          title: string;
-          content: string;
-        };
-      };
-      whatWeOffer: {
-        title: string;
-        comprehensive: {
-          title: string;
-          content: string;
-        };
-        affordable: {
-          title: string;
-          content: string;
-        };
-        support: {
-          title: string;
-          content: string;
-        };
-      };
-      cta: {
-        text: string;
-        button: string;
-      };
-    };
-    privacyPolicy: {
-      title: string;
-      lastUpdated: string;
-      introduction: {
-        title: string;
-        content: string;
-      };
-      informationWeCollect: {
-        title: string;
-        personal: {
-          title: string;
-          content: string;
-        };
-        usage: {
-          title: string;
-          content: string;
-        };
-        technical: {
-          title: string;
-          content: string;
-        };
-      };
-      howWeUse: {
-        title: string;
-        provide: string;
-        communicate: string;
-        security: string;
-        support: string;
-        analytics: string;
-      };
-      dataSecurity: {
-        title: string;
-        content: string;
-      };
-      dataRetention: {
-        title: string;
-        content: string;
-      };
-      yourRights: {
-        title: string;
-        intro: string;
-        access: string;
-        correct: string;
-        delete: string;
-        export: string;
-        object: string;
-      };
-      contact: {
-        title: string;
-        content: string;
-      };
-    };
-    termsOfService: {
-      title: string;
-      lastUpdated: string;
-      introduction: {
-        title: string;
-        content: string;
-      };
-      acceptance: {
-        title: string;
-        content: string;
-      };
-      account: {
-        title: string;
-        intro: string;
-        accurate: string;
-        maintain: string;
-        notify: string;
-        responsible: string;
-      };
-      use: {
-        title: string;
-        permitted: {
-          title: string;
-          content: string;
-        };
-        prohibited: {
-          title: string;
-          unauthorized: string;
-          malicious: string;
-          interfere: string;
-          violate: string;
-        };
-      };
-      subscription: {
-        title: string;
-        content: string;
-        cancellation: string;
-      };
-      intellectualProperty: {
-        title: string;
-        content: string;
-      };
-      liability: {
-        title: string;
-        content: string;
-      };
-      termination: {
-        title: string;
-        content: string;
-      };
-      changes: {
-        title: string;
-        content: string;
-      };
-      contact: {
-        title: string;
-        content: string;
-      };
-    };
-  // Maintenance Mode
-  maintenance: {
-    startedAt: string;
-    timeRemaining: string;
-    remaining: string;
-    affectedServices: string;
-    progress: string;
-    inProgress: string;
-    teamWorking: string;
-    refresh: string;
-    autoRefresh: string;
-    title: string;
-    defaultMessage: string;
-    scheduledEnd: string;
-    retryAfter: string;
-    seconds: string;
-    retry: string;
-    info: string;
-  };
-}
-
+// TranslationKeys type - matches the structure of the EN translation object
+export type TranslationKeys = typeof import('./en').en;

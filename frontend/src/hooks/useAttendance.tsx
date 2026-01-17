@@ -91,7 +91,9 @@ export const useAttendanceSessions = (filters: AttendanceFilters = {}, usePagina
       return (apiSessions as AttendanceApi.AttendanceSession[]).map(mapAttendanceSessionApiToDomain);
     },
     enabled: !!user && !!profile && !profileLoading && !isEventUser, // Disable for event users and wait for profile
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes - increased from 2 minutes
+    refetchOnWindowFocus: false, // Prevent refetch on tab switch
+    refetchOnReconnect: false, // Prevent refetch on reconnect
   });
 
   useEffect(() => {

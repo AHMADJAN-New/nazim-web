@@ -591,7 +591,7 @@ export function StaffList() {
                                 <SelectValue placeholder={t('events.status')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">{t('userManagement.allStatus')}</SelectItem>
+                                <SelectItem value="all">{t('staff.allStatus')}</SelectItem>
                                 <SelectItem value="active">{t('staff.statusActive')}</SelectItem>
                                 <SelectItem value="inactive">{t('staff.statusInactive')}</SelectItem>
                                 <SelectItem value="on_leave">{t('staff.statusOnLeave')}</SelectItem>
@@ -618,7 +618,7 @@ export function StaffList() {
                                 <SelectValue placeholder={t('staff.school')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">{t('leave.allSchools')}</SelectItem>
+                                <SelectItem value="all">{t('students.allSchools')}</SelectItem>
                                     {schools.map((school) => (
                                         <SelectItem key={school.id} value={school.id}>
                                             {school.schoolName}
