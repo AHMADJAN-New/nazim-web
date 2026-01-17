@@ -29,6 +29,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import {
     ChartContainer,
     ChartTooltip,
@@ -215,176 +216,75 @@ export default function LibraryDashboard() {
             />
 
             {/* Main Stats Cards Row */}
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                {/* Total Books */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
-                        <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
-                            {t('library.totalBooks') || 'Total Books'}
-                        </CardTitle>
-                        <div className="p-2 rounded-lg bg-blue-500/10 flex-shrink-0">
-                            <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="pb-3">
-                        <div className="text-2xl sm:text-3xl font-bold mb-2 text-blue-600 break-words">
-                            {dashboardStats.totalBooks}
-                        </div>
-                        <div className="text-xs text-muted-foreground mb-2 break-words">
-                            {dashboardStats.totalCopies} {t('library.totalCopiesLabel') || 'total copies'}
-                        </div>
-                    </CardContent>
-                    <CardFooter className="pt-3 pb-3">
-                        <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full justify-start whitespace-normal sm:whitespace-nowrap"
-                            onClick={() => navigate('/library/books')}
-                        >
-                            <ArrowUpRight className="h-4 w-4 mr-1.5 flex-shrink-0" />
-                            <span className="text-left">{t('library.viewAllBooks') || 'View All Books'}</span>
-                        </Button>
-                    </CardFooter>
-                </Card>
-
-                {/* Available Copies */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
-                        <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
-                            {t('library.availableCopies') || 'Available Copies'}
-                        </CardTitle>
-                        <div className="p-2 rounded-lg bg-green-500/10 flex-shrink-0">
-                            <BookCheck className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="pb-3">
-                        <div className="text-2xl sm:text-3xl font-bold mb-2 text-green-600 break-words">
-                            {dashboardStats.availableCopies}
-                        </div>
-                        <div className="text-xs text-muted-foreground mb-2 break-words">
-                            {dashboardStats.onLoan} {t('library.onLoanLabel') || 'on loan'}
-                        </div>
-                        <div className="space-y-2">
-                            <Progress value={availabilityPercentage} className="h-2" />
-                            <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                                <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
-                                <span className="text-green-600 dark:text-green-400 font-medium whitespace-nowrap">
-                                    {availabilityPercentage.toFixed(1)}%
-                                </span>
-                                <span className="text-muted-foreground break-words">
-                                    available
-                                </span>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Active Loans */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
-                        <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
-                            {t('library.activeLoans') || 'Active Loans'}
-                        </CardTitle>
-                        <div className="p-2 rounded-lg bg-purple-500/10 flex-shrink-0">
-                            <Layers className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="pb-3">
-                        <div className="text-2xl sm:text-3xl font-bold mb-2 text-purple-600 break-words">
-                            {dashboardStats.activeLoans}
-                        </div>
-                        <div className="text-xs text-muted-foreground mb-2 break-words">
-                            {dashboardStats.overdueCount > 0 ? (
-                                <span className="text-destructive font-medium">
-                                    {dashboardStats.overdueCount} {t('library.overdue') || 'overdue'}
-                                </span>
-                            ) : (
-                                <span>{t('library.allCurrent') || 'All current'}</span>
-                            )}
-                        </div>
-                    </CardContent>
-                    <CardFooter className="pt-3 pb-3">
-                        <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full justify-start whitespace-normal sm:whitespace-nowrap"
-                            onClick={() => navigate('/library/distribution')}
-                        >
-                            <ArrowUpRight className="h-4 w-4 mr-1.5 flex-shrink-0" />
-                            <span className="text-left">{t('library.manageLoans') || 'Manage Loans'}</span>
-                        </Button>
-                    </CardFooter>
-                </Card>
-
-                {/* Due Soon */}
-                <Card className="relative overflow-visible">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
-                        <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
-                            {t('library.dueSoonCount') || 'Due Soon'}
-                        </CardTitle>
-                        <div className="p-2 rounded-lg bg-amber-500/10 flex-shrink-0">
-                            <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600 dark:text-amber-400" />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="pb-3">
-                        <div className={`text-2xl sm:text-3xl font-bold mb-2 break-words ${dashboardStats.dueSoonCount > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                            {dashboardStats.dueSoonCount}
-                        </div>
-                        <div className="text-xs text-muted-foreground mb-2 break-words">
-                            {t('library.dueInNext7Days') || 'Due in next 7 days'}
-                        </div>
-                    </CardContent>
-                </Card>
+            <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                <StatsCard
+                    title={t('library.totalBooks') || 'Total Books'}
+                    value={dashboardStats.totalBooks}
+                    icon={BookOpen}
+                    description={`${dashboardStats.totalCopies} ${t('library.totalCopiesLabel') || 'total copies'}`}
+                    color="blue"
+                    showButton={true}
+                    buttonText={t('library.viewAllBooks') || 'View All Books'}
+                    onClick={() => navigate('/library/books')}
+                />
+                <StatsCard
+                    title={t('library.availableCopies') || 'Available Copies'}
+                    value={dashboardStats.availableCopies}
+                    icon={BookCheck}
+                    description={`${dashboardStats.onLoan} ${t('library.onLoanLabel') || 'on loan'}`}
+                    color="green"
+                />
+                <StatsCard
+                    title={t('library.activeLoans') || 'Active Loans'}
+                    value={dashboardStats.activeLoans}
+                    icon={Layers}
+                    description={dashboardStats.overdueCount > 0 
+                        ? `${dashboardStats.overdueCount} ${t('library.overdue') || 'overdue'}`
+                        : t('library.allCurrent') || 'All current'}
+                    color="purple"
+                    showButton={true}
+                    buttonText={t('library.manageLoans') || 'Manage Loans'}
+                    onClick={() => navigate('/library/distribution')}
+                />
+                <StatsCard
+                    title={t('library.dueSoonCount') || 'Due Soon'}
+                    value={dashboardStats.dueSoonCount}
+                    icon={Calendar}
+                    description={t('library.dueInNext7Days') || 'Due in next 7 days'}
+                    color="amber"
+                />
             </div>
 
             {/* Secondary Stats Row */}
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                {/* Total Library Value */}
+            <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                <StatsCard
+                    title={t('library.totalValue') || 'Total Library Value'}
+                    value={dashboardStats.totalValue.toLocaleString('en-US', { 
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 2 
+                    })}
+                    icon={DollarSign}
+                    description={t('library.totalValueDescription') || 'Based on book prices and copies'}
+                    color="blue"
+                />
+                <StatsCard
+                    title={t('library.overdue') || 'Overdue Books'}
+                    value={dashboardStats.overdueCount}
+                    icon={AlertTriangle}
+                    description={dashboardStats.overdueCount > 0 
+                        ? t('library.booksPastDue') || 'Books past due date'
+                        : t('library.noOverdue') || 'No overdue books'}
+                    color={dashboardStats.overdueCount > 0 ? "red" : "blue"}
+                />
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">{t('library.totalValue') || 'Total Library Value'}</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {dashboardStats.totalValue.toLocaleString('en-US', { 
-                                minimumFractionDigits: 2, 
-                                maximumFractionDigits: 2 
-                            })}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {t('library.totalValueDescription') || 'Based on book prices and copies'}
-                        </p>
-                    </CardContent>
-                </Card>
-
-                {/* Overdue Books */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">{t('library.overdue') || 'Overdue Books'}</CardTitle>
-                        <AlertTriangle className="h-4 w-4 text-destructive" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className={`text-2xl font-bold ${dashboardStats.overdueCount > 0 ? 'text-destructive' : ''}`}>
-                            {dashboardStats.overdueCount}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {dashboardStats.overdueCount > 0 
-                                ? t('library.booksPastDue') || 'Books past due date'
-                                : t('library.noOverdue') || 'No overdue books'}
-                        </p>
-                    </CardContent>
-                </Card>
-
-                {/* Categories */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">{t('library.categories') || 'Categories'}</CardTitle>
-                        <Tag className="h-4 w-4 text-muted-foreground" />
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Tag className="h-4 w-4" />
+                            {t('library.categories') || 'Categories'}
+                        </CardTitle>
+                        <CardDescription>
+                            {t('library.totalCategories') || 'Total categories'}
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FileText, ChevronDown, ChevronUp, TrendingUp, Award } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -165,54 +166,31 @@ export function ExamsSection({ exams }: ExamsSectionProps) {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold">{summary.totalExams}</p>
-                <p className="text-sm text-muted-foreground">{t('studentHistory.totalExams') || 'Total Exams'}</p>
-              </div>
-              <FileText className="h-8 w-8 text-primary/20" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-primary">{summary.averagePercentage}%</p>
-                <p className="text-sm text-muted-foreground">{t('studentHistory.averageScore') || 'Average Score'}</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-primary/20" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold">{summary.totalMarks}</p>
-                <p className="text-sm text-muted-foreground">{t('studentHistory.totalMarks') || 'Total Marks'}</p>
-              </div>
-              <Award className="h-8 w-8 text-emerald-200" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold">{summary.totalMaxMarks}</p>
-                <p className="text-sm text-muted-foreground">{t('studentHistory.maxPossible') || 'Max Possible'}</p>
-              </div>
-              <Award className="h-8 w-8 text-gray-200" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <StatsCard
+          title={t('studentHistory.totalExams') || 'Total Exams'}
+          value={summary.totalExams}
+          icon={FileText}
+          color="blue"
+        />
+        <StatsCard
+          title={t('studentHistory.averageScore') || 'Average Score'}
+          value={`${summary.averagePercentage}%`}
+          icon={TrendingUp}
+          color="purple"
+        />
+        <StatsCard
+          title={t('studentHistory.totalMarks') || 'Total Marks'}
+          value={summary.totalMarks}
+          icon={Award}
+          color="emerald"
+        />
+        <StatsCard
+          title={t('studentHistory.maxPossible') || 'Max Possible'}
+          value={summary.totalMaxMarks}
+          icon={Award}
+          color="blue"
+        />
       </div>
 
       {/* Overall Progress */}

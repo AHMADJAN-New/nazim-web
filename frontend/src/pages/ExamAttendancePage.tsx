@@ -17,6 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useExam, useExamTimes, useTimeslotStudents, useMarkExamAttendance, useExamAttendanceSummary, useExams, useScanExamAttendance, useExamAttendanceScanFeed, useLatestExamFromCurrentYear } from '@/hooks/useExams';
@@ -509,33 +510,31 @@ export default function ExamAttendancePage() {
 
       {/* Summary Cards */}
       {attendanceSummary && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Enrolled Students</CardDescription>
-              <CardTitle className="text-2xl">{attendanceSummary.totals.enrolledStudents}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Present</CardDescription>
-              <CardTitle className="text-2xl text-green-600">{attendanceSummary.totals.present}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Absent</CardDescription>
-              <CardTitle className="text-2xl text-red-600">{attendanceSummary.totals.absent}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Late / Excused</CardDescription>
-              <CardTitle className="text-2xl text-yellow-600">
-                {attendanceSummary.totals.late + attendanceSummary.totals.excused}
-              </CardTitle>
-            </CardHeader>
-          </Card>
+        <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <StatsCard
+            title="Enrolled Students"
+            value={attendanceSummary.totals.enrolledStudents}
+            icon={Users}
+            color="blue"
+          />
+          <StatsCard
+            title="Present"
+            value={attendanceSummary.totals.present}
+            icon={Check}
+            color="green"
+          />
+          <StatsCard
+            title="Absent"
+            value={attendanceSummary.totals.absent}
+            icon={X}
+            color="red"
+          />
+          <StatsCard
+            title="Late / Excused"
+            value={attendanceSummary.totals.late + attendanceSummary.totals.excused}
+            icon={Clock}
+            color="amber"
+          />
         </div>
       )}
 

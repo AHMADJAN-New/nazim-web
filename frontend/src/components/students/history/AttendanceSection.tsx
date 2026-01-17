@@ -1,5 +1,6 @@
 import { CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -55,7 +56,7 @@ export function AttendanceSection({ attendance }: AttendanceSectionProps) {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="pt-4">
             <div className="text-center">
@@ -66,41 +67,26 @@ export function AttendanceSection({ attendance }: AttendanceSectionProps) {
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-green-600">{summary.presentCount}</p>
-                <p className="text-sm text-muted-foreground">{t('studentHistory.present') || 'Present'}</p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-200" />
-            </div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title={t('studentHistory.present') || 'Present'}
+          value={summary.presentCount}
+          icon={CheckCircle}
+          color="green"
+        />
         
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-red-600">{summary.absentCount}</p>
-                <p className="text-sm text-muted-foreground">{t('studentHistory.absent') || 'Absent'}</p>
-              </div>
-              <XCircle className="h-8 w-8 text-red-200" />
-            </div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title={t('studentHistory.absent') || 'Absent'}
+          value={summary.absentCount}
+          icon={XCircle}
+          color="red"
+        />
         
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-yellow-600">{summary.lateCount}</p>
-                <p className="text-sm text-muted-foreground">{t('studentHistory.late') || 'Late'}</p>
-              </div>
-              <Clock className="h-8 w-8 text-yellow-200" />
-            </div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title={t('studentHistory.late') || 'Late'}
+          value={summary.lateCount}
+          icon={Clock}
+          color="amber"
+        />
       </div>
 
       {/* Monthly Breakdown */}

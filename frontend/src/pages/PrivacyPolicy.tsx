@@ -22,7 +22,7 @@ export default function PrivacyPolicy() {
   const languages = [
     { code: 'en' as const, name: 'English', flag: '🇺🇸', nativeName: 'English' },
     { code: 'ps' as const, name: 'Pashto', flag: '🇦🇫', nativeName: 'پښتو' },
-    { code: 'fa' as const, name: 'Farsi', flag: '🇮🇷', nativeName: 'فارسی' },
+    { code: 'fa' as const, name: 'Dari', flag: '🇮🇷', nativeName: 'دری' },
     // { code: 'ar' as const, name: 'Arabic', flag: '🇸🇦', nativeName: 'العربية' },
   ];
 

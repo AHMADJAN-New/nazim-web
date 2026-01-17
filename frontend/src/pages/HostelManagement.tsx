@@ -8,6 +8,7 @@ import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -232,53 +233,34 @@ export function HostelManagement() {
       />
 
       <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('hostel.roomsOccupied')}</CardTitle>
-            <BedDouble className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.occupiedRooms}</div>
-            <p className="text-xs text-muted-foreground">
-              {summary.totalRooms} {t('hostel.totalRoomsLabel')}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('hostel.studentsInHostel')}</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.totalStudentsInRooms}</div>
-            <p className="text-xs text-muted-foreground">
-              {summary.unassignedBoarders} {t('hostel.boardersWaitingForRooms')}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('hostel.buildingsLabel')}</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.totalBuildings}</div>
-            <p className="text-xs text-muted-foreground">{t('hostel.acrossHostelNetwork')}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('hostel.wardenCoverageLabel')}</CardTitle>
-            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.uniqueWardens}</div>
-            <p className="text-xs text-muted-foreground">{t('hostel.roomsWithAssignedWardens')}</p>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title={t('hostel.roomsOccupied')}
+          value={summary.occupiedRooms}
+          icon={BedDouble}
+          description={`${summary.totalRooms} ${t('hostel.totalRoomsLabel')}`}
+          color="blue"
+        />
+        <StatsCard
+          title={t('hostel.studentsInHostel')}
+          value={summary.totalStudentsInRooms}
+          icon={Users}
+          description={`${summary.unassignedBoarders} ${t('hostel.boardersWaitingForRooms')}`}
+          color="green"
+        />
+        <StatsCard
+          title={t('hostel.buildingsLabel')}
+          value={summary.totalBuildings}
+          icon={Building2}
+          description={t('hostel.acrossHostelNetwork')}
+          color="purple"
+        />
+        <StatsCard
+          title={t('hostel.wardenCoverageLabel')}
+          value={summary.uniqueWardens}
+          icon={ShieldCheck}
+          description={t('hostel.roomsWithAssignedWardens')}
+          color="amber"
+        />
       </div>
 
       <FilterPanel 

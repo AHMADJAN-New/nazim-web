@@ -32,6 +32,7 @@ import { DataTablePagination } from '@/components/data-table/data-table-paginati
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/ui/loading';
@@ -252,43 +253,35 @@ const CourseStudentReports = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Enrolled</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{stats.enrolled}</div>
-            <Badge variant="secondary">Live</Badge>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('courses.completed')}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{stats.completed}</div>
-            <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Dropped/Failed</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{stats.dropped}</div>
-            <AlertTriangle className="h-6 w-6 text-amber-500" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('events.total')}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <FileBadge2 className="h-6 w-6 text-indigo-500" />
-          </CardContent>
-        </Card>
+          <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <StatsCard
+          title="Enrolled"
+          value={stats.enrolled}
+          icon={CheckCircle}
+          description="Live"
+          color="blue"
+        />
+        <StatsCard
+          title={t('courses.completed')}
+          value={stats.completed}
+          icon={CheckCircle2}
+          description={t('courses.completedStudents') || 'Completed students'}
+          color="green"
+        />
+        <StatsCard
+          title="Dropped/Failed"
+          value={stats.dropped}
+          icon={AlertTriangle}
+          description={t('courses.droppedStudents') || 'Dropped students'}
+          color="amber"
+        />
+        <StatsCard
+          title={t('events.total')}
+          value={stats.total}
+          icon={FileBadge2}
+          description={t('courses.totalStudents') || 'Total students'}
+          color="purple"
+        />
       </div>
 
       <Card>

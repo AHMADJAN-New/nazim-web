@@ -185,7 +185,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const languages = [
     { code: "en" as const, name: "English", flag: "🇺🇸" },
     { code: "ps" as const, name: "پښتو", flag: "🇦🇫" },
-    { code: "fa" as const, name: "فارسی", flag: "🇮🇷" },
+    { code: "fa" as const, name: "دری", flag: "🇮🇷" },
     // Arabic temporarily hidden until translations are complete
     // { code: "ar" as const, name: "العربية", flag: "🇸🇦" }
   ];
@@ -271,11 +271,11 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   };
 
   return (
-    <header className="bg-card border-b border-border sticky top-0 z-50 w-full shadow-sm flex-shrink-0" data-tour="app-header">
-      <div className="px-4 py-2 grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] items-center gap-3 sm:gap-4">
+    <header className="bg-card border-b border-border fixed md:sticky top-0 left-0 right-0 z-50 w-full shadow-sm flex-shrink-0" data-tour="app-header">
+      <div className="px-2 sm:px-4 py-2 flex items-center justify-between gap-2 sm:gap-4 overflow-x-auto">
         {/* Left Section - Sidebar trigger + Title/Breadcrumb */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <SidebarTrigger />
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
+          <SidebarTrigger className="relative z-50" />
           
           <div className="hidden lg:block">
             {showBreadcrumb && breadcrumbItems.length > 0 ? (
@@ -300,13 +300,13 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
 
           <div className="lg:hidden">
             {title ? (
-              <p className="text-base font-semibold text-foreground line-clamp-1 max-w-[160px]">{title}</p>
+              <p className="text-sm sm:text-base font-semibold text-foreground line-clamp-1 max-w-[120px] sm:max-w-[160px]">{title}</p>
             ) : null}
           </div>
         </div>
 
-        {/* Center Section - Search */}
-        <div className="order-3 w-full sm:order-none sm:flex sm:justify-center" ref={searchContainerRef} data-tour="search-container">
+        {/* Center Section - Search (Desktop only) */}
+        <div className="hidden sm:flex sm:justify-center flex-1 max-w-xl mx-4" ref={searchContainerRef} data-tour="search-container">
           <div className="relative w-full sm:max-w-xl">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -367,8 +367,97 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
         />
 
         {/* Right Section - Actions & Profile */}
-        <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end w-full sm:w-auto sm:flex-nowrap flex-shrink-0">
-          {/* Platform Admin Button */}
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          {/* School Switcher, Language, Help, Notifications - Always visible */}
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            {/* School Switcher - Visible on mobile */}
+            {showSchoolSwitcher && (
+              <Select
+                value={selectedSchoolId ?? authProfile?.default_school_id ?? 'none'}
+                onValueChange={(value) => {
+                  if (value && value !== 'none') {
+                    handleSchoolChange(value);
+                  }
+                }}
+                disabled={updateMySchool.isPending && !hasSchoolsAccessAll}
+              >
+                <SelectTrigger className="flex w-[100px] sm:w-[200px] text-xs sm:text-sm h-8 sm:h-9">
+                  <img
+                    src="/nazim_logo.webp"
+                    alt="Nazim"
+                    className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 object-contain flex-shrink-0"
+                    loading="lazy"
+                  />
+                  <SelectValue placeholder={t("common.selectSchool") || "Select School"} className="truncate" />
+                </SelectTrigger>
+                <SelectContent>
+                  {schools.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.schoolName}
+                      {s.id === authProfile?.default_school_id && !hasSchoolsAccessAll && (
+                        <span className="ml-2 text-xs text-muted-foreground">(Default)</span>
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* Language Selector - Always visible */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex h-8 sm:h-9 px-2 sm:px-3">
+                  <Languages className="h-4 w-4 flex-shrink-0" />
+                  <span className="ml-1 sm:ml-2 text-xs sm:text-sm">
+                    {languages.find(l => l.code === language)?.name}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>{t('common.selectLanguage')}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {languages.map((lang) => (
+                  <DropdownMenuItem
+                    key={lang.code}
+                    onClick={() => setLanguage(lang.code)}
+                    className={language === lang.code ? "bg-accent" : ""}
+                  >
+                    {lang.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Contextual Help - Always visible */}
+            <div data-tour="help-button">
+              <ContextualHelpButton
+                contextKey={undefined} // Will use current route automatically
+                variant="ghost"
+                size="sm"
+              />
+            </div>
+
+            {/* Notifications - Always visible */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="relative h-8 sm:h-9 px-2 sm:px-3"
+              onClick={() => setIsNotificationsOpen(true)}
+              data-tour="notifications"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadNotifications > 0 && (
+                <Badge
+                  variant="destructive"
+                  className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center"
+                >
+                  {unreadNotifications}
+                </Badge>
+              )}
+            </Button>
+          </div>
+
+          {/* Desktop: Platform Admin Button */}
           {isPlatformAdmin && (
             <Button
               variant="outline"
@@ -381,66 +470,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
             </Button>
           )}
 
-          {/* School Switcher */}
-          {showSchoolSwitcher && (
-            <Select
-              value={selectedSchoolId ?? authProfile?.default_school_id ?? 'none'}
-              onValueChange={(value) => {
-                if (value && value !== 'none') {
-                  handleSchoolChange(value);
-                }
-              }}
-              disabled={updateMySchool.isPending && !hasSchoolsAccessAll}
-            >
-              <SelectTrigger className="hidden md:flex w-[200px]">
-                <img
-                  src="/nazim_logo.webp"
-                  alt="Nazim"
-                  className="h-4 w-4 mr-2 object-contain"
-                  loading="lazy"
-                />
-                <SelectValue placeholder={t("common.selectSchool") || "Select School"} />
-              </SelectTrigger>
-              <SelectContent>
-                {schools.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.schoolName}
-                    {s.id === authProfile?.default_school_id && !hasSchoolsAccessAll && (
-                      <span className="ml-2 text-xs text-muted-foreground">(Default)</span>
-                    )}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
-          {/* Language Selector */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="hidden sm:flex">
-                <Languages className="h-4 w-4" />
-                <span className="ml-2 text-sm">
-                  {languages.find(l => l.code === language)?.flag}
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t('common.selectLanguage')}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {languages.map((lang) => (
-                <DropdownMenuItem
-                  key={lang.code}
-                  onClick={() => setLanguage(lang.code)}
-                  className={language === lang.code ? "bg-accent" : ""}
-                >
-                  <span className="mr-2">{lang.flag}</span>
-                  {lang.name}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Theme Toggle */}
+          {/* Desktop: Theme Toggle */}
           <Button
             variant="ghost"
             size="sm"
@@ -448,34 +478,6 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
             className="hidden sm:flex"
           >
             {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
-
-          {/* Contextual Help */}
-          <div data-tour="help-button">
-            <ContextualHelpButton
-              contextKey={undefined} // Will use current route automatically
-              variant="ghost"
-              size="sm"
-            />
-          </div>
-
-          {/* Notifications */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="relative"
-            onClick={() => setIsNotificationsOpen(true)}
-            data-tour="notifications"
-          >
-            <Bell className="h-4 w-4" />
-            {unreadNotifications > 0 && (
-              <Badge
-                variant="destructive"
-                className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center"
-              >
-                {unreadNotifications}
-              </Badge>
-            )}
           </Button>
 
           {/* User Profile */}
@@ -517,6 +519,22 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              {/* Mobile: Platform Admin Button */}
+              {isPlatformAdmin && (
+                <>
+                  <DropdownMenuItem onClick={() => navigate('/platform/dashboard')} className="sm:hidden">
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>Platform Admin</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="sm:hidden" />
+                </>
+              )}
+              {/* Mobile: Theme Toggle */}
+              <DropdownMenuItem onClick={toggleTheme} className="sm:hidden">
+                {isDarkMode ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+                <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="sm:hidden" />
               <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -264,73 +265,47 @@ export default function AssetReportsTab() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t('assets.totalAssets')}</CardDescription>
-            <CardTitle className="text-2xl">{(stats as AssetApi.AssetStats | undefined)?.asset_count ?? calculatedStats.totalAssets}</CardTitle>
-            <div className="text-xs text-muted-foreground mt-1 space-y-1">
-              <div>{calculatedStats.totalCopies} {t('assets.totalCopiesLabel')}</div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs">
-                  {calculatedStats.assignedAssets} {t('assets.assignedLabel')}
-                </Badge>
-                <Badge variant="outline" className="text-xs">
-                  {calculatedStats.totalAssets - calculatedStats.assignedAssets} {t('assets.availableLabel')}
-                </Badge>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t('assets.totalPrice')}</CardDescription>
-            <CardTitle className="text-2xl">
-              {Object.entries(calculatedStats.totalPriceByCurrency).map(([code, { symbol, amount }], index) => (
-                <span key={code}>
-                  {index > 0 && <span className="text-muted-foreground"> + </span>}
-                  <span>{formatAmountWithSymbol(amount, symbol)}</span>
-                </span>
-              ))}
-              {Object.keys(calculatedStats.totalPriceByCurrency).length === 0 && (
-                <span className="text-muted-foreground">$0.00</span>
-              )}
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
-              {t('assets.sumOfPrices')}
-            </p>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t('assets.totalValue')}</CardDescription>
-            <CardTitle className="text-2xl">
-              {Object.entries(calculatedStats.totalValueByCurrency).map(([code, { symbol, amount }], index) => (
-                <span key={code}>
-                  {index > 0 && <span className="text-muted-foreground"> + </span>}
-                  <span>{formatAmountWithSymbol(amount, symbol)}</span>
-                </span>
-              ))}
-              {Object.keys(calculatedStats.totalValueByCurrency).length === 0 && (
-                <span className="text-muted-foreground">$0.00</span>
-              )}
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
-              {t('assets.priceTimesCopies')}
-            </p>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t('assets.maintenanceCost')}</CardDescription>
-            <CardTitle className="text-2xl">
-              {formatCurrency(calculatedStats.totalMaintenanceCost)}
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
-              {calculatedStats.needsMaintenance} {t('assets.needAttention')}
-            </p>
-          </CardHeader>
-        </Card>
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatsCard
+          title={t('assets.totalAssets')}
+          value={(stats as AssetApi.AssetStats | undefined)?.asset_count ?? calculatedStats.totalAssets}
+          icon={BarChart3}
+          description={`${calculatedStats.totalCopies} ${t('assets.totalCopiesLabel')}`}
+          color="blue"
+        />
+        <StatsCard
+          title={t('assets.totalPrice')}
+          value={
+            Object.entries(calculatedStats.totalPriceByCurrency).length > 0
+              ? Object.entries(calculatedStats.totalPriceByCurrency)
+                  .map(([code, { symbol, amount }]) => formatAmountWithSymbol(amount, symbol))
+                  .join(' + ')
+              : '$0.00'
+          }
+          icon={DollarSign}
+          description={t('assets.sumOfPrices')}
+          color="green"
+        />
+        <StatsCard
+          title={t('assets.totalValue')}
+          value={
+            Object.entries(calculatedStats.totalValueByCurrency).length > 0
+              ? Object.entries(calculatedStats.totalValueByCurrency)
+                  .map(([code, { symbol, amount }]) => formatAmountWithSymbol(amount, symbol))
+                  .join(' + ')
+              : '$0.00'
+          }
+          icon={TrendingUp}
+          description={t('assets.priceTimesCopies')}
+          color="purple"
+        />
+        <StatsCard
+          title={t('assets.maintenanceCost')}
+          value={formatCurrency(calculatedStats.totalMaintenanceCost)}
+          icon={AlertTriangle}
+          description={`${calculatedStats.needsMaintenance} ${t('assets.needAttention')}`}
+          color="amber"
+        />
       </div>
 
       {/* Filters */}

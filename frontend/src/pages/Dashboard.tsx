@@ -225,48 +225,60 @@ export default function Dashboard() {
       value: dashboardStats.totalStudents.toLocaleString(),
       icon: Users,
       description: t('dashboard.activeStudents') || "Active students",
-      color: "primary" as const,
-      onClick: "/students"
+      color: "blue" as const,
+      onClick: "/students",
+      showButton: true,
+      buttonText: t('students.viewAll') || "View Students"
     } : null,
     canSeeStaff ? {
       title: t('dashboard.totalStaff') || "Total Staff",
       value: dashboardStats.totalStaff.toLocaleString(),
       icon: GraduationCap,
       description: t('dashboard.activeStaff') || "Active staff",
-      color: "secondary" as const,
-      onClick: "/staff"
+      color: "green" as const,
+      onClick: "/staff",
+      showButton: true,
+      buttonText: t('staff.viewAll') || "View Staff"
     } : null,
     canSeeClasses ? {
       title: t('dashboard.totalClasses') || "Total Classes",
       value: dashboardStats.totalClasses.toLocaleString(),
       icon: BookOpen,
       description: t('dashboard.activeClasses') || "Active classes",
-      color: "primary" as const,
-      onClick: "/settings/classes"
+      color: "purple" as const,
+      onClick: "/settings/classes",
+      showButton: true,
+      buttonText: t('classes.viewAll') || "View Classes"
     } : null,
     canSeeRooms ? {
       title: t('hostel.totalRooms') || "Total Rooms",
       value: dashboardStats.totalRooms.toLocaleString(),
       icon: Building,
       description: t('dashboard.availableRooms') || "Available rooms",
-      color: "secondary" as const,
-      onClick: "/settings/buildings"
+      color: "amber" as const,
+      onClick: "/settings/buildings",
+      showButton: true,
+      buttonText: t('buildings.viewAll') || "View Buildings"
     } : null,
     canSeeBuildings ? {
       title: t('dashboard.totalBuildings') || "Total Buildings",
       value: dashboardStats.totalBuildings.toLocaleString(),
       icon: Home,
       description: t('dashboard.schoolBuildings') || "School buildings",
-      color: "primary" as const,
-      onClick: "/settings/buildings"
+      color: "blue" as const,
+      onClick: "/settings/buildings",
+      showButton: true,
+      buttonText: t('buildings.viewAll') || "View Buildings"
     } : null
   ].filter(Boolean) as Array<{
     title: string;
     value: string;
     icon: LucideIcon;
     description: string;
-    color: "primary" | "secondary";
+    color: "blue" | "green" | "purple" | "amber" | "red";
     onClick: string;
+    showButton: boolean;
+    buttonText: string;
   }>) : [];
 
 
@@ -315,15 +327,13 @@ export default function Dashboard() {
       </div>
 
       {/* Key Metrics - Top Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8">
         {statsCards.slice(0, 4).map((stat, index) => (
-          <div 
-            key={index} 
+          <StatsCard 
+            key={index}
+            {...stat}
             onClick={() => handleStatClick(stat.onClick)}
-            className="cursor-pointer transform hover:scale-[1.02] transition-all duration-200"
-          >
-            <StatsCard {...stat} />
-          </div>
+          />
         ))}
       </div>
 
@@ -446,44 +456,44 @@ export default function Dashboard() {
       <div className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" data-tour="dashboard-tabs">
           <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 h-auto p-1" data-tour="dashboard-tabs-list">
-            <TabsTrigger value="overview" className="flex items-center gap-2" data-tour="tab-overview">
+            <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-tour="tab-overview">
               <Home className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('dashboard.overview') || 'Overview'}</span>
+              <span>{t('dashboard.overview') || 'Overview'}</span>
             </TabsTrigger>
             {canSeeFinanceTab && (
-              <TabsTrigger value="finance" className="flex items-center gap-2" data-tour="tab-finance">
+              <TabsTrigger value="finance" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-tour="tab-finance">
                 <DollarSign className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('nav.finance') || 'Finance'}</span>
+                <span>{t('nav.finance') || 'Finance'}</span>
               </TabsTrigger>
             )}
             {canSeeAssetsTab && (
-              <TabsTrigger value="assets" className="flex items-center gap-2" data-tour="tab-assets">
+              <TabsTrigger value="assets" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-tour="tab-assets">
                 <Package className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('nav.assets') || 'Assets'}</span>
+                <span>{t('nav.assets') || 'Assets'}</span>
               </TabsTrigger>
             )}
             {canSeeLibraryTab && (
-              <TabsTrigger value="library" className="flex items-center gap-2" data-tour="tab-library">
+              <TabsTrigger value="library" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-tour="tab-library">
                 <BookOpen className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('nav.library') || 'Library'}</span>
+                <span>{t('nav.library') || 'Library'}</span>
               </TabsTrigger>
             )}
             {canSeeAttendanceTab && (
-              <TabsTrigger value="attendance" className="flex items-center gap-2" data-tour="tab-attendance">
+              <TabsTrigger value="attendance" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-tour="tab-attendance">
                 <Activity className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('nav.attendance') || 'Attendance'}</span>
+                <span>{t('nav.attendance') || 'Attendance'}</span>
               </TabsTrigger>
             )}
             {canSeeLeaveTab && (
-              <TabsTrigger value="leave" className="flex items-center gap-2" data-tour="tab-leave">
+              <TabsTrigger value="leave" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-tour="tab-leave">
                 <Calendar className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('nav.leaveRequests') || 'Leave Requests'}</span>
+                <span>{t('nav.leaveRequests') || 'Leave Requests'}</span>
               </TabsTrigger>
             )}
             {canSeeDocumentsTab && (
-              <TabsTrigger value="documents" className="flex items-center gap-2" data-tour="tab-documents">
+              <TabsTrigger value="documents" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-tour="tab-documents">
                 <FileText className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('students.documents') || 'Documents'}</span>
+                <span>{t('students.documents') || 'Documents'}</span>
               </TabsTrigger>
             )}
           </TabsList>

@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Combobox } from '@/components/ui/combobox';
 import {
   Dialog,
@@ -537,30 +538,32 @@ export default function AttendanceTotalsReports() {
 
             {!isLoading && report && (
                 <div className="space-y-6">
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <SummaryCard
-                            label={t('attendanceTotalsReport.totalSessions') || 'Sessions analyzed'}
+                    <div className="grid gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <StatsCard
+                            title={t('attendanceTotalsReport.totalSessions') || 'Sessions analyzed'}
                             value={report.totals.sessions.toLocaleString()}
                             icon={FileText}
+                            color="blue"
                         />
-                        <SummaryCard
-                            label={t('attendanceTotalsReport.studentsMarked') || 'Students marked'}
+                        <StatsCard
+                            title={t('attendanceTotalsReport.studentsMarked') || 'Students marked'}
                             value={report.totals.studentsMarked.toLocaleString()}
                             icon={Activity}
+                            color="purple"
                         />
-                        <SummaryCard
-                            label={t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}
+                        <StatsCard
+                            title={t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}
                             value={formatPercent(report.totals.attendanceRate)}
-                            helper={t('attendanceTotalsReport.attendanceRateHelper') || 'Present vs total records'}
+                            description={t('attendanceTotalsReport.attendanceRateHelper') || 'Present vs total records'}
                             icon={BarChart3}
-                            tone="success"
+                            color="green"
                         />
-                        <SummaryCard
-                            label={t('attendanceTotalsReport.absences') || 'Absences'}
+                        <StatsCard
+                            title={t('attendanceTotalsReport.absences') || 'Absences'}
                             value={report.totals.absent.toLocaleString()}
-                            helper={t('attendanceTotalsReport.absenceHelper') || 'Across selected filters'}
+                            description={t('attendanceTotalsReport.absenceHelper') || 'Across selected filters'}
                             icon={AlertTriangle}
-                            tone="warning"
+                            color="amber"
                         />
                     </div>
 

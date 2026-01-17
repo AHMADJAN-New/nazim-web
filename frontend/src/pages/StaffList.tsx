@@ -33,6 +33,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Pencil, Trash2, Eye, Users, Filter, X, ChevronRight, ChevronLeft, User, MapPin, GraduationCap, Briefcase, FileText, CheckCircle2 } from 'lucide-react';
@@ -514,57 +515,42 @@ export function StaffList() {
 
             {/* Stats */}
             {stats && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">{t('staff.totalStaff')}</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.total}</div>
-                            <p className="text-xs text-muted-foreground">{t('staff.acrossSelected') || 'Across selected organization'}</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">{t('events.active')}</CardTitle>
-                            <Users className="h-4 w-4 text-green-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-                            <p className="text-xs text-muted-foreground">{t('staff.activeStaff') || 'Active staff members'}</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">{t('staff.onLeave')}</CardTitle>
-                            <Users className="h-4 w-4 text-orange-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-orange-600">{stats.onLeave}</div>
-                            <p className="text-xs text-muted-foreground">{t('staff.onLeaveStaff') || 'Staff on leave'}</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">{t('staff.teachers')}</CardTitle>
-                            <Users className="h-4 w-4 text-blue-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-blue-600">{stats.byType.teacher}</div>
-                            <p className="text-xs text-muted-foreground">{t('staff.teacherCount') || 'Teaching staff'}</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">{t('staff.admins')}</CardTitle>
-                            <Users className="h-4 w-4 text-purple-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-purple-600">{stats.byType.admin}</div>
-                            <p className="text-xs text-muted-foreground">{t('staff.adminCount') || 'Administrative staff'}</p>
-                        </CardContent>
-                    </Card>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+                    <StatsCard
+                        title={t('staff.totalStaff')}
+                        value={stats.total}
+                        icon={Users}
+                        description={t('staff.acrossSelected') || 'Across selected organization'}
+                        color="blue"
+                    />
+                    <StatsCard
+                        title={t('events.active')}
+                        value={stats.active}
+                        icon={Users}
+                        description={t('staff.activeStaff') || 'Active staff members'}
+                        color="green"
+                    />
+                    <StatsCard
+                        title={t('staff.onLeave')}
+                        value={stats.onLeave}
+                        icon={Users}
+                        description={t('staff.onLeaveStaff') || 'Staff on leave'}
+                        color="orange"
+                    />
+                    <StatsCard
+                        title={t('staff.teachers')}
+                        value={stats.byType.teacher}
+                        icon={GraduationCap}
+                        description={t('staff.teacherCount') || 'Teaching staff'}
+                        color="blue"
+                    />
+                    <StatsCard
+                        title={t('staff.admins')}
+                        value={stats.byType.admin}
+                        icon={Briefcase}
+                        description={t('staff.adminCount') || 'Administrative staff'}
+                        color="purple"
+                    />
                 </div>
             )}
 

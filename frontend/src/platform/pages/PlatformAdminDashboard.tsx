@@ -28,6 +28,7 @@ import { usePlatformDashboard, usePlatformPendingPayments, usePlatformPendingRen
 
 import { OrganizationAdminsManagement } from '@/components/settings/OrganizationAdminsManagement';
 import { OrganizationsManagement } from '@/components/settings/OrganizationsManagement';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -116,71 +117,35 @@ export function PlatformAdminDashboard() {
       />
 
       {/* Stats Cards */}
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-4">
-        <Card className="overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">
-              Total Organizations
-            </CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground hidden sm:inline-flex" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">
-              {stats.totalOrganizations}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {stats.totalSchools} schools
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">
-              Active Subscriptions
-            </CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500 hidden sm:inline-flex" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">
-              {activeSubscriptions}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {trialSubscriptions} on trial
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">
-              Pending Actions
-            </CardTitle>
-            <Clock className="h-4 w-4 text-yellow-500 hidden sm:inline-flex" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">
-              {stats.pendingPayments + stats.pendingRenewals}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {stats.pendingPayments} payments, {stats.pendingRenewals} renewals
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">
-              Revenue This Year
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground hidden sm:inline-flex" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">
-              {stats.revenueThisYear.afn.toLocaleString()} AFN
-            </div>
-            <p className="text-xs text-muted-foreground">
-              ${stats.revenueThisYear.usd.toLocaleString()} USD
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-3 md:gap-4 grid-cols-1 lg:grid-cols-4">
+        <StatsCard
+          title="Total Organizations"
+          value={stats.totalOrganizations}
+          icon={Building2}
+          description={`${stats.totalSchools} schools`}
+          color="blue"
+        />
+        <StatsCard
+          title="Active Subscriptions"
+          value={activeSubscriptions}
+          icon={CheckCircle}
+          description={`${trialSubscriptions} on trial`}
+          color="green"
+        />
+        <StatsCard
+          title="Pending Actions"
+          value={stats.pendingPayments + stats.pendingRenewals}
+          icon={Clock}
+          description={`${stats.pendingPayments} payments, ${stats.pendingRenewals} renewals`}
+          color="amber"
+        />
+        <StatsCard
+          title="Revenue This Year"
+          value={`${stats.revenueThisYear.afn.toLocaleString()} AFN`}
+          icon={DollarSign}
+          description={`$${stats.revenueThisYear.usd.toLocaleString()} USD`}
+          color="purple"
+        />
       </div>
 
       {/* Main Content */}

@@ -44,15 +44,102 @@ import {
   Printer,
   Tag,
   Phone,
-  HelpCircle
+  HelpCircle,
+  // New unique icons
+  FileSpreadsheet,
+  FileBarChart,
+  FileUser,
+  FileCheck,
+  FilePlus,
+  FileStack,
+  FileQuestion,
+  FileCode,
+  Inbox,
+  Send,
+  Brain,
+  Receipt,
+  ClipboardCheck,
+  PenTool,
+  Timer,
+  ListChecks,
+  IdCard,
+  ScanLine,
+  CalendarOff,
+  CalendarClock,
+  CalendarRange,
+  CalendarCheck,
+  Settings2,
+  Tags,
+  Wrench,
+  HeartHandshake,
+  UserRound,
+  UsersRound,
+  UserSquare,
+  BookMarked,
+  Book,
+  BookText,
+  BookType,
+  PieChart,
+  DollarSign,
+  Table,
+  ShieldAlert,
+  Medal,
+  FileImage,
+  Archive,
+  Folder,
+  UserRoundPlus,
+  Grid3x3,
+  Library,
+  ChartBar,
+  BarChart,
+  BarChart2,
+  LineChart,
+  // Additional unique icons for remaining duplicates
+  CalendarDays,
+  CalendarPlus,
+  Landmark,
+  ScrollText,
+  FileOutput,
+  FilePen,
+  FilePieChart,
+  Layers,
+  LayoutGrid,
+  Presentation,
+  BadgeCheck,
+  BadgeDollarSign,
+  Gauge,
+  Activity,
+  ChartLine,
+  ChartSpline,
+  ChartNoAxesCombined,
+  Shapes,
+  Component,
+  Blocks,
+  SquareStack,
+  GalleryVerticalEnd,
+  Ticket,
+  CalendarHeart,
+  PartyPopper
 } from "lucide-react";
 import { useState, useEffect, useMemo, useCallback, useRef, memo, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { NavLink, useLocation } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Tooltip,
@@ -172,6 +259,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
   // CRITICAL: Use the lite gate status hook (no permission required) for access gating
   const { data: gateStatus, isLoading: gateStatusLoading } = useSubscriptionGateStatus();
   const location = useLocation();
+  const flyoutCloseTimerRef = useRef<number | null>(null);
+  const [openFlyoutKey, setOpenFlyoutKey] = useState<string | null>(null);
   
   // CRITICAL: Check if subscription is blocked (expired, suspended, trial ended, etc.)
   // When blocked, sidebar should show NO navigation items
@@ -494,13 +583,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
               title: "All Events",
               titleKey: "subjects.all",
               url: "/events",
-              icon: Calendar,
+              icon: CalendarRange,
             }] : []),
             ...(hasEventCheckinsCreatePermission ? [{
               title: "Check-in",
               titleKey: "events.checkin",
               url: "/events",
-              icon: UserCheck,
+              icon: ScanLine,
             }] : []),
             ...(hasEventGuestsCreatePermission ? [{
               title: "Add Guest",
@@ -542,13 +631,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Staff",
             titleKey: "staff",
             url: "/staff",
-            icon: Users,
+            icon: UserRound,
           }] : []),
           ...(hasStaffReportsPermission ? [{
             title: "Staff Reports",
             titleKey: "staffReports",
             url: "/reports/staff-registrations",
-            icon: FileText,
+            icon: FileSpreadsheet,
           }] : []),
         ],
       })] : []),
@@ -574,31 +663,31 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Attendance",
             titleKey: "attendance",
             url: "/attendance",
-            icon: UserCheck,
+            icon: ClipboardCheck,
           }] : []),
           ...(hasAttendanceSessionsPermission ? [{
             title: "Mark Attendance",
             titleKey: "markAttendance",
             url: "/attendance/marking",
-            icon: ClipboardList,
+            icon: PenTool,
           }] : []),
           ...(hasAttendanceSessionsPermission ? [{
             title: "Attendance Reports",
             titleKey: "attendanceReports",
             url: "/attendance/reports",
-            icon: FileText,
+            icon: FileCheck,
           }] : []),
           ...(hasAttendanceReportsPermission ? [{
             title: "Attendance Totals",
             titleKey: "attendanceTotalsReport",
             url: "/attendance/reports/totals",
-            icon: LucideIcons.BarChart3,
+            icon: ChartNoAxesCombined,
           }] : []),
         ],
       })] : []),
       ...(hasLeaveRequestsPermission ? [asNavItem({
         titleKey: "leaveRequests",
-        icon: Calendar,
+        icon: CalendarOff,
         badge: null,
         priority: 2.3,
         category: 'operations' as NavigationCategory,
@@ -608,19 +697,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Leave Requests",
             titleKey: "leaveRequests",
             url: "/leave-requests",
-            icon: Calendar,
+            icon: CalendarClock,
           },
           {
             title: "Leave Reports",
             titleKey: "leaveReports",
             url: "/leave-requests/reports",
-            icon: LucideIcons.BarChart3,
+            icon: BarChart,
           },
         ],
       })] : []),
       ...((hasShortTermCoursesPermission || hasCourseStudentsPermission || hasCourseReportsPermission || hasCourseAttendancePermission || hasCertificateTemplatesPermission || hasCourseDocumentsPermission) ? [asNavItem({
         titleKey: "shortTermCourses",
-        icon: GraduationCap,
+        icon: Presentation,
         badge: null,
         priority: 4.1,
         category: 'academic' as NavigationCategory,
@@ -642,37 +731,37 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Course Students",
             titleKey: "courseStudents",
             url: "/course-students",
-            icon: GraduationCap,
+            icon: Ticket,
           }] : []),
           ...(hasCourseAttendancePermission ? [{
             title: "Course Attendance",
             titleKey: "courseAttendance",
             url: "/course-attendance",
-            icon: UserCheck,
+            icon: Timer,
           }] : []),
           ...(hasCourseStudentsPermission ? [{
             title: "Course Certificates",
             titleKey: "courseCertificates",
             url: "/course-certificates",
-            icon: LucideIcons.Award,
+            icon: BadgeCheck,
           }] : []),
           ...(hasCertificateTemplatesPermission ? [{
             title: "Certificate Templates",
             titleKey: "certificateTemplates",
             url: "/certificate-templates",
-            icon: LucideIcons.Award,
+            icon: ScrollText,
           }] : []),
           ...(hasCourseDocumentsPermission ? [{
             title: "Course Documents",
             titleKey: "courseDocuments",
             url: "/course-documents",
-            icon: FileText,
+            icon: FileStack,
           }] : []),
           ...(hasCourseReportsPermission ? [{
             title: "Course Reports",
             titleKey: "courseReports",
             url: "/course-students/reports",
-            icon: LucideIcons.BarChart3,
+            icon: PieChart,
           }] : []),
         ],
       })] : []),
@@ -688,13 +777,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Dashboard",
             titleKey: "dashboard",
             url: "/graduation",
-            icon: LucideIcons.Home,
+            icon: Grid3x3,
           }] : []),
           ...(hasGraduationBatchesPermission ? [{
             title: "Graduation Batches",
             titleKey: "graduation.batches",
             url: "/graduation/batches",
-            icon: LucideIcons.GraduationCap,
+            icon: LucideIcons.Users,
           }] : []),
           ...(hasCertificateTemplatesPermission ? [{
             title: "Certificate Templates",
@@ -722,13 +811,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "ID Card Templates",
             titleKey: "idCards.templates",
             url: "/id-cards/templates",
-            icon: LucideIcons.CreditCard,
+            icon: LayoutGrid,
           }] : []),
           ...(hasIdCardsPermission ? [{
             title: "ID Card Assignment",
             titleKey: "idCards.assignment",
             url: "/id-cards/assignment",
-            icon: LucideIcons.UserCheck,
+            icon: IdCard,
           }] : []),
           ...(hasIdCardsExportPermission ? [{
             title: "ID Card Export",
@@ -750,7 +839,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Students",
             titleKey: "students",
             url: "/students",
-            icon: GraduationCap,
+            icon: User,
           }] : []),
           ...(hasStudentsImportPermission ? [{
             title: "Bulk Import Students",
@@ -762,19 +851,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Admissions",
             titleKey: "admissions",
             url: "/admissions",
-            icon: UserCheck,
+            icon: UserRoundPlus,
           }] : []),
           ...(hasStudentReportsPermission ? [{
             title: "Student Reports",
             titleKey: "studentReports",
             url: "/reports/student-registrations",
-            icon: FileText,
+            icon: FileUser,
           }] : []),
           ...(hasStudentAdmissionsReportPermission ? [{
             title: "Admissions Report",
             titleKey: "admissionsReport",
             url: "/admissions/report",
-            icon: FileText,
+            icon: FilePlus,
           }] : []),
           ...(hasStudentsPermission ? [{
             title: "Student History",
@@ -796,7 +885,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Exams",
             titleKey: "exams",
             url: "/exams",
-            icon: Trophy,
+            icon: Medal,
           }] : []),
           ...(hasExamsMarksPermission ? [{
             title: "Exam Marks",
@@ -808,7 +897,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Exam Attendance",
             titleKey: "examAttendance",
             url: "/exams/attendance",
-            icon: UserCheck,
+            icon: ListChecks,
           }] : []),
           ...(hasExamsTimetablePermission ? [{
             title: "Exam Timetables",
@@ -820,19 +909,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
           ...((hasExamsManagePermission || hasExamsEnrollPermission || hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission || hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission) ? [{
             title: "Exam Management",
             titleKey: "examManagement",
-            icon: LucideIcons.Settings,
+            icon: Wrench,
             children: [
               ...(hasExamsManagePermission ? [{
                 title: "Exam Enrollment",
                 titleKey: "examEnrollment",
                 url: "/exams/enrollment",
-                icon: UserPlus,
+                icon: BadgeCheck,
               }] : []),
               ...(hasExamsEnrollPermission ? [{
                 title: "Student Enrollment",
                 titleKey: "examStudentEnrollment",
                 url: "/exams/student-enrollment",
-                icon: Users,
+                icon: GalleryVerticalEnd,
               }] : []),
               ...((hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission) ? [{
                 title: "Roll Numbers",
@@ -864,13 +953,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
                 title: "Exam Papers",
                 titleKey: "examPapers",
                 url: "/exams/papers",
-                icon: LucideIcons.FileText,
+                icon: FileQuestion,
               }] : []),
               ...(hasExamsPapersPermission ? [{
                 title: "Print Tracking",
                 titleKey: "examPaperPrintTracking",
                 url: "/exams/papers/print-tracking",
-                icon: LucideIcons.Printer,
+                icon: LucideIcons.Scan,
               }] : []),
             ],
           }] : []),
@@ -878,37 +967,37 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Exam Documents",
             titleKey: "examDocuments",
             url: "/exam-documents",
-            icon: FileText,
+            icon: FileOutput,
           }] : []),
           // Reports Submenu - at the end
           ...((hasExamsReportsPermission || hasExamsViewGradeCardsPermission || hasExamsViewConsolidatedReportsPermission || hasExamsViewClassReportsPermission || hasExamsViewStudentReportsPermission || hasExamsNumbersPrintPermission) ? [{
             title: "Reports",
             titleKey: "examReports",
-            icon: FileText,
+            icon: FileBarChart,
             children: [
               ...(hasExamsReportsPermission ? [{
                 title: "Exam Insights",
                 titleKey: "examInsights",
                 url: "/exams/reports",
-                icon: FileText,
+                icon: Brain,
               }] : []),
               ...(hasExamsReportsPermission ? [{
                 title: "Exam Analytics",
                 titleKey: "examAnalytics",
                 url: "/exams/analytics",
-                icon: BarChart3,
+                icon: ChartSpline,
               }] : []),
               ...(hasExamsViewConsolidatedReportsPermission ? [{
                 title: "Consolidated Mark Sheet",
                 titleKey: "consolidatedMarkSheet",
                 url: "/exams/reports/consolidated",
-                icon: LucideIcons.FileText,
+                icon: Table,
               }] : []),
               ...(hasExamsViewClassReportsPermission ? [{
                 title: "Class Subject Mark Sheet",
                 titleKey: "classSubjectMarkSheet",
                 url: "/exams/reports/class-subject",
-                icon: LucideIcons.BarChart3,
+                icon: FilePen,
               }] : []),
               ...(hasExamsViewStudentReportsPermission ? [{
                 title: "Student Report Card",
@@ -956,7 +1045,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Hostel reports",
             titleKey: "hostel.reports",
             url: "/hostel/reports",
-            icon: LucideIcons.BarChart3,
+            icon: BarChart2,
           }] : []),
         ],
       })] : []),
@@ -972,19 +1061,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Dashboard",
             titleKey: "library.dashboard",
             url: "/library/dashboard",
-            icon: LucideIcons.BarChart3,
+            icon: Library,
           }] : []),
           ...(hasLibraryCategoriesPermission ? [{
             title: "Categories",
             titleKey: "library.categories",
             url: "/library/categories",
-            icon: BookOpen,
+            icon: BookMarked,
           }] : []),
           ...(hasLibraryBooksPermission ? [{
             title: "Books",
             titleKey: "library.books",
             url: "/library/books",
-            icon: BookOpen,
+            icon: Book,
           }] : []),
           ...(hasLibraryLoansPermission ? [{
             title: "Distribution",
@@ -996,7 +1085,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Reports",
             titleKey: "library.reports",
             url: "/library/reports",
-            icon: LucideIcons.BarChart3,
+            icon: ChartBar,
           }] : []),
         ],
       })] : []),
@@ -1012,7 +1101,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Dashboard",
             titleKey: "finance.dashboard",
             url: "/finance/dashboard",
-            icon: Home,
+            icon: LucideIcons.TrendingUp,
           }] : []),
           ...(hasFinanceAccountsPermission ? [{
             title: "Accounts",
@@ -1024,7 +1113,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Income",
             titleKey: "finance.income",
             url: "/finance/income",
-            icon: LucideIcons.TrendingUp,
+            icon: LucideIcons.ArrowUpCircle,
           }] : []),
           ...(hasExpenseEntriesPermission ? [{
             title: "Expenses",
@@ -1042,19 +1131,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Donors",
             titleKey: "finance.donors",
             url: "/finance/donors",
-            icon: Users,
+            icon: HeartHandshake,
           }] : []),
           ...(hasFinanceDocumentsPermission ? [{
             title: "Documents",
             titleKey: "finance.financeDocuments",
             url: "/finance/documents",
-            icon: LucideIcons.FileText,
+            icon: Receipt,
           }] : []),
           ...(hasFinanceReportsPermission ? [{
             title: "Reports",
             titleKey: "finance.reports",
             url: "/finance/reports",
-            icon: LucideIcons.BarChart3,
+            icon: LineChart,
           }] : []),
           // Settings submenu - only show if user has at least one settings permission
           ...((hasCurrenciesPermission || hasIncomeCategoriesPermission ||
@@ -1062,7 +1151,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
               title: "Settings",
               titleKey: "finance.settings",
               url: "/finance/settings",
-              icon: LucideIcons.Settings,
+              icon: Settings2,
             }] : []),
         ],
       })] : []),
@@ -1078,7 +1167,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Dashboard",
             titleKey: "finance.fees.dashboard",
             url: "/finance/fees/dashboard",
-            icon: LucideIcons.BarChart3,
+            icon: DollarSign,
           },
           {
             title: "Structures",
@@ -1096,19 +1185,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Payments",
             titleKey: "finance.fees.payments",
             url: "/finance/fees/payments",
-            icon: LucideIcons.CreditCard,
+            icon: BadgeDollarSign,
           }] : []),
           ...(hasFeeExceptionsPermission ? [{
             title: "Exceptions",
             titleKey: "finance.fees.exceptions",
             url: "/finance/fees/exceptions",
-            icon: LucideIcons.Shield,
+            icon: ShieldAlert,
           }] : []),
           {
             title: "Reports",
             titleKey: "finance.fees.reports",
             url: "/finance/fees/reports",
-            icon: LucideIcons.FileText,
+            icon: FilePieChart,
           },
         ].filter(Boolean) as NavigationChild[],
       }] : []),
@@ -1124,19 +1213,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "DMS Dashboard",
             titleKey: "dms.dashboard",
             url: "/dms/dashboard",
-            icon: Home,
+            icon: Gauge,
           }] : []),
           ...(hasDmsIncomingPermission ? [{
             title: "Incoming",
             titleKey: "dms.incoming",
             url: "/dms/incoming",
-            icon: FileText,
+            icon: Inbox,
           }] : []),
           ...(hasDmsOutgoingPermission ? [{
             title: "Outgoing",
             titleKey: "dms.outgoing",
             url: "/dms/outgoing",
-            icon: FileText,
+            icon: Send,
           }] : []),
           ...(hasDmsOutgoingPermission ? [{
             title: "Issue Letter",
@@ -1148,13 +1237,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Templates",
             titleKey: "dms.templates",
             url: "/dms/templates",
-            icon: BookOpen,
+            icon: FileCode,
           }] : []),
           ...(hasDmsLetterheadsPermission ? [{
             title: "Letterheads",
             titleKey: "dms.letterheads",
             url: "/dms/letterheads",
-            icon: Trophy,
+            icon: FileImage,
           }] : []),
           ...(hasDmsLetterTypesPermission ? [{
             title: "Letter Types",
@@ -1172,19 +1261,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Archive",
             titleKey: "dms.archive",
             url: "/dms/archive",
-            icon: Package,
+            icon: Archive,
           }] : []),
           ...(hasDmsReportsPermission ? [{
             title: "Reports",
             titleKey: "dms.reports",
             url: "/dms/reports",
-            icon: LucideIcons.BarChart3,
+            icon: BarChart2,
           }] : []),
           ...(hasDmsSettingsPermission ? [{
             title: "Settings",
             titleKey: "dms.settings",
             url: "/dms/settings",
-            icon: Settings,
+            icon: SquareStack,
           }] : []),
         ],
       })] : []),
@@ -1200,13 +1289,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "All Events",
             titleKey: "events.all",
             url: "/events",
-            icon: Calendar,
+            icon: CalendarHeart,
           }] : []),
           ...(hasEventCheckinsCreatePermission ? [{
             title: "Check-in",
             titleKey: "events.checkin",
             url: "/events",
-            icon: UserCheck,
+            icon: ScanLine,
           }] : []),
           ...(hasEventGuestsCreatePermission ? [{
             title: "Add Guest",
@@ -1218,7 +1307,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Event Types",
             titleKey: "events.types",
             url: "/events/types",
-            icon: Settings,
+            icon: Tags,
           }] : []),
           ...(hasEventUpdatePermission ? [{
             title: "Event Users",
@@ -1246,7 +1335,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Asset Categories",
             titleKey: "assets.categories",
             url: "/assets/categories",
-            icon: Package,
+            icon: Folder,
           },
           {
             title: "Asset Management",
@@ -1264,13 +1353,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Asset Reports",
             titleKey: "assets.reports",
             url: "/assets/reports",
-            icon: LucideIcons.BarChart3,
+            icon: BarChart,
           },
         ],
       })] : []),
       ...((hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission || hasTimetablesPermission) ? [asNavItem({
         titleKey: "academicManagement",
-        icon: GraduationCap,
+        icon: Landmark,
         badge: null,
         priority: 4.5,
         category: 'academic' as NavigationCategory,
@@ -1280,25 +1369,25 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Classes",
             titleKey: "academic.classes.title",
             url: "/settings/classes",
-            icon: GraduationCap,
+            icon: Layers,
           }] : []),
           ...(hasSubjectsPermission ? [{
             title: "Subjects",
             titleKey: "academic.subjects.title",
             url: "/settings/subjects",
-            icon: BookOpen,
+            icon: BookText,
           }] : []),
           ...(hasTeacherSubjectAssignmentsPermission ? [{
             title: "Teacher Subject Assignments",
             titleKey: "teacherSubjectAssignments.title",
             url: "/settings/teacher-subject-assignments",
-            icon: UserCheck,
+            icon: Component,
           }] : []),
         ],
       })] : []),
       ...((hasTimetablesPermission || hasScheduleSlotsPermission) ? [asNavItem({
         titleKey: "timetables",
-        icon: Calendar,
+        icon: CalendarClock,
         badge: null,
         priority: 4.6,
         category: 'academic' as NavigationCategory,
@@ -1308,7 +1397,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Timetable Generation",
             titleKey: "timetable.title",
             url: "/academic/timetable-generation",
-            icon: Calendar,
+            icon: CalendarCheck,
           }] : []),
           ...(hasScheduleSlotsPermission ? [{
             title: "Schedule Slots",
@@ -1332,7 +1421,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Profile Management",
             titleKey: "profileManagement",
             url: "/settings/profile",
-            icon: Users,
+            icon: UserCog,
           }] : []),
           ...(hasPermissionsPermission ? [{
             title: "Permissions Management",
@@ -1344,7 +1433,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Roles Management",
             titleKey: "rolesManagement",
             url: "/settings/roles",
-            icon: Shield,
+            icon: Blocks,
           }] : []),
           ...(hasPermissionsPermission ? [{
             title: "User Permissions",
@@ -1356,7 +1445,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "User Management",
             titleKey: "userManagement",
             url: "/admin/users",
-            icon: Users,
+            icon: UsersRound,
           }] : []),
         ],
       },
@@ -1371,7 +1460,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
       })] : []),
       {
         titleKey: "academicSettings",
-        icon: GraduationCap,
+        icon: Shapes,
         badge: null,
         priority: 9,
         category: 'admin' as NavigationCategory,
@@ -1388,19 +1477,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Report Templates",
             titleKey: "reportTemplates",
             url: "/settings/report-templates",
-            icon: FileText,
+            icon: Activity,
           }] : []),
           ...(hasResidencyTypesPermission ? [{
             title: "Residency Types",
             titleKey: "academic.residencyTypes.title",
             url: "/settings/residency-types",
-            icon: BookOpen,
+            icon: BookType,
           }] : []),
           ...(hasAcademicYearsPermission ? [{
             title: "Academic Years",
             titleKey: "academic.academicYears.title",
             url: "/settings/academic-years",
-            icon: Calendar,
+            icon: CalendarDays,
           }] : []),
           ...(hasExamTypesPermission ? [{
             title: "Exam Types",
@@ -1412,13 +1501,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Staff Types",
             titleKey: "staffTypes",
             url: "/settings/staff-types",
-            icon: Users,
+            icon: UserSquare,
           }] : []),
           ...(hasGradesPermission ? [{
             title: "Grades Management",
             titleKey: "grades.management",
             url: "/settings/grades",
-            icon: Trophy,
+            icon: Star,
           }] : []),
         ],
       },
@@ -1898,32 +1987,123 @@ export const SmartSidebar = memo(function SmartSidebar() {
         </SidebarMenuButton>
       );
 
+      const renderFlyoutChildren = (children: NavigationChild[]): ReactNode[] => {
+        return children.map((child) => {
+          const childLabel = child.titleKey ? tUnsafe(`nav.${child.titleKey}`) : child.title;
+          const hasNested = Array.isArray(child.children) && child.children.length > 0;
+
+          if (hasNested) {
+            return (
+              <DropdownMenuSub key={child.url || child.titleKey || child.title}>
+                <DropdownMenuSubTrigger className={cn("gap-2", isRTL && "text-right")}>
+                  <child.icon className="h-4 w-4" />
+                  <span className="flex-1 truncate">{childLabel}</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent
+                  side={isRTL ? "left" : "right"}
+                  align="start"
+                  sideOffset={8}
+                  dir={isRTL ? "rtl" : "ltr"}
+                  className={cn("min-w-56", isRTL && "text-right")}
+                >
+                  {renderFlyoutChildren(child.children!)}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            );
+          }
+
+          return (
+            <DropdownMenuItem asChild key={child.url || child.titleKey || child.title} className="gap-2">
+              <NavLink
+                to={child.url || "/"}
+                className={cn(
+                  "flex w-full items-center gap-2",
+                  isRTL && "justify-end text-right"
+                )}
+              >
+                <child.icon className="h-4 w-4" />
+                <span className="flex-1 truncate">{childLabel}</span>
+              </NavLink>
+            </DropdownMenuItem>
+          );
+        });
+      };
+
+      // Collapsed: show a standard flyout menu (submenu list) instead of only a tooltip label.
+      if (collapsed) {
+        return (
+          <DropdownMenu
+            key={item.titleKey}
+            open={openFlyoutKey === item.titleKey}
+            onOpenChange={(open) => setOpenFlyoutKey(open ? item.titleKey : null)}
+          >
+            <SidebarMenuItem data-tour={dataTour}>
+              <DropdownMenuTrigger asChild>
+                <div
+                  onMouseEnter={() => {
+                    if (flyoutCloseTimerRef.current) {
+                      window.clearTimeout(flyoutCloseTimerRef.current);
+                      flyoutCloseTimerRef.current = null;
+                    }
+                    setOpenFlyoutKey(item.titleKey);
+                  }}
+                  onMouseLeave={() => {
+                    if (flyoutCloseTimerRef.current) {
+                      window.clearTimeout(flyoutCloseTimerRef.current);
+                    }
+                    flyoutCloseTimerRef.current = window.setTimeout(() => {
+                      setOpenFlyoutKey((current) => (current === item.titleKey ? null : current));
+                    }, 120);
+                  }}
+                >
+                  {menuButton}
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side={isRTL ? "left" : "right"}
+                align="start"
+                sideOffset={8}
+                collisionPadding={12}
+                dir={isRTL ? "rtl" : "ltr"}
+                className={cn("min-w-64", isRTL && "text-right")}
+                onMouseEnter={() => {
+                  if (flyoutCloseTimerRef.current) {
+                    window.clearTimeout(flyoutCloseTimerRef.current);
+                    flyoutCloseTimerRef.current = null;
+                  }
+                  setOpenFlyoutKey(item.titleKey);
+                }}
+                onMouseLeave={() => {
+                  if (flyoutCloseTimerRef.current) {
+                    window.clearTimeout(flyoutCloseTimerRef.current);
+                  }
+                  flyoutCloseTimerRef.current = window.setTimeout(() => {
+                    setOpenFlyoutKey((current) => (current === item.titleKey ? null : current));
+                  }, 120);
+                }}
+              >
+                <DropdownMenuLabel className={cn("flex items-center justify-between gap-2", isRTL && "text-right")}>
+                  <span className="flex-1 truncate">{label}</span>
+                  {item.badge && (
+                    <Badge variant={item.badge.variant}>
+                      {item.badge.text}
+                    </Badge>
+                  )}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {renderFlyoutChildren(item.children)}
+              </DropdownMenuContent>
+            </SidebarMenuItem>
+          </DropdownMenu>
+        );
+      }
+
       return (
         <Collapsible key={item.titleKey} open={isExpanded} onOpenChange={() => toggleExpanded(item.titleKey)}>
           <SidebarMenuItem data-tour={dataTour}>
-            {collapsed ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <CollapsibleTrigger asChild>
-                      {menuButton}
-                    </CollapsibleTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent side={isRTL ? "left" : "right"}>
-                    <p>{label}</p>
-                    {item.badge && (
-                      <Badge variant={item.badge.variant} className="ml-2">
-                        {item.badge.text}
-                      </Badge>
-                    )}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ) : (
-              <CollapsibleTrigger asChild>
-                {menuButton}
-              </CollapsibleTrigger>
-            )}
+            <CollapsibleTrigger asChild>
+              {menuButton}
+            </CollapsibleTrigger>
             {!collapsed && (
               <CollapsibleContent>
                 <SidebarMenu className={`${isRTL ? 'mr-4 border-r' : 'ml-4 border-l'} border-sidebar-border`}>
@@ -2181,28 +2361,33 @@ export const SmartSidebar = memo(function SmartSidebar() {
         data-active={isItemActiveNow}
       >
         {collapsed ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to={item.url || '/'}
-                    className={getNavCls({ isActive: isItemActiveNow })}
-                  >
-                    <item.icon className={`h-4 w-4 ${iconColorClass}`} />
-                  </NavLink>
-                </SidebarMenuButton>
-              </TooltipTrigger>
-              <TooltipContent side={isRTL ? "left" : "right"}>
-                <p>{label}</p>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <SidebarMenuButton asChild>
+                <NavLink
+                  to={item.url || '/'}
+                  className={getNavCls({ isActive: isItemActiveNow })}
+                >
+                  <item.icon className={`h-4 w-4 ${iconColorClass}`} />
+                </NavLink>
+              </SidebarMenuButton>
+            </TooltipTrigger>
+            <TooltipContent
+              side={isRTL ? "left" : "right"}
+              align="center"
+              sideOffset={8}
+              className="whitespace-nowrap"
+            >
+              <p className="flex items-center gap-2">
+                <span>{label}</span>
                 {item.badge && (
-                  <Badge variant={item.badge.variant} className="ml-2">
+                  <Badge variant={item.badge.variant}>
                     {item.badge.text}
                   </Badge>
                 )}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+              </p>
+            </TooltipContent>
+          </Tooltip>
         ) : (
           <SidebarMenuButton 
             asChild
@@ -2241,16 +2426,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
       data-tour="sidebar"
     >
       {/* Logo Section */}
-      <div className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
+      <div className={cn("border-b border-sidebar-border", collapsed ? "p-2" : "p-4")}>
+        <div className="flex items-center justify-center">
           <img
             src="/nazim_logo.webp"
             alt="Nazim Logo"
-            className="w-12 h-12 rounded-lg object-contain ring-2 ring-sidebar-border bg-sidebar-primary/10 p-1.5 flex-shrink-0"
+            className={cn(
+              "rounded-lg object-contain ring-2 ring-sidebar-border bg-sidebar-primary/10 p-1.5 flex-shrink-0",
+              collapsed ? "w-10 h-10" : "w-12 h-12"
+            )}
             loading="lazy"
           />
           {!collapsed && (
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 ml-3">
               <h1 
                 className="text-lg font-bold text-sidebar-foreground"
                 style={{ fontFamily: "'Bahij Nassim', 'Noto Sans Arabic', 'Amiri', serif" }}
@@ -2294,7 +2482,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
         </div>
       )}
 
-      <SidebarContent className="custom-scrollbar" data-sidebar-content>
+      <TooltipProvider delayDuration={300}>
+        <SidebarContent className="custom-scrollbar overflow-x-hidden overflow-y-auto" data-sidebar-content>
         {/* Search Bar */}
         {!collapsed && (
           <div className="p-2 border-b border-sidebar-border">
@@ -2503,13 +2692,17 @@ export const SmartSidebar = memo(function SmartSidebar() {
           <SidebarGroup className="mb-2">
             <Collapsible open={expandedCategories.has('core')} onOpenChange={() => toggleCategory('core')}>
               <CollapsibleTrigger asChild>
-                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2 cursor-pointer hover:text-sidebar-foreground/80 transition-colors flex items-center gap-2">
+                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2 cursor-pointer hover:text-sidebar-foreground/80 transition-colors flex items-center gap-2 !opacity-100 !mt-0">
                   {expandedCategories.has('core') ? (
                     <ChevronDown className="h-3 w-3" />
                   ) : (
                     <ChevronRight className="h-3 w-3" />
                   )}
-                  <span>{t('nav.sections.core')}</span>
+                  {collapsed ? (
+                    <span className="text-[13px] leading-tight px-1 whitespace-nowrap font-medium">{t('nav.sections.core')}</span>
+                  ) : (
+                    <span>{t('nav.sections.core')}</span>
+                  )}
                 </SidebarGroupLabel>
               </CollapsibleTrigger>
               <CollapsibleContent>
@@ -2528,13 +2721,17 @@ export const SmartSidebar = memo(function SmartSidebar() {
           <SidebarGroup data-tour="sidebar-operations" className="mb-2">
             <Collapsible open={expandedCategories.has('operations')} onOpenChange={() => toggleCategory('operations')}>
               <CollapsibleTrigger asChild>
-                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2 cursor-pointer hover:text-sidebar-foreground/80 transition-colors flex items-center gap-2">
+                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2 cursor-pointer hover:text-sidebar-foreground/80 transition-colors flex items-center gap-2 !opacity-100 !mt-0">
                   {expandedCategories.has('operations') ? (
                     <ChevronDown className="h-3 w-3" />
                   ) : (
                     <ChevronRight className="h-3 w-3" />
                   )}
-                  <span>{t('nav.sections.operations')}</span>
+                  {collapsed ? (
+                    <span className="text-[13px] leading-tight px-1 whitespace-nowrap font-medium">{t('nav.sections.operations')}</span>
+                  ) : (
+                    <span>{t('nav.sections.operations')}</span>
+                  )}
                 </SidebarGroupLabel>
               </CollapsibleTrigger>
               <CollapsibleContent>
@@ -2553,13 +2750,17 @@ export const SmartSidebar = memo(function SmartSidebar() {
           <SidebarGroup data-tour="sidebar-academic-section" className="mb-2">
             <Collapsible open={expandedCategories.has('academic')} onOpenChange={() => toggleCategory('academic')}>
               <CollapsibleTrigger asChild>
-                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2 cursor-pointer hover:text-sidebar-foreground/80 transition-colors flex items-center gap-2">
+                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2 cursor-pointer hover:text-sidebar-foreground/80 transition-colors flex items-center gap-2 !opacity-100 !mt-0">
                   {expandedCategories.has('academic') ? (
                     <ChevronDown className="h-3 w-3" />
                   ) : (
                     <ChevronRight className="h-3 w-3" />
                   )}
-                  <span>{t('nav.sections.academic')}</span>
+                  {collapsed ? (
+                    <span className="text-[13px] leading-tight px-1 whitespace-nowrap font-medium">{t('nav.sections.academic')}</span>
+                  ) : (
+                    <span>{t('nav.sections.academic')}</span>
+                  )}
                 </SidebarGroupLabel>
               </CollapsibleTrigger>
               <CollapsibleContent>
@@ -2578,13 +2779,17 @@ export const SmartSidebar = memo(function SmartSidebar() {
           <SidebarGroup data-tour="sidebar-finance-section" className="mb-2">
             <Collapsible open={expandedCategories.has('finance')} onOpenChange={() => toggleCategory('finance')}>
               <CollapsibleTrigger asChild>
-                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2 cursor-pointer hover:text-sidebar-foreground/80 transition-colors flex items-center gap-2">
+                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2 cursor-pointer hover:text-sidebar-foreground/80 transition-colors flex items-center gap-2 !opacity-100 !mt-0">
                   {expandedCategories.has('finance') ? (
                     <ChevronDown className="h-3 w-3" />
                   ) : (
                     <ChevronRight className="h-3 w-3" />
                   )}
-                  <span>{t('nav.sections.finance')}</span>
+                  {collapsed ? (
+                    <span className="text-[13px] leading-tight px-1 whitespace-nowrap font-medium">{t('nav.sections.finance')}</span>
+                  ) : (
+                    <span>{t('nav.sections.finance')}</span>
+                  )}
                 </SidebarGroupLabel>
               </CollapsibleTrigger>
               <CollapsibleContent>
@@ -2603,13 +2808,17 @@ export const SmartSidebar = memo(function SmartSidebar() {
           <SidebarGroup data-tour="sidebar-admin-section" className="mb-2">
             <Collapsible open={expandedCategories.has('admin')} onOpenChange={() => toggleCategory('admin')}>
               <CollapsibleTrigger asChild>
-                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2 cursor-pointer hover:text-sidebar-foreground/80 transition-colors flex items-center gap-2">
+                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2 cursor-pointer hover:text-sidebar-foreground/80 transition-colors flex items-center gap-2 !opacity-100 !mt-0">
                   {expandedCategories.has('admin') ? (
                     <ChevronDown className="h-3 w-3" />
                   ) : (
                     <ChevronRight className="h-3 w-3" />
                   )}
-                  <span>{t('nav.sections.admin')}</span>
+                  {collapsed ? (
+                    <span className="text-[13px] leading-tight px-1 whitespace-nowrap font-medium">{t('nav.sections.admin')}</span>
+                  ) : (
+                    <span>{t('nav.sections.admin')}</span>
+                  )}
                 </SidebarGroupLabel>
               </CollapsibleTrigger>
               <CollapsibleContent>
@@ -2623,6 +2832,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
+      </TooltipProvider>
 
     </Sidebar>
   );

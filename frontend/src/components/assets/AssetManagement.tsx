@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ColumnDef, flexRender } from '@tanstack/react-table';
-import { Plus, Pencil, Trash2, Wrench, History, ShieldCheck } from 'lucide-react';
+import { Plus, Pencil, Trash2, Wrench, History, ShieldCheck, Boxes, DollarSign, CheckCircle2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -341,31 +342,31 @@ export function AssetManagement() {
         )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Assets</CardDescription>
-            <CardTitle className="text-2xl">{stats?.asset_count ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Purchase Value</CardDescription>
-            <CardTitle className="text-2xl">${(stats?.total_purchase_value || 0).toLocaleString()}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Maintenance Spend</CardDescription>
-            <CardTitle className="text-2xl">${(stats?.maintenance_cost_total || 0).toLocaleString()}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Available</CardDescription>
-            <CardTitle className="text-2xl">{stats?.status_counts?.available ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
+      <div className="grid gap-3 md:gap-4 md:grid-cols-4">
+        <StatsCard
+          title="Total Assets"
+          value={stats?.asset_count ?? 0}
+          icon={Boxes}
+          color="blue"
+        />
+        <StatsCard
+          title="Purchase Value"
+          value={`$${(stats?.total_purchase_value || 0).toLocaleString()}`}
+          icon={DollarSign}
+          color="green"
+        />
+        <StatsCard
+          title="Maintenance Spend"
+          value={`$${(stats?.maintenance_cost_total || 0).toLocaleString()}`}
+          icon={Wrench}
+          color="amber"
+        />
+        <StatsCard
+          title="Available"
+          value={stats?.status_counts?.available ?? 0}
+          icon={CheckCircle2}
+          color="green"
+        />
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">

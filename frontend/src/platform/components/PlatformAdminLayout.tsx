@@ -53,7 +53,7 @@ function LanguageSwitcherButton() {
   const languages = [
     { code: 'en' as const, name: 'English', flag: '🇺🇸' },
     { code: 'ps' as const, name: 'پښتو', flag: '🇦🇫' },
-    { code: 'fa' as const, name: 'فارسی', flag: '🇮🇷' },
+    { code: 'fa' as const, name: 'دری', flag: '🇮🇷' },
     // Arabic temporarily hidden until translations are complete
     // { code: 'ar' as const, name: 'العربية', flag: '🇸🇦' },
   ];
@@ -72,7 +72,6 @@ function LanguageSwitcherButton() {
             onClick={() => setLanguage(lang.code)}
             className={language === lang.code ? "bg-accent" : ""}
           >
-            <span className="mr-2">{lang.flag}</span>
             {lang.name}
           </DropdownMenuItem>
         ))}
@@ -495,7 +494,7 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       {/* Main Content */}
       <div className="flex flex-1 flex-col lg:pl-64">
         {/* Top Bar */}
-        <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 lg:px-6">
+        <header className="fixed top-0 left-0 lg:left-64 right-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 lg:px-6">
           <Button
             variant="ghost"
             size="icon"
@@ -528,6 +527,9 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
             </Button>
           </div>
         </header>
+
+        {/* Spacer to account for fixed header height */}
+        <div className="h-16 flex-shrink-0" aria-hidden="true" />
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">

@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { useSchoolContext } from '@/contexts/SchoolContext';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -403,11 +404,31 @@ const StudentAdmissionsReport = () => {
       {!isLoading && !isError && report && (
         <>
           {/* Summary Cards */}
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-            <SummaryCard label={t('admissions.totalAdmissions') || 'Total admissions'} value={report.totals.total} icon={BarChart3} tone="primary" />
-            <SummaryCard label={t('events.active') || 'Active'} value={report.totals.active} icon={BarChart3} tone="success" />
-            <SummaryCard label={t('admissions.pending') || 'Pending'} value={report.totals.pending} icon={BarChart3} tone="warning" />
-            <SummaryCard label={t('admissions.boarder') || 'Boarders'} value={report.totals.boarders} icon={Building2} />
+          <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            <StatsCard
+              title={t('admissions.totalAdmissions') || 'Total admissions'}
+              value={report.totals.total}
+              icon={BarChart3}
+              color="blue"
+            />
+            <StatsCard
+              title={t('events.active') || 'Active'}
+              value={report.totals.active}
+              icon={UserCheck}
+              color="green"
+            />
+            <StatsCard
+              title={t('admissions.pending') || 'Pending'}
+              value={report.totals.pending}
+              icon={AlertTriangle}
+              color="amber"
+            />
+            <StatsCard
+              title={t('admissions.boarder') || 'Boarders'}
+              value={report.totals.boarders}
+              icon={Building2}
+              color="purple"
+            />
           </div>
 
           {/* Breakdown Tables - Compact Grid */}

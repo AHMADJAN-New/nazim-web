@@ -7,6 +7,7 @@ import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading';
@@ -314,49 +315,34 @@ export function HostelReports() {
       />
 
       <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('hostel.reports.boardersCardTitle')}</CardTitle>
-            <BedDouble className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totals.boarders}</div>
-            <p className="text-xs text-muted-foreground">{totals.assignedBoarders} {t('hostel.reports.assignedToRooms')}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('hostel.reports.unassignedBoardersCardTitle')}</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totals.unassignedBoarders}</div>
-            <p className="text-xs text-muted-foreground">{t('hostel.reports.waitingForRoomPlacement')}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('hostel.reports.buildingsTracked')}</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totals.buildings}</div>
-            <p className="text-xs text-muted-foreground">{t('hostel.reports.acrossRooms').replace('{count}', totals.roomsCount.toString())}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('hostel.reports.wardensWithAssignments')}</CardTitle>
-            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totals.wardens}</div>
-            <p className="text-xs text-muted-foreground">{t('hostel.reports.roomsCurrentlySupervised')}</p>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title={t('hostel.reports.boardersCardTitle')}
+          value={totals.boarders}
+          icon={BedDouble}
+          description={`${totals.assignedBoarders} ${t('hostel.reports.assignedToRooms')}`}
+          color="blue"
+        />
+        <StatsCard
+          title={t('hostel.reports.unassignedBoardersCardTitle')}
+          value={totals.unassignedBoarders}
+          icon={Users}
+          description={t('hostel.reports.waitingForRoomPlacement')}
+          color="amber"
+        />
+        <StatsCard
+          title={t('hostel.reports.buildingsTracked')}
+          value={totals.buildings}
+          icon={Building2}
+          description={t('hostel.reports.acrossRooms').replace('{count}', totals.roomsCount.toString())}
+          color="purple"
+        />
+        <StatsCard
+          title={t('hostel.reports.wardensWithAssignments')}
+          value={totals.wardens}
+          icon={ShieldCheck}
+          description={t('hostel.reports.roomsCurrentlySupervised')}
+          color="green"
+        />
       </div>
 
       {/* Tabs for different report sections */}

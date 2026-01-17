@@ -27,12 +27,31 @@ import {
 } from '@/components/ui/table';
 import { useLanguage } from '@/hooks/useLanguage';
 import { organizationsApi } from '@/lib/api/client';
+import { platformApi } from '@/platform/lib/platformApi';
 import { showToast } from '@/lib/toast';
 
 interface OrganizationPermissionManagementProps {
   organizationId: string;
   // Optional: Use platform admin API endpoints instead of regular endpoints
   usePlatformAdminApi?: boolean;
+}
+
+interface PermissionsResponse {
+  permissions: Array<{
+    id: number | string;
+    name: string;
+    resource?: string;
+    action?: string;
+    description?: string;
+  }>;
+  roles: Array<{
+    name: string;
+    permissions?: string[];
+  }>;
+  organization?: {
+    id: string;
+    name: string;
+  };
 }
 
 export function OrganizationPermissionManagement({ 
@@ -48,14 +67,27 @@ export function OrganizationPermissionManagement({
 
   // Use platform admin API if specified, otherwise use regular API
   const permissionsApi = usePlatformAdminApi
-    ? async (id: string) => {
-        const { platformApi } = await import('@/platform/lib/platformApi');
-        // Platform admin API now returns the same format as regular API (with permissions, roles, etc.)
-        return platformApi.permissions.getForOrganization(id);
+    ? async (id: string): Promise<PermissionsResponse> => {
+        // Platform API returns just permissions array, but we need to match the regular API structure
+        // For now, fetch permissions and construct a compatible response
+        const permissions = await platformApi.permissions.getForOrganization(id);
+        // Get organization info separately
+        const orgResponse = await platformApi.organizations.get(id);
+        const organization = (orgResponse as any)?.data || orgResponse;
+        // Get roles - platform API might not have this, so we'll use empty array for now
+        // TODO: Add roles endpoint to platform API if needed
+        return {
+          permissions: Array.isArray(permissions) ? permissions : [],
+          roles: [], // Platform API doesn't have roles endpoint yet
+          organization: organization ? { id: organization.id || id, name: organization.name || '' } : undefined,
+        };
       }
-    : (id: string) => organizationsApi.permissions(id);
+    : async (id: string): Promise<PermissionsResponse> => {
+        const response = await organizationsApi.permissions(id);
+        return response as PermissionsResponse;
+      };
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<PermissionsResponse>({
     queryKey: ['organization-permissions', organizationId, usePlatformAdminApi ? 'platform' : 'regular'],
     queryFn: () => permissionsApi(organizationId),
   });

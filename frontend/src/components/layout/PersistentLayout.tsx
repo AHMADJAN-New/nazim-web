@@ -68,6 +68,9 @@ export function PersistentLayout() {
           breadcrumbItems={[]}
         />
         
+        {/* Spacer to account for fixed header height on mobile only */}
+        <div className="h-14 sm:h-16 md:hidden flex-shrink-0" aria-hidden="true" />
+        
         {/* Subscription status banner - shows for trial, grace, readonly, blocked */}
         {showBanner && permissionsReady && (
           <div className="px-4 py-2 border-b bg-background flex-shrink-0">

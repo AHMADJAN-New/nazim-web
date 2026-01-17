@@ -882,7 +882,7 @@ export const ps: TranslationKeys = {
     years: 'کلونه',
     yes: 'هو',
     selectLanguage: 'ژبه غوره کړئ',
-    schoolManagement: 'د ښوونځي مدیریت',
+    schoolManagement: 'ناظم د دیني مدارسو د مالي او اداري چارو د تنظیم سیستم',
     toggleSidebar: 'د سایډبار بدلول'
   },
   completionDate: 'د تکمیل نېټه',
@@ -1072,7 +1072,6 @@ export const ps: TranslationKeys = {
     templatesNoTemplates: 'قالب نشته. خپل لومړی قالب جوړ کړئ.',
     createLetterhead: 'سرپاڼه جوړه کړئ',
     letterheadsTitle: 'سرپاڼې',
-    letterheadsDescription: 'سرپاڼې او مخکتنې مدیریت کړئ',
     letterheadsSearchPlaceholder: 'سرپاڼې لټون...',
     letterheadsNoLetterheads: 'سرپاڼه نشته. خپله لومړۍ سرپاڼه جوړه کړئ.',
     position: 'موقعیت',
@@ -1088,45 +1087,16 @@ export const ps: TranslationKeys = {
     uploadLetterhead: 'سرلیک اپلوډ کړئ',
     searchByName: 'د نوم له مخې لټون...',
     fileType: 'د فایل ډول',
-     archiveSearch: 'آرشيف کې لټون',
-     archiveSearchDescription: 'په آرشیف شویو اسنادو کې لټون وکړئ.',
-     archive: 'آرشيف',
-     reports: 'راپورونه',
-     reportsPage: {
-       incomingByDepartment: 'راغلي اسناد د څانګو له مخې',
-       department: 'څانګه',
-       total: 'ټول',
-       securityDistribution: 'د امنیت وېش',
-       level: 'کچه',
-       count: 'شمېره',
-       pendingAging: 'د انتظار مودې',
-       status: 'حالت',
-       avgDays: 'اوسط ورځې',
-       unassigned: 'نه دی ټاکل شوی',
-       none: 'هیڅ',
-       notAvailable: 'N/A',
-       filterSummary: 'د DMS وېش راپور'
-     },
-     settings: 'تنظیمات',
-     settingsPage: {
-       title: 'د شمېرې او امنیت تنظیمات',
-       incomingPrefix: 'د راغلو مخکینی کوډ',
-       outgoingPrefix: 'د وتلو مخکینی کوډ',
-       yearMode: 'د کال حالت',
-       resetYearly: 'شمېرې هر کال بیا تنظیمول',
-       saveSettings: 'تنظیمات خوندي کړئ',
-       settingsSaved: 'تنظیمات خوندي شول',
-       saveFailed: 'خوندي کول ناکام شول'
-     },
-     deleteDocumentWarning: 'ایا تاسو ډاډه یاست چې غواړئ دا وتلی سند حذف کړئ؟ دا عمل بیرته نشي راګرځېدلای',
+    archiveSearchDescription: 'په آرشیف شویو اسنادو کې لټون وکړئ.',
+    deleteDocumentWarning: 'ایا تاسو ډاډه یاست چې غواړئ دا وتلی سند حذف کړئ؟ دا عمل بیرته نشي راګرځېدلای',
     documents: 'اسناد',
     deleteDocument: 'سند حذف کړئ',
-  deleteDocumentConfirm: 'د سند حذفول تائید کړئ',
-  documentDescription: 'د سند توضیحات',
-  documentTitle: 'د سند سرلیک',
-  documentType: 'د سند ډول',
-  errorLoading: 'د مرستې مقالې په ترلاسه کولو کې ستونزه',
-  title: 'پاڼه ونه موندل شوه', // Generic fallback title
+    deleteDocumentConfirm: 'د سند حذفول تائید کړئ',
+    documentDescription: 'د سند توضیحات',
+    documentTitle: 'د سند سرلیک',
+    documentType: 'د سند ډول',
+    errorLoading: 'د مرستې مقالې په ترلاسه کولو کې ستونزه',
+    title: 'پاڼه ونه موندل شوه', // Generic fallback title
     tableHeaders: {
       number: 'شمېره',
       subject: 'موضوع',
@@ -1341,8 +1311,6 @@ export const ps: TranslationKeys = {
     incoming: 'راغلي اسناد',
     outgoing: 'صادر شوي اسناد',
     issueLetterNav: 'لیک صادر کړئ',
-    templates: 'قالبونه',
-    letterheads: 'د لیک سرپاڼې',
     letterTypes: 'د لیک ډولونه',
     letterTypesPage: {
       title: 'د لیک ډولونه',
@@ -2054,7 +2022,13 @@ export const ps: TranslationKeys = {
     multipleClasses: 'څو ټولګي',
     exportMultipleClasses: 'څو ټولګي صادرول',
     exportMultipleClassesDescription: 'ټول ټولګي په یو فایل کې صادر کړئ. Excel: هر ټولګی په جلا پاڼه کې. PDF: ټول ټولګي له جلا کونکو سره.',
-    hubDescription: 'د ازموینې د ټولو راپورونو مرکز'
+    hubDescription: 'د ازموینې د ټولو راپورونو مرکز',
+    overview: 'کتنه',
+    subjectsAndMarks: 'مضامین او نمرې',
+    gradeCards: 'د درجو کارتونه',
+    classSubjectEnrollment: 'د ټولګي او مضمون شمولیت',
+    classSubjectEnrollmentDescription: 'د ټاکل شویو ټولګیو او د ازموینې مضامینو کتنه د زده کونکو شمیر سره.',
+    selectExamWithAssignments: 'د راپور د لیدو لپاره د دندو سره ازموینه غوره کړئ.'
   },
   exams: {
     management: 'د تعلیمي کلونو لپاره د ازموینو جوړول او مدیریت',
@@ -2986,7 +2960,7 @@ export const ps: TranslationKeys = {
   },
   onboarding: {
     welcome: {
-      title: 'ناظم د ښوونځي مدیریت سیسټم ته ښه راغلاست',
+      title: 'ناظم. د دیني مدارسو د مالي او اداري چارو د تنظیم سیسټم ته ښه راغلاست',
       description: 'د سیسټم د ټولو ځانګړتیاوو د زده کړې لپاره لارښود ولوستئ یا د سیسټم لارښود وګورئ.'
     },
     actions: {
@@ -3056,7 +3030,10 @@ export const ps: TranslationKeys = {
     },
     viewFullArticle: 'بشپړه مقاله وګورئ',
     views: 'لیدنې',
-    wasThisHelpful: 'ایا دا مقاله ګټوره وه؟'
+    wasThisHelpful: 'ایا دا مقاله ګټوره وه؟',
+    showingPage: 'د مخ ښودل',
+    of: 'د',
+    totalArticles: 'ټولې مقالې'
   },
   hostel: {
     boarders: 'لیلیه وال',
@@ -3428,7 +3405,7 @@ export const ps: TranslationKeys = {
       startFreeTrial: 'وړیا ازمایښت پیل کړئ',
       subtitle: 'زموږ د هراړخیز اسلامي ښوونځي مدیریت پلیټفارم سره عملیات ساده کړئ، د زده کړې پایلې ښه کړئ او د ټولنې اړیکې پیاوړې کړئ.',
       title: 'خپل',
-      titleHighlight: 'د ښوونځي مدیریت بدل کړئ',
+      titleHighlight: 'د د خپلې جامعې/ مدرسې مدیریت بدل کړئ',
       watchDemo: 'ډیمو وګورئ'
     },
     nav: {
@@ -3508,7 +3485,7 @@ export const ps: TranslationKeys = {
       features: {
         badge: 'ځانګړتیاوې',
         subtitle: 'د زده کوونکو له شمولیت څخه تر فراغت پورې، زموږ پلیټفارم هر اړخ پوښي.',
-        title: 'هر هغه څه چې تاسو د ښوونځي مدیریت لپاره اړتیا لرئ'
+        title: 'هر هغه څه چې تاسو د جامعې/ مدرسې مدیریت لپاره اړتیا لرئ'
       },
       pricing: {
         allPlansNote: 'ټول پلانونه ۳۰ ورځې وړیا ازمایښت لري • د تنظیم فیس نشته • هر وخت لغوه کیدی شي',
@@ -3738,7 +3715,6 @@ export const ps: TranslationKeys = {
     availableCopies: 'موجودې نسخې',
     book: 'کتاب',
     bookInformation: 'د کتاب معلومات',
-    bookNumber: 'د کتاب شمېره',
     bookNumberPlaceholder: 'د کتاب ځانګړې شمېره',
     books: 'کتابونه',
     booksByCategory: 'کتابونه د کټګورۍ له مخې',
@@ -4017,7 +3993,7 @@ export const ps: TranslationKeys = {
     'finance.fees.structures': 'ساختارونه',
     'finance.fees.assignments': 'وټاکل',
     'finance.fees.payments': 'تادیه',
-    'finance.fees.exceptions': 'استثنا', 
+    'finance.fees.exceptions': 'استثنا',
     'finance.fees.reports': 'راپورونه',
     'dms.dashboard': 'د اسنادو سیسټم ډشبورډ',
     'dms.incoming': 'راغلي اسناد',
@@ -4514,12 +4490,6 @@ export const ps: TranslationKeys = {
       deleteConfirmRooms: '. که په دې ودانۍ کې اتاقونه شتون ولري، پاکول به ناکام شي.',
       editBuilding: 'ودانۍ سمه کړئ',
       enterBuildingName: 'د ودانۍ نوم ولیکئ',
-      exportErrorExcel: 'د Excel صادرول ناکام شول',
-      exportErrorNoBuildings: 'د صادرولو لپاره ودانۍ نشته.',
-      exportErrorNoSchool: 'مهرباني وکړئ د راپور صادرولو دمخه د ښوونځي نښانونه تنظیم کړئ.',
-      exportErrorPdf: 'د PDF صادرول ناکام شول',
-      exportSuccessExcel: 'د Excel صادرول پیل شول',
-      exportSuccessPdf: 'د PDF صادرول پیل شول',
       loadingBuildings: 'ودانۍ ترلاسه کیږي...',
       management: 'د ودانیو مدیریت',
       na: 'د تطبیق وړ نه دی',
@@ -4548,6 +4518,14 @@ export const ps: TranslationKeys = {
       student: 'زده کوونکی',
       uploadDocument: 'سند پورته کړئ',
       uploaded: 'پورته شوی',
+    },
+    userSettings: {
+      changePassword: 'د پاسورډ بدلول',
+      changePasswordDescription: 'خپل پاسورډ تازه کړئ ترڅو ستاسو حساب خوندي پاتې شي',
+      description: 'خپل حساب غوره توبونه او امنیتي تنظیمات مدیریت کړئ',
+      preferences: 'غوره توبونه',
+      security: 'امنیت',
+      title: 'د کاروونکي تنظیمات',
     },
   },
   size: 'اندازه',
@@ -5232,7 +5210,7 @@ export const ps: TranslationKeys = {
     maintenanceFees: 'د ساتنې فیسونه',
     maintenanceFeeStatus: 'د ساتنې فیس حالت',
     nextMaintenanceDue: 'د راتلونکي ساتنې فیس',
-    noMaintenanceDue: 'د ساتنې فیس واجب ندی',
+    noMaintenanceDue: 'د ساتنې فیس لا نشته',
     daysUntilDue: 'تر ورکړې پورې پاتې ورځې',
     lastPaid: 'وروستی ورکړل شوی',
     lastMaintenancePaid: 'د وروستي ساتنې فیس ورکړل شو',

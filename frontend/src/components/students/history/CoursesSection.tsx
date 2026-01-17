@@ -1,5 +1,6 @@
 import { Award, CheckCircle, Clock, XCircle, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -53,66 +54,37 @@ export function CoursesSection({ courses }: CoursesSectionProps) {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold">{summary.totalCourses}</p>
-                <p className="text-sm text-muted-foreground">{t('studentHistory.totalCourses') || 'Total Courses'}</p>
-              </div>
-              <Award className="h-8 w-8 text-purple-200" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-green-600">{summary.completedCourses}</p>
-                <p className="text-sm text-muted-foreground">{t('studentHistory.completed') || 'Completed'}</p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-200" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-blue-600">{summary.enrolledCourses}</p>
-                <p className="text-sm text-muted-foreground">{t('studentHistory.enrolled') || 'Enrolled'}</p>
-              </div>
-              <Clock className="h-8 w-8 text-blue-200" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-red-600">{summary.droppedCourses}</p>
-                <p className="text-sm text-muted-foreground">{t('studentHistory.dropped') || 'Dropped'}</p>
-              </div>
-              <XCircle className="h-8 w-8 text-red-200" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-amber-600">{summary.certificatesIssued}</p>
-                <p className="text-sm text-muted-foreground">{t('studentHistory.certificates') || 'Certificates'}</p>
-              </div>
-              <FileText className="h-8 w-8 text-amber-200" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+        <StatsCard
+          title={t('studentHistory.totalCourses') || 'Total Courses'}
+          value={summary.totalCourses}
+          icon={Award}
+          color="purple"
+        />
+        <StatsCard
+          title={t('studentHistory.completed') || 'Completed'}
+          value={summary.completedCourses}
+          icon={CheckCircle}
+          color="green"
+        />
+        <StatsCard
+          title={t('studentHistory.enrolled') || 'Enrolled'}
+          value={summary.enrolledCourses}
+          icon={Clock}
+          color="blue"
+        />
+        <StatsCard
+          title={t('studentHistory.dropped') || 'Dropped'}
+          value={summary.droppedCourses}
+          icon={XCircle}
+          color="red"
+        />
+        <StatsCard
+          title={t('studentHistory.certificates') || 'Certificates'}
+          value={summary.certificatesIssued}
+          icon={FileText}
+          color="amber"
+        />
       </div>
 
       {/* Completion Rate */}

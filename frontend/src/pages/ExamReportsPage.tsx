@@ -9,6 +9,7 @@ import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -94,6 +95,79 @@ export function ExamReportsPage() {
     );
   }
 
+  // Empty state - no exam selected
+  if (!examId) {
+    return (
+      <div className="space-y-6 p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">{t('nav.examReports') || 'Exam Reports'}</h1>
+            <p className="text-muted-foreground">{t('examReports.classSubjectEnrollmentDescription') || 'Overview of assigned classes and exam subjects with student counts.'}</p>
+          </div>
+          {!examIdFromParams && (
+            <div className="w-64">
+              <Select
+                value={selectedExamId || undefined}
+                onValueChange={(value) => setSelectedExamId(value === 'all' ? undefined : value)}
+                disabled={examsLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('exams.selectExam') || 'Select exam'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(allExams || []).map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name} {e.academicYear ? `(${e.academicYear.name})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+
+        {/* Empty State Cards */}
+        <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-4 mb-6">
+          <StatsCard
+            title={t('exams.totalClasses') || 'Total Classes'}
+            value={0}
+            icon={GraduationCap}
+            color="blue"
+          />
+          <StatsCard
+            title={t('exams.totalSubjects') || 'Total Subjects'}
+            value={0}
+            icon={BookOpen}
+            color="purple"
+          />
+          <StatsCard
+            title={t('students.enrolledStudents') || 'Enrolled Students'}
+            value={0}
+            icon={Users}
+            color="green"
+          />
+          <StatsCard
+            title={t('exams.resultsEntered') || 'Results Entered'}
+            value={0}
+            icon={CheckCircle}
+            color="emerald"
+          />
+        </div>
+
+        {/* Empty State Message */}
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground text-center">
+              {t('examReports.selectExamWithAssignments') || 'Select an exam with assignments to view its report.'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Not found state
   if (!exam) {
     return (
@@ -158,7 +232,7 @@ export function ExamReportsPage() {
               </Select>
             </div>
           )}
-          <Badge variant="outline">{exam.academicYear?.name || t('common.na') || 'N/A'}</Badge>
+          <Badge variant="outline">{exam.academicYear?.name || 'N/A'}</Badge>
         </div>
       </div>
 
@@ -187,59 +261,31 @@ export function ExamReportsPage() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t('exams.totalClasses') || 'Total Classes'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <GraduationCap className="h-5 w-5 text-muted-foreground" />
-                <span className="text-2xl font-bold">{summaryReport?.totals?.classes ?? 0}</span>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t('exams.totalSubjects') || 'Total Subjects'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-muted-foreground" />
-                <span className="text-2xl font-bold">{summaryReport?.totals?.subjects ?? 0}</span>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t('students.enrolledStudents') || 'Enrolled Students'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-muted-foreground" />
-                <span className="text-2xl font-bold">{summaryReport?.totals?.enrolledStudents ?? 0}</span>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t('exams.resultsEntered') || 'Results Entered'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-muted-foreground" />
-                <span className="text-2xl font-bold">{summaryReport?.totals?.resultsEntered ?? 0}</span>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-4 mb-6">
+          <StatsCard
+            title={t('exams.totalClasses') || 'Total Classes'}
+            value={summaryReport?.totals?.classes ?? 0}
+            icon={GraduationCap}
+            color="blue"
+          />
+          <StatsCard
+            title={t('exams.totalSubjects') || 'Total Subjects'}
+            value={summaryReport?.totals?.subjects ?? 0}
+            icon={BookOpen}
+            color="purple"
+          />
+          <StatsCard
+            title={t('students.enrolledStudents') || 'Enrolled Students'}
+            value={summaryReport?.totals?.enrolledStudents ?? 0}
+            icon={Users}
+            color="green"
+          />
+          <StatsCard
+            title={t('exams.resultsEntered') || 'Results Entered'}
+            value={summaryReport?.totals?.resultsEntered ?? 0}
+            icon={CheckCircle}
+            color="emerald"
+          />
         </div>
       )}
 

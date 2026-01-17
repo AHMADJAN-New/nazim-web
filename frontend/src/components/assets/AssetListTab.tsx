@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ColumnDef, flexRender } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { Plus, Pencil, Trash2, Printer, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, Printer, Eye, Boxes, DollarSign, Wrench, CheckCircle2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -589,34 +590,30 @@ export default function AssetListTab() {
     <div className="space-y-4">
       {/* Stats Cards */}
       <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t('assets.totalAssets')}</CardDescription>
-            <CardTitle className="text-2xl">{stats?.asset_count ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t('assets.purchaseValue')}</CardDescription>
-            <CardTitle className="text-2xl">
-              ${((stats?.total_purchase_value ?? 0) as number).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t('assets.maintenanceSpend')}</CardDescription>
-            <CardTitle className="text-2xl">
-              ${((stats?.maintenance_cost_total ?? 0) as number).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t('assets.availableCount')}</CardDescription>
-            <CardTitle className="text-2xl">{stats?.status_counts?.available ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
+        <StatsCard
+          title={t('assets.totalAssets')}
+          value={stats?.asset_count ?? 0}
+          icon={Boxes}
+          color="blue"
+        />
+        <StatsCard
+          title={t('assets.purchaseValue')}
+          value={`$${((stats?.total_purchase_value ?? 0) as number).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          icon={DollarSign}
+          color="green"
+        />
+        <StatsCard
+          title={t('assets.maintenanceSpend')}
+          value={`$${((stats?.maintenance_cost_total ?? 0) as number).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          icon={Wrench}
+          color="amber"
+        />
+        <StatsCard
+          title={t('assets.availableCount')}
+          value={stats?.status_counts?.available ?? 0}
+          icon={CheckCircle2}
+          color="green"
+        />
       </div>
 
       {/* Filters and Actions */}

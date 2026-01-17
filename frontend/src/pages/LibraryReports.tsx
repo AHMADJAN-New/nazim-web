@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
 
 import { useLibraryCategories } from '@/hooks/useLibraryCategories';
@@ -359,97 +360,50 @@ export default function LibraryReports() {
             />
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            {t('library.totalBooks') || 'Total Books'}
-                        </CardTitle>
-                        <BookOpen className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalBooks}</div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {stats.totalCopies} {t('library.totalCopiesLabel2') || 'total copies'}
-                        </p>
-                    </CardContent>
-                </Card>
+            <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                <StatsCard
+                    title={t('library.totalBooks') || 'Total Books'}
+                    value={stats.totalBooks}
+                    icon={BookOpen}
+                    description={`${stats.totalCopies} ${t('library.totalCopiesLabel2') || 'total copies'}`}
+                    color="blue"
+                />
+                <StatsCard
+                    title={t('library.availableCopies') || 'Available Copies'}
+                    value={stats.availableCopies}
+                    icon={BookCheck}
+                    description={`${stats.totalCopies - stats.availableCopies} ${t('library.onLoanLabel') || 'on loan'}`}
+                    color="green"
+                />
+                <StatsCard
+                    title={t('library.activeLoans') || 'Active Loans'}
+                    value={stats.activeLoans}
+                    icon={Layers}
+                    description={t('library.currentlyLoanedOut') || 'Currently loaned out'}
+                    color="purple"
+                />
 
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            {t('library.availableCopies') || 'Available Copies'}
-                        </CardTitle>
-                        <BookCheck className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.availableCopies}</div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {stats.totalCopies - stats.availableCopies}{' '}
-                            {t('library.onLoanLabel') || 'on loan'}
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            {t('library.activeLoans') || 'Active Loans'}
-                        </CardTitle>
-                        <BookCheck className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.activeLoans}</div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {t('library.currentlyLoanedOut') || 'Currently loaned out'}
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            {t('library.overdue') || 'Overdue'}
-                        </CardTitle>
-                        <AlertTriangle className="h-4 w-4 text-destructive" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-destructive">{stats.overdueCount}</div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {t('library.booksPastDue') || 'Books past due date'}
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            {t('library.dueSoonBooks') || 'Due Soon'}
-                        </CardTitle>
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.dueSoonCount}</div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {t('library.dueInNext7Days') || 'Due in next 7 days'}
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            {t('library.loanHistory') || 'Loan History'}
-                        </CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{filteredLoanHistory.length}</div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {t('library.inSelectedDateRange') || 'In selected date range'}
-                        </p>
-                    </CardContent>
-                </Card>
+                <StatsCard
+                    title={t('library.overdue') || 'Overdue'}
+                    value={stats.overdueCount}
+                    icon={AlertTriangle}
+                    description={t('library.booksPastDue') || 'Books past due date'}
+                    color="red"
+                />
+                <StatsCard
+                    title={t('library.dueSoonBooks') || 'Due Soon'}
+                    value={stats.dueSoonCount}
+                    icon={Calendar}
+                    description={t('library.dueInNext7Days') || 'Due in next 7 days'}
+                    color="amber"
+                />
+                <StatsCard
+                    title={t('library.loanHistory') || 'Loan History'}
+                    value={filteredLoanHistory.length}
+                    icon={TrendingUp}
+                    description={t('library.inSelectedDateRange') || 'In selected date range'}
+                    color="blue"
+                />
             </div>
 
             {/* Tabs for different report sections */}

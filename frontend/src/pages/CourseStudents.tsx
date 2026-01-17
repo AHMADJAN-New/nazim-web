@@ -39,6 +39,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -445,43 +446,35 @@ const CourseStudents = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('events.total')}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{summary.total}</div>
-            <Users className="h-6 w-6 text-blue-500" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('courses.enrolled')}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{summary.enrolled}</div>
-            <BookOpen className="h-6 w-6 text-slate-500" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('courses.completed')}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{summary.completed}</div>
-            <GraduationCap className="h-6 w-6 text-emerald-500" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('courses.dropped')}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{summary.dropped}</div>
-            <AlertTriangle className="h-6 w-6 text-amber-500" />
-          </CardContent>
-        </Card>
+          <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <StatsCard
+          title={t('events.total')}
+          value={summary.total}
+          icon={Users}
+          description={t('courses.totalStudents') || 'Total students'}
+          color="blue"
+        />
+        <StatsCard
+          title={t('courses.enrolled')}
+          value={summary.enrolled}
+          icon={BookOpen}
+          description={t('courses.enrolledStudents') || 'Enrolled students'}
+          color="blue"
+        />
+        <StatsCard
+          title={t('courses.completed')}
+          value={summary.completed}
+          icon={GraduationCap}
+          description={t('courses.completedStudents') || 'Completed students'}
+          color="green"
+        />
+        <StatsCard
+          title={t('courses.dropped')}
+          value={summary.dropped}
+          icon={AlertTriangle}
+          description={t('courses.droppedStudents') || 'Dropped students'}
+          color="amber"
+        />
           </div>
         </CardContent>
       </Card>

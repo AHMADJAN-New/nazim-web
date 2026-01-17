@@ -577,31 +577,6 @@ export const platformApi = {
     },
   },
 
-  // Contact Messages
-  contactMessages: {
-    list: async (params?: Record<string, string>) => {
-      return apiClient.get<{
-        data: any[];
-        current_page: number;
-        last_page: number;
-        per_page: number;
-        total: number;
-      }>('/platform/contact-messages', params);
-    },
-    get: async (id: string) => {
-      return apiClient.get<{ data: any }>(`/platform/contact-messages/${id}`);
-    },
-    update: async (id: string, data: Partial<any>) => {
-      return apiClient.put<{ data: any }>(`/platform/contact-messages/${id}`, data);
-    },
-    delete: async (id: string) => {
-      return apiClient.delete(`/platform/contact-messages/${id}`);
-    },
-    stats: async () => {
-      return apiClient.get<{ data: any }>('/platform/contact-messages/stats');
-    },
-  },
-
   // Generic request method for custom endpoints
   request: async function<T = any>(endpoint: string, options?: { method?: string; body?: string | object; params?: Record<string, string> }) {
     const method = options?.method || 'GET';

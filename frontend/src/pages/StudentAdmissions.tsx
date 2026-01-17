@@ -29,6 +29,7 @@ import { useResourceUsage } from '@/hooks/useSubscription';
 import { showToast } from '@/lib/toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { useDataTable } from '@/hooks/use-data-table';
@@ -507,47 +508,35 @@ export function StudentAdmissions() {
         onDelete={handleDelete}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t('admissions.totalAdmissionsLabel')}</CardTitle>
-            <UserCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">{t('admissions.acrossAllResidencyTypes')}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t('admissions.activeStudents')}</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.active}</div>
-            <p className="text-xs text-muted-foreground">{t('admissions.currentlyStudying')}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t('admissions.pendingAdmitted')}</CardTitle>
-            <ClipboardList className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pending}</div>
-            <p className="text-xs text-muted-foreground">{t('admissions.awaitingActivation')}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t('hostel.boardersLabel')}</CardTitle>
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.boarders}</div>
-            <p className="text-xs text-muted-foreground">{t('admissions.studentsWithAccommodation')}</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <StatsCard
+          title={t('admissions.totalAdmissionsLabel')}
+          value={stats.total}
+          icon={UserCheck}
+          description={t('admissions.acrossAllResidencyTypes')}
+          color="blue"
+        />
+        <StatsCard
+          title={t('admissions.activeStudents')}
+          value={stats.active}
+          icon={Shield}
+          description={t('admissions.currentlyStudying')}
+          color="green"
+        />
+        <StatsCard
+          title={t('admissions.pendingAdmitted')}
+          value={stats.pending}
+          icon={ClipboardList}
+          description={t('admissions.awaitingActivation')}
+          color="amber"
+        />
+        <StatsCard
+          title={t('hostel.boardersLabel')}
+          value={stats.boarders}
+          icon={MapPin}
+          description={t('admissions.studentsWithAccommodation')}
+          color="purple"
+        />
       </div>
 
       <FilterPanel title={t('admissions.filtersTitle')}>

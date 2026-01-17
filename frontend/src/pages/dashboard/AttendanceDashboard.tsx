@@ -2,13 +2,13 @@
  * Attendance Dashboard - Overview of attendance data
  */
 
-import { Activity, Calendar, CheckCircle2, XCircle, Clock, TrendingUp } from 'lucide-react';
+import { Activity, Calendar, CheckCircle2, XCircle, Clock, TrendingUp, ArrowUpRight } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { useAttendanceSessions } from '@/hooks/useAttendance';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -89,64 +89,99 @@ export default function AttendanceDashboard() {
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Total Sessions */}
+        <Card className="relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
               {t('attendance.totalSessions') || 'Total Sessions'}
             </CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 rounded-lg bg-blue-500/10 flex-shrink-0">
+              <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{dashboardStats.totalSessions}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="pb-3">
+            <div className="text-2xl sm:text-3xl font-bold mb-2 text-blue-600 break-words">
+              {dashboardStats.totalSessions}
+            </div>
+            <div className="text-xs text-muted-foreground mb-2 break-words">
               {dashboardStats.todaySessions} {t('events.today') || 'today'}
-            </p>
+            </div>
           </CardContent>
+          <CardFooter className="pt-3 pb-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full justify-start whitespace-normal sm:whitespace-nowrap"
+              onClick={() => navigate('/attendance')}
+            >
+              <ArrowUpRight className="h-4 w-4 mr-1.5 flex-shrink-0" />
+              <span className="text-left">{t('attendance.viewSessions') || 'View Sessions'}</span>
+            </Button>
+          </CardFooter>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+        {/* Attendance Rate */}
+        <Card className="relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
               {t('attendance.attendanceRate') || 'Attendance Rate'}
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 rounded-lg bg-green-500/10 flex-shrink-0">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{dashboardStats.attendanceRate}%</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="pb-3">
+            <div className="text-2xl sm:text-3xl font-bold mb-2 text-green-600 break-words">
+              {dashboardStats.attendanceRate}%
+            </div>
+            <div className="text-xs text-muted-foreground mb-2 break-words">
               {dashboardStats.presentCount} {t('examReports.present') || 'present'} / {dashboardStats.totalRecords} {t('events.total') || 'total'}
-            </p>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+        {/* Present */}
+        <Card className="relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
               {t('examReports.present') || 'Present'}
             </CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <div className="p-2 rounded-lg bg-green-500/10 flex-shrink-0">
+              <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{dashboardStats.presentCount}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="pb-3">
+            <div className="text-2xl sm:text-3xl font-bold mb-2 text-green-600 break-words">
+              {dashboardStats.presentCount}
+            </div>
+            <div className="text-xs text-muted-foreground mb-2 break-words">
               {t('table.students') || 'students'}
-            </p>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+        {/* Absent */}
+        <Card className="relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full -mr-8 -mt-8 pointer-events-none opacity-50" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
               {t('attendance.absent') || 'Absent'}
             </CardTitle>
-            <XCircle className="h-4 w-4 text-red-600" />
+            <div className="p-2 rounded-lg bg-red-500/10 flex-shrink-0">
+              <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 dark:text-red-400" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{dashboardStats.absentCount}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="pb-3">
+            <div className="text-2xl sm:text-3xl font-bold mb-2 text-red-600 break-words">
+              {dashboardStats.absentCount}
+            </div>
+            <div className="text-xs text-muted-foreground mb-2 break-words">
               {t('table.students') || 'students'}
-            </p>
+            </div>
           </CardContent>
         </Card>
       </div>

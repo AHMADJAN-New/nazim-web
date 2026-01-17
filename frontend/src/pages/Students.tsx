@@ -31,6 +31,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useDataTable } from '@/hooks/use-data-table';
 import {
@@ -806,47 +807,35 @@ export function Students() {
           onSubmitData={onDialogSubmit}
         />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('events.total') || 'Total Students'}</CardTitle>
-            <UserRound className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.total ?? 0}</div>
-            <p className="text-xs text-muted-foreground">{t('students.acrossSelected') || 'Across selected organization'}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('students.male') || 'Male'}</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.male ?? 0}</div>
-            <p className="text-xs text-muted-foreground">{t('students.registeredMale') || 'Registered male students'}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('students.female') || 'Female'}</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.female ?? 0}</div>
-            <p className="text-xs text-muted-foreground">{t('students.registeredFemale') || 'Registered female students'}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('students.orphans') || 'Orphans'}</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.orphans ?? 0}</div>
-            <p className="text-xs text-muted-foreground">{t('students.needingSpecial') || 'Needing special care'}</p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <StatsCard
+          title={t('events.total') || 'Total Students'}
+          value={stats?.total ?? 0}
+          icon={UserRound}
+          description={t('students.acrossSelected') || 'Across selected organization'}
+          color="blue"
+        />
+        <StatsCard
+          title={t('students.male') || 'Male'}
+          value={stats?.male ?? 0}
+          icon={Shield}
+          description={t('students.registeredMale') || 'Registered male students'}
+          color="blue"
+        />
+        <StatsCard
+          title={t('students.female') || 'Female'}
+          value={stats?.female ?? 0}
+          icon={Shield}
+          description={t('students.registeredFemale') || 'Registered female students'}
+          color="purple"
+        />
+        <StatsCard
+          title={t('students.orphans') || 'Orphans'}
+          value={stats?.orphans ?? 0}
+          icon={Shield}
+          description={t('students.needingSpecial') || 'Needing special care'}
+          color="amber"
+        />
       </div>
 
       <FilterPanel title={t('events.filters')}>

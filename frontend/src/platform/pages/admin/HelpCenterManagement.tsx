@@ -940,7 +940,7 @@ export default function HelpCenterManagement() {
                   <SelectContent>
                     <SelectItem value="en">English</SelectItem>
                     <SelectItem value="ps">پښتو (Pashto)</SelectItem>
-                    <SelectItem value="fa">فارسی (Farsi)</SelectItem>
+                    <SelectItem value="fa">دری (Dari)</SelectItem>
                     <SelectItem value="ar">العربية (Arabic)</SelectItem>
                   </SelectContent>
                 </Select>

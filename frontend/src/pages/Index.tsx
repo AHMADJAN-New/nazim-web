@@ -65,7 +65,7 @@ const Index = () => {
   // Language options for selector (English, Dari/Farsi, and Pashto)
   const languages = [
     { code: 'en' as const, name: 'English', codeText: 'EN', nativeName: 'English' },
-    { code: 'fa' as const, name: 'فارسی', codeText: 'DA', nativeName: 'فارسی' },
+    { code: 'fa' as const, name: 'دری', codeText: 'DA', nativeName: 'دری' },
     { code: 'ps' as const, name: 'پښتو', codeText: 'PS', nativeName: 'پښتو' },
   ];
 

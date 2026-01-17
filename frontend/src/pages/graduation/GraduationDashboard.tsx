@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -192,51 +193,31 @@ export default function GraduationDashboard() {
       )}
 
       {/* Summary Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{t('toast.graduation.summary.totalBatches') || 'Total Batches'}</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </div>
-              <Calendar className="h-8 w-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{t('toast.graduation.summary.draftBatches') || 'Draft'}</p>
-                <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-500">{stats.draft}</p>
-              </div>
-              <Clock className="h-8 w-8 text-yellow-600 dark:text-yellow-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{t('toast.graduation.summary.approvedBatches') || 'Approved'}</p>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-500">{stats.approved}</p>
-              </div>
-              <CheckCircle2 className="h-8 w-8 text-blue-600 dark:text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{t('toast.graduation.summary.issuedBatches') || 'Issued'}</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-500">{stats.issued}</p>
-              </div>
-              <Award className="h-8 w-8 text-green-600 dark:text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <StatsCard
+          title={t('toast.graduation.summary.totalBatches') || 'Total Batches'}
+          value={stats.total}
+          icon={Calendar}
+          color="blue"
+        />
+        <StatsCard
+          title={t('toast.graduation.summary.draftBatches') || 'Draft'}
+          value={stats.draft}
+          icon={Clock}
+          color="yellow"
+        />
+        <StatsCard
+          title={t('toast.graduation.summary.approvedBatches') || 'Approved'}
+          value={stats.approved}
+          icon={CheckCircle2}
+          color="blue"
+        />
+        <StatsCard
+          title={t('toast.graduation.summary.issuedBatches') || 'Issued'}
+          value={stats.issued}
+          icon={Award}
+          color="green"
+        />
       </div>
 
       {/* Current Year Stats */}
