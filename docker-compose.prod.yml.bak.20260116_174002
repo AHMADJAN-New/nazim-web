@@ -1,13 +1,12 @@
 services:
   db:
-    # PostgreSQL 18 - Latest stable version
-    # Compatible with pgcrypto extension and gen_random_uuid() used in migrations
-    image: postgres:18
+    image: postgres:16
     container_name: nazim_prod_db
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-nazim}
       POSTGRES_USER: ${POSTGRES_USER:-nazim}
+     
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
     volumes:
       - nazim_pg_data:/var/lib/postgresql/data
@@ -42,8 +41,12 @@ services:
       dockerfile: docker/php/Dockerfile.prod
     container_name: nazim_prod_php
     restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      CACHE_STORE: redis
+      APP_URL: ${APP_URL:-http://localhost}
     env_file:
-      - docker/env/compose.prod.env
       - ./backend/.env
     depends_on:
       db:
@@ -65,7 +68,6 @@ services:
     container_name: nazim_prod_queue
     restart: unless-stopped
     env_file:
-      - docker/env/compose.prod.env
       - ./backend/.env
     depends_on:
       php:
@@ -75,13 +77,13 @@ services:
     command: ["sh", "-lc", "php artisan queue:work --sleep=3 --tries=3 --timeout=120 --no-interaction"]
     networks:
       - nazim_network
+    CACHE_STORE: redis
 
   scheduler:
     image: nazim-web-php:prod
     container_name: nazim_prod_scheduler
     restart: unless-stopped
     env_file:
-      - docker/env/compose.prod.env
       - ./backend/.env
     depends_on:
       php:
@@ -106,11 +108,11 @@ services:
         VITE_API_URL: ${VITE_API_URL:-/api}
     container_name: nazim_prod_nginx
     restart: unless-stopped
-    env_file:
-      - docker/env/compose.prod.env
     depends_on:
       php:
         condition: service_healthy
+    env_file:
+      - docker/env/compose.prod.env
     ports:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
@@ -130,13 +132,14 @@ services:
     image: certbot/certbot:latest
     container_name: nazim_prod_certbot
     restart: "no"
-    env_file:
-      - docker/env/compose.prod.env
     volumes:
       - nazim_letsencrypt:/etc/letsencrypt
       - nazim_certbot_www:/var/www/certbot
     networks:
       - nazim_network
+
+    env_file:
+      - docker/env/compose.prod.env
 
 volumes:
   nazim_pg_data:
@@ -148,3 +151,4 @@ volumes:
 networks:
   nazim_network:
     driver: bridge
+

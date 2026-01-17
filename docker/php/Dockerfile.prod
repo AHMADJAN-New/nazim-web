@@ -60,10 +60,13 @@ COPY docker/php/nazim.ini /usr/local/etc/php/conf.d/99-nazim.ini
 WORKDIR /var/www/backend
 COPY backend/ /var/www/backend/
 
+# ? IMPORTANT: Laravel writable dirs must exist BEFORE composer scripts run
+RUN mkdir -p /var/www/backend/storage /var/www/backend/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/backend/storage /var/www/backend/bootstrap/cache \
+    && chmod -R 775 /var/www/backend/storage /var/www/backend/bootstrap/cache
+
 # Install PHP deps (prod)
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader \
-    && mkdir -p /var/www/backend/storage /var/www/backend/bootstrap/cache \
-    && chown -R www-data:www-data /var/www/backend/storage /var/www/backend/bootstrap/cache
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
 # Browsershot defaults (can be overridden via env)
 ENV BROWSERSHOT_CHROME_PATH=/usr/bin/chromium \
@@ -71,4 +74,4 @@ ENV BROWSERSHOT_CHROME_PATH=/usr/bin/chromium \
 
 EXPOSE 9000
 CMD ["php-fpm"]
-
+ 

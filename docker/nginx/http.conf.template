@@ -1,0 +1,52 @@
+server {
+    listen 80;
+    server_name ${DOMAIN} _;
+
+    client_max_body_size 50M;
+
+    location = /healthz {
+        add_header Content-Type text/plain;
+        return 200 "ok\n";
+    }
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        try_files $uri =404;
+    }
+
+    # Serve app over HTTP during bootstrap (temporary)
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location ^~ /assets/ {
+        try_files $uri =404;
+        access_log off;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000, immutable";
+    }
+
+    location ^~ /storage/ {
+        alias /backend-storage/app/public/;
+        try_files $uri =404;
+        access_log off;
+        expires 7d;
+        add_header Cache-Control "public, max-age=604800";
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location = /api { return 301 /api/; }
+
+    location ^~ /api/ {
+        include fastcgi_params;
+        fastcgi_pass php:9000;
+        fastcgi_param SCRIPT_FILENAME /var/www/backend/public/index.php;
+        fastcgi_param DOCUMENT_ROOT  /var/www/backend/public;
+        fastcgi_param REQUEST_URI $request_uri;
+        fastcgi_read_timeout 300;
+    }
+
+    location ~ /\.(?!well-known).* { deny all; }
+}

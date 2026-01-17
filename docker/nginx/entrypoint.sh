@@ -1,17 +1,26 @@
 #!/bin/sh
-set -eu
+set -e
 
-DOMAIN="${DOMAIN:-nazim.cloud}"
+DOMAIN="${DOMAIN:-}"
 
-echo "[nginx] DOMAIN=${DOMAIN}"
-
-# Render nginx config from template (envsubst)
-if [ -f /etc/nginx/conf.d/default.conf.template ]; then
-  envsubst '${DOMAIN}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
+if [ -z "$DOMAIN" ]; then
+  echo "[nginx] ERROR: DOMAIN env is empty"
+  exit 1
 fi
 
-if [ -x /refresh_certs.sh ]; then
-  /refresh_certs.sh
+CERT="/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
+HTTP_TPL="/etc/nginx/conf.d/http.conf.template"
+HTTPS_TPL="/etc/nginx/conf.d/https.conf.template"
+OUT="/etc/nginx/conf.d/default.conf"
+
+echo "[nginx] DOMAIN=$DOMAIN"
+
+if [ -f "$CERT" ]; then
+  echo "[nginx] Found Let's Encrypt cert. Rendering HTTPS config."
+  envsubst '${DOMAIN}' < "$HTTPS_TPL" > "$OUT"
+else
+  echo "[nginx] No Let's Encrypt cert yet. Rendering HTTP bootstrap config."
+  envsubst '${DOMAIN}' < "$HTTP_TPL" > "$OUT"
 fi
 
 exec "$@"

@@ -51,6 +51,28 @@ compose() {
 # shellcheck disable=SC1090
 source "${COMPOSE_ENV}"
 
+# Check firewall configuration (optional - will warn if not configured)
+FIREWALL_SCRIPT="${ROOT_DIR}/docker/scripts/prod/setup-firewall.sh"
+if [[ -f "${FIREWALL_SCRIPT}" ]]; then
+  if command -v ufw >/dev/null 2>&1; then
+    if sudo ufw status | grep -q "Status: active"; then
+      HTTP_PORT="${HTTP_PORT:-80}"
+      HTTPS_PORT="${HTTPS_PORT:-443}"
+      if ! sudo ufw status | grep -q "${HTTP_PORT}/tcp" || ! sudo ufw status | grep -q "${HTTPS_PORT}/tcp"; then
+        echo "[bootstrap] WARNING: Firewall is active but HTTP/HTTPS ports may not be allowed"
+        echo "[bootstrap] Run: sudo bash ${FIREWALL_SCRIPT}"
+      else
+        echo "[bootstrap] Firewall is active and ports are configured"
+      fi
+    else
+      echo "[bootstrap] WARNING: Firewall (UFW) is not active"
+      echo "[bootstrap] To configure firewall, run: sudo bash ${FIREWALL_SCRIPT}"
+    fi
+  else
+    echo "[bootstrap] INFO: UFW not installed. To set up firewall, run: sudo bash ${FIREWALL_SCRIPT}"
+  fi
+fi
+
 echo "[bootstrap] Building images (php + nginx w/ frontend build)..."
 compose build --no-cache
 

@@ -12,9 +12,10 @@ This setup matches the audited production topology:
 - `docker/php/Dockerfile.prod` + `docker/php/nazim.ini`
 - `docker/postgres/init/01-extensions.sql` (enables `pgcrypto` for `gen_random_uuid()`)
 - `docker/env/compose.prod.env.example` + `docker/env/backend.env.example`
+- `docker/scripts/prod/setup.sh` (master setup script - recommended)
 - `docker/scripts/prod/bootstrap.sh` (first-time setup)
-- `docker/scripts/prod/update.sh` (update/redeploy)
-- `docker/scripts/prod/backup_db.sh`, `docker/scripts/prod/restore_db.sh`
+- `docker/scripts/maintenance/update.sh` (update/redeploy)
+- `docker/scripts/backup/backup_db.sh`, `docker/scripts/backup/restore_db.sh`
 
 ### 1) On a new VPS
 
@@ -43,9 +44,13 @@ cp docker/env/backend.env.example backend/.env
 ### 3) Bootstrap
 
 ```bash
+# Option 1: Master setup (recommended - does everything)
+sudo bash docker/scripts/prod/setup.sh
+
+# Option 2: Manual step-by-step
 bash docker/scripts/prod/preflight.sh
 bash docker/scripts/prod/bootstrap.sh
-bash docker/scripts/prod/smoke_test.sh
+bash docker/scripts/maintenance/smoke_test.sh
 ```
 
 ### HTTPS (Let's Encrypt)
@@ -69,7 +74,7 @@ bash docker/scripts/prod/https_renew.sh
 ### 4) Update (future deploys)
 
 ```bash
-bash docker/scripts/prod/update.sh
+bash docker/scripts/maintenance/update.sh
 ```
 
 ### 5) Logs
@@ -81,24 +86,24 @@ docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml
 ### 6) Backups
 
 ```bash
-bash docker/scripts/prod/backup_db.sh
+bash docker/scripts/backup/backup_db.sh
 ```
 
 Restore:
 
 ```bash
-bash docker/scripts/prod/restore_db.sh backups/db_YYYYMMDD_HHMMSS.sql.gz
+bash docker/scripts/backup/restore_db.sh backups/db_YYYYMMDD_HHMMSS.sql.gz
 ```
 
 Storage backup (uploads, private docs, cached reports, etc.):
 
 ```bash
-bash docker/scripts/prod/backup_storage.sh
+bash docker/scripts/backup/backup_storage.sh
 ```
 
 Restore:
 
 ```bash
-bash docker/scripts/prod/restore_storage.sh backups/storage_YYYYMMDD_HHMMSS.tar.gz
+bash docker/scripts/backup/restore_storage.sh backups/storage_YYYYMMDD_HHMMSS.tar.gz
 ```
 
