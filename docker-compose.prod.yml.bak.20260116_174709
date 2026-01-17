@@ -1,8 +1,6 @@
 services:
   db:
-    # PostgreSQL 18 - Latest stable version
-    # Compatible with pgcrypto extension and gen_random_uuid() used in migrations
-    image: postgres:18
+    image: postgres:16
     container_name: nazim_prod_db
     restart: unless-stopped
     environment:
@@ -43,8 +41,12 @@ services:
     container_name: nazim_prod_php
     restart: unless-stopped
     env_file:
-      - docker/env/compose.prod.env
       - ./backend/.env
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_URL: ${APP_URL:-http://localhost}
+      CACHE_STORE: ${CACHE_STORE:-redis}
     depends_on:
       db:
         condition: service_healthy
@@ -65,7 +67,6 @@ services:
     container_name: nazim_prod_queue
     restart: unless-stopped
     env_file:
-      - docker/env/compose.prod.env
       - ./backend/.env
     depends_on:
       php:
@@ -81,7 +82,6 @@ services:
     container_name: nazim_prod_scheduler
     restart: unless-stopped
     env_file:
-      - docker/env/compose.prod.env
       - ./backend/.env
     depends_on:
       php:
@@ -106,8 +106,6 @@ services:
         VITE_API_URL: ${VITE_API_URL:-/api}
     container_name: nazim_prod_nginx
     restart: unless-stopped
-    env_file:
-      - docker/env/compose.prod.env
     depends_on:
       php:
         condition: service_healthy
@@ -130,8 +128,6 @@ services:
     image: certbot/certbot:latest
     container_name: nazim_prod_certbot
     restart: "no"
-    env_file:
-      - docker/env/compose.prod.env
     volumes:
       - nazim_letsencrypt:/etc/letsencrypt
       - nazim_certbot_www:/var/www/certbot

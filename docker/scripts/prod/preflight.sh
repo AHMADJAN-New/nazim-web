@@ -37,6 +37,21 @@ if ! docker compose version >/dev/null 2>&1; then
   exit 1
 fi
 
+# Check firewall status (optional - informational only)
+if command -v ufw >/dev/null 2>&1; then
+  if sudo ufw status | grep -q "Status: active"; then
+    HTTP_PORT="${HTTP_PORT:-80}"
+    HTTPS_PORT="${HTTPS_PORT:-443}"
+    if sudo ufw status | grep -q "${HTTP_PORT}/tcp" && sudo ufw status | grep -q "${HTTPS_PORT}/tcp"; then
+      echo "[preflight] Firewall: Active (HTTP/HTTPS ports allowed)"
+    else
+      echo "[preflight] WARNING: Firewall active but HTTP/HTTPS ports may not be configured"
+    fi
+  else
+    echo "[preflight] WARNING: Firewall (UFW) is not active"
+  fi
+fi
+
 echo "[preflight] DOMAIN=${DOMAIN}"
 echo "[preflight] APP_URL=${APP_URL}"
 
