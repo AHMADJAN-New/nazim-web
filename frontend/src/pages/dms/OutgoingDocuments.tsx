@@ -41,16 +41,16 @@ import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 import { generateLetterPdf } from "@/services/dms/LetterPdfGenerator";
 
 const statusOptions = [
-  { label: "Draft", value: "draft" },
-  { label: "Issued", value: "issued" },
-  { label: "Printed", value: "printed" },
+  { labelKey: "dms.archiveSearch.draft", value: "draft" },
+  { labelKey: "dms.archiveSearch.issued", value: "issued" },
+  { labelKey: "dms.archiveSearch.printed", value: "printed" },
 ];
 
 const recipientTypeOptions = [
-  { label: "Student", value: "student" },
-  { label: "Staff", value: "staff" },
-  { label: "Applicant", value: "applicant" },
-  { label: "External", value: "external" },
+  { labelKey: "common.student", value: "student" },
+  { labelKey: "common.staff", value: "staff" },
+  { labelKey: "common.applicant", value: "applicant" },
+  { labelKey: "common.external", value: "external" },
 ];
 
 // Attachment Card Component
@@ -144,7 +144,7 @@ function AttachmentCard({
               disabled={previewLoading}
             >
               <Eye className="h-3 w-3 mr-1" />
-              Preview
+              {t('common.preview')}
             </Button>
           )}
           <Button
@@ -154,7 +154,7 @@ function AttachmentCard({
             onClick={() => onDownload(file.id, file.original_name)}
           >
             <Download className="h-3 w-3 mr-1" />
-            Download
+            {t('common.download')}
           </Button>
         </div>
       </CardContent>
@@ -265,40 +265,40 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
     <div className="space-y-6">
       {/* Basic Information */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Basic Information</h3>
+        <h3 className="text-lg font-semibold mb-4">{t('dms.forms.outgoing.basicInfo')}</h3>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <Label className="text-muted-foreground">Document Number</Label>
+            <Label className="text-muted-foreground">{t('dms.forms.outgoing.documentNumber')}</Label>
             <p className="font-medium">{doc.full_outdoc_number || "N/A"}</p>
           </div>
           <div>
-            <Label className="text-muted-foreground">Issue Date</Label>
+            <Label className="text-muted-foreground">{t('dms.forms.outgoing.issueDate')}</Label>
             <p className="font-medium">{formatDate(doc.issue_date)}</p>
           </div>
           <div>
-            <Label className="text-muted-foreground">Subject</Label>
+            <Label className="text-muted-foreground">{t('dms.forms.outgoing.subject')}</Label>
             <p className="font-medium">{doc.subject || "N/A"}</p>
           </div>
           <div>
-            <Label className="text-muted-foreground">Status</Label>
+            <Label className="text-muted-foreground">{t('dms.forms.outgoing.status')}</Label>
             <p className="font-medium capitalize">{doc.status || "N/A"}</p>
           </div>
           <div>
-            <Label className="text-muted-foreground">Recipient Type</Label>
+            <Label className="text-muted-foreground">{t('dms.forms.outgoing.recipientType')}</Label>
             <p className="font-medium capitalize">{doc.recipient_type || "N/A"}</p>
           </div>
           <div>
-            <Label className="text-muted-foreground">Security Level</Label>
+            <Label className="text-muted-foreground">{t('dms.forms.outgoing.securityLevel')}</Label>
             <div className="font-medium">
               <SecurityBadge level={doc.security_level_key} />
             </div>
           </div>
           <div>
-            <Label className="text-muted-foreground">Pages Count (ضمائم)</Label>
+            <Label className="text-muted-foreground">{t('dms.forms.outgoing.pagesCount')}</Label>
             <p className="font-medium">{doc.pages_count ?? "N/A"}</p>
           </div>
           <div>
-            <Label className="text-muted-foreground">Attachments Count</Label>
+            <Label className="text-muted-foreground">{t('dms.forms.outgoing.attachmentsCount')}</Label>
             <p className="font-medium">{doc.attachments_count ?? 0}</p>
           </div>
         </div>
@@ -309,7 +309,7 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
         <>
           <Separator />
           <div>
-            <Label className="text-muted-foreground mb-2 block">Description / Content</Label>
+            <Label className="text-muted-foreground mb-2 block">{t('dms.forms.outgoing.contentLabel')}</Label>
             <div
               className="prose prose-sm max-w-none p-4 border rounded-lg bg-muted/50"
               dangerouslySetInnerHTML={{ __html: doc.description }}
@@ -323,7 +323,7 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
         <>
           <Separator />
           <div>
-            <Label className="text-muted-foreground mb-2 block">Body Content</Label>
+            <Label className="text-muted-foreground mb-2 block">{t('dms.forms.outgoing.bodyContent')}</Label>
             <div
               className="prose prose-sm max-w-none p-4 border rounded-lg bg-muted/50"
               dangerouslySetInnerHTML={{ __html: doc.body_html }}
@@ -335,7 +335,7 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
       {/* Attachments */}
       <Separator />
       <div>
-        <h3 className="text-lg font-semibold mb-4">Attachments ({files.length})</h3>
+        <h3 className="text-lg font-semibold mb-4">{t('dms.archiveSearch.viewDialog.attachments')} ({files.length})</h3>
         {files && files.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {files.map((file: any) => (
@@ -354,7 +354,7 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
         ) : (
           <div className="text-center py-12 border-2 border-dashed rounded-lg">
             <File className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">No attachments found</p>
+            <p className="text-sm text-muted-foreground">{t('dms.noAttachmentsFound')}</p>
           </div>
         )}
       </div>
@@ -363,8 +363,8 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
       <Dialog open={!!previewFile} onOpenChange={(open) => !open && handleClosePreview()}>
         <DialogContent className="max-w-[95vw] w-full max-h-[95vh] h-full overflow-hidden p-0">
           <DialogHeader className="sr-only">
-            <DialogTitle>{previewFile?.name || 'File Preview'}</DialogTitle>
-            <DialogDescription>Preview attachment file</DialogDescription>
+            <DialogTitle>{previewFile?.name || t('common.preview')}</DialogTitle>
+            <DialogDescription>{t('common.preview')}</DialogDescription>
           </DialogHeader>
           {previewFile && (
             <>
@@ -384,7 +384,7 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
                       <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
-                      <p className="text-sm text-muted-foreground">Loading preview...</p>
+                      <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
                     </div>
                   </div>
                 ) : previewFile.url && (
@@ -407,14 +407,14 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
                         <div className="flex items-center justify-center h-full text-center p-8">
                           <div>
                             <p className="text-sm text-muted-foreground mb-4">
-                              PDF preview is not available. Please download the file to view it.
+                              {t('dms.pdfPreviewNotAvailable')}
                             </p>
                             <Button
                               variant="outline"
                               onClick={() => handleDownload(previewFile.id, previewFile.name)}
                             >
                               <Download className="h-4 w-4 mr-1" />
-                              Download PDF
+                              {t('common.download')}
                             </Button>
                           </div>
                         </div>
@@ -422,14 +422,14 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
                     ) : (
                       <div className="text-center">
                         <File className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-sm text-muted-foreground">Preview not available for this file type</p>
+                        <p className="text-sm text-muted-foreground">{t('dms.previewNotAvailable')}</p>
                         <Button
                           variant="outline"
                           className="mt-4"
                           onClick={() => handleDownload(previewFile.id, previewFile.name)}
                         >
                           <Download className="h-4 w-4 mr-1" />
-                          Download File
+                          {t('common.download')}
                         </Button>
                       </div>
                     )}
@@ -824,48 +824,48 @@ export default function OutgoingDocuments() {
       <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Add Outgoing Document</DialogTitle>
+              <DialogTitle>{t('dms.forms.outgoing.title')}</DialogTitle>
               <DialogDescription>
-                Create a new outgoing document or letter. Fill in the required fields and save.
+                {t('dms.forms.outgoing.description')}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
               {/* Basic Information */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Basic Information</h3>
+                <h3 className="text-lg font-semibold">{t('dms.forms.outgoing.basicInfo')}</h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Academic Year</Label>
+                    <Label>{t('dms.forms.outgoing.academicYear')}</Label>
                     <Select
                       value={newDoc.academic_year_id || currentAcademicYear?.id || ""}
                       onValueChange={(value) => setNewDoc((s) => ({ ...s, academic_year_id: value }))}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select academic year" />
+                        <SelectValue placeholder={t('dms.forms.outgoing.academicYear')} />
                       </SelectTrigger>
                       <SelectContent>
                         {academicYears?.map((year) => (
                           <SelectItem key={year.id} value={year.id}>
-                            {year.name} {year.isCurrent ? "(Current)" : ""}
+                            {year.name} {year.isCurrent ? `(${t('common.default')})` : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Issue Date <span className="text-destructive">*</span></Label>
+                    <Label>{t('dms.forms.outgoing.issueDate')} <span className="text-destructive">*</span></Label>
                     <CalendarDatePicker date={newDoc.issue_date ? new Date(newDoc.issue_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, issue_date: date ? date.toISOString().split("T")[0] : "" }))} />
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label>Subject <span className="text-destructive">*</span></Label>
+                    <Label>{t('dms.forms.outgoing.subject')} <span className="text-destructive">*</span></Label>
                     <Input
                       value={newDoc.subject}
                       onChange={(e) => setNewDoc((s) => ({ ...s, subject: e.target.value }))}
-                      placeholder="Document subject"
+                      placeholder={t('dms.forms.outgoing.subject')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Recipient Type</Label>
+                    <Label>{t('dms.forms.outgoing.recipientType')}</Label>
                     <Select
                       value={newDoc.recipient_type}
                       onValueChange={(value) => setNewDoc((s) => ({ ...s, recipient_type: value }))}
@@ -876,14 +876,14 @@ export default function OutgoingDocuments() {
                       <SelectContent>
                         {recipientTypeOptions.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
+                            {t(opt.labelKey)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Status</Label>
+                    <Label>{t('dms.forms.outgoing.status')}</Label>
                     <Select
                       value={newDoc.status}
                       onValueChange={(value) => setNewDoc((s) => ({ ...s, status: value }))}
@@ -894,7 +894,7 @@ export default function OutgoingDocuments() {
                       <SelectContent>
                         {statusOptions.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
+                            {t(opt.labelKey)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -907,43 +907,43 @@ export default function OutgoingDocuments() {
 
               {/* Document Content */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Document Content</h3>
+                <h3 className="text-lg font-semibold">{t('dms.forms.outgoing.content')}</h3>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Description / Content</Label>
+                    <Label>{t('dms.forms.outgoing.contentLabel')}</Label>
                     <RichTextEditor
                       value={newDoc.description}
                       onChange={(html) => setNewDoc((s) => ({ ...s, description: html }))}
-                      placeholder="Enter document description or content..."
+                      placeholder={t('dms.forms.outgoing.contentPlaceholder')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Body HTML</Label>
+                    <Label>{t('dms.forms.outgoing.bodyContent')}</Label>
                     <RichTextEditor
                       value={newDoc.body_html}
                       onChange={(html) => setNewDoc((s) => ({ ...s, body_html: html }))}
-                      placeholder="Enter document body content..."
+                      placeholder={t('dms.forms.outgoing.bodyContentPlaceholder')}
                     />
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label>Pages Count (ضمائم)</Label>
+                      <Label>{t('dms.forms.outgoing.pagesCount')}</Label>
                       <Input
                         type="number"
                         min="0"
                         value={newDoc.pages_count}
                         onChange={(e) => setNewDoc((s) => ({ ...s, pages_count: e.target.value }))}
-                        placeholder="Number of pages"
+                        placeholder="0"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Attachments Count</Label>
+                      <Label>{t('dms.forms.outgoing.attachmentsCount')}</Label>
                       <Input
                         type="number"
                         min="0"
                         value={newDoc.attachments_count}
                         onChange={(e) => setNewDoc((s) => ({ ...s, attachments_count: e.target.value }))}
-                        placeholder="Number of attachments"
+                        placeholder="0"
                       />
                     </div>
                   </div>
@@ -954,7 +954,7 @@ export default function OutgoingDocuments() {
 
               {/* Document Numbering */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Document Numbering</h3>
+                <h3 className="text-lg font-semibold">{t('dms.forms.outgoing.documentNumbering')}</h3>
                 <div className="space-y-4">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -963,16 +963,16 @@ export default function OutgoingDocuments() {
                       onCheckedChange={(checked) => setNewDoc((s) => ({ ...s, is_manual_number: !!checked }))}
                     />
                     <Label htmlFor="is_manual_number" className="cursor-pointer">
-                      Use manual document number
+                      {t('dms.forms.outgoing.manualNumber')}
                     </Label>
                   </div>
                   {newDoc.is_manual_number && (
                     <div className="space-y-2">
-                      <Label>Manual Document Number</Label>
+                      <Label>{t('dms.forms.outgoing.manualNumber')}</Label>
                       <Input
                         value={newDoc.manual_outdoc_number}
                         onChange={(e) => setNewDoc((s) => ({ ...s, manual_outdoc_number: e.target.value }))}
-                        placeholder="Enter manual document number"
+                        placeholder={t('dms.forms.outgoing.manualNumber')}
                       />
                     </div>
                   )}
@@ -983,45 +983,45 @@ export default function OutgoingDocuments() {
 
               {/* Additional Information */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Additional Information</h3>
+                <h3 className="text-lg font-semibold">{t('dms.forms.outgoing.externalDocInfo')}</h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>External Document Number</Label>
+                    <Label>{t('dms.forms.outgoing.externalDocNumber')}</Label>
                     <Input
                       value={newDoc.external_doc_number}
                       onChange={(e) => setNewDoc((s) => ({ ...s, external_doc_number: e.target.value }))}
-                      placeholder="External reference number"
+                      placeholder={t('dms.forms.outgoing.externalDocNumber')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>External Document Date</Label>
+                    <Label>{t('dms.forms.outgoing.externalDocDate')}</Label>
                     <CalendarDatePicker date={newDoc.external_doc_date ? new Date(newDoc.external_doc_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, external_doc_date: date ? date.toISOString().split("T")[0] : "" }))} />
                   </div>
                   <div className="space-y-2">
-                    <Label>Security Level</Label>
+                    <Label>{t('dms.forms.outgoing.securityLevel')}</Label>
                     <Select
                       value={newDoc.security_level_key || "none"}
                       onValueChange={(value) => setNewDoc((s) => ({ ...s, security_level_key: value === "none" ? "" : value }))}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select security level" />
+                        <SelectValue placeholder={t('dms.forms.outgoing.securityLevel')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="public">Public</SelectItem>
-                        <SelectItem value="internal">Internal</SelectItem>
-                        <SelectItem value="confidential">Confidential</SelectItem>
-                        <SelectItem value="secret">Secret</SelectItem>
-                        <SelectItem value="top_secret">Top Secret</SelectItem>
+                        <SelectItem value="none">{t('common.none')}</SelectItem>
+                        <SelectItem value="public">{t('common.public')}</SelectItem>
+                        <SelectItem value="internal">{t('common.internal')}</SelectItem>
+                        <SelectItem value="confidential">{t('common.confidential')}</SelectItem>
+                        <SelectItem value="secret">{t('common.secret')}</SelectItem>
+                        <SelectItem value="top_secret">{t('common.topSecret')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Notes</Label>
+                    <Label>{t('dms.forms.outgoing.notes')}</Label>
                     <Input
                       value={newDoc.notes}
                       onChange={(e) => setNewDoc((s) => ({ ...s, notes: e.target.value }))}
-                      placeholder="Additional notes"
+                      placeholder={t('dms.forms.outgoing.notes')}
                     />
                   </div>
                 </div>
@@ -1040,13 +1040,13 @@ export default function OutgoingDocuments() {
                     is_manual_number: newDoc.is_manual_number || false,
                   })}
                 >
-                  {createMutation.isPending ? "Saving..." : "Save Document"}
+                  {createMutation.isPending ? t('common.saving') : t('common.save')}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => handleDialogOpenChange(false)}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               </div>
             </div>
