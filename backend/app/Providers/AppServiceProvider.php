@@ -17,8 +17,10 @@ use App\Models\Event;
 use App\Models\CertificateTemplate;
 use App\Models\IdCardTemplate;
 use App\Models\IncomingDocument;
+use App\Models\AttendanceSession;
 use App\Observers\OrganizationObserver;
 use App\Observers\UsageTrackingObserver;
+use App\Observers\AttendanceSessionObserver;
 use App\Services\Notifications\NotificationRuleRegistry;
 use App\Services\Notifications\NotificationService;
 use Illuminate\Support\Facades\Gate;
@@ -67,6 +69,9 @@ class AppServiceProvider extends ServiceProvider
         CertificateTemplate::observe(UsageTrackingObserver::class);
         IdCardTemplate::observe(UsageTrackingObserver::class);
         IncomingDocument::observe(UsageTrackingObserver::class);
+
+        // Register AttendanceSession observer to email reports when session is closed
+        AttendanceSession::observe(AttendanceSessionObserver::class);
 
         Gate::policy(\App\Models\IncomingDocument::class, \App\Policies\IncomingDocumentPolicy::class);
         Gate::policy(\App\Models\OutgoingDocument::class, \App\Policies\OutgoingDocumentPolicy::class);

@@ -33,3 +33,10 @@ Schedule::command('usage:recalculate')
     ->everyFifteenMinutes()
     ->appendOutputTo(storage_path('logs/usage-recalculation.log'))
     ->description('Recalculate usage counts from database to ensure accuracy');
+
+// Schedule daily financial summary reports
+Schedule::command('reports:daily-financial-summary')
+    ->daily()
+    ->at('18:00')
+    ->appendOutputTo(storage_path('logs/daily-financial-summary.log'))
+    ->description('Generate and email daily financial summary reports to finance staff');
