@@ -34,13 +34,13 @@ const statusOrder: AdmissionStatus[] = ['active', 'admitted', 'pending', 'inacti
 const statusLabelMap = (
   t: ReturnType<typeof useLanguage>['t']
 ): Record<AdmissionStatus, string> => ({
-  pending: t('admissions.pending') || 'Pending',
-  admitted: t('admissions.admitted') || 'Admitted',
-  active: t('events.active') || 'Active',
-  inactive: t('events.inactive') || 'Inactive',
-  suspended: t('students.suspended') || 'Suspended',
-  withdrawn: t('admissions.withdrawn') || 'Withdrawn',
-  graduated: t('students.graduated') || 'Graduated',
+  pending: t('admissions.pending'),
+  admitted: t('admissions.admitted'),
+  active: t('common.active'),
+  inactive: t('common.inactive'),
+  suspended: t('students.suspended'),
+  withdrawn: t('admissions.withdrawn'),
+  graduated: t('students.graduated'),
 });
 
 const formatNumber = (value?: number) => (value ?? 0).toLocaleString();
@@ -209,58 +209,11 @@ const StudentAdmissionsReport = () => {
     );
   }, [filters]);
 
-  return (
-    <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
-      <PageHeader
-        title={t('admissions.reportTitle') || 'Admissions Report'}
-        description={t('admissions.reportSubtitle') || 'Analyze admissions performance across schools and years.'}
-        icon={<BarChart3 className="h-5 w-5" />}
-        primaryAction={{
-          label: t('admissions.list') || 'Admissions',
-          href: '/admissions',
-          icon: <UserCheck className="h-4 w-4" />,
-        }}
-        secondaryActions={[
-          {
-            label: t('events.refresh') || 'Refresh',
-            onClick: () => refetch(),
-            icon: <RefreshCw className="h-4 w-4" />,
-            variant: 'outline',
-          },
-        ]}
-        rightSlot={
-          report && report.recentAdmissions.length > 0 ? (
-            <ReportExportButtons
-              data={report.recentAdmissions}
-              columns={[
-                { key: 'student_name', label: t('events.name') || 'Student Name' },
-                { key: 'admission_no', label: t('examReports.admissionNo') || 'Admission #' },
-                { key: 'card_number', label: t('attendanceReports.cardNumber') || 'Card #' },
-                { key: 'school', label: t('admissions.school') || 'School' },
-                { key: 'class', label: t('search.class') || 'Class' },
-                { key: 'section', label: t('events.section') || 'Section' },
-                { key: 'academic_year', label: t('admissions.academicYear') || 'Academic Year' },
-                { key: 'residency_type', label: t('admissions.residency') || 'Residency Type' },
-                { key: 'is_boarder', label: t('admissions.boarder') || 'Boarder' },
-                { key: 'room', label: t('admissions.room') || 'Room' },
-                { key: 'guardian_name', label: t('admissions.guardian') || 'Guardian Name' },
-                { key: 'guardian_phone', label: t('admissions.guardianPhone') || 'Guardian Phone' },
-                { key: 'enrollment_status', label: t('events.status') || 'Enrollment Status' },
-                { key: 'admission_date', label: t('studentReportCard.admissionDate') || 'Admission Date' },
-              ]}
-              reportKey="student_admissions"
-              title={t('admissions.reportTitle') || 'Student Admissions Report'}
               transformData={transformAdmissionData}
               buildFiltersSummary={buildFiltersSummary}
               schoolId={currentSchoolId}
               templateType="student_admissions"
               disabled={!report || report.recentAdmissions.length === 0 || isLoading}
-              errorNoSchool={t('admissions.schoolRequiredForExport') || 'A school is required to export the report.'}
-              errorNoData={t('events.noDataToExport') || 'No data to export'}
-              successPdf={t('admissions.reportExported') || 'PDF report generated successfully'}
-              successExcel={t('admissions.reportExported') || 'Excel report generated successfully'}
-              errorPdf={t('admissions.exportFailed') || 'Failed to generate PDF report'}
-              errorExcel={t('admissions.exportFailed') || 'Failed to generate Excel report'}
               parameters={{
                 academic_year_id: filters.academicYearId || undefined,
                 enrollment_status: filters.enrollmentStatus !== 'all' ? filters.enrollmentStatus : undefined,
@@ -275,12 +228,12 @@ const StudentAdmissionsReport = () => {
       />
 
       <FilterPanel
-        title={t('admissions.reportFilters') || 'Report filters'}
+        title={t('common.filters')}
         footer={
           hasActiveFilters ? (
             <div className="flex justify-end">
               <Button variant="ghost" size="sm" onClick={handleResetFilters}>
-                {t('admissions.resetFilters') || 'Reset'}
+                {t('common.reset')}
               </Button>
             </div>
           ) : null
@@ -288,25 +241,25 @@ const StudentAdmissionsReport = () => {
       >
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
-            <Label>{t('admissions.school') || 'School'}</Label>
+            <Label>{t('common.school')}</Label>
             <Combobox
               options={(schools || []).map((school) => ({ label: school.schoolName, value: school.id }))}
               value={filters.schoolId || ''}
               onValueChange={(value) => handleFilterChange('schoolId', value || undefined)}
-              placeholder={t('leave.allSchools') || 'All schools'}
+              placeholder={t('common.all')}
             />
           </div>
           <div className="space-y-2">
-            <Label>{t('admissions.academicYear') || 'Academic Year'}</Label>
+            <Label>{t('fees.academicYear')}</Label>
             <Select
               value={filters.academicYearId || 'all'}
               onValueChange={(value) => handleFilterChange('academicYearId', value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t('admissions.selectAcademicYear') || 'Select year'} />
+                <SelectValue placeholder={t('common.select')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                <SelectItem value="all">{t('common.all')}</SelectItem>
                 {(academicYears || []).map((year) => (
                   <SelectItem key={year.id} value={year.id}>
                     {year.name}
@@ -316,16 +269,16 @@ const StudentAdmissionsReport = () => {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>{t('admissions.residency') || 'Residency'}</Label>
+            <Label>{t('admissions.residency')}</Label>
             <Select
               value={filters.residencyTypeId || 'all'}
               onValueChange={(value) => handleFilterChange('residencyTypeId', value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t('admissions.allResidency') || 'All residency'} />
+                <SelectValue placeholder={t('common.all')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                <SelectItem value="all">{t('common.all')}</SelectItem>
                 {(residencyTypes || []).map((residency) => (
                   <SelectItem key={residency.id} value={residency.id}>
                     {residency.name}
@@ -335,16 +288,16 @@ const StudentAdmissionsReport = () => {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>{t('events.status') || 'Status'}</Label>
+            <Label>{t('common.status')}</Label>
             <Select
               value={filters.enrollmentStatus || 'all'}
               onValueChange={(value) => handleFilterChange('enrollmentStatus', value as AdmissionStatus | 'all')}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t('userManagement.allStatus') || 'All status'} />
+                <SelectValue placeholder={t('common.all')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                <SelectItem value="all">{t('common.all')}</SelectItem>
                 {statusOrder.map((status) => (
                   <SelectItem key={status} value={status}>
                     {statusLabels[status]}
@@ -354,17 +307,17 @@ const StudentAdmissionsReport = () => {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>{t('library.fromDate') || 'From date'}</Label>
+            <Label>{t('common.fromDate')}</Label>
             <CalendarDatePicker date={filters.fromDate || '' ? new Date(filters.fromDate || '') : undefined} onDateChange={(date) => handleFilterChange("fromDate", date ? date.toISOString().split("T")[0] : "")} />
           </div>
           <div className="space-y-2">
-            <Label>{t('library.toDate') || 'To date'}</Label>
+            <Label>{t('common.toDate')}</Label>
             <CalendarDatePicker date={filters.toDate || '' ? new Date(filters.toDate || '') : undefined} onDateChange={(date) => handleFilterChange("toDate", date ? date.toISOString().split("T")[0] : "")} />
           </div>
           <div className="flex items-center justify-between rounded-lg border px-4 py-3 md:col-span-2">
             <div className="space-y-1">
-              <p className="text-sm font-medium">{t('admissions.boarderOnly') || 'Boarders only'}</p>
-              <p className="text-xs text-muted-foreground">{t('admissions.boarderOnlyHint') || 'Show only boarding students'}</p>
+              <p className="text-sm font-medium">{t('admissions.boarderOnly')}</p>
+              <p className="text-xs text-muted-foreground">{t('admissions.boarderOnlyHint')}</p>
             </div>
             <Switch
               checked={!!filters.isBoarder}
@@ -378,24 +331,24 @@ const StudentAdmissionsReport = () => {
       {hasInvalidRange && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>{t('admissions.invalidDateRangeTitle') || 'Invalid date range'}</AlertTitle>
+          <AlertTitle>{t('common.error')}</AlertTitle>
           <AlertDescription>
-            {t('admissions.invalidDateRangeDescription') || 'The start date must be before the end date.'}
+            {t('common.error')}
           </AlertDescription>
         </Alert>
       )}
 
       {isLoading && (
         <div className="py-12 flex justify-center">
-          <LoadingSpinner text="Loading report..." />
+          <LoadingSpinner text={t('common.loading')} />
         </div>
       )}
 
       {!isLoading && isError && !hasInvalidRange && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>{t('events.error') || 'Error'}</AlertTitle>
-          <AlertDescription>{(error as Error)?.message || t('events.unexpectedError') || 'Could not load report.'}</AlertDescription>
+          <AlertTitle>{t('common.error')}</AlertTitle>
+          <AlertDescription>{(error as Error)?.message || t('common.error')}</AlertDescription>
         </Alert>
       )}
 
@@ -404,32 +357,32 @@ const StudentAdmissionsReport = () => {
         <>
           {/* Summary Cards */}
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-            <SummaryCard label={t('admissions.totalAdmissions') || 'Total admissions'} value={report.totals.total} icon={BarChart3} tone="primary" />
-            <SummaryCard label={t('events.active') || 'Active'} value={report.totals.active} icon={BarChart3} tone="success" />
-            <SummaryCard label={t('admissions.pending') || 'Pending'} value={report.totals.pending} icon={BarChart3} tone="warning" />
-            <SummaryCard label={t('admissions.boarder') || 'Boarders'} value={report.totals.boarders} icon={Building2} />
+            <SummaryCard label={t('admissions.totalAdmissions')} value={report.totals.total} icon={BarChart3} tone="primary" />
+            <SummaryCard label={t('common.active')} value={report.totals.active} icon={BarChart3} tone="success" />
+            <SummaryCard label={t('admissions.pending')} value={report.totals.pending} icon={BarChart3} tone="warning" />
+            <SummaryCard label={t('admissions.boarder')} value={report.totals.boarders} icon={Building2} />
           </div>
 
           {/* Breakdown Tables - Compact Grid */}
           <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">{t('admissions.statusBreakdown') || 'Status breakdown'}</CardTitle>
+                <CardTitle className="text-base">{t('admissions.statusBreakdown')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="rounded-md border overflow-x-auto -mx-4 sm:mx-0">
                   <Table className="w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('events.status') || 'Status'}</TableHead>
-                        <TableHead className="text-right">{t('admissions.totalAdmissions') || 'Count'}</TableHead>
+                        <TableHead>{t('common.status')}</TableHead>
+                        <TableHead className="text-right">{t('common.total')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {report.statusBreakdown.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={2} className="h-24 text-center text-muted-foreground">
-                            {t('admissions.noDataFound') || 'No data found'}
+                            {t('common.noData')}
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -453,24 +406,24 @@ const StudentAdmissionsReport = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">{t('admissions.schoolBreakdown') || 'By school'}</CardTitle>
+                <CardTitle className="text-base">{t('admissions.schoolBreakdown')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="rounded-md border overflow-x-auto -mx-4 sm:mx-0">
                   <Table className="w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('admissions.school') || 'School'}</TableHead>
-                        <TableHead className="text-right hidden sm:table-cell">{t('events.active') || 'Active'}</TableHead>
-                        <TableHead className="text-right hidden md:table-cell">{t('admissions.boarder') || 'Boarders'}</TableHead>
-                        <TableHead className="text-right">{t('admissions.totalAdmissions') || 'Total'}</TableHead>
+                        <TableHead>{t('common.school')}</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">{t('common.active')}</TableHead>
+                        <TableHead className="text-right hidden md:table-cell">{t('admissions.boarder')}</TableHead>
+                        <TableHead className="text-right">{t('common.total')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {report.schoolBreakdown.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                            {t('admissions.noDataFound') || 'No data found'}
+                            {t('common.noData')}
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -491,24 +444,24 @@ const StudentAdmissionsReport = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">{t('admissions.academicYearBreakdown') || 'By academic year'}</CardTitle>
+                <CardTitle className="text-base">{t('admissions.academicYearBreakdown')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="rounded-md border overflow-x-auto -mx-4 sm:mx-0">
                   <Table className="w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('admissions.academicYear') || 'Year'}</TableHead>
-                        <TableHead className="text-right hidden sm:table-cell">{t('events.active') || 'Active'}</TableHead>
-                        <TableHead className="text-right hidden md:table-cell">{t('admissions.boarder') || 'Boarders'}</TableHead>
-                        <TableHead className="text-right">{t('admissions.totalAdmissions') || 'Total'}</TableHead>
+                        <TableHead>{t('fees.academicYear')}</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">{t('common.active')}</TableHead>
+                        <TableHead className="text-right hidden md:table-cell">{t('admissions.boarder')}</TableHead>
+                        <TableHead className="text-right">{t('common.total')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {report.academicYearBreakdown.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                            {t('admissions.noDataFound') || 'No data found'}
+                            {t('common.noData')}
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -529,24 +482,24 @@ const StudentAdmissionsReport = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">{t('admissions.residencyBreakdown') || 'Residency breakdown'}</CardTitle>
+                <CardTitle className="text-base">{t('admissions.residencyBreakdown')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="rounded-md border overflow-x-auto -mx-4 sm:mx-0">
                   <Table className="w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('admissions.residencyType') || 'Type'}</TableHead>
-                        <TableHead className="text-right hidden sm:table-cell">{t('events.active') || 'Active'}</TableHead>
-                        <TableHead className="text-right hidden md:table-cell">{t('admissions.boarder') || 'Boarders'}</TableHead>
-                        <TableHead className="text-right">{t('admissions.totalAdmissions') || 'Total'}</TableHead>
+                        <TableHead>{t('admissions.residencyType')}</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">{t('common.active')}</TableHead>
+                        <TableHead className="text-right hidden md:table-cell">{t('admissions.boarder')}</TableHead>
+                        <TableHead className="text-right">{t('common.total')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {report.residencyBreakdown.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                            {t('admissions.noDataFound') || 'No data found'}
+                            {t('common.noData')}
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -571,15 +524,15 @@ const StudentAdmissionsReport = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>{t('admissions.recentAdmissions') || 'Admissions'}</CardTitle>
+                  <CardTitle>{t('admissions.recentAdmissions')}</CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
                     {report.pagination.total > 0
-                      ? `${t('library.showing') || 'Showing'} ${report.pagination.from} ${t('events.to') || 'to'} ${report.pagination.to} ${t('events.of') || 'of'} ${formatNumber(report.pagination.total)} ${t('pagination.entries') || 'entries'}`
-                      : t('admissions.noDataFound') || 'No admissions found'}
+                      ? `${t('common.showing')} ${report.pagination.from} ${t('common.to')} ${report.pagination.to} ${t('common.of')} ${formatNumber(report.pagination.total)} ${t('common.total').toLowerCase()}`
+                      : t('common.noData')}
                   </p>
                 </div>
                 {report.pagination.total > 0 && (
-                  <Badge variant="outline">{formatNumber(report.pagination.total)} {t('admissions.records') || 'records'}</Badge>
+                  <Badge variant="outline">{formatNumber(report.pagination.total)} {t('admissions.records')}</Badge>
                 )}
               </div>
             </CardHeader>
@@ -588,19 +541,19 @@ const StudentAdmissionsReport = () => {
                 <Table className="w-full">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('events.name') || 'Student'}</TableHead>
-                      <TableHead className="hidden md:table-cell">{t('admissions.schoolClass') || 'School / Class'}</TableHead>
-                      <TableHead className="hidden lg:table-cell">{t('admissions.residency') || 'Residency'}</TableHead>
-                      <TableHead className="hidden lg:table-cell">{t('admissions.guardian') || 'Guardian'}</TableHead>
-                      <TableHead>{t('events.status') || 'Status'}</TableHead>
-                      <TableHead className="hidden sm:table-cell">{t('studentReportCard.admissionDate') || 'Date'}</TableHead>
+                      <TableHead>{t('common.student')}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t('common.school')} / {t('common.class')}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('admissions.residency')}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('admissions.guardian')}</TableHead>
+                      <TableHead>{t('common.status')}</TableHead>
+                      <TableHead className="hidden sm:table-cell">{t('studentReportCard.admissionDate')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {report.recentAdmissions.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                          {t('admissions.noDataFound') || 'No admissions found'}
+                          {t('common.noData')}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -608,16 +561,16 @@ const StudentAdmissionsReport = () => {
                         <TableRow key={admission.id}>
                           <TableCell>
                             <div className="space-y-1 min-w-0">
-                              <div className="font-semibold break-words">{admission.student?.fullName || t('events.notAvailable')}</div>
+                              <div className="font-semibold break-words">{admission.student?.fullName || t('common.notAvailable')}</div>
                               <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
                                 {admission.student?.admissionNumber && (
                                   <Badge variant="outline" className="text-xs">
-                                    {t('examReports.admissionNo') || 'Adm'}: {admission.student.admissionNumber}
+                                    {t('examReports.admissionNo')}: {admission.student.admissionNumber}
                                   </Badge>
                                 )}
                                 {admission.student?.cardNumber && (
                                   <Badge variant="secondary" className="text-xs">
-                                    {t('attendanceReports.cardNumber') || 'Card'}: {admission.student.cardNumber}
+                                    {t('attendanceReports.cardNumber')}: {admission.student.cardNumber}
                                   </Badge>
                                 )}
                               </div>
@@ -649,14 +602,14 @@ const StudentAdmissionsReport = () => {
                               </Badge>
                               <div>
                                 <Badge variant={admission.isBoarder ? 'default' : 'secondary'} className="text-xs">
-                                  {admission.isBoarder ? t('admissions.boarderYes') || 'Boarder' : t('admissions.boarderNo') || 'Day'}
+                                  {admission.isBoarder ? t('common.yes') : t('common.no')}
                                 </Badge>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell className="hidden lg:table-cell">
                             <div className="space-y-0.5 min-w-0">
-                              <div className="font-medium break-words">{admission.student?.guardianName || t('events.notAvailable')}</div>
+                              <div className="font-medium break-words">{admission.student?.guardianName || t('common.notAvailable')}</div>
                               {admission.student?.guardianPhone && (
                                 <Button variant="ghost" size="sm" className="h-6 text-xs px-2" asChild>
                                   <a href={`tel:${admission.student.guardianPhone}`}>
@@ -673,7 +626,7 @@ const StudentAdmissionsReport = () => {
                           </TableCell>
                           <TableCell className="text-muted-foreground hidden sm:table-cell">
                             {admission.admissionDate
-                              ? new Intl.DateTimeFormat(undefined, { dateStyle: 'short' }).format(admission.admissionDate)
+                              ? formatDate(admission.admissionDate)
                               : '—'}
                           </TableCell>
                         </TableRow>

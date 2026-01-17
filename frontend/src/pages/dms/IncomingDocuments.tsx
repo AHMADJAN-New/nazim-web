@@ -223,7 +223,7 @@ function DocumentViewContent({ doc }: { doc: IncomingDocument }) {
         url: url,
       });
     } catch (error: any) {
-      showToast.error(error.message || 'Failed to load preview');
+      showToast.error(error.message || t('dms.failedToLoadPreview'));
     } finally {
       setPreviewLoading(false);
     }
@@ -249,9 +249,9 @@ function DocumentViewContent({ doc }: { doc: IncomingDocument }) {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      showToast.success('File downloaded successfully');
+      showToast.success(t('common.downloadSuccess'));
     } catch (error: any) {
-      showToast.error(error.message || 'Failed to download file');
+      showToast.error(error.message || t('common.downloadFailed'));
     }
   };
 
@@ -263,7 +263,7 @@ function DocumentViewContent({ doc }: { doc: IncomingDocument }) {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.incoming.documentNumber')}</Label>
-            <p className="font-medium">{doc.full_indoc_number || "N/A"}</p>
+            <p className="font-medium">{doc.full_indoc_number || t('common.notAvailable')}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.incoming.receivedDate')}</Label>
@@ -271,11 +271,11 @@ function DocumentViewContent({ doc }: { doc: IncomingDocument }) {
           </div>
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.incoming.subject')}</Label>
-            <p className="font-medium">{doc.subject || "N/A"}</p>
+            <p className="font-medium">{doc.subject || t('common.notAvailable')}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.incoming.status')}</Label>
-            <p className="font-medium capitalize">{doc.status || "N/A"}</p>
+            <p className="font-medium capitalize">{doc.status || t('common.notAvailable')}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.incoming.securityLevel')}</Label>
@@ -285,7 +285,7 @@ function DocumentViewContent({ doc }: { doc: IncomingDocument }) {
           </div>
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.incoming.pagesCount')}</Label>
-            <p className="font-medium">{doc.pages_count ?? "N/A"}</p>
+            <p className="font-medium">{doc.pages_count ?? t('common.notAvailable')}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.incoming.attachmentsCount')}</Label>
@@ -301,15 +301,15 @@ function DocumentViewContent({ doc }: { doc: IncomingDocument }) {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.incoming.senderName')}</Label>
-            <p className="font-medium">{doc.sender_name || "N/A"}</p>
+            <p className="font-medium">{doc.sender_name || t('common.notAvailable')}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.incoming.senderOrganization')}</Label>
-            <p className="font-medium">{doc.sender_org || "N/A"}</p>
+            <p className="font-medium">{doc.sender_org || t('common.notAvailable')}</p>
           </div>
           <div className="md:col-span-2">
             <Label className="text-muted-foreground">{t('dms.forms.incoming.senderAddress')}</Label>
-            <p className="font-medium">{doc.sender_address || "N/A"}</p>
+            <p className="font-medium">{doc.sender_address || t('common.notAvailable')}</p>
           </div>
         </div>
       </div>
@@ -321,11 +321,11 @@ function DocumentViewContent({ doc }: { doc: IncomingDocument }) {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.incoming.externalDocNumber')}</Label>
-            <p className="font-medium">{doc.external_doc_number || "N/A"}</p>
+            <p className="font-medium">{doc.external_doc_number || t('common.notAvailable')}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.incoming.externalDocDate')}</Label>
-            <p className="font-medium">{doc.external_doc_date ? formatDate(doc.external_doc_date) : "N/A"}</p>
+            <p className="font-medium">{doc.external_doc_date ? formatDate(doc.external_doc_date) : t('common.notAvailable')}</p>
           </div>
         </div>
       </div>
@@ -563,7 +563,7 @@ export default function IncomingDocuments() {
   const createMutation = useMutation({
     mutationFn: (payload: any) => dmsApi.incoming.create(payload),
     onSuccess: (data: any) => {
-      showToast.success(t('toast.documentCreated') || 'Incoming document saved successfully');
+      showToast.success(t('toast.documentCreated'));
       queryClient.invalidateQueries({ queryKey: ["dms", "incoming"] });
       // Store created document ID for file upload
       if (data?.id) {
@@ -592,13 +592,13 @@ export default function IncomingDocuments() {
       });
       setIsDialogOpen(false);
     },
-    onError: (err: any) => showToast.error(err.message || t('toast.documentCreateFailed') || 'Failed to save document'),
+    onError: (err: any) => showToast.error(err.message || t('toast.documentCreateFailed')),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: any }) => dmsApi.incoming.update(id, payload),
     onSuccess: () => {
-      showToast.success(t('toast.documentUpdated') || 'Incoming document updated successfully');
+      showToast.success(t('toast.documentUpdated'));
       queryClient.invalidateQueries({ queryKey: ["dms", "incoming"] });
       setIsEditDialogOpen(false);
       setEditDoc(null);
@@ -622,19 +622,19 @@ export default function IncomingDocuments() {
         academic_year_id: currentAcademicYear?.id || "",
       });
     },
-    onError: (err: any) => showToast.error(err.message || t('toast.documentUpdateFailed') || 'Failed to update document'),
+    onError: (err: any) => showToast.error(err.message || t('toast.documentUpdateFailed')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => dmsApi.incoming.delete(id),
     onSuccess: async () => {
-      showToast.success(t('courses.documentDeleted') || 'Incoming document deleted successfully');
+      showToast.success(t('dms.documentDeleted'));
       await queryClient.invalidateQueries({ queryKey: ["dms", "incoming"] });
       await queryClient.refetchQueries({ queryKey: ["dms", "incoming"] });
       setIsDeleteDialogOpen(false);
       setDeleteDocId(null);
     },
-    onError: (err: any) => showToast.error(err.message || t('toast.documentDeleteFailed') || 'Failed to delete document'),
+    onError: (err: any) => showToast.error(err.message || t('toast.documentDeleteFailed')),
   });
 
   const [newDoc, setNewDoc] = useState({
@@ -804,11 +804,11 @@ export default function IncomingDocuments() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
-        title={t('dms.incomingDocuments') || 'Incoming Documents'}
-        description={t('dms.incomingDocumentsDescription') || 'Manage and track incoming documents'}
+        title={t('dms.incomingDocuments')}
+        description={t('dms.incomingDocumentsDescription')}
         icon={<FileText className="h-5 w-5" />}
         primaryAction={{
-          label: t('dms.addDocument') || 'Add Document',
+          label: t('dms.addDocument'),
           onClick: () => setIsDialogOpen(true),
           icon: <Plus className="h-4 w-4" />,
         }}
@@ -817,24 +817,24 @@ export default function IncomingDocuments() {
       <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t('dms.forms.incoming.title') || 'Add Incoming Document'}</DialogTitle>
+            <DialogTitle>{t('dms.forms.incoming.title')}</DialogTitle>
             <DialogDescription>
-              {t('dms.forms.incoming.description') || 'Create a new incoming document record. Fill in the required fields and save.'}
+              {t('dms.forms.incoming.description')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
               {/* Basic Information */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">{t('dms.forms.incoming.basicInfo') || 'Basic Information'}</h3>
+                <h3 className="text-lg font-semibold">{t('dms.forms.incoming.basicInfo')}</h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>{t('dms.forms.incoming.academicYear') || 'Academic Year'}</Label>
+                    <Label>{t('dms.forms.incoming.academicYear')}</Label>
                     <Select
                       value={newDoc.academic_year_id || currentAcademicYear?.id || ""}
                       onValueChange={(value) => setNewDoc((s) => ({ ...s, academic_year_id: value }))}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={t('dms.forms.incoming.academicYear') || 'Select academic year'} />
+                        <SelectValue placeholder={t('dms.forms.incoming.academicYear')} />
                       </SelectTrigger>
                       <SelectContent>
                         {academicYears?.map((year) => (
@@ -846,16 +846,16 @@ export default function IncomingDocuments() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('dms.forms.incoming.receivedDate') || 'Received Date'} <span className="text-destructive">*</span></Label>
+                    <Label>{t('dms.forms.incoming.receivedDate')} <span className="text-destructive">*</span></Label>
                     <CalendarDatePicker date={newDoc.received_date ? new Date(newDoc.received_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, received_date: date ? date.toISOString().split("T")[0] : "" }))} />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('dms.forms.incoming.subject') || 'Subject'} <span className="text-destructive">*</span></Label>
+                  <Label>{t('dms.forms.incoming.subject')} <span className="text-destructive">*</span></Label>
                   <Input
                     value={newDoc.subject}
                     onChange={(e) => setNewDoc((s) => ({ ...s, subject: e.target.value }))}
-                    placeholder={t('dms.forms.incoming.subject') || 'Subject'}
+                    placeholder={t('dms.forms.incoming.subject')}
                   />
                 </div>
               </div>
@@ -864,31 +864,31 @@ export default function IncomingDocuments() {
 
               {/* Sender Information */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">{t('dms.forms.incoming.senderInfo') || 'Sender Information'}</h3>
+                <h3 className="text-lg font-semibold">{t('dms.forms.incoming.senderInfo')}</h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>{t('dms.forms.incoming.senderName') || 'Sender Name'}</Label>
+                    <Label>{t('dms.forms.incoming.senderName')}</Label>
                     <Input
                       value={newDoc.sender_name}
                       onChange={(e) => setNewDoc((s) => ({ ...s, sender_name: e.target.value }))}
-                      placeholder={t('dms.forms.incoming.senderName') || 'Sender name'}
+                      placeholder={t('dms.forms.incoming.senderName')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('dms.forms.incoming.senderOrganization') || 'Sender Organization'}</Label>
+                    <Label>{t('dms.forms.incoming.senderOrganization')}</Label>
                     <Input
                       value={newDoc.sender_org}
                       onChange={(e) => setNewDoc((s) => ({ ...s, sender_org: e.target.value }))}
-                      placeholder={t('dms.forms.incoming.senderOrganization') || 'Sender organization'}
+                      placeholder={t('dms.forms.incoming.senderOrganization')}
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('dms.forms.incoming.senderAddress') || 'Sender Address'}</Label>
+                  <Label>{t('dms.forms.incoming.senderAddress')}</Label>
                   <Input
                     value={newDoc.sender_address}
                     onChange={(e) => setNewDoc((s) => ({ ...s, sender_address: e.target.value }))}
-                    placeholder={t('dms.forms.incoming.senderAddress') || 'Sender address'}
+                    placeholder={t('dms.forms.incoming.senderAddress')}
                   />
                 </div>
               </div>
@@ -897,16 +897,16 @@ export default function IncomingDocuments() {
 
               {/* Document Content */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">{t('dms.forms.incoming.content') || 'Document Content'}</h3>
+                <h3 className="text-lg font-semibold">{t('dms.forms.incoming.content')}</h3>
                 <RichTextEditor
                   value={newDoc.description}
                   onChange={(value) => setNewDoc((s) => ({ ...s, description: value }))}
-                  label={t('dms.forms.incoming.contentLabel') || 'Description / Content'}
-                  placeholder={t('dms.forms.incoming.contentPlaceholder') || 'Enter document description or content...'}
+                  label={t('dms.forms.incoming.contentLabel')}
+                  placeholder={t('dms.forms.incoming.contentPlaceholder')}
                 />
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>{t('dms.forms.incoming.pagesCount') || 'Pages Count'}</Label>
+                    <Label>{t('dms.forms.incoming.pagesCount')}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -916,7 +916,7 @@ export default function IncomingDocuments() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('dms.forms.incoming.attachmentsCount') || 'Attachments Count'}</Label>
+                    <Label>{t('dms.forms.incoming.attachmentsCount')}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -932,7 +932,7 @@ export default function IncomingDocuments() {
 
               {/* Document Number Assignment */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">{t('dms.forms.incoming.documentNumber') || 'Document Number'}</h3>
+                <h3 className="text-lg font-semibold">{t('dms.forms.incoming.documentNumber')}</h3>
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="manual-number"
@@ -940,16 +940,16 @@ export default function IncomingDocuments() {
                     onCheckedChange={(checked) => setNewDoc((s) => ({ ...s, is_manual_number: checked === true }))}
                   />
                   <Label htmlFor="manual-number" className="cursor-pointer">
-                    {t('dms.forms.incoming.manualNumber') || 'Assign document number manually'}
+                    {t('dms.forms.incoming.manualNumber')}
                   </Label>
                 </div>
                 {newDoc.is_manual_number && (
                   <div className="space-y-2">
-                    <Label>{t('dms.forms.incoming.manualNumber') || 'Manual Document Number'}</Label>
+                    <Label>{t('dms.forms.incoming.manualNumber')}</Label>
                     <Input
                       value={newDoc.manual_indoc_number}
                       onChange={(e) => setNewDoc((s) => ({ ...s, manual_indoc_number: e.target.value }))}
-                      placeholder={t('dms.forms.incoming.manualNumber') || 'IN-2025-001'}
+                      placeholder="IN-2025-001"
                     />
                   </div>
                 )}
@@ -959,42 +959,42 @@ export default function IncomingDocuments() {
 
               {/* Additional Information */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">{t('dms.forms.incoming.content') || 'Additional Information'}</h3>
+                <h3 className="text-lg font-semibold">{t('dms.forms.incoming.content')}</h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>{t('dms.forms.incoming.externalDocNumber') || 'External Document Number'}</Label>
+                    <Label>{t('dms.forms.incoming.externalDocNumber')}</Label>
                     <Input
                       value={newDoc.external_doc_number}
                       onChange={(e) => setNewDoc((s) => ({ ...s, external_doc_number: e.target.value }))}
-                      placeholder={t('dms.forms.incoming.externalDocNumber') || 'External reference number'}
+                      placeholder={t('dms.forms.incoming.externalDocNumber')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('dms.forms.incoming.externalDocDate') || 'External Document Date'}</Label>
+                    <Label>{t('dms.forms.incoming.externalDocDate')}</Label>
                     <CalendarDatePicker date={newDoc.external_doc_date ? new Date(newDoc.external_doc_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, external_doc_date: date ? date.toISOString().split("T")[0] : "" }))} />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('dms.forms.incoming.securityLevel') || 'Security Level'}</Label>
+                  <Label>{t('dms.forms.incoming.securityLevel')}</Label>
                   <Select
                     value={newDoc.security_level_key || "none"}
                     onValueChange={(value) => setNewDoc((s) => ({ ...s, security_level_key: value === "none" ? "" : value }))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('dms.forms.incoming.securityLevel') || 'Select security level'} />
+                      <SelectValue placeholder={t('dms.forms.incoming.securityLevel')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
-                      <SelectItem value="public">{t('common.public') || 'Public'}</SelectItem>
-                      <SelectItem value="internal">{t('common.internal') || 'Internal'}</SelectItem>
-                      <SelectItem value="confidential">{t('common.confidential') || 'Confidential'}</SelectItem>
-                      <SelectItem value="secret">{t('common.secret') || 'Secret'}</SelectItem>
-                      <SelectItem value="top_secret">{t('common.topSecret') || 'Top Secret'}</SelectItem>
+                      <SelectItem value="none">{t('common.none')}</SelectItem>
+                      <SelectItem value="public">{t('common.public')}</SelectItem>
+                      <SelectItem value="internal">{t('common.internal')}</SelectItem>
+                      <SelectItem value="confidential">{t('common.confidential')}</SelectItem>
+                      <SelectItem value="secret">{t('common.secret')}</SelectItem>
+                      <SelectItem value="top_secret">{t('common.topSecret')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('dms.forms.incoming.status') || 'Status'}</Label>
+                  <Label>{t('dms.forms.incoming.status')}</Label>
                   <Select
                     value={newDoc.status}
                     onValueChange={(value) => setNewDoc((s) => ({ ...s, status: value }))}
@@ -1005,7 +1005,7 @@ export default function IncomingDocuments() {
                     <SelectContent>
                       {statusOptions.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
+                          {t(opt.labelKey)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1438,7 +1438,7 @@ export default function IncomingDocuments() {
                       <TableCell className="font-medium">
                         <DocumentNumberBadge value={doc.full_indoc_number} type="incoming" />
                       </TableCell>
-                      <TableCell className="max-w-[200px] truncate">{doc.subject || t('dms.issueLetter.issuedLetters.noSubject')}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{doc.subject || t('dms.noSubject')}</TableCell>
                       <TableCell className="max-w-[250px]">
                         <div className="text-sm text-muted-foreground truncate">
                           {getShortDescription(doc.description, 80)}
@@ -1478,7 +1478,11 @@ export default function IncomingDocuments() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <span className="capitalize">{doc.status}</span>
+                        <span className="capitalize">
+                          {statusOptions.find(opt => opt.value === doc.status) 
+                            ? t(statusOptions.find(opt => opt.value === doc.status)!.labelKey)
+                            : doc.status}
+                        </span>
                       </TableCell>
                       <TableCell className="text-right">{formatDate(doc.received_date)}</TableCell>
                       <TableCell className="text-right">

@@ -38,18 +38,18 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 
 
-const difficultyConfig: Record<QuestionDifficulty, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
-  easy: { label: 'Easy', variant: 'default' },
-  medium: { label: 'Medium', variant: 'secondary' },
-  hard: { label: 'Hard', variant: 'destructive' },
+const difficultyConfig: Record<QuestionDifficulty, { labelKey: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+  easy: { labelKey: 'questionBank.difficulty.easy', variant: 'default' },
+  medium: { labelKey: 'questionBank.difficulty.medium', variant: 'secondary' },
+  hard: { labelKey: 'questionBank.difficulty.hard', variant: 'destructive' },
 };
 
-const typeConfig: Record<QuestionType, { label: string }> = {
-  mcq: { label: 'Multiple Choice' },
-  short: { label: 'Short Answer' },
-  descriptive: { label: 'Descriptive' },
-  true_false: { label: 'True/False' },
-  essay: { label: 'Essay' },
+const typeConfig: Record<QuestionType, { labelKey: string }> = {
+  mcq: { labelKey: 'questionBank.type.mcq' },
+  short: { labelKey: 'questionBank.type.short' },
+  descriptive: { labelKey: 'questionBank.type.descriptive' },
+  true_false: { labelKey: 'questionBank.type.true_false' },
+  essay: { labelKey: 'questionBank.type.essay' },
 };
 
 export function QuestionBank() {
@@ -541,7 +541,7 @@ export function QuestionBank() {
     const config = difficultyConfig[difficulty];
     return (
       <Badge variant={config.variant}>
-        {t(`questionBank.difficulty.${difficulty}`) || config.label}
+        {t(config.labelKey)}
       </Badge>
     );
   };
@@ -550,7 +550,7 @@ export function QuestionBank() {
     const config = typeConfig[type];
     return (
       <Badge variant="outline">
-        {t(`questionBank.type.${type}`) || config.label}
+        {t(config.labelKey)}
       </Badge>
     );
   };
@@ -877,10 +877,10 @@ export function QuestionBank() {
           )}
         </div>
 
-      {/* Type, Difficulty, Marks */}
+        {/* Type, Difficulty, Marks */}
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <Label>{t('events.type') || 'Type'} *</Label>
+          <Label>{t('common.type')} *</Label>
           <Controller
             control={form.control}
             name="type"
@@ -897,7 +897,7 @@ export function QuestionBank() {
                         key={`type-form-${type.value}-${idx}`} 
                         value={type.value}
                       >
-                        {t(`questionBank.type.${type.value}`) || type.label}
+                        {t(typeConfig[type.value]?.labelKey)}
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -906,7 +906,7 @@ export function QuestionBank() {
           />
         </div>
         <div>
-          <Label>{t('examPapers.difficulty') || 'Difficulty'} *</Label>
+          <Label>{t('examPapers.difficulty')} *</Label>
           <Controller
             control={form.control}
             name="difficulty"
@@ -923,7 +923,7 @@ export function QuestionBank() {
                         key={`difficulty-form-${diff.value}-${idx}`} 
                         value={diff.value}
                       >
-                        {t(`questionBank.difficulty.${diff.value}`) || diff.label}
+                        {t(difficultyConfig[diff.value]?.labelKey)}
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -1126,20 +1126,20 @@ export function QuestionBank() {
               title={t('nav.questionBank') || 'Question Bank'}
               transformData={(data) => data.map((q: Question) => ({
                 questionText: q.text || '-',
-                type: typeConfig[q.type]?.label || q.type,
-                difficulty: difficultyConfig[q.difficulty]?.label || q.difficulty,
+                type: t(typeConfig[q.type]?.labelKey) || q.type,
+                difficulty: t(difficultyConfig[q.difficulty]?.labelKey) || q.difficulty,
                 marks: q.marks || 0,
                 subject: q.subject?.name || '-',
-                className: q.classAcademicYear?.class?.name || t('subjects.all') || 'All',
-                status: q.isActive ? (t('events.active') || 'Active') : (t('events.inactive') || 'Inactive'),
+                className: q.classAcademicYear?.class?.name || t('common.all'),
+                status: q.isActive ? t('common.active') : t('common.inactive'),
                 correctAnswer: q.correctAnswer || '-',
               }))}
               buildFiltersSummary={() => {
                 const parts: string[] = [];
-                if (selectedType !== 'all') parts.push(`Type: ${typeConfig[selectedType]?.label || selectedType}`);
-                if (selectedDifficulty !== 'all') parts.push(`Difficulty: ${difficultyConfig[selectedDifficulty]?.label || selectedDifficulty}`);
-                if (selectedStatus !== 'all') parts.push(`Status: ${selectedStatus === 'active' ? 'Active' : 'Inactive'}`);
-                parts.push(`Total: ${pagination?.total || questions.length} questions`);
+                if (selectedType !== 'all') parts.push(`${t('common.type')}: ${t(typeConfig[selectedType]?.labelKey) || selectedType}`);
+                if (selectedDifficulty !== 'all') parts.push(`${t('examPapers.difficulty')}: ${t(difficultyConfig[selectedDifficulty]?.labelKey) || selectedDifficulty}`);
+                if (selectedStatus !== 'all') parts.push(`${t('common.status')}: ${selectedStatus === 'active' ? t('common.active') : t('common.inactive')}`);
+                parts.push(`${t('common.total')}: ${pagination?.total || questions.length} ${t('questionBank.questionsList').toLowerCase()}`);
                 return parts.join(' | ');
               }}
               schoolId={profile?.default_school_id}
@@ -1226,10 +1226,10 @@ export function QuestionBank() {
             {/* Type Filter */}
             <Select value={selectedType} onValueChange={(val) => setSelectedType(val as QuestionType | 'all')}>
               <SelectTrigger>
-                <SelectValue placeholder={t('questionBank.filterType') || 'Type'} />
+                <SelectValue placeholder={t('questionBank.filterType')} />
               </SelectTrigger>
                 <SelectContent>
-                <SelectItem value="all">{t('subjects.all') || 'All Types'}</SelectItem>
+                <SelectItem value="all">{t('common.allTypes')}</SelectItem>
                 {QUESTION_TYPES
                   .filter((type): type is { value: QuestionType; label: string } => Boolean(type?.value))
                   .map((type, idx) => (
@@ -1237,7 +1237,7 @@ export function QuestionBank() {
                       key={`filter-type-${type.value}-${idx}`} 
                       value={type.value}
                     >
-                      {t(`questionBank.type.${type.value}`) || type.label}
+                      {t(typeConfig[type.value]?.labelKey)}
                     </SelectItem>
                   ))}
               </SelectContent>
@@ -1246,10 +1246,10 @@ export function QuestionBank() {
             {/* Difficulty Filter */}
             <Select value={selectedDifficulty} onValueChange={(val) => setSelectedDifficulty(val as QuestionDifficulty | 'all')}>
               <SelectTrigger>
-                <SelectValue placeholder={t('questionBank.filterDifficulty') || 'Difficulty'} />
+                <SelectValue placeholder={t('questionBank.filterDifficulty')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('subjects.all') || 'All Difficulties'}</SelectItem>
+                <SelectItem value="all">{t('common.allLevels')}</SelectItem>
                 {QUESTION_DIFFICULTIES
                   .filter((diff): diff is { value: QuestionDifficulty; label: string } => Boolean(diff?.value))
                   .map((diff, idx) => (
@@ -1257,7 +1257,7 @@ export function QuestionBank() {
                       key={`filter-difficulty-${diff.value}-${idx}`} 
                       value={diff.value}
                     >
-                      {t(`questionBank.difficulty.${diff.value}`) || diff.label}
+                      {t(difficultyConfig[diff.value]?.labelKey)}
                     </SelectItem>
                   ))}
               </SelectContent>
@@ -1414,11 +1414,11 @@ export function QuestionBank() {
               <div className="flex gap-2 flex-wrap">
                 {getTypeBadge(selectedQuestion.type)}
                 {getDifficultyBadge(selectedQuestion.difficulty)}
-                <Badge variant="secondary">{selectedQuestion.marks} {t('questionBank.marks') || 'marks'}</Badge>
+                <Badge variant="secondary">{selectedQuestion.marks} {t('questionBank.marks').toLowerCase()}</Badge>
                 {selectedQuestion.isActive ? (
-                  <Badge variant="default">{t('events.active') || 'Active'}</Badge>
+                  <Badge variant="default">{t('common.active')}</Badge>
                 ) : (
-                  <Badge variant="outline">{t('events.inactive') || 'Inactive'}</Badge>
+                  <Badge variant="outline">{t('common.inactive')}</Badge>
                 )}
               </div>
               

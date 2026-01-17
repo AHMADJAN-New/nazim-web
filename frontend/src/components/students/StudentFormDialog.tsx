@@ -232,8 +232,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
     const onSubmit = async (values: StudentFormValues) => {
         // Check subscription limits for new students
         if (!isEdit && !studentUsage.canCreate) {
-            const errorMessage = t('students.limitReached') || 
-                `Student limit reached (${studentUsage.current}/${studentUsage.limit}). Please upgrade your plan to create more students.`;
+            const errorMessage = t('students.limitReached');
             showToast.error(errorMessage);
             return;
         }
@@ -253,8 +252,8 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                     // Simple confirm UX; can be upgraded to custom dialog
                     const first = dupes[0];
                     const proceed = window.confirm(
-                        `${t('students.potentialDuplicate') || 'Potential duplicate found'} (e.g., ${first.full_name} - ${first.match_reason}).\n` +
-                        `${t('students.proceedCreate') || 'Do you still want to proceed creating a new record?'}`
+                        `${t('students.potentialDuplicate')} (e.g., ${first.full_name} - ${first.match_reason}).\n` +
+                        `${t('students.proceedCreate')}`
                     );
                     if (!proceed) {
                         return;
@@ -316,9 +315,9 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                 aria-describedby="student-form-description"
             >
                 <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex-shrink-0">
-                    <DialogTitle className="text-lg sm:text-xl">{isEdit ? t('students.editStudent') || 'Edit Student' : t('events.add') || 'Register Student'}</DialogTitle>
+                    <DialogTitle className="text-lg sm:text-xl">{isEdit ? t('students.editStudent') : t('students.add')}</DialogTitle>
                     <DialogDescription id="student-form-description" className="text-sm">
-                        {isEdit ? t('students.updateDescription') || 'Update registration and guardian details.' : t('students.addDescription') || 'Capture admission details with guardian and residency information.'}
+                        {isEdit ? t('students.updateDescription') : t('students.addDescription')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -338,7 +337,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                     if (firstError?.message) {
                         showToast.error(firstError.message);
                     } else {
-                        showToast.error(t('events.validationError') || 'Please fix form errors before submitting');
+                        showToast.error(t('common.error'));
                     }
                     // Switch to the tab containing the first error
                     if (firstError) {
@@ -360,19 +359,19 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0 px-4 sm:px-6">
                         <TabsList className="flex w-full gap-1 h-auto mb-3 sm:mb-4 flex-shrink-0 overflow-x-auto pb-1 scrollbar-hide">
                             <TabsTrigger value="admission" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
-                                {t('students.admissionInfo') || 'Admission'}
+                                {t('students.admissionInfo')}
                             </TabsTrigger>
                             <TabsTrigger value="personal" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
-                                {t('students.personalInfo') || 'Personal'}
+                                {t('students.personalInfo')}
                             </TabsTrigger>
                             <TabsTrigger value="address" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
-                                {t('students.addressInfo') || 'Address'}
+                                {t('students.addressInfo')}
                             </TabsTrigger>
                             <TabsTrigger value="guardian" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
-                                {t('students.guardianInfo') || 'Guardian'}
+                                {t('students.guardianInfo')}
                             </TabsTrigger>
                             <TabsTrigger value="additional" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
-                                {t('students.otherInfo') || 'Additional'}
+                                {t('students.otherInfo')}
                             </TabsTrigger>
                         </TabsList>
 
@@ -382,14 +381,14 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                 {/* School selection when multiple schools exist */}
                                 {schools && schools.length > 1 && (
                                     <div className="space-y-2">
-                                        <Label>{t('students.school') || 'School'}</Label>
+                                        <Label>{t('students.school')}</Label>
                                         <Controller
                                             control={control}
                                             name="school_id"
                                             render={({ field }) => (
                                                 <Select value={field.value || ''} onValueChange={field.onChange}>
                                                     <SelectTrigger>
-                                                        <SelectValue placeholder={t('common.selectSchool') || 'Select school'} />
+                                                        <SelectValue placeholder={t('common.selectSchool')} />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         {schools.map((s) => (
@@ -407,7 +406,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <Label>
-                                            {t('examReports.admissionNo') || 'Admission No'}
+                                            {t('examReports.admissionNo')}
                                             <span className="text-destructive ml-1">*</span>
                                         </Label>
                                         <Input 
@@ -420,15 +419,15 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                         )}
                                     </div>
                                     <div>
-                                        <Label>{t('attendanceReports.cardNumber') || 'Card Number'}</Label>
+                                        <Label>{t('attendanceReports.cardNumber')}</Label>
                                         <Input placeholder="Card-1001" {...register('card_number')} />
                                     </div>
                                     <div>
-                                        <Label>{t('students.applyingGrade') || 'Applying Grade'}</Label>
+                                        <Label>{t('students.applyingGrade')}</Label>
                                         <Input placeholder="Grade 7" {...register('applying_grade')} />
                                     </div>
                                     <div>
-                                        <Label>{t('students.admissionYear') || 'Admission Year'}</Label>
+                                        <Label>{t('students.admissionYear')}</Label>
                                         <Input placeholder="2024" {...register('admission_year')} />
                                     </div>
                                 </div>
@@ -439,11 +438,11 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <Label>
-                                            {t('userManagement.fullName') || 'Full Name'}
+                                            {t('common.fullName')}
                                             <span className="text-destructive ml-1">*</span>
                                         </Label>
                                         <StudentAutocompleteInput
-                                            placeholder={t('userManagement.fullName') || 'Student full name'}
+                                            placeholder={t('common.fullName')}
                                             suggestions={ac?.names || []}
                                             {...register('full_name')}
                                             className={errors.full_name ? 'border-destructive' : ''}
@@ -454,11 +453,11 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                     </div>
                                     <div>
                                         <Label>
-                                            {t('examReports.fatherName') || 'Father Name'}
+                                            {t('students.fatherName')}
                                             <span className="text-destructive ml-1">*</span>
                                         </Label>
                                         <StudentAutocompleteInput
-                                            placeholder={t('examReports.fatherName') || 'Father name'}
+                                            placeholder={t('students.fatherName')}
                                             suggestions={ac?.fatherNames || []}
                                             {...register('father_name')}
                                             className={errors.father_name ? 'border-destructive' : ''}
@@ -468,20 +467,20 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                         )}
                                     </div>
                                     <div>
-                                        <Label>{t('students.grandfatherName') || 'Grandfather Name'}</Label>
+                                        <Label>{t('students.grandfatherName')}</Label>
                                         <StudentAutocompleteInput
-                                            placeholder={t('students.grandfatherName') || 'Grandfather name'}
+                                            placeholder={t('students.grandfatherName')}
                                             suggestions={ac?.grandfatherNames || []}
                                             {...register('grandfather_name')}
                                         />
                                     </div>
                                     <div>
-                                        <Label>{t('studentReportCard.motherName') || 'Mother Name'}</Label>
-                                        <Input placeholder={t('studentReportCard.motherName') || 'Mother name'} {...register('mother_name')} />
+                                        <Label>{t('students.motherName')}</Label>
+                                        <Input placeholder={t('students.motherName')} {...register('mother_name')} />
                                     </div>
                                     <div>
                                         <Label>
-                                            {t('students.gender') || 'Gender'}
+                                            {t('students.gender')}
                                             <span className="text-destructive ml-1">*</span>
                                         </Label>
                                         <Controller
@@ -490,11 +489,11 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                             render={({ field }) => (
                                                 <Select value={field.value} onValueChange={field.onChange}>
                                                     <SelectTrigger className={errors.gender ? 'border-destructive' : ''}>
-                                                        <SelectValue placeholder={t('students.selectGender') || 'Select gender'} />
+                                                        <SelectValue placeholder={t('students.selectGender')} />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="male">{t('students.male') || 'Male'}</SelectItem>
-                                                        <SelectItem value="female">{t('students.female') || 'Female'}</SelectItem>
+                                                        <SelectItem value="male">{t('students.male')}</SelectItem>
+                                                        <SelectItem value="female">{t('students.female')}</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             )}
@@ -504,15 +503,15 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                         )}
                                     </div>
                                     <div>
-                                        <Label>{t('students.birthYear') || 'Birth Year'}</Label>
+                                        <Label>{t('students.birthYear')}</Label>
                                         <Input placeholder="1387" {...register('birth_year')} />
                                     </div>
                                     <div>
-                                        <Label>{t('students.birthDate') || 'Birth Date'}</Label>
+                                        <Label>{t('students.birthDate')}</Label>
                                         <Input placeholder="2008-03-21" {...register('birth_date')} />
                                     </div>
                                     <div>
-                                        <Label>{t('students.age') || 'Age'}</Label>
+                                        <Label>{t('students.age')}</Label>
                                         <Input 
                                             type="number" 
                                             placeholder="15" 
@@ -532,16 +531,16 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                         )}
                                     </div>
                                     <div>
-                                        <Label>{t('students.preferredLanguage') || 'Preferred Language'}</Label>
+                                        <Label>{t('students.preferredLanguage')}</Label>
                                         <Input placeholder="Dari / Pashto" {...register('preferred_language')} />
                                     </div>
                                     <div>
-                                        <Label>{t('students.nationality') || 'Nationality'}</Label>
+                                        <Label>{t('students.nationality')}</Label>
                                         <Input placeholder="Afghan" {...register('nationality')} />
                                     </div>
                                     <div className="sm:col-span-2">
-                                        <Label>{t('students.previousSchool') || 'Previous School'}</Label>
-                                        <Input placeholder={t('students.previousSchool') || 'Previous madrasa or school'} {...register('previous_school')} />
+                                        <Label>{t('students.previousSchool')}</Label>
+                                        <Input placeholder={t('students.previousSchool')} {...register('previous_school')} />
                                     </div>
                                 </div>
                             </TabsContent>
@@ -550,24 +549,24 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                             <TabsContent value="address" className="space-y-4 mt-0">
                                 <div className="space-y-4">
                                     <div>
-                                        <h3 className="text-sm font-medium mb-3">{t('students.originAddress') || 'Origin Address'}</h3>
+                                        <h3 className="text-sm font-medium mb-3">{t('students.originAddress')}</h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                             <div>
-                                                <Label>{t('students.originProvince') || 'Origin Province'}</Label>
-                                                <Input placeholder={t('students.originProvince') || 'Province'} {...register('orig_province')} />
+                                                <Label>{t('students.originProvince')}</Label>
+                                                <Input placeholder={t('students.originProvince')} {...register('orig_province')} />
                                             </div>
                                             <div>
-                                                <Label>{t('students.originDistrict') || 'Origin District'}</Label>
+                                                <Label>{t('students.originDistrict')}</Label>
                                                 <StudentAutocompleteInput
-                                                    placeholder={t('students.originDistrict') || 'District'}
+                                                    placeholder={t('students.originDistrict')}
                                                     suggestions={ac?.origDistricts || []}
                                                     {...register('orig_district')}
                                                 />
                                             </div>
                                             <div>
-                                                <Label>{t('students.originVillage') || 'Origin Village'}</Label>
+                                                <Label>{t('students.originVillage')}</Label>
                                                 <StudentAutocompleteInput
-                                                    placeholder={t('students.originVillage') || 'Village'}
+                                                    placeholder={t('students.originVillage')}
                                                     suggestions={ac?.origVillages || []}
                                                     {...register('orig_village')}
                                                 />
@@ -575,24 +574,24 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                         </div>
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-medium mb-3">{t('students.currentAddress') || 'Current Address'}</h3>
+                                        <h3 className="text-sm font-medium mb-3">{t('students.currentAddress')}</h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                             <div>
-                                                <Label>{t('students.currentProvince') || 'Current Province'}</Label>
-                                                <Input placeholder={t('students.currentProvince') || 'Province'} {...register('curr_province')} />
+                                                <Label>{t('students.currentProvince')}</Label>
+                                                <Input placeholder={t('students.currentProvince')} {...register('curr_province')} />
                                             </div>
                                             <div>
-                                                <Label>{t('students.currentDistrict') || 'Current District'}</Label>
+                                                <Label>{t('students.currentDistrict')}</Label>
                                                 <StudentAutocompleteInput
-                                                    placeholder={t('students.currentDistrict') || 'District'}
+                                                    placeholder={t('students.currentDistrict')}
                                                     suggestions={ac?.currDistricts || []}
                                                     {...register('curr_district')}
                                                 />
                                             </div>
                                             <div>
-                                                <Label>{t('students.currentVillage') || 'Current Village'}</Label>
+                                                <Label>{t('students.currentVillage')}</Label>
                                                 <StudentAutocompleteInput
-                                                    placeholder={t('students.currentVillage') || 'Village'}
+                                                    placeholder={t('students.currentVillage')}
                                                     suggestions={ac?.currVillages || []}
                                                     {...register('curr_village')}
                                                 />
@@ -600,9 +599,9 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                         </div>
                                     </div>
                                     <div>
-                                        <Label>{t('students.homeAddress') || 'Home Address'}</Label>
+                                        <Label>{t('students.homeAddress')}</Label>
                                         <Textarea 
-                                            placeholder={t('students.homeAddress') || 'Full address'} 
+                                            placeholder={t('students.homeAddress')} 
                                             {...register('home_address')}
                                             className="min-h-[80px]"
                                         />
@@ -614,57 +613,57 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                             <TabsContent value="guardian" className="space-y-4 mt-0">
                                 <div className="space-y-4">
                                     <div>
-                                        <h3 className="text-sm font-medium mb-3">{t('students.guardianInfo') || 'Guardian Information'}</h3>
+                                        <h3 className="text-sm font-medium mb-3">{t('students.guardianInfo')}</h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div>
-                                                <Label>{t('students.guardianName') || 'Guardian Name'}</Label>
+                                                <Label>{t('students.guardianName')}</Label>
                                                 <StudentAutocompleteInput
-                                                    placeholder={t('students.guardian') || 'Guardian'}
+                                                    placeholder={t('students.guardian')}
                                                     suggestions={ac?.guardianNames || []}
                                                     {...register('guardian_name')}
                                                 />
                                             </div>
                                             <div>
-                                                <Label>{t('students.relation') || 'Relation'}</Label>
-                                                <Input placeholder={t('students.relation') || 'Relation'} {...register('guardian_relation')} />
+                                                <Label>{t('students.relation')}</Label>
+                                                <Input placeholder={t('students.relation')} {...register('guardian_relation')} />
                                             </div>
                                             <div>
-                                                <Label>{t('students.guardianPhone') || 'Guardian Phone'}</Label>
-                                                <Input placeholder={t('events.phone') || 'Phone'} {...register('guardian_phone')} />
+                                                <Label>{t('students.guardianPhone')}</Label>
+                                                <Input placeholder={t('common.phone')} {...register('guardian_phone')} />
                                             </div>
                                             <div>
-                                                <Label>{t('students.guardianTazkira') || 'Guardian Tazkira'}</Label>
-                                                <Input placeholder={t('students.guardianTazkira') || 'Tazkira'} {...register('guardian_tazkira')} />
+                                                <Label>{t('students.guardianTazkira')}</Label>
+                                                <Input placeholder={t('students.guardianTazkira')} {...register('guardian_tazkira')} />
                                             </div>
                                             <div className="sm:col-span-2">
-                                                <Label>{t('students.guardianPicturePath') || 'Guardian Picture Path'}</Label>
-                                                <Input placeholder={t('students.guardianPicturePath') || 'Storage path'} {...register('guardian_picture_path')} />
+                                                <Label>{t('students.guardianPicturePath')}</Label>
+                                                <Input placeholder={t('students.guardianPicturePath')} {...register('guardian_picture_path')} />
                                             </div>
                                         </div>
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-medium mb-3">{t('students.guarantorInfo') || 'Guarantor (Zamin) Information'}</h3>
+                                        <h3 className="text-sm font-medium mb-3">{t('students.guarantorInfo')}</h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div>
-                                                <Label>{t('students.zaminName') || 'Zamin/Guarantor Name'}</Label>
+                                                <Label>{t('students.zaminName')}</Label>
                                                 <StudentAutocompleteInput
-                                                    placeholder={t('students.zaminName') || 'Guarantor'}
+                                                    placeholder={t('students.zaminName')}
                                                     suggestions={ac?.zaminNames || []}
                                                     {...register('zamin_name')}
                                                 />
                                             </div>
                                             <div>
-                                                <Label>{t('students.zaminPhone') || 'Zamin Phone'}</Label>
-                                                <Input placeholder={t('events.phone') || 'Phone'} {...register('zamin_phone')} />
+                                                <Label>{t('students.zaminPhone')}</Label>
+                                                <Input placeholder={t('common.phone')} {...register('zamin_phone')} />
                                             </div>
                                             <div>
-                                                <Label>{t('students.zaminTazkira') || 'Zamin Tazkira'}</Label>
-                                                <Input placeholder={t('students.zaminTazkira') || 'Tazkira'} {...register('zamin_tazkira')} />
+                                                <Label>{t('students.zaminTazkira')}</Label>
+                                                <Input placeholder={t('students.zaminTazkira')} {...register('zamin_tazkira')} />
                                             </div>
                                             <div className="sm:col-span-2">
-                                                <Label>{t('students.zaminAddress') || 'Zamin Address'}</Label>
+                                                <Label>{t('students.zaminAddress')}</Label>
                                                 <Textarea 
-                                                    placeholder={t('students.zaminAddress') || 'Guarantor address'} 
+                                                    placeholder={t('students.zaminAddress')} 
                                                     {...register('zamin_address')}
                                                     className="min-h-[80px]"
                                                 />
@@ -678,7 +677,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                             <TabsContent value="additional" className="space-y-4 mt-0">
                                 <div className="space-y-4">
                                     <div>
-                                        <Label>{t('students.studentPicture') || 'Student Picture'}</Label>
+                                        <Label>{t('students.studentPicture')}</Label>
                                         <div className="mt-2">
                                             <StudentPictureUpload
                                                 studentId={student?.id}
@@ -692,79 +691,79 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                         <div>
-                                            <Label>{t('students.admissionFeeStatus') || 'Admission Fee Status'}</Label>
+                                            <Label>{t('students.admissionFeeStatus')}</Label>
                                             <Controller
                                                 control={control}
                                                 name="admission_fee_status"
                                                 render={({ field }) => (
                                                     <Select value={field.value} onValueChange={field.onChange}>
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder={t('students.feeStatus') || 'Fee status'} />
+                                                            <SelectValue placeholder={t('students.feeStatus')} />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            <SelectItem value="paid">{t('students.paid') || 'Paid'}</SelectItem>
-                                                            <SelectItem value="pending">{t('students.pending') || 'Pending'}</SelectItem>
-                                                            <SelectItem value="waived">{t('students.waived') || 'Waived'}</SelectItem>
-                                                            <SelectItem value="partial">{t('students.partial') || 'Partial'}</SelectItem>
+                                                            <SelectItem value="paid">{t('students.paid')}</SelectItem>
+                                                            <SelectItem value="pending">{t('students.pending')}</SelectItem>
+                                                            <SelectItem value="waived">{t('students.waived')}</SelectItem>
+                                                            <SelectItem value="partial">{t('students.partial')}</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 )}
                                             />
                                         </div>
                                         <div>
-                                            <Label>{t('students.status.label') || 'Student Status'}</Label>
+                                            <Label>{t('students.status')}</Label>
                                             <Controller
                                                 control={control}
                                                 name="student_status"
                                                 render={({ field }) => (
                                                     <Select value={field.value} onValueChange={field.onChange}>
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder={t('students.status.label') || 'Status'} />
+                                                            <SelectValue placeholder={t('students.status')} />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            <SelectItem value="applied">{t('students.applied') || 'Applied'}</SelectItem>
-                                                            <SelectItem value="admitted">{t('students.admitted') || 'Admitted'}</SelectItem>
-                                                            <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
-                                                            <SelectItem value="withdrawn">{t('students.withdrawn') || 'Withdrawn'}</SelectItem>
+                                                            <SelectItem value="applied">{t('students.applied')}</SelectItem>
+                                                            <SelectItem value="admitted">{t('students.admitted')}</SelectItem>
+                                                            <SelectItem value="active">{t('common.active')}</SelectItem>
+                                                            <SelectItem value="withdrawn">{t('students.withdrawn')}</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 )}
                                             />
                                         </div>
                                         <div>
-                                            <Label>{t('students.orphanStatus') || 'Orphan Status'}</Label>
+                                            <Label>{t('students.orphanStatus')}</Label>
                                             <Controller
                                                 control={control}
                                                 name="is_orphan"
                                                 render={({ field }) => (
                                                     <Select value={field.value ? 'yes' : 'no'} onValueChange={(value) => field.onChange(value === 'yes')}>
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder={t('students.orphan') || 'Orphan'} />
+                                                            <SelectValue placeholder={t('students.orphan')} />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            <SelectItem value="yes">{t('students.orphan') || 'Orphan'}</SelectItem>
-                                                            <SelectItem value="no">{t('students.hasParents') || 'Has parents'}</SelectItem>
+                                                            <SelectItem value="yes">{t('students.orphan')}</SelectItem>
+                                                            <SelectItem value="no">{t('students.hasParents')}</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 )}
                                             />
                                         </div>
                                         <div>
-                                            <Label>{t('students.disabilityStatus') || 'Disability Status'}</Label>
-                                            <Input placeholder={t('students.disabilityStatus') || 'e.g. Hearing impairment'} {...register('disability_status')} />
+                                            <Label>{t('students.disabilityStatus')}</Label>
+                                            <Input placeholder={t('students.disabilityStatus')} {...register('disability_status')} />
                                         </div>
                                         <div>
-                                            <Label>{t('students.emergencyContactName') || 'Emergency Contact Name'}</Label>
-                                            <Input placeholder={t('students.emergencyContactName') || 'Emergency contact'} {...register('emergency_contact_name')} />
+                                            <Label>{t('students.emergencyContactName')}</Label>
+                                            <Input placeholder={t('students.emergencyContactName')} {...register('emergency_contact_name')} />
                                         </div>
                                         <div>
-                                            <Label>{t('students.emergencyContactPhone') || 'Emergency Contact Phone'}</Label>
-                                            <Input placeholder={t('students.emergencyContactPhone') || 'Contact phone'} {...register('emergency_contact_phone')} />
+                                            <Label>{t('students.emergencyContactPhone')}</Label>
+                                            <Input placeholder={t('students.emergencyContactPhone')} {...register('emergency_contact_phone')} />
                                         </div>
                                         <div className="sm:col-span-2 lg:col-span-3">
-                                            <Label>{t('students.familyIncome') || 'Family Income / Support Details'}</Label>
+                                            <Label>{t('students.familyIncome')}</Label>
                                             <Textarea 
-                                                placeholder={t('students.familyIncome') || 'Monthly income or donor support'} 
+                                                placeholder={t('students.familyIncome')} 
                                                 {...register('family_income')}
                                                 className="min-h-[80px]"
                                             />
@@ -783,7 +782,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                                     }}
                                                     className="w-full"
                                                 >
-                                                    {t('students.educationalHistory') || 'Educational History'}
+                                                    {t('students.educationalHistory')}
                                                 </Button>
                                                 <Button
                                                     type="button"
@@ -795,7 +794,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                                     }}
                                                     className="w-full"
                                                 >
-                                                    {t('students.studentDocuments') || 'Student Documents'}
+                                                    {t('students.studentDocuments')}
                                                 </Button>
                                                 <Button
                                                     type="button"
@@ -807,7 +806,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                                     }}
                                                     className="w-full"
                                                 >
-                                                    {t('students.disciplineRecords') || 'Discipline Records'}
+                                                    {t('students.disciplineRecords')}
                                                 </Button>
                                             </div>
                                         </div>
@@ -832,7 +831,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                             }}
                                             className="flex-1 sm:flex-initial text-sm"
                                         >
-                                            {t('events.previous') || 'Previous'}
+                                            {t('common.previous')}
                                         </Button>
                                     )}
                                     {activeTab !== 'additional' && (
@@ -848,7 +847,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                             }}
                                             className="flex-1 sm:flex-initial text-sm"
                                         >
-                                            {t('events.next') || 'Next'}
+                                            {t('common.next')}
                                         </Button>
                                     )}
                                 </div>
@@ -857,7 +856,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                     className="w-full sm:w-auto sm:min-w-[150px] order-1 sm:order-2 text-sm"
                                     disabled={!isEdit && !studentUsage.canCreate}
                                 >
-                                    {isEdit ? t('events.save') || 'Update Student' : t('events.add') || 'Register Student'}
+                                    {isEdit ? t('common.save') : t('students.add')}
                                 </Button>
                             </div>
                         </DialogFooter>

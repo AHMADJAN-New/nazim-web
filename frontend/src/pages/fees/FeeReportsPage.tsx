@@ -178,13 +178,13 @@ export default function FeeReportsPage() {
     if (!dashboard) return [];
     const { statusCounts } = dashboard.summary;
     return [
-      { name: 'Paid', value: statusCounts.paid, fill: STATUS_COLORS.paid },
-      { name: 'Partial', value: statusCounts.partial, fill: STATUS_COLORS.partial },
-      { name: 'Pending', value: statusCounts.pending, fill: STATUS_COLORS.pending },
-      { name: 'Overdue', value: statusCounts.overdue, fill: STATUS_COLORS.overdue },
-      { name: 'Waived', value: statusCounts.waived, fill: STATUS_COLORS.waived },
+      { name: t('fees.paid'), value: statusCounts.paid, fill: STATUS_COLORS.paid },
+      { name: t('fees.partial'), value: statusCounts.partial, fill: STATUS_COLORS.partial },
+      { name: t('fees.pending'), value: statusCounts.pending, fill: STATUS_COLORS.pending },
+      { name: t('fees.overdue'), value: statusCounts.overdue, fill: STATUS_COLORS.overdue },
+      { name: t('fees.waived'), value: statusCounts.waived, fill: STATUS_COLORS.waived },
     ].filter(item => item.value > 0);
-  }, [dashboard]);
+  }, [dashboard, t]);
 
   // Prepare class-wise collection data
   const classCollectionData = useMemo(() => {
@@ -212,7 +212,7 @@ export default function FeeReportsPage() {
     };
     return (
       <Badge className={colors[status] || ''} variant={variants[status] || 'outline'}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {t(`fees.${status}`)}
       </Badge>
     );
   };
@@ -352,7 +352,7 @@ export default function FeeReportsPage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {t('fees.totalAssigned') || 'Total Fees'}
+              {t('fees.totalAssigned')}
             </CardTitle>
             <div className="p-2 rounded-lg bg-blue-500/10">
               <Banknote className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -365,7 +365,7 @@ export default function FeeReportsPage() {
             <div className="flex items-center gap-2 text-sm">
               <Users className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">
-                {dashboard?.summary.totalStudents || 0} students
+                {dashboard?.summary.totalStudents || 0} {t('table.students')}
               </span>
             </div>
           </CardContent>
@@ -376,7 +376,7 @@ export default function FeeReportsPage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full -mr-16 -mt-16" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {t('fees.totalPaid') || 'Collected'}
+              {t('fees.collected')}
             </CardTitle>
             <div className="p-2 rounded-lg bg-green-500/10">
               <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
@@ -389,7 +389,7 @@ export default function FeeReportsPage() {
             <div className="flex items-center gap-2 text-sm">
               <CheckCircle className="h-4 w-4 text-green-500" />
               <span className="text-green-600 dark:text-green-400 font-medium">
-                {dashboard?.summary.collectionRate.toFixed(1) || 0}% collected
+                {dashboard?.summary.collectionRate.toFixed(1) || 0}% {t('fees.collected').toLowerCase()}
               </span>
             </div>
           </CardContent>
@@ -400,7 +400,7 @@ export default function FeeReportsPage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full -mr-16 -mt-16" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {t('fees.remaining') || 'Remaining'}
+              {t('fees.remaining')}
             </CardTitle>
             <div className="p-2 rounded-lg bg-orange-500/10">
               <TrendingDown className="h-5 w-5 text-orange-600 dark:text-orange-400" />
@@ -413,7 +413,7 @@ export default function FeeReportsPage() {
             <div className="flex items-center gap-2 text-sm">
               <Clock className="h-4 w-4 text-orange-500" />
               <span className="text-muted-foreground">
-                {dashboard?.summary.statusCounts.pending || 0} pending
+                {dashboard?.summary.statusCounts.pending || 0} {t('fees.pending').toLowerCase()}
               </span>
             </div>
           </CardContent>
@@ -424,7 +424,7 @@ export default function FeeReportsPage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full -mr-16 -mt-16" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {t('fees.overdue') || 'Overdue'}
+              {t('fees.overdue')}
             </CardTitle>
             <div className="p-2 rounded-lg bg-red-500/10">
               <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
@@ -438,7 +438,7 @@ export default function FeeReportsPage() {
               <span className="text-muted-foreground">
                 {defaultersData?.summary.totalOutstanding
                   ? formatCurrency(defaultersData.summary.totalOutstanding)
-                  : '$0'} outstanding
+                  : formatCurrency(0)} {t('fees.totalRemaining').toLowerCase()}
               </span>
             </div>
           </CardContent>
@@ -1065,7 +1065,7 @@ export default function FeeReportsPage() {
                                     return (
                                       <div className="mt-3 pt-3 border-t space-y-2">
                                         <div className="text-xs font-medium text-muted-foreground mb-2">
-                                          {t('fees.exceptions') || 'Exceptions'} ({assignmentExceptions.length})
+                                          {t('fees.exceptions')} ({assignmentExceptions.length})
                                         </div>
                                         {assignmentExceptions.map((exception) => (
                                           <div key={exception.id} className="text-xs bg-muted/50 rounded p-2 space-y-1">
@@ -1080,14 +1080,14 @@ export default function FeeReportsPage() {
                                                 }
                                                 className="text-xs"
                                               >
-                                                {exception.exceptionType.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                                                {t(`fees.exceptionTypes.${exception.exceptionType}`)}
                                               </Badge>
                                               <span className="font-medium">{formatCurrency(exception.exceptionAmount)}</span>
                                             </div>
                                             <p className="text-muted-foreground">{exception.exceptionReason}</p>
                                             {exception.isActive && (
                                               <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 text-xs">
-                                                Active
+                                                {t('common.active')}
                                               </Badge>
                                             )}
                                           </div>

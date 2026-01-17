@@ -97,16 +97,16 @@ export default function FinanceReports() {
     const { data: accountBalances, isLoading: accountLoading } = useAccountBalancesReport();
 
     const DateRangePicker = () => (
-        <FilterPanel title={t('events.filters') || 'Search & Filter'}>
+        <FilterPanel title={t('common.filters')}>
             <div className="flex flex-col gap-4 md:flex-row md:items-end">
                 <div className="flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <Label htmlFor="startDate">{t('events.from') || 'From'}</Label>
-                    <CalendarDatePicker date={dateRange.startDate ? new Date(dateRange.startDate) : undefined} onDateChange={(date) => setDateRange(date ? date.toISOString().split("T")[0] : "")} />
+                    <Label htmlFor="startDate">{t('common.from')}</Label>
+                    <CalendarDatePicker date={dateRange.startDate ? new Date(dateRange.startDate) : undefined} onDateChange={(date) => setDateRange(prev => ({ ...prev, startDate: date ? date.toISOString().split("T")[0] : "" }))} />
                 </div>
                 <div className="flex items-center gap-2">
-                    <Label htmlFor="endDate">{t('events.to') || 'To'}</Label>
-                    <CalendarDatePicker date={dateRange.endDate ? new Date(dateRange.endDate) : undefined} onDateChange={(date) => setDateRange(date ? date.toISOString().split("T")[0] : "")} />
+                    <Label htmlFor="endDate">{t('common.to')}</Label>
+                    <CalendarDatePicker date={dateRange.endDate ? new Date(dateRange.endDate) : undefined} onDateChange={(date) => setDateRange(prev => ({ ...prev, endDate: date ? date.toISOString().split("T")[0] : "" }))} />
                 </div>
             </div>
         </FilterPanel>
@@ -554,34 +554,33 @@ export default function FinanceReports() {
                         </div>
 
                         {/* Interactive Area Chart */}
-                        <Card className="pt-0">
-                            <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
-                                <div className="grid flex-1 gap-1">
-                                    <CardTitle>{t('finance.incomeVsExpenseTrend') || 'Income vs Expense Trend'}</CardTitle>
-                                    <CardDescription>
-                                        {t('finance.showingTrendsForPeriod') || 'Showing income and expense trends over time'}
-                                    </CardDescription>
-                                </div>
-                                <Select value={timeRange} onValueChange={(value: '7d' | '30d' | '90d') => setTimeRange(value)}>
-                                    <SelectTrigger
-                                        className="hidden w-[160px] rounded-lg sm:ml-auto sm:flex"
-                                        aria-label="Select time range"
-                                    >
-                                        <SelectValue placeholder={t('finance.selectTimeRange') || 'Select time range'} />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl">
-                                        <SelectItem value="7d" className="rounded-lg">
-                                            {t('finance.last7Days') || 'Last 7 days'}
-                                        </SelectItem>
-                                        <SelectItem value="30d" className="rounded-lg">
-                                            {t('finance.last30Days') || 'Last 30 days'}
-                                        </SelectItem>
-                                        <SelectItem value="90d" className="rounded-lg">
-                                            {t('finance.last90Days') || 'Last 90 days'}
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </CardHeader>
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <div className="grid flex-1 gap-1">
+                                        <CardTitle>{t('finance.incomeVsExpenseTrend')}</CardTitle>
+                                        <CardDescription>
+                                            {t('finance.showingTrendsForPeriod')}
+                                        </CardDescription>
+                                    </div>
+                                    <Select value={timeRange} onValueChange={(value: '7d' | '30d' | '90d') => setTimeRange(value)}>
+                                        <SelectTrigger
+                                            className="hidden w-[160px] rounded-lg sm:ml-auto sm:flex"
+                                            aria-label={t('finance.selectTimeRange')}
+                                        >
+                                            <SelectValue placeholder={t('finance.selectTimeRange')} />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl">
+                                            <SelectItem value="7d" className="rounded-lg">
+                                                {t('finance.last7Days')}
+                                            </SelectItem>
+                                            <SelectItem value="30d" className="rounded-lg">
+                                                {t('finance.last30Days')}
+                                            </SelectItem>
+                                            <SelectItem value="90d" className="rounded-lg">
+                                                {t('finance.last90Days')}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </CardHeader>
                             <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
                                 {timeSeriesData.length > 0 ? (
                                     <ChartContainer
@@ -969,7 +968,7 @@ export default function FinanceReports() {
                             <div className="flex w-full items-start gap-2 text-sm">
                                 <div className="grid gap-2">
                                     <div className="flex items-center gap-2 leading-none font-medium">
-                                        {t('finance.totalProjects') || 'Total Projects'}: {projectSummary.projects.length}
+                                        {t('finance.totalProjects')}: {projectSummary.projects.length}
                                         <FolderKanban className="h-4 w-4" />
                                     </div>
                                     <div className="text-muted-foreground flex items-center gap-2 leading-none">

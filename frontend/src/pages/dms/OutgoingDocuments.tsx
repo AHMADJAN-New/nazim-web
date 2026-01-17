@@ -229,7 +229,7 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
         url: url,
       });
     } catch (error: any) {
-      showToast.error(error.message || 'Failed to load preview');
+      showToast.error(error.message || t('dms.failedToLoadPreview'));
     } finally {
       setPreviewLoading(false);
     }
@@ -255,9 +255,9 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      showToast.success('File downloaded successfully');
+      showToast.success(t('common.downloadSuccess'));
     } catch (error: any) {
-      showToast.error(error.message || 'Failed to download file');
+      showToast.error(error.message || t('common.downloadFailed'));
     }
   };
 
@@ -269,7 +269,7 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.outgoing.documentNumber')}</Label>
-            <p className="font-medium">{doc.full_outdoc_number || "N/A"}</p>
+            <p className="font-medium">{doc.full_outdoc_number || t('common.notAvailable')}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.outgoing.issueDate')}</Label>
@@ -277,15 +277,15 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
           </div>
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.outgoing.subject')}</Label>
-            <p className="font-medium">{doc.subject || "N/A"}</p>
+            <p className="font-medium">{doc.subject || t('common.notAvailable')}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.outgoing.status')}</Label>
-            <p className="font-medium capitalize">{doc.status || "N/A"}</p>
+            <p className="font-medium capitalize">{doc.status || t('common.notAvailable')}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.outgoing.recipientType')}</Label>
-            <p className="font-medium capitalize">{doc.recipient_type || "N/A"}</p>
+            <p className="font-medium capitalize">{doc.recipient_type || t('common.notAvailable')}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.outgoing.securityLevel')}</Label>
@@ -295,7 +295,7 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
           </div>
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.outgoing.pagesCount')}</Label>
-            <p className="font-medium">{doc.pages_count ?? "N/A"}</p>
+            <p className="font-medium">{doc.pages_count ?? t('common.notAvailable')}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">{t('dms.forms.outgoing.attachmentsCount')}</Label>
@@ -531,7 +531,7 @@ export default function OutgoingDocuments() {
   const createMutation = useMutation({
     mutationFn: (payload: any) => dmsApi.outgoing.create(payload),
     onSuccess: (data: any) => {
-      showToast.success(t('toast.documentCreated') || 'Outgoing document saved successfully');
+      showToast.success(t('toast.documentCreated'));
       queryClient.invalidateQueries({ queryKey: ["dms", "outgoing"] });
       // Store created document ID for file upload
       if (data?.id) {
@@ -558,13 +558,13 @@ export default function OutgoingDocuments() {
       });
       setIsDialogOpen(false);
     },
-    onError: (err: any) => showToast.error(err.message || t('toast.documentCreateFailed') || 'Failed to save document'),
+    onError: (err: any) => showToast.error(err.message || t('toast.documentCreateFailed')),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: any }) => dmsApi.outgoing.update(id, payload),
     onSuccess: () => {
-      showToast.success(t('toast.documentUpdated') || 'Outgoing document updated successfully');
+      showToast.success(t('toast.documentUpdated'));
       queryClient.invalidateQueries({ queryKey: ["dms", "outgoing"] });
       setIsEditDialogOpen(false);
       setEditDoc(null);
@@ -586,19 +586,19 @@ export default function OutgoingDocuments() {
         academic_year_id: currentAcademicYear?.id || "",
       });
     },
-    onError: (err: any) => showToast.error(err.message || t('toast.documentUpdateFailed') || 'Failed to update document'),
+    onError: (err: any) => showToast.error(err.message || t('toast.documentUpdateFailed')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => dmsApi.outgoing.delete(id),
     onSuccess: async () => {
-      showToast.success(t('courses.documentDeleted') || 'Outgoing document deleted successfully');
+      showToast.success(t('dms.documentDeleted'));
       await queryClient.invalidateQueries({ queryKey: ["dms", "outgoing"] });
       await queryClient.refetchQueries({ queryKey: ["dms", "outgoing"] });
       setIsDeleteDialogOpen(false);
       setDeleteDocId(null);
     },
-    onError: (err: any) => showToast.error(err.message || t('toast.documentDeleteFailed') || 'Failed to delete document'),
+    onError: (err: any) => showToast.error(err.message || t('toast.documentDeleteFailed')),
   });
 
 
@@ -722,13 +722,13 @@ export default function OutgoingDocuments() {
   const handleDownloadPdf = async (doc: OutgoingDocument) => {
     try {
       if (!doc.template_id) {
-        showToast.error('This document has no template attached, so a PDF cannot be generated.');
+        showToast.error(t('dms.noTemplateError'));
         return;
       }
 
       const fullDoc = doc.template ? doc : await dmsApi.outgoing.get(doc.id);
       if (!fullDoc.template) {
-        showToast.error('Template data is missing for this document.');
+        showToast.error(t('dms.missingTemplateData'));
         return;
       }
 
@@ -764,7 +764,7 @@ export default function OutgoingDocuments() {
 
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to download PDF';
+      const message = error instanceof Error ? error.message : t('dms.failedToDownloadPdf');
       showToast.error(message);
     }
   };
@@ -1155,14 +1155,18 @@ export default function OutgoingDocuments() {
                       <TableCell className="font-medium">
                         <DocumentNumberBadge value={doc.full_outdoc_number} type="outgoing" />
                       </TableCell>
-                      <TableCell className="max-w-[200px] truncate">{doc.subject || (t('dms.issueLetter.issuedLetters.noSubject') || 'No subject')}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{doc.subject || t('dms.noSubject')}</TableCell>
                       <TableCell className="max-w-[250px]">
                         <div className="text-sm text-muted-foreground truncate">
                           {getShortDescription(doc.description, 80)}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="capitalize">{doc.recipient_type}</span>
+                        <span className="capitalize">
+                          {recipientTypeOptions.find(opt => opt.value === doc.recipient_type)
+                            ? t(recipientTypeOptions.find(opt => opt.value === doc.recipient_type)!.labelKey)
+                            : doc.recipient_type}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
@@ -1173,7 +1177,7 @@ export default function OutgoingDocuments() {
                       </TableCell>
                       <TableCell>
                         {doc.pages_count ? (
-                          <span className="text-sm">{doc.pages_count} {doc.pages_count === 1 ? (t('dms.page') || 'page') : (t('dms.pages') || 'pages')}</span>
+                          <span className="text-sm">{doc.pages_count} {doc.pages_count === 1 ? t('dms.page') : t('dms.pages')}</span>
                         ) : (
                           <span className="text-sm text-muted-foreground">-</span>
                         )}
@@ -1182,7 +1186,11 @@ export default function OutgoingDocuments() {
                         <SecurityBadge level={doc.security_level_key} />
                       </TableCell>
                       <TableCell>
-                        <span className="capitalize">{doc.status}</span>
+                        <span className="capitalize">
+                          {statusOptions.find(opt => opt.value === doc.status)
+                            ? t(statusOptions.find(opt => opt.value === doc.status)!.labelKey)
+                            : doc.status}
+                        </span>
                       </TableCell>
                       <TableCell className="text-right">{formatDate(doc.issue_date)}</TableCell>
                       <TableCell className="text-right">
@@ -1233,7 +1241,7 @@ export default function OutgoingDocuments() {
               {paginationMeta && paginationMeta.last_page > 1 && (
                 <div className="mt-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Label className="text-sm">Rows per page:</Label>
+                    <Label className="text-sm">{t('common.rowsPerPage')}:</Label>
                     <Select
                       value={pageSize.toString()}
                       onValueChange={(value) => {
@@ -1309,9 +1317,9 @@ export default function OutgoingDocuments() {
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Document Details</DialogTitle>
+            <DialogTitle>{t('dms.documentDetails')}</DialogTitle>
             <DialogDescription>
-              View complete document information, content, and attachments
+              {t('dms.viewDocumentDescription')}
             </DialogDescription>
           </DialogHeader>
           {viewDoc && (
@@ -1324,9 +1332,9 @@ export default function OutgoingDocuments() {
       <Dialog open={isUploadDialogOpen} onOpenChange={handleUploadDialogOpenChange}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Upload Attachments / Files</DialogTitle>
+            <DialogTitle>{t('dms.uploadFiles')}</DialogTitle>
             <DialogDescription>
-              Upload attachments or files for this document. Images will be automatically compressed.
+              {t('dms.issueLetter.uploadAttachmentsDescription')}
             </DialogDescription>
           </DialogHeader>
           {uploadDocId && (
@@ -1351,49 +1359,49 @@ export default function OutgoingDocuments() {
       <Dialog open={isEditDialogOpen} onOpenChange={handleEditDialogClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Outgoing Document</DialogTitle>
+            <DialogTitle>{t('dms.forms.outgoing.editTitle')}</DialogTitle>
             <DialogDescription>
-              Update the outgoing document information. Fill in the required fields and save.
+              {t('dms.forms.outgoing.editDescription')}
             </DialogDescription>
           </DialogHeader>
           {editDoc && (
             <div className="space-y-6">
               {/* Basic Information */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Basic Information</h3>
+                <h3 className="text-lg font-semibold">{t('dms.forms.outgoing.basicInfo')}</h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Academic Year</Label>
+                    <Label>{t('dms.forms.outgoing.academicYear')}</Label>
                     <Select
                       value={newDoc.academic_year_id || currentAcademicYear?.id || ""}
                       onValueChange={(value) => setNewDoc((s) => ({ ...s, academic_year_id: value }))}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select academic year" />
+                        <SelectValue placeholder={t('dms.forms.outgoing.academicYear')} />
                       </SelectTrigger>
                       <SelectContent>
                         {academicYears?.map((year) => (
                           <SelectItem key={year.id} value={year.id}>
-                            {year.name} {year.isCurrent ? "(Current)" : ""}
+                            {year.name} {year.isCurrent ? `(${t('common.default')})` : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Issue Date <span className="text-destructive">*</span></Label>
+                    <Label>{t('dms.forms.outgoing.issueDate')} <span className="text-destructive">*</span></Label>
                     <CalendarDatePicker date={newDoc.issue_date ? new Date(newDoc.issue_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, issue_date: date ? date.toISOString().split("T")[0] : "" }))} />
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label>Subject <span className="text-destructive">*</span></Label>
+                    <Label>{t('dms.forms.outgoing.subject')} <span className="text-destructive">*</span></Label>
                     <Input
                       value={newDoc.subject}
                       onChange={(e) => setNewDoc((s) => ({ ...s, subject: e.target.value }))}
-                      placeholder="Document subject"
+                      placeholder={t('dms.forms.outgoing.subject')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Recipient Type</Label>
+                    <Label>{t('dms.forms.outgoing.recipientType')}</Label>
                     <Select
                       value={newDoc.recipient_type}
                       onValueChange={(value) => setNewDoc((s) => ({ ...s, recipient_type: value }))}
@@ -1404,14 +1412,14 @@ export default function OutgoingDocuments() {
                       <SelectContent>
                         {recipientTypeOptions.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
+                            {t(opt.labelKey)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Status</Label>
+                    <Label>{t('dms.forms.outgoing.status')}</Label>
                     <Select
                       value={newDoc.status}
                       onValueChange={(value) => setNewDoc((s) => ({ ...s, status: value }))}
@@ -1422,7 +1430,7 @@ export default function OutgoingDocuments() {
                       <SelectContent>
                         {statusOptions.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
+                            {t(opt.labelKey)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1435,43 +1443,43 @@ export default function OutgoingDocuments() {
 
               {/* Document Content */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Document Content</h3>
+                <h3 className="text-lg font-semibold">{t('dms.forms.outgoing.content')}</h3>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Description / Content</Label>
+                    <Label>{t('dms.forms.outgoing.contentLabel')}</Label>
                     <RichTextEditor
                       value={newDoc.description}
                       onChange={(html) => setNewDoc((s) => ({ ...s, description: html }))}
-                      placeholder="Enter document description or content..."
+                      placeholder={t('dms.forms.outgoing.contentPlaceholder')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Body HTML</Label>
+                    <Label>{t('dms.forms.outgoing.bodyContent')}</Label>
                     <RichTextEditor
                       value={newDoc.body_html}
                       onChange={(html) => setNewDoc((s) => ({ ...s, body_html: html }))}
-                      placeholder="Enter document body content..."
+                      placeholder={t('dms.forms.outgoing.bodyContentPlaceholder')}
                     />
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label>Pages Count (ضمائم)</Label>
+                      <Label>{t('dms.forms.outgoing.pagesCount')}</Label>
                       <Input
                         type="number"
                         min="0"
                         value={newDoc.pages_count}
                         onChange={(e) => setNewDoc((s) => ({ ...s, pages_count: e.target.value }))}
-                        placeholder="Number of pages"
+                        placeholder="0"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Attachments Count</Label>
+                      <Label>{t('dms.forms.outgoing.attachmentsCount')}</Label>
                       <Input
                         type="number"
                         min="0"
                         value={newDoc.attachments_count}
                         onChange={(e) => setNewDoc((s) => ({ ...s, attachments_count: e.target.value }))}
-                        placeholder="Number of attachments"
+                        placeholder="0"
                       />
                     </div>
                   </div>
@@ -1482,7 +1490,7 @@ export default function OutgoingDocuments() {
 
               {/* Document Numbering */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Document Numbering</h3>
+                <h3 className="text-lg font-semibold">{t('dms.forms.outgoing.documentNumbering')}</h3>
                 <div className="space-y-4">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -1491,16 +1499,16 @@ export default function OutgoingDocuments() {
                       onCheckedChange={(checked) => setNewDoc((s) => ({ ...s, is_manual_number: !!checked }))}
                     />
                     <Label htmlFor="edit_is_manual_number" className="cursor-pointer">
-                      Use manual document number
+                      {t('dms.forms.outgoing.manualNumber')}
                     </Label>
                   </div>
                   {newDoc.is_manual_number && (
                     <div className="space-y-2">
-                      <Label>Manual Document Number</Label>
+                      <Label>{t('dms.forms.outgoing.manualNumber')}</Label>
                       <Input
                         value={newDoc.manual_outdoc_number}
                         onChange={(e) => setNewDoc((s) => ({ ...s, manual_outdoc_number: e.target.value }))}
-                        placeholder="Enter manual document number"
+                        placeholder={t('dms.forms.outgoing.manualNumber')}
                       />
                     </div>
                   )}
@@ -1511,45 +1519,45 @@ export default function OutgoingDocuments() {
 
               {/* Additional Information */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Additional Information</h3>
+                <h3 className="text-lg font-semibold">{t('dms.forms.outgoing.externalDocInfo')}</h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>External Document Number</Label>
+                    <Label>{t('dms.forms.outgoing.externalDocNumber')}</Label>
                     <Input
                       value={newDoc.external_doc_number}
                       onChange={(e) => setNewDoc((s) => ({ ...s, external_doc_number: e.target.value }))}
-                      placeholder="External reference number"
+                      placeholder={t('dms.forms.outgoing.externalDocNumber')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>External Document Date</Label>
+                    <Label>{t('dms.forms.outgoing.externalDocDate')}</Label>
                     <CalendarDatePicker date={newDoc.external_doc_date ? new Date(newDoc.external_doc_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, external_doc_date: date ? date.toISOString().split("T")[0] : "" }))} />
                   </div>
                   <div className="space-y-2">
-                    <Label>Security Level</Label>
+                    <Label>{t('dms.forms.outgoing.securityLevel')}</Label>
                     <Select
                       value={newDoc.security_level_key || "none"}
                       onValueChange={(value) => setNewDoc((s) => ({ ...s, security_level_key: value === "none" ? "" : value }))}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select security level" />
+                        <SelectValue placeholder={t('dms.forms.outgoing.securityLevel')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="public">Public</SelectItem>
-                        <SelectItem value="internal">Internal</SelectItem>
-                        <SelectItem value="confidential">Confidential</SelectItem>
-                        <SelectItem value="secret">Secret</SelectItem>
-                        <SelectItem value="top_secret">Top Secret</SelectItem>
+                        <SelectItem value="none">{t('common.none')}</SelectItem>
+                        <SelectItem value="public">{t('common.public')}</SelectItem>
+                        <SelectItem value="internal">{t('common.internal')}</SelectItem>
+                        <SelectItem value="confidential">{t('common.confidential')}</SelectItem>
+                        <SelectItem value="secret">{t('common.secret')}</SelectItem>
+                        <SelectItem value="top_secret">{t('common.topSecret')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Notes</Label>
+                    <Label>{t('dms.forms.outgoing.notes')}</Label>
                     <Input
                       value={newDoc.notes}
                       onChange={(e) => setNewDoc((s) => ({ ...s, notes: e.target.value }))}
-                      placeholder="Additional notes"
+                      placeholder={t('dms.forms.outgoing.notes')}
                     />
                   </div>
                 </div>
@@ -1575,13 +1583,13 @@ export default function OutgoingDocuments() {
                     }
                   }}
                 >
-                  {updateMutation.isPending ? "Saving..." : "Save Changes"}
+                  {updateMutation.isPending ? t('common.saving') : t('common.save')}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => handleEditDialogClose(false)}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               </div>
             </div>
@@ -1598,19 +1606,19 @@ export default function OutgoingDocuments() {
       }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('events.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('common.confirmDelete')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('dms.deleteDocumentWarning') || 'Are you sure you want to delete this outgoing document? This action cannot be undone.'}
+              {t('dms.deleteDocumentWarning')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground"
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? (t('events.deleting') || 'Deleting...') : (t('events.delete') || 'Delete')}
+              {deleteMutation.isPending ? t('common.deleting') : t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

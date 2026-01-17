@@ -319,10 +319,10 @@ export function ExamTimetablePage() {
     return (
       <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <div className="text-center py-12">
-          <p className="text-muted-foreground">{t('exams.noExamsAvailable') || 'No exams available'}</p>
+          <p className="text-muted-foreground">{t('exams.noExamsAvailable')}</p>
           <Button variant="link" onClick={() => navigate('/exams')} className="mt-4">
             <ArrowLeft className="h-4 w-4" />
-            <span className="ml-2">{t('exams.backToList') || 'Back to Exams'}</span>
+            <span className="ml-2">{t('exams.backToList')}</span>
           </Button>
         </div>
       </div>
@@ -336,14 +336,14 @@ export function ExamTimetablePage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/exams')} className="flex-shrink-0" aria-label={t('events.back') || 'Back'}>
+              <Button variant="ghost" size="icon" onClick={() => navigate('/exams')} className="flex-shrink-0" aria-label={t('common.back')}>
                 <ArrowLeft className="h-5 w-5" />
-                <span className="sr-only">{t('events.back') || 'Back'}</span>
+                <span className="sr-only">{t('common.back')}</span>
               </Button>
               <div className="flex-1 min-w-0">
-                <CardTitle className="text-2xl">{t('exams.timetable') || 'Exam Timetable'}</CardTitle>
+                <CardTitle className="text-2xl">{t('exams.examTimetable')}</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1 hidden md:block">
-                  {t('exams.selectExamToViewTimetable') || 'Select an exam to view and manage its timetable'}
+                  {t('exams.selectExamToViewTimetable')}
                 </p>
               </div>
             </div>
@@ -351,20 +351,20 @@ export function ExamTimetablePage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">{t('exams.selectExam') || 'Select Exam'}</CardTitle>
+            <CardTitle className="text-lg">{t('exams.selectExam')}</CardTitle>
             <CardDescription>
-              {t('exams.selectExamDescription') || 'Choose an exam to view and manage its timetable'}
+              {t('exams.selectExamDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="w-full max-w-md">
-              <Label>{t('exams.exam') || 'Exam'}</Label>
+              <Label>{t('exams.exam')}</Label>
               <Select
                 value={selectedExamId || ''}
                 onValueChange={(v) => setSelectedExamId(v)}
               >
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder={t('exams.selectExamPlaceholder') || 'Select an exam...'} />
+                  <SelectValue placeholder={t('exams.selectExamPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {allExams.map((e) => (
@@ -385,7 +385,7 @@ export function ExamTimetablePage() {
     return (
       <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <div className="text-center py-12">
-          <p className="text-muted-foreground">{t('exams.selectExamToViewTimetable') || 'Please select an exam to view timetable'}</p>
+          <p className="text-muted-foreground">{t('exams.selectExamToViewTimetable')}</p>
         </div>
       </div>
     );
@@ -395,10 +395,10 @@ export function ExamTimetablePage() {
     return (
       <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
         <div className="text-center py-12">
-          <p className="text-muted-foreground">{t('events.notFound') || 'Exam not found'}</p>
+          <p className="text-muted-foreground">{t('exams.notFound')}</p>
           <Button variant="link" onClick={() => navigate('/exams')} className="mt-4">
             <ArrowLeft className="h-4 w-4" />
-            <span className="ml-2">{t('exams.backToList') || 'Back to Exams'}</span>
+            <span className="ml-2">{t('exams.backToList')}</span>
           </Button>
         </div>
       </div>
@@ -414,19 +414,19 @@ export function ExamTimetablePage() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4 flex-1 min-w-0">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/exams')} className="flex-shrink-0" aria-label={t('events.back') || 'Back'}>
+              <Button variant="ghost" size="icon" onClick={() => navigate('/exams')} className="flex-shrink-0" aria-label={t('common.back')}>
                 <ArrowLeft className="h-5 w-5" />
-                <span className="sr-only">{t('events.back') || 'Back'}</span>
+                <span className="sr-only">{t('common.back')}</span>
               </Button>
               <div className="min-w-0 flex-1">
                 <CardTitle className="text-2xl truncate">{exam.name}</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1 hidden md:block">
-                  {t('exams.timetableDescription') || 'Manage exam timetable and schedule'}
+                  {t('exams.examTimetableDescription')}
                 </p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2 flex-shrink-0">
-              <Badge variant="outline">{exam.academicYear?.name || 'N/A'}</Badge>
+              <Badge variant="outline">{exam.academicYear?.name || t('common.notAvailable')}</Badge>
               {exam.startDate && exam.endDate && (
                 <Badge variant="secondary" className="gap-1">
                   <CalendarIcon className="h-3 w-3" />
@@ -443,7 +443,7 @@ export function ExamTimetablePage() {
       {!examIdFromParams && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">{t('exams.selectExam') || 'Select Exam'}</CardTitle>
+            <CardTitle className="text-lg">{t('exams.selectExam')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="w-full max-w-md">
@@ -452,7 +452,7 @@ export function ExamTimetablePage() {
                 onValueChange={(v) => setSelectedExamId(v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={t('exams.selectExamPlaceholder') || 'Select an exam...'} />
+                  <SelectValue placeholder={t('exams.selectExamPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {allExams?.map((e) => (
@@ -474,10 +474,10 @@ export function ExamTimetablePage() {
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
               <Select value={selectedClassFilter} onValueChange={setSelectedClassFilter} className="w-full sm:w-[200px]">
                 <SelectTrigger>
-                  <SelectValue placeholder={t('exams.filterByClass') || 'Filter by class'} />
+                  <SelectValue placeholder={t('exams.filterByClass')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('subjects.all') || 'All Classes'}</SelectItem>
+                  <SelectItem value="all">{t('common.allClasses')}</SelectItem>
                   {examClasses?.map((ec) => (
                     <SelectItem key={ec.id} value={ec.id}>
                       {getClassName(ec.id)}
@@ -489,7 +489,7 @@ export function ExamTimetablePage() {
                 <CalendarDatePicker date={selectedDateFilter ? new Date(selectedDateFilter) : undefined} onDateChange={(date) => setSelectedDateFilter(date ? date.toISOString().split("T")[0] : "")} />
                 {selectedDateFilter && (
                   <Button variant="ghost" size="sm" onClick={() => setSelectedDateFilter('')} className="flex-shrink-0">
-                    {t('events.clear') || 'Clear'}
+                    {t('common.clear')}
                   </Button>
                 )}
               </div>
@@ -499,16 +499,16 @@ export function ExamTimetablePage() {
                 <ReportExportButtons
                   data={filteredExamTimes}
                   columns={[
-                    { key: 'date', label: t('events.date') || 'Date' },
-                    { key: 'time', label: t('exams.time') || 'Time' },
-                    { key: 'className', label: t('search.class') || 'Class' },
-                    { key: 'subjectName', label: t('exams.subject') || 'Subject' },
-                    { key: 'roomName', label: t('exams.room') || 'Room' },
-                    { key: 'invigilatorName', label: t('exams.invigilator') || 'Invigilator' },
-                    { key: 'status', label: t('events.status') || 'Status' },
+                    { key: 'date', label: t('common.date') },
+                    { key: 'time', label: t('exams.time') },
+                    { key: 'className', label: t('common.class') },
+                    { key: 'subjectName', label: t('exams.subject') },
+                    { key: 'roomName', label: t('exams.room') },
+                    { key: 'invigilatorName', label: t('exams.invigilator') },
+                    { key: 'status', label: t('common.status') },
                   ]}
                   reportKey="exam_timetable"
-                  title={`${t('exams.examTimetable') || 'Exam Timetable'} - ${exam?.name || ''}`}
+                  title={`${t('exams.examTimetable')} - ${exam?.name || ''}`}
                   transformData={(data) => data.map((et: ExamTime) => ({
                     date: formatDate(et.date),
                     time: `${et.startTime} - ${et.endTime}`,
@@ -516,19 +516,19 @@ export function ExamTimetablePage() {
                     subjectName: getSubjectName(et.examSubjectId),
                     roomName: et.room?.name || '-',
                     invigilatorName: et.invigilator?.fullName || '-',
-                    status: et.isLocked ? (t('exams.locked') || 'Locked') : (t('exams.unlocked') || 'Unlocked'),
+                    status: et.isLocked ? t('exams.locked') : t('exams.unlocked'),
                   }))}
                   buildFiltersSummary={() => {
                     const parts: string[] = [];
-                    if (exam?.name) parts.push(`Exam: ${exam.name}`);
-                    if (exam?.academicYear?.name) parts.push(`Academic Year: ${exam.academicYear.name}`);
+                    if (exam?.name) parts.push(`${t('exams.exam')}: ${exam.name}`);
+                    if (exam?.academicYear?.name) parts.push(`${t('exams.academicYear')}: ${exam.academicYear.name}`);
                     if (selectedClassFilter !== 'all') {
-                      parts.push(`Class: ${getClassName(selectedClassFilter)}`);
+                      parts.push(`${t('common.class')}: ${getClassName(selectedClassFilter)}`);
                     }
                     if (selectedDateFilter) {
-                      parts.push(`Date: ${formatDate(selectedDateFilter)}`);
+                      parts.push(`${t('common.date')}: ${formatDate(selectedDateFilter)}`);
                     }
-                    parts.push(`Total Sessions: ${filteredExamTimes.length}`);
+                    parts.push(`${t('common.total')} ${t('exams.sessions')}: ${filteredExamTimes.length}`);
                     return parts.join(' | ');
                   }}
                   schoolId={profile?.default_school_id}
@@ -539,7 +539,7 @@ export function ExamTimetablePage() {
               {canModify && (
                 <Button onClick={() => setIsCreateDialogOpen(true)} disabled={!examClasses?.length || !examSubjects?.length} className="w-full sm:w-auto flex-shrink-0">
                   <Plus className="h-4 w-4" />
-                  <span className="ml-2">{t('exams.addTimeSlot') || 'Add Time Slot'}</span>
+                  <span className="ml-2">{t('exams.addTimeSlot')}</span>
                 </Button>
               )}
             </div>
@@ -550,9 +550,9 @@ export function ExamTimetablePage() {
       {/* Timetable */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('exams.examTimetable') || 'Exam Timetable'}</CardTitle>
+          <CardTitle>{t('exams.examTimetable')}</CardTitle>
           <CardDescription className="hidden md:block">
-            {t('exams.examTimetableDescription') || 'Schedule of exam sessions'}
+            {t('exams.examTimetableDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -560,11 +560,11 @@ export function ExamTimetablePage() {
             <div className="text-center py-8">
               <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-sm text-muted-foreground">
-                {t('exams.noTimeSlots') || 'No time slots scheduled yet.'}
+                {t('exams.noTimeSlots')}
               </p>
               {!examClasses?.length && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  {t('exams.addClassesFirst') || 'Add classes to the exam first.'}
+                  {t('exams.addClassesFirst')}
                 </p>
               )}
             </div>
@@ -577,18 +577,18 @@ export function ExamTimetablePage() {
                     <h3 className="font-medium">
                       {formatDate(dateKey)}
                     </h3>
-                    <Badge variant="outline">{times.length} {t('exams.sessions') || 'sessions'}</Badge>
+                    <Badge variant="outline">{times.length} {t('exams.sessions')}</Badge>
                   </div>
                   <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>{t('exams.time') || 'Time'}</TableHead>
-                          <TableHead>{t('search.class') || 'Class'}</TableHead>
-                          <TableHead>{t('exams.subject') || 'Subject'}</TableHead>
-                          <TableHead className="hidden md:table-cell">{t('exams.room') || 'Room'}</TableHead>
-                          <TableHead className="hidden lg:table-cell">{t('exams.invigilator') || 'Invigilator'}</TableHead>
-                          <TableHead>{t('events.actions') || 'Actions'}</TableHead>
+                          <TableHead>{t('exams.time')}</TableHead>
+                          <TableHead>{t('common.class')}</TableHead>
+                          <TableHead>{t('exams.subject')}</TableHead>
+                          <TableHead className="hidden md:table-cell">{t('exams.room')}</TableHead>
+                          <TableHead className="hidden lg:table-cell">{t('exams.invigilator')}</TableHead>
+                          <TableHead>{t('common.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                     <TableBody>
@@ -635,8 +635,8 @@ export function ExamTimetablePage() {
                                   size="icon"
                                   onClick={() => handleToggleLock(examTime)}
                                   className="flex-shrink-0"
-                                  aria-label={examTime.isLocked ? t('exams.unlock') || 'Unlock' : t('exams.lock') || 'Lock'}
-                                  title={examTime.isLocked ? t('exams.unlock') || 'Unlock' : t('exams.lock') || 'Lock'}
+                                  aria-label={examTime.isLocked ? t('exams.unlock') : t('exams.lock')}
+                                  title={examTime.isLocked ? t('exams.unlock') : t('exams.lock')}
                                 >
                                   {examTime.isLocked ? (
                                     <Unlock className="h-4 w-4" />
@@ -651,10 +651,10 @@ export function ExamTimetablePage() {
                                       size="icon"
                                       onClick={() => openEditDialog(examTime)}
                                       className="flex-shrink-0"
-                                      aria-label={t('events.edit') || 'Edit'}
+                                      aria-label={t('common.edit')}
                                     >
                                       <Pencil className="h-4 w-4" />
-                                      <span className="sr-only">{t('events.edit') || 'Edit'}</span>
+                                      <span className="sr-only">{t('common.edit')}</span>
                                     </Button>
                                     <Button
                                       variant="ghost"
@@ -664,10 +664,10 @@ export function ExamTimetablePage() {
                                         setIsDeleteDialogOpen(true);
                                       }}
                                       className="flex-shrink-0"
-                                      aria-label={t('events.delete') || 'Delete'}
+                                      aria-label={t('common.delete')}
                                     >
                                       <Trash2 className="h-4 w-4 text-destructive" />
-                                      <span className="sr-only">{t('events.delete') || 'Delete'}</span>
+                                      <span className="sr-only">{t('common.delete')}</span>
                                     </Button>
                                   </>
                                 )}
@@ -690,21 +690,21 @@ export function ExamTimetablePage() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t('exams.addTimeSlot') || 'Add Time Slot'}</DialogTitle>
+            <DialogTitle>{t('exams.addTimeSlot')}</DialogTitle>
             <DialogDescription>
-              {t('exams.addTimeSlotDescription') || 'Schedule a new exam session'}
+              {t('exams.addTimeSlotDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>{t('search.class') || 'Class'} *</Label>
+                <Label>{t('common.class')} *</Label>
                 <Select 
                   value={formData.examClassId} 
                   onValueChange={(v) => setFormData({ ...formData, examClassId: v, examSubjectId: '' })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t('events.selectClass') || 'Select class'} />
+                    <SelectValue placeholder={t('common.selectClass')} />
                   </SelectTrigger>
                   <SelectContent>
                     {examClasses?.map((ec) => (
@@ -716,19 +716,19 @@ export function ExamTimetablePage() {
                 </Select>
               </div>
               <div>
-                <Label>{t('exams.subject') || 'Subject'} *</Label>
+                <Label>{t('exams.subject')} *</Label>
                 <Select 
                   value={formData.examSubjectId} 
                   onValueChange={(v) => setFormData({ ...formData, examSubjectId: v })}
                   disabled={!formData.examClassId}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t('exams.selectSubject') || 'Select subject'} />
+                    <SelectValue placeholder={t('exams.selectSubject')} />
                   </SelectTrigger>
                   <SelectContent>
                     {subjectsForSelectedClass.map((es) => (
                       <SelectItem key={es.id} value={es.id}>
-                        {es.subject?.name || 'Subject'}
+                        {es.subject?.name || t('common.subject')}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -736,12 +736,12 @@ export function ExamTimetablePage() {
               </div>
             </div>
             <div>
-              <Label>{t('events.date') || 'Date'} *</Label>
-              <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
+              <Label>{t('common.date')} *</Label>
+              <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData({ ...formData, date: date ? date.toISOString().split("T")[0] : "" })} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>{t('exams.startTime') || 'Start Time'} *</Label>
+                <Label>{t('exams.startTime')} *</Label>
                 <Input
                   type="time"
                   value={formData.startTime}
@@ -749,7 +749,7 @@ export function ExamTimetablePage() {
                 />
               </div>
               <div>
-                <Label>{t('exams.endTime') || 'End Time'} *</Label>
+                <Label>{t('exams.endTime')} *</Label>
                 <Input
                   type="time"
                   value={formData.endTime}
@@ -759,13 +759,13 @@ export function ExamTimetablePage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>{t('exams.room') || 'Room'}</Label>
+                <Label>{t('exams.room')}</Label>
                 <Select value={formData.roomId || 'none'} onValueChange={(v) => setFormData({ ...formData, roomId: v })}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t('exams.selectRoom') || 'Select room'} />
+                    <SelectValue placeholder={t('exams.selectRoom')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
+                    <SelectItem value="none">{t('common.none')}</SelectItem>
                     {rooms?.map((room) => (
                       <SelectItem key={room.id} value={room.id}>
                         {room.name}
@@ -775,13 +775,13 @@ export function ExamTimetablePage() {
                 </Select>
               </div>
               <div>
-                <Label>{t('exams.invigilator') || 'Invigilator'}</Label>
+                <Label>{t('exams.invigilator')}</Label>
                 <Select value={formData.invigilatorId || 'none'} onValueChange={(v) => setFormData({ ...formData, invigilatorId: v })}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t('exams.selectInvigilator') || 'Select invigilator'} />
+                    <SelectValue placeholder={t('exams.selectInvigilator')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
+                    <SelectItem value="none">{t('common.none')}</SelectItem>
                     {staff?.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
                         {s.firstName} {s.lastName}
@@ -792,21 +792,21 @@ export function ExamTimetablePage() {
               </div>
             </div>
             <div>
-              <Label>{t('events.notes') || 'Notes'}</Label>
+              <Label>{t('common.notes')}</Label>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder={t('exams.notesPlaceholder') || 'Optional notes...'}
+                placeholder={t('exams.notesPlaceholder')}
                 rows={2}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setIsCreateDialogOpen(false); resetForm(); }}>
-              {t('events.cancel') || 'Cancel'}
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleCreate} disabled={createExamTime.isPending}>
-              {t('events.create') || 'Create'}
+              {t('common.create')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -816,9 +816,9 @@ export function ExamTimetablePage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t('exams.editTimeSlot') || 'Edit Time Slot'}</DialogTitle>
+            <DialogTitle>{t('exams.editTimeSlot')}</DialogTitle>
             <DialogDescription>
-              {t('exams.editTimeSlotDescription') || 'Update exam session details'}
+              {t('exams.editTimeSlotDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -828,12 +828,12 @@ export function ExamTimetablePage() {
               </div>
             )}
             <div>
-              <Label>{t('events.date') || 'Date'} *</Label>
-              <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
+              <Label>{t('common.date')} *</Label>
+              <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData({ ...formData, date: date ? date.toISOString().split("T")[0] : "" })} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>{t('exams.startTime') || 'Start Time'} *</Label>
+                <Label>{t('exams.startTime')} *</Label>
                 <Input
                   type="time"
                   value={formData.startTime}
@@ -841,7 +841,7 @@ export function ExamTimetablePage() {
                 />
               </div>
               <div>
-                <Label>{t('exams.endTime') || 'End Time'} *</Label>
+                <Label>{t('exams.endTime')} *</Label>
                 <Input
                   type="time"
                   value={formData.endTime}
@@ -851,13 +851,13 @@ export function ExamTimetablePage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>{t('exams.room') || 'Room'}</Label>
+                <Label>{t('exams.room')}</Label>
                 <Select value={formData.roomId || 'none'} onValueChange={(v) => setFormData({ ...formData, roomId: v })}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t('exams.selectRoom') || 'Select room'} />
+                    <SelectValue placeholder={t('exams.selectRoom')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
+                    <SelectItem value="none">{t('common.none')}</SelectItem>
                     {rooms?.map((room) => (
                       <SelectItem key={room.id} value={room.id}>
                         {room.name}
@@ -867,13 +867,13 @@ export function ExamTimetablePage() {
                 </Select>
               </div>
               <div>
-                <Label>{t('exams.invigilator') || 'Invigilator'}</Label>
+                <Label>{t('exams.invigilator')}</Label>
                 <Select value={formData.invigilatorId || 'none'} onValueChange={(v) => setFormData({ ...formData, invigilatorId: v })}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t('exams.selectInvigilator') || 'Select invigilator'} />
+                    <SelectValue placeholder={t('exams.selectInvigilator')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
+                    <SelectItem value="none">{t('common.none')}</SelectItem>
                     {staff?.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
                         {s.firstName} {s.lastName}
@@ -884,21 +884,21 @@ export function ExamTimetablePage() {
               </div>
             </div>
             <div>
-              <Label>{t('events.notes') || 'Notes'}</Label>
+              <Label>{t('common.notes')}</Label>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder={t('exams.notesPlaceholder') || 'Optional notes...'}
+                placeholder={t('exams.notesPlaceholder')}
                 rows={2}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setIsEditDialogOpen(false); setTimeToEdit(null); resetForm(); }}>
-              {t('events.cancel') || 'Cancel'}
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleUpdate} disabled={updateExamTime.isPending}>
-              {t('events.update') || 'Update'}
+              {t('common.update')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -908,9 +908,9 @@ export function ExamTimetablePage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('exams.deleteTimeSlotConfirm') || 'Delete Time Slot'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('exams.deleteTimeSlotConfirm')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('exams.deleteTimeSlotConfirmMessage') || 'Are you sure you want to delete this time slot?'}
+              {t('exams.deleteTimeSlotConfirmMessage')}
               {timeToDelete && (
                 <div className="mt-2 font-medium">
                   {getClassName(timeToDelete.examClassId)} - {getSubjectName(timeToDelete.examSubjectId)}
@@ -921,9 +921,11 @@ export function ExamTimetablePage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              {t('common.cancel')}
+            </Button>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              {t('events.delete') || 'Delete'}
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

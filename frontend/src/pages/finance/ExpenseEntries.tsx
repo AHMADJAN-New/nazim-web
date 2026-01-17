@@ -218,19 +218,19 @@ export default function ExpenseEntries() {
             case 'approved':
                 return (
                     <Badge variant="outline" className="bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400">
-                        {t('status.approved') || 'Approved'}
+                        {t('finance.approved')}
                     </Badge>
                 );
             case 'pending':
                 return (
                     <Badge variant="outline" className="bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400">
-                        {t('finance.pending') || 'Pending'}
+                        {t('finance.pending')}
                     </Badge>
                 );
             case 'rejected':
                 return (
                     <Badge variant="outline" className="bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400">
-                        {t('finance.rejected') || 'Rejected'}
+                        {t('finance.rejected')}
                     </Badge>
                 );
             default:
@@ -248,13 +248,13 @@ export default function ExpenseEntries() {
         >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="accountId">{t('finance.account') || 'Account'} *</Label>
+                    <Label htmlFor="accountId">{t('finance.account')} *</Label>
                     <Select
                         value={formData.accountId}
                         onValueChange={(value) => setFormData({ ...formData, accountId: value })}
                     >
                         <SelectTrigger>
-                            <SelectValue placeholder={t('finance.selectAccount') || 'Select account'} />
+                            <SelectValue placeholder={t('finance.selectAccount')} />
                         </SelectTrigger>
                         <SelectContent>
                             {activeAccounts.map((account) => (
@@ -266,13 +266,13 @@ export default function ExpenseEntries() {
                     </Select>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="expenseCategoryId">{t('assets.category') || 'Category'} *</Label>
+                    <Label htmlFor="expenseCategoryId">{t('assets.category')} *</Label>
                     <Select
                         value={formData.expenseCategoryId}
                         onValueChange={(value) => setFormData({ ...formData, expenseCategoryId: value })}
                     >
                         <SelectTrigger>
-                            <SelectValue placeholder={t('finance.selectCategory') || 'Select category'} />
+                            <SelectValue placeholder={t('finance.selectCategory')} />
                         </SelectTrigger>
                         <SelectContent>
                             {activeCategories.map((category) => (
@@ -286,7 +286,7 @@ export default function ExpenseEntries() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="amount">{t('finance.amount') || 'Amount'} *</Label>
+                    <Label htmlFor="amount">{t('finance.amount')} *</Label>
                     <Input
                         id="amount"
                         type="number"
@@ -297,29 +297,29 @@ export default function ExpenseEntries() {
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="date">{t('events.date') || 'Date'} *</Label>
-                    <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
+                    <Label htmlFor="date">{t('events.date')} *</Label>
+                    <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData({ ...formData, date: date ? date.toISOString().split("T")[0] : "" })} />
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="currencyId">{t('finance.currency') || 'Currency'}</Label>
+                    <Label htmlFor="currencyId">{t('finance.currency')}</Label>
                     <Select
                         value={formData.currencyId || defaultCurrencyId || 'none'}
                         onValueChange={(value) => setFormData({ ...formData, currencyId: value === 'none' ? null : value })}
                     >
                         <SelectTrigger>
-                            <SelectValue placeholder={t('finance.selectCurrency') || 'Select currency'} />
+                            <SelectValue placeholder={t('finance.selectCurrency')} />
                         </SelectTrigger>
                         <SelectContent>
                             {selectedAccount?.currencyId && (
                                 <SelectItem value={selectedAccount.currencyId}>
-                                    {currencies?.find(c => c.id === selectedAccount.currencyId)?.code || 'N/A'} - {currencies?.find(c => c.id === selectedAccount.currencyId)?.name || 'Account Currency'}
+                                    {currencies?.find(c => c.id === selectedAccount.currencyId)?.code || t('common.notAvailable')} - {currencies?.find(c => c.id === selectedAccount.currencyId)?.name || t('finance.accountCurrency')}
                                 </SelectItem>
                             )}
                             {baseCurrency && (!selectedAccount?.currencyId || selectedAccount.currencyId !== baseCurrency.id) && (
                                 <SelectItem value={baseCurrency.id}>
-                                    {baseCurrency.code} - {baseCurrency.name} {t('finance.baseCurrency') || '(Base)'}
+                                    {baseCurrency.code} - {baseCurrency.name} {t('finance.baseCurrency')}
                                 </SelectItem>
                             )}
                             {currencies?.filter(c => 
@@ -334,16 +334,16 @@ export default function ExpenseEntries() {
                     </Select>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="projectId">{t('finance.project') || 'Project'}</Label>
+                    <Label htmlFor="projectId">{t('finance.project')}</Label>
                     <Select
                         value={formData.projectId || 'none'}
                         onValueChange={(value) => setFormData({ ...formData, projectId: value === 'none' ? null : value })}
                     >
                         <SelectTrigger>
-                            <SelectValue placeholder={t('finance.selectProject') || 'Select project'} />
+                            <SelectValue placeholder={t('finance.selectProject')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
+                            <SelectItem value="none">{t('common.none')}</SelectItem>
                             {activeProjects.map((project) => (
                                 <SelectItem key={project.id} value={project.id}>
                                     {project.name}
@@ -355,16 +355,16 @@ export default function ExpenseEntries() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="paidTo">{t('finance.paidTo') || 'Paid To'}</Label>
+                    <Label htmlFor="paidTo">{t('finance.paidTo')}</Label>
                     <Input
                         id="paidTo"
                         value={formData.paidTo || ''}
                         onChange={(e) => setFormData({ ...formData, paidTo: e.target.value })}
-                        placeholder={t('finance.paidToPlaceholder') || 'Person or vendor name...'}
+                        placeholder={t('finance.paidToPlaceholder')}
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="paymentMethod">{t('finance.paymentMethod') || 'Payment Method'}</Label>
+                    <Label htmlFor="paymentMethod">{t('finance.paymentMethod')}</Label>
                     <Select
                         value={formData.paymentMethod || 'cash'}
                         onValueChange={(value: 'cash' | 'bank_transfer' | 'cheque' | 'other') => setFormData({ ...formData, paymentMethod: value })}
@@ -373,26 +373,26 @@ export default function ExpenseEntries() {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="cash">{t('finance.cash') || 'Cash'}</SelectItem>
-                            <SelectItem value="bank_transfer">{t('finance.bankTransfer') || 'Bank Transfer'}</SelectItem>
-                            <SelectItem value="cheque">{t('finance.cheque') || 'Cheque'}</SelectItem>
-                            <SelectItem value="other">{t('events.other') || 'Other'}</SelectItem>
+                            <SelectItem value="cash">{t('finance.cash')}</SelectItem>
+                            <SelectItem value="bank_transfer">{t('finance.bankTransfer')}</SelectItem>
+                            <SelectItem value="cheque">{t('finance.cheque')}</SelectItem>
+                            <SelectItem value="other">{t('common.other')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="referenceNo">{t('finance.referenceNo') || 'Reference No.'}</Label>
+                    <Label htmlFor="referenceNo">{t('finance.referenceNo')}</Label>
                     <Input
                         id="referenceNo"
                         value={formData.referenceNo || ''}
                         onChange={(e) => setFormData({ ...formData, referenceNo: e.target.value })}
-                        placeholder={t('finance.voucherNoPlaceholder') || 'Voucher/Bill number...'}
+                        placeholder={t('finance.voucherNoPlaceholder')}
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="status">{t('events.status') || 'Status'}</Label>
+                    <Label htmlFor="status">{t('common.status')}</Label>
                     <Select
                         value={formData.status}
                         onValueChange={(value: 'pending' | 'approved' | 'rejected') => setFormData({ ...formData, status: value })}
@@ -401,25 +401,25 @@ export default function ExpenseEntries() {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="approved">{t('status.approved') || 'Approved'}</SelectItem>
-                            <SelectItem value="pending">{t('finance.pending') || 'Pending'}</SelectItem>
-                            <SelectItem value="rejected">{t('finance.rejected') || 'Rejected'}</SelectItem>
+                            <SelectItem value="approved">{t('finance.approved')}</SelectItem>
+                            <SelectItem value="pending">{t('finance.pending')}</SelectItem>
+                            <SelectItem value="rejected">{t('finance.rejected')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="description">{t('events.description') || 'Description'}</Label>
+                <Label htmlFor="description">{t('common.description')}</Label>
                 <Textarea
                     id="description"
                     value={formData.description || ''}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder={t('finance.expenseDescriptionPlaceholder') || 'e.g., Monthly electricity bill'}
+                    placeholder={t('finance.expenseDescriptionPlaceholder')}
                 />
             </div>
             <DialogFooter>
                 <Button type="submit" disabled={loading || !formData.accountId || !formData.expenseCategoryId || formData.amount <= 0}>
-                    {editEntry ? t('events.update') || 'Update' : t('events.create') || 'Create'}
+                    {editEntry ? t('common.update') : t('common.create')}
                 </Button>
             </DialogFooter>
         </form>
@@ -428,11 +428,11 @@ export default function ExpenseEntries() {
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
             <PageHeader
-                title={t('finance.expenseEntries') || 'Expense Entries'}
-                description={t('finance.expenseEntriesDescription') || 'Record and manage expenses'}
+                title={t('finance.expenseEntries')}
+                description={t('finance.expenseEntriesDescription')}
                 icon={<TrendingDown className="h-5 w-5" />}
                 primaryAction={{
-                    label: t('finance.addExpense') || 'Add Expense',
+                    label: t('finance.addExpense'),
                     onClick: () => setIsCreateOpen(true),
                     icon: <Plus className="h-4 w-4" />,
                 }}
@@ -440,18 +440,18 @@ export default function ExpenseEntries() {
                     <ReportExportButtons
                         data={filteredEntries}
                         columns={[
-                            { key: 'date', label: t('events.date'), align: 'left' },
+                            { key: 'date', label: t('common.date'), align: 'left' },
                             { key: 'categoryName', label: t('assets.category'), align: 'left' },
                             { key: 'accountName', label: t('finance.account'), align: 'left' },
                             { key: 'paidTo', label: t('finance.paidTo'), align: 'left' },
                             { key: 'projectName', label: t('finance.project'), align: 'left' },
                             { key: 'amount', label: t('finance.amount'), align: 'right' },
                             { key: 'paymentMethod', label: t('finance.paymentMethod'), align: 'left' },
-                            { key: 'status', label: t('events.status'), align: 'center' },
+                            { key: 'status', label: t('common.status'), align: 'center' },
                             { key: 'referenceNo', label: t('finance.referenceNo'), align: 'left' },
                         ]}
                         reportKey="expense_entries"
-                        title={t('finance.expenseEntries') || 'Expense Entries'}
+                        title={t('finance.expenseEntries')}
                         transformData={(data) =>
                             data.map((entry) => ({
                                 date: formatDate(entry.date),
@@ -467,8 +467,8 @@ export default function ExpenseEntries() {
                         }
                         buildFiltersSummary={() => {
                             const parts: string[] = [];
-                            if (dateFrom) parts.push(`${t('events.from')}: ${dateFrom}`);
-                            if (dateTo) parts.push(`${t('events.to')}: ${dateTo}`);
+                            if (dateFrom) parts.push(`${t('common.from')}: ${dateFrom}`);
+                            if (dateTo) parts.push(`${t('common.to')}: ${dateTo}`);
                             if (filterCategory !== 'all') {
                                 const cat = categories?.find(c => c.id === filterCategory);
                                 if (cat) parts.push(`${t('assets.category')}: ${cat.name}`);
@@ -477,8 +477,8 @@ export default function ExpenseEntries() {
                                 const acc = accounts?.find(a => a.id === filterAccount);
                                 if (acc) parts.push(`${t('finance.account')}: ${acc.name}`);
                             }
-                            if (filterStatus !== 'all') parts.push(`${t('events.status')}: ${filterStatus}`);
-                            if (searchTerm) parts.push(`${t('events.search')}: ${searchTerm}`);
+                            if (filterStatus !== 'all') parts.push(`${t('common.status')}: ${filterStatus}`);
+                            if (searchTerm) parts.push(`${t('common.search')}: ${searchTerm}`);
                             return parts.join(' | ');
                         }}
                         templateType="expense_entries"
@@ -490,25 +490,25 @@ export default function ExpenseEntries() {
             <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>{t('finance.addExpense') || 'Add Expense'}</DialogTitle>
+                        <DialogTitle>{t('finance.addExpense')}</DialogTitle>
                         <DialogDescription>
-                            {t('finance.addExpenseDescription') || 'Record a new expense entry'}
+                            {t('finance.addExpenseDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     {renderEntryForm(handleCreate, createEntry.isPending)}
                 </DialogContent>
             </Dialog>
 
-            <FilterPanel title={t('events.filters') || 'Search & Filter'}>
+            <FilterPanel title={t('common.filters')}>
                 <div className="flex flex-wrap gap-4 items-end">
                     <div className="flex-1 min-w-[200px]">
                         <Label className="text-xs text-muted-foreground mb-1 block">
-                            {t('events.search') || 'Search'}
+                            {t('common.search')}
                         </Label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder={t('events.search') || 'Search...'}
+                                placeholder={t('common.search')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10"
@@ -518,28 +518,28 @@ export default function ExpenseEntries() {
                     <div className="min-w-[150px]">
                         <Label className="text-xs text-muted-foreground mb-1 block">
                             <Calendar className="inline h-3 w-3 mr-1" />
-                            {t('events.from') || 'From'}
+                            {t('common.from')}
                         </Label>
                         <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
                     </div>
                     <div className="min-w-[150px]">
                         <Label className="text-xs text-muted-foreground mb-1 block">
                             <Calendar className="inline h-3 w-3 mr-1" />
-                            {t('events.to') || 'To'}
+                            {t('common.to')}
                         </Label>
                         <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
                     </div>
                     <div className="min-w-[140px]">
                         <Label className="text-xs text-muted-foreground mb-1 block">
                             <Filter className="inline h-3 w-3 mr-1" />
-                            {t('assets.category') || 'Category'}
+                            {t('assets.category')}
                         </Label>
                         <Select value={filterCategory} onValueChange={setFilterCategory}>
                             <SelectTrigger>
-                                <SelectValue placeholder={t('subjects.all') || 'All'} />
+                                <SelectValue placeholder={t('common.all')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                                <SelectItem value="all">{t('common.all')}</SelectItem>
                                 {categories?.map((category) => (
                                     <SelectItem key={category.id} value={category.id}>
                                         {category.name}
@@ -550,14 +550,14 @@ export default function ExpenseEntries() {
                     </div>
                     <div className="min-w-[140px]">
                         <Label className="text-xs text-muted-foreground mb-1 block">
-                            {t('finance.account') || 'Account'}
+                            {t('finance.account')}
                         </Label>
                         <Select value={filterAccount} onValueChange={setFilterAccount}>
                             <SelectTrigger>
-                                <SelectValue placeholder={t('subjects.all') || 'All'} />
+                                <SelectValue placeholder={t('common.all')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                                <SelectItem value="all">{t('common.all')}</SelectItem>
                                 {accounts?.map((account) => (
                                     <SelectItem key={account.id} value={account.id}>
                                         {account.name}
@@ -568,24 +568,24 @@ export default function ExpenseEntries() {
                     </div>
                     <div className="min-w-[120px]">
                         <Label className="text-xs text-muted-foreground mb-1 block">
-                            {t('events.status') || 'Status'}
+                            {t('common.status')}
                         </Label>
                         <Select value={filterStatus} onValueChange={setFilterStatus}>
                             <SelectTrigger>
-                                <SelectValue placeholder={t('subjects.all') || 'All'} />
+                                <SelectValue placeholder={t('common.all')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
-                                <SelectItem value="approved">{t('status.approved') || 'Approved'}</SelectItem>
-                                <SelectItem value="pending">{t('finance.pending') || 'Pending'}</SelectItem>
-                                <SelectItem value="rejected">{t('finance.rejected') || 'Rejected'}</SelectItem>
+                                <SelectItem value="all">{t('common.all')}</SelectItem>
+                                <SelectItem value="approved">{t('finance.approved')}</SelectItem>
+                                <SelectItem value="pending">{t('finance.pending')}</SelectItem>
+                                <SelectItem value="rejected">{t('finance.rejected')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     {hasActiveFilters && (
                         <Button variant="outline" size="sm" onClick={clearFilters}>
                             <X className="h-4 w-4 mr-1" />
-                            {t('events.clearFilters') || 'Clear'}
+                            {t('common.clearFilters')}
                         </Button>
                     )}
                 </div>
@@ -597,14 +597,14 @@ export default function ExpenseEntries() {
                     <div className="flex items-center justify-between">
                         <CardTitle className="flex items-center gap-2">
                             <TrendingDown className="h-5 w-5 text-red-500" />
-                            {t('finance.totalExpenses') || 'Total Expenses'}
+                            {t('finance.totalExpenses')}
                         </CardTitle>
                         <span className="text-2xl font-bold text-red-600">
                             {formatCurrency(totalExpense)}
                         </span>
                     </div>
                     <CardDescription>
-                        {filteredEntries.length} {t('finance.entriesFound') || 'entries found'} ({t('finance.approvedOnly') || 'approved only'})
+                        {filteredEntries.length} {t('finance.entriesFound')} ({t('finance.approvedOnly')})
                     </CardDescription>
                 </CardHeader>
             </Card>
@@ -615,14 +615,14 @@ export default function ExpenseEntries() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>{t('events.date') || 'Date'}</TableHead>
-                                <TableHead>{t('assets.category') || 'Category'}</TableHead>
-                                <TableHead>{t('finance.account') || 'Account'}</TableHead>
-                                <TableHead>{t('finance.paidTo') || 'Paid To'}</TableHead>
-                                <TableHead>{t('finance.project') || 'Project'}</TableHead>
-                                <TableHead>{t('events.status') || 'Status'}</TableHead>
-                                <TableHead className="text-right">{t('finance.amount') || 'Amount'}</TableHead>
-                                <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
+                                <TableHead>{t('common.date')}</TableHead>
+                                <TableHead>{t('assets.category')}</TableHead>
+                                <TableHead>{t('finance.account')}</TableHead>
+                                <TableHead>{t('finance.paidTo')}</TableHead>
+                                <TableHead>{t('finance.project')}</TableHead>
+                                <TableHead>{t('common.status')}</TableHead>
+                                <TableHead className="text-right">{t('finance.amount')}</TableHead>
+                                <TableHead className="text-right">{t('common.actions')}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -697,7 +697,7 @@ export default function ExpenseEntries() {
                             {filteredEntries.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                                        {t('finance.noExpenses') || 'No expense entries found'}
+                                        {t('finance.noExpenses')}
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -710,9 +710,9 @@ export default function ExpenseEntries() {
             <Dialog open={!!editEntry} onOpenChange={(open) => { if (!open) { setEditEntry(null); resetForm(); } }}>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>{t('finance.editExpense') || 'Edit Expense'}</DialogTitle>
+                        <DialogTitle>{t('finance.editExpense')}</DialogTitle>
                         <DialogDescription>
-                            {t('finance.editExpenseDescription') || 'Update expense entry details'}
+                            {t('finance.editExpenseDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     {renderEntryForm(handleUpdate, updateEntry.isPending)}
@@ -723,15 +723,15 @@ export default function ExpenseEntries() {
             <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('events.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('common.confirmDelete')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            {t('finance.deleteEntryWarning') || 'Are you sure you want to delete this entry? This action cannot be undone.'}
+                            {t('finance.deleteEntryWarning')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                            {t('events.delete') || 'Delete'}
+                            {t('common.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -743,46 +743,46 @@ export default function ExpenseEntries() {
                     {viewingEntry && (
                         <>
                             <SheetHeader>
-                                <SheetTitle>{t('finance.entryDetails') || 'Expense Entry Details'}</SheetTitle>
+                                <SheetTitle>{t('finance.entryDetails')}</SheetTitle>
                                 <SheetDescription>
-                                    {t('finance.viewEntryDetails') || 'View detailed information about this expense entry'}
+                                    {t('finance.viewEntryDetails')}
                                 </SheetDescription>
                             </SheetHeader>
 
                             <div className="mt-6 space-y-6">
                                 {/* Entry Information */}
                                 <div className="space-y-4">
-                                    <h3 className="text-lg font-semibold">{t('finance.entryInformation') || 'Entry Information'}</h3>
+                                    <h3 className="text-lg font-semibold">{t('finance.entryInformation')}</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <p className="text-sm font-medium text-muted-foreground">{t('finance.amount') || 'Amount'}</p>
+                                            <p className="text-sm font-medium text-muted-foreground">{t('finance.amount')}</p>
                                             <p className="text-lg font-semibold text-red-600">
                                                 -{formatCurrency(viewingEntry.amount)}
                                             </p>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-muted-foreground">{t('events.date') || 'Date'}</p>
+                                            <p className="text-sm font-medium text-muted-foreground">{t('common.date')}</p>
                                             <p className="text-sm font-medium">{formatDate(viewingEntry.date)}</p>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-muted-foreground">{t('events.status') || 'Status'}</p>
+                                            <p className="text-sm font-medium text-muted-foreground">{t('common.status')}</p>
                                             <div className="mt-1">{getStatusBadge(viewingEntry.status)}</div>
                                         </div>
                                         {viewingEntry.referenceNo && (
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">{t('finance.referenceNo') || 'Reference No.'}</p>
+                                                <p className="text-sm font-medium text-muted-foreground">{t('finance.referenceNo')}</p>
                                                 <p className="text-sm font-medium">{viewingEntry.referenceNo}</p>
                                             </div>
                                         )}
                                         <div>
-                                            <p className="text-sm font-medium text-muted-foreground">{t('finance.paymentMethod') || 'Payment Method'}</p>
+                                            <p className="text-sm font-medium text-muted-foreground">{t('finance.paymentMethod')}</p>
                                             <Badge variant="outline" className="mt-1">
                                                 {viewingEntry.paymentMethod.replace('_', ' ').toUpperCase()}
                                             </Badge>
                                         </div>
                                         {viewingEntry.paidTo && (
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">{t('finance.paidTo') || 'Paid To'}</p>
+                                                <p className="text-sm font-medium text-muted-foreground">{t('finance.paidTo')}</p>
                                                 <Badge variant="outline" className="bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400 mt-1">
                                                     {viewingEntry.paidTo}
                                                 </Badge>
@@ -791,7 +791,7 @@ export default function ExpenseEntries() {
                                     </div>
                                     {viewingEntry.description && (
                                         <div>
-                                            <p className="text-sm font-medium text-muted-foreground">{t('events.description') || 'Description'}</p>
+                                            <p className="text-sm font-medium text-muted-foreground">{t('common.description')}</p>
                                             <p className="text-sm mt-1">{viewingEntry.description}</p>
                                         </div>
                                     )}
@@ -803,16 +803,16 @@ export default function ExpenseEntries() {
                                 {viewingEntry.account && (
                                     <>
                                         <div className="space-y-4">
-                                            <h3 className="text-lg font-semibold">{t('finance.accountInformation') || 'Account Information'}</h3>
+                                            <h3 className="text-lg font-semibold">{t('finance.accountInformation')}</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
-                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.accountName') || 'Account Name'}</p>
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.accountName')}</p>
                                                     <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 mt-1">
                                                         {viewingEntry.account.name}
                                                     </Badge>
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.accountType') || 'Account Type'}</p>
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.accountType')}</p>
                                                     <Badge 
                                                         variant="outline"
                                                         className={
@@ -821,18 +821,18 @@ export default function ExpenseEntries() {
                                                                 : 'bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400 mt-1'
                                                         }
                                                     >
-                                                        {viewingEntry.account.type === 'cash' ? t('finance.cash') || 'Cash' : t('finance.fund') || 'Fund'}
+                                                        {viewingEntry.account.type === 'cash' ? t('finance.cash') : t('finance.fund')}
                                                     </Badge>
                                                 </div>
                                                 <div className="col-span-2">
-                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.currentBalance') || 'Current Balance'}</p>
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.currentBalance')}</p>
                                                     <p className="text-2xl font-bold text-emerald-600 mt-1">
                                                         {formatCurrency(viewingEntry.account.currentBalance)}
                                                     </p>
                                                 </div>
                                                 {viewingEntry.account.code && (
                                                     <div>
-                                                        <p className="text-sm font-medium text-muted-foreground">{t('finance.accountCode') || 'Account Code'}</p>
+                                                        <p className="text-sm font-medium text-muted-foreground">{t('finance.accountCode')}</p>
                                                         <p className="text-sm font-medium">{viewingEntry.account.code}</p>
                                                     </div>
                                                 )}
@@ -846,23 +846,23 @@ export default function ExpenseEntries() {
                                 {viewingEntry.expenseCategory && (
                                     <>
                                         <div className="space-y-4">
-                                            <h3 className="text-lg font-semibold">{t('finance.categoryInformation') || 'Category Information'}</h3>
+                                            <h3 className="text-lg font-semibold">{t('finance.categoryInformation')}</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
-                                                    <p className="text-sm font-medium text-muted-foreground">{t('assets.category') || 'Category'}</p>
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('assets.category')}</p>
                                                     <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 mt-1">
                                                         {viewingEntry.expenseCategory.name}
                                                     </Badge>
                                                 </div>
                                                 {viewingEntry.expenseCategory.code && (
                                                     <div>
-                                                        <p className="text-sm font-medium text-muted-foreground">{t('assets.categoryCode') || 'Category Code'}</p>
+                                                        <p className="text-sm font-medium text-muted-foreground">{t('assets.categoryCode')}</p>
                                                         <p className="text-sm font-medium">{viewingEntry.expenseCategory.code}</p>
                                                     </div>
                                                 )}
                                                 {viewingEntry.expenseCategory.description && (
                                                     <div className="col-span-2">
-                                                        <p className="text-sm font-medium text-muted-foreground">{t('events.description') || 'Description'}</p>
+                                                        <p className="text-sm font-medium text-muted-foreground">{t('common.description')}</p>
                                                         <p className="text-sm mt-1">{viewingEntry.expenseCategory.description}</p>
                                                     </div>
                                                 )}
@@ -876,29 +876,29 @@ export default function ExpenseEntries() {
                                 {viewingEntry.project && (
                                     <>
                                         <div className="space-y-4">
-                                            <h3 className="text-lg font-semibold">{t('finance.projectInformation') || 'Project Information'}</h3>
+                                            <h3 className="text-lg font-semibold">{t('finance.projectInformation')}</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
-                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.project') || 'Project'}</p>
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.project')}</p>
                                                     <Badge variant="outline" className="bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400 mt-1">
                                                         {viewingEntry.project.name}
                                                     </Badge>
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-muted-foreground">{t('events.status') || 'Status'}</p>
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('common.status')}</p>
                                                     <Badge variant="outline" className="mt-1 capitalize">
                                                         {viewingEntry.project.status}
                                                     </Badge>
                                                 </div>
                                                 {viewingEntry.project.budgetAmount && (
                                                     <div>
-                                                        <p className="text-sm font-medium text-muted-foreground">{t('finance.budgetAmount') || 'Budget Amount'}</p>
+                                                        <p className="text-sm font-medium text-muted-foreground">{t('finance.budgetAmount')}</p>
                                                         <p className="text-sm font-medium">{formatCurrency(viewingEntry.project.budgetAmount)}</p>
                                                     </div>
                                                 )}
                                                 {viewingEntry.project.balance !== undefined && (
                                                     <div>
-                                                        <p className="text-sm font-medium text-muted-foreground">{t('finance.projectBalance') || 'Project Balance'}</p>
+                                                        <p className="text-sm font-medium text-muted-foreground">{t('finance.projectBalance')}</p>
                                                         <p className="text-sm font-medium">{formatCurrency(viewingEntry.project.balance)}</p>
                                                     </div>
                                                 )}
@@ -912,17 +912,17 @@ export default function ExpenseEntries() {
                                 {viewingEntry.currency && (
                                     <>
                                         <div className="space-y-4">
-                                            <h3 className="text-lg font-semibold">{t('finance.currencyInformation') || 'Currency Information'}</h3>
+                                            <h3 className="text-lg font-semibold">{t('finance.currencyInformation')}</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
-                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.currency') || 'Currency'}</p>
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.currency')}</p>
                                                     <Badge variant="outline" className="bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400 mt-1">
-                                                        {viewingEntry.currency.code || 'N/A'}
+                                                        {viewingEntry.currency.code || t('common.notAvailable')}
                                                     </Badge>
                                                 </div>
                                                 {viewingEntry.currency.symbol && (
                                                     <div>
-                                                        <p className="text-sm font-medium text-muted-foreground">{t('finance.currencySymbol') || 'Symbol'}</p>
+                                                        <p className="text-sm font-medium text-muted-foreground">{t('finance.currencySymbol')}</p>
                                                         <p className="text-sm font-medium">{viewingEntry.currency.symbol}</p>
                                                     </div>
                                                 )}
@@ -934,17 +934,17 @@ export default function ExpenseEntries() {
 
                                 {/* Metadata */}
                                 <div className="space-y-4">
-                                    <h3 className="text-lg font-semibold">{t('events.metadata') || 'Metadata'}</h3>
+                                    <h3 className="text-lg font-semibold">{t('common.metadata')}</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {viewingEntry.createdAt && (
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">{t('events.createdAt') || 'Created At'}</p>
+                                                <p className="text-sm font-medium text-muted-foreground">{t('common.createdAt')}</p>
                                                 <p className="text-sm">{formatDate(viewingEntry.createdAt)}</p>
                                             </div>
                                         )}
                                         {viewingEntry.updatedAt && (
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">{t('events.updatedAt') || 'Updated At'}</p>
+                                                <p className="text-sm font-medium text-muted-foreground">{t('common.updatedAt')}</p>
                                                 <p className="text-sm">{formatDate(viewingEntry.updatedAt)}</p>
                                             </div>
                                         )}

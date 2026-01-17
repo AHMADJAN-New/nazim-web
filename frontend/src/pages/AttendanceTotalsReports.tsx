@@ -64,12 +64,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const attendanceStatusMeta = {
-    present: { label: 'Present', icon: CheckCircle2, tone: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950' },
-    absent: { label: 'Absent', icon: XCircle, tone: 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950' },
-    late: { label: 'Late', icon: Clock, tone: 'text-amber-600 bg-amber-50 dark:text-amber-300 dark:bg-amber-950' },
-    excused: { label: 'Excused', icon: AlertTriangle, tone: 'text-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-950' },
-    sick: { label: 'Sick', icon: Heart, tone: 'text-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-950' },
-    leave: { label: 'Leave', icon: Calendar, tone: 'text-orange-600 bg-orange-50 dark:text-orange-300 dark:bg-orange-950' },
+    present: { labelKey: 'admissions.active', icon: CheckCircle2, tone: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950' },
+    absent: { labelKey: 'admissions.absent', icon: XCircle, tone: 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950' },
+    late: { labelKey: 'admissions.late', icon: Clock, tone: 'text-amber-600 bg-amber-50 dark:text-amber-300 dark:bg-amber-950' },
+    excused: { labelKey: 'admissions.excused', icon: AlertTriangle, tone: 'text-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-950' },
+    sick: { labelKey: 'admissions.sick', icon: Heart, tone: 'text-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-950' },
+    leave: { labelKey: 'admissions.leave', icon: Calendar, tone: 'text-orange-600 bg-orange-50 dark:text-orange-300 dark:bg-orange-950' },
 } as const;
 
 const SummaryCard = ({
@@ -577,10 +577,10 @@ export default function AttendanceTotalsReports() {
                                     <div key={key} className="rounded-lg border p-3 space-y-1">
                                         <div className={`inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-medium ${meta.tone}`}>
                                             <Icon className="h-3.5 w-3.5" />
-                                            {meta.label}
+                                            {t(meta.labelKey)}
                                         </div>
                                         <div className="text-2xl font-semibold">{total}</div>
-                                        <p className="text-xs text-muted-foreground">{t('attendanceTotalsReport.records') || 'records'}</p>
+                                        <p className="text-xs text-muted-foreground">{t('attendanceTotalsReport.records')}</p>
                                     </div>
                                 );
                             })}
@@ -592,11 +592,11 @@ export default function AttendanceTotalsReports() {
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="class" className="flex items-center gap-2">
                                 <GraduationCap className="h-4 w-4" />
-                                Class Sessions
+                                {t('attendanceTotalsReport.classWise')}
                             </TabsTrigger>
                             <TabsTrigger value="room" className="flex items-center gap-2">
                                 <Building2 className="h-4 w-4" />
-                                Room Sessions
+                                {t('attendanceTotalsReport.roomWise')}
                             </TabsTrigger>
                         </TabsList>
 

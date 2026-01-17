@@ -4912,6 +4912,9 @@ export const TRANSLATION_KEYS = [
     toggleSidebar: string;
     breadcrumb: string;
     previousSlide: string;
+    notAvailable: string;
+    downloadSuccess: string;
+    downloadFailed: string;
     enterCurrentPassword: string;
     enterNewPassword: string;
     currentPassword: string;
@@ -5218,6 +5221,12 @@ export const TRANSLATION_KEYS = [
     archiveSearchDescription: string;
     searchPlaceholder: string;
     documents: string;
+    failedToLoadPreview: string;
+    documentDeleted: string;
+    noSubject: string;
+    noTemplateError: string;
+    missingTemplateData: string;
+    failedToDownloadPdf: string;
     tableHeaders: {
       number: string;
       subject: string;
@@ -8388,7 +8397,13 @@ export const TRANSLATION_KEYS = [
     assign: string;
     assignedAt: string;
     assignedCards: string;
-    assignment: string;
+    assignment: {
+      title: string;
+      description: string;
+      assignTemplate: string;
+      confirmAssign: string;
+      assignToStudents: string;
+    };
     auto: string;
     autoBasedOnGlobal: string;
     backPreview: string;
@@ -9923,6 +9938,20 @@ export const TRANSLATION_KEYS = [
     paidToPlaceholder: string;
     voucherNoPlaceholder: string;
     expenseDescriptionPlaceholder: string;
+    entryDetails: string;
+    viewEntryDetails: string;
+    entryInformation: string;
+    accountInformation: string;
+    accountName: string;
+    accountType: string;
+    accountCode: string;
+    accountCurrency: string;
+    categoryInformation: string;
+    projectInformation: string;
+    budgetAmount: string;
+    projectBalance: string;
+    currencyInformation: string;
+    currencySymbol: string;
     filterByStatus: string;
     approved: string;
     pending: string;
@@ -10039,6 +10068,7 @@ export const TRANSLATION_KEYS = [
     accountName: string;
     accountType: string;
     accountCode: string;
+    accountCurrency: string;
     categoryInformation: string;
     categoryCode: string;
     projectInformation: string;
@@ -10873,6 +10903,8 @@ export const TRANSLATION_KEYS = [
       hard: string;
     };
     marks: string;
+    templateFiles: string;
+    templateFilesDescription: string;
     questionText: string;
     questionTextPlaceholder: string;
     rtl: string;

@@ -44,12 +44,18 @@ import { PaperGenerator } from '@/components/examPapers/PaperGenerator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useExamPaperTemplateFiles, type ExamPaperTemplateFile } from '@/hooks/useExamPaperTemplateFiles';
 
-const languageConfig: Record<ExamPaperLanguage, { label: string; isRtl: boolean }> = {
-  en: { label: 'English', isRtl: false },
-  ps: { label: 'Pashto', isRtl: true },
-  fa: { label: 'Farsi', isRtl: true },
-  ar: { label: 'Arabic', isRtl: true },
-};
+    const languageConfig: Record<ExamPaperLanguage, { label: string; isRtl: boolean }> = {
+    en: { label: t('common.english'), isRtl: false },
+    ps: { label: t('common.pashto'), isRtl: true },
+    fa: { label: t('common.farsi'), isRtl: true },
+    ar: { label: t('common.arabic'), isRtl: true },
+  };
+
+  const statusLabels = {
+    draft: t('common.draft'),
+    active: t('common.active'),
+    inactive: t('common.inactive'),
+  };
 
 export default function ExamPaperTemplates() {
   const { t } = useLanguage();
@@ -136,6 +142,13 @@ export default function ExamPaperTemplates() {
     form.setValue('templateFileId', templateFile.id);
     form.setValue('language', templateFile.language);
     setIsTemplateFilesDialogOpen(false);
+  };
+
+  const languageLabelConfig: Record<ExamPaperLanguage, string> = {
+    en: t('common.english'),
+    ps: t('common.pashto'),
+    fa: t('common.farsi'),
+    ar: t('common.arabic'),
   };
 
   // Watch form values for cascading
@@ -704,9 +717,9 @@ export default function ExamPaperTemplates() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">{t('nav.examPapers') || 'Exam Papers'}</h1>
+          <h1 className="text-2xl font-semibold">{t('nav.examPapers')}</h1>
           <p className="text-sm text-muted-foreground">
-            {t('events.description') || 'Create and manage exam papers'}
+            {t('events.description')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -714,43 +727,43 @@ export default function ExamPaperTemplates() {
             <ReportExportButtons
               data={filteredTemplates}
               columns={[
-                { key: 'title', label: t('examPapers.templateTitle') || 'Title' },
-                { key: 'subject', label: t('examPapers.subject') || 'Subject' },
-                { key: 'exam', label: t('examPapers.exam') || 'Exam' },
-                { key: 'className', label: t('search.class') || 'Class' },
-                { key: 'language', label: t('examPapers.language') || 'Language' },
-                { key: 'duration', label: t('examPapers.duration') || 'Duration' },
-                { key: 'questionsCount', label: t('examPapers.questions') || 'Questions' },
-                { key: 'totalMarks', label: t('examPapers.marks') || 'Total Marks' },
-                { key: 'status', label: t('events.status') || 'Status' },
+                { key: 'title', label: t('examPapers.templateTitle') },
+                { key: 'subject', label: t('examPapers.subject') },
+                { key: 'exam', label: t('examPapers.exam') },
+                { key: 'className', label: t('common.class') },
+                { key: 'language', label: t('examPapers.language') },
+                { key: 'duration', label: t('examPapers.duration') },
+                { key: 'questionsCount', label: t('examPapers.questions') },
+                { key: 'totalMarks', label: t('examPapers.marks') },
+                { key: 'status', label: t('common.status') },
               ]}
               reportKey="exam_paper_templates"
-              title={t('nav.examPapers') || 'Exam Papers'}
+              title={t('nav.examPapers')}
               transformData={(data) => data.map((template: ExamPaperTemplate) => ({
                 title: template.title || '-',
                 subject: getSubjectName(template.subjectId),
-                exam: template.examId ? getExamName(template.examId) || '-' : (t('examPapers.generic') || 'Generic'),
+                exam: template.examId ? getExamName(template.examId) || '-' : t('examPapers.generic'),
                 className: template.classAcademicYear?.class?.name || '-',
                 language: languageConfig[template.language]?.label || template.language,
                 duration: `${template.durationMinutes} min`,
                 questionsCount: template.itemsCount ?? template.items?.length ?? 0,
                 totalMarks: template.computedTotalMarks || template.totalMarks || '-',
-                status: template.isActive ? (t('events.active') || 'Active') : (t('events.inactive') || 'Inactive'),
+                status: template.isActive ? t('common.active') : t('common.inactive'),
               }))}
               buildFiltersSummary={() => {
                 const parts: string[] = [];
                 if (selectedSchoolId) {
                   const school = schools?.find(s => s.id === selectedSchoolId);
-                  if (school) parts.push(`School: ${school.schoolName}`);
+                  if (school) parts.push(`${t('common.school')}: ${school.schoolName}`);
                 }
                 if (selectedSubjectId) {
-                  parts.push(`Subject: ${getSubjectName(selectedSubjectId)}`);
+                  parts.push(`${t('examPapers.subject')}: ${getSubjectName(selectedSubjectId)}`);
                 }
                 if (selectedExamId) {
                   const exam = exams?.find(e => e.id === selectedExamId);
-                  if (exam) parts.push(`Exam: ${exam.name}`);
+                  if (exam) parts.push(`${t('examPapers.exam')}: ${exam.name}`);
                 }
-                parts.push(`Total: ${filteredTemplates.length} paper(s)`);
+                parts.push(`${t('common.total')}: ${filteredTemplates.length} ${t('examPapers.totalPapers').toLowerCase()}`);
                 return parts.join(' | ');
               }}
               schoolId={profile?.default_school_id}
@@ -761,7 +774,7 @@ export default function ExamPaperTemplates() {
           {hasCreate && activeTab === 'templates' && (
             <Button onClick={openCreateDialog}>
               <Plus className="h-4 w-4 mr-2" />
-              {t('events.create') || 'Create Template'}
+              {t('events.create')}
             </Button>
           )}
         </div>
@@ -770,8 +783,8 @@ export default function ExamPaperTemplates() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="templates">{t('nav.examPapers') || 'Exam Papers'}</TabsTrigger>
-          <TabsTrigger value="template-files">{t('examPapers.templateFiles') || 'Template Files'}</TabsTrigger>
+          <TabsTrigger value="templates">{t('nav.examPapers')}</TabsTrigger>
+          <TabsTrigger value="template-files">{t('examPapers.templateFiles')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="templates" className="space-y-6">
@@ -782,12 +795,12 @@ export default function ExamPaperTemplates() {
                 {/* Search */}
                 <div className="relative md:col-span-1">
                   <Label className="text-xs font-medium text-muted-foreground mb-2 block">
-                    {t('events.search') || 'Search'}
+                    {t('common.search')}
                   </Label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder={t('assets.searchPlaceholder') || 'Search papers...'}
+                      placeholder={t('common.search')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-9"
@@ -798,14 +811,14 @@ export default function ExamPaperTemplates() {
             {/* School Filter */}
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground">
-                {t('questionBank.filterSchool') || 'School'}
+                {t('common.school')}
               </Label>
               <Select value={selectedSchoolId || 'all'} onValueChange={(val) => setSelectedSchoolId(val === 'all' ? undefined : val)}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('questionBank.filterSchool') || 'School'} />
+                  <SelectValue placeholder={t('common.school')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('subjects.all') || 'All Schools'}</SelectItem>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
                   {(schools || []).map(school => (
                     <SelectItem key={school.id} value={school.id}>
                       {school.schoolName}
@@ -818,14 +831,14 @@ export default function ExamPaperTemplates() {
             {/* Subject Filter */}
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground">
-                {t('questionBank.filterSubject') || 'Subject'}
+                {t('examPapers.subject')}
               </Label>
               <Select value={selectedSubjectId || 'all'} onValueChange={(val) => setSelectedSubjectId(val === 'all' ? undefined : val)}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('questionBank.filterSubject') || 'Subject'} />
+                  <SelectValue placeholder={t('examPapers.subject')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('subjects.all') || 'All Subjects'}</SelectItem>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
                   {(subjects || []).map(subject => (
                     <SelectItem key={subject.id} value={subject.id}>
                       {subject.name}
@@ -838,14 +851,14 @@ export default function ExamPaperTemplates() {
             {/* Exam Filter */}
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground">
-                {t('examPapers.filterExam') || 'Exam'}
+                {t('examPapers.exam')}
               </Label>
               <Select value={selectedExamId || 'all'} onValueChange={(val) => setSelectedExamId(val === 'all' ? undefined : val)}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('examPapers.filterExam') || 'Exam'} />
+                  <SelectValue placeholder={t('examPapers.exam')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('subjects.all') || 'All Exams'}</SelectItem>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
                   {(exams || []).map(exam => (
                     <SelectItem key={exam.id} value={exam.id}>
                       {exam.name}
@@ -861,11 +874,11 @@ export default function ExamPaperTemplates() {
           {/* Templates Table */}
           <Card>
         <CardHeader>
-          <CardTitle>{t('examPapers.papersList') || 'Exam Papers'}</CardTitle>
+          <CardTitle>{t('examPapers.papersList')}</CardTitle>
           <CardDescription>
             {filteredTemplates.length 
-              ? t('examPapers.totalPapers', { count: filteredTemplates.length }) || `${filteredTemplates.length} paper(s) found`
-              : t('examPapers.noPapers') || 'No papers found'}
+              ? t('examPapers.totalPapers', { count: filteredTemplates.length })
+              : t('examPapers.noPapers')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -878,22 +891,22 @@ export default function ExamPaperTemplates() {
           ) : filteredTemplates.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-sm text-muted-foreground">
-                {t('examPapers.noPapersFound') || 'No papers found. Create your first exam paper to get started.'}
+                {t('examPapers.noPapersFound')}
               </p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[200px]">{t('examPapers.templateTitle') || 'Title'}</TableHead>
-                  <TableHead>{t('examPapers.subject') || 'Subject'}</TableHead>
-                  <TableHead>{t('examPapers.exam') || 'Exam'}</TableHead>
-                  <TableHead>{t('examPapers.language') || 'Language'}</TableHead>
-                  <TableHead>{t('examPapers.duration') || 'Duration'}</TableHead>
-                  <TableHead>{t('examPapers.questions') || 'Questions'}</TableHead>
-                  <TableHead>{t('examPapers.marks') || 'Marks'}</TableHead>
-                  <TableHead>{t('events.status') || 'Status'}</TableHead>
-                  <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
+                  <TableHead className="min-w-[200px]">{t('examPapers.templateTitle')}</TableHead>
+                  <TableHead>{t('examPapers.subject')}</TableHead>
+                  <TableHead>{t('examPapers.exam')}</TableHead>
+                  <TableHead>{t('examPapers.language')}</TableHead>
+                  <TableHead>{t('examPapers.duration')}</TableHead>
+                  <TableHead>{t('examPapers.questions')}</TableHead>
+                  <TableHead>{t('examPapers.marks')}</TableHead>
+                  <TableHead>{t('common.status')}</TableHead>
+                  <TableHead className="text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -904,7 +917,7 @@ export default function ExamPaperTemplates() {
                         {template.title}
                         {template.isDefaultForExamSubject && (
                           <Badge variant="default" className="text-xs">
-                            {t('events.default') || 'Default'}
+                            {t('common.default')}
                           </Badge>
                         )}
                       </div>
@@ -917,7 +930,7 @@ export default function ExamPaperTemplates() {
                         <Badge variant="outline">{getExamName(template.examId)}</Badge>
                       ) : (
                         <span className="text-muted-foreground text-sm">
-                          {t('examPapers.generic') || 'Generic'}
+                          {t('examPapers.generic')}
                         </span>
                       )}
                     </TableCell>
@@ -931,71 +944,73 @@ export default function ExamPaperTemplates() {
                     </TableCell>
                     <TableCell>
                       {template.isActive ? (
-                        <Badge variant="default">{t('events.active') || 'Active'}</Badge>
+                        <Badge variant="default">{t('common.active')}</Badge>
                       ) : (
-                        <Badge variant="outline">{t('events.inactive') || 'Inactive'}</Badge>
+                        <Badge variant="outline">{t('common.inactive')}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>{t('events.actions') || 'Actions'}</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          {hasRead && (
-                            <>
-                              <DropdownMenuItem onClick={() => {
-                                setSelectedTemplate(template);
-                                setIsPreviewDialogOpen(true);
-                              }}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                {t('events.preview') || 'Preview'}
+                      <div className="flex justify-end gap-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>{t('common.actions')}</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {hasRead && (
+                              <>
+                                <DropdownMenuItem onClick={() => {
+                                  setSelectedTemplate(template);
+                                  setIsPreviewDialogOpen(true);
+                                }}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  {t('common.preview')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => {
+                                  setSelectedTemplate(template);
+                                  setIsGenerateDialogOpen(true);
+                                }}>
+                                  <Download className="h-4 w-4 mr-2" />
+                                  {t('examPapers.generatePdf')}
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {hasRead && (
+                              <DropdownMenuItem onClick={() => navigate(`/exams/papers/${template.id}/edit`)}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                {t('examPapers.editQuestions')}
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {
-                                setSelectedTemplate(template);
-                                setIsGenerateDialogOpen(true);
-                              }}>
-                                <Download className="h-4 w-4 mr-2" />
-                                {t('examPapers.generatePdf') || 'Generate PDF'}
+                            )}
+                            {hasUpdate && (
+                              <DropdownMenuItem onClick={() => openEditDialog(template)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                {t('common.edit')}
                               </DropdownMenuItem>
-                            </>
-                          )}
-                          {hasRead && (
-                            <DropdownMenuItem onClick={() => navigate(`/exams/papers/${template.id}/edit`)}>
-                              <FileText className="h-4 w-4 mr-2" />
-                              {t('examPapers.editQuestions') || 'Edit Questions'}
-                            </DropdownMenuItem>
-                          )}
-                          {hasUpdate && (
-                            <DropdownMenuItem onClick={() => openEditDialog(template)}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              {t('events.edit') || 'Edit'}
-                            </DropdownMenuItem>
-                          )}
-                          {hasCreate && (
-                            <DropdownMenuItem onClick={() => handleDuplicate(template)}>
-                              <Copy className="h-4 w-4 mr-2" />
-                              {t('events.duplicate') || 'Duplicate'}
-                            </DropdownMenuItem>
-                          )}
-                          {hasDelete && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => openDeleteDialog(template)}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                {t('events.delete') || 'Delete'}
+                            )}
+                            {hasCreate && (
+                              <DropdownMenuItem onClick={() => handleDuplicate(template)}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                {t('common.duplicate')}
                               </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            )}
+                            {hasDelete && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => openDeleteDialog(template)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  {t('common.delete')}
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1009,19 +1024,19 @@ export default function ExamPaperTemplates() {
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{t('examPapers.createPaper') || 'Create Exam Paper'}</DialogTitle>
+            <DialogTitle>{t('examPapers.createPaper')}</DialogTitle>
             <DialogDescription>
-              {t('examPapers.createDescription') || 'Create a new exam paper'}
+              {t('examPapers.createDescription')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleCreate)}>
             <TemplateFormFields />
             <DialogFooter className="mt-4">
               <Button type="button" variant="outline" onClick={() => { setIsCreateDialogOpen(false); resetForm(); }}>
-                {t('events.cancel') || 'Cancel'}
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={createTemplate.isPending}>
-                {createTemplate.isPending ? (t('events.creating') || 'Creating...') : (t('events.create') || 'Create')}
+                {createTemplate.isPending ? t('common.creating') : t('common.create')}
               </Button>
             </DialogFooter>
           </form>
@@ -1032,19 +1047,19 @@ export default function ExamPaperTemplates() {
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{t('examPapers.editPaper') || 'Edit Exam Paper'}</DialogTitle>
+            <DialogTitle>{t('examPapers.editPaper')}</DialogTitle>
             <DialogDescription>
-              {t('examPapers.editDescription') || 'Update the exam paper details'}
+              {t('examPapers.editDescription')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleUpdate)}>
             <TemplateFormFields isEdit />
             <DialogFooter className="mt-4">
               <Button type="button" variant="outline" onClick={() => { setIsEditDialogOpen(false); resetForm(); }}>
-                {t('events.cancel') || 'Cancel'}
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={updateTemplate.isPending}>
-                {updateTemplate.isPending ? (t('events.updating') || 'Updating...') : (t('events.update') || 'Update')}
+                {updateTemplate.isPending ? t('common.updating') : t('common.update')}
               </Button>
             </DialogFooter>
           </form>
@@ -1055,22 +1070,24 @@ export default function ExamPaperTemplates() {
           <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('assets.deleteConfirm') || 'Delete Exam Paper'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('common.confirmDelete')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('examPapers.deleteConfirmMessage') || 'Are you sure you want to delete this exam paper? This action cannot be undone.'}
+              {t('examPapers.deleteConfirmMessage')}
               {selectedTemplate && (
                 <span className="block mt-2 font-semibold">{selectedTemplate.title}</span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
-            <AlertDialogAction 
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button 
               onClick={handleDelete} 
-              className="bg-destructive text-destructive-foreground"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('events.delete') || 'Delete'}
-            </AlertDialogAction>
+              {t('common.delete')}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
           </AlertDialog>
@@ -1104,9 +1121,9 @@ export default function ExamPaperTemplates() {
       <Dialog open={isTemplateFilesDialogOpen} onOpenChange={setIsTemplateFilesDialogOpen}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Manage Template Files</DialogTitle>
+            <DialogTitle>{t('examPapers.templateFiles')}</DialogTitle>
             <DialogDescription>
-              Create and manage HTML template files for exam papers
+              {t('examPapers.templateFilesDescription')}
             </DialogDescription>
           </DialogHeader>
           <TemplateFileManager
@@ -1115,11 +1132,14 @@ export default function ExamPaperTemplates() {
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsTemplateFilesDialogOpen(false)}>
-              Close
+              {t('common.close')}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
     </div>
   );
 }

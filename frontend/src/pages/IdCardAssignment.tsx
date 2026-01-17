@@ -230,7 +230,7 @@ export default function IdCardAssignment() {
 
     // Validate account and category if fee is paid
     if (cardFeePaid && (!accountId || !incomeCategoryId)) {
-      showToast.error(t('idCards.accountAndCategoryRequired') || 'Account and Income Category are required when fee is paid');
+      showToast.error(t('idCards.accountAndCategoryRequired'));
       return;
     }
 
@@ -285,7 +285,7 @@ export default function IdCardAssignment() {
 
     // Validate account and category if fee is paid
     if (cardFeePaid && (!accountId || !incomeCategoryId)) {
-      showToast.error(t('idCards.accountAndCategoryRequired') || 'Account and Income Category are required when fee is paid');
+      showToast.error(t('idCards.accountAndCategoryRequired'));
       return;
     }
 
@@ -397,19 +397,19 @@ export default function IdCardAssignment() {
     <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4">
       <Card>
         <CardHeader>
-          <CardTitle>{t('idCards.assignment') || 'ID Card Assignment'}</CardTitle>
+          <CardTitle>{t('idCards.assignment.title')}</CardTitle>
           <CardDescription>
-            {t('idCards.assignment.description') || 'Assign ID card templates to students and manage card assignments'}
+            {t('idCards.assignment.description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="assignment" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="assignment">
-                {t('idCards.assignment') || 'Assignment'}
+                {t('idCards.assignment.title')}
               </TabsTrigger>
               <TabsTrigger value="assigned">
-                {t('idCards.assignedCards') || 'Assigned Cards'} ({filteredCards.length})
+                {t('idCards.assignedCards')} ({filteredCards.length})
               </TabsTrigger>
             </TabsList>
 
@@ -418,10 +418,10 @@ export default function IdCardAssignment() {
               {/* Filter Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
-              <Label>{t('academic.academicYears.academicYear') || 'Academic Year'}</Label>
+              <Label>{t('academic.academicYears.academicYear')}</Label>
               <Select value={academicYearId} onValueChange={setAcademicYearId}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('events.select') || 'Select'} />
+                  <SelectValue placeholder={t('common.select')} />
                 </SelectTrigger>
                 <SelectContent>
                   {academicYears.map(year => (
@@ -434,13 +434,13 @@ export default function IdCardAssignment() {
             </div>
 
             <div>
-              <Label>{t('schools.school') || 'School'}</Label>
+              <Label>{t('common.school')}</Label>
               <Select value={schoolIdForSelect} onValueChange={(value) => setSchoolId(value === 'all' ? '' : value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('subjects.all') || 'All'} />
+                  <SelectValue placeholder={t('common.all')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
                   {schools.map(school => (
                     <SelectItem key={school.id} value={school.id}>
                       {school.schoolName}
@@ -451,13 +451,13 @@ export default function IdCardAssignment() {
             </div>
 
             <div>
-              <Label>{t('search.class') || 'Class'}</Label>
+              <Label>{t('common.class')}</Label>
               <Select value={classIdForSelect} onValueChange={(value) => setClassId(value === 'all' ? '' : value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('subjects.all') || 'All'} />
+                  <SelectValue placeholder={t('common.all')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
                   {classes.map(cls => (
                     <SelectItem key={cls.id} value={cls.id}>
                       {cls.name}
@@ -468,27 +468,27 @@ export default function IdCardAssignment() {
             </div>
 
             <div>
-              <Label>{t('students.enrollmentStatus') || 'Enrollment Status'}</Label>
+              <Label>{t('students.enrollmentStatus')}</Label>
               <Select value={enrollmentStatus} onValueChange={setEnrollmentStatus}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
-                  <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
-                  <SelectItem value="inactive">{t('events.inactive') || 'Inactive'}</SelectItem>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
+                  <SelectItem value="active">{t('common.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('common.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label>{t('idCards.template') || 'Template'}</Label>
+              <Label>{t('idCards.template')}</Label>
               <Select value={templateIdForSelect} onValueChange={(value) => setTemplateId(value === 'all' ? '' : value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('subjects.all') || 'All'} />
+                  <SelectValue placeholder={t('common.all')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
                   {templates.map(template => (
                     <SelectItem key={template.id} value={template.id}>
                       {template.name}
@@ -503,7 +503,7 @@ export default function IdCardAssignment() {
             <div className="flex-1 relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('events.search') || 'Search students...'}
+                placeholder={t('common.search')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8"
@@ -517,7 +517,7 @@ export default function IdCardAssignment() {
             <div className="lg:col-span-2 space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-base font-semibold">
-                  {t('table.students') || 'Students'} ({studentsWithCardStatus.length})
+                  {t('common.student')} ({studentsWithCardStatus.length})
                 </Label>
                 <Button
                   variant="outline"
@@ -527,12 +527,12 @@ export default function IdCardAssignment() {
                   {selectedAdmissionIds.size === studentsWithCardStatus.length ? (
                     <>
                       <Square className="h-4 w-4 mr-1" />
-                      {t('events.deselectAll') || 'Deselect All'}
+                      {t('common.deselectAll')}
                     </>
                   ) : (
                     <>
                       <CheckSquare className="h-4 w-4 mr-1" />
-                      {t('events.selectAll') || 'Select All'}
+                      {t('common.selectAll')}
                     </>
                   )}
                 </Button>
@@ -582,26 +582,26 @@ export default function IdCardAssignment() {
                         <div className="flex-1 min-w-0">
                           <div className="font-medium truncate">{student.fullName}</div>
                           <div className="text-sm text-muted-foreground">
-                            {t('examReports.admissionNo') || 'Admission'}: {student.admissionNumber}
+                            {t('examReports.admissionNo')}: {student.admissionNumber}
                           </div>
                           <div className="flex gap-1 mt-1">
                             {hasCard ? (
                               <Badge variant="default" className="text-xs">
-                                {t('assets.assigned') || 'Assigned'}
+                                {t('idCards.assigned')}
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="text-xs">
-                                {t('idCards.notAssigned') || 'Not Assigned'}
+                                {t('idCards.notAssigned')}
                               </Badge>
                             )}
                             {isPrinted && (
                               <Badge variant="secondary" className="text-xs">
-                                {t('idCards.printed') || 'Printed'}
+                                {t('idCards.printed')}
                               </Badge>
                             )}
                             {feePaid && (
                               <Badge variant="outline" className="text-xs">
-                                {t('courses.feePaid') || 'Fee Paid'}
+                                {t('idCards.feePaid')}
                               </Badge>
                             )}
                           </div>
@@ -618,18 +618,18 @@ export default function IdCardAssignment() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">
-                    {t('idCards.assignment.assignTemplate') || 'Assign Template'}
+                    {t('idCards.assignment.assignTemplate')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label>{t('idCards.template') || 'Template'}</Label>
+                    <Label>{t('idCards.template')}</Label>
                     <Select
                       value={selectedTemplateForAssignment}
                       onValueChange={setSelectedTemplateForAssignment}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={t('studentReportCard.selectTemplate') || 'Select template'} />
+                        <SelectValue placeholder={t('idCards.selectTemplatePlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {templates.map(template => (
@@ -643,7 +643,7 @@ export default function IdCardAssignment() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>{t('idCards.cardFee') || 'Card Fee'}</Label>
+                      <Label>{t('idCards.cardFee')}</Label>
                       <Input
                         type="number"
                         value={cardFee}
@@ -659,7 +659,7 @@ export default function IdCardAssignment() {
                           onCheckedChange={(checked) => setCardFeePaid(checked as boolean)}
                         />
                         <Label htmlFor="fee-paid" className="cursor-pointer">
-                          {t('courses.feePaid') || 'Fee Paid'}
+                          {t('idCards.feePaid')}
                         </Label>
                       </div>
                     </div>
@@ -668,10 +668,10 @@ export default function IdCardAssignment() {
                   {cardFeePaid && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>{t('finance.accounts.account') || 'Account'} *</Label>
+                        <Label>{t('finance.accounts.account')} *</Label>
                         <Select value={accountId} onValueChange={setAccountId} required>
                           <SelectTrigger className={!accountId ? 'border-destructive' : ''}>
-                            <SelectValue placeholder={t('events.select') || 'Select account'} />
+                            <SelectValue placeholder={t('common.select')} />
                           </SelectTrigger>
                           <SelectContent>
                             {financeAccounts.map(account => (
@@ -683,15 +683,15 @@ export default function IdCardAssignment() {
                         </Select>
                         {!accountId && (
                           <p className="text-sm text-destructive mt-1">
-                            {t('events.required') || 'Required'}
+                            {t('common.required')}
                           </p>
                         )}
                       </div>
                       <div>
-                        <Label>{t('finance.incomeCategories.category') || 'Income Category'} *</Label>
+                        <Label>{t('finance.incomeCategories.category')} *</Label>
                         <Select value={incomeCategoryId} onValueChange={setIncomeCategoryId} required>
                           <SelectTrigger className={!incomeCategoryId ? 'border-destructive' : ''}>
-                            <SelectValue placeholder={t('events.select') || 'Select category'} />
+                            <SelectValue placeholder={t('common.select')} />
                           </SelectTrigger>
                           <SelectContent>
                             {incomeCategories.map(category => (
@@ -703,7 +703,7 @@ export default function IdCardAssignment() {
                         </Select>
                         {!incomeCategoryId && (
                           <p className="text-sm text-destructive mt-1">
-                            {t('events.required') || 'Required'}
+                            {t('common.required')}
                           </p>
                         )}
                       </div>
@@ -712,27 +712,27 @@ export default function IdCardAssignment() {
 
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-muted-foreground">
-                      {t('idCards.selectedStudents') || 'Selected'}: {selectedAdmissionIds.size}
+                      {t('idCards.selectedStudents')}: {selectedAdmissionIds.size}
                     </div>
                     <Button
                       onClick={() => setIsAssignDialogOpen(true)}
                       disabled={!academicYearId || !selectedTemplateForAssignment || selectedAdmissionIds.size === 0}
                     >
-                      {t('idCards.assign') || 'Assign Cards'}
+                      {t('idCards.assign')}
                     </Button>
                   </div>
 
                   {/* Preview Section */}
                   <Separator />
                   <div>
-                    <Label>{t('events.preview') || 'Preview'}</Label>
+                    <Label>{t('common.preview')}</Label>
                     <div className="flex gap-2 mt-2">
                       <Select
                         value={previewStudentId || ''}
                         onValueChange={(value) => setPreviewStudentId(value || null)}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={t('idCards.selectStudentForPreview') || 'Select student'} />
+                          <SelectValue placeholder={t('idCards.selectStudentForPreview')} />
                         </SelectTrigger>
                         <SelectContent>
                           {studentsWithCardStatus
@@ -749,8 +749,8 @@ export default function IdCardAssignment() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="front">{t('idCards.front') || 'Front'}</SelectItem>
-                          <SelectItem value="back">{t('events.back') || 'Back'}</SelectItem>
+                          <SelectItem value="front">{t('idCards.frontSide')}</SelectItem>
+                          <SelectItem value="back">{t('common.back')}</SelectItem>
                         </SelectContent>
                       </Select>
                       {previewStudentId && (
@@ -762,7 +762,7 @@ export default function IdCardAssignment() {
                           }}
                         >
                           <Eye className="h-4 w-4 mr-1" />
-                          {t('events.preview') || 'Preview'}
+                          {t('common.preview')}
                         </Button>
                       )}
                     </div>
@@ -780,17 +780,17 @@ export default function IdCardAssignment() {
                   <div className="flex items-start justify-between">
                     <div>
                       <CardTitle className="text-lg">
-                        {t('idCards.assignedCards.title') || 'Assigned Cards'}
+                        {t('idCards.assignedCards')}
                       </CardTitle>
                       <CardDescription>
-                        {t('idCards.assignedCards.description') || 'View and manage assigned ID cards'}
+                        {t('idCards.assignedCards')}
                       </CardDescription>
                     </div>
                     <ReportExportButtons
                       data={filteredCards}
                       columns={reportColumns}
                       reportKey="id_cards_assignment"
-                      title={t('idCards.assignedCards.title') || 'ID Cards Assignment Report'}
+                      title={t('idCards.assignedCards')}
                       transformData={transformIdCardData}
                       buildFiltersSummary={buildFiltersSummary}
                       schoolId={schoolId || undefined}
@@ -801,37 +801,37 @@ export default function IdCardAssignment() {
                 </CardHeader>
                 <CardContent>
               {cardsLoading ? (
-                <div className="text-center py-8">{t('common.loading') || 'Loading...'}</div>
+                <div className="text-center py-8">{t('common.loading')}</div>
               ) : (
                 <Tabs defaultValue="all" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="all">
-                      {t('subjects.all') || 'All'} ({filteredCards.length})
+                      {t('common.all')} ({filteredCards.length})
                     </TabsTrigger>
                     <TabsTrigger value="unprinted">
-                      {t('idCards.unprinted') || 'Unprinted'} ({filteredCards.filter(c => !c.isPrinted).length})
+                      {t('idCards.unprinted')} ({filteredCards.filter(c => !c.isPrinted).length})
                     </TabsTrigger>
                     <TabsTrigger value="printed">
-                      {t('idCards.printed') || 'Printed'} ({filteredCards.filter(c => c.isPrinted).length})
+                      {t('idCards.printed')} ({filteredCards.filter(c => c.isPrinted).length})
                     </TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="all" className="mt-4">
                     {filteredCards.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
-                        {t('idCards.noCards') || 'No ID cards found'}
+                        {t('idCards.noCards')}
                       </div>
                     ) : (
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>{t('students.student') || 'Student'}</TableHead>
-                            <TableHead>{t('examReports.admissionNo') || 'Admission No'}</TableHead>
-                            <TableHead>{t('search.class') || 'Class'}</TableHead>
-                            <TableHead>{t('idCards.template') || 'Template'}</TableHead>
-                            <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
-                            <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
-                            <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
+                            <TableHead>{t('common.student')}</TableHead>
+                            <TableHead>{t('examReports.admissionNo')}</TableHead>
+                            <TableHead>{t('search.class')}</TableHead>
+                            <TableHead>{t('idCards.template')}</TableHead>
+                            <TableHead>{t('idCards.feeStatus')}</TableHead>
+                            <TableHead>{t('idCards.printedStatus')}</TableHead>
+                            <TableHead className="text-right">{t('common.actions')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -846,15 +846,15 @@ export default function IdCardAssignment() {
                               <TableCell>
                                 <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
                                   {card.cardFeePaid
-                                    ? t('courses.feePaid') || 'Paid'
-                                    : t('idCards.feeUnpaid') || 'Unpaid'}
+                                    ? t('idCards.feePaid')
+                                    : t('idCards.feeUnpaid')}
                                 </Badge>
                               </TableCell>
                               <TableCell>
                                 <Badge variant={card.isPrinted ? 'default' : 'secondary'}>
                                   {card.isPrinted
-                                    ? t('idCards.printed') || 'Printed'
-                                    : t('idCards.unprinted') || 'Unprinted'}
+                                    ? t('idCards.printed')
+                                    : t('idCards.unprinted')}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">
@@ -918,19 +918,19 @@ export default function IdCardAssignment() {
                   <TabsContent value="unprinted" className="mt-4">
                     {filteredCards.filter(c => !c.isPrinted).length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
-                        {t('idCards.noUnprintedCards') || 'No unprinted cards found'}
+                        {t('idCards.noUnprintedCards')}
                       </div>
                     ) : (
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>{t('students.student') || 'Student'}</TableHead>
-                            <TableHead>{t('examReports.admissionNo') || 'Admission No'}</TableHead>
-                            <TableHead>{t('search.class') || 'Class'}</TableHead>
-                            <TableHead>{t('idCards.template') || 'Template'}</TableHead>
-                            <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
-                            <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
-                            <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
+                            <TableHead>{t('common.student')}</TableHead>
+                            <TableHead>{t('examReports.admissionNo')}</TableHead>
+                            <TableHead>{t('search.class')}</TableHead>
+                            <TableHead>{t('idCards.template')}</TableHead>
+                            <TableHead>{t('idCards.feeStatus')}</TableHead>
+                            <TableHead>{t('idCards.printedStatus')}</TableHead>
+                            <TableHead className="text-right">{t('common.actions')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -945,13 +945,13 @@ export default function IdCardAssignment() {
                               <TableCell>
                                 <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
                                   {card.cardFeePaid
-                                    ? t('courses.feePaid') || 'Paid'
-                                    : t('idCards.feeUnpaid') || 'Unpaid'}
+                                    ? t('idCards.feePaid')
+                                    : t('idCards.feeUnpaid')}
                                 </Badge>
                               </TableCell>
                               <TableCell>
                                 <Badge variant="secondary">
-                                  {t('idCards.unprinted') || 'Unprinted'}
+                                  {t('idCards.unprinted')}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">
@@ -1013,19 +1013,19 @@ export default function IdCardAssignment() {
                   <TabsContent value="printed" className="mt-4">
                     {filteredCards.filter(c => c.isPrinted).length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
-                        {t('idCards.noPrintedCards') || 'No printed cards found'}
+                        {t('idCards.noPrintedCards')}
                       </div>
                     ) : (
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>{t('students.student') || 'Student'}</TableHead>
-                            <TableHead>{t('examReports.admissionNo') || 'Admission No'}</TableHead>
-                            <TableHead>{t('search.class') || 'Class'}</TableHead>
-                            <TableHead>{t('idCards.template') || 'Template'}</TableHead>
-                            <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
-                            <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
-                            <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
+                            <TableHead>{t('common.student')}</TableHead>
+                            <TableHead>{t('examReports.admissionNo')}</TableHead>
+                            <TableHead>{t('search.class')}</TableHead>
+                            <TableHead>{t('idCards.template')}</TableHead>
+                            <TableHead>{t('idCards.feeStatus')}</TableHead>
+                            <TableHead>{t('idCards.printedStatus')}</TableHead>
+                            <TableHead className="text-right">{t('common.actions')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1040,13 +1040,13 @@ export default function IdCardAssignment() {
                               <TableCell>
                                 <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
                                   {card.cardFeePaid
-                                    ? t('courses.feePaid') || 'Paid'
-                                    : t('idCards.feeUnpaid') || 'Unpaid'}
+                                    ? t('idCards.feePaid')
+                                    : t('idCards.feeUnpaid')}
                                 </Badge>
                               </TableCell>
                               <TableCell>
                                 <Badge variant="default">
-                                  {t('idCards.printed') || 'Printed'}
+                                  {t('idCards.printed')}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">
@@ -1110,20 +1110,19 @@ export default function IdCardAssignment() {
       <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('idCards.assignment.confirmAssign') || 'Confirm Assignment'}</DialogTitle>
+            <DialogTitle>{t('idCards.assignment.confirmAssign')}</DialogTitle>
             <DialogDescription>
-              {t('idCards.assignment.assignToStudents', { count: selectedAdmissionIds.size }) ||
-                `Assign ID card to ${selectedAdmissionIds.size} student(s)?`}
+              {t('idCards.assignment.assignToStudents', { count: selectedAdmissionIds.size })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
-              {t('events.cancel') || 'Cancel'}
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleBulkAssign} disabled={assignCards.isPending}>
               {assignCards.isPending
-                ? t('events.processing') || 'Processing...'
-                : t('events.confirm') || 'Confirm'}
+                ? t('common.processing')
+                : t('common.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1133,11 +1132,11 @@ export default function IdCardAssignment() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('idCards.editCard') || 'Edit ID Card'}</DialogTitle>
+            <DialogTitle>{t('idCards.editCard')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>{t('idCards.cardFee') || 'Card Fee'}</Label>
+              <Label>{t('idCards.cardFee')}</Label>
               <Input
                 type="number"
                 value={cardFee}
@@ -1151,16 +1150,16 @@ export default function IdCardAssignment() {
                 onCheckedChange={(checked) => setCardFeePaid(checked as boolean)}
               />
               <Label htmlFor="edit-fee-paid" className="cursor-pointer">
-                {t('courses.feePaid') || 'Fee Paid'}
+                {t('idCards.feePaid')}
               </Label>
             </div>
             {cardFeePaid && (
               <>
                 <div>
-                  <Label>{t('finance.accounts.account') || 'Account'} *</Label>
+                  <Label>{t('finance.accounts.account')} *</Label>
                   <Select value={accountId} onValueChange={setAccountId} required>
                     <SelectTrigger className={!accountId ? 'border-destructive' : ''}>
-                      <SelectValue placeholder={t('events.select') || 'Select account'} />
+                      <SelectValue placeholder={t('common.select')} />
                     </SelectTrigger>
                     <SelectContent>
                       {financeAccounts.map(account => (
@@ -1172,15 +1171,15 @@ export default function IdCardAssignment() {
                   </Select>
                   {!accountId && (
                     <p className="text-sm text-destructive mt-1">
-                      {t('events.required') || 'Required'}
+                      {t('common.required')}
                     </p>
                   )}
                 </div>
                 <div>
-                  <Label>{t('finance.incomeCategories.category') || 'Income Category'} *</Label>
+                  <Label>{t('finance.incomeCategories.category')} *</Label>
                   <Select value={incomeCategoryId} onValueChange={setIncomeCategoryId} required>
                     <SelectTrigger className={!incomeCategoryId ? 'border-destructive' : ''}>
-                      <SelectValue placeholder={t('events.select') || 'Select category'} />
+                      <SelectValue placeholder={t('common.select')} />
                     </SelectTrigger>
                     <SelectContent>
                       {incomeCategories.map(category => (
@@ -1192,7 +1191,7 @@ export default function IdCardAssignment() {
                   </Select>
                   {!incomeCategoryId && (
                     <p className="text-sm text-destructive mt-1">
-                      {t('events.required') || 'Required'}
+                      {t('common.required')}
                     </p>
                   )}
                 </div>
@@ -1201,10 +1200,10 @@ export default function IdCardAssignment() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              {t('events.cancel') || 'Cancel'}
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleSaveEdit} disabled={updateCard.isPending}>
-              {updateCard.isPending ? t('events.saving') || 'Saving...' : t('events.save') || 'Save'}
+              {updateCard.isPending ? t('common.saving') : t('common.save')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1214,15 +1213,15 @@ export default function IdCardAssignment() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('events.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('common.confirmDelete')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('assets.deleteConfirm') || 'Are you sure you want to delete this ID card assignment?'}
+              {t('idCards.deleteConfirmation')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteCard} disabled={deleteCard.isPending}>
-              {deleteCard.isPending ? t('events.deleting') || 'Deleting...' : t('events.delete') || 'Delete'}
+              {deleteCard.isPending ? t('common.deleting') : t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1232,7 +1231,7 @@ export default function IdCardAssignment() {
       <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t('events.preview') || 'Card Preview'}</DialogTitle>
+            <DialogTitle>{t('common.preview')}</DialogTitle>
           </DialogHeader>
           {previewStudentId && (
             <StudentIdCardPreview

@@ -55,12 +55,12 @@ import { showToast } from '@/lib/toast';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import type { Exam, ExamStatus } from '@/types/domain/exam';
 
-const statusConfig: Record<ExamStatus, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
-  draft: { label: 'Draft', variant: 'outline' },
-  scheduled: { label: 'Scheduled', variant: 'secondary' },
-  in_progress: { label: 'In Progress', variant: 'default' },
-  completed: { label: 'Completed', variant: 'default' },
-  archived: { label: 'Archived', variant: 'outline' },
+const statusConfig: Record<ExamStatus, { labelKey: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+  draft: { labelKey: 'exams.status.draft', variant: 'outline' },
+  scheduled: { labelKey: 'exams.status.scheduled', variant: 'secondary' },
+  in_progress: { labelKey: 'exams.status.in_progress', variant: 'default' },
+  completed: { labelKey: 'exams.status.completed', variant: 'default' },
+  archived: { labelKey: 'exams.status.archived', variant: 'outline' },
 };
 
 const statusTransitions: Record<ExamStatus, ExamStatus[]> = {
@@ -408,7 +408,7 @@ export function Exams() {
     const config = statusConfig[status] || statusConfig.draft;
     return (
       <Badge variant={config.variant}>
-        {t(`exams.status.${status}`) || config.label}
+        {t(config.labelKey)}
       </Badge>
     );
   };
