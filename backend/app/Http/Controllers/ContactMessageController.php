@@ -17,22 +17,39 @@ class ContactMessageController extends Controller
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
+            'position' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'phone' => 'nullable|string|max:50',
-            'school_name' => 'nullable|string|max:255',
-            'student_count' => 'nullable|integer|min:0',
+            'whatsapp' => 'required|string|max:50',
+            'preferred_contact_method' => 'nullable|in:email,phone,whatsapp',
+            'school_name' => 'required|string|max:255',
+            'city' => 'nullable|string|max:255',
+            'country' => 'nullable|string|max:100',
+            'student_count' => 'required|integer|min:0',
+            'number_of_schools' => 'nullable|integer|min:0',
+            'staff_count' => 'nullable|integer|min:0',
             'message' => 'required|string|min:10',
+            'referral_source' => 'nullable|string|max:255',
         ]);
 
         $message = ContactMessage::create([
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
+            'position' => $validated['position'],
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? null,
-            'school_name' => $validated['school_name'] ?? null,
-            'student_count' => $validated['student_count'] ?? null,
+            'whatsapp' => $validated['whatsapp'],
+            'preferred_contact_method' => $validated['preferred_contact_method'] ?? 'email',
+            'school_name' => $validated['school_name'],
+            'city' => $validated['city'] ?? null,
+            'country' => $validated['country'] ?? null,
+            'student_count' => $validated['student_count'],
+            'number_of_schools' => $validated['number_of_schools'] ?? null,
+            'staff_count' => $validated['staff_count'] ?? null,
             'message' => $validated['message'],
+            'referral_source' => $validated['referral_source'] ?? null,
             'status' => 'new',
+            'urgency' => 'medium',
             'source' => 'landing_page',
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
@@ -92,7 +109,10 @@ class ContactMessageController extends Controller
                 $q->where('first_name', 'ilike', "%{$search}%")
                   ->orWhere('last_name', 'ilike', "%{$search}%")
                   ->orWhere('email', 'ilike', "%{$search}%")
+                  ->orWhere('phone', 'ilike', "%{$search}%")
                   ->orWhere('school_name', 'ilike', "%{$search}%")
+                  ->orWhere('city', 'ilike', "%{$search}%")
+                  ->orWhere('country', 'ilike', "%{$search}%")
                   ->orWhere('message', 'ilike', "%{$search}%");
             });
         }
@@ -150,17 +170,27 @@ class ContactMessageController extends Controller
                 'first_name' => $message->first_name,
                 'last_name' => $message->last_name,
                 'email' => $message->email,
+                'position' => $message->position,
                 'phone' => $message->phone,
+                'whatsapp' => $message->whatsapp,
+                'preferred_contact_method' => $message->preferred_contact_method,
                 'school_name' => $message->school_name,
+                'city' => $message->city,
+                'country' => $message->country,
                 'student_count' => $message->student_count,
+                'number_of_schools' => $message->number_of_schools,
+                'staff_count' => $message->staff_count,
                 'message' => $message->message,
                 'status' => $message->status,
+                'urgency' => $message->urgency,
                 'admin_notes' => $message->admin_notes,
                 'replied_by' => $message->replied_by,
                 'replied_at' => $message->replied_at?->toISOString(),
+                'follow_up_date' => $message->follow_up_date?->toISOString(),
                 'reply_subject' => $message->reply_subject,
                 'reply_message' => $message->reply_message,
                 'source' => $message->source,
+                'referral_source' => $message->referral_source,
                 'ip_address' => $message->ip_address,
                 'user_agent' => $message->user_agent,
                 'created_at' => $message->created_at->toISOString(),
@@ -203,7 +233,9 @@ class ContactMessageController extends Controller
 
         $validated = $request->validate([
             'status' => 'sometimes|in:new,read,replied,archived',
+            'urgency' => 'sometimes|in:low,medium,high',
             'admin_notes' => 'nullable|string',
+            'follow_up_date' => 'nullable|date',
             'reply_subject' => 'nullable|string|max:255',
             'reply_message' => 'nullable|string',
         ]);
@@ -214,8 +246,16 @@ class ContactMessageController extends Controller
             $updateData['status'] = $validated['status'];
         }
 
+        if (isset($validated['urgency'])) {
+            $updateData['urgency'] = $validated['urgency'];
+        }
+
         if (isset($validated['admin_notes'])) {
             $updateData['admin_notes'] = $validated['admin_notes'];
+        }
+
+        if (isset($validated['follow_up_date'])) {
+            $updateData['follow_up_date'] = $validated['follow_up_date'];
         }
 
         if (isset($validated['reply_subject']) || isset($validated['reply_message'])) {
@@ -234,17 +274,27 @@ class ContactMessageController extends Controller
                 'first_name' => $message->first_name,
                 'last_name' => $message->last_name,
                 'email' => $message->email,
+                'position' => $message->position,
                 'phone' => $message->phone,
+                'whatsapp' => $message->whatsapp,
+                'preferred_contact_method' => $message->preferred_contact_method,
                 'school_name' => $message->school_name,
+                'city' => $message->city,
+                'country' => $message->country,
                 'student_count' => $message->student_count,
+                'number_of_schools' => $message->number_of_schools,
+                'staff_count' => $message->staff_count,
                 'message' => $message->message,
                 'status' => $message->status,
+                'urgency' => $message->urgency,
                 'admin_notes' => $message->admin_notes,
                 'replied_by' => $message->replied_by,
                 'replied_at' => $message->replied_at?->toISOString(),
+                'follow_up_date' => $message->follow_up_date?->toISOString(),
                 'reply_subject' => $message->reply_subject,
                 'reply_message' => $message->reply_message,
                 'source' => $message->source,
+                'referral_source' => $message->referral_source,
                 'created_at' => $message->created_at->toISOString(),
                 'updated_at' => $message->updated_at->toISOString(),
             ],

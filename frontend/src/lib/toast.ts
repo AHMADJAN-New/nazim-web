@@ -3,7 +3,7 @@
 
 import { toast, ExternalToast } from 'sonner';
 
-import { t, isRTL, Language } from './i18n';
+import { t, isRTL, Language, loadTranslation } from './i18n';
 
 // Storage key for language (same as useLanguage hook)
 const LANGUAGE_STORAGE_KEY = 'nazim-language';
@@ -40,18 +40,31 @@ function translateMessage(
   
   // If it looks like a translation key (contains dots), try to translate
   if (messageOrKey.includes('.')) {
-    const translated = t(messageOrKey, lang, params);
-    // If translation returns the formatted key fallback, return original message
-    // The t() function returns last part of key capitalized if not found
-    const keyParts = messageOrKey.split('.');
-    const fallback = keyParts[keyParts.length - 1]
-      .charAt(0).toUpperCase() + 
-      keyParts[keyParts.length - 1].slice(1).replace(/([A-Z])/g, ' $1').trim();
+    // Ensure language is loaded (trigger async load if needed)
+    // The t() function will handle this, but we trigger it explicitly to ensure it's in progress
+    if (lang !== 'en') {
+      loadTranslation(lang).catch(() => {
+        // Silently fail - English fallback will be used
+      });
+    }
     
-    if (translated === fallback) {
-      // Translation not found, return the original message
+    // Use t() function which handles all translation logic including fallbacks
+    // It will return the translated text, or English with [EN] prefix if missing
+    const translated = t(messageOrKey, lang, params);
+    
+    // If t() returns a [MISSING:] or [HARDCODED:] prefix, it means the key doesn't exist
+    if (translated.startsWith('[MISSING:') || translated.startsWith('[HARDCODED:')) {
+      // Return the original key as fallback
       return messageOrKey;
     }
+    
+    // Strip [EN] prefix if present (it indicates English fallback, but we still want to show the message)
+    // The [EN] prefix is useful for debugging but not for user-facing toasts
+    if (translated.startsWith('[EN] ')) {
+      return translated.substring(5); // Remove "[EN] " prefix
+    }
+    
+    // Return the translated text
     return translated;
   }
   

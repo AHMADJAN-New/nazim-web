@@ -39,11 +39,19 @@ const LazyPricingSection = lazy(() => import('./index/PricingSection').then((m) 
 interface ContactFormData {
   first_name: string;
   last_name: string;
+  position: string;
   email: string;
   phone?: string;
-  school_name?: string;
-  student_count?: number;
+  whatsapp: string;
+  preferred_contact_method?: 'email' | 'phone' | 'whatsapp';
+  school_name: string;
+  city?: string;
+  country?: string;
+  student_count: number;
+  number_of_schools?: number;
+  staff_count?: number;
   message: string;
+  referral_source?: string;
 }
 
 const Index = () => {
@@ -70,11 +78,19 @@ const Index = () => {
     defaultValues: {
       first_name: '',
       last_name: '',
+      position: '',
       email: '',
       phone: '',
+      whatsapp: '',
+      preferred_contact_method: 'email',
       school_name: '',
-      student_count: undefined,
+      city: '',
+      country: '',
+      student_count: 0,
+      number_of_schools: undefined,
+      staff_count: undefined,
       message: '',
+      referral_source: '',
     },
   });
 
@@ -84,11 +100,19 @@ const Index = () => {
       await apiClient.post('/contact', {
         first_name: data.first_name,
         last_name: data.last_name,
+        position: data.position,
         email: data.email,
         phone: data.phone || null,
-        school_name: data.school_name || null,
-        student_count: data.student_count || null,
+        whatsapp: data.whatsapp,
+        preferred_contact_method: data.preferred_contact_method || 'email',
+        school_name: data.school_name,
+        city: data.city || null,
+        country: data.country || null,
+        student_count: data.student_count,
+        number_of_schools: data.number_of_schools || null,
+        staff_count: data.staff_count || null,
         message: data.message,
+        referral_source: data.referral_source || null,
       });
 
       showToast.success(t('contact.form.success'));
@@ -299,6 +323,22 @@ const Index = () => {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="position">
+                {t('contact.form.position')} <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="position"
+                {...register('position', {
+                  required: t('contact.form.position') + ' ' + tCommon('common.required'),
+                })}
+                placeholder={t('contact.form.positionPlaceholder')}
+              />
+              {errors.position && (
+                <p className="text-sm text-destructive">{errors.position.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="email">
                 {t('contact.form.email')} <span className="text-destructive">*</span>
               </Label>
@@ -319,38 +359,100 @@ const Index = () => {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">{t('contact.form.phone')} ({t('contact.form.optional')})</Label>
-              <Input
-                id="phone"
-                type="tel"
-                {...register('phone')}
-                placeholder="+93 XXX XXX XXXX"
-              />
-            </div>
-
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="school_name">{t('contact.form.schoolName')} ({t('contact.form.optional')})</Label>
+                <Label htmlFor="phone">{t('contact.form.phone')} ({t('contact.form.optional')})</Label>
                 <Input
-                  id="school_name"
-                  {...register('school_name')}
-                  placeholder={t('contact.form.schoolName')}
+                  id="phone"
+                  type="tel"
+                  {...register('phone')}
+                  placeholder="+93 XXX XXX XXXX"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="student_count">{t('contact.form.studentCount')} ({t('contact.form.optional')})</Label>
+                <Label htmlFor="whatsapp">
+                  {t('contact.form.whatsapp')} <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="whatsapp"
+                  type="tel"
+                  {...register('whatsapp', {
+                    required: t('contact.form.whatsapp') + ' ' + tCommon('common.required'),
+                  })}
+                  placeholder="+93 XXX XXX XXXX"
+                />
+                {errors.whatsapp && (
+                  <p className="text-sm text-destructive">{errors.whatsapp.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="preferred_contact_method">{t('contact.form.preferredContact')} ({t('contact.form.optional')})</Label>
+              <select
+                id="preferred_contact_method"
+                {...register('preferred_contact_method')}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="email">{t('contact.form.email')}</option>
+                <option value="phone">{t('contact.form.phone')}</option>
+                <option value="whatsapp">{t('contact.form.whatsapp')}</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="school_name">
+                {t('contact.form.schoolName')} <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="school_name"
+                {...register('school_name', {
+                  required: t('contact.form.schoolName') + ' ' + tCommon('common.required'),
+                })}
+                placeholder={t('contact.form.schoolName')}
+              />
+              {errors.school_name && (
+                <p className="text-sm text-destructive">{errors.school_name.message}</p>
+              )}
+            </div>
+
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="city">{t('contact.form.city')} ({t('contact.form.optional')})</Label>
+                <Input
+                  id="city"
+                  {...register('city')}
+                  placeholder={t('contact.form.city')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="country">{t('contact.form.country')} ({t('contact.form.optional')})</Label>
+                <Input
+                  id="country"
+                  {...register('country')}
+                  placeholder={t('contact.form.country')}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="student_count">
+                  {t('contact.form.studentCount')} <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="student_count"
                   type="number"
                   min="0"
                   {...register('student_count', {
+                    required: t('contact.form.studentCount') + ' ' + tCommon('common.required'),
                     valueAsNumber: true,
-                  min: {
-                    value: 0,
-                    message: tCommon('forms.required'),
-                  },
+                    min: {
+                      value: 0,
+                      message: tCommon('forms.required'),
+                    },
                   })}
                   placeholder="0"
                 />
@@ -358,6 +460,49 @@ const Index = () => {
                   <p className="text-sm text-destructive">{errors.student_count.message}</p>
                 )}
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="number_of_schools">{t('contact.form.numberOfSchools')} ({t('contact.form.optional')})</Label>
+                <Input
+                  id="number_of_schools"
+                  type="number"
+                  min="0"
+                  {...register('number_of_schools', {
+                    valueAsNumber: true,
+                    min: {
+                      value: 0,
+                      message: tCommon('forms.required'),
+                    },
+                  })}
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="staff_count">{t('contact.form.staffCount')} ({t('contact.form.optional')})</Label>
+                <Input
+                  id="staff_count"
+                  type="number"
+                  min="0"
+                  {...register('staff_count', {
+                    valueAsNumber: true,
+                    min: {
+                      value: 0,
+                      message: tCommon('forms.required'),
+                    },
+                  })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="referral_source">{t('contact.form.referralSource')} ({t('contact.form.optional')})</Label>
+              <Input
+                id="referral_source"
+                {...register('referral_source')}
+                placeholder={t('contact.form.referralSourcePlaceholder')}
+              />
             </div>
 
             <div className="space-y-2">

@@ -20,10 +20,13 @@ import {
   DollarSign,
   Lock,
   Mail,
+  MessageSquare,
   Key,
+  AlertCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -32,9 +35,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/hooks/useLanguage';
 import { cn } from '@/lib/utils';
+import { platformApi } from '@/platform/lib/platformApi';
+import { usePlatformDashboard, usePlatformPendingPayments, usePlatformPendingRenewals } from '@/platform/hooks/usePlatformAdmin';
 
 interface PlatformAdminLayoutProps {
   children: React.ReactNode;
@@ -83,6 +89,41 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(['Settings']);
 
+  // Fetch stats for badge counts
+  const { data: dashboardData } = usePlatformDashboard();
+  const { data: pendingPaymentsData } = usePlatformPendingPayments();
+  const { data: pendingRenewalsData } = usePlatformPendingRenewals();
+
+  // Fetch contact messages stats
+  const { data: contactMessagesStats } = useQuery({
+    queryKey: ['platform-contact-messages-stats'],
+    queryFn: async () => {
+      const response = await platformApi.contactMessages.stats();
+      return (response as { data: any }).data;
+    },
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Fetch plan requests count
+  const { data: planRequestsData } = useQuery({
+    queryKey: ['platform-plan-requests-count'],
+    queryFn: async () => {
+      const response = await platformApi.planRequests.list({ per_page: 1 });
+      return response as { pagination?: { total?: number }; data?: any[] };
+    },
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Calculate counts
+  const pendingActionsCount = (dashboardData?.pendingPayments || 0) + (dashboardData?.pendingRenewals || 0);
+  const contactMessagesCount = contactMessagesStats?.new || 0;
+  const planRequestsCount = planRequestsData?.pagination?.total || 0;
+  const expiringSoonCount = dashboardData?.expiringSoon || 0;
+  const recentlyExpiredCount = dashboardData?.recentlyExpired || 0;
+  const subscriptionsIssuesCount = expiringSoonCount + recentlyExpiredCount;
+
   const handleSignOut = async () => {
     // CRITICAL: Before logging out, restore main app token if it existed
     const mainAppTokenBackup = localStorage.getItem('main_app_token_backup');
@@ -108,79 +149,131 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       name: 'Dashboard', 
       href: '/platform/dashboard', 
       icon: TrendingUp,
-      description: 'Platform overview and statistics'
+      iconColor: 'text-blue-500',
+      iconBg: 'bg-blue-500/10',
+      description: 'Platform overview and statistics',
+      badge: null,
     },
     { 
       name: 'Organizations', 
       href: '/platform/organizations', 
       icon: Building2,
-      description: 'Manage all organizations'
+      iconColor: 'text-purple-500',
+      iconBg: 'bg-purple-500/10',
+      description: 'Manage all organizations',
+      badge: null,
     },
     { 
       name: 'Organization Admins', 
       href: '/platform/admins', 
       icon: Users,
-      description: 'View organization administrators'
+      iconColor: 'text-indigo-500',
+      iconBg: 'bg-indigo-500/10',
+      description: 'View organization administrators',
+      badge: null,
     },
     { 
       name: 'Permission Groups', 
       href: '/platform/permission-groups', 
       icon: Shield,
-      description: 'Manage permission groups'
+      iconColor: 'text-amber-500',
+      iconBg: 'bg-amber-500/10',
+      description: 'Manage permission groups',
+      badge: null,
     },
     { 
       name: 'Subscriptions', 
       href: '/platform/subscriptions', 
       icon: Package,
-      description: 'Manage organization subscriptions'
+      iconColor: 'text-green-500',
+      iconBg: 'bg-green-500/10',
+      description: 'Manage organization subscriptions',
+      badge: subscriptionsIssuesCount > 0 ? subscriptionsIssuesCount : null,
+      badgeVariant: 'destructive' as const,
     },
     { 
       name: 'Subscription Plans', 
       href: '/platform/plans', 
       icon: CreditCard,
-      description: 'Manage subscription plans'
+      iconColor: 'text-emerald-500',
+      iconBg: 'bg-emerald-500/10',
+      description: 'Manage subscription plans',
+      badge: null,
     },
     { 
       name: 'Plan Requests', 
       href: '/platform/plan-requests', 
       icon: Mail,
-      description: 'Enterprise plan contact requests'
+      iconColor: 'text-cyan-500',
+      iconBg: 'bg-cyan-500/10',
+      description: 'Enterprise plan contact requests',
+      badge: planRequestsCount > 0 ? planRequestsCount : null,
+      badgeVariant: 'default' as const,
+    },
+    { 
+      name: 'Contact Messages', 
+      href: '/platform/contact-messages', 
+      icon: MessageSquare,
+      iconColor: 'text-pink-500',
+      iconBg: 'bg-pink-500/10',
+      description: 'Manage contact form submissions from landing page',
+      badge: contactMessagesCount > 0 ? contactMessagesCount : null,
+      badgeVariant: 'default' as const,
     },
     { 
       name: 'Pending Actions', 
       href: '/platform/pending', 
       icon: Clock,
-      description: 'Review pending payments and renewals'
+      iconColor: 'text-orange-500',
+      iconBg: 'bg-orange-500/10',
+      description: 'Review pending payments and renewals',
+      badge: pendingActionsCount > 0 ? pendingActionsCount : null,
+      badgeVariant: 'destructive' as const,
     },
     { 
       name: 'Discount Codes', 
       href: '/platform/discount-codes', 
       icon: Ticket,
-      description: 'Manage discount codes'
+      iconColor: 'text-teal-500',
+      iconBg: 'bg-teal-500/10',
+      description: 'Manage discount codes',
+      badge: null,
     },
     { 
       name: 'Maintenance Fees', 
       href: '/platform/maintenance-fees', 
       icon: RefreshCw,
-      description: 'Manage maintenance fees across all organizations'
+      iconColor: 'text-slate-500',
+      iconBg: 'bg-slate-500/10',
+      description: 'Manage maintenance fees across all organizations',
+      badge: null,
     },
     { 
       name: 'License Fees', 
       href: '/platform/license-fees', 
       icon: Lock,
-      description: 'Manage license fee payments across all organizations'
+      iconColor: 'text-gray-500',
+      iconBg: 'bg-gray-500/10',
+      description: 'Manage license fee payments across all organizations',
+      badge: null,
     },
     { 
       name: 'Revenue History', 
       href: '/platform/revenue-history', 
       icon: DollarSign,
-      description: 'View organization revenue history and breakdown'
+      iconColor: 'text-yellow-500',
+      iconBg: 'bg-yellow-500/10',
+      description: 'View organization revenue history and breakdown',
+      badge: null,
     },
     { 
       name: 'Settings', 
-      href: '/platform/settings', 
+      href: '/platform/settings',
       icon: Settings,
+      iconColor: 'text-slate-600',
+      iconBg: 'bg-slate-600/10',
       description: 'Platform settings',
+      badge: null,
       children: [
         {
           name: 'General Settings',
@@ -198,19 +291,28 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       name: 'Help Center', 
       href: '/platform/help-center', 
       icon: HelpCircle,
-      description: 'Manage help center articles and categories'
+      iconColor: 'text-blue-600',
+      iconBg: 'bg-blue-600/10',
+      description: 'Manage help center articles and categories',
+      badge: null,
     },
     { 
       name: 'Maintenance History', 
       href: '/platform/maintenance-history', 
       icon: History,
-      description: 'View maintenance mode history'
+      iconColor: 'text-gray-600',
+      iconBg: 'bg-gray-600/10',
+      description: 'View maintenance mode history',
+      badge: null,
     },
     { 
       name: 'Desktop Licenses', 
       href: '/platform/desktop-licenses', 
       icon: Key,
-      description: 'Generate and manage desktop application licenses'
+      iconColor: 'text-violet-500',
+      iconBg: 'bg-violet-500/10',
+      description: 'Generate and manage desktop application licenses',
+      badge: null,
     },
   ];
 
@@ -227,7 +329,9 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
           {/* Header */}
           <div className="flex h-16 items-center justify-between border-b px-6">
             <div className="flex items-center gap-2">
-              <Shield className="h-6 w-6 text-primary" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                <Shield className="h-5 w-5 text-primary" />
+              </div>
               <span className="font-bold text-lg">Platform Admin</span>
             </div>
             <Button
@@ -270,10 +374,15 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
                         )}
                         title={item.description}
                       >
-                        <item.icon className={cn(
-                          'h-5 w-5 flex-shrink-0 transition-transform',
-                          isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-foreground'
-                        )} />
+                        <div className={cn(
+                          'flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0 transition-colors',
+                          isActive ? 'bg-primary-foreground/20' : item.iconBg
+                        )}>
+                          <item.icon className={cn(
+                            'h-4 w-4',
+                            isActive ? 'text-primary-foreground' : item.iconColor
+                          )} />
+                        </div>
                         <span className="flex-1 truncate text-left">{item.name}</span>
                         {isExpanded ? (
                           <ChevronDown className="h-4 w-4 flex-shrink-0" />
@@ -312,7 +421,7 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
                     <Link
                       to={item.href}
                       className={cn(
-                        'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
+                        'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
                         isActive
                           ? 'bg-primary text-primary-foreground shadow-sm'
                           : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
@@ -320,13 +429,29 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
                       onClick={() => setSidebarOpen(false)}
                       title={item.description}
                     >
-                      <item.icon className={cn(
-                        'h-5 w-5 flex-shrink-0 transition-transform',
-                        isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-foreground'
-                      )} />
+                      <div className={cn(
+                        'flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0 transition-colors',
+                        isActive ? 'bg-primary-foreground/20' : item.iconBg
+                      )}>
+                        <item.icon className={cn(
+                          'h-4 w-4',
+                          isActive ? 'text-primary-foreground' : item.iconColor
+                        )} />
+                      </div>
                       <span className="flex-1 truncate">{item.name}</span>
+                      {item.badge !== null && item.badge !== undefined && item.badge > 0 && (
+                        <Badge 
+                          variant={item.badgeVariant || 'default'} 
+                          className={cn(
+                            'h-5 min-w-5 px-1.5 text-xs font-semibold flex items-center justify-center',
+                            isActive && 'bg-primary-foreground/20 text-primary-foreground'
+                          )}
+                        >
+                          {item.badge > 99 ? '99+' : item.badge}
+                        </Badge>
+                      )}
                       {isActive && (
-                        <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
+                        <div className="absolute right-2 h-1.5 w-1.5 rounded-full bg-primary-foreground" />
                       )}
                     </Link>
                   )}
@@ -415,4 +540,3 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
     </div>
   );
 }
-

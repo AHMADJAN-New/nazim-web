@@ -146,31 +146,42 @@ export default function AuthPage() {
       <div className="w-full max-w-[800px] min-h-[600px] md:h-[600px] flex rounded-[20px] overflow-hidden shadow-2xl">
         {/* Left Frame - Image Panel - Hidden on mobile */}
         <div className="hidden md:block w-[360px] relative overflow-hidden rounded-l-[20px] flex-shrink-0">
-          <picture>
-            <source srcSet="/Login.webp" type="image/webp" />
-            <source srcSet="/Login-optimized.jpg" type="image/jpeg" />
-            <img
-              src="/Login.jpg"
-              alt="ناظم - د دیني مدارسو د تنظیم سیستم"
-              className="w-full h-full object-cover"
-              loading="lazy"
-              onError={(e) => {
-                // Fallback if image doesn't load
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                if (target.parentElement) {
-                  target.parentElement.className = 'hidden md:block w-[360px] bg-[#2c2f33] rounded-l-[20px] flex-shrink-0';
-                }
-              }}
-            />
-          </picture>
+          <img
+            src="/Login.jpg"
+            alt="ناظم - د دیني مدارسو د تنظیم سیستم"
+            className="w-full h-full object-cover"
+            loading="lazy"
+            onError={(e) => {
+              // Fallback if image doesn't load
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              if (target.parentElement) {
+                target.parentElement.className = 'hidden md:block w-[360px] bg-[#2c2f33] rounded-l-[20px] flex-shrink-0';
+              }
+            }}
+          />
         </div>
 
         {/* Right Frame - Login Form */}
-        <div className="flex-1 bg-white rounded-[20px] md:rounded-l-none md:rounded-r-[20px] p-6 md:p-8 flex flex-col">
+        <div className="flex-1 bg-white rounded-[20px] md:rounded-l-none md:rounded-r-[20px] p-6 md:p-8 flex flex-col overflow-y-auto min-h-0">
+          {/* Logo */}
+          <div className="flex justify-center mb-2">
+            <img
+              src="/nazim_logo.webp"
+              alt="Nazim Logo"
+              className="w-14 h-14 md:w-16 md:h-16 rounded-lg object-contain ring-2 ring-white/20 bg-white/20 p-1"
+              loading="eager"
+              onError={(e) => {
+                // Fallback if logo doesn't load
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
+            />
+          </div>
+          
           {/* Title */}
           <h1
-            className="text-[42px] md:text-[48px] font-bold text-[#2c2f33] text-center mb-4"
+            className="text-[36px] md:text-[42px] font-bold text-[#2c2f33] text-center mb-2"
             style={{ fontFamily: "'Bahij Titr', 'Noto Sans Arabic', sans-serif" }}
           >
             ناظم
@@ -178,14 +189,14 @@ export default function AuthPage() {
 
           {/* Subtitle */}
           <p
-            className="text-[18px] md:text-[20px] text-[#0b3d91] text-center mb-8 md:mb-10 px-4 leading-relaxed"
+            className="text-[16px] md:text-[18px] text-[#0b3d91] text-center mb-6 md:mb-8 px-4 leading-relaxed"
             style={{ fontFamily: "'Bahij Nassim', 'Noto Sans Arabic', sans-serif" }}
           >
             د دیني مدارسو د تنظیم سیستم ته ښه راغلاست
           </p>
 
           {/* Login Form */}
-          <form onSubmit={handleSignIn} className="flex-1 flex flex-col items-center justify-center space-y-6">
+          <form onSubmit={handleSignIn} className="flex-1 flex flex-col items-center justify-center space-y-6 min-h-0">
             {/* Email Input */}
             <div className="w-full max-w-[320px]">
               <Input
@@ -241,7 +252,7 @@ export default function AuthPage() {
           </form>
 
           {/* Contact Info */}
-          <div className="mt-auto pt-6 flex items-center justify-center gap-3" dir="ltr">
+          <div className="mt-auto pt-6 pb-2 flex items-center justify-center gap-3 flex-shrink-0" dir="ltr">
             {/* WhatsApp Icon */}
             <svg
               width="36"

@@ -17,6 +17,7 @@ import PlatformSettings from './pages/admin/PlatformSettings';
 import MaintenanceFeesManagement from './pages/admin/MaintenanceFeesManagement';
 import LicenseFeesManagement from './pages/admin/LicenseFeesManagement';
 import DesktopLicenseGeneration from './pages/admin/DesktopLicenseGeneration';
+import ContactMessagesManagement from './pages/admin/ContactMessagesManagement';
 import { PlatformAdminDashboard } from './pages/PlatformAdminDashboard';
 import { PlatformAdminLogin } from './pages/PlatformAdminLogin';
 import { PlatformPermissionGroupsManagement } from './pages/PlatformPermissionGroupsManagement';
@@ -192,6 +193,7 @@ export function PlatformAdminApp() {
                 </Suspense>
               } />
               <Route path="permission-groups" element={<PlatformPermissionGroupsManagement />} />
+              <Route path="contact-messages" element={<ContactMessagesManagement />} />
               {/* CRITICAL: More specific routes must come before less specific ones */}
               <Route path="settings/translations" element={
                 <Suspense fallback={<PageSkeleton />}>
