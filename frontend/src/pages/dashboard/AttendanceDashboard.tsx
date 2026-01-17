@@ -3,7 +3,7 @@
  */
 
 import { Activity, Calendar, CheckCircle2, XCircle, Clock, TrendingUp } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
@@ -19,41 +19,66 @@ export default function AttendanceDashboard() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   
-  // Only load data when this component is mounted (lazy loading)
-  const { sessions: attendanceSessions = [], isLoading } = useAttendanceSessions({}, false);
+  // Limit to last 30 days for dashboard performance
+  const dateTo = new Date().toISOString().split('T')[0];
+  const dateFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  // Use pagination with larger page size for dashboard (100 sessions for better stats)
+  const { sessions: attendanceSessions = [], isLoading, pageSize, setPageSize } = useAttendanceSessions(
+    { dateFrom, dateTo },
+    true // Use pagination
+  );
 
-  // Calculate dashboard statistics
+  // Set larger page size on mount for dashboard (load more sessions for accurate stats)
+  useEffect(() => {
+    if (pageSize < 100) {
+      setPageSize(100);
+    }
+  }, [pageSize, setPageSize]);
+
+  // Calculate dashboard statistics - optimized computation
+  // Note: Records are not included in the sessions list API response for performance
+  // So we only calculate session-level stats here
   const dashboardStats = useMemo(() => {
-    const totalSessions = attendanceSessions.length;
-    const todaySessions = attendanceSessions.filter(session => {
+    if (!attendanceSessions || attendanceSessions.length === 0) {
+      return {
+        totalSessions: 0,
+        todaySessions: 0,
+        totalRecords: 0,
+        presentCount: 0,
+        absentCount: 0,
+        attendanceRate: 0,
+      };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let totalSessions = 0;
+    let todaySessions = 0;
+
+    // Single pass through sessions for better performance
+    // Note: Records are not included in list response, so we can't calculate record-level stats
+    for (const session of attendanceSessions) {
+      totalSessions++;
+      
       const sessionDate = new Date(session.sessionDate);
-      const today = new Date();
-      return sessionDate.toDateString() === today.toDateString();
-    }).length;
+      sessionDate.setHours(0, 0, 0, 0);
+      if (sessionDate.getTime() === today.getTime()) {
+        todaySessions++;
+      }
+    }
 
-    // Calculate total attendance records
-    const totalRecords = attendanceSessions.reduce((sum, session) => {
-      return sum + (session.records?.length || 0);
-    }, 0);
-
-    // Calculate present/absent counts
-    const presentCount = attendanceSessions.reduce((sum, session) => {
-      return sum + (session.records?.filter(r => r.status === 'present').length || 0);
-    }, 0);
-
-    const absentCount = attendanceSessions.reduce((sum, session) => {
-      return sum + (session.records?.filter(r => r.status === 'absent').length || 0);
-    }, 0);
-
-    const attendanceRate = totalRecords > 0 ? (presentCount / totalRecords) * 100 : 0;
-
+    // Records are not available in list response, so we show 0
+    // To get accurate record stats, we'd need to fetch individual sessions with records
+    // For dashboard performance, we skip this and only show session counts
     return {
       totalSessions,
       todaySessions,
-      totalRecords,
-      presentCount,
-      absentCount,
-      attendanceRate: Math.round(attendanceRate * 10) / 10,
+      totalRecords: 0, // Not available in list response
+      presentCount: 0, // Not available in list response
+      absentCount: 0, // Not available in list response
+      attendanceRate: 0, // Not available in list response
     };
   }, [attendanceSessions]);
 
@@ -158,7 +183,7 @@ export default function AttendanceDashboard() {
                     <div>
                       <p className="font-medium">{formatDate(session.sessionDate)}</p>
                       <p className="text-sm text-muted-foreground">
-                        {session.records?.length || 0} {t('attendance.records') || 'records'}
+                        {session.className || t('attendance.session') || 'Session'}
                       </p>
                     </div>
                   </div>
