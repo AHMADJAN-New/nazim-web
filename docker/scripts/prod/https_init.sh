@@ -34,7 +34,8 @@ compose run --rm certbot certonly \
   -d "${DOMAIN}" \
   --email "${EMAIL}" \
   --agree-tos \
-  --no-eff-email
+  --no-eff-email \
+  --non-interactive
 
 echo "[https_init] Refreshing cert symlinks + reloading nginx..."
 compose exec -T nginx sh -lc '/refresh_certs.sh && nginx -s reload'

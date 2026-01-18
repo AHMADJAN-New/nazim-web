@@ -42,7 +42,7 @@ sleep 2
 # Renew certificates if they exist, otherwise skip silently
 if compose exec -T nginx test -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" 2>/dev/null; then
   echo "[update] Renewing certificates for ${DOMAIN}..."
-  if compose run --rm certbot renew --webroot -w /var/www/certbot --quiet; then
+  if compose run --rm certbot renew --webroot -w /var/www/certbot --non-interactive --quiet; then
     echo "[update] ✓ Certificates renewed (or already up to date)"
     echo "[update] Refreshing cert symlinks + reloading nginx..."
     compose exec -T nginx sh -lc '/refresh_certs.sh && nginx -s reload' || true

@@ -15,7 +15,7 @@ compose() {
 }
 
 echo "[https_renew] Renewing certificates (if needed)..."
-compose run --rm certbot renew --webroot -w /var/www/certbot --quiet
+compose run --rm certbot renew --webroot -w /var/www/certbot --non-interactive --quiet
 
 echo "[https_renew] Refreshing cert symlinks + reloading nginx..."
 compose exec -T nginx sh -lc '/refresh_certs.sh && nginx -s reload'
