@@ -183,6 +183,15 @@ return Application::configure(basePath: dirname(__DIR__))
                     $statusCode = $e->getCode();
                 }
                 
+                // Log the exception for debugging (even in production)
+                \Illuminate\Support\Facades\Log::error('API exception: ' . $e->getMessage(), [
+                    'exception' => get_class($e),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                    'request_uri' => $request->getRequestUri(),
+                ]);
+                
                 // Return JSON error response
                 return response()->json([
                     'message' => config('app.debug') ? $e->getMessage() : 'An error occurred',

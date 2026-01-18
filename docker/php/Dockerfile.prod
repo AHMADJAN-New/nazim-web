@@ -78,6 +78,11 @@ ENV BROWSERSHOT_CHROME_PATH=/usr/bin/chromium \
     BROWSERSHOT_NODE_BINARY=/usr/bin/node \
     PUPPETEER_CACHE_DIR=/var/www/.cache/puppeteer
 
+# Copy entrypoint script
+COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 EXPOSE 9000
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php-fpm"]
  

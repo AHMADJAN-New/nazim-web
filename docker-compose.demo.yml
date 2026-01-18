@@ -3,16 +3,16 @@ services:
     # PostgreSQL 18 - Latest stable version
     # Compatible with pgcrypto extension and gen_random_uuid() used in migrations
     image: postgres:18
-    container_name: nazim_prod_db
+    container_name: nazim_demo_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-nazim}
-      POSTGRES_USER: ${POSTGRES_USER:-nazim}
+      POSTGRES_DB: ${POSTGRES_DB:-nazim_demo}
+      POSTGRES_USER: ${POSTGRES_USER:-nazim_demo}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
     volumes:
       # PostgreSQL 18+ requires mount at /var/lib/postgresql (not /var/lib/postgresql/data)
       # This allows version-specific subdirectories for easier upgrades
-      - nazim_pg_data:/var/lib/postgresql
+      - nazim_demo_pg_data:/var/lib/postgresql
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
@@ -20,76 +20,76 @@ services:
       timeout: 3s
       retries: 30
     networks:
-      - nazim_network
+      - nazim_demo_network
 
   redis:
     image: redis:7-alpine
-    container_name: nazim_prod_redis
+    container_name: nazim_demo_redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
-      - nazim_redis_data:/data
+      - nazim_demo_redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 30
     networks:
-      - nazim_network
+      - nazim_demo_network
 
   php:
-    image: nazim-web-php:prod
+    image: nazim-web-php:demo
     build:
       context: .
       dockerfile: docker/php/Dockerfile.prod
-    container_name: nazim_prod_php
+    container_name: nazim_demo_php
     restart: unless-stopped
     env_file:
-      - docker/env/compose.prod.env
-      - ./backend/.env
+      - docker/env/compose.demo.env
+      - ./backend/.env.demo
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
-      - nazim_backend_storage:/var/www/backend/storage
+      - nazim_demo_backend_storage:/var/www/backend/storage
     healthcheck:
       test: ["CMD-SHELL", "php -v >/dev/null 2>&1 && php-fpm -t >/dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 12
     networks:
-      - nazim_network
+      - nazim_demo_network
 
   queue:
-    image: nazim-web-php:prod
-    container_name: nazim_prod_queue
+    image: nazim-web-php:demo
+    container_name: nazim_demo_queue
     restart: unless-stopped
     env_file:
-      - docker/env/compose.prod.env
-      - ./backend/.env
+      - docker/env/compose.demo.env
+      - ./backend/.env.demo
     depends_on:
       php:
         condition: service_healthy
     volumes:
-      - nazim_backend_storage:/var/www/backend/storage
+      - nazim_demo_backend_storage:/var/www/backend/storage
     command: ["sh", "-lc", "php artisan queue:work --sleep=3 --tries=3 --timeout=120 --no-interaction"]
     networks:
-      - nazim_network
+      - nazim_demo_network
 
   scheduler:
-    image: nazim-web-php:prod
-    container_name: nazim_prod_scheduler
+    image: nazim-web-php:demo
+    container_name: nazim_demo_scheduler
     restart: unless-stopped
     env_file:
-      - docker/env/compose.prod.env
-      - ./backend/.env
+      - docker/env/compose.demo.env
+      - ./backend/.env.demo
     depends_on:
       php:
         condition: service_healthy
     volumes:
-      - nazim_backend_storage:/var/www/backend/storage
+      - nazim_demo_backend_storage:/var/www/backend/storage
     command:
       [
         "sh",
@@ -97,7 +97,7 @@ services:
         "while true; do php artisan schedule:run --no-interaction --verbose || true; sleep 60; done",
       ]
     networks:
-      - nazim_network
+      - nazim_demo_network
 
   nginx:
     build:
@@ -106,10 +106,10 @@ services:
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
         VITE_API_URL: ${VITE_API_URL:-/api}
-    container_name: nazim_prod_nginx
+    container_name: nazim_demo_nginx
     restart: unless-stopped
     env_file:
-      - docker/env/compose.prod.env
+      - docker/env/compose.demo.env
     depends_on:
       php:
         condition: service_healthy
@@ -118,36 +118,37 @@ services:
     # The reverse proxy connects to this service via the network
     # Ports omitted - not exposed to host
     volumes:
-      - nazim_backend_storage:/backend-storage:ro
-      - nazim_letsencrypt:/etc/letsencrypt
-      - nazim_certbot_www:/var/www/certbot
+      - nazim_demo_backend_storage:/backend-storage:ro
+      - nazim_demo_letsencrypt:/etc/letsencrypt
+      - nazim_demo_certbot_www:/var/www/certbot
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost/healthz >/dev/null 2>&1"]
       interval: 10s
       timeout: 3s
       retries: 12
     networks:
-      - nazim_network
+      - nazim_demo_network
 
   certbot:
     image: certbot/certbot:latest
-    container_name: nazim_prod_certbot
+    container_name: nazim_demo_certbot
     restart: "no"
     env_file:
-      - docker/env/compose.prod.env
+      - docker/env/compose.demo.env
     volumes:
-      - nazim_letsencrypt:/etc/letsencrypt
-      - nazim_certbot_www:/var/www/certbot
+      - nazim_demo_letsencrypt:/etc/letsencrypt
+      - nazim_demo_certbot_www:/var/www/certbot
     networks:
-      - nazim_network
+      - nazim_demo_network
 
 volumes:
-  nazim_pg_data:
-  nazim_redis_data:
-  nazim_backend_storage:
-  nazim_letsencrypt:
-  nazim_certbot_www:
+  nazim_demo_pg_data:
+  nazim_demo_redis_data:
+  nazim_demo_backend_storage:
+  nazim_demo_letsencrypt:
+  nazim_demo_certbot_www:
 
 networks:
-  nazim_network:
+  nazim_demo_network:
     driver: bridge
+

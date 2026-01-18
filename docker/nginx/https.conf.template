@@ -14,8 +14,44 @@ server {
         try_files $uri =404;
     }
 
+    root /usr/share/nginx/html;
+    index index.html;
+    
+    location ^~ /assets/ {
+        try_files $uri =404;
+        access_log off;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000, immutable";
+    }
+    
+    location ^~ /storage/ {
+        alias /backend-storage/app/public/;
+        try_files $uri =404;
+        access_log off;
+        expires 7d;
+        add_header Cache-Control "public, max-age=604800";
+    }
+    
+    location = /api { return 301 /api/; }
+    
+    location ^~ /api/ {
+        include fastcgi_params;
+        fastcgi_pass php:9000;
+        fastcgi_param SCRIPT_FILENAME /var/www/backend/public/index.php;
+        fastcgi_param DOCUMENT_ROOT  /var/www/backend/public;
+        fastcgi_param REQUEST_URI $request_uri;
+        fastcgi_read_timeout 300;
+    }
+    
     location / {
-        return 301 https://$host$request_uri;
+        # Only redirect to HTTPS if request is not already HTTPS (behind proxy)
+        # If X-Forwarded-Proto is https, we're behind a proxy - don't redirect, just serve content
+        if ($http_x_forwarded_proto != "https") {
+            return 301 https://$host$request_uri;
+        }
+        
+        # Serve content when behind proxy (X-Forwarded-Proto: https) or direct HTTP access
+        try_files $uri $uri/ /index.html;
     }
 }
 

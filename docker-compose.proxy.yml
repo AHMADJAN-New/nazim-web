@@ -1,0 +1,59 @@
+services:
+  proxy:
+    image: nginx:alpine
+    container_name: nazim_proxy
+    restart: unless-stopped
+    ports:
+      # Only the proxy exposes ports 80/443
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/proxy/conf.d:/etc/nginx/conf.d:ro
+      # Share Let's Encrypt certificates from both environments
+      - nazim_letsencrypt:/etc/letsencrypt/prod:ro
+      - nazim_demo_letsencrypt:/etc/letsencrypt/demo:ro
+      - nazim_proxy_letsencrypt:/etc/letsencrypt/proxy
+      - nazim_proxy_certbot_www:/var/www/certbot
+    networks:
+      - nazim_network  # Connect to production network
+      - nazim_demo_network  # Connect to demo network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+
+  proxy_certbot:
+    image: certbot/certbot:latest
+    container_name: nazim_proxy_certbot
+    restart: "no"
+    environment:
+      - DOMAIN=${PROXY_DOMAIN:-nazim.cloud}
+      - EMAIL=${PROXY_LETSENCRYPT_EMAIL:-admin@nazim.cloud}
+    volumes:
+      - nazim_proxy_letsencrypt:/etc/letsencrypt
+      - nazim_proxy_certbot_www:/var/www/certbot
+    networks:
+      - nazim_network
+      - nazim_demo_network
+
+volumes:
+  # Proxy-managed volumes
+  nazim_proxy_letsencrypt:
+  nazim_proxy_certbot_www:
+  # External volumes from production/demo (must exist before proxy starts)
+  nazim_letsencrypt:
+    name: nazim-web_nazim_letsencrypt
+    external: true
+  nazim_demo_letsencrypt:
+    name: nazim-web_nazim_demo_letsencrypt
+    external: true
+
+networks:
+  nazim_network:
+    name: nazim-web_nazim_network
+    external: true
+  nazim_demo_network:
+    name: nazim-web_nazim_demo_network
+    external: true
