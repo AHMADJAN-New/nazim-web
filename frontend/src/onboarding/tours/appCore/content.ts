@@ -2,10 +2,8 @@
  * App Core Tour - Content (i18n-aware)
  *
  * IMPORTANT:
- * - This content is resolved dynamically using the currently selected language
- *   (`localStorage.nazim-language`).
- * - This allows the tour to immediately match the user-selected language without requiring
- *   a page reload.
+ * - This content is resolved dynamically using the currently selected language.
+ * - Nazim Standards: Professional tone, native localization (Pashto/Dari), and user-centric descriptions.
  */
 
 import { getCurrentLanguage } from '../../rtl';
@@ -14,9 +12,12 @@ type SupportedLanguage = 'en' | 'ps' | 'fa' | 'ar';
 
 function getLang(): SupportedLanguage {
   const lang = getCurrentLanguage();
-  return lang === 'ps' || lang === 'fa' || lang === 'ar' ? lang : 'en';
+  return (['ps', 'fa', 'ar'] as const).includes(lang as any) 
+    ? (lang as SupportedLanguage) 
+    : 'en';
 }
 
+// English (Refined)
 export const tourContentEn = {
   welcome: {
     title: 'Welcome to Nazim!',
@@ -30,382 +31,549 @@ export const tourContentEn = {
     title: 'Your Dashboard',
     icon: 'Home',
     text: [
-      'This is your Dashboard - your central hub for school management.',
-      'Here you can see key metrics, recent activities, and quick access to important features.',
+      'This is your central hub for school management.',
+      'Here you see key metrics, recent activities, and shortcuts to important features immediately after logging in.',
     ],
   },
   dashboardTabs: {
     title: 'Dashboard Tabs',
-    icon: 'FileText',
+    icon: 'Layout',
     text: [
-      'The dashboard uses tabs to organize different sections of information.',
-      'Click on any tab to switch between Overview, Finance, Assets, Library, Attendance, Leave Requests, and Documents.',
-      'Each tab shows relevant data and quick actions for that area. Tabs help you navigate without leaving the dashboard.',
-      'Tabs are used throughout the application to organize related content. You\'ll find tabs in many pages: student profiles, staff records, reports, and more.',
-      'Click any tab to switch views. The active tab is highlighted. On mobile, tab labels may be hidden - icons are always visible.',
-      'Action buttons near the tabs (Add, Export, Filter, etc.) let you perform tasks immediately. Together the tabs and actions keep you moving through the workflow without extra navigation.',
+      'The dashboard organizes information into tabs (Overview, Finance, Attendance, etc.).',
+      'Click a tab to switch views without leaving the page.',
+      'Each tab provides specific data and quick actions relevant to that area.',
     ],
   },
   tabsGeneral: {
     title: 'Understanding Tabs',
     icon: 'FileText',
     text: [
-      'Tabs are used throughout the application to organize related content.',
-      'You\'ll find tabs in many pages: student profiles, staff records, reports, and more.',
-      'Click any tab to switch views. The active tab is highlighted. On mobile, tab labels may be hidden - icons are always visible.',
-      'Tabs help you access different sections of information without navigating away from the current page.',
+      'You will see tabs throughout the application (e.g., inside Student Profiles or Reports).',
+      'They allow you to view different categories of information while staying on the same record.',
+      'On mobile devices, tab labels might hide, but the icons will remain visible.',
     ],
   },
   sidebar: {
     title: 'Navigation Sidebar',
-    icon: 'Home',
+    icon: 'Menu',
     text: [
-      'The sidebar is your main navigation hub, organized into logical sections.',
-      'Operations: Manage students, staff, and attendance. Academic: Handle classes, subjects, and exams. Finance: Track fees and payments. Administration: Configure settings and permissions.',
-      'Click any menu item to explore. Items with arrows have sub-menus that expand when clicked.',
+      'The sidebar is your main navigation map.',
+      'It allows you to jump between Operations, Academics, Finance, and Settings.',
+      'Click any item with an arrow to reveal more specific options.',
     ],
   },
   editIcon: {
-    title: 'Edit Icon (Pencil)',
+    title: 'Edit (Pencil)',
     icon: 'Pencil',
     text: [
-      'The edit action always uses the `Pencil` icon from our lucide set.',
-      'You will find it beside each record in tables and lists.',
-      'Click it to open the inline form where you can update fields right away.',
-      'Keeping edits next to the data prevents losing context.',
+      'The `Pencil` icon is your tool for making changes.',
+      'You will find it beside records in tables.',
+      'Click it to update information immediately without losing your place.',
     ],
   },
   deleteIcon: {
-    title: 'Delete Icon (Trash)',
+    title: 'Delete (Trash)',
     icon: 'Trash2',
     text: [
-      'Our delete icon is the `Trash2` icon from lucide.',
-      'It appears beside the edit icon in the same action area.',
-      'Use it to remove outdated entries, and confirm when prompted before the deletion goes through.',
+      'The `Trash` icon allows you to remove records.',
+      'It usually appears beside the edit icon.',
+      'Use this to remove outdated entries. You will always be asked to confirm before deletion.',
     ],
   },
   viewIcon: {
-    title: 'View Icon (Eye)',
+    title: 'View (Eye)',
     icon: 'Eye',
     text: [
-      'The `Eye` icon lets you open a read-only view of a record.',
-      'Use its button when you want to preview data before editing or deleting.',
-      'It is handy for quick lookups without navigating away from the list.',
+      'The `Eye` icon opens a read-only preview.',
+      'Use this to check details without the risk of accidentally changing data.',
     ],
   },
   tabsActions: {
-    title: 'Tabs & Action Buttons',
-    icon: 'FileText',
+    title: 'Action Buttons',
+    icon: 'MousePointerClick',
     text: [
-      'Many pages show tabs or pills at the top of the content area (for example, Overview, Records, and Reports).',
-      'Switch between these tabs to change the focus of the page without leaving the module.',
-      'Action buttons near the tabs (Add, Export, Filter, etc.) let you perform tasks immediately.',
-      'Together the tabs and actions keep you moving through the workflow without extra navigation.',
+      'Look for buttons like "Add", "Export", or "Filter" near the top of the page.',
+      'These actions are context-aware, meaning they change based on which tab you are currently viewing.',
     ],
   },
   topBar: {
     title: 'Top Bar Navigation',
-    icon: 'Search',
+    icon: 'PanelTop',
     text: [
-      'The top bar provides quick access to essential tools and information.',
-      'Use the search bar to quickly find students, staff, or any content. Press Ctrl+K (or Cmd+K on Mac) for the command palette.',
-      'The notification bell shows important updates, and the user menu lets you access your profile and settings.',
+      'The top bar stays visible wherever you go.',
+      'It houses the global search, notifications, and your user profile menu.',
     ],
   },
   search: {
     title: 'Global Search',
     icon: 'Search',
     text: [
-      'Search across the entire application instantly.',
-      'Type to find students, staff, classes, or any content. Use Ctrl+K (Cmd+K on Mac) for advanced search with filters.',
+      'Find anything instantly.',
+      'Type to find students, staff, or classes. Use Ctrl+K (Cmd+K on Mac) to open the search command palette quickly.',
     ],
   },
   notifications: {
     title: 'Notifications',
     icon: 'Bell',
     text: [
-      'Stay updated with important notifications.',
-      'Click the bell icon to see all your notifications. The badge shows unread count.',
+      'Stay updated with system alerts.',
+      'The bell icon shows important updates. A red badge indicates unread messages.',
     ],
   },
   sidebarStudents: {
     title: 'Student Management',
     icon: 'Users',
     text: [
-      'Manage all your student information in one place.',
-      'Register new students, view detailed profiles, manage admissions, track academic progress, and handle student documents.',
-      'All student data is organized by class and academic year for easy access.',
+      'The core of your school data.',
+      'Register new students, manage admissions, track academic progress, and handle documents.',
+      'Data is organized by class and academic year.',
     ],
   },
   sidebarStaff: {
     title: 'Staff Management',
     icon: 'UserCheck',
     text: [
-      'Manage your staff members and teachers efficiently.',
-      'Register new staff, assign roles and permissions, manage teacher assignments to classes and subjects, and track staff performance.',
+      'Manage your workforce efficiently.',
+      'Register staff, assign roles, manage teacher subjects, and track performance.',
     ],
   },
   sidebarAttendance: {
-    title: 'Attendance Tracking',
+    title: 'Attendance',
     icon: 'Calendar',
     text: [
-      'Track attendance for both students and staff.',
-      'Mark daily attendance, view attendance reports, monitor patterns, and generate attendance summaries for parents and administration.',
+      'Track daily presence for students and staff.',
+      'Mark attendance, view patterns, and generate monthly reports for parents or administration.',
     ],
   },
   sidebarExams: {
     title: 'Examinations',
     icon: 'BookOpen',
     text: [
-      'Manage all examination and assessment activities.',
-      'Create exam schedules, enter grades, generate report cards, and track student performance across all subjects.',
+      'Handle assessments and grading.',
+      'Create exam schedules, enter marks, and generate report cards automatically.',
     ],
   },
   sidebarFinance: {
-    title: 'Finance Management',
+    title: 'Finance',
     icon: 'CreditCard',
     text: [
-      'Handle all financial operations for your school.',
-      'Manage fee collection, track payments, generate invoices and receipts, view financial reports, and monitor outstanding balances.',
+      'Manage school financials.',
+      'Track fee collections, manage expenses, and view financial summaries and outstanding balances.',
     ],
   },
   sidebarAcademic: {
-    title: 'Academic Settings',
+    title: 'Academic Setup',
     icon: 'GraduationCap',
     text: [
-      'Configure your academic structure and curriculum.',
-      'Set up academic years, create and manage classes, define subjects, build timetables, and organize your academic calendar.',
+      'Configure the backbone of your curriculum.',
+      'Set up academic years, define classes and subjects, and build timetables.',
     ],
   },
   sidebarSettings: {
-    title: 'Settings',
+    title: 'System Settings',
     icon: 'Settings',
     text: [
-      'Configure your organization and system settings.',
-      'Manage users and permissions, customize school branding, configure system preferences, and access administrative tools.',
+      'Control how Nazim works for you.',
+      'Manage user permissions, school branding, and general system preferences.',
     ],
   },
   userMenu: {
-    title: 'User Menu',
+    title: 'User Profile',
     icon: 'User',
     text: [
-      'Access your profile and account settings.',
-      'Click your avatar or name to open the user menu. From here you can view your profile, change settings, switch schools (if applicable), adjust language and theme preferences, or log out.',
+      'Manage your account.',
+      'Click your avatar to view your profile, change language/theme settings, or log out.',
     ],
   },
   helpCenter: {
     title: 'Help & Support',
     icon: 'HelpCircle',
     text: [
-      'Get help whenever you need it.',
-      'Click the help icon to access the Help Center with detailed guides, tutorials, and contextual tips. You can also find help buttons throughout the application for specific features.',
+      'Need assistance?',
+      'Click the help icon to access guides and tutorials. Look for specific help buttons on complex pages for context-aware tips.',
     ],
   },
   complete: {
     title: "You're All Set!",
-    icon: 'School',
+    icon: 'CheckCircle',
     text: [
-      'Congratulations! You now know the basics of navigating Nazim.',
-      'You\'ve learned about the sidebar, dashboard tabs, common icons (edit, delete, view), and how to access help.',
-      'Feel free to explore the app and take this tour again anytime from your profile menu or the help center.',
-      'Welcome to Nazim!',
+      'Congratulations! You know the basics.',
+      'You are ready to start managing your school with Nazim.',
+      'You can revisit this tour anytime from the user menu.',
     ],
   },
 };
 
-// Pashto translations (fallback to English if not present)
+// Pashto (Standardized)
 export const tourContentPs: typeof tourContentEn = {
   welcome: {
     title: 'ناظم ته ښه راغلاست!',
     icon: 'School',
     text: [
-      'موږ خوشحاله یو چې تاسو زموږ سره یاست! راځئ یو لنډ سفر وکړو ترڅو له سیستم سره بلد شئ.',
-      'په دې سفر کې به د اپلیکیشن مهمې ځانګړتیاوې، منو (Sidebar) او عام کارونه در وښایو چې هره ورځ یې کاروئ.',
+      'خوښ یو چې تاسو له موږ سره یاست! راځئ یو لنډ سفر وکړو ترڅو له سیستم سره بلد شئ.',
+      'دا سفر به تاسو ته د سیستم مهمې برخې او هغه تڼۍ وښيي چې هره ورځ ورسره سروکار لرئ.',
     ],
   },
   dashboard: {
     title: 'ستاسو ډشبورډ',
     icon: 'Home',
     text: [
-      'دا ستاسو ډشبورډ دی — د ښوونځي د مدیریت مرکزي ځای.',
-      'دلته مهم شمېرې، وروستي فعالیتونه، او مهمو برخو ته چټک لاسرسی لیدلی شئ.',
+      'دا د ښوونځي د مدیریت لپاره ستاسو مرکزي پاڼه ده.',
+      'دلته مهم ارقام، وروستي فعالیتونه، او اړینو برخو ته چټک لاسرسی لیدلی شئ.',
     ],
   },
   dashboardTabs: {
     title: 'د ډشبورډ ټبونه',
-    icon: 'FileText',
+    icon: 'Layout',
     text: [
-      'ډشبورډ د ټبونو له لارې بېلابېلې برخې منظموي.',
-      'پر هر ټب کلیک وکړئ ترڅو د عمومي معلوماتو، مالیې، شتمنیو، کتابتون، حاضري، رخصتیو غوښتنو او اسنادو ترمنځ بدلون وکړئ.',
-      'هر ټب د خپلې برخې اړوند معلومات او چټک کارونه ښيي. ټبونه مرسته کوي چې له ډشبورډه ونه وځئ.',
-      'ټبونه په ټول اپلیکیشن کې کارول کېږي: د زده‌کوونکي پروفایلونه، د کارکوونکو ثبتونه، راپورونه او نور.',
-      'پر هر ټب کلیک سره لید بدلېږي. فعال ټب روښانه ښکاري. په موبایل کې ممکن د ټب نومونه پټ وي — خو آیکنونه تل ښکاري.',
-      'د ټبونو ترڅنګ د عمل تڼۍ (Add، Export، Filter او نور) تاسو ته سمدستي کار کول اسانه کوي او اضافي تګ راتګ کموي.',
+      'ډشبورډ معلومات په ټبونو وېشي (لکه عمومي، مالي، حاضري).',
+      'پر هر ټب کلیک وکړئ ترڅو د پاڼې د بدلولو پرته بېلابېل معلومات وګورئ.',
+      'هر ټب د هغې برخې اړوند ځانګړي معلومات او کړنې ښيي.',
     ],
   },
   tabsGeneral: {
-    title: 'د ټبونو پوهه',
+    title: 'د ټبونو پېژندنه',
     icon: 'FileText',
     text: [
-      'ټبونه په اپلیکیشن کې د اړوندو معلوماتو د منظمولو لپاره کارول کېږي.',
-      'په ډېرو پاڼو کې به ټبونه ووینئ: د زده‌کوونکو پروفایلونه، د کارکوونکو ریکارډونه، راپورونه او نور.',
-      'پر ټب کلیک سره لید بدلېږي. فعال ټب روښانه وي. په موبایل کې ممکن نوم پټ وي — آیکنونه تل ښکاري.',
-      'ټبونه مرسته کوي چې د یوې پاڼې دننه بېلابېلې برخې ووینئ، پرته له دې چې له پاڼې ووځئ.',
+      'تاسو به په ټول سیستم کې ټبونه وینئ (مثلاً د زده‌کوونکي په پروفایل کې).',
+      'دا تاسو ته اجازه درکوي چې د یو ریکارډ اړوند بېلابېل معلومات په اسانۍ وګورئ.',
+      'په موبایل کې ممکن د ټب نوم پټ شي، خو آیکن به تل ښکاري.',
     ],
   },
   sidebar: {
-    title: 'د منو (Sidebar) ناوبرۍ',
-    icon: 'Home',
+    title: 'د اړخ مینو (Sidebar)',
+    icon: 'Menu',
     text: [
-      'Sidebar ستاسو د ناوبرۍ اصلي مرکز دی او په منظم ډول په برخو وېشل شوی دی.',
-      'Operations: زده‌کوونکي، کارکوونکي او حاضري مدیریت کړئ. Academic: ټولګي، مضمونونه او امتحانونه تنظیم کړئ. Finance: فیسونه او تادیات تعقیب کړئ. Administration: تنظیمات او اجازې تنظیم کړئ.',
-      'پر هر مینو کلیک وکړئ. هغه توکي چې غشی لري فرعي مینو لري او د کلیک په کولو سره پراخېږي.',
+      'دا مینو ستاسو د تګ راتګ اصلي نقشه ده.',
+      'له دې لارې عملیاتي، تدریسي، مالي او تنظیماتو برخو ته تګ کولی شئ.',
+      'هغه مینو چې غشی لري، نور فرعي انتخابونه هم لري.',
     ],
   },
   editIcon: {
-    title: 'د سمون آیکن (پنسل)',
+    title: 'سمون (پنسل)',
     icon: 'Pencil',
     text: [
-      'د سمون لپاره تل د `Pencil` آیکن کارېږي.',
-      'دا آیکن به د جدولونو او لېستونو په هر ریکارډ کې د عمل برخه کې ووینئ.',
-      'پر دې کلیک سره د هماغه ځای فورم پرانیستل کېږي او تاسو سمدستي بدلون کولی شئ.',
-      'دا کار ستاسو تمرکز له معلوماتو سره نږدې ساتي.',
+      'د `پنسل` نښه د معلوماتو د بدلون لپاره ده.',
+      'دا نښه د جدولونو په هر ریکارډ کې لیدل کیږي.',
+      'پر دې کلیک سره سمدستي معلومات تازه کولی شئ پرته له دې چې پاڼه بدله شي.',
     ],
   },
   deleteIcon: {
-    title: 'د ړنګولو آیکن (Trash)',
+    title: 'پاکول (Trash)',
     icon: 'Trash2',
     text: [
-      'د ړنګولو لپاره د `Trash2` آیکن کارېږي.',
-      'دا عموماً د سمون آیکن ترڅنګ ښودل کېږي.',
-      'د زړو یا ناسم معلوماتو د لرې کولو لپاره یې وکاروئ، او د تایید پیغام په وخت کې احتیاط وکړئ.',
+      'د `کثافات دانی` نښه د ریکارډونو د پاکولو لپاره ده.',
+      'دا عموماً د سمون ترڅنګ وي.',
+      'د زړو معلوماتو د لرې کولو لپاره یې وکاروئ. سیستم به تل لومړی ستاسو تایید وغواړي.',
     ],
   },
   viewIcon: {
-    title: 'د کتلو آیکن (Eye)',
+    title: 'لیدل (سترګه)',
     icon: 'Eye',
     text: [
-      'د `Eye` آیکن د ریکارډ د یوازې-لوستلو (Read-only) کتنې لپاره دی.',
-      'کله چې غواړئ له سمون یا ړنګولو مخکې معلومات وګورئ، دا تڼۍ وکاروئ.',
-      'دا د چټکو کتنو لپاره ګټور دی پرته له دې چې له لېسته ووځئ.',
+      'د `سترګې` نښه د معلوماتو د یوازې لیدلو (Read-only) لپاره ده.',
+      'کله چې غواړئ معلومات وګورئ پرته له دې چې په غلطۍ سره یې بدل کړئ، دا تڼۍ وکاروئ.',
     ],
   },
   tabsActions: {
-    title: 'ټبونه او د عمل تڼۍ',
-    icon: 'FileText',
+    title: 'د عمل تڼۍ',
+    icon: 'MousePointerClick',
     text: [
-      'ډېری پاڼې د محتوا په سر کې ټبونه/پیلونه ښيي (لکه Overview، Records، Reports).',
-      'د ټبونو ترمنځ بدلون وکړئ ترڅو د پاڼې تمرکز بدل کړئ پرته له دې چې له مودول څخه ووځئ.',
-      'د ټبونو ترڅنګ د عمل تڼۍ (Add، Export، Filter او نور) تاسو ته ژر کار کول اسانه کوي.',
-      'ټبونه او عمل تڼۍ یو ځای ستاسو کاري بهیر چټکوي او اضافي ناوبرۍ کموي.',
+      'د پاڼې په سر کې د "اضافه کول"، "ایکسپورټ" یا "فلټر" تڼۍ وکاروئ.',
+      'دا تڼۍ هوښیارې دي او د هغه ټب سره سم بدلیږي چې تاسو یې ګورئ.',
     ],
   },
   topBar: {
-    title: 'پورته بار (Top Bar)',
-    icon: 'Search',
+    title: 'پورته مینو (Top Bar)',
+    icon: 'PanelTop',
     text: [
-      'پورته بار تاسو ته مهمو وسایلو ته چټک لاسرسی درکوي.',
-      'د لټون له لارې زده‌کوونکي، کارکوونکي او نور معلومات ژر پیدا کړئ. د Command Palette لپاره Ctrl+K (په Mac کې Cmd+K) وکاروئ.',
-      'د خبرتیاوو زنګ مهم تازه معلومات ښيي، او د کاروونکي مینو څخه پروفایل او تنظیماتو ته لاسرسی لرئ.',
+      'دا برخه تل د سکرین په سر کې ښکاري.',
+      'دلته عمومي لټون، خبرتیاوې او ستاسو شخصي پروفایل شتون لري.',
     ],
   },
   search: {
     title: 'عمومي لټون',
     icon: 'Search',
     text: [
-      'په ټول اپلیکیشن کې ژر لټون وکړئ.',
-      'زده‌کوونکي، کارکوونکي، ټولګي او نور معلومات ومومئ. د پرمختللي لټون لپاره Ctrl+K (په Mac کې Cmd+K) وکاروئ.',
+      'هرڅه په یوه شیبه کې ومومئ.',
+      'د زده‌کوونکو، کارکوونکو یا ټولګیو نوم ولیکئ. د چټک لاسرسي لپاره Ctrl+K وکاروئ.',
     ],
   },
   notifications: {
     title: 'خبرتیاوې',
     icon: 'Bell',
     text: [
-      'له مهمو خبرتیاوو سره خبر اوسئ.',
-      'د زنګ آیکن کلیک کړئ ترڅو ټولې خبرتیاوې وګورئ. نښه (badge) د نه-لوستل شوو شمېر ښيي.',
+      'له مهمو بدلونونو خبر اوسئ.',
+      'د زنګ نښه مهم پیغامونه ښيي. سور رنګ د نویو او نه لوستل شویو پیغامونو نښه ده.',
     ],
   },
   sidebarStudents: {
     title: 'د زده‌کوونکو مدیریت',
     icon: 'Users',
     text: [
-      'د زده‌کوونکو ټول معلومات په یو ځای کې اداره کړئ.',
-      'نوي زده‌کوونکي ثبت کړئ، تفصیلي پروفایلونه وګورئ، داخلې تنظیم کړئ، تعلیمي پرمختګ تعقیب کړئ، او اسناد مدیریت کړئ.',
-      'د زده‌کوونکو معلومات د ټولګي او تعلیمي کال له مخې منظم دي.',
+      'د ښوونځي د معلوماتو اصلي برخه.',
+      'نوي زده‌کوونکي ثبت کړئ، داخلې تنظیم کړئ، او تعلیمي پرمختګ تعقیب کړئ.',
+      'معلومات د ټولګي او تعلیمي کال له مخې منظم شوي دي.',
     ],
   },
   sidebarStaff: {
     title: 'د کارکوونکو مدیریت',
     icon: 'UserCheck',
     text: [
-      'کارکوونکي او ښوونکي په اغېزمن ډول مدیریت کړئ.',
-      'نوي کارکوونکي ثبت کړئ، رولونه او اجازې ورکړئ، ښوونکي ټولګیو/مضمونونو ته وټاکئ، او د کارکوونکو فعالیت تعقیب کړئ.',
+      'خپل پرسونل په اغېزمن ډول مدیریت کړئ.',
+      'کارکوونکي ثبت کړئ، دندې ور وسپارئ او فعالیت یې وڅارئ.',
     ],
   },
   sidebarAttendance: {
-    title: 'د حاضري ثبت',
+    title: 'حاضري',
     icon: 'Calendar',
     text: [
-      'د زده‌کوونکو او کارکوونکو حاضري تعقیب کړئ.',
-      'ورځنۍ حاضري وټاکئ، راپورونه وګورئ، الګوګانې (patterns) وڅارئ، او د ادارې/اولیاوو لپاره لنډیزونه جوړ کړئ.',
+      'د زده‌کوونکو او کارکوونکو ورځنۍ حاضري واخلئ.',
+      'ورځنۍ حاضري وټاکئ او میاشتني راپورونه وګورئ.',
     ],
   },
   sidebarExams: {
     title: 'امتحانونه',
     icon: 'BookOpen',
     text: [
-      'د امتحان او ارزونې ټول کارونه مدیریت کړئ.',
-      'د امتحان مهالویش جوړ کړئ، نمرې داخل کړئ، کارډونه/راپورونه جوړ کړئ، او د ټولو مضمونونو له مخې د زده‌کوونکو فعالیت تعقیب کړئ.',
+      'ارزونې او نمرې مدیریت کړئ.',
+      'د امتحان مهالویش جوړ کړئ، نمرې داخل کړئ او په اتومات ډول د پایلو پاڼې (اطلاع نامې) جوړې کړئ.',
     ],
   },
   sidebarFinance: {
-    title: 'د مالیې مدیریت',
+    title: 'مالي چارې',
     icon: 'CreditCard',
     text: [
-      'د ښوونځي ټول مالي کارونه اداره کړئ.',
-      'د فیس راټولول، تادیات، رسید/انوايس، مالي راپورونه، او پاتې بیلانسونه تعقیب کړئ.',
+      'د ښوونځي مالي حسابونه اداره کړئ.',
+      'فیسونه راټول کړئ، لګښتونه ثبت کړئ او مالي راپورونه وګورئ.',
     ],
   },
   sidebarAcademic: {
     title: 'تعلیمي تنظیمات',
     icon: 'GraduationCap',
     text: [
-      'تعلیمي جوړښت او نصاب تنظیم کړئ.',
-      'تعلیمي کلونه جوړ کړئ، ټولګي تنظیم کړئ، مضمونونه تعریف کړئ، مهالویش جوړ کړئ، او تعلیمي کلیز منظم کړئ.',
+      'د نصاب او درسونو بنسټ جوړ کړئ.',
+      'تعلیمي کلونه، ټولګي او مضمونونه تعریف کړئ او مهالویش جوړ کړئ.',
     ],
   },
   sidebarSettings: {
-    title: 'تنظیمات',
+    title: 'د سیستم تنظیمات',
     icon: 'Settings',
     text: [
-      'د ادارې او سیستم تنظیمات سمبال کړئ.',
-      'کاروونکي او اجازې مدیریت کړئ، د ښوونځي برانډنګ تنظیم کړئ، د سیستم غوره‌توبونه بدل کړئ، او اداري وسایلو ته لاسرسی ولرئ.',
+      'ناظم ستاسو د اړتیا سره سم تنظیم کړئ.',
+      'د کاروونکو صلاحیتونه او د ښوونځي عمومي معلومات دلته بدلولی شئ.',
     ],
   },
   userMenu: {
-    title: 'د کاروونکي مینو',
+    title: 'د کاروونکي پروفایل',
     icon: 'User',
     text: [
-      'پروفایل او حساب تنظیماتو ته لاسرسی.',
-      'پر اواتار/نوم کلیک وکړئ ترڅو مینو پرانیستل شي. له دې ځایه پروفایل وګورئ، تنظیمات بدل کړئ، ښوونځی بدل کړئ (که وي)، ژبه/تم بدل کړئ، یا ووځئ.',
+      'خپل حساب مدیریت کړئ.',
+      'پر خپل عکس کلیک وکړئ ترڅو پروفایل وګورئ، ژبه بدله کړئ یا له سیستمه ووځئ.',
     ],
   },
   helpCenter: {
     title: 'مرسته او ملاتړ',
     icon: 'HelpCircle',
     text: [
-      'هر وخت مرسته ترلاسه کړئ.',
-      'د مرستې آیکن کلیک کړئ ترڅو د مرستې مرکز پرانیستل شي: لارښودونه، درسونه او اړوندې مشورې. په نورو برخو کې هم د ځانګړو فیچرونو لپاره د مرستې تڼۍ شته.',
+      'مرستې ته اړتیا لرئ؟',
+      'د مرستې آیکن کلیک وکړئ. په پیچلو پاڼو کې د ځانګړو لارښوونو تڼۍ هم شته.',
     ],
   },
   complete: {
     title: 'تاسو چمتو یاست!',
+    icon: 'CheckCircle',
+    text: [
+      'مبارک! تاسو لومړني شیان زده کړل.',
+      'تاسو اوس کولی شئ په ناظم کې خپل کار پیل کړئ.',
+      'دا لارښود هر وخت د کاروونکي مینو څخه بیا کتلی شئ.',
+    ],
+  },
+};
+
+// Farsi/Dari (Added for Nazim Standards)
+export const tourContentFa: typeof tourContentEn = {
+  welcome: {
+    title: 'به ناظم خوش آمدید!',
     icon: 'School',
     text: [
-      'مبارک! اوس تاسو د ناظم د ناوبرۍ بنسټیز اصول زده کړل.',
-      'تاسو د منو، ډشبورډ ټبونه، عام آیکنونه (سمون، ړنګول، کتنه) او د مرستې لاسرسی وپېژاند.',
-      'هر وخت کولی شئ له کاروونکي مینو یا د مرستې مرکز څخه دا سفر بیا پیل کړئ.',
-      'ناظم ته ښه راغلاست!',
+      'خوشحالیم که شما اینجا هستید! بیایید یک گشت کوتاه بزنیم تا با سیستم آشنا شوید.',
+      'این راهنما ویژگی‌های اصلی، منوها و کارهای روزمره را به شما نشان می‌دهد.',
+    ],
+  },
+  dashboard: {
+    title: 'داشبورد شما',
+    icon: 'Home',
+    text: [
+      'اینجا مرکز مدیریت مکتب شماست.',
+      'شما می‌توانید آمار کلیدی، فعالیت‌های اخیر و میانبرهای مهم را بلافاصله پس از ورود ببینید.',
+    ],
+  },
+  dashboardTabs: {
+    title: 'تب‌های داشبورد',
+    icon: 'Layout',
+    text: [
+      'داشبورد اطلاعات را در تب‌ها (مانند عمومی، مالی، حاضری) دسته‌بندی می‌کند.',
+      'روی هر تب کلیک کنید تا بدون ترک صفحه، اطلاعات مختلف را ببینید.',
+      'هر تب داده‌ها و عملیات مربوط به همان بخش را نشان می‌دهد.',
+    ],
+  },
+  tabsGeneral: {
+    title: 'آشنایی با تب‌ها',
+    icon: 'FileText',
+    text: [
+      'شما در سراسر برنامه تب‌ها را خواهید دید (مثلاً در پروفایل شاگردان).',
+      'آن‌ها به شما اجازه می‌دهند دسته‌های مختلف اطلاعات را بدون جابجایی صفحه مشاهده کنید.',
+      'در موبایل ممکن است نام تب پنهان شود، اما آیکون آن همیشه قابل مشاهده است.',
+    ],
+  },
+  sidebar: {
+    title: 'منوی کناری (Sidebar)',
+    icon: 'Menu',
+    text: [
+      'این منو نقشه اصلی شما برای حرکت در سیستم است.',
+      'از اینجا می‌توانید به بخش‌های عملیاتی، تدریسی، مالی و تنظیمات بروید.',
+      'گزینه‌هایی که فلش دارند، شامل زیرمجموعه‌های بیشتری هستند.',
+    ],
+  },
+  editIcon: {
+    title: 'ویرایش (قلم)',
+    icon: 'Pencil',
+    text: [
+      'آیکون `قلم` ابزار شما برای ایجاد تغییرات است.',
+      'این آیکون را در کنار رکوردها در جداول خواهید دید.',
+      'با کلیک روی آن می‌توانید اطلاعات را فوراً به‌روزرسانی کنید.',
+    ],
+  },
+  deleteIcon: {
+    title: 'حذف (سطل زباله)',
+    icon: 'Trash2',
+    text: [
+      'آیکون `سطل زباله` برای حذف کردن رکوردها است.',
+      'معمولاً در کنار آیکون ویرایش قرار دارد.',
+      'برای حذف اطلاعات قدیمی از آن استفاده کنید. سیستم همیشه قبل از حذف از شما تایید می‌گیرد.',
+    ],
+  },
+  viewIcon: {
+    title: 'مشاهده (چشم)',
+    icon: 'Eye',
+    text: [
+      'آیکون `چشم` حالت فقط خواندنی را باز می‌کند.',
+      'برای بررسی جزئیات بدون خطر تغییر اشتباهی داده‌ها از این گزینه استفاده کنید.',
+    ],
+  },
+  tabsActions: {
+    title: 'دکمه‌های عملیاتی',
+    icon: 'MousePointerClick',
+    text: [
+      'در بالای صفحه دکمه‌هایی مانند "افزودن"، "اکسپورت" یا "فیلتر" را ببینید.',
+      'این دکمه‌ها هوشمند هستند و بر اساس تبی که در آن هستید تغییر می‌کنند.',
+    ],
+  },
+  topBar: {
+    title: 'نوار بالا (Top Bar)',
+    icon: 'PanelTop',
+    text: [
+      'این نوار همیشه در بالای صفحه قابل مشاهده است.',
+      'جستجوی عمومی، اعلانات و پروفایل کاربری شما در اینجا قرار دارد.',
+    ],
+  },
+  search: {
+    title: 'جستجوی عمومی',
+    icon: 'Search',
+    text: [
+      'هر چیزی را فوراً پیدا کنید.',
+      'نام شاگردان، کارمندان یا صنف‌ها را تایپ کنید. برای دسترسی سریع از کلیدهای Ctrl+K استفاده کنید.',
+    ],
+  },
+  notifications: {
+    title: 'اعلانات',
+    icon: 'Bell',
+    text: [
+      'از تغییرات سیستم باخبر باشید.',
+      'آیکون زنگ پیام‌های مهم را نشان می‌دهد. نشان قرمز به معنی پیام‌های خوانده نشده است.',
+    ],
+  },
+  sidebarStudents: {
+    title: 'مدیریت شاگردان',
+    icon: 'Users',
+    text: [
+      'هسته اصلی اطلاعات مکتب شما.',
+      'شاگردان جدید را ثبت کنید، امور پذیرش را انجام دهید و پیشرفت تحصیلی را پیگیری نمایید.',
+      'اطلاعات بر اساس صنف و سال تحصیلی منظم شده‌اند.',
+    ],
+  },
+  sidebarStaff: {
+    title: 'مدیریت کارمندان',
+    icon: 'UserCheck',
+    text: [
+      'پرسنل خود را به درستی مدیریت کنید.',
+      'کارمندان را ثبت کنید، وظایف را تعیین نمایید و عملکرد آن‌ها را بررسی کنید.',
+    ],
+  },
+  sidebarAttendance: {
+    title: 'حاضری',
+    icon: 'Calendar',
+    text: [
+      'حاضری روزانه شاگردان و کارمندان را ثبت کنید.',
+      'حاضری بگیرید، الگوها را ببینید و گزارش‌های ماهانه تهیه کنید.',
+    ],
+  },
+  sidebarExams: {
+    title: 'امتحانات',
+    icon: 'BookOpen',
+    text: [
+      'مدیریت ارزیابی‌ها و نمرات.',
+      'تقسیم‌اوقات امتحان بسازید، نمرات را وارد کنید و اطلاع‌نامه‌ها را به صورت خودکار ایجاد کنید.',
+    ],
+  },
+  sidebarFinance: {
+    title: 'امور مالی',
+    icon: 'CreditCard',
+    text: [
+      'مدیریت حساب‌های مالی مکتب.',
+      'جمع‌آوری فیس‌ها، مدیریت مصارف و مشاهده گزارش‌های مالی و باقی‌داری‌ها.',
+    ],
+  },
+  sidebarAcademic: {
+    title: 'تنظیمات تدریسی',
+    icon: 'GraduationCap',
+    text: [
+      'زیربنای نصاب درسی خود را بسازید.',
+      'سال‌های تحصیلی، صنف‌ها و مضامین را تعریف کنید و تقسیم‌اوقات بسازید.',
+    ],
+  },
+  sidebarSettings: {
+    title: 'تنظیمات سیستم',
+    icon: 'Settings',
+    text: [
+      'ناظم را مطابق نیاز خود تنظیم کنید.',
+      'صلاحیت‌های کاربران، برندینگ مکتب و تنظیمات عمومی سیستم را مدیریت کنید.',
+    ],
+  },
+  userMenu: {
+    title: 'پروفایل کاربری',
+    icon: 'User',
+    text: [
+      'مدیریت حساب کاربری شما.',
+      'روی عکس خود کلیک کنید تا پروفایل را ببینید، زبان را تغییر دهید یا از سیستم خارج شوید.',
+    ],
+  },
+  helpCenter: {
+    title: 'کمک و پشتیبانی',
+    icon: 'HelpCircle',
+    text: [
+      'به کمک نیاز دارید؟',
+      'روی آیکون کمک کلیک کنید. در صفحات پیچیده دکمه‌های راهنمای مخصوص نیز وجود دارد.',
+    ],
+  },
+  complete: {
+    title: 'شما آماده‌اید!',
+    icon: 'CheckCircle',
+    text: [
+      'تبریک! شما اصول اولیه را یاد گرفتید.',
+      'اکنون آماده‌اید تا کار با ناظم را شروع کنید.',
+      'هر زمان بخواهید می‌توانید این راهنما را از منوی کاربری دوباره باز کنید.',
     ],
   },
 };
@@ -413,11 +581,15 @@ export const tourContentPs: typeof tourContentEn = {
 export type AppCoreStepId = keyof typeof tourContentEn;
 
 /**
- * Get content for a step
+ * Get content for a step based on current language
  */
 export function getStepContent(stepId: AppCoreStepId): { title: string; text: string[]; icon?: string } {
   const lang = getLang();
-  const dict = lang === 'ps' ? tourContentPs : tourContentEn;
+  
+  let dict = tourContentEn;
+  if (lang === 'ps') dict = tourContentPs;
+  else if (lang === 'fa') dict = tourContentFa;
+  
   const content = dict[stepId];
   return {
     title: content.title,

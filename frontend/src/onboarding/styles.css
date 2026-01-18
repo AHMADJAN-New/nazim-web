@@ -77,8 +77,8 @@ html.shepherd-active [data-tour="sidebar"] {
 /* But keep the step element interactive */
 .shepherd-element {
   pointer-events: auto;
-  /* CRITICAL: Ensure dialog stays visible when scrolling */
-  position: fixed !important;
+  /* CRITICAL: Allow Popper to control positioning */
+  position: fixed;
   will-change: transform;
 }
 
@@ -94,8 +94,8 @@ html.shepherd-active [data-tour="sidebar"] {
   box-shadow: var(--shepherd-shadow);
   border: 1px solid var(--shepherd-border);
   font-family: var(--shepherd-font-family);
-  /* CRITICAL: Use fixed positioning to ensure dialog stays visible when scrolling */
-  position: fixed !important;
+  /* CRITICAL: Allow Popper to control positioning, but provide defaults */
+  position: fixed;
   will-change: transform;
   /* Ensure dialog is interactive */
   pointer-events: auto;
@@ -105,6 +105,10 @@ html.shepherd-active [data-tour="sidebar"] {
   opacity: 1 !important;
   /* Ensure dialog is always on top */
   transform: translateZ(0);
+  
+  /* CRITICAL: Prevent dialog from exceeding viewport height */
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
 }
 
 .shepherd-element.shepherd-has-title .shepherd-content .shepherd-header {
@@ -356,6 +360,17 @@ html.shepherd-active [data-tour="sidebar"] {
     max-width: calc(100vw - 2rem);
     min-width: auto;
     margin: 0 1rem;
+    /* CRITICAL: On mobile, ensure dialog doesn't go off-screen */
+    max-height: calc(100vh - 4rem);
+  }
+  
+  /* Only force bottom positioning for body-centered steps (attached to body) */
+  .shepherd-element.shepherd-centered {
+    /* Position at bottom of screen for centered steps on mobile */
+    bottom: 1rem;
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%);
   }
   
   .shepherd-content {
@@ -373,6 +388,16 @@ html.shepherd-active [data-tour="sidebar"] {
   .shepherd-button {
     padding: 0.5rem 0.75rem;
     font-size: 0.8125rem;
+  }
+  
+  /* Ensure footer buttons are always visible on mobile */
+  .shepherd-footer {
+    position: sticky;
+    bottom: 0;
+    background: var(--shepherd-bg);
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--shepherd-border);
   }
 }
 

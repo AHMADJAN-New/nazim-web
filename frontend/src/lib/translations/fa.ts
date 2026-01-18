@@ -135,6 +135,7 @@ export const fa: TranslationKeys = {
       studentCount: 'تعداد شاگردان',
       teacher: 'استاد',
       title: 'صنف‌ها',
+      viewAll: 'مشاهده همه',
       toYear: 'به سال تعلیمی',
       viewHistory: 'مشاهده تاریخچه',
       yearClasses: 'صنف‌ها بر اساس سال تعلیمی',
@@ -4351,7 +4352,8 @@ export const fa: TranslationKeys = {
       selectSchool: 'انتخاب مکتب',
       title: 'مدیریت ساختمان‌ها',
       unknownSchool: 'مکتب نامشخص',
-      update: 'به‌روزرسانی'
+      update: 'به‌روزرسانی',
+      viewAll: 'مشاهده همه'
     },
     roomNumber: 'شماره اتاق',
     rooms: {
@@ -4560,6 +4562,7 @@ export const fa: TranslationKeys = {
     teachingSection: 'بخش تدریس',
     title: 'مدیریت کارمندان',
     totalStaff: 'کل کارمندان',
+    viewAll: 'مشاهده همه',
     type: 'نوع',
     universityInstitution: 'پوهنتون/موسسه',
     updateStaff: 'به‌روزرسانی کارمند',
@@ -4867,6 +4870,7 @@ export const fa: TranslationKeys = {
     templateFieldsHint: 'ستون‌های مورد نیاز را انتخاب کنید. Excel دانلود شده دارای عنوان‌های دوستانه است.',
     title: 'شاگردان',
     total: 'کل شاگردان',
+    viewAll: 'مشاهده همه',
     totalStudents: 'تعداد کل شاگردان',
     transferred: 'منتقل شده',
     unsupportedFileType: 'این نوع فایل قابل پیش‌نمایش نیست. برای مشاهده دانلود کنید.',
@@ -6351,7 +6355,8 @@ export const fa: TranslationKeys = {
   buildings: {
     buildingCreated: 'building Created',
     buildingUpdated: 'building Updated',
-    buildingDeleted: 'building Deleted'
+    buildingDeleted: 'building Deleted',
+    viewAll: 'مشاهده همه'
   },
   '': {
     '': {
@@ -6361,7 +6366,8 @@ export const fa: TranslationKeys = {
     }
   },
   classes: {
-    noClasses: 'no Classes'
+    noClasses: 'no Classes',
+    viewAll: 'مشاهده همه'
   },
   'This document has no template attached, so a PDF cannot be generated': {
     '': ''

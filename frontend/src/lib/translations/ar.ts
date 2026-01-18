@@ -136,6 +136,7 @@ export const ar: TranslationKeys = {
       "teacher": "المعلم",
       "title": "الفصول",
       "toYear": "إلى السنة الأكاديمية",
+      "viewAll": "عرض الكل",
       "viewHistory": "عرض التاريخ",
       "yearClasses": "الفصول حسب السنة الأكاديمية",
       "copyDescription": "نسخ الفصول من سنة أكاديمية إلى أخرى",
@@ -4494,7 +4495,8 @@ export const ar: TranslationKeys = {
       "selectSchool": "Settings",
       "title": "Settings",
       "unknownSchool": "Settings",
-      "update": "Settings"
+      "update": "Settings",
+      "viewAll": "عرض الكل"
     },
     "roomNumber": "رقم الغرفة",
     "rooms": {
@@ -4701,6 +4703,7 @@ export const ar: TranslationKeys = {
     "teachingSection": "قسم التدريس",
     "title": "إدارة الموظفين",
     "totalStaff": "إجمالي الموظفين",
+    "viewAll": "عرض الكل",
     "type": "النوع",
     "universityInstitution": "الجامعة/المؤسسة",
     "updateStaff": "تحديث الموظف",
@@ -5008,6 +5011,7 @@ export const ar: TranslationKeys = {
     "templateFieldsHint": "اختر الأعمدة التي تحتاجها. ملف Excel المُنزّل يستخدم عناوين ودّية.",
     "title": "الطلاب",
     "total": "إجمالي الطلاب",
+    "viewAll": "عرض الكل",
     "totalStudents": "إجمالي الطلاب",
     "transferred": "منقول",
     "unsupportedFileType": "لا يمكن معاينة نوع الملف هذا. يرجى التنزيل للمشاهدة.",
@@ -6377,7 +6381,8 @@ export const ar: TranslationKeys = {
   "buildings": {
     "buildingCreated": "building Created",
     "buildingUpdated": "building Updated",
-    "buildingDeleted": "building Deleted"
+    "buildingDeleted": "building Deleted",
+    "viewAll": "عرض الكل"
   },
   "": {
     "": {
@@ -6387,7 +6392,8 @@ export const ar: TranslationKeys = {
     }
   },
   "classes": {
-    "noClasses": "no Classes"
+    "noClasses": "no Classes",
+    "viewAll": "عرض الكل"
   },
   "This document has no template attached, so a PDF cannot be generated": {
     "": ""

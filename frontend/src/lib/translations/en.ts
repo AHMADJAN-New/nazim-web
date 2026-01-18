@@ -133,6 +133,7 @@ export const en = {
       studentCount: 'Student Count',
       teacher: 'Teacher',
       title: 'Classes',
+      viewAll: 'View All',
       toYear: 'To Academic Year',
       viewHistory: 'View History',
       yearClasses: 'Classes by Academic Year',
@@ -1251,10 +1252,14 @@ export const en = {
       confidentialAndHigher: 'Confidential & higher',
       week: 'Week',
       month: 'Month',
-      manageHint: 'Use the tabs on the sidebar to manage incoming, outgoing, templates, and reports.'
+      manageHint: 'Use the tabs on the sidebar to manage incoming, outgoing, templates, and reports.',
+      awaitingAction: 'awaiting action',
+      highSecurity: 'high security documents'
     },
     incoming: 'Incoming',
     outgoing: 'Outgoing',
+    viewIncoming: 'View Incoming',
+    viewOutgoing: 'View Outgoing',
     issueLetterNav: 'Issue Letter',
     letterTypes: 'Letter Types',
     letterTypesPage: {
@@ -3641,6 +3646,7 @@ export const en = {
     totalLeaves: 'Total leaves',
     totalRequests: 'Total Requests',
     travel: 'Travel - Out of town travel',
+    viewRequests: 'View Requests',
     twoDays: '2 Days',
     twoWeeks: '2 Weeks',
     typePlaceholder: 'Type',
@@ -4473,7 +4479,8 @@ export const en = {
       selectSchool: 'Select school',
       title: 'Buildings Management',
       unknownSchool: 'Unknown School',
-      update: 'Update'
+      update: 'Update',
+      viewAll: 'View All'
     },
     roomNumber: 'Room Number',
     rooms: {
@@ -4682,6 +4689,7 @@ export const en = {
     teachers: 'Teachers',
     teachingSection: 'Teaching Section',
     title: 'Staff Management',
+    viewAll: 'View All',
     totalStaff: 'Total Staff',
     type: 'Type',
     universityInstitution: 'University/Institution',
@@ -4990,6 +4998,7 @@ export const en = {
     templateFieldsHint: 'Choose which columns you want. The downloaded Excel will use friendly column names.',
     title: 'Students',
     total: 'Total Students',
+    viewAll: 'View All',
     totalStudents: 'Total Students',
     transferred: 'Transferred',
     unsupportedFileType: 'This file type cannot be previewed. Please download to view.',
@@ -6330,7 +6339,8 @@ export const en = {
   buildings: {
     buildingCreated: 'building Created',
     buildingUpdated: 'building Updated',
-    buildingDeleted: 'building Deleted'
+    buildingDeleted: 'building Deleted',
+    viewAll: 'View All'
   },
   '': {
     '': {
@@ -6340,6 +6350,7 @@ export const en = {
     }
   },
   classes: {
-    noClasses: 'no Classes'
+    noClasses: 'no Classes',
+    viewAll: 'View All'
   }
 };

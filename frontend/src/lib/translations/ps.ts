@@ -136,6 +136,7 @@ export const ps: TranslationKeys = {
       teacher: 'ښوونکی',
       title: 'ټولګي',
       toYear: 'تعليمي کال ته',
+      viewAll: 'ټول کتل',
       viewHistory: 'تاریخچه وګورئ',
       yearClasses: 'د کال په اساس ټولګي',
       copyDescription: 'ټولګي له یو تعلیمي کال څخه بل ته کاپي کړئ',
@@ -1306,10 +1307,14 @@ export const ps: TranslationKeys = {
       confidentialAndHigher: 'محرمانه او پورته',
       week: 'اونۍ',
       month: 'میاشت',
-      manageHint: 'د راغلو، وتلو، قالبونو او راپورونو د مدیریت لپاره د کناري منو تبونه وکاروئ.'
+      manageHint: 'د راغلو، وتلو، قالبونو او راپورونو د مدیریت لپاره د کناري منو تبونه وکاروئ.',
+      awaitingAction: 'د عملیې په تمه',
+      highSecurity: 'د لوړ امنیت اسناد'
     },
     incoming: 'راغلي اسناد',
     outgoing: 'صادر شوي اسناد',
+    viewIncoming: 'راغلي وګورئ',
+    viewOutgoing: 'وتلي وګورئ',
     issueLetterNav: 'لیک صادر کړئ',
     letterTypes: 'د لیک ډولونه',
     letterTypesPage: {
@@ -3686,6 +3691,7 @@ export const ps: TranslationKeys = {
     totalLeaves: 'ټولې رخصتۍ',
     totalRequests: 'ټولې غوښتنې',
     travel: 'سفر - له ښاره بهر',
+    viewRequests: 'غوښتنې وګورئ',
     twoDays: '۲ ورځې',
     twoWeeks: '۲ اونۍ',
     typePlaceholder: 'ډول',
@@ -4506,6 +4512,7 @@ export const ps: TranslationKeys = {
       exportErrorPdf: 'د PDF صادرول ناکام شول',
       exportErrorExcel: 'د Excel صادرول ناکام شول',
       reportRoomsCount: 'د ودانۍ د اتاقونه شمېره',
+      viewAll: 'ټول کتل'
     },
     shortTermCourses: {
       completionDate: 'د بشپړېدو نېټه',
@@ -4660,6 +4667,7 @@ export const ps: TranslationKeys = {
     teachingSection: 'د تدریس برخه',
     title: 'د کارکوونکو مدیریت',
     totalStaff: 'ټول کارکوونکي',
+    viewAll: 'ټول کتل',
     type: 'ډول',
     universityInstitution: 'پوهنتون/موسسه',
     updateStaff: 'کارمند تازه کړئ',
@@ -4976,6 +4984,7 @@ export const ps: TranslationKeys = {
     templateFieldsHint: 'وټاکئ کوم کالمونه غواړئ. ډاونلوډ شوی ایکسل به دوستانه کالم نومونه وکاروي.',
     title: 'زده کوونکي',
     total: 'ټول زده کوونکي',
+    viewAll: 'ټول کتل',
     totalStudents: 'ټول زده کوونکي',
     transferred: 'تبدیل شوی',
     unsupportedFileType: 'دا د فایل ډول د مخکتنې وړ ندی. مهرباني وکړئ د لیدلو لپاره ډاونلوډ کړئ.',
@@ -6315,7 +6324,8 @@ export const ps: TranslationKeys = {
   buildings: {
     buildingCreated: 'ودانۍ جوړه شوه',
     buildingUpdated: 'ودانۍ تازه شوه',
-    buildingDeleted: 'ودانۍ ړنګه شوه'
+    buildingDeleted: 'ودانۍ ړنګه شوه',
+    viewAll: 'ټول کتل'
   },
   '': {
     '': {
@@ -6373,6 +6383,7 @@ export const ps: TranslationKeys = {
     }
   },
   classes: {
-    noClasses: 'هیڅ ټولګي نشته'
+    noClasses: 'هیڅ ټولګي نشته',
+    viewAll: 'ټول کتل'
   }
 };

@@ -235,14 +235,6 @@ export function TourProvider({
       // CRITICAL: Only check localStorage, not database, for immediate eligibility
       const isCompleted = localStorageIsTourCompleted(tourId);
       
-      if (import.meta.env.DEV && tourId === 'initialSetup') {
-        console.log('[TourContext] isTourCompleted check:', {
-          tourId,
-          isCompleted,
-          profileHasCompleted: profile?.has_completed_onboarding,
-        });
-      }
-      
       return isCompleted;
     },
     getTourVersion: (tourId: string) => {

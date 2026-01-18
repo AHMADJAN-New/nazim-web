@@ -9,8 +9,8 @@ import type { Tour as ShepherdTour, Step as ShepherdStep } from 'shepherd.js';
 import type { TourDefinition, TourStep, TourDebugLog } from './types';
 import { getTour } from './TourRegistry';
 import { completeTour, saveProgress, getLastStepId } from './storage';
-import { getRTLPlacement, isRTL, getTextDirection } from './rtl';
-import { waitForVisible, scrollToElement, waitForRouteChange, wait, findElement } from './dom';
+import { getRTLPlacement, isRTL, getTextDirection, getCurrentLanguage } from './rtl';
+import { waitForVisible, scrollToElement, waitForRouteChange, wait, findElement, isElementVisible } from './dom';
 import { executeActions, setNavigateFunction } from './actions';
 import { saveActiveTourState, clearActiveTourState } from './sessionStorage';
 import { dismissTour, isTourDismissed, undismissTour } from './dismissedTours';
@@ -542,8 +542,7 @@ export class TourRunner {
       document.documentElement.classList.remove('shepherd-active');
       
       // Mark tour as dismissed only when user cancels (not when we cancel programmatically)
-      // Also: do not permanently dismiss initial setup tour; onboarding should remain available until completed.
-      if (!this.suppressDismissOnCancel && tourDef.id !== 'initialSetup') {
+      if (!this.suppressDismissOnCancel) {
         dismissTour(tourDef.id);
       }
       
@@ -576,15 +575,32 @@ export class TourRunner {
       if (step.optional && !step.hideOnNext && step.attachTo?.selector && step.attachTo.selector !== 'body') {
         const el = findElement(step.attachTo.selector);
         if (!el && !step.route) {
-          // Safe skip - no navigation means element won't appear
-          skippedCount++;
-          debugLog({
-            timestamp: Date.now(),
-            type: 'info',
-            message: `Skipping optional step "${step.id}" - target not found and no route change`,
-            data: { selector: step.attachTo.selector },
-          });
-          continue;
+          // If the step has preActions, those actions may reveal the element (e.g., open mobile sidebar sheet).
+          // So we should NOT pre-skip in that case.
+          const hasPreActions = Array.isArray(step.preActions) && step.preActions.length > 0;
+          
+          // CRITICAL: Don't skip sidebar menu steps (they depend on sidebar being opened in a previous step)
+          // Steps with IDs starting with "sidebar-" are menu items that appear after sidebar is opened
+          const isSidebarMenuStep = step.id.startsWith('sidebar-');
+          
+          if (hasPreActions || isSidebarMenuStep) {
+            debugLog({
+              timestamp: Date.now(),
+              type: 'info',
+              message: `Keeping optional step "${step.id}" - target missing but ${hasPreActions ? 'preActions may reveal it' : 'sidebar menu step (will be opened by previous step)'}`,
+              data: { selector: step.attachTo.selector, preActions: step.preActions?.map((a) => a.type) },
+            });
+          } else {
+            // Safe skip - no navigation and no preActions means element won't appear
+            skippedCount++;
+            debugLog({
+              timestamp: Date.now(),
+              type: 'info',
+              message: `Skipping optional step "${step.id}" - target not found and no route change`,
+              data: { selector: step.attachTo.selector },
+            });
+            continue;
+          }
         }
         // If route exists, element might appear after navigation - keep the step
       }
@@ -677,12 +693,35 @@ export class TourRunner {
     const titleHtml = step.title ? `<h3 class="shepherd-title">${iconHtml}${step.title}</h3>` : (iconHtml ? `<div class="shepherd-icon-only">${iconHtml}</div>` : '');
     const textHtml = `<div class="shepherd-text" dir="${getTextDirection()}">${textContent}</div>`;
     
+    // Get current language for button text
+    const language = getCurrentLanguage();
+    const getButtonText = (action: 'back' | 'next' | 'finish') => {
+      if (!rtl) {
+        // English (LTR)
+        switch (action) {
+          case 'back': return '← Back';
+          case 'next': return 'Next →';
+          case 'finish': return 'Finish';
+        }
+      } else {
+        // RTL languages
+        switch (action) {
+          case 'back':
+            return language === 'ps' ? '→ مخکني' : language === 'fa' ? '→ قبلی' : '→ Back';
+          case 'next':
+            return language === 'ps' ? 'بل ←' : language === 'fa' ? 'بعدی ←' : 'Next ←';
+          case 'finish':
+            return language === 'ps' ? 'بشپړول' : language === 'fa' ? 'پای' : 'Finish';
+        }
+      }
+    };
+    
     // Build buttons
     const buttons: any[] = [];
     
     if (!isFirst) {
       buttons.push({
-        text: rtl ? '→ قبلی' : '← Back',
+        text: getButtonText('back'),
         action: () => this.shepherdTour?.back(),
         classes: 'shepherd-button-secondary',
       });
@@ -690,7 +729,7 @@ export class TourRunner {
     
     if (isLast) {
       buttons.push({
-        text: rtl ? 'پای' : 'Finish',
+        text: getButtonText('finish'),
         action: () => this.shepherdTour?.complete(),
         classes: 'shepherd-button-primary',
       });
@@ -698,7 +737,7 @@ export class TourRunner {
       // Special handling for steps that should hide tour on next
       if (step.hideOnNext && step.waitForDialog) {
         buttons.push({
-          text: rtl ? 'بعدی ←' : 'Next →',
+          text: getButtonText('next'),
           action: () => {
             debugLog({
               timestamp: Date.now(),
@@ -728,7 +767,7 @@ export class TourRunner {
         });
       } else {
         buttons.push({
-          text: rtl ? 'بعدی ←' : 'Next →',
+          text: getButtonText('next'),
           action: () => this.shepherdTour?.next(),
           classes: 'shepherd-button-primary',
         });
@@ -741,8 +780,27 @@ export class TourRunner {
     
     if (step.attachTo && step.attachTo.selector !== 'body') {
       const placement = getRTLPlacement(step);
+      const isSidebarStep = step.id.startsWith('sidebar-');
+      
+      // Handle comma-separated selectors (try each until one is found and visible)
       attachTo = {
-        element: () => findElement(step.attachTo!.selector),
+        element: () => {
+          const selectors = step.attachTo!.selector.split(',').map(s => s.trim());
+          for (const sel of selectors) {
+            const el = findElement(sel);
+            if (!el) continue;
+            
+            // Sidebar steps: accept existence (animation can fool "visible" checks)
+            // On mobile, during sidebar sheet animation, elements often exist but fail
+            // visibility checks for a moment (width=0, clipped, transform, etc.)
+            if (isSidebarStep) return el;
+            
+            // Normal steps: require visible
+            if (isElementVisible(el)) return el;
+          }
+          // Fallback: return first found (even if not visible)
+          return findElement(selectors[0]);
+        },
         on: placement === 'center' ? 'bottom' : placement,
       };
     }
@@ -757,7 +815,7 @@ export class TourRunner {
       buttons: buttons.length > 0 ? buttons : [
         // Fallback: Always have at least a Next button
         {
-          text: rtl ? 'بعدی ←' : 'Next →',
+          text: getButtonText('next'),
           action: () => this.shepherdTour?.next(),
           classes: 'shepherd-button-primary',
         },
@@ -810,6 +868,34 @@ export class TourRunner {
               // Already on the correct route - just wait a bit for page to be ready
               // If waiting for dialog, wait longer for it to open
               await wait(isWaitingForDialog ? 500 : 100);
+            }
+            
+            // Defensive: Ensure sidebar is open for sidebar menu steps
+            // Use the step target itself as the source of truth (most reliable on mobile + desktop)
+            const isSidebarMenuStep = step.id.startsWith('sidebar-');
+            
+            if (isSidebarMenuStep && step.attachTo?.selector) {
+              const target = findElement(step.attachTo.selector);
+              const targetVisible = !!(target && isElementVisible(target));
+              
+              if (!targetVisible) {
+                debugLog({
+                  timestamp: Date.now(),
+                  type: 'info',
+                  message: `Sidebar target not visible for "${step.id}" → expanding sidebar`,
+                  data: { selector: step.attachTo.selector },
+                });
+                
+                await executeActions([{ type: 'expandSidebar' } as any]);
+                
+                // Wait for the actual target to become visible (not just a fixed delay)
+                await Promise.race([
+                  waitForVisible({ selector: step.attachTo.selector, timeoutMs: 3000 }),
+                  wait(3500),
+                ]);
+              } else if (DEBUG) {
+                console.log(`[TourRunner] Sidebar target already visible for "${step.id}" — skipping expand`);
+              }
             }
             
             // Execute pre-actions
@@ -1022,8 +1108,8 @@ export class TourRunner {
                       boundary: 'viewport',
                       padding: 8,
                       rootBoundary: 'viewport',
-                      // For sidebar steps, allow overflow to keep dialog visible
-                      altBoundary: isSidebarStep,
+                      // Always respect viewport boundary
+                      altBoundary: false,
                     },
                   },
                   {
@@ -1318,17 +1404,29 @@ export class TourRunner {
 
   private applyOverlayInteractivity(allowClicksOutside: boolean): void {
     const overlay = document.querySelector('.shepherd-modal-overlay-container') as HTMLElement | null;
+
     if (overlay) {
-      // Always allow scrolling by making overlay non-interactive
-      // This allows scroll events to pass through while keeping overlay visible
-      overlay.style.pointerEvents = 'none';
+      // If outside clicks are NOT allowed, the overlay must capture clicks
+      // Otherwise, users will accidentally click the app and close sidebars/dialogs.
+      overlay.style.pointerEvents = allowClicksOutside ? 'none' : 'auto';
+
+      // Keep the SVG from blocking if we're allowing click-through
       const svg = overlay.querySelector('svg');
-      if (svg) {
-        (svg as unknown as HTMLElement).style.pointerEvents = 'none';
+      if (svg) (svg as unknown as HTMLElement).style.pointerEvents = allowClicksOutside ? 'none' : 'auto';
+
+      if (!allowClicksOutside) {
+        // Prevent overlay click from closing app dialogs/backdrops underneath
+        overlay.addEventListener(
+          'click',
+          (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          },
+          { capture: true }
+        );
       }
     }
-    
-    // Always allow body scrolling when tour is active
+
     document.body.classList.add('shepherd-active');
     document.documentElement.classList.add('shepherd-active');
   }

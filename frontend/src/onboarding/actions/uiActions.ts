@@ -373,16 +373,53 @@ export async function closeModal(modalId?: string): Promise<boolean> {
 
 /**
  * Scroll to an element
+ * Handles both page scrolling and scrolling within containers (like sidebar)
+ * Waits for element to appear if not immediately found (for sidebar items that appear after sidebar opens)
  */
 export async function scrollTo(selector: string): Promise<boolean> {
   if (DEBUG) {
     console.log(`[TourActions] Scrolling to: ${selector}`);
   }
   
-  const element = findElement(selector);
+  // First, try to find the element
+  let element = findElement(selector);
+  
+  // If not found, wait for it to appear (element might be in sidebar that's still opening)
+  if (!element) {
+    if (DEBUG) {
+      console.log(`[TourActions] Element not found immediately, waiting for: ${selector}`);
+    }
+    element = await waitForElement(selector, 3000);
+  }
+  
   if (element) {
-    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    await wait(500);
+    // Check if element is inside a scrollable sidebar container
+    const sidebarContent = element.closest('[data-sidebar-content], [data-radix-scroll-area-viewport]');
+    
+    if (sidebarContent) {
+      // Scroll within the sidebar container
+      const scrollContainer = sidebarContent as HTMLElement;
+      const elementRect = element.getBoundingClientRect();
+      const containerRect = scrollContainer.getBoundingClientRect();
+      
+      // Calculate the scroll position to center the element in the container
+      const elementTop = element.getBoundingClientRect().top - containerRect.top + scrollContainer.scrollTop;
+      const targetScroll = elementTop - (containerRect.height / 2) + (elementRect.height / 2);
+      
+      scrollContainer.scrollTo({
+        top: Math.max(0, targetScroll),
+        behavior: 'smooth'
+      });
+      
+      if (DEBUG) {
+        console.log(`[TourActions] Scrolled within sidebar container to: ${selector}`);
+      }
+    } else {
+      // Regular page scroll
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
+    await wait(400);
     return true;
   }
   
@@ -421,105 +458,236 @@ export async function waitAction(ms: number): Promise<boolean> {
 }
 
 /**
- * Expand the sidebar if collapsed
- * Handles both desktop collapsed state and mobile hidden state
+ * Check if we're on mobile (viewport width < 768px)
+ */
+function isMobileViewport(): boolean {
+  return typeof window !== 'undefined' && window.innerWidth < 768;
+}
+
+// Mutex to prevent double-click toggle when multiple steps call expandSidebar rapidly
+let sidebarOpenInFlight: Promise<boolean> | null = null;
+
+/**
+ * Check if mobile sidebar (Sheet) is open
+ */
+function isMobileSidebarOpen(): boolean {
+  const content = document.querySelector('[data-sidebar="sidebar"][data-mobile="true"]') as HTMLElement | null;
+  if (!content) return false;
+
+  // Radix / Sheet style signals (more reliable than computed display/opacity alone)
+  const dataState = content.getAttribute('data-state') || content.closest('[data-state]')?.getAttribute('data-state');
+  const ariaHidden = content.getAttribute('aria-hidden') || content.closest('[aria-hidden]')?.getAttribute('aria-hidden');
+
+  if (dataState === 'open') return true;
+  if (ariaHidden === 'false') return true;
+
+  // Visual fallback (only after state checks)
+  const style = window.getComputedStyle(content);
+  const rect = content.getBoundingClientRect();
+  return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+}
+
+/**
+ * Check if desktop sidebar is open
+ */
+function isDesktopSidebarOpen(): boolean {
+  const sidebar = document.querySelector('[data-sidebar="sidebar"]') as HTMLElement | null;
+  if (!sidebar) return false;
+
+  const state = sidebar.getAttribute('data-state');
+  const collapsed = sidebar.getAttribute('data-collapsed');
+
+  if (state === 'collapsed') return false;
+  if (collapsed === 'true') return false;
+
+  // If your sidebar uses width/min-width collapse, this catches it:
+  const rect = sidebar.getBoundingClientRect();
+  return rect.width > 80; // tweak if your collapsed width is different
+}
+
+/**
+ * Expand the sidebar if collapsed (open-only, never toggles)
+ * Handles both desktop collapsed state and mobile hidden state (Sheet)
+ * Uses mutex to prevent double-click toggle when multiple steps call rapidly
  */
 export async function expandSidebar(): Promise<boolean> {
-  if (DEBUG) {
-    console.log('[TourActions] Expanding sidebar');
+  if (DEBUG) console.log('[TourActions] Expanding sidebar (open-only)');
+
+  // Prevent double-click toggle when multiple steps call expandSidebar rapidly
+  if (sidebarOpenInFlight) {
+    if (DEBUG) console.log('[TourActions] expandSidebar already in-flight, awaiting...');
+    return sidebarOpenInFlight;
   }
-  
-  // Try multiple selectors for sidebar
-  const sidebarSelectors = [
-    '[data-sidebar]',
-    '[data-tour="sidebar"]',
-    '[role="complementary"]',
-    'aside[data-state]',
-  ];
-  
-  let sidebar: Element | null = null;
-  for (const selector of sidebarSelectors) {
-    sidebar = findElement(selector);
-    if (sidebar) break;
-  }
-  
-  if (sidebar) {
-    // Check if sidebar is collapsed or hidden
-    const isCollapsed = sidebar.getAttribute('data-state') === 'collapsed' ||
-                        sidebar.getAttribute('data-collapsed') === 'true' ||
-                        sidebar.classList.contains('collapsed') ||
-                        sidebar.getAttribute('aria-hidden') === 'true';
-    
-    // Check if sidebar is hidden on mobile (check computed styles)
-    const computedStyle = window.getComputedStyle(sidebar);
-    const isHidden = computedStyle.display === 'none' || 
-                     computedStyle.visibility === 'hidden' ||
-                     computedStyle.transform.includes('translateX(-100%)');
-    
-    if (isCollapsed || isHidden) {
-      // Try multiple trigger selectors
+
+  sidebarOpenInFlight = (async () => {
+    const isMobile = isMobileViewport();
+
+    if (isMobile) {
+      // If already open, do nothing
+      if (isMobileSidebarOpen()) {
+        if (DEBUG) console.log('[TourActions] Mobile sidebar already open');
+        await wait(150);
+        return true;
+      }
+
       const triggerSelectors = [
+        '[data-sidebar="trigger"]',
         '[data-sidebar-trigger]',
         '[data-tour="sidebar-trigger"]',
         'button[aria-label*="menu" i]',
-        'button[aria-label*="sidebar" i]',
-        'button[aria-label*="navigation" i]',
-        '[data-radix-collapsible-trigger]',
+        'button[aria-label*="open" i]',
       ];
-      
-      for (const selector of triggerSelectors) {
-        const trigger = findElement(selector);
-        if (trigger) {
-          clickElement(selector);
-          await wait(500); // Wait longer for mobile animations
+
+      const triggerSel = triggerSelectors.find((s) => !!findElement(s));
+      if (!triggerSel) {
+        if (DEBUG) console.warn('[TourActions] Could not find mobile sidebar trigger');
+        return false;
+      }
+
+      // Click ONCE (open-only) then wait for "open" state
+      clickElement(triggerSel);
+
+      // Wait until the sidebar is truly open (state-based)
+      const maxAttempts = 30; // ~3s
+      for (let i = 0; i < maxAttempts; i++) {
+        if (isMobileSidebarOpen()) {
+          await wait(250); // animation settle
+          if (DEBUG) console.log('[TourActions] Mobile sidebar opened successfully');
           return true;
         }
+        await wait(100);
       }
-      
-      // Fallback: try to find menu button in header
-      const menuButton = findElement('button[aria-label*="menu" i], button[aria-label*="open" i]');
-      if (menuButton) {
-        clickElement('button[aria-label*="menu" i], button[aria-label*="open" i]');
-        await wait(500);
+
+      if (DEBUG) console.warn('[TourActions] Mobile sidebar did not open in time');
+      return false;
+    }
+
+    // Desktop
+    const sidebar = findElement('[data-sidebar="sidebar"]');
+    if (!sidebar) {
+      if (DEBUG) console.warn('[TourActions] Could not find desktop sidebar');
+      return false;
+    }
+
+    if (isDesktopSidebarOpen()) {
+      if (DEBUG) console.log('[TourActions] Desktop sidebar already open');
+      return true;
+    }
+
+    const triggerSelectors = [
+      '[data-sidebar="trigger"]',
+      '[data-sidebar-trigger]',
+      '[data-tour="sidebar-trigger"]',
+    ];
+
+    const triggerSel = triggerSelectors.find((s) => !!findElement(s));
+    if (!triggerSel) {
+      if (DEBUG) console.warn('[TourActions] Could not find desktop sidebar trigger');
+      return false;
+    }
+
+    clickElement(triggerSel);
+
+    // Wait until open (don't just sleep)
+    const maxAttempts = 20; // ~2s
+    for (let i = 0; i < maxAttempts; i++) {
+      if (isDesktopSidebarOpen()) {
+        await wait(150);
+        if (DEBUG) console.log('[TourActions] Desktop sidebar opened successfully');
         return true;
       }
+      await wait(100);
     }
-    return true; // Already expanded
+
+    if (DEBUG) console.warn('[TourActions] Desktop sidebar did not open in time');
+    return false;
+  })();
+
+  try {
+    return await sidebarOpenInFlight;
+  } finally {
+    sidebarOpenInFlight = null;
   }
-  
-  // If sidebar not found, try to find and click menu button (mobile)
-  const menuButton = findElement('button[aria-label*="menu" i], button[aria-label*="open" i]');
-  if (menuButton) {
-    clickElement('button[aria-label*="menu" i], button[aria-label*="open" i]');
-    await wait(500);
-    return true;
-  }
-  
-  if (DEBUG) {
-    console.warn('[TourActions] Could not find sidebar or trigger');
-  }
-  return false;
 }
 
 /**
  * Collapse the sidebar if expanded
+ * Handles both desktop expanded state and mobile open state
  */
 export async function collapseSidebar(): Promise<boolean> {
   if (DEBUG) {
     console.log('[TourActions] Collapsing sidebar');
   }
+
+  const isMobileSidebarVisible = (): boolean => {
+    const el = document.querySelector('[data-sidebar="sidebar"][data-mobile="true"]') as HTMLElement | null;
+    if (!el) return false;
+    const style = window.getComputedStyle(el);
+    return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+  };
+
+  const waitForMobileSidebarClose = async (): Promise<void> => {
+    // Poll because the sheet may unmount or animate.
+    const maxAttempts = 25; // ~2.5s
+    for (let i = 0; i < maxAttempts; i++) {
+      if (!isMobileSidebarVisible()) return;
+      await wait(100);
+    }
+  };
   
+  // Check for mobile sidebar (Sheet)
+  const mobileSidebar = document.querySelector('[data-sidebar="sidebar"][data-mobile="true"]');
+  if (mobileSidebar) {
+    const style = window.getComputedStyle(mobileSidebar);
+    const isVisible = style.display !== 'none' && style.visibility !== 'hidden';
+    
+    if (isVisible) {
+      // Find trigger to toggle (close)
+      const triggerSelectors = [
+        '[data-sidebar-trigger]',
+        '[data-sidebar="trigger"]',
+        '[data-tour="sidebar-trigger"]',
+        'button[aria-label*="menu" i]',
+        'button[aria-label*="close" i]', // Close button inside sheet
+      ];
+      
+      for (const selector of triggerSelectors) {
+        // Prefer triggers outside the sidebar first (toggle button), then close button inside
+        const trigger = findElement(selector);
+        if (trigger) {
+          clickElement(selector);
+          await waitForMobileSidebarClose();
+          return true;
+        }
+      }
+      
+      // Fallback: press Escape
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await waitForMobileSidebarClose();
+      return true;
+    }
+    return true; // Already closed (not visible)
+  }
+
+  // Desktop sidebar
   const sidebar = findElement('[data-sidebar]');
   if (sidebar) {
     const isCollapsed = sidebar.getAttribute('data-state') === 'collapsed' ||
                         sidebar.getAttribute('data-collapsed') === 'true';
     
     if (!isCollapsed) {
-      const trigger = findElement('[data-sidebar-trigger]');
-      if (trigger) {
-        clickElement('[data-sidebar-trigger]');
-        await wait(300);
-        return true;
+      const triggerSelectors = [
+        '[data-sidebar-trigger]',
+        '[data-sidebar="trigger"]',
+      ];
+      
+      for (const selector of triggerSelectors) {
+        const trigger = findElement(selector);
+        if (trigger) {
+          clickElement(selector);
+          await wait(300);
+          return true;
+        }
       }
     }
     return true; // Already collapsed

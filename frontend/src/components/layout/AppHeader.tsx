@@ -370,7 +370,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           {/* School Switcher, Language, Help, Notifications - Always visible */}
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-            {/* School Switcher - Visible on mobile */}
+            {/* School Switcher - Hidden on mobile (moved to avatar menu) */}
             {showSchoolSwitcher && (
               <Select
                 value={selectedSchoolId ?? authProfile?.default_school_id ?? 'none'}
@@ -381,7 +381,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                 }}
                 disabled={updateMySchool.isPending && !hasSchoolsAccessAll}
               >
-                <SelectTrigger className="flex w-[100px] sm:w-[200px] text-xs sm:text-sm h-8 sm:h-9">
+                <SelectTrigger className="hidden sm:flex w-[100px] sm:w-[200px] text-xs sm:text-sm h-8 sm:h-9">
                   <img
                     src="/nazim_logo.webp"
                     alt="Nazim"
@@ -519,6 +519,46 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              {/* Mobile: School Switcher */}
+              {showSchoolSwitcher && (
+                <>
+                  <div className="sm:hidden">
+                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                      {t("common.schoolManagement") || "School"}
+                    </DropdownMenuLabel>
+                    {schools.map((s) => {
+                      const isSelected = (selectedSchoolId ?? authProfile?.default_school_id) === s.id;
+                      return (
+                        <DropdownMenuItem
+                          key={s.id}
+                          onClick={() => {
+                            if (!isSelected && s.id !== 'none') {
+                              handleSchoolChange(s.id);
+                            }
+                          }}
+                          disabled={updateMySchool.isPending && !hasSchoolsAccessAll}
+                          className={isSelected ? "bg-accent" : ""}
+                        >
+                          <img
+                            src="/nazim_logo.webp"
+                            alt="Nazim"
+                            className="h-4 w-4 mr-2 object-contain flex-shrink-0"
+                            loading="lazy"
+                          />
+                          <span className="flex-1">{s.schoolName}</span>
+                          {isSelected && (
+                            <span className="text-xs text-muted-foreground ml-2">✓</span>
+                          )}
+                          {s.id === authProfile?.default_school_id && !hasSchoolsAccessAll && !isSelected && (
+                            <span className="text-xs text-muted-foreground ml-2">(Default)</span>
+                          )}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </div>
+                  <DropdownMenuSeparator className="sm:hidden" />
+                </>
+              )}
               {/* Mobile: Platform Admin Button */}
               {isPlatformAdmin && (
                 <>

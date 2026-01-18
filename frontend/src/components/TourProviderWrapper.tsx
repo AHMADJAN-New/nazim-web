@@ -43,47 +43,28 @@ export function TourProviderWrapper({ children, tours, autoStart = false }: Tour
         return;
       }
 
-      // Auto-start initial setup tour if:
-      // 1. autoStart is explicitly true, OR
-      // 2. User hasn't completed onboarding (profile is null OR has_completed_onboarding is false/undefined)
-      // If profile is null, assume user hasn't completed onboarding (show tour)
-      const hasCompletedOnboarding = profile?.has_completed_onboarding === true;
-      const shouldStart = autoStart || !hasCompletedOnboarding;
-      
+      // Auto-start tours if autoStart prop is true
+      // Tours will use their own eligibility logic to determine if they should show
       if (import.meta.env.DEV) {
         console.log('[TourProviderWrapper] Auto-start decision:', {
           autoStart,
           profile: profile ? 'loaded' : 'null',
-          has_completed_onboarding: profile?.has_completed_onboarding,
-          shouldStart,
         });
       }
       
-      setShouldAutoStart(shouldStart);
+      setShouldAutoStart(autoStart);
 
-      if (shouldStart && typeof window !== 'undefined') {
+      if (autoStart && typeof window !== 'undefined') {
         sessionStorage.setItem(AUTO_START_SESSION_KEY, 'true');
       }
     }
   }, [profileLoading, profile, autoStart, location.pathname]);
 
-  // Handle tour completion - mark profile as completed
+  // Handle tour completion
   const handleTourComplete = async (tourId: string) => {
-    if (tourId === 'initialSetup' && profile && profile.has_completed_onboarding !== true) {
-      try {
-        // Update profile to mark onboarding as completed
-        await authApi.updateProfile({
-          has_completed_onboarding: true,
-          onboarding_completed_at: new Date().toISOString(),
-        });
-        
-        // Refresh auth to get updated profile
-        await refreshAuth();
-      } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error('[TourProviderWrapper] Failed to mark onboarding as completed:', error);
-        }
-      }
+    // Tour completion handling can be extended here if needed
+    if (import.meta.env.DEV) {
+      console.log('[TourProviderWrapper] Tour completed:', tourId);
     }
   };
 

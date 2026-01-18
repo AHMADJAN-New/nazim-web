@@ -66,10 +66,12 @@ export const appCoreSteps: TourStep[] = [
       { type: 'switchTab', payload: { containerId: 'dashboard-tabs', tabId: 'overview' } },
     ],
     waitFor: { selector: '[data-tour="dashboard-tabs-list"]', timeoutMs: 5000 },
+    scroll: 'start',
     optional: true,
   },
   
-  // Step 4: Sidebar Navigation
+  // Step 4: Sidebar Navigation - On mobile, just highlight the sidebar trigger/toggle icon
+  // On desktop, highlight the sidebar itself
   {
     id: 'sidebar',
     get title() {
@@ -81,11 +83,9 @@ export const appCoreSteps: TourStep[] = [
     get icon() {
       return getStepContent('sidebar').icon;
     },
-    attachTo: { selector: '[data-tour="sidebar"]', on: 'right' },
-    preActions: [
-      { type: 'expandSidebar' },
-    ],
-    waitFor: { selector: '[data-tour="sidebar"]', timeoutMs: 3000 },
+    // Use sidebar trigger on mobile, sidebar on desktop - the selector will find whichever is visible
+    attachTo: { selector: '[data-sidebar="trigger"], [data-tour="sidebar"]', on: 'bottom' },
+    waitFor: { selector: '[data-sidebar="trigger"], [data-tour="sidebar"]', timeoutMs: 3000 },
     optional: true,
     rtlPlacementFlip: true,
   },
@@ -192,7 +192,7 @@ export const appCoreSteps: TourStep[] = [
     optional: true,
   },
   
-  // Step 11: Students Menu
+  // Step 11: Students Menu - Opens sidebar once for all sidebar menu steps
   {
     id: 'sidebar-students',
     get title() {
@@ -204,13 +204,14 @@ export const appCoreSteps: TourStep[] = [
     get icon() {
       return getStepContent('sidebarStudents').icon;
     },
-    attachTo: { selector: '[data-tour="sidebar-students"]', on: 'right' },
+    attachTo: { selector: '[data-tour="sidebar-students"]', on: 'bottom' },
     preActions: [
-      { type: 'expandSidebar' },
+      { type: 'wait', payload: { ms: 150 } },
     ],
-    waitFor: { selector: '[data-tour="sidebar-students"]', timeoutMs: 3000 },
+    waitFor: { selector: '[data-tour="sidebar-students"]', timeoutMs: 8000 },
+    scroll: 'center',
+    allowClicksOutside: false,
     optional: true,
-    rtlPlacementFlip: true,
   },
   
   // Step 12: Staff Menu
@@ -225,10 +226,11 @@ export const appCoreSteps: TourStep[] = [
     get icon() {
       return getStepContent('sidebarStaff').icon;
     },
-    attachTo: { selector: '[data-tour="sidebar-staff"]', on: 'right' },
-    waitFor: { selector: '[data-tour="sidebar-staff"]', timeoutMs: 3000 },
+    attachTo: { selector: '[data-tour="sidebar-staff"]', on: 'bottom' },
+    waitFor: { selector: '[data-tour="sidebar-staff"]', timeoutMs: 8000 },
+    scroll: 'center',
+    allowClicksOutside: false,
     optional: true,
-    rtlPlacementFlip: true,
   },
   
   // Step 13: Attendance Menu
@@ -243,10 +245,11 @@ export const appCoreSteps: TourStep[] = [
     get icon() {
       return getStepContent('sidebarAttendance').icon;
     },
-    attachTo: { selector: '[data-tour="sidebar-attendance"]', on: 'right' },
-    waitFor: { selector: '[data-tour="sidebar-attendance"]', timeoutMs: 3000 },
+    attachTo: { selector: '[data-tour="sidebar-attendance"]', on: 'bottom' },
+    waitFor: { selector: '[data-tour="sidebar-attendance"]', timeoutMs: 8000 },
+    scroll: 'center',
+    allowClicksOutside: false,
     optional: true,
-    rtlPlacementFlip: true,
   },
   
   // Step 14: Exams Menu
@@ -261,10 +264,11 @@ export const appCoreSteps: TourStep[] = [
     get icon() {
       return getStepContent('sidebarExams').icon;
     },
-    attachTo: { selector: '[data-tour="sidebar-exams"]', on: 'right' },
-    waitFor: { selector: '[data-tour="sidebar-exams"]', timeoutMs: 3000 },
+    attachTo: { selector: '[data-tour="sidebar-exams"]', on: 'bottom' },
+    waitFor: { selector: '[data-tour="sidebar-exams"]', timeoutMs: 8000 },
+    scroll: 'center',
+    allowClicksOutside: false,
     optional: true,
-    rtlPlacementFlip: true,
   },
   
   // Step 15: Finance Menu
@@ -279,10 +283,11 @@ export const appCoreSteps: TourStep[] = [
     get icon() {
       return getStepContent('sidebarFinance').icon;
     },
-    attachTo: { selector: '[data-tour="sidebar-finance"]', on: 'right' },
-    waitFor: { selector: '[data-tour="sidebar-finance"]', timeoutMs: 3000 },
+    attachTo: { selector: '[data-tour="sidebar-finance"]', on: 'bottom' },
+    waitFor: { selector: '[data-tour="sidebar-finance"]', timeoutMs: 8000 },
+    scroll: 'center',
+    allowClicksOutside: false,
     optional: true,
-    rtlPlacementFlip: true,
   },
   
   // Step 16: Academic Menu
@@ -297,10 +302,11 @@ export const appCoreSteps: TourStep[] = [
     get icon() {
       return getStepContent('sidebarAcademic').icon;
     },
-    attachTo: { selector: '[data-tour="sidebar-academic"]', on: 'right' },
-    waitFor: { selector: '[data-tour="sidebar-academic"]', timeoutMs: 3000 },
+    attachTo: { selector: '[data-tour="sidebar-academic"]', on: 'bottom' },
+    waitFor: { selector: '[data-tour="sidebar-academic"]', timeoutMs: 8000 },
+    scroll: 'center',
+    allowClicksOutside: false,
     optional: true,
-    rtlPlacementFlip: true,
   },
   
   // Step 17: Settings Menu
@@ -315,10 +321,11 @@ export const appCoreSteps: TourStep[] = [
     get icon() {
       return getStepContent('sidebarSettings').icon;
     },
-    attachTo: { selector: '[data-tour="sidebar-settings"]', on: 'right' },
-    waitFor: { selector: '[data-tour="sidebar-settings"]', timeoutMs: 3000 },
+    attachTo: { selector: '[data-tour="sidebar-settings"]', on: 'bottom' },
+    waitFor: { selector: '[data-tour="sidebar-settings"]', timeoutMs: 8000 },
+    scroll: 'center',
+    allowClicksOutside: false,
     optional: true,
-    rtlPlacementFlip: true,
   },
   
   // Step 18: User Menu
@@ -334,6 +341,9 @@ export const appCoreSteps: TourStep[] = [
       return getStepContent('userMenu').icon;
     },
     attachTo: { selector: '[data-tour="user-menu"]', on: 'bottom' },
+    preActions: [
+      { type: 'collapseSidebar' },
+    ],
     waitFor: { selector: '[data-tour="user-menu"]', timeoutMs: 3000 },
     optional: true,
   },
