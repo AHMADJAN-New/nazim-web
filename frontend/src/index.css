@@ -225,10 +225,6 @@ body,
   [dir="rtl"] .text-left { text-align: right !important; }
   [dir="rtl"] .text-right { text-align: right !important; }
 
-  /* Optional: mirror icons if you use rotate-180 class */
-  [dir="rtl"] .rotate-180 {
-    transform: scaleX(-1);
-  }
 
   /* RTL spacing - auto margins */
   [dir="rtl"] .ml-auto { margin-left: 0 !important; margin-right: auto !important; }
@@ -294,6 +290,21 @@ body,
   [dir="rtl"] .container.max-w-7xl button {
     font-size: 1rem !important;
   }
+/* =========================================================
+   FIX: Switch thumb breaks in RTL (checked state overflows)
+   Force LTR only for the Switch component
+   ========================================================= */
+
+/* shadcn/radix Switch root usually has: inline-flex, h-6, w-11, rounded-full */
+[dir="rtl"] button[role="switch"],
+[dir="rtl"] [role="switch"] {
+  direction: ltr !important;
+}
+
+/* Ensure thumb translation stays inside track (some libs use the thumb span) */
+[dir="rtl"] [role="switch"] > span {
+  direction: ltr !important;
+}
 
   /* =========================================================
      TABLE ROW STRIPING

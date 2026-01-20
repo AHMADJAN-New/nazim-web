@@ -57,8 +57,65 @@ export function StudentIdCardPreview({
   const actualTemplate = providedTemplate || fetchedTemplate;
   
   // Convert StudentIdCard to Student format for renderer
+  // Handles both regular students and course students
   const getStudentForRenderer = (card: StudentIdCard | null): Student | null => {
-    if (!card || !card.student) return null;
+    if (!card) return null;
+
+    // Handle course students
+    if (card.courseStudentId && card.courseStudent) {
+      const courseStudent = card.courseStudent;
+      const student: Student = {
+        id: courseStudent.id,
+        fullName: courseStudent.fullName || '',
+        fatherName: courseStudent.fatherName || '',
+        admissionNumber: courseStudent.admissionNo || '',
+        studentCode: null,
+        cardNumber: card.cardNumber || null,
+        rollNumber: null,
+        picturePath: courseStudent.picturePath || null,
+        currentClass: null, // Course students don't have classes
+        school: card.organization ? {
+          id: card.organization.id,
+          schoolName: card.organization.name,
+        } : null,
+        // Add required fields with defaults
+        organizationId: card.organizationId,
+        schoolId: card.schoolId,
+        firstName: courseStudent.fullName?.split(' ')[0] || '',
+        lastName: courseStudent.fullName?.split(' ').slice(1).join(' ') || '',
+        gender: 'male' as any,
+        status: 'active' as any,
+        admissionFeeStatus: 'paid' as any,
+        isOrphan: false,
+        address: {
+          street: '',
+          city: '',
+          state: '',
+          country: '',
+          postalCode: '',
+        },
+        guardians: [],
+        previousSchools: [],
+        healthInfo: {},
+        documents: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      
+      if (import.meta.env.DEV) {
+        console.log('[StudentIdCardPreview] Course student data for renderer:', {
+          fullName: student.fullName,
+          fatherName: student.fatherName,
+          admissionNumber: student.admissionNumber,
+          course: courseStudent.course?.name,
+        });
+      }
+      
+      return student;
+    }
+
+    // Handle regular students
+    if (!card.student) return null;
     
     const student: Student = {
       id: card.student.id,
@@ -179,8 +236,8 @@ export function StudentIdCardPreview({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actualCard?.id, actualTemplate?.id, side, cardLoading, templateLoading]);
 
-  // Check if we have the necessary data
-  const hasStudentData = actualCard && actualCard.student;
+  // Check if we have the necessary data (handles both regular and course students)
+  const hasStudentData = actualCard && (actualCard.student || actualCard.courseStudent);
 
   // Use the fetched template if available
   const templateForPreview = actualTemplate || (actualCard?.template ? {
@@ -219,7 +276,10 @@ export function StudentIdCardPreview({
       // Create download link
       const link = document.createElement('a');
       link.href = dataUrl;
-      link.download = `id-card-${actualCard.student?.admissionNumber || actualCard.id}-${side}.png`;
+      const admissionNumber = actualCard.courseStudentId
+        ? actualCard.courseStudent?.admissionNo
+        : actualCard.student?.admissionNumber;
+      link.download = `id-card-${admissionNumber || actualCard.id}-${side}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -264,7 +324,10 @@ export function StudentIdCardPreview({
         throw new Error('No valid card sides to export');
       }
 
-      const baseFilename = `id-card-${actualCard.student?.admissionNumber || actualCard.id}`;
+      const admissionNumber = actualCard.courseStudentId
+        ? actualCard.courseStudent?.admissionNo
+        : actualCard.student?.admissionNumber;
+      const baseFilename = `id-card-${admissionNumber || actualCard.id}`;
       const notes = actualCard.notes || null;
       const expiryDate = actualCard.printedAt ? new Date(actualCard.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null;
 

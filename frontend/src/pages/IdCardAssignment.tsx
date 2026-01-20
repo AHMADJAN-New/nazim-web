@@ -36,6 +36,8 @@ import { useClasses, useClassAcademicYears } from '@/hooks/useClasses';
 import { useIdCardTemplates } from '@/hooks/useIdCardTemplates';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import { useCourseStudents } from '@/hooks/useCourseStudents';
+import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import { useFinanceAccounts, useIncomeCategories } from '@/hooks/useFinance';
 import {
   useStudentIdCards,
@@ -86,11 +88,15 @@ export default function IdCardAssignment() {
   const { profile } = useAuth();
   const organizationId = profile?.organization_id;
 
+  // Student type: 'regular' or 'course'
+  const [studentType, setStudentType] = useState<'regular' | 'course'>('regular');
+
   // Filter states
   const [academicYearId, setAcademicYearId] = useState<string>('');
   const [schoolId, setSchoolId] = useState<string>('');
   const [classId, setClassId] = useState<string>('');
   const [classAcademicYearId, setClassAcademicYearId] = useState<string>('');
+  const [courseId, setCourseId] = useState<string>('');
   const [enrollmentStatus, setEnrollmentStatus] = useState<string>('active');
   const [templateId, setTemplateId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -98,10 +104,12 @@ export default function IdCardAssignment() {
   // Helper to convert empty string to 'all' for Select components
   const schoolIdForSelect = schoolId || 'all';
   const classIdForSelect = classId || 'all';
+  const courseIdForSelect = courseId || 'all';
   const templateIdForSelect = templateId || 'all';
 
-  // Student selection (using admission IDs)
+  // Student selection (using admission IDs for regular students, course student IDs for course students)
   const [selectedAdmissionIds, setSelectedAdmissionIds] = useState<Set<string>>(new Set());
+  const [selectedCourseStudentIds, setSelectedCourseStudentIds] = useState<Set<string>>(new Set());
 
   // Assignment panel
   const [selectedTemplateForAssignment, setSelectedTemplateForAssignment] = useState<string>('');
@@ -130,6 +138,9 @@ export default function IdCardAssignment() {
   const { data: classes = [] } = useClasses(organizationId);
   const { data: classAcademicYears = [] } = useClassAcademicYears(academicYearId, organizationId);
   const { data: templates = [] } = useIdCardTemplates(true);
+  const { data: courses = [] } = useShortTermCourses(organizationId, false);
+  
+  // Regular students (only fetch when in regular mode)
   const { data: studentAdmissions = [] } = useStudentAdmissions(organizationId, false, {
     academic_year_id: academicYearId || undefined,
     school_id: schoolId || undefined,
@@ -137,6 +148,10 @@ export default function IdCardAssignment() {
     class_academic_year_id: classAcademicYearId || undefined,
     enrollment_status: enrollmentStatus === 'all' ? undefined : enrollmentStatus,
   });
+
+  // Course students (only fetch when in course mode)
+  const effectiveCourseId = courseId || undefined;
+  const { data: courseStudents = [] } = useCourseStudents(effectiveCourseId, false);
 
   // Set default academic year
   useEffect(() => {
@@ -149,12 +164,14 @@ export default function IdCardAssignment() {
   const cardFilters: StudentIdCardFilters = useMemo(() => ({
     academicYearId: academicYearId || undefined,
     schoolId: schoolId || undefined,
-    classId: classId || undefined,
-    classAcademicYearId: classAcademicYearId || undefined,
+    classId: studentType === 'regular' ? (classId || undefined) : undefined,
+    classAcademicYearId: studentType === 'regular' ? (classAcademicYearId || undefined) : undefined,
+    courseId: studentType === 'course' ? (courseId || undefined) : undefined,
+    studentType: studentType,
     enrollmentStatus: enrollmentStatus === 'all' ? undefined : enrollmentStatus,
-    idCardTemplateId: templateId || undefined,
+    templateId: templateId || undefined,
     search: searchQuery || undefined,
-  }), [academicYearId, schoolId, classId, classAcademicYearId, enrollmentStatus, templateId, searchQuery]);
+  }), [academicYearId, schoolId, classId, classAcademicYearId, courseId, studentType, enrollmentStatus, templateId, searchQuery]);
 
   const { data: idCards = [], isLoading: cardsLoading } = useStudentIdCards(cardFilters);
   const { data: financeAccounts = [] } = useFinanceAccounts({ isActive: true });
@@ -165,66 +182,121 @@ export default function IdCardAssignment() {
   const markFeePaid = useMarkCardFeePaid();
   const deleteCard = useDeleteStudentIdCard();
 
-  // Filter students by search query
+  // Filter students by search query (handles both regular and course students)
   const filteredStudents = useMemo(() => {
-    if (!searchQuery) return studentAdmissions;
-    const query = searchQuery.toLowerCase();
-    return studentAdmissions.filter(admission => {
-      const student = admission.student;
-      if (!student) return false;
-      return (
-        student.fullName?.toLowerCase().includes(query) ||
-        student.admissionNumber?.toLowerCase().includes(query) ||
-        student.studentCode?.toLowerCase().includes(query)
-      );
-    });
-  }, [studentAdmissions, searchQuery]);
+    if (studentType === 'course') {
+      const students = courseStudents as import('@/types/domain/courseStudent').CourseStudent[];
+      if (!searchQuery) return students;
+      const query = searchQuery.toLowerCase();
+      return students.filter(courseStudent => {
+        return (
+          courseStudent.fullName?.toLowerCase().includes(query) ||
+          courseStudent.admissionNo?.toLowerCase().includes(query)
+        );
+      });
+    } else {
+      // Regular students
+      if (!searchQuery) return studentAdmissions;
+      const query = searchQuery.toLowerCase();
+      return studentAdmissions.filter(admission => {
+        const student = admission.student;
+        if (!student) return false;
+        return (
+          student.fullName?.toLowerCase().includes(query) ||
+          student.admissionNumber?.toLowerCase().includes(query) ||
+          student.studentCode?.toLowerCase().includes(query)
+        );
+      });
+    }
+  }, [studentAdmissions, courseStudents, searchQuery, studentType]);
 
-  // Get students with card status
+  // Get students with card status (handles both regular and course students)
   const studentsWithCardStatus = useMemo(() => {
-    return filteredStudents.map(admission => {
-      const card = idCards.find(c => c.studentAdmissionId === admission.id);
-      return {
-        admission,
-        card,
-        hasCard: !!card,
-        isPrinted: card?.isPrinted ?? false,
-        feePaid: card?.cardFeePaid ?? false,
-      };
-    });
-  }, [filteredStudents, idCards]);
+    if (studentType === 'course') {
+      const courseStudents = filteredStudents as import('@/types/domain/courseStudent').CourseStudent[];
+      return courseStudents.map(courseStudent => {
+        const card = idCards.find(c => c.courseStudentId === courseStudent.id);
+        return {
+          courseStudent,
+          card,
+          hasCard: !!card,
+          isPrinted: card?.isPrinted ?? false,
+          feePaid: card?.cardFeePaid ?? false,
+        };
+      });
+    } else {
+      const admissions = filteredStudents as typeof studentAdmissions;
+      return admissions.map(admission => {
+        const card = idCards.find(c => c.studentAdmissionId === admission.id);
+        return {
+          admission,
+          card,
+          hasCard: !!card,
+          isPrinted: card?.isPrinted ?? false,
+          feePaid: card?.cardFeePaid ?? false,
+        };
+      });
+    }
+  }, [filteredStudents, idCards, studentType, studentAdmissions]);
 
-  // Handle student selection (using admission IDs)
-  const toggleStudentSelection = (admissionId: string) => {
-    setSelectedAdmissionIds(prev => {
-      const next = new Set(prev);
-      if (next.has(admissionId)) {
-        next.delete(admissionId);
-      } else {
-        next.add(admissionId);
-      }
-      return next;
-    });
+  // Handle student selection (using admission IDs for regular students, course student IDs for course students)
+  const toggleStudentSelection = (id: string) => {
+    if (studentType === 'course') {
+      setSelectedCourseStudentIds(prev => {
+        const next = new Set(prev);
+        if (next.has(id)) {
+          next.delete(id);
+        } else {
+          next.add(id);
+        }
+        return next;
+      });
+    } else {
+      setSelectedAdmissionIds(prev => {
+        const next = new Set(prev);
+        if (next.has(id)) {
+          next.delete(id);
+        } else {
+          next.add(id);
+        }
+        return next;
+      });
+    }
   };
 
   const selectAllStudents = () => {
-    if (selectedAdmissionIds.size === studentsWithCardStatus.length) {
-      setSelectedAdmissionIds(new Set());
+    if (studentType === 'course') {
+      if (selectedCourseStudentIds.size === studentsWithCardStatus.length) {
+        setSelectedCourseStudentIds(new Set());
+      } else {
+        setSelectedCourseStudentIds(new Set(studentsWithCardStatus.map(s => s.courseStudent!.id)));
+      }
     } else {
-      setSelectedAdmissionIds(new Set(studentsWithCardStatus.map(s => s.admission.id)));
+      if (selectedAdmissionIds.size === studentsWithCardStatus.length) {
+        setSelectedAdmissionIds(new Set());
+      } else {
+        setSelectedAdmissionIds(new Set(studentsWithCardStatus.map(s => s.admission!.id)));
+      }
     }
   };
 
   const selectByClass = (classAcadYearId: string) => {
-    const classAdmissions = studentsWithCardStatus
-      .filter(s => s.admission.classAcademicYearId === classAcadYearId)
-      .map(s => s.admission.id);
-    setSelectedAdmissionIds(new Set(classAdmissions));
+    if (studentType === 'regular') {
+      const classAdmissions = studentsWithCardStatus
+        .filter(s => s.admission?.classAcademicYearId === classAcadYearId)
+        .map(s => s.admission!.id);
+      setSelectedAdmissionIds(new Set(classAdmissions));
+    }
+    // Course students don't have classes, so this function does nothing for course mode
   };
 
-  // Handle bulk assignment
+  // Handle bulk assignment (handles both regular and course students)
   const handleBulkAssign = async () => {
-    if (!academicYearId || !selectedTemplateForAssignment || selectedAdmissionIds.size === 0) {
+    const hasSelectedStudents = studentType === 'course' 
+      ? selectedCourseStudentIds.size > 0 
+      : selectedAdmissionIds.size > 0;
+
+    if (!academicYearId || !selectedTemplateForAssignment || !hasSelectedStudents) {
       return;
     }
 
@@ -237,9 +309,10 @@ export default function IdCardAssignment() {
     const request: AssignIdCardRequest = {
       academicYearId,
       idCardTemplateId: selectedTemplateForAssignment,
-      studentAdmissionIds: Array.from(selectedAdmissionIds),
-      classId: classId || null,
-      classAcademicYearId: classAcademicYearId || null,
+      studentAdmissionIds: studentType === 'regular' ? Array.from(selectedAdmissionIds) : undefined,
+      courseStudentIds: studentType === 'course' ? Array.from(selectedCourseStudentIds) : undefined,
+      classId: studentType === 'regular' ? (classId || null) : null,
+      classAcademicYearId: studentType === 'regular' ? (classAcademicYearId || null) : null,
       cardFee: cardFee ? parseFloat(cardFee) : undefined,
       cardFeePaid: cardFeePaid,
       cardFeePaidDate: cardFeePaid ? new Date().toISOString() : undefined,
@@ -251,6 +324,7 @@ export default function IdCardAssignment() {
       await assignCards.mutateAsync(request);
       setIsAssignDialogOpen(false);
       setSelectedAdmissionIds(new Set());
+      setSelectedCourseStudentIds(new Set());
       setSelectedTemplateForAssignment('');
       setCardFee('');
       setCardFeePaid(false);
@@ -331,11 +405,11 @@ export default function IdCardAssignment() {
     });
   }, [idCards, searchQuery]);
 
-  // Report export columns
+  // Report export columns (handles both regular and course students)
   const reportColumns = useMemo(() => [
     { key: 'student_name', label: t('students.student') || 'Student' },
     { key: 'admission_number', label: t('examReports.admissionNo') || 'Admission No' },
-    { key: 'class_name', label: t('search.class') || 'Class' },
+    { key: 'class_name', label: studentType === 'course' ? (t('courses.course') || 'Course') : (t('search.class') || 'Class') },
     { key: 'template_name', label: t('idCards.template') || 'Template' },
     { key: 'card_number', label: t('attendanceReports.cardNumber') || 'Card Number' },
     { key: 'fee_status', label: t('idCards.feeStatus') || 'Fee Status' },
@@ -343,14 +417,20 @@ export default function IdCardAssignment() {
     { key: 'printed_status', label: t('idCards.printedStatus') || 'Printed Status' },
     { key: 'printed_at', label: t('idCards.printedAt') || 'Printed At' },
     { key: 'assigned_at', label: t('idCards.assignedAt') || 'Assigned At' },
-  ], [t]);
+  ], [t, studentType]);
 
-  // Transform data for report
+  // Transform data for report (handles both regular and course students)
   const transformIdCardData = useCallback((cards: typeof filteredCards) => {
     return cards.map(card => ({
-      student_name: card.student?.fullName || '-',
-      admission_number: card.student?.admissionNumber || '-',
-      class_name: card.class?.name || '-',
+      student_name: card.courseStudentId 
+        ? (card.courseStudent?.fullName || '-')
+        : (card.student?.fullName || '-'),
+      admission_number: card.courseStudentId
+        ? (card.courseStudent?.admissionNo || '-')
+        : (card.student?.admissionNumber || '-'),
+      class_name: card.courseStudentId
+        ? (card.courseStudent?.course?.name || '-')
+        : (card.class?.name || '-'),
       template_name: card.template?.name || '-',
       card_number: card.cardNumber || '-',
       fee_status: card.cardFeePaid 
@@ -376,9 +456,13 @@ export default function IdCardAssignment() {
       const school = schools.find(s => s.id === schoolId);
       if (school) filters.push(`${t('common.schoolManagement') || 'School'}: ${school.schoolName}`);
     }
-    if (classId) {
+    if (studentType === 'regular' && classId) {
       const cls = classes.find(c => c.id === classId);
       if (cls) filters.push(`${t('search.class') || 'Class'}: ${cls.name}`);
+    }
+    if (studentType === 'course' && courseId) {
+      const course = courses.find(c => c.id === courseId);
+      if (course) filters.push(`${t('courses.course') || 'Course'}: ${course.name}`);
     }
     if (templateId) {
       const template = templates.find(t => t.id === templateId);
@@ -391,13 +475,13 @@ export default function IdCardAssignment() {
       filters.push(`${t('events.search') || 'Search'}: ${searchQuery}`);
     }
     return filters.join(', ');
-  }, [academicYearId, schoolId, classId, templateId, enrollmentStatus, searchQuery, academicYears, schools, classes, templates, t]);
+  }, [academicYearId, schoolId, classId, courseId, studentType, templateId, enrollmentStatus, searchQuery, academicYears, schools, classes, courses, templates, t]);
 
   return (
     <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4">
       <Card>
         <CardHeader>
-          <CardTitle>{t('idCards.assignment') || 'ID Card Assignment'}</CardTitle>
+          <CardTitle>{t('idCards.assignment.title') || 'ID Card Assignment'}</CardTitle>
           <CardDescription>
             {t('idCards.assignment.description') || 'Assign ID card templates to students and manage card assignments'}
           </CardDescription>
@@ -406,15 +490,41 @@ export default function IdCardAssignment() {
           <Tabs defaultValue="assignment" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="assignment">
-                {t('idCards.assignment') || 'Assignment'}
+                {t('idCards.assignment.title') || 'Assignment'}
               </TabsTrigger>
               <TabsTrigger value="assigned">
-                {t('idCards.assignedCards') || 'Assigned Cards'} ({filteredCards.length})
+                {t('idCards.assignedCards.title') || t('idCards.assignedCards') || 'Assigned Cards'} ({filteredCards.length})
               </TabsTrigger>
             </TabsList>
 
             {/* Assignment Tab */}
             <TabsContent value="assignment" className="space-y-4 mt-4">
+              {/* Student Type Selection */}
+              <div className="flex gap-2 mb-4">
+                <Tabs value={studentType} onValueChange={(value) => {
+                  setStudentType(value as 'regular' | 'course');
+                  // Clear selections when switching modes
+                  setSelectedAdmissionIds(new Set());
+                  setSelectedCourseStudentIds(new Set());
+                  // Reset filters
+                  if (value === 'course') {
+                    setClassId('');
+                    setClassAcademicYearId('');
+                  } else {
+                    setCourseId('');
+                  }
+                }}>
+                  <TabsList>
+                    <TabsTrigger value="regular">
+                      {t('students.students') || 'Regular Students'}
+                    </TabsTrigger>
+                    <TabsTrigger value="course">
+                      {t('courses.courseStudents') || 'Course Students'}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+
               {/* Filter Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
@@ -450,22 +560,42 @@ export default function IdCardAssignment() {
               </Select>
             </div>
 
-            <div>
-              <Label>{t('search.class') || 'Class'}</Label>
-              <Select value={classIdForSelect} onValueChange={(value) => setClassId(value === 'all' ? '' : value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('subjects.all') || 'All'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
-                  {classes.map(cls => (
-                    <SelectItem key={cls.id} value={cls.id}>
-                      {cls.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Show Class filter for regular students, Course filter for course students */}
+            {studentType === 'regular' ? (
+              <div>
+                <Label>{t('search.class') || 'Class'}</Label>
+                <Select value={classIdForSelect} onValueChange={(value) => setClassId(value === 'all' ? '' : value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('subjects.all') || 'All'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                    {classes.map(cls => (
+                      <SelectItem key={cls.id} value={cls.id}>
+                        {cls.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div>
+                <Label>{t('courses.course') || 'Course'}</Label>
+                <Select value={courseIdForSelect} onValueChange={(value) => setCourseId(value === 'all' ? '' : value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('subjects.all') || 'All'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                    {courses.map(course => (
+                      <SelectItem key={course.id} value={course.id}>
+                        {course.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div>
               <Label>{t('students.enrollmentStatus') || 'Enrollment Status'}</Label>
@@ -524,7 +654,9 @@ export default function IdCardAssignment() {
                   size="sm"
                   onClick={selectAllStudents}
                 >
-                  {selectedAdmissionIds.size === studentsWithCardStatus.length ? (
+                  {(studentType === 'course' 
+                    ? selectedCourseStudentIds.size === studentsWithCardStatus.length
+                    : selectedAdmissionIds.size === studentsWithCardStatus.length) ? (
                     <>
                       <Square className="h-4 w-4 mr-1" />
                       {t('events.deselectAll') || 'Deselect All'}
@@ -540,75 +672,146 @@ export default function IdCardAssignment() {
 
               <ScrollArea className="h-[500px] border rounded-lg p-2">
                 <div className="space-y-2">
-                  {studentsWithCardStatus.map(({ admission, card, hasCard, isPrinted, feePaid }) => {
-                    const student = admission.student;
-                    if (!student) return null;
-
-                    const isSelected = selectedAdmissionIds.has(admission.id);
-                    return (
-                      <div
-                        key={admission.id}
-                        className={cn(
-                          "flex items-center gap-2 p-2 rounded-lg border transition-colors cursor-pointer",
-                          isSelected
-                            ? "bg-primary/10 border-primary"
-                            : "hover:bg-muted/50"
-                        )}
-                        onClick={(e) => {
-                          // Don't toggle if clicking directly on checkbox or its container
-                          const target = e.target as HTMLElement;
-                          if (target.closest('button') || target.closest('[role="checkbox"]')) {
-                            return;
-                          }
-                          toggleStudentSelection(admission.id);
-                        }}
-                      >
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedAdmissionIds(prev => new Set(prev).add(admission.id));
-                              } else {
-                                setSelectedAdmissionIds(prev => {
-                                  const next = new Set(prev);
-                                  next.delete(admission.id);
-                                  return next;
-                                });
+                  {studentType === 'course' 
+                    ? studentsWithCardStatus.map((item) => {
+                        // Type guard for course students
+                        if (!('courseStudent' in item)) return null;
+                        const courseStudent = item.courseStudent;
+                        const isSelected = selectedCourseStudentIds.has(courseStudent.id);
+                        return (
+                          <div
+                            key={courseStudent.id}
+                            className={cn(
+                              "flex items-center gap-2 p-2 rounded-lg border transition-colors cursor-pointer",
+                              isSelected
+                                ? "bg-primary/10 border-primary"
+                                : "hover:bg-muted/50"
+                            )}
+                            onClick={(e) => {
+                              const target = e.target as HTMLElement;
+                              if (target.closest('button') || target.closest('[role="checkbox"]')) {
+                                return;
                               }
+                              toggleStudentSelection(courseStudent.id);
                             }}
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{student.fullName}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {t('examReports.admissionNo') || 'Admission'}: {student.admissionNumber}
+                          >
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedCourseStudentIds(prev => new Set(prev).add(courseStudent.id));
+                                  } else {
+                                    setSelectedCourseStudentIds(prev => {
+                                      const next = new Set(prev);
+                                      next.delete(courseStudent.id);
+                                      return next;
+                                    });
+                                  }
+                                }}
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">{courseStudent.fullName}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {t('examReports.admissionNo') || 'Admission'}: {courseStudent.admissionNo}
+                              </div>
+                              <div className="flex gap-1 mt-1">
+                                {item.hasCard ? (
+                                  <Badge variant="default" className="text-xs">
+                                    {t('assets.assigned') || 'Assigned'}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-xs">
+                                    {t('idCards.notAssigned') || 'Not Assigned'}
+                                  </Badge>
+                                )}
+                                {item.isPrinted && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {t('idCards.printed') || 'Printed'}
+                                  </Badge>
+                                )}
+                                {item.feePaid && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {t('courses.feePaid') || 'Fee Paid'}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex gap-1 mt-1">
-                            {hasCard ? (
-                              <Badge variant="default" className="text-xs">
-                                {t('assets.assigned') || 'Assigned'}
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs">
-                                {t('idCards.notAssigned') || 'Not Assigned'}
-                              </Badge>
+                        );
+                      })
+                    : studentsWithCardStatus.map((item) => {
+                        // Type guard for regular students
+                        if (!('admission' in item)) return null;
+                        const admission = item.admission;
+                        const student = admission.student;
+                        if (!student) return null;
+
+                        const isSelected = selectedAdmissionIds.has(admission.id);
+                        return (
+                          <div
+                            key={admission.id}
+                            className={cn(
+                              "flex items-center gap-2 p-2 rounded-lg border transition-colors cursor-pointer",
+                              isSelected
+                                ? "bg-primary/10 border-primary"
+                                : "hover:bg-muted/50"
                             )}
-                            {isPrinted && (
-                              <Badge variant="secondary" className="text-xs">
-                                {t('idCards.printed') || 'Printed'}
-                              </Badge>
-                            )}
-                            {feePaid && (
-                              <Badge variant="outline" className="text-xs">
-                                {t('courses.feePaid') || 'Fee Paid'}
-                              </Badge>
-                            )}
+                            onClick={(e) => {
+                              const target = e.target as HTMLElement;
+                              if (target.closest('button') || target.closest('[role="checkbox"]')) {
+                                return;
+                              }
+                              toggleStudentSelection(admission.id);
+                            }}
+                          >
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedAdmissionIds(prev => new Set(prev).add(admission.id));
+                                  } else {
+                                    setSelectedAdmissionIds(prev => {
+                                      const next = new Set(prev);
+                                      next.delete(admission.id);
+                                      return next;
+                                    });
+                                  }
+                                }}
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">{student.fullName}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {t('examReports.admissionNo') || 'Admission'}: {student.admissionNumber}
+                              </div>
+                              <div className="flex gap-1 mt-1">
+                                {item.hasCard ? (
+                                  <Badge variant="default" className="text-xs">
+                                    {t('assets.assigned') || 'Assigned'}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-xs">
+                                    {t('idCards.notAssigned') || 'Not Assigned'}
+                                  </Badge>
+                                )}
+                                {item.isPrinted && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {t('idCards.printed') || 'Printed'}
+                                  </Badge>
+                                )}
+                                {item.feePaid && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {t('courses.feePaid') || 'Fee Paid'}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
                 </div>
               </ScrollArea>
             </div>
@@ -618,7 +821,7 @@ export default function IdCardAssignment() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">
-                    {t('idCards.assignment.assignTemplate') || 'Assign Template'}
+                    {t('idCards.assignment.assignTemplate')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -712,11 +915,19 @@ export default function IdCardAssignment() {
 
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-muted-foreground">
-                      {t('idCards.selectedStudents') || 'Selected'}: {selectedAdmissionIds.size}
+                      {t('idCards.selectedStudents') || 'Selected'}: {studentType === 'course' 
+                        ? selectedCourseStudentIds.size 
+                        : selectedAdmissionIds.size}
                     </div>
                     <Button
                       onClick={() => setIsAssignDialogOpen(true)}
-                      disabled={!academicYearId || !selectedTemplateForAssignment || selectedAdmissionIds.size === 0}
+                      disabled={
+                        !academicYearId || 
+                        !selectedTemplateForAssignment || 
+                        (studentType === 'course' 
+                          ? selectedCourseStudentIds.size === 0 
+                          : selectedAdmissionIds.size === 0)
+                      }
                     >
                       {t('idCards.assign') || 'Assign Cards'}
                     </Button>
@@ -735,13 +946,31 @@ export default function IdCardAssignment() {
                           <SelectValue placeholder={t('idCards.selectStudentForPreview') || 'Select student'} />
                         </SelectTrigger>
                         <SelectContent>
-                          {studentsWithCardStatus
-                            .filter(s => s.hasCard)
-                            .map(({ admission }) => (
-                              <SelectItem key={admission.id} value={admission.id}>
-                                {admission.student?.fullName}
-                              </SelectItem>
-                            ))}
+                          {studentType === 'course'
+                            ? studentsWithCardStatus
+                                .filter(s => s.hasCard && 'courseStudent' in s)
+                                .map((item) => {
+                                  if ('courseStudent' in item) {
+                                    return (
+                                      <SelectItem key={item.courseStudent.id} value={item.courseStudent.id}>
+                                        {item.courseStudent.fullName}
+                                      </SelectItem>
+                                    );
+                                  }
+                                  return null;
+                                })
+                            : studentsWithCardStatus
+                                .filter(s => s.hasCard && 'admission' in s)
+                                .map((item) => {
+                                  if ('admission' in item && item.admission.student) {
+                                    return (
+                                      <SelectItem key={item.admission.id} value={item.admission.id}>
+                                        {item.admission.student.fullName}
+                                      </SelectItem>
+                                    );
+                                  }
+                                  return null;
+                                })}
                         </SelectContent>
                       </Select>
                       <Select value={previewSide} onValueChange={(value: 'front' | 'back') => setPreviewSide(value)}>
@@ -757,7 +986,9 @@ export default function IdCardAssignment() {
                         <Button
                           variant="outline"
                           onClick={() => {
-                            const card = idCards.find(c => c.studentAdmissionId === previewStudentId);
+                            const card = studentType === 'course'
+                              ? idCards.find(c => c.courseStudentId === previewStudentId)
+                              : idCards.find(c => c.studentAdmissionId === previewStudentId);
                             if (card) handlePreview(card.id, previewSide);
                           }}
                         >
@@ -827,7 +1058,7 @@ export default function IdCardAssignment() {
                           <TableRow>
                             <TableHead>{t('students.student') || 'Student'}</TableHead>
                             <TableHead>{t('examReports.admissionNo') || 'Admission No'}</TableHead>
-                            <TableHead>{t('search.class') || 'Class'}</TableHead>
+                            <TableHead>{studentType === 'course' ? (t('courses.course') || 'Course') : (t('search.class') || 'Class')}</TableHead>
                             <TableHead>{t('idCards.template') || 'Template'}</TableHead>
                             <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
                             <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
@@ -841,7 +1072,11 @@ export default function IdCardAssignment() {
                                 {card.student?.fullName || '-'}
                               </TableCell>
                               <TableCell>{card.student?.admissionNumber || '-'}</TableCell>
-                              <TableCell>{card.class?.name || '-'}</TableCell>
+                              <TableCell>
+                                {card.courseStudentId 
+                                  ? (card.courseStudent?.course?.name || '-')
+                                  : (card.class?.name || '-')}
+                              </TableCell>
                               <TableCell>{card.template?.name || '-'}</TableCell>
                               <TableCell>
                                 <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
@@ -863,8 +1098,8 @@ export default function IdCardAssignment() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => {
-                                      const admissionId = card.studentAdmissionId;
-                                      setPreviewStudentId(admissionId);
+                                      const studentId = card.courseStudentId || card.studentAdmissionId;
+                                      setPreviewStudentId(studentId);
                                       setPreviewSide('front');
                                       handlePreview(card.id, 'front');
                                     }}
@@ -926,7 +1161,7 @@ export default function IdCardAssignment() {
                           <TableRow>
                             <TableHead>{t('students.student') || 'Student'}</TableHead>
                             <TableHead>{t('examReports.admissionNo') || 'Admission No'}</TableHead>
-                            <TableHead>{t('search.class') || 'Class'}</TableHead>
+                            <TableHead>{studentType === 'course' ? (t('courses.course') || 'Course') : (t('search.class') || 'Class')}</TableHead>
                             <TableHead>{t('idCards.template') || 'Template'}</TableHead>
                             <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
                             <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
@@ -940,7 +1175,11 @@ export default function IdCardAssignment() {
                                 {card.student?.fullName || '-'}
                               </TableCell>
                               <TableCell>{card.student?.admissionNumber || '-'}</TableCell>
-                              <TableCell>{card.class?.name || '-'}</TableCell>
+                              <TableCell>
+                                {card.courseStudentId 
+                                  ? (card.courseStudent?.course?.name || '-')
+                                  : (card.class?.name || '-')}
+                              </TableCell>
                               <TableCell>{card.template?.name || '-'}</TableCell>
                               <TableCell>
                                 <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
@@ -960,8 +1199,8 @@ export default function IdCardAssignment() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => {
-                                      const admissionId = card.studentAdmissionId;
-                                      setPreviewStudentId(admissionId);
+                                      const studentId = card.courseStudentId || card.studentAdmissionId;
+                                      setPreviewStudentId(studentId);
                                       setPreviewSide('front');
                                       handlePreview(card.id, 'front');
                                     }}
@@ -1021,7 +1260,7 @@ export default function IdCardAssignment() {
                           <TableRow>
                             <TableHead>{t('students.student') || 'Student'}</TableHead>
                             <TableHead>{t('examReports.admissionNo') || 'Admission No'}</TableHead>
-                            <TableHead>{t('search.class') || 'Class'}</TableHead>
+                            <TableHead>{studentType === 'course' ? (t('courses.course') || 'Course') : (t('search.class') || 'Class')}</TableHead>
                             <TableHead>{t('idCards.template') || 'Template'}</TableHead>
                             <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
                             <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
@@ -1035,7 +1274,11 @@ export default function IdCardAssignment() {
                                 {card.student?.fullName || '-'}
                               </TableCell>
                               <TableCell>{card.student?.admissionNumber || '-'}</TableCell>
-                              <TableCell>{card.class?.name || '-'}</TableCell>
+                              <TableCell>
+                                {card.courseStudentId 
+                                  ? (card.courseStudent?.course?.name || '-')
+                                  : (card.class?.name || '-')}
+                              </TableCell>
                               <TableCell>{card.template?.name || '-'}</TableCell>
                               <TableCell>
                                 <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
@@ -1055,8 +1298,8 @@ export default function IdCardAssignment() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => {
-                                      const admissionId = card.studentAdmissionId;
-                                      setPreviewStudentId(admissionId);
+                                      const studentId = card.courseStudentId || card.studentAdmissionId;
+                                      setPreviewStudentId(studentId);
                                       setPreviewSide('front');
                                       handlePreview(card.id, 'front');
                                     }}
@@ -1112,8 +1355,14 @@ export default function IdCardAssignment() {
           <DialogHeader>
             <DialogTitle>{t('idCards.assignment.confirmAssign') || 'Confirm Assignment'}</DialogTitle>
             <DialogDescription>
-              {t('idCards.assignment.assignToStudents', { count: selectedAdmissionIds.size }) ||
-                `Assign ID card to ${selectedAdmissionIds.size} student(s)?`}
+              {t('idCards.assignment.assignToStudents', { 
+                count: studentType === 'course' 
+                  ? selectedCourseStudentIds.size 
+                  : selectedAdmissionIds.size 
+              }) ||
+                `Assign ID card to ${studentType === 'course' 
+                  ? selectedCourseStudentIds.size 
+                  : selectedAdmissionIds.size} student(s)?`}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1216,7 +1465,7 @@ export default function IdCardAssignment() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('events.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('assets.deleteConfirm') || 'Are you sure you want to delete this ID card assignment?'}
+              {t('idCards.deleteConfirm') || 'Are you sure you want to delete this ID card assignment?'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

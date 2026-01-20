@@ -21,6 +21,7 @@ export function mapStudentIdCardApiToDomain(api: StudentIdCardApi.StudentIdCard)
     schoolId: api.school_id,
     studentId: api.student_id,
     studentAdmissionId: api.student_admission_id,
+    courseStudentId: api.course_student_id || null,
     idCardTemplateId: api.id_card_template_id,
     academicYearId: api.academic_year_id,
     classId: api.class_id,
@@ -52,6 +53,19 @@ export function mapStudentIdCardApiToDomain(api: StudentIdCardApi.StudentIdCard)
       enrollmentStatus: api.student_admission.enrollment_status,
       classId: api.student_admission.class_id,
       classAcademicYearId: api.student_admission.class_academic_year_id,
+    } : undefined,
+    courseStudent: api.course_student ? {
+      id: api.course_student.id,
+      courseId: api.course_student.course_id,
+      admissionNo: api.course_student.admission_no,
+      fullName: api.course_student.full_name,
+      fatherName: api.course_student.father_name || null,
+      picturePath: api.course_student.picture_path || null,
+      course: api.course_student.course ? {
+        id: api.course_student.course.id,
+        name: api.course_student.course.name,
+        code: api.course_student.course.code || null,
+      } : undefined,
     } : undefined,
     template: api.template ? {
       id: api.template.id,
@@ -142,6 +156,7 @@ export function mapAssignIdCardRequestDomainToApi(domain: AssignIdCardRequest): 
     academic_year_id: domain.academicYearId,
     id_card_template_id: domain.idCardTemplateId,
     student_admission_ids: domain.studentAdmissionIds,
+    course_student_ids: domain.courseStudentIds,
     class_id: domain.classId,
     class_academic_year_id: domain.classAcademicYearId,
     card_fee: domain.cardFee,
@@ -164,6 +179,9 @@ export function mapStudentIdCardFiltersDomainToApi(domain: IdCardFilters): Stude
   if (domain.schoolId !== undefined) filters.school_id = domain.schoolId;
   if (domain.classId !== undefined) filters.class_id = domain.classId;
   if (domain.classAcademicYearId !== undefined) filters.class_academic_year_id = domain.classAcademicYearId;
+  if (domain.courseId !== undefined) filters.course_id = domain.courseId;
+  if (domain.courseStudentId !== undefined) filters.course_student_id = domain.courseStudentId;
+  if (domain.studentType !== undefined) filters.student_type = domain.studentType;
   if (domain.enrollmentStatus !== undefined) filters.enrollment_status = domain.enrollmentStatus;
   if (domain.templateId !== undefined) {
     filters.template_id = domain.templateId;

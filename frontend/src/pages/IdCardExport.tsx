@@ -22,9 +22,11 @@ import { Switch } from '@/components/ui/switch';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useAuth } from '@/hooks/useAuth';
 import { useClasses, useClassAcademicYears } from '@/hooks/useClasses';
+import { useCourseStudents } from '@/hooks/useCourseStudents';
 import { useIdCardTemplates } from '@/hooks/useIdCardTemplates';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useSchools } from '@/hooks/useSchools';
+import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import {
   useStudentIdCards,
   useExportIdCards,
@@ -49,15 +51,18 @@ import {
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'idCardExportSettings';
 
 interface ExportSettings {
+  studentType?: 'regular' | 'course';
   academicYearId?: string;
   schoolId?: string;
   classId?: string;
   classAcademicYearId?: string;
+  courseId?: string;
   templateId?: string;
   enrollmentStatus?: string;
   printedStatus?: string;
@@ -102,11 +107,15 @@ export default function IdCardExport() {
   // Load saved settings
   const savedSettings = loadSettings();
 
+  // Student type state
+  const [studentType, setStudentType] = useState<'regular' | 'course'>(savedSettings.studentType || 'regular');
+
   // Filter states
   const [academicYearId, setAcademicYearId] = useState<string>(savedSettings.academicYearId || '');
   const [schoolId, setSchoolId] = useState<string>(savedSettings.schoolId || '');
   const [classId, setClassId] = useState<string>(savedSettings.classId || '');
   const [classAcademicYearId, setClassAcademicYearId] = useState<string>(savedSettings.classAcademicYearId || '');
+  const [courseId, setCourseId] = useState<string>(savedSettings.courseId || '');
   const [templateId, setTemplateId] = useState<string>(savedSettings.templateId || '');
   const [enrollmentStatus, setEnrollmentStatus] = useState<string>(savedSettings.enrollmentStatus || 'active');
   const [printedStatus, setPrintedStatus] = useState<string>(savedSettings.printedStatus || 'all');
@@ -116,6 +125,7 @@ export default function IdCardExport() {
   // Helper to convert empty string to 'all' for Select components
   const schoolIdForSelect = schoolId || 'all';
   const classIdForSelect = classId || 'all';
+  const courseIdForSelect = courseId || 'all';
   const templateIdForSelect = templateId || 'all';
 
   // Export options
@@ -135,6 +145,7 @@ export default function IdCardExport() {
   const { data: schools = [] } = useSchools(organizationId);
   const { data: classes = [] } = useClasses(organizationId);
   const { data: classAcademicYears = [] } = useClassAcademicYears(academicYearId, organizationId);
+  const { data: courses = [] } = useShortTermCourses(organizationId);
   const { data: templates = [] } = useIdCardTemplates(true);
 
   // Set default academic year (only if not already set from saved settings)
@@ -147,10 +158,12 @@ export default function IdCardExport() {
   // Save settings to localStorage whenever they change
   useEffect(() => {
     const settings: ExportSettings = {
+      studentType,
       academicYearId,
       schoolId,
       classId,
       classAcademicYearId,
+      courseId,
       templateId,
       enrollmentStatus,
       printedStatus,
@@ -163,20 +176,21 @@ export default function IdCardExport() {
       includeUnpaid,
     };
     saveSettings(settings);
-  }, [academicYearId, schoolId, classId, classAcademicYearId, templateId, enrollmentStatus, printedStatus, feeStatus, exportFormat, exportSides, cardsPerPage, quality, includeUnprinted, includeUnpaid]);
+  }, [studentType, academicYearId, schoolId, classId, classAcademicYearId, courseId, templateId, enrollmentStatus, printedStatus, feeStatus, exportFormat, exportSides, cardsPerPage, quality, includeUnprinted, includeUnpaid]);
 
   // Filters for ID cards
   const cardFilters: StudentIdCardFilters = useMemo(() => ({
     academicYearId: academicYearId || undefined,
     schoolId: schoolId || undefined,
-    classId: classId || undefined,
-    classAcademicYearId: classAcademicYearId || undefined,
+    classId: studentType === 'regular' ? (classId || undefined) : undefined,
+    classAcademicYearId: studentType === 'regular' ? (classAcademicYearId || undefined) : undefined,
+    courseId: studentType === 'course' ? (courseId || undefined) : undefined,
     enrollmentStatus: enrollmentStatus === 'all' ? undefined : enrollmentStatus,
     idCardTemplateId: templateId || undefined,
     isPrinted: printedStatus === 'all' ? undefined : printedStatus === 'printed',
     cardFeePaid: feeStatus === 'all' ? undefined : feeStatus === 'paid',
     search: searchQuery || undefined,
-  }), [academicYearId, schoolId, classId, classAcademicYearId, enrollmentStatus, templateId, printedStatus, feeStatus, searchQuery]);
+  }), [studentType, academicYearId, schoolId, classId, classAcademicYearId, courseId, enrollmentStatus, templateId, printedStatus, feeStatus, searchQuery]);
 
   const { data: idCards = [], isLoading: cardsLoading } = useStudentIdCards(cardFilters);
   const exportCards = useExportIdCards();
@@ -218,9 +232,11 @@ export default function IdCardExport() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(card => {
+        const studentName = card.student?.fullName?.toLowerCase() || card.courseStudent?.fullName?.toLowerCase() || '';
+        const admissionNumber = card.student?.admissionNumber?.toLowerCase() || card.courseStudent?.admissionNo?.toLowerCase() || '';
         return (
-          card.student?.fullName?.toLowerCase().includes(query) ||
-          card.student?.admissionNumber?.toLowerCase().includes(query)
+          studentName.includes(query) ||
+          admissionNumber.includes(query)
         );
       });
     }
@@ -320,6 +336,18 @@ export default function IdCardExport() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Student Type Selector */}
+          <Tabs value={studentType} onValueChange={(value) => setStudentType(value as 'regular' | 'course')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="regular">
+                {t('idCards.assignment.regularStudents') || 'Regular Students'}
+              </TabsTrigger>
+              <TabsTrigger value="course">
+                {t('idCards.assignment.courseStudents') || 'Course Students'}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
           {/* Statistics Dashboard */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
@@ -398,22 +426,41 @@ export default function IdCardExport() {
                   </Select>
                 </div>
 
-                <div>
-                  <Label>{t('search.class') || 'Class'}</Label>
-                  <Select value={classIdForSelect} onValueChange={(value) => setClassId(value === 'all' ? '' : value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('subjects.all') || 'All'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
-                      {classes.map(cls => (
-                        <SelectItem key={cls.id} value={cls.id}>
-                          {cls.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {studentType === 'regular' ? (
+                  <div>
+                    <Label>{t('search.class') || 'Class'}</Label>
+                    <Select value={classIdForSelect} onValueChange={(value) => setClassId(value === 'all' ? '' : value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('subjects.all') || 'All'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                        {classes.map(cls => (
+                          <SelectItem key={cls.id} value={cls.id}>
+                            {cls.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div>
+                    <Label>{t('courses.course') || 'Course'}</Label>
+                    <Select value={courseIdForSelect} onValueChange={(value) => setCourseId(value === 'all' ? '' : value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('subjects.all') || 'All'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                        {courses.map(course => (
+                          <SelectItem key={course.id} value={course.id}>
+                            {course.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div>
                   <Label>{t('idCards.template') || 'Template'}</Label>
@@ -643,7 +690,7 @@ export default function IdCardExport() {
                         </TableHead>
                         <TableHead>{t('students.student') || 'Student'}</TableHead>
                         <TableHead>{t('examReports.admissionNo') || 'Admission No'}</TableHead>
-                        <TableHead>{t('search.class') || 'Class'}</TableHead>
+                        <TableHead>{studentType === 'regular' ? (t('search.class') || 'Class') : (t('courses.course') || 'Course')}</TableHead>
                         <TableHead>{t('idCards.template') || 'Template'}</TableHead>
                         <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
                         <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
@@ -675,10 +722,15 @@ export default function IdCardExport() {
                                 />
                               </TableCell>
                               <TableCell className="font-medium">
-                                {card.student?.fullName || '-'}
+                                {card.student?.fullName || card.courseStudent?.fullName || '-'}
                               </TableCell>
-                              <TableCell>{card.student?.admissionNumber || '-'}</TableCell>
-                              <TableCell>{card.class?.name || '-'}</TableCell>
+                              <TableCell>{card.student?.admissionNumber || card.courseStudent?.admissionNo || '-'}</TableCell>
+                              <TableCell>
+                                {studentType === 'regular' 
+                                  ? (card.class?.name || '-')
+                                  : (card.courseStudent?.course?.name || '-')
+                                }
+                              </TableCell>
                               <TableCell>{card.template?.name || '-'}</TableCell>
                               <TableCell>
                                 <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>

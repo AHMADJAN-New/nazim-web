@@ -21,6 +21,7 @@ class CourseAttendanceRecord extends Model
         'id',
         'attendance_session_id',
         'organization_id',
+        'school_id',
         'course_id',
         'course_student_id',
         'status',

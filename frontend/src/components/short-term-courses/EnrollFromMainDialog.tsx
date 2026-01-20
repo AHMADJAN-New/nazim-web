@@ -19,6 +19,7 @@ import { LoadingSpinner } from '@/components/ui/loading';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useEnrollFromMain } from '@/hooks/useCourseStudents';
+import { useLanguage } from '@/hooks/useLanguage';
 import { useStudents } from '@/hooks/useStudents';
 import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
 
@@ -37,6 +38,7 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
   courses,
   onSuccess,
 }: EnrollFromMainDialogProps) {
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>(course?.id || '');
@@ -150,12 +152,12 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5" />
-            Enroll Students from Main Database
+            {t('courses.enrollFromMainDialog.title')}
           </DialogTitle>
           <DialogDescription>
             {selectedCourse 
-              ? `Select students from the main database to enroll in ${selectedCourse.name}.`
-              : 'Select a course and students from the main database to enroll.'}
+              ? t('courses.enrollFromMainDialog.description', { courseName: selectedCourse.name })
+              : t('courses.enrollFromMainDialog.descriptionNoCourse')}
           </DialogDescription>
         </DialogHeader>
 
@@ -163,7 +165,7 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
           {openCourses.length > 0 && (
             <div>
               <Label htmlFor="courseSelect" className="text-base font-semibold">
-                Select Course <span className="text-destructive">*</span>
+                {t('courses.enrollFromMainDialog.selectCourse')} <span className="text-destructive">*</span>
               </Label>
               <Select 
                 value={selectedCourseId} 
@@ -175,7 +177,7 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
                 disabled={isLoading}
               >
                 <SelectTrigger id="courseSelect" className="w-full">
-                  <SelectValue placeholder="Select a course to enroll students" />
+                  <SelectValue placeholder={t('courses.enrollFromMainDialog.selectCoursePlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {openCourses.map((c) => (
@@ -184,7 +186,7 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
                         <span className="font-medium">{c.name}</span>
                         {c.feeAmount && (
                           <span className="text-xs text-muted-foreground">
-                            Fee: {c.feeAmount}
+                            {t('courses.enrollFromMainDialog.fee')} {c.feeAmount}
                           </span>
                         )}
                       </div>
@@ -194,7 +196,7 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
               </Select>
               {!selectedCourse && selectedCourseId && (
                 <p className="text-sm text-destructive mt-1">
-                  Selected course not found. Please select a valid course.
+                  {t('courses.enrollFromMainDialog.courseNotFound')}
                 </p>
               )}
             </div>
@@ -203,14 +205,14 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
           {openCourses.length === 0 && (
             <div className="p-4 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground">
-                No open courses available. Please create a course first.
+                {t('courses.enrollFromMainDialog.noOpenCourses')}
               </p>
             </div>
           )}
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="registrationDate">Registration Date</Label>
+              <Label htmlFor="registrationDate">{t('courses.enrollFromMainDialog.registrationDate')}</Label>
               <CalendarDatePicker date={registrationDate ? new Date(registrationDate) : undefined} onDateChange={(date) => setRegistrationDate(date ? date.toISOString().split("T")[0] : "")} />
             </div>
             <div className="flex items-center space-x-2 pt-6">
@@ -220,7 +222,7 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
                 onCheckedChange={(checked) => setFeePaid(checked === true)}
               />
               <Label htmlFor="feePaid" className="cursor-pointer">
-                Mark fee as paid {selectedCourse?.feeAmount ? `(${selectedCourse.feeAmount})` : ''}
+                {t('courses.enrollFromMainDialog.markFeeAsPaid')} {selectedCourse?.feeAmount ? `(${selectedCourse.feeAmount})` : ''}
               </Label>
             </div>
           </div>
@@ -228,7 +230,7 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name or admission number..."
+              placeholder={t('courses.enrollFromMainDialog.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -236,9 +238,9 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
           </div>
 
           <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>{selectedIds.length} student(s) selected</span>
+            <span>{t('courses.enrollFromMainDialog.studentsSelected', { count: selectedIds.length })}</span>
             <Button variant="ghost" size="sm" onClick={handleSelectAll}>
-              {selectedIds.length === filteredStudents.length ? 'Deselect All' : 'Select All'}
+              {selectedIds.length === filteredStudents.length ? t('courses.enrollFromMainDialog.deselectAll') : t('courses.enrollFromMainDialog.selectAll')}
             </Button>
           </div>
 
@@ -252,16 +254,16 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
                 {filteredStudents.length === 0 ? (
                   <div className="text-center text-muted-foreground py-8 space-y-2">
                     <p>
-                      {search ? 'No students match your search' : 'No students available'}
+                      {search ? t('courses.enrollFromMainDialog.noStudentsMatchSearch') : t('courses.enrollFromMainDialog.noStudentsAvailable')}
                     </p>
                     {!isLoading && students.length === 0 && (
                       <p className="text-xs">
-                        Make sure you have students in the main students table.
+                        {t('courses.enrollFromMainDialog.ensureStudentsInMainTable')}
                       </p>
                     )}
                     {!isLoading && students.length > 0 && search && (
                       <p className="text-xs">
-                        Try a different search term. Found {students.length} student(s) total.
+                        {t('courses.enrollFromMainDialog.tryDifferentSearch', { count: students.length })}
                       </p>
                     )}
                   </div>
@@ -291,13 +293,13 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
                           <div className="font-medium truncate">{fullName}</div>
                           <div className="text-sm text-muted-foreground space-y-0.5 mt-1">
                             {fatherName && (
-                              <div className="truncate">S/O {fatherName}</div>
+                              <div className="truncate">{t('courses.enrollFromMainDialog.sonOf')} {fatherName}</div>
                             )}
                             {(student.grandfatherName || student.grandfather_name) && (
-                              <div className="truncate text-xs">G/S {student.grandfatherName || student.grandfather_name}</div>
+                              <div className="truncate text-xs">{t('courses.enrollFromMainDialog.grandsonOf')} {student.grandfatherName || student.grandfather_name}</div>
                             )}
                             {(student.motherName || student.mother_name) && (
-                              <div className="truncate text-xs">D/O {student.motherName || student.mother_name}</div>
+                              <div className="truncate text-xs">{t('courses.enrollFromMainDialog.daughterOf')} {student.motherName || student.mother_name}</div>
                             )}
                             {(student.currProvince || student.curr_province) && (
                               <div className="truncate text-xs">
@@ -307,10 +309,10 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
                               </div>
                             )}
                             {(student.guardianName || student.guardian_name) && (
-                              <div className="truncate text-xs">Guardian: {student.guardianName || student.guardian_name}</div>
+                              <div className="truncate text-xs">{t('courses.enrollFromMainDialog.guardian')} {student.guardianName || student.guardian_name}</div>
                             )}
                             {(student.nationality) && (
-                              <div className="truncate text-xs">Nationality: {student.nationality}</div>
+                              <div className="truncate text-xs">{t('courses.enrollFromMainDialog.nationality')} {student.nationality}</div>
                             )}
                           </div>
                         </div>
@@ -325,7 +327,7 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
                           )}
                           {(student.birthYear || student.birth_year) && (
                             <span className="text-xs text-muted-foreground">
-                              Born: {student.birthYear || student.birth_year}
+                              {t('courses.enrollFromMainDialog.born')} {student.birthYear || student.birth_year}
                             </span>
                           )}
                         </div>
@@ -340,19 +342,22 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>
-            Cancel
+            {t('courses.enrollFromMainDialog.cancel')}
           </Button>
           <Button
             onClick={handleEnroll}
             disabled={selectedIds.length === 0 || !selectedCourse || enrollMutation.isPending}
           >
             {enrollMutation.isPending 
-              ? 'Enrolling...' 
+              ? t('courses.enrollFromMainDialog.enrolling')
               : selectedIds.length === 0
-              ? 'Select Students'
+              ? t('courses.enrollFromMainDialog.selectStudents')
               : !selectedCourse
-              ? 'Select Course'
-              : `Enroll ${selectedIds.length} Student${selectedIds.length !== 1 ? 's' : ''} to ${selectedCourse.name}`}
+              ? t('courses.enrollFromMainDialog.selectCourseButton')
+              : t('courses.enrollFromMainDialog.enrollStudents', { 
+                  count: selectedIds.length, 
+                  courseName: selectedCourse.name
+                })}
           </Button>
         </DialogFooter>
       </DialogContent>

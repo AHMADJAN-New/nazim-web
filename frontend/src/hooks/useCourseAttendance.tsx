@@ -237,6 +237,76 @@ export const useCloseCourseAttendanceSession = () => {
   });
 };
 
+export interface SessionReportItem {
+  course_student_id: string;
+  student_name: string;
+  father_name: string | null;
+  card_number: string | null;
+  admission_no: string;
+  status: 'present' | 'absent' | 'late' | 'excused' | 'sick' | 'leave';
+  note: string | null;
+  has_record: boolean;
+}
+
+export interface CourseReportItem {
+  course_student_id: string;
+  student_name: string;
+  father_name: string | null;
+  card_number: string | null;
+  admission_no: string;
+  completion_status: 'enrolled' | 'completed' | 'dropped' | 'failed';
+  total_sessions: number;
+  present: number;
+  late: number;
+  absent: number;
+  excused: number;
+  sick: number;
+  leave: number;
+  attendance_rate: number;
+}
+
+export const useCourseAttendanceSessionReport = (sessionId: string | null) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<SessionReportItem[]>({
+    queryKey: ['course-attendance-session-report', sessionId],
+    queryFn: async () => {
+      if (!user || !profile || !sessionId) return [];
+      const report = await courseAttendanceSessionsApi.sessionReport(sessionId);
+      return report as SessionReportItem[];
+    },
+    enabled: !!user && !!profile && !!sessionId,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useCourseAttendanceCourseReport = (params?: {
+  courseId?: string;
+  completionStatus?: 'enrolled' | 'completed' | 'dropped' | 'failed';
+  dateFrom?: string;
+  dateTo?: string;
+}) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<CourseReportItem[]>({
+    queryKey: ['course-attendance-course-report', params],
+    queryFn: async () => {
+      if (!user || !profile) return [];
+      const apiParams: any = {};
+      if (params?.courseId) apiParams.course_id = params.courseId;
+      if (params?.completionStatus) apiParams.completion_status = params.completionStatus;
+      if (params?.dateFrom) apiParams.date_from = params.dateFrom;
+      if (params?.dateTo) apiParams.date_to = params.dateTo;
+      const report = await courseAttendanceSessionsApi.report(apiParams);
+      return report as CourseReportItem[];
+    },
+    enabled: !!user && !!profile && !!params?.courseId,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
 export const useCourseAttendanceReport = (params?: {
   courseId?: string;
   courseStudentId?: string;

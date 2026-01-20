@@ -448,7 +448,7 @@ export function ExamDocuments() {
                     </h3>
                     <div className="flex-1 h-px bg-border" />
                     <span className="text-xs text-muted-foreground">
-                      {groupedExams[yearKey].length} {groupedExams[yearKey].length === 1 ? 'exam' : 'exams'}
+                      {groupedExams[yearKey].length} {groupedExams[yearKey].length === 1 ? t('exams.examSelected') : t('exams.examsSelected')}
                     </span>
                   </div>
                   <div className="grid grid-cols-1 gap-2">

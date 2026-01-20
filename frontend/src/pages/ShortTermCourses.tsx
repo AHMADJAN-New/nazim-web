@@ -31,6 +31,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -262,74 +264,56 @@ const ShortTermCourses = () => {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-2xl">{t('nav.shortTermCourses')}</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1 hidden md:block">
-                {t('shortTermCourses.subtitle')}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-              <Button onClick={handleCreate} className="w-full sm:w-auto">
-                <Plus className="h-4 w-4" />
-                <span className="ml-2">{t('courses.createCourse')}</span>
-              </Button>
-              <Button variant="outline" onClick={() => refetch()} className="w-full sm:w-auto">
-                <RefreshCw className="h-4 w-4" />
-                <span className="hidden sm:inline ml-2">{t('events.refresh')}</span>
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
+      <PageHeader
+        title={t('nav.shortTermCourses')}
+        description={t('courses.subtitle')}
+        icon={<School className="h-5 w-5" />}
+        primaryAction={{
+          label: t('courses.createCourse'),
+          onClick: handleCreate,
+          icon: <Plus className="h-4 w-4" />,
+        }}
+        secondaryActions={[
+          {
+            label: t('events.refresh'),
+            onClick: () => refetch(),
+            icon: <RefreshCw className="h-4 w-4" />,
+            variant: 'outline',
+          },
+        ]}
+      />
 
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('common.open')}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{summary.open}</div>
-            <School className="h-6 w-6 text-emerald-500" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('status.draft')}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{summary.draft}</div>
-            <Filter className="h-6 w-6 text-slate-500" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('courses.closed')}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{summary.closed}</div>
-            <CalendarRange className="h-6 w-6 text-amber-500" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('courses.completed')}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{summary.completed}</div>
-            <Users className="h-6 w-6 text-indigo-500" />
-          </CardContent>
-        </Card>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Stats Cards */}
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <StatsCard
+          title={t('common.open')}
+          value={summary.open}
+          icon={School}
+          color="emerald"
+        />
+        <StatsCard
+          title={t('status.draft')}
+          value={summary.draft}
+          icon={Filter}
+          color="secondary"
+        />
+        <StatsCard
+          title={t('courses.closed')}
+          value={summary.closed}
+          icon={CalendarRange}
+          color="amber"
+        />
+        <StatsCard
+          title={t('courses.completed')}
+          value={summary.completed}
+          icon={Users}
+          color="indigo"
+        />
+      </div>
 
       <Card>
         <CardHeader className="space-y-1 pb-3">
           <CardTitle className="text-lg font-semibold">{t('courses.courseList')}</CardTitle>
-          <p className="text-sm text-muted-foreground hidden md:block">{t('shortTermCourses.subtitle')}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
@@ -441,8 +425,7 @@ const ShortTermCourses = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('courses.deleteCourse')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('assets.deleteConfirm')} "{courseToDelete?.name}"? This action cannot be undone
-              and will remove all associated student enrollments.
+              {t('assets.deleteConfirm')} "{courseToDelete?.name}"? {t('library.cannotUndo')} {t('courses.deleteConfirmEnrollments')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -557,7 +540,7 @@ const ShortTermCourses = () => {
                             {student.certificateIssued && (
                               <Badge variant="outline" className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 border-purple-300 dark:border-purple-700">
                                 <span className="flex items-center gap-1">
-                                  <span>✓</span> Certificate
+                                  <span>✓</span> {t('courses.certificates')}
                                 </span>
                               </Badge>
                             )}

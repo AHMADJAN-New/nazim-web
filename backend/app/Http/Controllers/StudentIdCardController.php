@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\StudentIdCard;
 use App\Models\StudentAdmission;
+use App\Models\CourseStudent;
 use App\Models\IdCardTemplate;
 use App\Models\IncomeEntry;
 use App\Models\Currency;
@@ -81,19 +82,49 @@ class StudentIdCardController extends Controller
             $query->where('card_fee_paid', filter_var($request->card_fee_paid, FILTER_VALIDATE_BOOLEAN));
         }
 
-        // Filter by enrollment status (via student_admissions)
+        // Filter by student type (regular, course, or all)
+        if ($request->has('student_type') && $request->student_type) {
+            if ($request->student_type === 'regular') {
+                $query->forRegularStudents();
+            } elseif ($request->student_type === 'course') {
+                $query->forCourseStudents();
+            }
+            // 'all' means no filter
+        }
+
+        // Filter by course_id (for course students)
+        if ($request->has('course_id') && $request->course_id) {
+            $query->whereHas('courseStudent', function ($q) use ($request) {
+                $q->where('course_id', $request->course_id);
+            });
+        }
+
+        // Filter by course_student_id
+        if ($request->has('course_student_id') && $request->course_student_id) {
+            $query->forCourseStudent($request->course_student_id);
+        }
+
+        // Filter by enrollment status (via student_admissions for regular students)
         if ($request->has('enrollment_status') && $request->enrollment_status) {
             $query->whereHas('studentAdmission', function ($q) use ($request) {
                 $q->where('enrollment_status', $request->enrollment_status);
             });
         }
 
-        // Search by student name or admission number
+        // Search by student name or admission number (handles both regular and course students)
         if ($request->has('search') && $request->search) {
             $search = $request->search;
-            $query->whereHas('student', function ($q) use ($search) {
-                $q->where('full_name', 'ilike', "%{$search}%")
-                  ->orWhere('admission_no', 'ilike', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                // Search in regular students
+                $q->whereHas('student', function ($subQ) use ($search) {
+                    $subQ->where('full_name', 'ilike', "%{$search}%")
+                         ->orWhere('admission_no', 'ilike', "%{$search}%");
+                })
+                // Or search in course students
+                ->orWhereHas('courseStudent', function ($subQ) use ($search) {
+                    $subQ->where('full_name', 'ilike', "%{$search}%")
+                         ->orWhere('admission_no', 'ilike', "%{$search}%");
+                });
             });
         }
 
@@ -102,6 +133,7 @@ class StudentIdCardController extends Controller
         $query->with([
             'student',
             'studentAdmission',
+            'courseStudent.course', // Load course relationship for course students
             'template',
             'academicYear',
             'class',
@@ -153,11 +185,25 @@ class StudentIdCardController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        // Validate that either student_admission_ids OR course_student_ids is provided, but not both
+        $hasStudentAdmissionIds = $request->has('student_admission_ids') && !empty($request->student_admission_ids);
+        $hasCourseStudentIds = $request->has('course_student_ids') && !empty($request->course_student_ids);
+
+        if (!$hasStudentAdmissionIds && !$hasCourseStudentIds) {
+            return response()->json(['error' => 'Either student_admission_ids or course_student_ids must be provided'], 400);
+        }
+
+        if ($hasStudentAdmissionIds && $hasCourseStudentIds) {
+            return response()->json(['error' => 'Cannot provide both student_admission_ids and course_student_ids'], 400);
+        }
+
         $validated = $request->validate([
             'academic_year_id' => 'required|uuid|exists:academic_years,id',
             'id_card_template_id' => 'required|uuid|exists:id_card_templates,id',
-            'student_admission_ids' => 'required|array|min:1',
-            'student_admission_ids.*' => 'required|uuid|exists:student_admissions,id',
+            'student_admission_ids' => $hasStudentAdmissionIds ? 'required|array|min:1' : 'nullable|array',
+            'student_admission_ids.*' => $hasStudentAdmissionIds ? 'required|uuid|exists:student_admissions,id' : 'nullable',
+            'course_student_ids' => $hasCourseStudentIds ? 'required|array|min:1' : 'nullable|array',
+            'course_student_ids.*' => $hasCourseStudentIds ? 'required|uuid|exists:course_students,id' : 'nullable',
             'class_id' => 'nullable|uuid|exists:classes,id',
             'class_academic_year_id' => 'nullable|uuid|exists:class_academic_years,id',
             'card_fee' => 'nullable|numeric|min:0',
@@ -194,64 +240,138 @@ class StudentIdCardController extends Controller
 
         DB::beginTransaction();
         try {
-            foreach ($validated['student_admission_ids'] as $admissionId) {
-                // Get student admission
-                $admission = StudentAdmission::where('id', $admissionId)
-                    ->where('organization_id', $profile->organization_id)
-                    ->whereNull('deleted_at')
-                    ->first();
+            // Handle regular students (student_admission_ids)
+            if ($hasStudentAdmissionIds) {
+                foreach ($validated['student_admission_ids'] as $admissionId) {
+                    // Get student admission
+                    $admission = StudentAdmission::where('id', $admissionId)
+                        ->where('organization_id', $profile->organization_id)
+                        ->whereNull('deleted_at')
+                        ->first();
 
-                if (!$admission) {
-                    $skipped[] = [
-                        'student_admission_id' => $admissionId,
-                        'reason' => 'admission_not_found'
-                    ];
-                    continue;
-                }
-
-                // Check if card already exists for this admission and academic year
-                $existing = StudentIdCard::where('student_admission_id', $admissionId)
-                    ->where('academic_year_id', $validated['academic_year_id'])
-                    ->whereNull('deleted_at')
-                    ->first();
-
-                if ($existing) {
-                    $skipped[] = [
-                        'student_admission_id' => $admissionId,
-                        'reason' => 'already_assigned',
-                        'card_id' => $existing->id
-                    ];
-                    continue;
-                }
-
-                try {
-                    $card = StudentIdCard::create([
-                        'organization_id' => $profile->organization_id,
-                        'school_id' => $admission->school_id, // Set school_id from admission
-                        'student_id' => $admission->student_id,
-                        'student_admission_id' => $admissionId,
-                        'id_card_template_id' => $validated['id_card_template_id'],
-                        'academic_year_id' => $validated['academic_year_id'],
-                        'class_id' => $validated['class_id'] ?? $admission->class_id,
-                        'class_academic_year_id' => $validated['class_academic_year_id'] ?? $admission->class_academic_year_id,
-                        'card_fee' => $validated['card_fee'] ?? 0,
-                        'card_fee_paid' => $validated['card_fee_paid'] ?? false,
-                        'card_fee_paid_date' => ($validated['card_fee_paid'] ?? false) ? now() : null,
-                    ]);
-
-                    // Create income entry if fee is paid
-                    if ($card->card_fee_paid && $card->card_fee > 0 && !empty($validated['account_id']) && !empty($validated['income_category_id'])) {
-                        $this->createIncomeEntryForCard($card, $validated['account_id'], $validated['income_category_id'], $user->id);
-                        // Refresh card to get income_entry_id
-                        $card->refresh();
+                    if (!$admission) {
+                        $skipped[] = [
+                            'student_admission_id' => $admissionId,
+                            'reason' => 'admission_not_found'
+                        ];
+                        continue;
                     }
 
-                    $created[] = $card->id;
-                } catch (\Exception $e) {
-                    $errors[] = [
-                        'student_admission_id' => $admissionId,
-                        'error' => $e->getMessage()
-                    ];
+                    // Check if card already exists for this admission and academic year
+                    $existing = StudentIdCard::where('student_admission_id', $admissionId)
+                        ->where('academic_year_id', $validated['academic_year_id'])
+                        ->whereNull('deleted_at')
+                        ->whereNull('course_student_id') // Ensure it's a regular student card
+                        ->first();
+
+                    if ($existing) {
+                        $skipped[] = [
+                            'student_admission_id' => $admissionId,
+                            'reason' => 'already_assigned',
+                            'card_id' => $existing->id
+                        ];
+                        continue;
+                    }
+
+                    try {
+                        $card = StudentIdCard::create([
+                            'organization_id' => $profile->organization_id,
+                            'school_id' => $admission->school_id, // Set school_id from admission
+                            'student_id' => $admission->student_id,
+                            'student_admission_id' => $admissionId,
+                            'course_student_id' => null, // Regular student
+                            'id_card_template_id' => $validated['id_card_template_id'],
+                            'academic_year_id' => $validated['academic_year_id'],
+                            'class_id' => $validated['class_id'] ?? $admission->class_id,
+                            'class_academic_year_id' => $validated['class_academic_year_id'] ?? $admission->class_academic_year_id,
+                            'card_fee' => $validated['card_fee'] ?? 0,
+                            'card_fee_paid' => $validated['card_fee_paid'] ?? false,
+                            'card_fee_paid_date' => ($validated['card_fee_paid'] ?? false) ? now() : null,
+                        ]);
+
+                        // Create income entry if fee is paid
+                        if ($card->card_fee_paid && $card->card_fee > 0 && !empty($validated['account_id']) && !empty($validated['income_category_id'])) {
+                            $this->createIncomeEntryForCard($card, $validated['account_id'], $validated['income_category_id'], $user->id);
+                            // Refresh card to get income_entry_id
+                            $card->refresh();
+                        }
+
+                        $created[] = $card->id;
+                    } catch (\Exception $e) {
+                        $errors[] = [
+                            'student_admission_id' => $admissionId,
+                            'error' => $e->getMessage()
+                        ];
+                    }
+                }
+            }
+
+            // Handle course students (course_student_ids)
+            if ($hasCourseStudentIds) {
+                foreach ($validated['course_student_ids'] as $courseStudentId) {
+                    // Get course student
+                    $courseStudent = CourseStudent::where('id', $courseStudentId)
+                        ->where('organization_id', $profile->organization_id)
+                        ->whereNull('deleted_at')
+                        ->first();
+
+                    if (!$courseStudent) {
+                        $skipped[] = [
+                            'course_student_id' => $courseStudentId,
+                            'reason' => 'course_student_not_found'
+                        ];
+                        continue;
+                    }
+
+                    // Check if card already exists for this course student and academic year
+                    $existing = StudentIdCard::where('course_student_id', $courseStudentId)
+                        ->where('academic_year_id', $validated['academic_year_id'])
+                        ->whereNull('deleted_at')
+                        ->first();
+
+                    if ($existing) {
+                        $skipped[] = [
+                            'course_student_id' => $courseStudentId,
+                            'reason' => 'already_assigned',
+                            'card_id' => $existing->id
+                        ];
+                        continue;
+                    }
+
+                    try {
+                        // Get course to determine school_id
+                        $course = $courseStudent->course;
+                        $schoolId = $course && $course->school_id ? $course->school_id : null;
+
+                        $card = StudentIdCard::create([
+                            'organization_id' => $profile->organization_id,
+                            'school_id' => $schoolId, // Set school_id from course
+                            'student_id' => $courseStudent->main_student_id, // Link to main student if available
+                            'student_admission_id' => null, // Course students don't have admissions
+                            'course_student_id' => $courseStudentId,
+                            'id_card_template_id' => $validated['id_card_template_id'],
+                            'academic_year_id' => $validated['academic_year_id'],
+                            'class_id' => null, // Course students don't have classes
+                            'class_academic_year_id' => null, // Course students don't have classes
+                            'card_fee' => $validated['card_fee'] ?? 0,
+                            'card_fee_paid' => $validated['card_fee_paid'] ?? false,
+                            'card_fee_paid_date' => ($validated['card_fee_paid'] ?? false) ? now() : null,
+                        ]);
+
+                        // Create income entry if fee is paid
+                        if ($card->card_fee_paid && $card->card_fee > 0 && !empty($validated['account_id']) && !empty($validated['income_category_id'])) {
+                            $this->createIncomeEntryForCard($card, $validated['account_id'], $validated['income_category_id'], $user->id);
+                            // Refresh card to get income_entry_id
+                            $card->refresh();
+                        }
+
+                        $created[] = $card->id;
+                    } catch (\Exception $e) {
+                        $errors[] = [
+                            'course_student_id' => $courseStudentId,
+                            'error' => $e->getMessage()
+                        ];
+                    }
                 }
             }
 
@@ -302,6 +422,7 @@ class StudentIdCardController extends Controller
         $card = StudentIdCard::with([
             'student',
             'studentAdmission',
+            'courseStudent.course', // Load course relationship for course students
             'template',
             'academicYear',
             'class',
@@ -644,8 +765,13 @@ class StudentIdCardController extends Controller
             return null;
         }
 
-        // Get student name for description
-        $studentName = $card->student ? $card->student->full_name : 'Unknown Student';
+        // Get student name for description (handle both regular and course students)
+        $studentName = 'Unknown Student';
+        if ($card->student) {
+            $studentName = $card->student->full_name;
+        } elseif ($card->courseStudent) {
+            $studentName = $card->courseStudent->full_name;
+        }
 
         // Create income entry
         $incomeEntry = IncomeEntry::create([

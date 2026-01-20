@@ -507,10 +507,10 @@ export default function AttendanceTotalsReports() {
                             <Label>{t('attendanceTotalsReport.dateRange') || 'Date Range'}</Label>
                             <Tabs value={dateRangePreset} onValueChange={(value) => handleDateRangePreset(value as typeof dateRangePreset)}>
                                 <TabsList className="grid w-full grid-cols-4">
-                                    <TabsTrigger value="1week">1 Week</TabsTrigger>
-                                    <TabsTrigger value="1month">1 Month</TabsTrigger>
-                                    <TabsTrigger value="4months">4 Months</TabsTrigger>
-                                    <TabsTrigger value="custom">Custom</TabsTrigger>
+                                    <TabsTrigger value="1week">{t('attendanceTotalsReport.dateRange.1week')}</TabsTrigger>
+                                    <TabsTrigger value="1month">{t('attendanceTotalsReport.dateRange.1month')}</TabsTrigger>
+                                    <TabsTrigger value="4months">{t('attendanceTotalsReport.dateRange.4months')}</TabsTrigger>
+                                    <TabsTrigger value="custom">{t('attendanceTotalsReport.dateRange.custom')}</TabsTrigger>
                                 </TabsList>
                             </Tabs>
                         </div>
@@ -595,11 +595,11 @@ export default function AttendanceTotalsReports() {
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="class" className="flex items-center gap-2">
                                 <GraduationCap className="h-4 w-4" />
-                                Class Sessions
+                                {t('attendanceTotalsReport.classSessions')}
                             </TabsTrigger>
                             <TabsTrigger value="room" className="flex items-center gap-2">
                                 <Building2 className="h-4 w-4" />
-                                Room Sessions
+                                {t('attendanceTotalsReport.roomSessions')}
                             </TabsTrigger>
                         </TabsList>
 

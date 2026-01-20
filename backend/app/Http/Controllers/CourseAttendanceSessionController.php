@@ -478,6 +478,70 @@ class CourseAttendanceSessionController extends Controller
         return response()->json($session);
     }
 
+    public function sessionReport(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = $this->getProfile($user);
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        try {
+            if (!$user->hasPermissionTo('course_attendance.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('[CourseAttendanceSessionController] permission check failed', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $session = CourseAttendanceSession::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->find($id);
+
+        if (!$session) {
+            return response()->json(['error' => 'Session not found'], 404);
+        }
+
+        // Get all enrolled students for the course
+        $enrolledStudents = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('course_id', $session->course_id)
+            ->where('completion_status', 'enrolled')
+            ->whereNull('deleted_at')
+            ->select(['id', 'full_name', 'father_name', 'card_number', 'admission_no'])
+            ->orderBy('full_name')
+            ->get();
+
+        // Get attendance records for this session
+        $attendanceRecords = CourseAttendanceRecord::where('attendance_session_id', $session->id)
+            ->whereNull('deleted_at')
+            ->get()
+            ->keyBy('course_student_id');
+
+        // Build report: merge students with their attendance records
+        $report = $enrolledStudents->map(function ($student) use ($attendanceRecords) {
+            $record = $attendanceRecords->get($student->id);
+
+            return [
+                'course_student_id' => $student->id,
+                'student_name' => $student->full_name,
+                'father_name' => $student->father_name,
+                'card_number' => $student->card_number,
+                'admission_no' => $student->admission_no,
+                'status' => $record ? $record->status : 'absent',
+                'note' => $record ? $record->note : null,
+                'has_record' => $record !== null,
+            ];
+        })->values();
+
+        return response()->json($report);
+    }
+
     public function report(Request $request)
     {
         $user = $request->user();
@@ -489,52 +553,104 @@ class CourseAttendanceSessionController extends Controller
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
+        try {
+            if (!$user->hasPermissionTo('course_attendance.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('[CourseAttendanceSessionController] permission check failed', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $request->validate([
             'course_id' => 'required|uuid|exists:short_term_courses,id',
+            'completion_status' => 'nullable|in:enrolled,completed,dropped,failed',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date',
         ]);
 
-        $query = CourseAttendanceRecord::where('organization_id', $profile->organization_id)
+        // Verify course belongs to organization
+        $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->find($request->course_id);
+
+        if (!$course) {
+            return response()->json(['error' => 'Course not found'], 404);
+        }
+
+        // Get all students for the course (filtered by completion_status if provided)
+        $studentsQuery = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('course_id', $request->course_id)
+            ->whereNull('deleted_at');
+
+        if ($request->filled('completion_status')) {
+            $studentsQuery->where('completion_status', $request->completion_status);
+        }
+
+        $students = $studentsQuery->select(['id', 'full_name', 'father_name', 'card_number', 'admission_no', 'completion_status'])
+            ->orderBy('full_name')
+            ->get();
+
+        // Get all attendance records for the course
+        $recordsQuery = CourseAttendanceRecord::where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->where('course_id', $request->course_id)
             ->whereNull('deleted_at')
-            ->with(['courseStudent:id,full_name,admission_no', 'session:id,session_date']);
+            ->with(['session:id,session_date']);
 
         if ($request->filled('date_from')) {
-            $query->whereHas('session', function ($q) use ($request) {
+            $recordsQuery->whereHas('session', function ($q) use ($request) {
                 $q->whereDate('session_date', '>=', $request->date_from);
             });
         }
 
         if ($request->filled('date_to')) {
-            $query->whereHas('session', function ($q) use ($request) {
+            $recordsQuery->whereHas('session', function ($q) use ($request) {
                 $q->whereDate('session_date', '<=', $request->date_to);
             });
         }
 
-        $records = $query->get();
+        $records = $recordsQuery->get();
 
-        // Group by student
-        $grouped = $records->groupBy('course_student_id')->map(function ($studentRecords) {
-            $student = $studentRecords->first()->courseStudent;
+        // Group records by student
+        $recordsByStudent = $records->groupBy('course_student_id');
+
+        // Build report: include all students, even those without attendance records
+        $report = $students->map(function ($student) use ($recordsByStudent) {
+            $studentRecords = $recordsByStudent->get($student->id, collect());
+
             $total = $studentRecords->count();
             $present = $studentRecords->where('status', 'present')->count();
             $late = $studentRecords->where('status', 'late')->count();
             $absent = $studentRecords->where('status', 'absent')->count();
+            $excused = $studentRecords->where('status', 'excused')->count();
+            $sick = $studentRecords->where('status', 'sick')->count();
+            $leave = $studentRecords->where('status', 'leave')->count();
+
+            // Attendance rate: (present + late) / total sessions
+            // If no sessions, rate is 0
+            $attendanceRate = $total > 0 ? round((($present + $late) / $total) * 100, 1) : 0;
 
             return [
-                'student_id' => $student->id ?? null,
-                'student_name' => $student->full_name ?? 'Unknown',
-                'admission_no' => $student->admission_no ?? '',
+                'course_student_id' => $student->id,
+                'student_name' => $student->full_name,
+                'father_name' => $student->father_name,
+                'card_number' => $student->card_number,
+                'admission_no' => $student->admission_no,
+                'completion_status' => $student->completion_status,
                 'total_sessions' => $total,
                 'present' => $present,
                 'late' => $late,
                 'absent' => $absent,
-                'attendance_rate' => $total > 0 ? round((($present + $late) / $total) * 100, 1) : 0,
+                'excused' => $excused,
+                'sick' => $sick,
+                'leave' => $leave,
+                'attendance_rate' => $attendanceRate,
             ];
         })->values();
 
-        return response()->json($grouped);
+        return response()->json($report);
     }
 }

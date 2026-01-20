@@ -6,6 +6,7 @@ export interface StudentIdCard {
   school_id: string | null;
   student_id: string;
   student_admission_id: string;
+  course_student_id?: string | null;
   id_card_template_id: string;
   academic_year_id: string;
   class_id: string | null;
@@ -38,6 +39,19 @@ export interface StudentIdCard {
     id: string;
     enrollment_status: string;
     class_academic_year_id: string | null;
+  };
+  course_student?: {
+    id: string;
+    course_id: string;
+    admission_no: string;
+    full_name: string;
+    father_name?: string | null;
+    picture_path?: string | null;
+    course?: {
+      id: string;
+      name: string;
+      code?: string | null;
+    };
   };
   template?: {
     id: string;
@@ -108,7 +122,8 @@ export interface StudentIdCardUpdate {
 export interface AssignIdCardRequest {
   academic_year_id: string;
   id_card_template_id: string;
-  student_admission_ids: string[];
+  student_admission_ids?: string[];
+  course_student_ids?: string[];
   class_id?: string | null;
   class_academic_year_id?: string | null;
   card_fee?: number;
@@ -125,6 +140,9 @@ export interface StudentIdCardFilters {
   school_id?: string;
   class_id?: string;
   class_academic_year_id?: string;
+  course_id?: string;
+  course_student_id?: string;
+  student_type?: 'regular' | 'course' | 'all';
   enrollment_status?: string;
   id_card_template_id?: string;
   is_printed?: boolean;

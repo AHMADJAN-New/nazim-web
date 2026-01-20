@@ -2785,9 +2785,13 @@ export const courseAttendanceSessionsApi = {
 
   close: async (id: string) => apiClient.post(`/course-attendance-sessions/${id}/close`),
 
+  sessionReport: async (sessionId: string) =>
+    apiClient.get(`/course-attendance-sessions/${sessionId}/session-report`),
+
   report: async (params?: {
     course_id?: string;
     course_student_id?: string;
+    completion_status?: 'enrolled' | 'completed' | 'dropped' | 'failed';
     date_from?: string;
     date_to?: string;
   }) => apiClient.get('/course-attendance-sessions/report', params),
@@ -4215,6 +4219,9 @@ export const studentIdCardsApi = {
     academic_year_id?: string;
     class_id?: string;
     class_academic_year_id?: string;
+    course_id?: string;
+    course_student_id?: string;
+    student_type?: 'regular' | 'course' | 'all';
     enrollment_status?: string;
     id_card_template_id?: string;
     is_printed?: boolean;
@@ -4229,12 +4236,15 @@ export const studentIdCardsApi = {
   assign: async (data: {
     academic_year_id: string;
     id_card_template_id: string;
-    student_admission_ids: string[];
+    student_admission_ids?: string[];
+    course_student_ids?: string[];
     class_id?: string | null;
     class_academic_year_id?: string | null;
     card_fee?: number;
     card_fee_paid?: boolean;
     card_fee_paid_date?: string | null;
+    account_id?: string | null;
+    income_category_id?: string | null;
     card_number?: string | null;
     notes?: string | null;
   }) => apiClient.post('/student-id-cards/assign', data),

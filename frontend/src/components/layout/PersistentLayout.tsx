@@ -59,9 +59,11 @@ export function PersistentLayout() {
 
   return (
     <div className="min-h-screen flex w-full bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      <SmartSidebar />
+      <div className="relative z-30 flex-shrink-0 isolate bg-sidebar" style={{ contain: 'layout style paint' }}>
+        <SmartSidebar />
+      </div>
       
-      <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+      <div className="flex-1 min-w-0 min-h-0 flex flex-col relative z-10">
         <AppHeader 
           title={pageTitle}
           showBreadcrumb={false}
@@ -82,9 +84,9 @@ export function PersistentLayout() {
           </div>
         )}
         
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar min-w-0">
+        <div className={`flex-1 min-h-0 custom-scrollbar min-w-0 relative ${showLoading ? 'overflow-clip' : 'overflow-y-auto overflow-x-hidden'}`} style={{ contain: 'layout style' }}>
           {showLoading ? (
-            <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
+            <div className="absolute left-0 right-0 top-0 bottom-0 flex items-center justify-center bg-background z-10" style={{ contain: 'strict', clipPath: 'inset(0)' }}>
               <LoadingSpinner size="lg" text="Loading permissions..." />
             </div>
           ) : (

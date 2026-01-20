@@ -125,9 +125,9 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? t('courses.editCourse') : 'Create Course'}</DialogTitle>
+          <DialogTitle>{isEdit ? t('courses.editCourse') : t('courses.createCourse')}</DialogTitle>
           <DialogDescription>
-            {isEdit ? t('courses.updateDetails') : 'Fill in the details to create a new short-term course.'}
+            {isEdit ? t('courses.updateDetails') : t('courses.createCourseDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -135,7 +135,7 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <Label htmlFor="name">Course Name *</Label>
+              <Label htmlFor="name">{t('courses.courseName')} *</Label>
               <Input
                 id="name"
                 placeholder={t('events.courseNameExample')}
@@ -145,89 +145,99 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
             </div>
 
             <div className="md:col-span-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('courses.description')}</Label>
               <Textarea
                 id="description"
-                placeholder="Brief description of the course..."
+                placeholder={t('courses.descriptionPlaceholder')}
                 {...register('description')}
               />
             </div>
 
             <div>
-              <Label htmlFor="instructorName">Instructor Name</Label>
+              <Label htmlFor="instructorName">{t('courses.instructorName')}</Label>
               <Input
                 id="instructorName"
-                placeholder="e.g., Ahmad Khan"
+                placeholder={t('courses.instructorNamePlaceholder')}
                 {...register('instructorName')}
               />
             </div>
 
             <div>
-              <Label htmlFor="location">Location</Label>
+              <Label htmlFor="location">{t('courses.location')}</Label>
               <Input
                 id="location"
-                placeholder="e.g., Room 101"
+                placeholder={t('courses.locationPlaceholder')}
                 {...register('location')}
               />
             </div>
 
             <div>
-              <CalendarFormField control={control} name="startDate" label="Start Date" />
+              <CalendarFormField 
+                control={control} 
+                name="startDate" 
+                label={t('events.startDate')}
+                placeholder={t('courses.pickDate')}
+              />
             </div>
 
             <div>
-              <CalendarFormField control={control} name="endDate" label="End Date" />
+              <CalendarFormField 
+                control={control} 
+                name="endDate" 
+                label={t('events.endDate')}
+                placeholder={t('courses.pickDate')}
+              />
             </div>
 
             <div>
-              <Label htmlFor="durationDays">Duration (days)</Label>
+              <Label htmlFor="durationDays">{t('courses.durationDays')}</Label>
               <Input
                 id="durationDays"
                 type="number"
                 min={1}
-                placeholder="e.g., 30"
+                placeholder={t('courses.durationDaysPlaceholder')}
                 {...register('durationDays', { valueAsNumber: true })}
               />
             </div>
 
             <div>
-              <Label htmlFor="maxStudents">Max Students</Label>
+              <Label htmlFor="maxStudents">{t('courses.maxStudents')}</Label>
               <Input
                 id="maxStudents"
                 type="number"
                 min={1}
-                placeholder="e.g., 25"
+                placeholder={t('courses.maxStudentsPlaceholder')}
                 {...register('maxStudents', { valueAsNumber: true })}
               />
             </div>
 
             <div>
-              <Label htmlFor="feeAmount">Fee Amount</Label>
+              <Label htmlFor="feeAmount">{t('courses.feeAmount')}</Label>
               <Input
                 id="feeAmount"
                 type="number"
                 min={0}
                 step={0.01}
-                placeholder="e.g., 5000"
+                placeholder={t('courses.feeAmountPlaceholder')}
                 {...register('feeAmount', { valueAsNumber: true })}
               />
             </div>
 
             <div>
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status">{t('courses.status')}</Label>
               <Controller
                 name="status"
                 control={control}
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
+                      <SelectValue placeholder={t('courses.selectStatus')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="open">Open</SelectItem>
-                      <SelectItem value="closed">Closed</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="draft">{t('courses.draft')}</SelectItem>
+                      <SelectItem value="open">{t('courses.open')}</SelectItem>
+                      <SelectItem value="closed">{t('courses.closed')}</SelectItem>
+                      <SelectItem value="completed">{t('courses.completed')}</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -237,10 +247,10 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}>
-              {isEdit ? t('courses.updateCourse') : 'Create Course'}
+              {isEdit ? t('courses.updateCourse') : t('courses.createCourse')}
             </Button>
           </DialogFooter>
           </form>

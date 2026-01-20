@@ -6,6 +6,7 @@ export interface StudentIdCard {
   schoolId: string | null;
   studentId: string;
   studentAdmissionId: string;
+  courseStudentId?: string | null;
   idCardTemplateId: string;
   academicYearId: string;
   classId: string | null;
@@ -37,6 +38,19 @@ export interface StudentIdCard {
     enrollmentStatus: string;
     classId: string | null;
     classAcademicYearId: string | null;
+  };
+  courseStudent?: {
+    id: string;
+    courseId: string;
+    admissionNo: string;
+    fullName: string;
+    fatherName?: string | null;
+    picturePath?: string | null;
+    course?: {
+      id: string;
+      name: string;
+      code?: string | null;
+    };
   };
   template?: {
     id: string;
@@ -110,7 +124,8 @@ export type StudentIdCardUpdate = Partial<Omit<StudentIdCardInsert, 'studentId' 
 export interface AssignIdCardRequest {
   academicYearId: string;
   idCardTemplateId: string;
-  studentAdmissionIds: string[];
+  studentAdmissionIds?: string[];
+  courseStudentIds?: string[];
   classId?: string | null;
   classAcademicYearId?: string | null;
   cardFee?: number | null;
@@ -127,6 +142,9 @@ export interface IdCardFilters {
   schoolId?: string;
   classId?: string;
   classAcademicYearId?: string;
+  courseId?: string;
+  courseStudentId?: string;
+  studentType?: 'regular' | 'course' | 'all';
   enrollmentStatus?: string;
   templateId?: string;
   isPrinted?: boolean;

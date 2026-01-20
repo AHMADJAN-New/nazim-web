@@ -26,7 +26,7 @@ import { AlertTriangle, CheckCircle2, FileBadge2, RefreshCw, Download, MoreHoriz
 import { useMemo, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
@@ -131,9 +131,9 @@ const CourseStudentReports = () => {
       await Promise.all(selectedStudents.map((student) => markCompleted.mutateAsync({ id: student.id })));
       setSelectedStudentIds(new Set());
       setBulkCompleteDialogOpen(false);
-      toast.success(`${selectedStudents.length} student(s) marked as completed`);
+      showToast.success(t('toast.studentsMarkedCompleted', { count: selectedStudents.length }));
     } catch (error: any) {
-      toast.error(error.message || 'Failed to complete students');
+      showToast.error(error.message || t('toast.studentsMarkCompletedFailed'));
     }
   };
 
@@ -143,9 +143,9 @@ const CourseStudentReports = () => {
       await Promise.all(selectedStudents.map((student) => markDropped.mutateAsync(student.id)));
       setSelectedStudentIds(new Set());
       setBulkDropDialogOpen(false);
-      toast.success(`${selectedStudents.length} student(s) marked as dropped`);
+      showToast.success(t('toast.studentsMarkedDropped', { count: selectedStudents.length }));
     } catch (error: any) {
-      toast.error(error.message || 'Failed to drop students');
+      showToast.error(error.message || t('toast.studentsMarkDroppedFailed'));
     }
   };
 
@@ -230,7 +230,7 @@ const CourseStudentReports = () => {
             <div>
               <CardTitle className="text-2xl">{t('courses.courseReports')}</CardTitle>
               <p className="text-sm text-muted-foreground mt-1 hidden md:block">
-                View, filter, and manage course students with bulk operations.
+                {t('courses.reportsDescription')}
               </p>
             </div>
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
@@ -238,7 +238,7 @@ const CourseStudentReports = () => {
                 data={filtered}
                 columns={reportColumns}
                 reportKey="short_term_course_students"
-                title={t('courses.courseReports') || 'Short-term Course Students Report'}
+                title={t('courses.shortTermCourseStudentsReport')}
                 transformData={transformCourseStudentData}
                 buildFiltersSummary={buildFiltersSummary}
                 schoolId={profile?.default_school_id}
@@ -255,10 +255,10 @@ const CourseStudentReports = () => {
         <CardContent>
           <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
-          title="Enrolled"
+          title={t('courses.enrolledLabel')}
           value={stats.enrolled}
           icon={CheckCircle}
-          description="Live"
+          description={t('courses.live')}
           color="blue"
         />
         <StatsCard
@@ -269,10 +269,10 @@ const CourseStudentReports = () => {
           color="green"
         />
         <StatsCard
-          title="Dropped/Failed"
+          title={t('courses.droppedFailed')}
           value={stats.dropped}
           icon={AlertTriangle}
-          description={t('courses.droppedStudents') || 'Dropped students'}
+          description={t('courses.droppedStudents')}
           color="amber"
         />
         <StatsCard
@@ -288,8 +288,8 @@ const CourseStudentReports = () => {
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <CardTitle className="text-lg font-semibold">{t('nav.studentReports') || 'Student Reports'}</CardTitle>
-              <p className="text-sm text-muted-foreground">{t('courses.courseReportsDescription') || 'Filter and manage course students.'}</p>
+              <CardTitle className="text-lg font-semibold">{t('courses.studentReports')}</CardTitle>
+              <p className="text-sm text-muted-foreground">{t('courses.filterAndManageStudents')}</p>
             </div>
             {pagination && (
               <div className="text-sm text-muted-foreground">
@@ -321,20 +321,20 @@ const CourseStudentReports = () => {
               <Label>{t('events.status')}</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
+                  <SelectValue placeholder={t('courses.allStatusesPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="enrolled">Enrolled</SelectItem>
+                  <SelectItem value="all">{t('courses.allStatusesOption')}</SelectItem>
+                  <SelectItem value="enrolled">{t('courses.enrolledOption')}</SelectItem>
                   <SelectItem value="completed">{t('courses.completed')}</SelectItem>
-                  <SelectItem value="dropped">Dropped/Failed</SelectItem>
+                  <SelectItem value="dropped">{t('courses.droppedFailedOption')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>{t('events.search')}</Label>
               <Input
-                placeholder="Search by name, admission #, father name, or guardian..."
+                placeholder={t('courses.searchPlaceholderReports')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -346,7 +346,7 @@ const CourseStudentReports = () => {
             <div className="flex items-center justify-between p-3 bg-primary/5 border border-primary/20 rounded-lg">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">
-                  {selectedStudentIds.size} student{selectedStudentIds.size !== 1 ? 's' : ''} selected
+                  {selectedStudentIds.size} {t('courses.studentsSelected')}
                 </span>
               </div>
               <div className="flex gap-2">
@@ -354,7 +354,7 @@ const CourseStudentReports = () => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">
                       <MoreHorizontal className="h-4 w-4 mr-2" />
-                      Bulk Actions
+                      {t('courses.bulkActions')}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -363,19 +363,19 @@ const CourseStudentReports = () => {
                       disabled={selectedStudents.some((s) => s.completionStatus === 'completed')}
                     >
                       <CheckCircle className="mr-2 h-4 w-4" />
-                      Mark as Completed
+                      {t('courses.markAsCompleted')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => setBulkDropDialogOpen(true)}
                       disabled={selectedStudents.some((s) => s.completionStatus === 'dropped' || s.completionStatus === 'failed')}
                     >
                       <XCircle className="mr-2 h-4 w-4" />
-                      Mark as Dropped
+                      {t('courses.markAsDropped')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <Button variant="outline" size="sm" onClick={() => setSelectedStudentIds(new Set())}>
-                  Clear Selection
+                  {t('courses.clearSelection')}
                 </Button>
               </div>
             </div>
@@ -395,19 +395,19 @@ const CourseStudentReports = () => {
                         <Checkbox
                           checked={allSelected}
                           onCheckedChange={handleSelectAll}
-                          aria-label="Select all"
+                          aria-label={t('courses.selectAll')}
                         />
                       </TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Father Name</TableHead>
-                      <TableHead>Admission No</TableHead>
-                      <TableHead className="hidden lg:table-cell">Guardian Name</TableHead>
-                      <TableHead className="hidden lg:table-cell">Phone</TableHead>
-                      <TableHead className="hidden md:table-cell">Birth Year</TableHead>
-                      <TableHead className="hidden md:table-cell">Age</TableHead>
-                      <TableHead className="hidden md:table-cell">Registered</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="hidden md:table-cell">Course</TableHead>
+                      <TableHead>{t('courses.name')}</TableHead>
+                      <TableHead>{t('courses.fatherName')}</TableHead>
+                      <TableHead>{t('courses.admissionNo')}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('courses.guardianName')}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('courses.phone')}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t('courses.birthYear')}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t('courses.age')}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t('courses.registered')}</TableHead>
+                      <TableHead>{t('courses.statusLabel')}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t('courses.courseLabel')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -452,7 +452,11 @@ const CourseStudentReports = () => {
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className={statusBadge[student.completionStatus] || ''}>
-                                {student.completionStatus}
+                                {student.completionStatus === 'enrolled' && t('courses.enrolled')}
+                                {student.completionStatus === 'completed' && t('courses.completed')}
+                                {student.completionStatus === 'dropped' && t('courses.dropped')}
+                                {student.completionStatus === 'failed' && t('courses.failed')}
+                                {!['enrolled', 'completed', 'dropped', 'failed'].includes(student.completionStatus) && student.completionStatus}
                               </Badge>
                             </TableCell>
                             <TableCell className="hidden md:table-cell text-sm">
@@ -464,7 +468,7 @@ const CourseStudentReports = () => {
                     ) : (
                       <TableRow>
                         <TableCell colSpan={11} className="py-8 text-center text-muted-foreground">
-                          No students found
+                          {t('courses.noStudentsFound')}
                         </TableCell>
                       </TableRow>
                     )}
@@ -490,16 +494,15 @@ const CourseStudentReports = () => {
       <AlertDialog open={bulkCompleteDialogOpen} onOpenChange={setBulkCompleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Mark Students as Completed</AlertDialogTitle>
+            <AlertDialogTitle>{t('courses.markStudentsCompleted')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to mark {selectedStudents.length} student{selectedStudents.length !== 1 ? 's' : ''} as completed?
-              This action cannot be undone.
+              {t('courses.markStudentsCompletedConfirm', { count: selectedStudents.length })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleBulkComplete} disabled={markCompleted.isPending}>
-              {markCompleted.isPending ? 'Completing...' : 'Mark as Completed'}
+              {markCompleted.isPending ? t('courses.completing') : t('courses.markAsCompleted')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -509,16 +512,15 @@ const CourseStudentReports = () => {
       <AlertDialog open={bulkDropDialogOpen} onOpenChange={setBulkDropDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Mark Students as Dropped</AlertDialogTitle>
+            <AlertDialogTitle>{t('courses.markStudentsDropped')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to mark {selectedStudents.length} student{selectedStudents.length !== 1 ? 's' : ''} as dropped?
-              This action cannot be undone.
+              {t('courses.markStudentsDroppedConfirm', { count: selectedStudents.length })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleBulkDrop} disabled={markDropped.isPending}>
-              {markDropped.isPending ? 'Dropping...' : 'Mark as Dropped'}
+              {markDropped.isPending ? t('courses.dropping') : t('courses.markAsDropped')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

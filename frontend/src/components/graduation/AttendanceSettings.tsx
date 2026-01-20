@@ -65,11 +65,9 @@ export function AttendanceSettings({
               {t('toast.graduation.attendance.requireAttendance') || 'Require Attendance'}
             </Label>
             <CardDescription className="mt-1">
-              {t('toast.graduation.attendance.requireAttendance') || 'Require Attendance'}
-              {' - '}
               {requireAttendance
-                ? 'Students must meet attendance requirements to graduate'
-                : 'Attendance requirements are not enforced'}
+                ? (t('toast.graduation.attendance.requireAttendanceDescription') || 'Students must meet attendance requirements to graduate')
+                : (t('toast.graduation.attendance.requireAttendanceNotEnforced') || 'Attendance requirements are not enforced')}
             </CardDescription>
           </div>
         </div>
@@ -94,7 +92,7 @@ export function AttendanceSettings({
               <span className="text-sm text-muted-foreground">%</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Students must have at least {minAttendancePercentage}% attendance to be eligible for graduation
+              {t('toast.graduation.attendance.minPercentageDescription', { percentage: minAttendancePercentage }) || `Students must have at least ${minAttendancePercentage}% attendance to be eligible for graduation`}
             </p>
           </div>
 
@@ -109,7 +107,7 @@ export function AttendanceSettings({
                 {t('toast.graduation.attendance.excludeLeaves') || 'Exclude Approved Leaves'}
               </Label>
               <p className="text-xs text-muted-foreground mt-1">
-                Approved leaves (sick leave, personal leave, etc.) will not count as absences when calculating attendance percentage
+                {t('toast.graduation.attendance.excludeLeavesDescription') || 'Approved leaves (sick leave, personal leave, etc.) will not count as absences when calculating attendance percentage'}
               </p>
             </div>
           </div>

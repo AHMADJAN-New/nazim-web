@@ -271,8 +271,30 @@ export const useDeleteStudentIdCard = () => {
 
 /**
  * Convert StudentIdCard to Student format for renderer
+ * Handles both regular students and course students
  */
 function getStudentForRenderer(card: StudentIdCard): Student | null {
+  // Handle course students
+  if (card.courseStudentId && card.courseStudent) {
+    const courseStudent = card.courseStudent;
+    return {
+      id: courseStudent.id,
+      fullName: courseStudent.fullName,
+      fatherName: courseStudent.fatherName || '',
+      admissionNumber: courseStudent.admissionNo,
+      studentCode: null,
+      cardNumber: card.cardNumber || null,
+      rollNumber: null,
+      picturePath: courseStudent.picturePath || null,
+      currentClass: null, // Course students don't have classes
+      school: card.organization ? {
+        id: card.organization.id,
+        schoolName: card.organization.name,
+      } : null,
+    } as Student;
+  }
+
+  // Handle regular students
   if (!card.student) return null;
   
   return {

@@ -1009,7 +1009,7 @@ export function ClassesManagement() {
                                 {selectedClass ? t('academic.classes.editClass') : t('academic.classes.addClass')}
                             </DialogTitle>
                             <DialogDescription>
-                                {selectedClass ? 'Update class information' : 'Create a new class definition'}
+                                {selectedClass ? t('academic.classes.editDescription') : t('academic.classes.createDescription')}
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">

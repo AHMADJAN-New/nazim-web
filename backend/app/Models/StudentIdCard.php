@@ -24,6 +24,7 @@ class StudentIdCard extends Model
         'school_id',
         'student_id',
         'student_admission_id',
+        'course_student_id',
         'id_card_template_id',
         'academic_year_id',
         'class_id',
@@ -94,6 +95,14 @@ class StudentIdCard extends Model
     public function studentAdmission()
     {
         return $this->belongsTo(StudentAdmission::class, 'student_admission_id');
+    }
+
+    /**
+     * Get the course student for this ID card
+     */
+    public function courseStudent()
+    {
+        return $this->belongsTo(CourseStudent::class, 'course_student_id');
     }
 
     /**
@@ -241,6 +250,30 @@ class StudentIdCard extends Model
     public function scopeFeeUnpaid($query)
     {
         return $query->where('card_fee_paid', false);
+    }
+
+    /**
+     * Scope to filter by course student
+     */
+    public function scopeForCourseStudent($query, $courseStudentId)
+    {
+        return $query->where('course_student_id', $courseStudentId);
+    }
+
+    /**
+     * Scope to filter regular students only (exclude course students)
+     */
+    public function scopeForRegularStudents($query)
+    {
+        return $query->whereNull('course_student_id');
+    }
+
+    /**
+     * Scope to filter course students only
+     */
+    public function scopeForCourseStudents($query)
+    {
+        return $query->whereNotNull('course_student_id');
     }
 }
 

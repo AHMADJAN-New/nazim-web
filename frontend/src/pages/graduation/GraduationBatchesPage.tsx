@@ -1024,7 +1024,7 @@ export default function GraduationBatchesPage() {
                     </div>
                     {examIds.length > 0 && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        {examIds.length} {examIds.length === 1 ? 'exam' : 'exams'} selected
+                        {examIds.length} {examIds.length === 1 ? t('exams.examSelected') : t('exams.examsSelected')}
                       </p>
                     )}
                     {form.formState.errors.exam_ids && (
@@ -1076,6 +1076,7 @@ export default function GraduationBatchesPage() {
                         <CalendarDatePicker
                           date={field.value ? new Date(field.value) : undefined}
                           onDateChange={(date) => field.onChange(date ? date.toISOString().split("T")[0] : '')}
+                          placeholder={t('courses.pickDate') || t('events.pickDate') || 'Pick a date'}
                         />
                       )}
                     />
@@ -2033,7 +2034,7 @@ export default function GraduationBatchesPage() {
                 </div>
                 {editExamIds.length > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    {editExamIds.length} {editExamIds.length === 1 ? 'exam' : 'exams'} selected
+                    {editExamIds.length} {editExamIds.length === 1 ? t('exams.examSelected') : t('exams.examsSelected')}
                   </p>
                 )}
                 {editForm.formState.errors.exam_ids && (
@@ -2085,6 +2086,7 @@ export default function GraduationBatchesPage() {
                     <CalendarDatePicker
                       date={field.value ? new Date(field.value) : undefined}
                       onDateChange={(date) => field.onChange(date ? date.toISOString().split("T")[0] : '')}
+                      placeholder={t('courses.pickDate') || t('events.pickDate') || 'Pick a date'}
                     />
                   )}
                 />

@@ -20,6 +20,7 @@ class CourseAttendanceSession extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'course_id',
         'session_date',
         'session_title',

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Loader2 } from 'lucide-react';
 import { useState, useMemo, memo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 
 import { Button } from '@/components/ui/button';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
@@ -127,7 +127,7 @@ export const AssignToCourseDialog = memo(function AssignToCourseDialog({
       return mapCourseStudentApiToDomain(result as Api.CourseStudent);
     },
     onSuccess: async () => {
-      toast.success('Student enrolled in new course successfully');
+      showToast.success(t('courses.assignToCourseDialog.studentEnrolledSuccess'));
       await queryClient.invalidateQueries({ queryKey: ['course-students'] });
       await queryClient.refetchQueries({ queryKey: ['course-students'] });
       reset();
@@ -136,13 +136,13 @@ export const AssignToCourseDialog = memo(function AssignToCourseDialog({
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to enroll student in new course');
+      showToast.error(error.message || t('courses.assignToCourseDialog.studentEnrolledFailed'));
     },
   });
 
   const onSubmit = async (values: FormValues) => {
     if (isAlreadyEnrolled) {
-      toast.error('Student is already enrolled in this course');
+      showToast.error(t('courses.assignToCourseDialog.studentAlreadyEnrolled'));
       return;
     }
     await enrollMutation.mutateAsync(values);
@@ -158,20 +158,20 @@ export const AssignToCourseDialog = memo(function AssignToCourseDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Assign Student to New Course</DialogTitle>
+          <DialogTitle>{t('courses.assignToCourseDialog.title')}</DialogTitle>
           <DialogDescription>
-            Select an existing course student and assign them to a new course. Their personal information will be copied to the new enrollment.
+            {t('courses.assignToCourseDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Student Search and Selection */}
           <div className="space-y-2">
-            <Label>Search Student</Label>
+            <Label>{t('courses.assignToCourseDialog.searchStudent')}</Label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('events.searchStudentPlaceholder')}
+                placeholder={t('courses.assignToCourseDialog.searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -185,7 +185,7 @@ export const AssignToCourseDialog = memo(function AssignToCourseDialog({
               <div className="border rounded-md max-h-60 overflow-y-auto">
                 {filteredStudents.length === 0 ? (
                   <div className="p-4 text-center text-sm text-muted-foreground">
-                    {search ? t('students.noStudentsFound') : 'Start typing to search for students'}
+                    {search ? t('students.noStudentsFound') : t('courses.assignToCourseDialog.searchPlaceholder')}
                   </div>
                 ) : (
                   <div className="divide-y">
@@ -198,19 +198,19 @@ export const AssignToCourseDialog = memo(function AssignToCourseDialog({
                         >
                           <input
                             type="radio"
-                            {...register('studentId', { required: 'Please select a student' })}
+                            {...register('studentId', { required: t('courses.assignToCourseDialog.selectStudentRequired') })}
                             value={student.id}
                             className="mt-1"
                           />
                           <div className="flex-1 min-w-0">
                             <div className="font-medium">{student.fullName}</div>
                             <div className="text-sm text-muted-foreground">
-                              {student.fatherName && `Father: ${student.fatherName}`}
-                              {student.admissionNo && ` • Admission: ${student.admissionNo}`}
+                              {student.fatherName && `${t('courses.assignToCourseDialog.father')} ${student.fatherName}`}
+                              {student.admissionNo && ` • ${t('courses.assignToCourseDialog.admission')} ${student.admissionNo}`}
                             </div>
                             {course && (
                               <div className="text-xs text-muted-foreground mt-1">
-                                Current Course: {course.name}
+                                {t('courses.assignToCourseDialog.currentCourse')} {course.name}
                               </div>
                             )}
                           </div>
@@ -229,7 +229,7 @@ export const AssignToCourseDialog = memo(function AssignToCourseDialog({
           {/* Selected Student Info */}
           {selectedStudent && (
             <div className="p-3 bg-muted rounded-md space-y-1">
-              <div className="text-sm font-medium">Selected Student</div>
+              <div className="text-sm font-medium">{t('courses.assignToCourseDialog.selectedStudent')}</div>
               <div className="text-sm text-muted-foreground">
                 {selectedStudent.fullName}
                 {selectedStudent.fatherName && ` • ${selectedStudent.fatherName}`}
@@ -240,15 +240,15 @@ export const AssignToCourseDialog = memo(function AssignToCourseDialog({
 
           {/* Course Selection */}
           <div className="space-y-2">
-            <Label htmlFor="courseId">New Course *</Label>
+            <Label htmlFor="courseId">{t('courses.assignToCourseDialog.newCourse')}</Label>
             <Controller
               name="courseId"
               control={control}
-              rules={{ required: 'Course is required' }}
+              rules={{ required: t('courses.assignToCourseDialog.courseRequired') }}
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select course" />
+                    <SelectValue placeholder={t('courses.assignToCourseDialog.selectCourse')} />
                   </SelectTrigger>
                   <SelectContent>
                     {openCourses.map((course) => (
@@ -265,14 +265,14 @@ export const AssignToCourseDialog = memo(function AssignToCourseDialog({
             )}
             {isAlreadyEnrolled && selectedCourse && (
               <p className="text-sm text-amber-600">
-                ⚠️ This student is already enrolled in "{selectedCourse.name}"
+                ⚠️ {t('courses.assignToCourseDialog.alreadyEnrolled')} "{selectedCourse.name}"
               </p>
             )}
           </div>
 
           {/* Registration Date */}
           <div className="space-y-2">
-            <CalendarFormField control={control} name="registrationDate" label="Registration Date" required />
+            <CalendarFormField control={control} name="registrationDate" label={t('courses.assignToCourseDialog.registrationDate')} required />
           </div>
 
           {/* Fee Information */}
@@ -290,22 +290,22 @@ export const AssignToCourseDialog = memo(function AssignToCourseDialog({
                 )}
               />
               <Label htmlFor="feePaid" className="cursor-pointer">
-                Fee Paid
+                {t('courses.assignToCourseDialog.feePaid')}
               </Label>
             </div>
 
             {watch('feePaid') && (
               <div className="space-y-2">
-                <Label htmlFor="feeAmount">Fee Amount</Label>
+                <Label htmlFor="feeAmount">{t('courses.assignToCourseDialog.feeAmount')}</Label>
                 <Input
                   id="feeAmount"
                   type="number"
                   step="0.01"
                   min="0"
-                  placeholder={selectedCourse?.feeAmount ? `Default: ${selectedCourse.feeAmount}` : 'Enter amount'}
+                  placeholder={selectedCourse?.feeAmount ? `${t('common.default')} ${selectedCourse.feeAmount}` : t('courses.assignToCourseDialog.enterAmount')}
                   {...register('feeAmount', {
                     valueAsNumber: true,
-                    min: { value: 0, message: 'Fee amount must be positive' },
+                    min: { value: 0, message: t('courses.assignToCourseDialog.feeAmountPositive') },
                   })}
                 />
                 {errors.feeAmount && (
@@ -317,16 +317,16 @@ export const AssignToCourseDialog = memo(function AssignToCourseDialog({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
-              Cancel
+              {t('courses.assignToCourseDialog.cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting || isAlreadyEnrolled}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Enrolling...
+                  {t('courses.assignToCourseDialog.enrolling')}
                 </>
               ) : (
-                'Assign to Course'
+                t('courses.assignToCourseDialog.assignToCourse')
               )}
             </Button>
           </DialogFooter>

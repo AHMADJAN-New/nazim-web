@@ -915,6 +915,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     Route::middleware(['feature:short_courses'])->group(function () {
         Route::get('/course-attendance-sessions/roster', [CourseAttendanceSessionController::class, 'roster']);
         Route::get('/course-attendance-sessions/report', [CourseAttendanceSessionController::class, 'report']);
+        Route::get('/course-attendance-sessions/{id}/session-report', [CourseAttendanceSessionController::class, 'sessionReport']);
         Route::get('/course-attendance-sessions/{id}/scans', [CourseAttendanceSessionController::class, 'scans']);
         Route::get('/course-attendance-sessions', [CourseAttendanceSessionController::class, 'index']);
         Route::get('/course-attendance-sessions/{course_attendance_session}', [CourseAttendanceSessionController::class, 'show']);
