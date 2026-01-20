@@ -48,6 +48,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Ensure view compiled path is set (fixes "Please provide a valid cache path" error)
+        // Laravel's default config uses realpath() which returns false if directory doesn't exist
+        $compiledPath = config('view.compiled');
+        if (empty($compiledPath) || $compiledPath === false) {
+            $viewsPath = storage_path('framework/views');
+            // Ensure directory exists
+            if (!is_dir($viewsPath)) {
+                @mkdir($viewsPath, 0775, true);
+            }
+            config(['view.compiled' => $viewsPath]);
+        }
+
         // Register Organization observer to auto-create roles when organization is created
         Organization::observe(OrganizationObserver::class);
 

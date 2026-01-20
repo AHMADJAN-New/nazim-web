@@ -54,6 +54,9 @@ services:
         condition: service_healthy
     volumes:
       - nazim_backend_storage:/var/www/backend/storage
+      - ./backend/app:/var/www/backend/app:ro
+      - ./backend/routes:/var/www/backend/routes:ro
+      - ./backend/config:/var/www/backend/config:ro
     healthcheck:
       test: ["CMD-SHELL", "php -v >/dev/null 2>&1 && php-fpm -t >/dev/null 2>&1"]
       interval: 10s
@@ -74,6 +77,9 @@ services:
         condition: service_healthy
     volumes:
       - nazim_backend_storage:/var/www/backend/storage
+      - ./backend/app:/var/www/backend/app:ro
+      - ./backend/routes:/var/www/backend/routes:ro
+      - ./backend/config:/var/www/backend/config:ro
     command: ["sh", "-lc", "php artisan queue:work --sleep=3 --tries=3 --timeout=120 --no-interaction"]
     networks:
       - nazim_network

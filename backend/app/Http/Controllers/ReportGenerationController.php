@@ -6,6 +6,7 @@ use App\Jobs\GenerateReportJob;
 use App\Models\ReportRun;
 use App\Services\Reports\ReportConfig;
 use App\Services\Reports\ReportService;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,8 @@ use Illuminate\Support\Facades\Storage;
 class ReportGenerationController extends Controller
 {
     public function __construct(
-        private ReportService $reportService
+        private ReportService $reportService,
+        private FileStorageService $fileStorageService
     ) {}
 
     /**
@@ -314,39 +316,27 @@ class ReportGenerationController extends Controller
             ], 400);
         }
 
-        // Check if file exists using both Storage facade and direct file check
-        // Storage::exists() sometimes fails even when file exists, so we use direct file check as fallback
-        $fileExists = false;
-        $absolutePath = null;
-        
-        if ($reportRun->output_path) {
-            // Try Storage facade first
-            $fileExists = Storage::exists($reportRun->output_path);
-            
-            // If Storage::exists() returns false, try direct file check
-            if (!$fileExists) {
-                $absolutePath = storage_path('app/' . $reportRun->output_path);
-                $fileExists = file_exists($absolutePath);
-            }
+        // Check if file exists using FileStorageService (uses correct disk: 'local')
+        if (!$reportRun->output_path) {
+            \Log::error('Report output_path is empty', [
+                'report_id' => $id,
+                'status' => $reportRun->status,
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Report file path not found',
+            ], 404);
         }
 
-        \Log::debug('Checking report file', [
-            'report_id' => $id,
-            'output_path' => $reportRun->output_path,
-            'storage_exists' => $reportRun->output_path ? Storage::exists($reportRun->output_path) : false,
-            'file_exists' => $fileExists,
-            'absolute_path' => $absolutePath,
-        ]);
-
-        if (!$reportRun->output_path || !$fileExists) {
+        // Use FileStorageService to check if file exists (handles 'local' disk correctly)
+        if (!$this->fileStorageService->fileExists($reportRun->output_path, 'local')) {
             \Log::error('Report file not found', [
                 'report_id' => $id,
                 'output_path' => $reportRun->output_path,
                 'status' => $reportRun->status,
                 'file_name' => $reportRun->file_name,
-                'storage_exists' => $reportRun->output_path ? Storage::exists($reportRun->output_path) : false,
-                'file_exists' => $fileExists,
-                'absolute_path' => $absolutePath,
+                'storage_exists' => Storage::disk('local')->exists($reportRun->output_path),
+                'absolute_path' => storage_path('app/private/' . $reportRun->output_path),
             ]);
             return response()->json([
                 'success' => false,
@@ -354,65 +344,16 @@ class ReportGenerationController extends Controller
             ], 404);
         }
 
-        // Get file content - use direct file read if Storage::get() fails or returns empty
-        $content = null;
-        try {
-            $content = Storage::get($reportRun->output_path);
-            // Storage::get() can return empty string even when file exists, so check content length
-            if (empty($content) || strlen($content) === 0) {
-                \Log::warning('Storage::get() returned empty content, trying direct file read', [
-                    'report_id' => $id,
-                    'output_path' => $reportRun->output_path,
-                ]);
-                $content = null; // Reset to trigger fallback
-            }
-        } catch (\Exception $e) {
-            \Log::warning('Storage::get() failed, trying direct file read', [
-                'report_id' => $id,
-                'output_path' => $reportRun->output_path,
-                'error' => $e->getMessage(),
-            ]);
-            $content = null; // Reset to trigger fallback
-        }
-        
-        // Fallback to direct file read if Storage::get() failed or returned empty
-        if (!$content || strlen($content) === 0) {
-            if ($absolutePath && file_exists($absolutePath)) {
-                $content = file_get_contents($absolutePath);
-            } elseif ($reportRun->output_path) {
-                $absolutePath = storage_path('app/' . $reportRun->output_path);
-                if (file_exists($absolutePath)) {
-                    $content = file_get_contents($absolutePath);
-                }
-            }
-        }
-
-        if (!$content) {
-            \Log::error('Could not read report file content', [
-                'report_id' => $id,
-                'output_path' => $reportRun->output_path,
-                'absolute_path' => $absolutePath,
-            ]);
-            return response()->json([
-                'success' => false,
-                'error' => 'Could not read report file',
-            ], 500);
-        }
-
-        $mimeType = $reportRun->getMimeType();
         $fileName = $reportRun->file_name ?? "report.{$reportRun->getFileExtension()}";
 
         \Log::debug('Serving report file', [
             'report_id' => $id,
+            'output_path' => $reportRun->output_path,
             'file_name' => $fileName,
-            'file_size' => strlen($content),
-            'mime_type' => $mimeType,
         ]);
 
-        return response($content)
-            ->header('Content-Type', $mimeType)
-            ->header('Content-Disposition', "attachment; filename=\"{$fileName}\"")
-            ->header('Content-Length', strlen($content));
+        // Use FileStorageService to download file (handles disk correctly)
+        return $this->fileStorageService->downloadFile($reportRun->output_path, $fileName, 'local');
     }
 
     /**

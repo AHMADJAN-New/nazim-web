@@ -30,11 +30,11 @@ interface LanguageProviderProps {
 
 export function LanguageProvider({ children }: LanguageProviderProps) {
   const [language, setLanguageState] = useState<Language>(() => {
-    // Get from localStorage or default to English
+    // Get from localStorage or default to Pashto
     const saved = localStorage.getItem('nazim-language');
-    const lang = (saved as Language) || 'en';
+    const lang = (saved as Language) || 'ps';
     // Validate language - only allow supported languages
-    return ['en', 'ps', 'fa', 'ar'].includes(lang) ? lang : 'en';
+    return ['en', 'ps', 'fa', 'ar'].includes(lang) ? lang : 'ps';
   });
 
   const setLanguage = (lang: Language) => {

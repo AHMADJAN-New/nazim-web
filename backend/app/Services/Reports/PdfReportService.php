@@ -139,6 +139,38 @@ class PdfReportService
                 'disable-features=FontLoading', // Disable font loading restrictions
             ]); // Required for Linux environments without proper sandbox support (no -- prefix, Browsershot adds it)
 
+        // Set Node.js path (required for Browsershot/Puppeteer)
+        $nodePath = env('BROWSERSHOT_NODE_BINARY') ?: getenv('BROWSERSHOT_NODE_BINARY') ?: '/usr/bin/node';
+        if (file_exists($nodePath) && is_executable($nodePath)) {
+            \Log::info("Using Node.js path: {$nodePath}");
+            $browsershot->setNodePath($nodePath);
+        } else {
+            \Log::warning("Node.js not found at {$nodePath}, Browsershot will try to find it automatically");
+        }
+
+        // Set npm path (required for Browsershot/Puppeteer)
+        $npmPath = env('BROWSERSHOT_NPM_BINARY') ?: getenv('BROWSERSHOT_NPM_BINARY') ?: '/usr/bin/npm';
+        if (file_exists($npmPath) && is_executable($npmPath)) {
+            \Log::info("Using npm path: {$npmPath}");
+            $browsershot->setNpmPath($npmPath);
+        } else {
+            \Log::warning("npm not found at {$npmPath}, Browsershot will try to find it automatically");
+        }
+
+        // Set Puppeteer cache directory (required for Browsershot)
+        $puppeteerCacheDir = env('PUPPETEER_CACHE_DIR') ?: getenv('PUPPETEER_CACHE_DIR') ?: '/var/www/.cache/puppeteer';
+        if (is_dir($puppeteerCacheDir)) {
+            \Log::info("Using Puppeteer cache directory: {$puppeteerCacheDir}");
+            // Set environment variable for Puppeteer
+            putenv("PUPPETEER_CACHE_DIR={$puppeteerCacheDir}");
+        } else {
+            \Log::warning("Puppeteer cache directory not found at {$puppeteerCacheDir}, creating it");
+            @mkdir($puppeteerCacheDir, 0775, true);
+            @chown($puppeteerCacheDir, 'www-data');
+            @chmod($puppeteerCacheDir, 0775);
+            putenv("PUPPETEER_CACHE_DIR={$puppeteerCacheDir}");
+        }
+
         // Set Chrome/Chromium path if puppeteer is installed
         // Browsershot will use the Chrome from puppeteer if available
         $chromePath = $this->findChromePath();

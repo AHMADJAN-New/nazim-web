@@ -99,6 +99,7 @@ export type { TourRunnerOptions } from './TourRunner';
 
 // Tours
 export { appCoreTour } from './tours/appCore';
+export { schoolSetupTour } from './tours/schoolSetup';
 
 // Session storage (for navigation persistence)
 export {

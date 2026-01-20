@@ -115,7 +115,33 @@ docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml
    - Open `https://your-domain.com` in your browser
    - SSL certificate will be automatically obtained from Let's Encrypt
 
+## Cleanup & Fresh Start
+
+If you need to completely clean up and start fresh (e.g., after port conflicts or orphan containers):
+
+```bash
+# Run cleanup script (stops all containers, removes orphans, frees ports)
+sudo bash docker/scripts/prod/cleanup.sh
+
+# Then run setup again
+sudo bash docker/scripts/prod/setup.sh
+```
+
+**Warning:** The cleanup script preserves volumes (database, storage, SSL certificates). To remove volumes as well:
+```bash
+docker volume rm nazim_pg_data nazim_redis_data nazim_backend_storage nazim_letsencrypt nazim_certbot_www
+```
+
 ## Troubleshooting
+
+### Port 80 already allocated / Orphan containers
+```bash
+# Run cleanup to remove orphan containers and free ports
+sudo bash docker/scripts/prod/cleanup.sh
+
+# Then restart setup
+sudo bash docker/scripts/prod/setup.sh
+```
 
 ### Services not starting
 ```bash
@@ -124,6 +150,21 @@ docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml
 
 # Restart services
 docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml restart
+```
+
+### 502 Bad Gateway
+```bash
+# Check if PHP container is healthy
+docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml ps php
+
+# Check PHP logs
+docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml logs php
+
+# Check nginx logs
+docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml logs nginx
+
+# Restart PHP and nginx
+docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml restart php nginx
 ```
 
 ### Firewall blocking access
