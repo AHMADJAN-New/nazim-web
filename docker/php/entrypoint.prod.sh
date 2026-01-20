@@ -15,23 +15,32 @@ if [ ! -d "/var/www/.cache/puppeteer/chrome" ] && [ ! -d "/var/www/.cache/puppet
 fi
 
 # Ensure storage directories exist with correct permissions
-# This is important for report generation and file storage
-if [ -d "/var/www/backend/storage" ]; then
-    # Create base app directories if they don't exist (needed for dynamic directory creation)
-    # These directories are required for Laravel Storage facade to create subdirectories
-    mkdir -p /var/www/backend/storage/app/private
-    mkdir -p /var/www/backend/storage/app/public
-    
-    # Ensure all storage directories have correct ownership (www-data:www-data)
-    # This allows PHP-FPM (running as www-data) to create subdirectories and files
-    chown -R www-data:www-data /var/www/backend/storage 2>/dev/null || true
-    
-    # Set directory permissions: 775 (rwxrwxr-x) - allows www-data to create subdirectories
-    find /var/www/backend/storage -type d -exec chmod 775 {} \; 2>/dev/null || true
-    
-    # Set file permissions: 664 (rw-rw-r--) - allows www-data to write files
-    find /var/www/backend/storage -type f -exec chmod 664 {} \; 2>/dev/null || true
-fi
+# CRITICAL: This handles both fresh volumes and existing volumes
+# The storage directory is mounted as a volume, so we must ensure base directories exist
+mkdir -p /var/www/backend/storage 2>/dev/null || true
+mkdir -p /var/www/backend/storage/app/private 2>/dev/null || true
+mkdir -p /var/www/backend/storage/app/public 2>/dev/null || true
+mkdir -p /var/www/backend/storage/framework/cache 2>/dev/null || true
+mkdir -p /var/www/backend/storage/framework/sessions 2>/dev/null || true
+mkdir -p /var/www/backend/storage/framework/views 2>/dev/null || true
+mkdir -p /var/www/backend/storage/logs 2>/dev/null || true
+
+# Ensure bootstrap/cache directory exists
+mkdir -p /var/www/backend/bootstrap/cache 2>/dev/null || true
+
+# Set ownership: www-data must own all storage and cache directories
+# This allows PHP-FPM (running as www-data) to create subdirectories and files
+chown -R www-data:www-data /var/www/backend/storage 2>/dev/null || true
+chown -R www-data:www-data /var/www/backend/bootstrap/cache 2>/dev/null || true
+
+# Set directory permissions: 775 (rwxrwxr-x) - allows www-data to create subdirectories
+# This is CRITICAL for Laravel Storage facade to create nested directories
+find /var/www/backend/storage -type d -exec chmod 775 {} \; 2>/dev/null || true
+find /var/www/backend/bootstrap/cache -type d -exec chmod 775 {} \; 2>/dev/null || true
+
+# Set file permissions: 664 (rw-rw-r--) - allows www-data to write files
+find /var/www/backend/storage -type f -exec chmod 664 {} \; 2>/dev/null || true
+find /var/www/backend/bootstrap/cache -type f -exec chmod 664 {} \; 2>/dev/null || true
 
 # Execute the original command
 exec "$@"
