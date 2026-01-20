@@ -60,11 +60,21 @@ export function TourProviderWrapper({ children, tours, autoStart = false }: Tour
     }
   }, [profileLoading, profile, autoStart, location.pathname]);
 
-  // Handle tour completion
+  // Handle tour completion - auto-start next eligible tour
   const handleTourComplete = async (tourId: string) => {
     // Tour completion handling can be extended here if needed
     if (import.meta.env.DEV) {
       console.log('[TourProviderWrapper] Tour completed:', tourId);
+    }
+    
+    // Auto-start school setup tour after core tour completes
+    // The TourProvider's auto-start mechanism will handle this if both tours are registered
+    // and schoolSetup tour is eligible (appCore completed, schoolSetup not completed)
+    if (tourId === 'appCore') {
+      // Dispatch event that can be listened to by components with tour access
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tour:appCore-completed'));
+      }
     }
   };
 

@@ -599,7 +599,7 @@ export function ClassesManagement() {
     }
 
     return (
-        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden" data-tour="classes-page">
             <PageHeader
                 title={t('academic.classes.management') || 'Classes Management'}
                 description={t('academic.classes.title') || 'Manage classes and class assignments'}
@@ -671,7 +671,7 @@ export function ClassesManagement() {
                                         disabled={filteredClasses.length === 0}
                                     />
                                     {hasCreatePermission && (
-                                        <Button onClick={() => handleOpenClassDialog()} className="flex-shrink-0 whitespace-nowrap">
+                                        <Button onClick={() => handleOpenClassDialog()} className="flex-shrink-0 whitespace-nowrap" data-tour="classes-create-button">
                                             <Plus className="h-4 w-4 sm:mr-2" />
                                             <span className="hidden sm:inline">{t('academic.classes.addClass')}</span>
                                         </Button>
@@ -793,6 +793,7 @@ export function ClassesManagement() {
                                             disabled={!selectedAcademicYearId}
                                             variant="outline"
                                             className="flex-shrink-0 whitespace-nowrap"
+                                            data-tour="classes-assign-to-year-button"
                                         >
                                             <Plus className="h-4 w-4 sm:mr-2" />
                                             <span className="hidden sm:inline">{t('academic.classes.assignToYear')}</span>

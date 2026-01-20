@@ -185,15 +185,15 @@ export const schoolSetupSteps: TourStep[] = [
     get icon() {
       return getStepContent('assignSubjectsAcademicYear').icon;
     },
-    attachTo: { selector: '[data-tour="tab-academicYearSubjects"]', on: 'bottom' },
+    attachTo: { selector: '[data-tour="subjects-step2-academic-year"]', on: 'top' },
     route: '/settings/subjects',
     preActions: [
       { type: 'expandSidebar' },
       { type: 'openSidebarGroup', payload: { groupId: 'academicSettings' } },
       { type: 'navigate', payload: { route: '/settings/subjects' } },
-      { type: 'switchTab', payload: { containerId: 'subjects-tabs', tabId: 'academicYearSubjects' } },
+      { type: 'switchTab', payload: { containerId: 'subjects-tabs', tabId: 'classSubjects' } },
     ],
-    waitFor: { selector: '[data-tour="subjects-tabs"]', timeoutMs: 5000 },
+    waitFor: { selector: '[data-tour="subjects-step2-academic-year"]', timeoutMs: 5000 },
     scroll: 'center',
     optional: false,
   },

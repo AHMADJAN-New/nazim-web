@@ -29,6 +29,7 @@ import {
   Phone,
   Home,
   Folder,
+  PlayCircle,
   type LucideIcon,
 } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
@@ -56,6 +57,7 @@ import {
   usePopularArticles,
 } from '@/hooks/useHelpCenter';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useTour } from '@/onboarding';
 import { cn } from '@/lib/utils';
 
 // If your project uses shadcn/ui "sheet" + "select", keep these imports.
@@ -950,6 +952,54 @@ export default function HelpCenter() {
 
         {/* Main content */}
         <main>
+          {/* School Setup Tour Button */}
+          {!hasActiveFilters && (
+            <div className="mb-8">
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="p-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <GraduationCap className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold">
+                            {t('helpCenter.startSchoolSetupTour') || 'School Setup Tour'}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {t('helpCenter.schoolSetupTourDescription') || 'Complete guide to setting up your school: school details, academic years, classes, and subjects'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={async () => {
+                        const isCompleted = isTourCompleted('schoolSetup');
+                        if (isCompleted) {
+                          // Reset and restart if already completed
+                          await startTour('schoolSetup');
+                        } else {
+                          // Try to resume, or start if never started
+                          try {
+                            await resumeTour('schoolSetup');
+                          } catch {
+                            await startTour('schoolSetup');
+                          }
+                        }
+                      }}
+                      className="flex-shrink-0"
+                      size="lg"
+                    >
+                      <PlayCircle className="h-4 w-4 mr-2" />
+                      {t('helpCenter.startSchoolSetupTour') || 'Start School Setup Tour'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
           {/* Recently Viewed */}
           {!hasActiveFilters && recentlyViewedArticles.length > 0 && (
             <div className="mb-8">

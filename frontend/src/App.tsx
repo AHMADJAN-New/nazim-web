@@ -196,7 +196,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SchoolProvider } from "@/contexts/SchoolContext";
 import { AuthProvider } from "@/hooks/useAuth";
-import { appCoreTour } from "@/onboarding";
+import { appCoreTour, schoolSetupTour } from "@/onboarding";
 import { TourProviderWrapper } from "@/components/TourProviderWrapper";
 import { RouteToursHandler } from "@/components/RouteToursHandler";
 
@@ -402,7 +402,7 @@ const App = () => (
                   {/* Protected routes with persistent layout */}
                   <Route element={
                     <ProtectedRoute>
-                      <TourProviderWrapper tours={[appCoreTour]} autoStart={false}>
+                      <TourProviderWrapper tours={[appCoreTour, schoolSetupTour]} autoStart={false}>
                         <PersistentLayout />
                       </TourProviderWrapper>
                     </ProtectedRoute>

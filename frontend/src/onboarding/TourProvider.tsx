@@ -95,9 +95,32 @@ export function TourProvider({
         }));
         onTourStart?.(tourId);
       },
-      onComplete: (tourId) => {
+      onComplete: async (tourId) => {
         setState(defaultState);
         onTourComplete?.(tourId);
+        
+        // Auto-start next eligible tour after completion
+        // Wait a bit for completion to be fully processed
+        setTimeout(async () => {
+          if (!runnerRef.current) return;
+          
+          // Check if a tour is already running
+          if (runnerRef.current.getIsRunning()) return;
+          
+          const context = createTourContext();
+          const eligible = getEligibleTours(context);
+          
+          // Find the next eligible tour (excluding the one that just completed)
+          const nextTour = eligible.find(t => t.id !== tourId);
+          
+          if (nextTour && import.meta.env.DEV) {
+            console.log('[TourProvider] Auto-starting next eligible tour after completion:', nextTour.id);
+          }
+          
+          if (nextTour) {
+            await runnerRef.current.start(nextTour.id, undefined, { force: false });
+          }
+        }, 1000);
       },
       onCancel: (tourId) => {
         setState(defaultState);

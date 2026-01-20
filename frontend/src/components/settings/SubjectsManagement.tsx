@@ -598,7 +598,7 @@ export function SubjectsManagement() {
     };
 
     return (
-        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden" data-tour="subjects-page">
             <PageHeader
                 title={t('academic.subjects.title') || 'Subjects Management'}
                 description={t('academic.subjects.management') || 'Manage subjects and subject assignments'}
@@ -606,12 +606,12 @@ export function SubjectsManagement() {
             />
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <TabsList className="flex w-full gap-1 h-auto flex-shrink-0 overflow-x-auto pb-1">
+                <TabsList className="flex w-full gap-1 h-auto flex-shrink-0 overflow-x-auto pb-1" data-tour="subjects-tabs">
                     <TabsTrigger value="subjects" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
                         <BookOpen className="h-4 w-4 flex-shrink-0" />
                         <span className="text-xs sm:text-sm">{t('academic.subjects.baseSubjects')}</span>
                     </TabsTrigger>
-                    <TabsTrigger value="classSubjects" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
+                    <TabsTrigger value="classSubjects" className="flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0" data-tour="tab-classSubjects">
                         <GraduationCap className="h-4 w-4 flex-shrink-0" />
                         <span className="text-xs sm:text-sm">{t('academic.subjects.classSubjects')}</span>
                     </TabsTrigger>
@@ -629,7 +629,7 @@ export function SubjectsManagement() {
                                     </CardDescription>
                                 </div>
                                 {hasCreatePermission && (
-                                    <Button onClick={() => handleOpenSubjectDialog()} className="flex-shrink-0">
+                                    <Button onClick={() => handleOpenSubjectDialog()} className="flex-shrink-0" data-tour="subjects-create-button">
                                         <Plus className="h-4 w-4 sm:mr-2" />
                                         <span className="hidden sm:inline">{t('academic.subjects.addSubject')}</span>
                                     </Button>
@@ -919,7 +919,7 @@ export function SubjectsManagement() {
                     </Card>
 
                     {/* Step 2: Customize Subjects per Academic Year */}
-                    <Card>
+                    <Card data-tour="subjects-step2-academic-year">
                         <CardHeader className="pb-4">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                                 <div className="flex-1">

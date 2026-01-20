@@ -267,7 +267,7 @@ export function AcademicYearsManagement() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden" data-tour="academic-years-page">
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -282,7 +282,7 @@ export function AcademicYearsManagement() {
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               {hasCreatePermission && (
-                <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto">
+                <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto" data-tour="academic-years-create-button">
                   <Plus className="h-4 w-4" />
                   <span className="hidden sm:inline ml-2">{t('academic.academicYears.addAcademicYear')}</span>
                 </Button>

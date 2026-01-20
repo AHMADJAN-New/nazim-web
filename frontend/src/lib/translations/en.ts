@@ -2929,6 +2929,89 @@ export const en = {
       settings: 'Settings',
       subscription: 'Subscription',
       help: 'Help'
+    },
+    schoolSetup: {
+      title: 'School Setup Tour',
+      description: 'Complete guide to setting up your school: school details, academic years, classes, and subjects',
+      steps: {
+        editSchoolDetails: {
+          title: 'Edit School Details',
+          text: [
+            'Start by configuring your school information. Click the edit button to update:',
+            '• School name (in multiple languages if needed)',
+            '• School logo and branding',
+            '• Address and contact information',
+            '• Language and calendar preferences',
+            'These settings will be used throughout the system for reports and communications.'
+          ]
+        },
+        createAcademicYear: {
+          title: 'Create Academic Year',
+          text: [
+            'Academic years define the time periods for your school operations.',
+            'Click "Create Academic Year" to set up a new year with:',
+            '• Start and end dates',
+            '• Year name (e.g., "2024-2025")',
+            '• Status (active, planning, completed)',
+            'You can mark one year as current, which will be used as the default for new records.'
+          ]
+        },
+        createClasses: {
+          title: 'Create Classes',
+          text: [
+            'Classes are the building blocks of your academic structure.',
+            'Click "Create Class" to add a new class with:',
+            '• Class name and code',
+            '• Grade level',
+            '• Default capacity (number of students)',
+            'Classes can be reused across multiple academic years.'
+          ]
+        },
+        assignClassesToYear: {
+          title: 'Assign Classes to Academic Year',
+          text: [
+            'After creating classes, you need to assign them to specific academic years.',
+            'This creates class instances for that year where you can:',
+            '• Add sections (e.g., "10A", "10B")',
+            '• Assign rooms and teachers',
+            '• Set capacity per section',
+            'Each class can have multiple sections in the same academic year.'
+          ]
+        },
+        createSubjects: {
+          title: 'Create Subjects',
+          text: [
+            'Subjects represent the courses taught at your school.',
+            'Click "Create Subject" to add subjects with:',
+            '• Subject name and code',
+            '• Description (optional)',
+            '• Active status',
+            'Subjects are created once and can be assigned to multiple classes.'
+          ]
+        },
+        assignSubjectsClassLevel: {
+          title: 'Assign Subjects to Classes (Class-level)',
+          text: [
+            'This step creates class-level subject templates.',
+            'In the "Class Subjects" tab, assign subjects to classes:',
+            '• Select a class',
+            '• Choose subjects to offer for that class',
+            '• This defines which subjects are available for the class',
+            'This is Step 1 of the two-step subject assignment process.'
+          ]
+        },
+        assignSubjectsAcademicYear: {
+          title: 'Assign Subjects to Classes (Academic-year scoped)',
+          text: [
+            'This step creates actual subject enrollments for classes in a specific academic year.',
+            'In the "Class Academic Year Subjects" tab:',
+            '• Select an academic year and class instance',
+            '• Assign subjects that will be taught in that year',
+            '• Add details like room assignments and teachers',
+            'This is Step 2 - the actual subject assignments for the academic year.'
+          ]
+        }
+      }
     }
   },
   helpCenter: {
@@ -2983,7 +3066,9 @@ export const en = {
     wasThisHelpful: 'Was this article helpful?',
     showingPage: 'Showing page',
     of: 'of',
-    totalArticles: 'Total articles'
+    totalArticles: 'Total articles',
+    startSchoolSetupTour: 'Start School Setup Tour',
+    schoolSetupTourDescription: 'Complete guide to setting up your school: school details, academic years, classes, and subjects'
   },
   hostel: {
     boarders: 'Boarders',
