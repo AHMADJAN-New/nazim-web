@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+# Import Recommended Grafana Dashboards
+# These are well-tested, community-maintained dashboards
+
+set -e
+
+echo "=========================================="
+echo "Import Recommended Grafana Dashboards"
+echo "=========================================="
+echo ""
+echo "Recommended dashboards to import:"
+echo ""
+echo "1. ✅ Node Exporter Full (ID: 1860)"
+echo "   - You already have this!"
+echo "   - Comprehensive system metrics"
+echo ""
+echo "2. Docker Container & Host Metrics (ID: 179)"
+echo "   - Docker container monitoring"
+echo "   - Per-container CPU, Memory, Network"
+echo "   - Host and container metrics"
+echo ""
+echo "3. Prometheus Stats (ID: 893)"
+echo "   - Prometheus performance"
+echo "   - Query performance metrics"
+echo "   - Storage usage"
+echo ""
+echo "To import these dashboards:"
+echo ""
+echo "1. Open Grafana: http://168.231.125.153:3000"
+echo "2. Login (admin/admin)"
+echo ""
+echo "3. For each dashboard:"
+echo "   a. Go to: Dashboards → Import"
+echo "   b. Enter dashboard ID (179 or 893)"
+echo "   c. Click 'Load'"
+echo "   d. Select 'Prometheus' as data source"
+echo "   e. Click 'Import'"
+echo ""
+echo "Dashboard URLs:"
+echo "  - 1860: https://grafana.com/grafana/dashboards/1860"
+echo "  - 179:  https://grafana.com/grafana/dashboards/179"
+echo "  - 893:  https://grafana.com/grafana/dashboards/893"
+echo ""
+echo "Note: Dashboard 1860 is already working perfectly!"
+echo "      Import 179 for Docker container metrics."
+echo ""
+

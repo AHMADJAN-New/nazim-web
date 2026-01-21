@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+# Import Popular Grafana Dashboards
+# This script helps you import well-known dashboards for better monitoring
+
+set -e
+
+echo "=========================================="
+echo "Import Popular Grafana Dashboards"
+echo "=========================================="
+echo ""
+echo "Popular dashboard IDs to import:"
+echo ""
+echo "1. Node Exporter Full (ID: 1860)"
+echo "   - Comprehensive system metrics"
+echo "   - CPU, Memory, Disk, Network"
+echo ""
+echo "2. Docker Container & Host Metrics (ID: 179)"
+echo "   - Docker container monitoring"
+echo "   - Host and container metrics"
+echo ""
+echo "3. Prometheus Stats (ID: 893)"
+echo "   - Prometheus performance"
+echo "   - Query performance"
+echo ""
+echo "To import these dashboards:"
+echo ""
+echo "1. Go to Grafana: http://your-server-ip:3000"
+echo "2. Login (admin/admin)"
+echo "3. Go to: Dashboards → Import"
+echo "4. Enter dashboard ID (e.g., 1860)"
+echo "5. Select Prometheus as data source"
+echo "6. Click Import"
+echo ""
+echo "Or use Grafana API (requires API key):"
+echo ""
+echo "  curl -X POST http://localhost:3000/api/dashboards/db \\"
+echo "    -H 'Content-Type: application/json' \\"
+echo "    -H 'Authorization: Bearer YOUR_API_KEY' \\"
+echo "    -d @dashboard.json"
+echo ""
+echo "Dashboard URLs:"
+echo "  https://grafana.com/grafana/dashboards/1860"
+echo "  https://grafana.com/grafana/dashboards/179"
+echo "  https://grafana.com/grafana/dashboards/893"
+echo ""
+
