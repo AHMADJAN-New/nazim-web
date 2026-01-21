@@ -53,22 +53,35 @@ class BackupController extends Controller
 
         try {
             $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
-            // Store backups next to project directory (not inside backend/)
-            // Use realpath to resolve the path correctly, then normalize for Windows
-            $backupBaseDir = realpath(base_path('../'));
-            if ($backupBaseDir === false) {
-                $backupBaseDir = dirname(base_path());
-            }
-            // Normalize path separators for current OS
-            $backupBaseDir = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $backupBaseDir) . DIRECTORY_SEPARATOR . 'backups';
+            
+            // CRITICAL: Use storage/app/backups for Docker compatibility
+            // This ensures backups are stored within the storage volume where www-data has write permissions
+            $backupBaseDir = storage_path('app/backups');
+            
+            // Ensure backup base directory exists with correct permissions
             if (!is_dir($backupBaseDir)) {
-                File::makeDirectory($backupBaseDir, 0755, true);
+                try {
+                    File::makeDirectory($backupBaseDir, 0775, true);
+                    // Ensure www-data owns the directory (important for Docker)
+                    if (function_exists('chown') && posix_geteuid() === 0) {
+                        @chown($backupBaseDir, 'www-data');
+                        @chgrp($backupBaseDir, 'www-data');
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to create backup base directory: ' . $e->getMessage());
+                    throw new \Exception('Failed to create backup directory. Please ensure storage/app/backups is writable.');
+                }
             }
+            
+            // Create timestamped backup directory
             $backupDir = $backupBaseDir . DIRECTORY_SEPARATOR . $timestamp;
-
-            // Create backup directory
             if (!File::exists($backupDir)) {
-                File::makeDirectory($backupDir, 0755, true);
+                try {
+                    File::makeDirectory($backupDir, 0775, true);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to create backup directory: ' . $e->getMessage());
+                    throw new \Exception('Failed to create backup directory: ' . $e->getMessage());
+                }
             }
 
             // 1. Backup Database
@@ -153,8 +166,23 @@ class BackupController extends Controller
         try {
             $backupsDir = storage_path('app/backups');
 
+            // Ensure backup directory exists with correct permissions
             if (!File::exists($backupsDir)) {
-                File::makeDirectory($backupsDir, 0755, true);
+                try {
+                    File::makeDirectory($backupsDir, 0775, true);
+                    // Ensure www-data owns the directory (important for Docker)
+                    if (function_exists('chown') && posix_geteuid() === 0) {
+                        @chown($backupsDir, 'www-data');
+                        @chgrp($backupsDir, 'www-data');
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to create backups directory in listBackups: ' . $e->getMessage());
+                    // Don't throw - return empty list instead
+                    return response()->json([
+                        'success' => true,
+                        'backups' => [],
+                    ]);
+                }
             }
 
             $files = File::files($backupsDir);
@@ -275,9 +303,20 @@ class BackupController extends Controller
             $filename = 'uploaded_backup_' . $timestamp . '.zip';
             $backupPath = storage_path('app/backups/' . $filename);
 
-            // Ensure backup directory exists
-            if (!File::exists(storage_path('app/backups'))) {
-                File::makeDirectory(storage_path('app/backups'), 0755, true);
+            // Ensure backup directory exists with correct permissions
+            $backupsDir = storage_path('app/backups');
+            if (!File::exists($backupsDir)) {
+                try {
+                    File::makeDirectory($backupsDir, 0775, true);
+                    // Ensure www-data owns the directory (important for Docker)
+                    if (function_exists('chown') && posix_geteuid() === 0) {
+                        @chown($backupsDir, 'www-data');
+                        @chgrp($backupsDir, 'www-data');
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to create backups directory: ' . $e->getMessage());
+                    throw new \Exception('Failed to create backups directory. Please ensure storage/app/backups is writable.');
+                }
             }
 
             // Move uploaded file to backups directory
@@ -311,9 +350,30 @@ class BackupController extends Controller
         $extractDir = storage_path('app/restore_temp/' . $timestamp);
 
         try {
+            // Ensure restore_temp base directory exists
+            $restoreTempBase = storage_path('app/restore_temp');
+            if (!File::exists($restoreTempBase)) {
+                try {
+                    File::makeDirectory($restoreTempBase, 0775, true);
+                    // Ensure www-data owns the directory (important for Docker)
+                    if (function_exists('chown') && posix_geteuid() === 0) {
+                        @chown($restoreTempBase, 'www-data');
+                        @chgrp($restoreTempBase, 'www-data');
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to create restore_temp base directory: ' . $e->getMessage());
+                    throw new \Exception('Failed to create restore temporary directory. Please ensure storage/app/restore_temp is writable.');
+                }
+            }
+            
             // Create temporary extraction directory
             if (!File::exists($extractDir)) {
-                File::makeDirectory($extractDir, 0755, true);
+                try {
+                    File::makeDirectory($extractDir, 0775, true);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to create extract directory: ' . $e->getMessage());
+                    throw new \Exception('Failed to create extract directory: ' . $e->getMessage());
+                }
             }
 
             // Extract ZIP archive
@@ -816,7 +876,7 @@ class BackupController extends Controller
                     }
                 };
             } else {
-                // On Unix-like systems, use Process::fromArray()
+                // On Unix-like systems, use Process constructor with command array
                 $commandArray = [
                     $pgDumpPath,
                     '-h', $dbHost,
@@ -827,8 +887,7 @@ class BackupController extends Controller
                     '-f', $backupFile
                 ];
                 
-                $process = Process::fromArray($commandArray);
-                $process->setEnv(['PGPASSWORD' => $dbPassword]);
+                $process = new Process($commandArray, null, ['PGPASSWORD' => $dbPassword]);
                 $process->setTimeout(300); // 5 minutes timeout
             }
             
@@ -966,14 +1025,86 @@ class BackupController extends Controller
     private function backupStorage(string $backupDir): string
     {
         $storageBackupDir = $backupDir . DIRECTORY_SEPARATOR . 'storage';
-        File::makeDirectory($storageBackupDir, 0755, true);
+        
+        // Ensure backup directory exists
+        if (!File::exists($storageBackupDir)) {
+            try {
+                File::makeDirectory($storageBackupDir, 0775, true);
+            } catch (\Exception $e) {
+                \Log::error('Failed to create storage backup directory: ' . $e->getMessage(), [
+                    'path' => $storageBackupDir
+                ]);
+                throw new \Exception('Failed to create storage backup directory: ' . $e->getMessage());
+            }
+        }
 
         // Copy storage/app directory
         $sourcePath = storage_path('app');
         $destPath = $storageBackupDir . DIRECTORY_SEPARATOR . 'app';
 
-        if (File::exists($sourcePath)) {
-            File::copyDirectory($sourcePath, $destPath);
+        // Validate paths
+        if (empty($sourcePath) || empty($destPath)) {
+            throw new \Exception('Invalid source or destination path for storage backup');
+        }
+
+        // Ensure source exists
+        if (!File::exists($sourcePath)) {
+            \Log::warning('Storage source path does not exist: ' . $sourcePath);
+            return $storageBackupDir;
+        }
+
+        // Ensure destination parent directory exists
+        $destParent = dirname($destPath);
+        if (!File::exists($destParent)) {
+            try {
+                File::makeDirectory($destParent, 0775, true);
+            } catch (\Exception $e) {
+                \Log::error('Failed to create destination parent directory: ' . $e->getMessage(), [
+                    'path' => $destParent
+                ]);
+                throw new \Exception('Failed to create destination directory: ' . $e->getMessage());
+            }
+        }
+
+        try {
+            // Copy storage/app directory, excluding backups and restore_temp to avoid recursion
+            // Use manual copy with filtering to exclude backup directories
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($sourcePath, \RecursiveDirectoryIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::SELF_FIRST
+            );
+
+            foreach ($iterator as $item) {
+                $sourceItem = $item->getPathname();
+                $relativePath = substr($sourceItem, strlen($sourcePath) + 1);
+                
+                // Skip backups and restore_temp directories to avoid recursion
+                if (strpos($relativePath, 'backups') === 0 || strpos($relativePath, 'restore_temp') === 0) {
+                    continue;
+                }
+                
+                $destItem = $destPath . DIRECTORY_SEPARATOR . $relativePath;
+                
+                if ($item->isDir()) {
+                    if (!File::exists($destItem)) {
+                        File::makeDirectory($destItem, 0775, true);
+                    }
+                } else {
+                    // Copy file
+                    $destDir = dirname($destItem);
+                    if (!File::exists($destDir)) {
+                        File::makeDirectory($destDir, 0775, true);
+                    }
+                    copy($sourceItem, $destItem);
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to copy storage directory: ' . $e->getMessage(), [
+                'source' => $sourcePath,
+                'destination' => $destPath,
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw new \Exception('Failed to copy storage directory: ' . $e->getMessage());
         }
 
         return $storageBackupDir;

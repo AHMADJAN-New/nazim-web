@@ -76,6 +76,9 @@ fi
 echo "[bootstrap] Building images (php + nginx w/ frontend build)..."
 compose build --no-cache
 
+echo "[bootstrap] Cleaning up old/dangling images..."
+docker image prune -f || echo "[bootstrap] Warning: Failed to clean up images (non-critical)"
+
 echo "[bootstrap] Starting db + redis..."
 compose up -d db redis
 

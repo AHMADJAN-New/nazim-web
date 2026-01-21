@@ -210,14 +210,31 @@ class ApiClient {
         }
 
         // For validation errors (400 or 422), include details if available
-        if ((response.status === 400 || response.status === 422) && (error.details || error.errors)) {
+        if (response.status === 400 || response.status === 422) {
           const validationErrors = error.details || error.errors;
-          const details = Object.entries(validationErrors)
-            .map(([key, messages]) => `${key}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
-            .join('; ');
-          const validationError = new Error(error.message || 'Validation failed' + (details ? ` - ${details}` : ''));
+          
+          // Extract the first error message from the errors object for better frontend display
+          let firstErrorMessage = '';
+          if (validationErrors && typeof validationErrors === 'object') {
+            const firstField = Object.keys(validationErrors)[0];
+            if (firstField) {
+              const messages = validationErrors[firstField];
+              if (Array.isArray(messages) && messages.length > 0) {
+                firstErrorMessage = messages[0];
+              } else if (typeof messages === 'string') {
+                firstErrorMessage = messages;
+              }
+            }
+          }
+          
+          // Use the first error message as the main message, fallback to generic message
+          const errorMessage = firstErrorMessage || error.message || 'Validation failed';
+          const validationError = new Error(errorMessage);
+          
           // Attach errors object so hooks can access it
-          (validationError as any).errors = validationErrors;
+          (validationError as any).errors = validationErrors || {};
+          (validationError as any).status = response.status;
+          
           throw validationError;
         }
 

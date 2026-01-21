@@ -20,6 +20,10 @@ fi
 mkdir -p /var/www/backend/storage 2>/dev/null || true
 mkdir -p /var/www/backend/storage/app/private 2>/dev/null || true
 mkdir -p /var/www/backend/storage/app/public 2>/dev/null || true
+mkdir -p /var/www/backend/storage/app/backups 2>/dev/null || true
+mkdir -p /var/www/backend/storage/app/restore_temp 2>/dev/null || true
+mkdir -p /var/www/backend/storage/app/temp 2>/dev/null || true
+mkdir -p /var/www/backend/storage/app/tmp 2>/dev/null || true
 mkdir -p /var/www/backend/storage/framework/cache 2>/dev/null || true
 mkdir -p /var/www/backend/storage/framework/sessions 2>/dev/null || true
 mkdir -p /var/www/backend/storage/framework/views 2>/dev/null || true

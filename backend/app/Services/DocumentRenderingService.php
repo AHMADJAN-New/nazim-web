@@ -131,7 +131,19 @@ class DocumentRenderingService
         // Create temporary file path
         $tempDir = storage_path('app/temp');
         if (!is_dir($tempDir)) {
-            mkdir($tempDir, 0755, true);
+            try {
+                if (!mkdir($tempDir, 0775, true)) {
+                    throw new \RuntimeException("Failed to create temp directory: {$tempDir}");
+                }
+                // Ensure www-data owns the directory (important for Docker)
+                if (function_exists('chown') && function_exists('posix_geteuid') && posix_geteuid() === 0) {
+                    @chown($tempDir, 'www-data');
+                    @chgrp($tempDir, 'www-data');
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to create temp directory: ' . $e->getMessage());
+                throw new \RuntimeException('Failed to create temp directory. Please ensure storage/app/temp is writable.');
+            }
         }
         
         $filename = Str::uuid()->toString() . '.pdf';

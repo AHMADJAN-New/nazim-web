@@ -1,0 +1,104 @@
+# Prometheus Alert Rules
+# Defines alerts for critical system conditions
+
+groups:
+  - name: nazim_alerts
+    interval: 30s
+    rules:
+      # High Network Traffic Alert
+      - alert: HighNetworkTraffic
+        expr: |
+          sum(rate(node_network_receive_bytes_total{device!~"lo|docker.*|veth.*|br-.*"}[5m])) + 
+          sum(rate(node_network_transmit_bytes_total{device!~"lo|docker.*|veth.*|br-.*"}[5m])) > 1000000000
+        for: 5m
+        labels:
+          severity: warning
+          service: network
+        annotations:
+          summary: "High network traffic detected"
+          description: "Network traffic exceeds 1GB/s for more than 5 minutes"
+
+      # Low Disk Space Alert
+      - alert: LowDiskSpace
+        expr: |
+          100 - ((node_filesystem_avail_bytes{mountpoint="/"} * 100) / node_filesystem_size_bytes{mountpoint="/"}) > 80
+        for: 5m
+        labels:
+          severity: critical
+          service: disk
+        annotations:
+          summary: "Low disk space on root filesystem"
+          description: "Disk usage is above 80% for more than 5 minutes"
+
+      # Critical Disk Space Alert
+      - alert: CriticalDiskSpace
+        expr: |
+          100 - ((node_filesystem_avail_bytes{mountpoint="/"} * 100) / node_filesystem_size_bytes{mountpoint="/"}) > 90
+        for: 2m
+        labels:
+          severity: critical
+          service: disk
+        annotations:
+          summary: "Critical disk space warning"
+          description: "Disk usage is above 90% - immediate action required"
+
+      # High CPU Usage Alert
+      - alert: HighCPUUsage
+        expr: |
+          100 - (avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+          service: cpu
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for more than 10 minutes"
+
+      # High Memory Usage Alert
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: memory
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 85% for more than 5 minutes"
+
+      # Container Down Alert
+      - alert: ContainerDown
+        expr: |
+          up{job="docker-containers"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: docker
+        annotations:
+          summary: "Container is down"
+          description: "Container {{ $labels.name }} has been down for more than 1 minute"
+
+      # High Container Memory Usage
+      - alert: HighContainerMemory
+        expr: |
+          (container_memory_usage_bytes{name=~"nazim.*"} / container_spec_memory_limit_bytes{name=~"nazim.*"}) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: docker
+        annotations:
+          summary: "High container memory usage"
+          description: "Container {{ $labels.name }} is using more than 90% of its memory limit"
+
+      # High Container CPU Usage
+      - alert: HighContainerCPU
+        expr: |
+          rate(container_cpu_usage_seconds_total{name=~"nazim.*"}[5m]) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          service: docker
+        annotations:
+          summary: "High container CPU usage"
+          description: "Container {{ $labels.name }} CPU usage is above 80% for more than 10 minutes"
+

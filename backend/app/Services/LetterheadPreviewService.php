@@ -90,7 +90,19 @@ class LetterheadPreviewService
             $previewFullPath = Storage::path($previewPath);
             $previewDir = dirname($previewFullPath);
             if (!is_dir($previewDir)) {
-                mkdir($previewDir, 0755, true);
+                try {
+                    if (!mkdir($previewDir, 0775, true)) {
+                        throw new \RuntimeException("Failed to create preview directory: {$previewDir}");
+                    }
+                    // Ensure www-data owns the directory (important for Docker)
+                    if (function_exists('chown') && function_exists('posix_geteuid') && posix_geteuid() === 0) {
+                        @chown($previewDir, 'www-data');
+                        @chgrp($previewDir, 'www-data');
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to create preview directory: ' . $e->getMessage());
+                    throw new \RuntimeException('Failed to create preview directory. Please ensure storage/app/letterheads/previews is writable.');
+                }
             }
             
             // Save as JPEG

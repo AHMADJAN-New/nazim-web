@@ -389,8 +389,21 @@ class IssuedCertificateController extends Controller
             }
 
             // Create temp directory if it doesn't exist
-            if (!is_dir(dirname($zipPath))) {
-                mkdir(dirname($zipPath), 0755, true);
+            $tmpDir = dirname($zipPath);
+            if (!is_dir($tmpDir)) {
+                try {
+                    if (!mkdir($tmpDir, 0775, true)) {
+                        throw new \RuntimeException("Failed to create tmp directory: {$tmpDir}");
+                    }
+                    // Ensure www-data owns the directory (important for Docker)
+                    if (function_exists('chown') && function_exists('posix_geteuid') && posix_geteuid() === 0) {
+                        @chown($tmpDir, 'www-data');
+                        @chgrp($tmpDir, 'www-data');
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to create tmp directory: ' . $e->getMessage());
+                    throw new \RuntimeException('Failed to create tmp directory. Please ensure storage/app/tmp is writable.');
+                }
             }
 
             // Create ZIP archive

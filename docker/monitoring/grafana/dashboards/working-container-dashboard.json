@@ -1,0 +1,122 @@
+{
+  "dashboard": {
+    "title": "Nazim Container Monitoring (Working)",
+    "tags": ["containers", "docker", "nazim"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Container CPU Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(container_cpu_usage_seconds_total{id=~\"/system.slice/docker-.*scope\"}[5m]) * 100",
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Container Memory Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "container_memory_usage_bytes{id=~\"/system.slice/docker-.*scope\"}",
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes",
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Container Network Receive",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(container_network_receive_bytes_total{id=~\"/system.slice/docker-.*scope\"}[5m])",
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "Bps",
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Container Network Transmit",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(container_network_transmit_bytes_total{id=~\"/system.slice/docker-.*scope\"}[5m])",
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "Bps",
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "All Containers List",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "container_last_seen{id=~\"/system.slice/docker-.*scope\"}",
+            "refId": "A",
+            "format": "table",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    }
+  }
+}
+
