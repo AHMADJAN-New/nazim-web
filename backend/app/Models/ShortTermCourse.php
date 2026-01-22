@@ -20,6 +20,7 @@ class ShortTermCourse extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'name',
         'name_en',
         'name_ar',

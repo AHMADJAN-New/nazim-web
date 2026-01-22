@@ -326,29 +326,91 @@ class BackupController extends Controller
             $zip->close();
 
             // Restore database - check for .sql file, .tar file, .dump file, or custom format directory
-            $dbFile = $extractDir . '/database.sql';
-            $dbTarFile = $extractDir . '/database.tar';
-            $dbDumpFile = $extractDir . '/database.dump';
-            $dbDumpDir = $extractDir . '/database_dump'; // Custom format creates a directory
+            // Normalize paths for cross-platform compatibility
+            $dbFile = $extractDir . DIRECTORY_SEPARATOR . 'database.sql';
+            $dbTarFile = $extractDir . DIRECTORY_SEPARATOR . 'database.tar';
+            $dbDumpFile = $extractDir . DIRECTORY_SEPARATOR . 'database.dump';
+            $dbDumpDir = $extractDir . DIRECTORY_SEPARATOR . 'database_dump'; // Custom format creates a directory
+            
+            // Normalize all paths
+            $dbFile = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dbFile);
+            $dbTarFile = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dbTarFile);
+            $dbDumpFile = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dbDumpFile);
+            $dbDumpDir = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dbDumpDir);
             
             if (File::exists($dbFile)) {
                 $this->restoreDatabase($dbFile);
             } elseif (File::exists($dbTarFile)) {
+                // Validate file before restoring
+                if (File::size($dbTarFile) === 0) {
+                    throw new \Exception('Database backup file is empty: database.tar');
+                }
                 $this->restoreDatabase($dbTarFile);
             } elseif (File::exists($dbDumpFile)) {
+                if (File::size($dbDumpFile) === 0) {
+                    throw new \Exception('Database backup file is empty: database.dump');
+                }
                 $this->restoreDatabase($dbDumpFile);
             } elseif (is_dir($dbDumpDir)) {
                 $this->restoreDatabase($dbDumpDir);
             } else {
-                throw new \Exception('Database backup file not found in archive (expected database.sql, database.tar, database.dump, or database_dump directory)');
+                // List what files were found for debugging
+                $foundFiles = [];
+                if (File::exists($extractDir)) {
+                    try {
+                        $files = File::allFiles($extractDir);
+                        foreach ($files as $file) {
+                            $foundFiles[] = $file->getRelativePathname();
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning('Failed to list files in extract directory: ' . $e->getMessage());
+                    }
+                }
+                $foundFilesList = empty($foundFiles) ? 'none' : implode(', ', array_slice($foundFiles, 0, 10));
+                if (count($foundFiles) > 10) {
+                    $foundFilesList .= ' (and ' . (count($foundFiles) - 10) . ' more)';
+                }
+                throw new \Exception(
+                    'Database backup file not found in archive. ' .
+                    'Expected: database.sql, database.tar, database.dump, or database_dump directory. ' .
+                    'Found files: ' . $foundFilesList
+                );
             }
 
-            // Restore storage
-            $storageDir = $extractDir . '/storage/app';
-            if (File::exists($storageDir)) {
+            // Restore storage - handle multiple possible structures
+            $storageDir = null;
+            
+            // Try standard structure: storage/app
+            $storageDir1 = $extractDir . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'app';
+            $storageDir1 = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $storageDir1);
+            
+            // Try alternative structure: app (directly in extract dir)
+            $storageDir2 = $extractDir . DIRECTORY_SEPARATOR . 'app';
+            $storageDir2 = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $storageDir2);
+            
+            // Try another alternative: storage (if app is inside)
+            $storageDir3 = $extractDir . DIRECTORY_SEPARATOR . 'storage';
+            $storageDir3 = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $storageDir3);
+            
+            if (File::exists($storageDir1) && is_dir($storageDir1)) {
+                $storageDir = $storageDir1;
+            } elseif (File::exists($storageDir2) && is_dir($storageDir2)) {
+                $storageDir = $storageDir2;
+            } elseif (File::exists($storageDir3) && is_dir($storageDir3)) {
+                // Check if app directory exists inside storage
+                $appInsideStorage = $storageDir3 . DIRECTORY_SEPARATOR . 'app';
+                if (File::exists($appInsideStorage) && is_dir($appInsideStorage)) {
+                    $storageDir = $appInsideStorage;
+                } else {
+                    // Use storage directory directly if it contains files
+                    $storageDir = $storageDir3;
+                }
+            }
+            
+            if ($storageDir && File::exists($storageDir)) {
                 $this->restoreStorage($storageDir);
             } else {
-                \Log::warning('Storage backup not found in archive, skipping storage restore');
+                \Log::info('Storage backup not found in archive, skipping storage restore. This is normal if the backup only contains database.');
             }
 
             // Clean up temporary directory
@@ -368,6 +430,26 @@ class BackupController extends Controller
      */
     private function restoreDatabase(string $dbFile): void
     {
+        // Normalize path for cross-platform compatibility
+        $normalizedDbFile = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dbFile);
+        
+        // Validate file exists and is readable
+        if (!File::exists($normalizedDbFile)) {
+            throw new \Exception("Database backup file not found: {$normalizedDbFile}");
+        }
+        
+        if (!is_readable($normalizedDbFile)) {
+            throw new \Exception("Database backup file is not readable: {$normalizedDbFile}");
+        }
+        
+        // Check file size (if it's a file, not a directory)
+        if (!is_dir($normalizedDbFile)) {
+            $fileSize = File::size($normalizedDbFile);
+            if ($fileSize === 0) {
+                throw new \Exception("Database backup file is empty: {$normalizedDbFile}");
+            }
+        }
+        
         $dbConnection = config('database.default');
         $dbConfig = config("database.connections.{$dbConnection}");
 
@@ -380,7 +462,7 @@ class BackupController extends Controller
         // Use psql for PostgreSQL SQL files, pg_restore for tar/custom format
         if ($dbConnection === 'pgsql') {
             // Check if it's a tar/custom format (tar file, .dump file, or directory)
-            $isCustomFormat = str_ends_with($dbFile, '.tar') || str_ends_with($dbFile, '.dump') || is_dir($dbFile);
+            $isCustomFormat = str_ends_with($normalizedDbFile, '.tar') || str_ends_with($normalizedDbFile, '.dump') || is_dir($normalizedDbFile);
             
             if ($isCustomFormat) {
                 // Use pg_restore for custom format (.dump) files
@@ -399,18 +481,117 @@ class BackupController extends Controller
                 }
                 
                 // Use pg_restore for custom format
-                $command = sprintf(
-                    '%s -h %s -p %s -U %s -d %s --clean --if-exists %s',
-                    escapeshellarg($pgRestorePath),
-                    escapeshellarg($dbHost),
-                    escapeshellarg($dbPort),
-                    escapeshellarg($dbUser),
-                    escapeshellarg($dbName),
-                    escapeshellarg($dbFile)
-                );
-                
-                $process = Process::fromShellCommandline($command);
-                $process->setEnv(['PGPASSWORD' => $dbPassword]);
+                // Add verbose flag to get more detailed error information
+                // Add --no-owner flag to ignore ownership issues (roles that don't exist in target database)
+                // On Windows, use batch file approach (similar to pg_dump) for better error capture
+                if (PHP_OS_FAMILY === 'Windows') {
+                    // Create temporary batch file for better error capture on Windows
+                    $tempDir = str_replace('/', '\\', sys_get_temp_dir());
+                    $batchFile = $tempDir . '\\pg_restore_backup_' . uniqid() . '.bat';
+                    
+                    // Escape password for batch file
+                    $escapedPassword = str_replace(['"', '%', '!', '^', '&'], ['""', '%%', '!!', '^^', '^&'], $dbPassword);
+                    
+                    // Normalize paths for Windows
+                    $normalizedPgRestorePath = str_replace('/', '\\', $pgRestorePath);
+                    $normalizedDbFile = str_replace('/', '\\', $normalizedDbFile);
+                    
+                    // Escape backslashes and quotes in paths for batch file
+                    $escapedPgRestorePath = str_replace(['\\', '"'], ['\\\\', '\\"'], $normalizedPgRestorePath);
+                    $escapedDbFile = str_replace(['\\', '"'], ['\\\\', '\\"'], $normalizedDbFile);
+                    
+                    // Create batch file that redirects stderr to stdout
+                    // --no-owner: ignore ownership issues (don't try to set ownership to roles that don't exist)
+                    $batchContent = sprintf(
+                        "@echo off\nset PGPASSWORD=%s\n\"%s\" -h %s -p %s -U %s -d %s --clean --if-exists --no-owner -v \"%s\" 2>&1\n",
+                        $escapedPassword,
+                        $escapedPgRestorePath,
+                        escapeshellarg($dbHost),
+                        escapeshellarg($dbPort),
+                        escapeshellarg($dbUser),
+                        escapeshellarg($dbName),
+                        $escapedDbFile
+                    );
+                    file_put_contents($batchFile, $batchContent);
+                    
+                    // Execute batch file
+                    $normalizedBatchFile = str_replace('/', '\\', $batchFile);
+                    $command = 'cmd /c "' . $normalizedBatchFile . '"';
+                    
+                    $output = [];
+                    $returnVar = 0;
+                    exec($command . ' 2>&1', $output, $returnVar);
+                    $combinedOutput = implode("\n", $output);
+                    
+                    // Clean up batch file
+                    if (file_exists($batchFile)) {
+                        @unlink($batchFile);
+                    }
+                    
+                    // Create a mock Process object for compatibility
+                    // The command has already been executed via exec(), so this is just a wrapper
+                    $process = new class($returnVar, $combinedOutput) {
+                        private $exitCode;
+                        private $output;
+                        private $errorOutput;
+                        private $hasRun = false;
+                        
+                        public function __construct($exitCode, $output) {
+                            $this->exitCode = $exitCode;
+                            // On Windows with 2>&1, both stdout and stderr are in output
+                            $this->output = $output;
+                            $this->errorOutput = $output; // Same output for both on Windows
+                        }
+                        
+                        public function run($callback = null) {
+                            // Already executed via exec(), so this is a no-op
+                            $this->hasRun = true;
+                        }
+                        
+                        public function isSuccessful() {
+                            return $this->exitCode === 0;
+                        }
+                        
+                        public function getExitCode() {
+                            return $this->exitCode;
+                        }
+                        
+                        public function getOutput() {
+                            return $this->output;
+                        }
+                        
+                        public function getErrorOutput() {
+                            return $this->errorOutput;
+                        }
+                        
+                        public function setTimeout($timeout) {
+                            return $this;
+                        }
+                        
+                        public function setEnv(array $env) {
+                            return $this;
+                        }
+                    };
+                } else {
+                    // On Unix-like systems, use Process::fromArray()
+                    // --no-owner: ignore ownership issues (don't try to set ownership to roles that don't exist)
+                    $commandArray = [
+                        $pgRestorePath,
+                        '-h', $dbHost,
+                        '-p', $dbPort,
+                        '-U', $dbUser,
+                        '-d', $dbName,
+                        '--clean',
+                        '--if-exists',
+                        '--no-owner',
+                        '-v',
+                        $normalizedDbFile
+                    ];
+                    
+                    $process = Process::fromArray($commandArray);
+                    $process->setEnv(['PGPASSWORD' => $dbPassword]);
+                    $process->setTimeout(600);
+                }
             } else {
                 // Use psql for plain SQL files
                 $psqlPath = $this->findPsqlPath();
@@ -435,7 +616,7 @@ class BackupController extends Controller
                     escapeshellarg($dbPort),
                     escapeshellarg($dbUser),
                     escapeshellarg($dbName),
-                    escapeshellarg($dbFile)
+                    escapeshellarg($normalizedDbFile)
                 );
                 
                 $process = Process::fromShellCommandline($command);
@@ -451,7 +632,7 @@ class BackupController extends Controller
                 escapeshellarg($dbUser),
                 escapeshellarg($dbPassword),
                 escapeshellarg($dbName),
-                escapeshellarg($sqlFile)
+                escapeshellarg($normalizedDbFile)
             );
             
             $process = Process::fromShellCommandline($command);
@@ -464,7 +645,95 @@ class BackupController extends Controller
         $process->run();
 
         if (!$process->isSuccessful()) {
-            throw new ProcessFailedException($process);
+            // Capture full error output
+            $errorOutput = $process->getErrorOutput();
+            $output = $process->getOutput();
+            $exitCode = $process->getExitCode();
+            
+            // On Windows, stderr might be in stdout when using 2>&1
+            // Combine error output and standard output
+            $fullError = '';
+            if ($errorOutput) {
+                $fullError = trim($errorOutput);
+            }
+            if ($output) {
+                $outputTrimmed = trim($output);
+                if ($fullError && $outputTrimmed) {
+                    $fullError = $fullError . "\n" . $outputTrimmed;
+                } elseif ($outputTrimmed) {
+                    $fullError = $outputTrimmed;
+                }
+            }
+            
+            // If we still don't have an error message, try to get it from the process
+            if (empty($fullError)) {
+                // Try to get any available output
+                $fullError = 'Unknown error occurred';
+                if ($errorOutput) {
+                    $fullError = $errorOutput;
+                } elseif ($output) {
+                    $fullError = $output;
+                }
+            }
+            
+            // Log the full error for debugging
+            \Log::error('Database restore command failed', [
+                'command' => $command,
+                'exit_code' => $exitCode,
+                'error_output' => $errorOutput,
+                'output' => $output,
+                'db_file' => $normalizedDbFile,
+                'file_exists' => File::exists($normalizedDbFile),
+                'file_size' => File::exists($normalizedDbFile) && !is_dir($normalizedDbFile) ? File::size($normalizedDbFile) : 0,
+                'is_directory' => is_dir($normalizedDbFile),
+            ]);
+            
+            // Create detailed error message
+            // Show the actual error first, then context
+            $errorMessage = 'Database restore failed.';
+            
+            // Add the actual error message if available
+            if ($fullError && trim($fullError) !== '') {
+                $errorMessage .= "\n\nError details:\n" . $fullError;
+            } else {
+                $errorMessage .= "\n\nExit code: {$exitCode}";
+                if ($errorOutput) {
+                    $errorMessage .= "\nError output: " . $errorOutput;
+                }
+                if ($output) {
+                    $errorMessage .= "\nOutput: " . $output;
+                }
+            }
+            
+            // Add context about the file (on a new line)
+            $errorMessage .= "\n\nFile information:";
+            if (File::exists($normalizedDbFile)) {
+                if (!is_dir($normalizedDbFile)) {
+                    $fileSize = File::size($normalizedDbFile);
+                    $errorMessage .= " File exists, size: " . round($fileSize / 1024 / 1024, 2) . " MB";
+                } else {
+                    $errorMessage .= " Directory exists";
+                }
+            } else {
+                $errorMessage .= " File not found: {$normalizedDbFile}";
+            }
+            
+            // Add common error explanations
+            if (str_contains($fullError, 'password authentication failed') || str_contains($fullError, 'authentication failed')) {
+                $errorMessage .= ' Please check your database credentials.';
+            } elseif (str_contains($fullError, 'could not connect') || str_contains($fullError, 'connection refused')) {
+                $errorMessage .= ' Please check your database connection settings (host, port).';
+            } elseif (str_contains($fullError, 'does not exist') || str_contains($fullError, 'database') && str_contains($fullError, 'not exist')) {
+                $errorMessage .= ' The database does not exist. Please create it first.';
+            } elseif (str_contains($fullError, 'permission denied') || str_contains($fullError, 'access denied')) {
+                $errorMessage .= ' Database permission denied. Please check user permissions.';
+            } elseif (str_contains($fullError, 'invalid format') || str_contains($fullError, 'unrecognized archive format')) {
+                $errorMessage .= ' The backup file format is invalid or corrupted.';
+            } elseif (str_contains($fullError, 'version mismatch') || str_contains($fullError, 'incompatible version')) {
+                $errorMessage .= ' The backup file version is incompatible with your PostgreSQL version.';
+            }
+            
+            throw new \Exception($errorMessage);
         }
     }
 
@@ -473,16 +742,50 @@ class BackupController extends Controller
      */
     private function restoreStorage(string $backupStorageDir): void
     {
+        // Normalize path for cross-platform compatibility
+        $backupStorageDir = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $backupStorageDir);
+        
         $targetPath = storage_path('app');
 
         // Create backup of current storage before restoring
-        $currentBackupDir = storage_path('app/pre_restore_backup_' . Carbon::now()->format('Y-m-d_H-i-s'));
+        // Store outside storage/app to avoid infinite recursion
+        $currentBackupDir = storage_path('pre_restore_backups/pre_restore_backup_' . Carbon::now()->format('Y-m-d_H-i-s'));
+        
+        // Ensure the parent directory exists
+        $parentDir = storage_path('pre_restore_backups');
+        if (!File::exists($parentDir)) {
+            File::makeDirectory($parentDir, 0755, true);
+        }
+        
+        // Copy only contents of storage/app, excluding problematic directories
         if (File::exists($targetPath)) {
-            File::copyDirectory($targetPath, $currentBackupDir);
+            $items = array_merge(
+                File::directories($targetPath),
+                File::files($targetPath)
+            );
+            
+            foreach ($items as $item) {
+                $basename = basename($item);
+                
+                // Skip directories that should not be backed up
+                if ($basename === 'backups' || strpos($basename, 'pre_restore_backup_') === 0) {
+                    continue;
+                }
+                
+                $destination = $currentBackupDir . DIRECTORY_SEPARATOR . $basename;
+                
+                if (is_dir($item)) {
+                    File::copyDirectory($item, $destination);
+                } else {
+                    File::copy($item, $destination);
+                }
+            }
         }
 
         try {
-            // Clear current storage (except backups and pre_restore_backup directories)
+            // Clear current storage (except backups directory)
+            // Note: pre_restore_backup directories are now stored outside storage/app, so no need to exclude them
+            // But keep the check for safety in case old backups exist
             if (File::exists($targetPath)) {
                 $items = File::directories($targetPath);
                 foreach ($items as $item) {
@@ -500,14 +803,51 @@ class BackupController extends Controller
             }
 
             // Restore from backup
-            $items = array_merge(
-                File::directories($backupStorageDir),
-                File::files($backupStorageDir)
-            );
+            // Validate that the backup storage directory exists and is readable
+            if (!File::exists($backupStorageDir)) {
+                \Log::warning("Backup storage directory does not exist: {$backupStorageDir}. Skipping storage restore.");
+                return; // Storage restore is optional, don't throw error
+            }
+            
+            if (!is_readable($backupStorageDir)) {
+                \Log::warning("Backup storage directory is not readable: {$backupStorageDir}. Skipping storage restore.");
+                return; // Storage restore is optional, don't throw error
+            }
+            
+            if (!is_dir($backupStorageDir)) {
+                \Log::warning("Backup storage path is not a directory: {$backupStorageDir}. Skipping storage restore.");
+                return; // Storage restore is optional, don't throw error
+            }
+            
+            // Get directories and files from backup
+            $directories = [];
+            $files = [];
+            
+            try {
+                $directories = File::directories($backupStorageDir);
+            } catch (\Exception $e) {
+                \Log::warning("Failed to get directories from backup storage: " . $e->getMessage());
+                // Continue with empty directories array
+            }
+            
+            try {
+                $files = File::files($backupStorageDir);
+            } catch (\Exception $e) {
+                \Log::warning("Failed to get files from backup storage: " . $e->getMessage());
+                // Continue with empty files array
+            }
+            
+            $items = array_merge($directories, $files);
+            
+            if (empty($items)) {
+                \Log::warning("Backup storage directory is empty: {$backupStorageDir}");
+                // Don't throw error, just log warning - empty storage backup is acceptable
+                return;
+            }
 
             foreach ($items as $item) {
                 $basename = basename($item);
-                $destination = $targetPath . '/' . $basename;
+                $destination = $targetPath . DIRECTORY_SEPARATOR . $basename;
 
                 if (is_dir($item)) {
                     // Skip backups directory to avoid overwriting current backups

@@ -3,6 +3,7 @@ export type ShortTermCourseStatus = 'draft' | 'open' | 'closed' | 'completed';
 export interface ShortTermCourse {
   id: string;
   organization_id: string;
+  school_id: string;
   name: string;
   name_en?: string | null;
   name_ar?: string | null;

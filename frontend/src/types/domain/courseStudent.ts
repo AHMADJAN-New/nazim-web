@@ -3,6 +3,7 @@ import type { CourseCompletionStatus } from '@/types/api/courseStudent';
 export interface CourseStudent {
   id: string;
   organizationId: string;
+  schoolId: string;
   courseId: string;
   mainStudentId?: string | null;
   admissionNo: string;

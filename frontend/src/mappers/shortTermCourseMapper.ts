@@ -4,6 +4,7 @@ import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
 export const mapShortTermCourseApiToDomain = (course: Api.ShortTermCourse): ShortTermCourse => ({
   id: course.id,
   organizationId: course.organization_id,
+  schoolId: course.school_id,
   name: course.name,
   nameEn: course.name_en ?? null,
   nameAr: course.name_ar ?? null,

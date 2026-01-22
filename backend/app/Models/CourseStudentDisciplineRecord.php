@@ -21,6 +21,7 @@ class CourseStudentDisciplineRecord extends Model
         'id',
         'course_student_id',
         'organization_id',
+        'school_id',
         'course_id',
         'incident_date',
         'incident_type',

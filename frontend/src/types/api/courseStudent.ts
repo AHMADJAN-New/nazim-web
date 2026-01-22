@@ -3,6 +3,7 @@ export type CourseCompletionStatus = 'enrolled' | 'completed' | 'dropped' | 'fai
 export interface CourseStudent {
   id: string;
   organization_id: string;
+  school_id: string;
   course_id: string;
   main_student_id?: string | null;
   admission_no: string;

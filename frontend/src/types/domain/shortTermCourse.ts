@@ -3,6 +3,7 @@ import type { ShortTermCourseStatus } from '@/types/api/shortTermCourse';
 export interface ShortTermCourse {
   id: string;
   organizationId: string;
+  schoolId: string;
   name: string;
   nameEn?: string | null;
   nameAr?: string | null;

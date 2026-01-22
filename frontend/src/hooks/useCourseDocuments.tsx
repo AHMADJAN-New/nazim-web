@@ -8,6 +8,7 @@ import { showToast } from '@/lib/toast';
 export interface CourseDocument {
   id: string;
   organization_id: string;
+  school_id: string;
   course_id: string;
   course_student_id: string | null;
   document_type: string;
@@ -38,7 +39,7 @@ export const useCourseDocuments = (params?: {
   const { user, profile } = useAuth();
 
   return useQuery<CourseDocument[]>({
-    queryKey: ['course-documents', params],
+    queryKey: ['course-documents', profile?.organization_id ?? null, profile?.default_school_id ?? null, params],
     queryFn: async () => {
       if (!user || !profile) return [];
       const apiParams: any = {};

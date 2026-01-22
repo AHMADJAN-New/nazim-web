@@ -8,6 +8,7 @@ import { showToast } from '@/lib/toast';
 export interface CourseAttendanceSession {
   id: string;
   organization_id: string;
+  school_id: string;
   course_id: string;
   session_date: string;
   session_title: string | null;
@@ -33,6 +34,7 @@ export interface CourseAttendanceRecord {
   id: string;
   attendance_session_id: string;
   organization_id: string;
+  school_id: string;
   course_id: string;
   course_student_id: string;
   status: 'present' | 'absent' | 'late' | 'excused' | 'sick' | 'leave';
@@ -64,7 +66,7 @@ export const useCourseAttendanceSessions = (courseId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<CourseAttendanceSession[]>({
-    queryKey: ['course-attendance-sessions', courseId ?? 'all'],
+    queryKey: ['course-attendance-sessions', courseId ?? 'all', profile?.organization_id ?? null, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile) return [];
       const params: any = {};
@@ -150,7 +152,7 @@ export const useCourseRoster = (courseId: string | undefined) => {
   const { user, profile } = useAuth();
 
   return useQuery<CourseRosterStudent[]>({
-    queryKey: ['course-roster', courseId],
+    queryKey: ['course-roster', courseId, profile?.organization_id ?? null, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !courseId) return [];
       const roster = await courseAttendanceSessionsApi.roster({ course_id: courseId });
@@ -290,7 +292,7 @@ export const useCourseAttendanceCourseReport = (params?: {
   const { user, profile } = useAuth();
 
   return useQuery<CourseReportItem[]>({
-    queryKey: ['course-attendance-course-report', params],
+    queryKey: ['course-attendance-course-report', params, profile?.organization_id ?? null, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile) return [];
       const apiParams: any = {};

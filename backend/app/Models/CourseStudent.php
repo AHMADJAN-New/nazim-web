@@ -20,6 +20,7 @@ class CourseStudent extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'course_id',
         'main_student_id',
         'admission_no',

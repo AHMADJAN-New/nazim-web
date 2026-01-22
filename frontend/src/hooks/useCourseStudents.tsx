@@ -20,7 +20,7 @@ export const useCourseStudents = (courseId?: string, usePaginated?: boolean) => 
   });
 
   const { data, isLoading, error, refetch } = useQuery<CourseStudent[] | PaginatedResponse<Api.CourseStudent>>({
-    queryKey: ['course-students', courseId ?? 'all', usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+    queryKey: ['course-students', courseId ?? 'all', profile?.organization_id ?? null, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
     queryFn: async () => {
       if (!user || !profile) return [];
       const params: { course_id?: string; organization_id?: string; page?: number; per_page?: number } = {

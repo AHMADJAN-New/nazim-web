@@ -20,6 +20,7 @@ class CourseDocument extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'course_id',
         'course_student_id',
         'document_type',
