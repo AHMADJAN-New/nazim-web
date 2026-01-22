@@ -1,8 +1,29 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Parse command line arguments
+SKIP_BUILD=false
+SKIP_CLEANUP=false
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --skip-build)
+      SKIP_BUILD=true
+      shift
+      ;;
+    --skip-cleanup)
+      SKIP_CLEANUP=true
+      shift
+      ;;
+    *)
+      echo "[bootstrap] Unknown option: $1"
+      exit 1
+      ;;
+  esac
+done
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 COMPOSE_FILE="${ROOT_DIR}/docker-compose.prod.yml"
+MONITORING_COMPOSE_FILE="${ROOT_DIR}/docker-compose.monitoring.yml"
 COMPOSE_ENV_EXAMPLE="${ROOT_DIR}/docker/env/compose.prod.env.example"
 COMPOSE_ENV="${ROOT_DIR}/docker/env/compose.prod.env"
 BACKEND_ENV_EXAMPLE="${ROOT_DIR}/docker/env/backend.env.example"
@@ -47,6 +68,10 @@ compose() {
   docker compose --env-file "${COMPOSE_ENV}" -f "${COMPOSE_FILE}" "$@"
 }
 
+compose_monitoring() {
+  docker compose -f "${MONITORING_COMPOSE_FILE}" "$@"
+}
+
 # Load compose env vars (DOMAIN, etc.) for local script logic
 # shellcheck disable=SC1090
 source "${COMPOSE_ENV}"
@@ -73,11 +98,40 @@ if [[ -f "${FIREWALL_SCRIPT}" ]]; then
   fi
 fi
 
-echo "[bootstrap] Building images (php + nginx w/ frontend build)..."
-compose build --no-cache
+if [[ "${SKIP_CLEANUP}" != "true" ]]; then
+  echo "[bootstrap] Cleaning up old containers and networks..."
+  # Stop and remove old containers from both compose files
+  compose down --remove-orphans 2>/dev/null || true
+  compose_monitoring down --remove-orphans 2>/dev/null || true
 
-echo "[bootstrap] Cleaning up old/dangling images..."
-docker image prune -f || echo "[bootstrap] Warning: Failed to clean up images (non-critical)"
+  # Remove dangling containers
+  docker container prune -f || echo "[bootstrap] Warning: Failed to clean up containers (non-critical)"
+
+  # Remove unused networks (but keep nazim_network)
+  # Use until filter instead of name filter (more reliable)
+  docker network ls --filter "type=custom" --format "{{.Name}}" | grep -v "^nazim_network$" | xargs -r docker network rm 2>/dev/null || echo "[bootstrap] Warning: Some networks may not have been removed (non-critical)"
+else
+  echo "[bootstrap] Skipping cleanup (already done)"
+fi
+
+# Create network if it doesn't exist (needed for both app and monitoring)
+# This must happen AFTER compose down (which may remove the network)
+if ! docker network inspect nazim_network >/dev/null 2>&1; then
+  echo "[bootstrap] Creating nazim_network..."
+  docker network create nazim_network --driver bridge || echo "[bootstrap] Warning: Network may already exist"
+else
+  echo "[bootstrap] Network nazim_network already exists"
+fi
+
+if [[ "${SKIP_BUILD}" != "true" ]]; then
+  echo "[bootstrap] Building images (php + nginx w/ frontend build)..."
+  compose build --no-cache
+
+  echo "[bootstrap] Cleaning up old/dangling images..."
+  docker image prune -f || echo "[bootstrap] Warning: Failed to clean up images (non-critical)"
+else
+  echo "[bootstrap] Skipping build (already done)"
+fi
 
 echo "[bootstrap] Starting db + redis..."
 compose up -d db redis
@@ -120,7 +174,42 @@ compose exec -T nginx sh -lc 'test -f "/etc/letsencrypt/live/${DOMAIN:-nazim.clo
   && echo "[bootstrap] Cert already present" \
   || bash "${ROOT_DIR}/docker/scripts/prod/https_init.sh"
 
+echo "[bootstrap] Starting monitoring stack (Prometheus, Grafana, Loki, Promtail)..."
+if [[ -f "${MONITORING_COMPOSE_FILE}" ]]; then
+  compose_monitoring up -d
+  echo "[bootstrap] Waiting for monitoring services to be healthy..."
+  sleep 15
+  
+  # Wait for Grafana to be ready
+  echo "[bootstrap] Waiting for Grafana to be ready..."
+  for i in {1..30}; do
+    if curl -s http://localhost:3000/api/health >/dev/null 2>&1; then
+      echo "[bootstrap] Grafana is ready"
+      break
+    fi
+    sleep 2
+  done
+  
+  # Add datasources via API
+  echo "[bootstrap] Adding Prometheus datasource..."
+  curl -s -X POST -u admin:admin -H "Content-Type: application/json" \
+    -d '{"name":"Prometheus","type":"prometheus","access":"proxy","url":"http://prometheus:9090","uid":"prometheus","isDefault":true,"jsonData":{"timeInterval":"15s","httpMethod":"POST","queryTimeout":"60s"}}' \
+    http://localhost:3000/api/datasources >/dev/null 2>&1 || echo "[bootstrap] Warning: Failed to add Prometheus datasource (may already exist)"
+  
+  echo "[bootstrap] Adding Loki datasource..."
+  curl -s -X POST -u admin:admin -H "Content-Type: application/json" \
+    -d '{"name":"Loki","type":"loki","access":"proxy","url":"http://loki:3100","uid":"loki","isDefault":false,"jsonData":{"maxLines":1000}}' \
+    http://localhost:3000/api/datasources >/dev/null 2>&1 || echo "[bootstrap] Warning: Failed to add Loki datasource (may already exist)"
+  
+  compose_monitoring ps
+  echo "[bootstrap] Monitoring stack started"
+else
+  echo "[bootstrap] Warning: Monitoring compose file not found, skipping monitoring stack"
+fi
+
 echo
 echo "[bootstrap] Done."
-echo "[bootstrap] Check logs: docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml logs -f"
+echo "[bootstrap] Application services: docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml logs -f"
+echo "[bootstrap] Monitoring services: docker compose -f docker-compose.monitoring.yml logs -f"
+echo "[bootstrap] Grafana: http://$(hostname -I | awk '{print $1}'):3000 (admin/admin)"
 

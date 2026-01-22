@@ -1,5 +1,5 @@
-# Monitoring Stack: Prometheus + Grafana + Exporters
-# Provides real-time monitoring dashboards for traffic, disk usage, and system metrics
+# Monitoring Stack: Prometheus + Grafana + Loki + Exporters
+# Provides real-time monitoring dashboards for traffic, disk usage, system metrics, and log inspection
 
 services:
   # Prometheus - Metrics collection and storage
@@ -43,16 +43,21 @@ services:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_SERVER_ROOT_URL=http://168.231.125.153:3000
+      - GF_SERVER_SERVE_FROM_SUB_PATH=false
       - GF_INSTALL_PLUGINS=
       - GF_ANALYTICS_REPORTING_ENABLED=false
       - GF_ANALYTICS_CHECK_FOR_UPDATES=false
       - GF_SECURITY_DISABLE_GRAVATAR=true
       - GF_DATABASE_LOCKING_ENABLED=false
-      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      # Temporarily disable provisioning to allow Grafana to start
+      # Datasources will be added manually via API after Grafana is running
+      # - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
     volumes:
       - nazim_grafana_data:/var/lib/grafana
-      - ./docker/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      # Temporarily disable provisioning mount to allow Grafana to start
+      # Datasources will be added manually via API after Grafana is running
+      # - ./docker/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./docker/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "0.0.0.0:3000:3000"
@@ -66,6 +71,53 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Loki - Log aggregation system
+  loki:
+    image: grafana/loki:latest
+    container_name: nazim_monitoring_loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./docker/monitoring/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - nazim_loki_data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - nazim_network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Promtail - Log shipper (sends logs from Laravel to Loki)
+  promtail:
+    image: grafana/promtail:latest
+    container_name: nazim_monitoring_promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./docker/monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
+      - nazim_backend_storage:/var/log/laravel:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - nazim_network
+    depends_on:
+      loki:
+        condition: service_started
     logging:
       driver: "json-file"
       options:
@@ -138,6 +190,10 @@ services:
 volumes:
   nazim_prometheus_data:
   nazim_grafana_data:
+  nazim_loki_data:
+  nazim_backend_storage:
+    external: true
+    name: nazim-web_nazim_backend_storage
 
 networks:
   nazim_network:

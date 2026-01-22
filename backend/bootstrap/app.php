@@ -174,6 +174,23 @@ return Application::configure(basePath: dirname(__DIR__))
             return null;
         });
         
+        // CRITICAL: Handle ValidationException BEFORE the generic handler
+        // Validation errors are ALWAYS safe to show - they're user-facing feedback
+        // This ensures validation errors are returned even when APP_DEBUG=false
+        $exceptions->render(function (\Illuminate\Validation\ValidationException $e, \Illuminate\Http\Request $request) {
+            // For API routes, always return JSON with validation errors
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'message' => 'The given data was invalid.',
+                    'error' => 'Validation failed',
+                    'errors' => $e->errors(), // CRITICAL: Always include validation errors (safe to show)
+                ], 422);
+            }
+            
+            // For web routes, let Laravel handle it normally (will redirect back with errors)
+            return null;
+        });
+        
         // Handle all other exceptions for API routes - ensure they return JSON
         // This must come LAST so specific handlers above can handle their exceptions first
         $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
@@ -188,11 +205,21 @@ return Application::configure(basePath: dirname(__DIR__))
                     $statusCode = $e->getCode();
                 }
                 
-                // Return JSON error response
-                return response()->json([
-                    'message' => config('app.debug') ? $e->getMessage() : 'An error occurred',
-                    'error' => config('app.debug') ? $e->getMessage() : 'An error occurred',
-                ], $statusCode);
+                // Client errors (400-499): Show message in production (usually safe)
+                // Server errors (500+): Hide details in production (may contain sensitive info)
+                if ($statusCode >= 400 && $statusCode < 500) {
+                    // Client errors - safe to show in production
+                    return response()->json([
+                        'message' => $e->getMessage() ?: 'Invalid request',
+                        'error' => $e->getMessage() ?: 'Invalid request',
+                    ], $statusCode);
+                } else {
+                    // Server errors - hide details in production for security
+                    return response()->json([
+                        'message' => config('app.debug') ? $e->getMessage() : 'An error occurred. Please try again later.',
+                        'error' => config('app.debug') ? $e->getMessage() : 'An error occurred. Please try again later.',
+                    ], $statusCode);
+                }
             }
             
             return null;
