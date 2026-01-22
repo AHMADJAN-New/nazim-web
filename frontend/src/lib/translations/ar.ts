@@ -6737,5 +6737,14 @@ export const ar: TranslationKeys = {
     " Please check the file format": {
       "": ""
     }
-  }
+  },
+  platform: {
+    restoreType: {
+      label: "نوع الاستعادة",
+      databaseOnly: "قاعدة البيانات فقط (الحفاظ على الملفات الحالية)",
+      databaseAndFiles: "قاعدة البيانات + الملفات (استعادة كاملة)",
+      databaseOnlyDescription: "سيستبدل هذا بيانات قاعدة البيانات فقط. سيتم الحفاظ على ملفات التخزين الحالية.",
+      databaseAndFilesDescription: "سيستبدل هذا جميع البيانات الحالية في قاعدة البيانات والتخزين بالبيانات من هذا النسخ الاحتياطي.",
+    },
+  },
 };

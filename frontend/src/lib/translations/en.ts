@@ -6728,5 +6728,14 @@ export const en = {
   classes: {
     noClasses: 'no Classes',
     viewAll: 'View All'
-  }
+  },
+  platform: {
+    restoreType: {
+      label: 'Restore Type',
+      databaseOnly: 'Database Only (Preserve Current Files)',
+      databaseAndFiles: 'Database + Files (Complete Restore)',
+      databaseOnlyDescription: 'This will replace only the database data. Current storage files will be preserved.',
+      databaseAndFilesDescription: 'This will replace ALL current data in your database and storage with the data from this backup.',
+    },
+  },
 };

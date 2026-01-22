@@ -642,15 +642,18 @@ export const platformApi = {
         message: string;
       }>(`/platform/backups/${filename}`);
     },
-    restore: async (filename: string) => {
+    restore: async (filename: string, restoreType: 'database' | 'all' = 'all') => {
       return apiClient.post<{
         success: boolean;
         message: string;
-      }>(`/platform/backups/${filename}/restore`);
+      }>(`/platform/backups/${filename}/restore`, {
+        restore_type: restoreType,
+      });
     },
-    uploadAndRestore: async (file: File) => {
+    uploadAndRestore: async (file: File, restoreType: 'database' | 'all' = 'all') => {
       const formData = new FormData();
       formData.append('backup_file', file);
+      formData.append('restore_type', restoreType);
       return apiClient.post('/platform/backups/upload-restore', formData, { headers: {} });
     },
   },

@@ -1,46 +1,3 @@
----
-name: Add Restore Type Selection
-overview: Add the ability to choose between restoring only the database or both database and storage files. The selection will appear in the confirmation dialog using a select dropdown.
-todos:
-  - id: update-perform-restore
-    content: Update performRestore() method to accept $restoreStorage boolean parameter and conditionally restore storage
-    status: pending
-  - id: update-restore-backup-endpoint
-    content: Update restoreBackup() method to accept restore_type from request and pass to performRestore()
-    status: pending
-    dependencies:
-      - update-perform-restore
-  - id: update-upload-restore-endpoint
-    content: Update uploadAndRestore() method to accept restore_type from request and pass to performRestore()
-    status: pending
-    dependencies:
-      - update-perform-restore
-  - id: add-restore-type-state
-    content: Add restoreType state to PlatformSettings component for confirmation dialog
-    status: pending
-  - id: update-confirmation-dialog
-    content: Add Select dropdown in confirmation dialog for restore type selection with descriptions
-    status: pending
-    dependencies:
-      - add-restore-type-state
-  - id: update-restore-mutations
-    content: Update restoreBackup and uploadAndRestore mutations to accept and pass restore type
-    status: pending
-    dependencies:
-      - add-restore-type-state
-  - id: add-upload-restore-type
-    content: Add restore type selection for upload and restore section
-    status: pending
-    dependencies:
-      - add-restore-type-state
-  - id: update-platform-api
-    content: Update platformApi.backups.restore() and uploadAndRestore() to accept restore type parameter
-    status: pending
-  - id: add-translations
-    content: Add translation keys for restore type labels and descriptions in all language files
-    status: pending
----
-
 # Add Restore Type Selection Feature
 
 ## Overview
@@ -129,11 +86,11 @@ Add restore type selection to allow users to choose between:
 
 - Update `restore()` method to accept restore type:
   ```typescript
-            restore: async (filename: string, restoreType: 'database' | 'all' = 'all') => {
-              return apiClient.post(`/platform/backups/${filename}/restore`, {
-                restore_type: restoreType
-              });
-            }
+                restore: async (filename: string, restoreType: 'database' | 'all' = 'all') => {
+                  return apiClient.post(`/platform/backups/${filename}/restore`, {
+                    restore_type: restoreType
+                  });
+                }
   ```
 
 
@@ -141,12 +98,12 @@ Add restore type selection to allow users to choose between:
 
 - Update `uploadAndRestore()` method to accept restore type:
   ```typescript
-            uploadAndRestore: async (file: File, restoreType: 'database' | 'all' = 'all') => {
-              const formData = new FormData();
-              formData.append('backup_file', file);
-              formData.append('restore_type', restoreType);
-              return apiClient.post('/platform/backups/upload-restore', formData, { headers: {} });
-            }
+                uploadAndRestore: async (file: File, restoreType: 'database' | 'all' = 'all') => {
+                  const formData = new FormData();
+                  formData.append('backup_file', file);
+                  formData.append('restore_type', restoreType);
+                  return apiClient.post('/platform/backups/upload-restore', formData, { headers: {} });
+                }
   ```
 
 
@@ -195,8 +152,5 @@ flowchart TD
     J --> K
     F --> L[Close Dialog]
     K --> L
+
 ```
-
-
-
-## Benefits

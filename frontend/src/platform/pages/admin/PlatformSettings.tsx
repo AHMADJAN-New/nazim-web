@@ -57,6 +57,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingSpinner } from '@/components/ui/loading';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -113,7 +120,9 @@ export default function PlatformSettings() {
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [deletingBackupFilename, setDeletingBackupFilename] = useState<string | null>(null);
   const [restoringBackupFilename, setRestoringBackupFilename] = useState<string | null>(null);
+  const [restoreType, setRestoreType] = useState<'database' | 'all'>('all');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadRestoreType, setUploadRestoreType] = useState<'database' | 'all'>('all');
   const [maintenanceMessage, setMaintenanceMessage] = useState<string>('');
   const [scheduledEndAt, setScheduledEndAt] = useState<string>('');
   const [affectedServices, setAffectedServices] = useState<string>('');
@@ -311,27 +320,30 @@ export default function PlatformSettings() {
   };
 
   const restoreBackup = useMutation({
-    mutationFn: async (filename: string) => {
-      return await platformApi.backups.restore(filename);
+    mutationFn: async ({ filename, restoreType }: { filename: string; restoreType: 'database' | 'all' }) => {
+      return await platformApi.backups.restore(filename, restoreType);
     },
     onSuccess: () => {
       showToast.success('Backup restored successfully. Please refresh the page.');
       setRestoringBackupFilename(null);
+      setRestoreType('all');
       queryClient.invalidateQueries({ queryKey: ['platform-backups'] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'Failed to restore backup');
       setRestoringBackupFilename(null);
+      setRestoreType('all');
     },
   });
 
   const uploadAndRestore = useMutation({
-    mutationFn: async (file: File) => {
-      return await platformApi.backups.uploadAndRestore(file);
+    mutationFn: async ({ file, restoreType }: { file: File; restoreType: 'database' | 'all' }) => {
+      return await platformApi.backups.uploadAndRestore(file, restoreType);
     },
     onSuccess: () => {
       showToast.success('Backup uploaded and restored successfully. Please refresh the page.');
       setUploadedFile(null);
+      setUploadRestoreType('all');
       queryClient.invalidateQueries({ queryKey: ['platform-backups'] });
     },
     onError: (error: Error) => {
@@ -1018,6 +1030,26 @@ export default function PlatformSettings() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Upload and Restore Backup</h3>
                 <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="upload-restore-type">{t('platform.restoreType.label')}</Label>
+                    <Select
+                      value={uploadRestoreType}
+                      onValueChange={(value: 'database' | 'all') => setUploadRestoreType(value)}
+                    >
+                      <SelectTrigger id="upload-restore-type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('platform.restoreType.databaseAndFiles')}</SelectItem>
+                        <SelectItem value="database">{t('platform.restoreType.databaseOnly')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm text-muted-foreground">
+                      {uploadRestoreType === 'all'
+                        ? t('platform.restoreType.databaseAndFilesDescription')
+                        : t('platform.restoreType.databaseOnlyDescription')}
+                    </p>
+                  </div>
                   <div className="flex items-center gap-3">
                     <Input
                       type="file"
@@ -1029,7 +1061,7 @@ export default function PlatformSettings() {
                     <Button
                       onClick={() => {
                         if (uploadedFile) {
-                          uploadAndRestore.mutate(uploadedFile);
+                          uploadAndRestore.mutate({ file: uploadedFile, restoreType: uploadRestoreType });
                         } else {
                           showToast.error('Please select a backup file first');
                         }
@@ -1256,19 +1288,44 @@ export default function PlatformSettings() {
       </AlertDialog>
 
       {/* Restore Backup Confirmation Dialog */}
-      <AlertDialog open={!!restoringBackupFilename} onOpenChange={(open) => !open && setRestoringBackupFilename(null)}>
+      <AlertDialog
+        open={!!restoringBackupFilename}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRestoringBackupFilename(null);
+            setRestoreType('all');
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-yellow-500" />
               Restore Backup - Warning
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
+            <AlertDialogDescription className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="restore-type">{t('platform.restoreType.label')}</Label>
+                <Select
+                  value={restoreType}
+                  onValueChange={(value: 'database' | 'all') => setRestoreType(value)}
+                >
+                  <SelectTrigger id="restore-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('platform.restoreType.databaseAndFiles')}</SelectItem>
+                    <SelectItem value="database">{t('platform.restoreType.databaseOnly')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  {restoreType === 'all'
+                    ? t('platform.restoreType.databaseAndFilesDescription')
+                    : t('platform.restoreType.databaseOnlyDescription')}
+                </p>
+              </div>
               <p className="font-semibold text-foreground">
                 Are you sure you want to restore this backup?
-              </p>
-              <p>
-                This will replace <span className="font-semibold">ALL current data</span> in your database and storage with the data from this backup.
               </p>
               <p className="text-yellow-600 dark:text-yellow-400 font-medium">
                 This action is irreversible and cannot be undone!
@@ -1283,7 +1340,7 @@ export default function PlatformSettings() {
             <AlertDialogAction
               onClick={() => {
                 if (restoringBackupFilename) {
-                  restoreBackup.mutate(restoringBackupFilename);
+                  restoreBackup.mutate({ filename: restoringBackupFilename, restoreType });
                 }
               }}
               className="bg-yellow-600 text-white hover:bg-yellow-700"

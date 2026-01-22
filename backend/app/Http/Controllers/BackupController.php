@@ -268,7 +268,15 @@ class BackupController extends Controller
                 ], 404);
             }
 
-            $this->performRestore($backupPath);
+            // Get restore type from request (default: 'all' for backward compatibility)
+            $restoreType = $request->input('restore_type', 'all');
+            // Validate restore type - only allow 'database' or 'all'
+            if (!in_array($restoreType, ['database', 'all'], true)) {
+                $restoreType = 'all'; // Default to 'all' for invalid values
+            }
+            $restoreStorage = $restoreType !== 'database';
+
+            $this->performRestore($backupPath, $restoreStorage);
 
             return response()->json([
                 'success' => true,
@@ -322,8 +330,16 @@ class BackupController extends Controller
             // Move uploaded file to backups directory
             $file->move(storage_path('app/backups'), $filename);
 
+            // Get restore type from request (default: 'all' for backward compatibility)
+            $restoreType = $request->input('restore_type', 'all');
+            // Validate restore type - only allow 'database' or 'all'
+            if (!in_array($restoreType, ['database', 'all'], true)) {
+                $restoreType = 'all'; // Default to 'all' for invalid values
+            }
+            $restoreStorage = $restoreType !== 'database';
+
             // Perform restore
-            $this->performRestore($backupPath);
+            $this->performRestore($backupPath, $restoreStorage);
 
             return response()->json([
                 'success' => true,
@@ -344,7 +360,7 @@ class BackupController extends Controller
     /**
      * Perform the actual restore operation
      */
-    private function performRestore(string $backupPath): void
+    private function performRestore(string $backupPath, bool $restoreStorage = true): void
     {
         $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
         $extractDir = storage_path('app/restore_temp/' . $timestamp);
@@ -385,7 +401,8 @@ class BackupController extends Controller
             $zip->extractTo($extractDir);
             $zip->close();
 
-            // Restore database - check for .sql file, .tar file, .dump file, or custom format directory
+            // Restore database - check for .sql file (preferred, most compatible), .tar file, .dump file, or custom format directory
+            // Plain SQL format (.sql) is preferred for maximum compatibility across PostgreSQL versions
             // Normalize paths for cross-platform compatibility
             $dbFile = $extractDir . DIRECTORY_SEPARATOR . 'database.sql';
             $dbTarFile = $extractDir . DIRECTORY_SEPARATOR . 'database.tar';
@@ -437,40 +454,44 @@ class BackupController extends Controller
                 );
             }
 
-            // Restore storage - handle multiple possible structures
-            $storageDir = null;
-            
-            // Try standard structure: storage/app
-            $storageDir1 = $extractDir . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'app';
-            $storageDir1 = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $storageDir1);
-            
-            // Try alternative structure: app (directly in extract dir)
-            $storageDir2 = $extractDir . DIRECTORY_SEPARATOR . 'app';
-            $storageDir2 = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $storageDir2);
-            
-            // Try another alternative: storage (if app is inside)
-            $storageDir3 = $extractDir . DIRECTORY_SEPARATOR . 'storage';
-            $storageDir3 = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $storageDir3);
-            
-            if (File::exists($storageDir1) && is_dir($storageDir1)) {
-                $storageDir = $storageDir1;
-            } elseif (File::exists($storageDir2) && is_dir($storageDir2)) {
-                $storageDir = $storageDir2;
-            } elseif (File::exists($storageDir3) && is_dir($storageDir3)) {
-                // Check if app directory exists inside storage
-                $appInsideStorage = $storageDir3 . DIRECTORY_SEPARATOR . 'app';
-                if (File::exists($appInsideStorage) && is_dir($appInsideStorage)) {
-                    $storageDir = $appInsideStorage;
-                } else {
-                    // Use storage directory directly if it contains files
-                    $storageDir = $storageDir3;
+            // Restore storage - only if restoreStorage is true
+            if ($restoreStorage) {
+                $storageDir = null;
+                
+                // Try standard structure: storage/app
+                $storageDir1 = $extractDir . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'app';
+                $storageDir1 = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $storageDir1);
+                
+                // Try alternative structure: app (directly in extract dir)
+                $storageDir2 = $extractDir . DIRECTORY_SEPARATOR . 'app';
+                $storageDir2 = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $storageDir2);
+                
+                // Try another alternative: storage (if app is inside)
+                $storageDir3 = $extractDir . DIRECTORY_SEPARATOR . 'storage';
+                $storageDir3 = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $storageDir3);
+                
+                if (File::exists($storageDir1) && is_dir($storageDir1)) {
+                    $storageDir = $storageDir1;
+                } elseif (File::exists($storageDir2) && is_dir($storageDir2)) {
+                    $storageDir = $storageDir2;
+                } elseif (File::exists($storageDir3) && is_dir($storageDir3)) {
+                    // Check if app directory exists inside storage
+                    $appInsideStorage = $storageDir3 . DIRECTORY_SEPARATOR . 'app';
+                    if (File::exists($appInsideStorage) && is_dir($appInsideStorage)) {
+                        $storageDir = $appInsideStorage;
+                    } else {
+                        // Use storage directory directly if it contains files
+                        $storageDir = $storageDir3;
+                    }
                 }
-            }
-            
-            if ($storageDir && File::exists($storageDir)) {
-                $this->restoreStorage($storageDir);
+                
+                if ($storageDir && File::exists($storageDir)) {
+                    $this->restoreStorage($storageDir);
+                } else {
+                    \Log::info('Storage backup not found in archive, skipping storage restore. This is normal if the backup only contains database.');
+                }
             } else {
-                \Log::info('Storage backup not found in archive, skipping storage restore. This is normal if the backup only contains database.');
+                \Log::info('Storage restore skipped - database only restore requested.');
             }
 
             // Clean up temporary directory
@@ -486,7 +507,9 @@ class BackupController extends Controller
     }
 
     /**
-     * Restore database from SQL file or custom format dump
+     * Restore database from SQL file (plain format, preferred) or custom format dump (tar/dump)
+     * Plain SQL format (.sql) is restored using psql for maximum compatibility
+     * Custom formats (.tar, .dump) are restored using pg_restore
      */
     private function restoreDatabase(string $dbFile): void
     {
@@ -519,9 +542,16 @@ class BackupController extends Controller
         $dbUser = $dbConfig['username'];
         $dbPassword = $dbConfig['password'];
 
-        // Use psql for PostgreSQL SQL files, pg_restore for tar/custom format
+        // Initialize command variable for logging (will be set in all code paths)
+        $command = null;
+        $commandForLogging = null;
+        $pgRestoreVersion = null; // For version mismatch error messages
+
+        // Use psql for PostgreSQL plain SQL files (preferred, most compatible)
+        // Use pg_restore for tar/custom format files (for backward compatibility with old backups)
         if ($dbConnection === 'pgsql') {
             // Check if it's a tar/custom format (tar file, .dump file, or directory)
+            // Plain SQL files (.sql) are handled by psql for maximum compatibility
             $isCustomFormat = str_ends_with($normalizedDbFile, '.tar') || str_ends_with($normalizedDbFile, '.dump') || is_dir($normalizedDbFile);
             
             if ($isCustomFormat) {
@@ -539,6 +569,9 @@ class BackupController extends Controller
                     }
                     throw new \Exception($errorMessage);
                 }
+                
+                // Get pg_restore version for better error messages
+                $pgRestoreVersion = $this->getPgRestoreVersion($pgRestorePath);
                 
                 // Use pg_restore for custom format
                 // Add verbose flag to get more detailed error information
@@ -577,6 +610,15 @@ class BackupController extends Controller
                     // Execute batch file
                     $normalizedBatchFile = str_replace('/', '\\', $batchFile);
                     $command = 'cmd /c "' . $normalizedBatchFile . '"';
+                    $commandForLogging = sprintf(
+                        '%s -h %s -p %s -U %s -d %s --clean --if-exists --no-owner -v %s',
+                        $pgRestorePath,
+                        $dbHost,
+                        $dbPort,
+                        $dbUser,
+                        $dbName,
+                        $normalizedDbFile
+                    );
                     
                     $output = [];
                     $returnVar = 0;
@@ -633,7 +675,7 @@ class BackupController extends Controller
                         }
                     };
                 } else {
-                    // On Unix-like systems, use Process::fromArray()
+                    // On Unix-like systems, use Process constructor with command array
                     // --no-owner: ignore ownership issues (don't try to set ownership to roles that don't exist)
                     $commandArray = [
                         $pgRestorePath,
@@ -648,8 +690,10 @@ class BackupController extends Controller
                         $normalizedDbFile
                     ];
                     
-                    $process = Process::fromArray($commandArray);
-                    $process->setEnv(['PGPASSWORD' => $dbPassword]);
+                    // Build command string for logging
+                    $commandForLogging = implode(' ', array_map('escapeshellarg', $commandArray));
+                    
+                    $process = new Process($commandArray, null, ['PGPASSWORD' => $dbPassword]);
                     $process->setTimeout(600);
                 }
             } else {
@@ -678,6 +722,7 @@ class BackupController extends Controller
                     escapeshellarg($dbName),
                     escapeshellarg($normalizedDbFile)
                 );
+                $commandForLogging = $command;
                 
                 $process = Process::fromShellCommandline($command);
                 $process->setEnv(['PGPASSWORD' => $dbPassword]);
@@ -694,6 +739,7 @@ class BackupController extends Controller
                 escapeshellarg($dbName),
                 escapeshellarg($normalizedDbFile)
             );
+            $commandForLogging = $command;
             
             $process = Process::fromShellCommandline($command);
         } else {
@@ -738,7 +784,7 @@ class BackupController extends Controller
             
             // Log the full error for debugging
             \Log::error('Database restore command failed', [
-                'command' => $command,
+                'command' => $commandForLogging ?? $command ?? 'N/A',
                 'exit_code' => $exitCode,
                 'error_output' => $errorOutput,
                 'output' => $output,
@@ -779,7 +825,37 @@ class BackupController extends Controller
             }
             
             // Add common error explanations
-            if (str_contains($fullError, 'password authentication failed') || str_contains($fullError, 'authentication failed')) {
+            if (str_contains($fullError, 'unsupported version') || (str_contains($fullError, 'version') && str_contains($fullError, 'in file header'))) {
+                $errorMessage .= "\n\nThe backup file was created with a newer version of PostgreSQL.";
+                // Extract version number from error message (e.g., "unsupported version (1.16)")
+                if (preg_match('/version\s*\((\d+\.\d+)\)/', $fullError, $matches)) {
+                    $backupFormatVersion = $matches[1];
+                    $errorMessage .= " The backup uses format version {$backupFormatVersion}.";
+                } elseif (preg_match('/version\s+(\d+\.\d+)/', $fullError, $matches)) {
+                    $backupFormatVersion = $matches[1];
+                    $errorMessage .= " The backup uses format version {$backupFormatVersion}.";
+                }
+                $errorMessage .= "\n\nFormat version 1.16 requires PostgreSQL 17.6+ or pg_restore 17.6+.";
+                
+                // Add detected pg_restore version if available
+                if (isset($pgRestoreVersion) && $pgRestoreVersion) {
+                    $errorMessage .= "\n\nDetected pg_restore version: {$pgRestoreVersion}";
+                    // Try to extract version number
+                    if (preg_match('/(\d+)\.(\d+)/', $pgRestoreVersion, $versionMatches)) {
+                        $majorVersion = (int)$versionMatches[1];
+                        $minorVersion = (int)$versionMatches[2];
+                        if ($majorVersion < 17 || ($majorVersion === 17 && $minorVersion < 6)) {
+                            $errorMessage .= " (This version is too old. You need PostgreSQL 17.6 or higher.)";
+                        }
+                    }
+                }
+                
+                $errorMessage .= "\n\nSolutions:";
+                $errorMessage .= "\n1. Upgrade your PostgreSQL client tools to version 17.6 or higher";
+                $errorMessage .= "\n2. Or recreate the backup using an older pg_dump version that's compatible with your pg_restore";
+                $errorMessage .= "\n3. Or use a PostgreSQL 17.6+ server for restoration";
+                $errorMessage .= "\n4. Consider using plain SQL format (--format=plain) instead of tar format for better compatibility";
+            } elseif (str_contains($fullError, 'password authentication failed') || str_contains($fullError, 'authentication failed')) {
                 $errorMessage .= ' Please check your database credentials.';
             } elseif (str_contains($fullError, 'could not connect') || str_contains($fullError, 'connection refused')) {
                 $errorMessage .= ' Please check your database connection settings (host, port).';
@@ -1084,6 +1160,23 @@ class BackupController extends Controller
     }
 
     /**
+     * Get pg_restore version string
+     */
+    private function getPgRestoreVersion(string $pgRestorePath): ?string
+    {
+        try {
+            $process = Process::fromShellCommandline(sprintf('%s --version', escapeshellarg($pgRestorePath)));
+            $process->setTimeout(10);
+            $process->run();
+            $output = trim($process->getOutput());
+            return $output !== '' ? $output : null;
+        } catch (\Exception $e) {
+            \Log::warning('Failed to read pg_restore version: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Backup database using pg_dump
      */
     private function backupDatabase(string $backupDir): string
@@ -1099,8 +1192,9 @@ class BackupController extends Controller
         $dbUser = env('DB_USERNAME', $dbConfig['username'] ?? '');
         $dbPassword = env('DB_PASSWORD', $dbConfig['password'] ?? '');
 
-        // Use tar format from the start - it doesn't require restrict keys
-        $backupFile = $backupDir . DIRECTORY_SEPARATOR . 'database.tar';
+        // Use plain SQL format for better compatibility across PostgreSQL versions
+        // Plain SQL format works with any PostgreSQL version and doesn't have version compatibility issues
+        $backupFile = $backupDir . DIRECTORY_SEPARATOR . 'database.sql';
 
         // Use pg_dump for PostgreSQL
         if ($dbConnection === 'pgsql') {
@@ -1135,8 +1229,9 @@ class BackupController extends Controller
                 $escapedBackupFile = str_replace(['\\', '"'], ['\\\\', '\\"'], $normalizedBackupFile);
                 // Redirect stderr to stdout (2>&1) to capture all output
                 // Note: Don't use escapeshellarg() for paths in batch files - it adds extra quotes
+                // Use plain SQL format (-F p) for better compatibility across PostgreSQL versions
                 $batchContent = sprintf(
-                    "@echo off\nset PGPASSWORD=%s\n\"%s\" -h %s -p %s -U %s -d %s -F t -f \"%s\" 2>&1\n",
+                    "@echo off\nset PGPASSWORD=%s\n\"%s\" -h %s -p %s -U %s -d %s -F p -f \"%s\" 2>&1\n",
                     $escapedPassword,
                     $pgDumpPath,
                     escapeshellarg($dbHost),
@@ -1217,69 +1312,25 @@ class BackupController extends Controller
                 };
             } else {
                 // On Unix-like systems, use Process constructor with command array
+                // Use plain SQL format (-F p) for better compatibility across PostgreSQL versions
                 $commandArray = [
                     $pgDumpPath,
                     '-h', $dbHost,
                     '-p', $dbPort,
                     '-U', $dbUser,
                     '-d', $dbName,
-                    '-F', 't',
+                    '-F', 'p',  // Plain SQL format for maximum compatibility
                     '-f', $backupFile
                 ];
                 
                 $process = new Process($commandArray, null, ['PGPASSWORD' => $dbPassword]);
                 $process->setTimeout(300); // 5 minutes timeout
-            }
-            
-            // Run the process with real-time output capture (for Unix-like systems)
-            if (PHP_OS_FAMILY !== 'Windows') {
                 $process->run();
             }
 
             // Clean up temporary batch file on Windows
             if (PHP_OS_FAMILY === 'Windows' && isset($batchFile) && file_exists($batchFile)) {
                 @unlink($batchFile);
-            }
-
-            // If command failed with restrict key error, try with --restrict-key flag (PostgreSQL 17.6+)
-            // The restrict key feature requires an explicit key when auto-generation fails
-            if (!$process->isSuccessful()) {
-                $errorOutput = $process->getErrorOutput();
-                $output = $process->getOutput();
-                // Check both error output and standard output for restrict key errors
-                $fullErrorText = trim($errorOutput) . "\n" . trim($output);
-                $hasRestrictKeyError = str_contains($errorOutput, 'could not generate restrict key') ||
-                                      str_contains($errorOutput, 'restrict key') ||
-                                      str_contains($output, 'could not generate restrict key') ||
-                                      str_contains($output, 'restrict key');
-                
-                if ($hasRestrictKeyError) {
-                    // Try using tar format instead of plain text
-                    // Tar format doesn't require restrict keys and creates a single file (easier to handle)
-                    $tarBackupFile = str_replace('.sql', '.tar', $backupFile);
-                    
-                    // Use tar format (F t) - single file format that doesn't require restrict keys
-                    // Add verbose flag to get more detailed error information
-                    $command = sprintf(
-                        '%s -h %s -p %s -U %s -d %s -F t -v -f %s',
-                        escapeshellarg($pgDumpPath),
-                        escapeshellarg($dbHost),
-                        escapeshellarg($dbPort),
-                        escapeshellarg($dbUser),
-                        escapeshellarg($dbName),
-                        escapeshellarg($tarBackupFile)
-                    );
-                    
-                    $process = Process::fromShellCommandline($command);
-                    $process->setEnv(['PGPASSWORD' => $dbPassword]);
-                    $process->setTimeout(300);
-                    $process->run();
-                    
-                    // If tar format succeeded, update backupFile path
-                    if ($process->isSuccessful() && file_exists($tarBackupFile)) {
-                        $backupFile = $tarBackupFile;
-                    }
-                }
             }
         } elseif ($dbConnection === 'mysql') {
             // Find mysqldump executable
@@ -1333,21 +1384,7 @@ class BackupController extends Controller
             }
             
             // Add more context for common errors
-            if (str_contains($fullError, 'could not generate restrict key')) {
-                $errorMessage .= ' This error is related to PostgreSQL 17.6+ restrict key feature. ';
-                $errorMessage .= 'Please ensure you are using a compatible version of pg_dump.';
-                if (isset($pgDumpPath) && isset($pgDumpVersion)) {
-                    $errorMessage .= " Detected pg_dump: {$pgDumpPath}";
-                    if ($pgDumpVersion) {
-                        $errorMessage .= " ({$pgDumpVersion})";
-                    }
-                    $errorMessage .= '.';
-                }
-                $errorMessage .= ' You can set PG_DUMP_PATH in .env to point to a newer pg_dump.';
-            } elseif (str_contains($errorOutput, 'illegal option') && str_contains($errorOutput, '--restrict-key')) {
-                $errorMessage .= ' The installed pg_dump does not support the --restrict-key option. ';
-                $errorMessage .= 'Please update pg_dump to version 17.6 or higher.';
-            } elseif (str_contains($errorOutput, 'password authentication failed')) {
+            if (str_contains($errorOutput, 'password authentication failed')) {
                 $errorMessage .= ' Please check your database credentials.';
             } elseif (str_contains($errorOutput, 'could not connect')) {
                 $errorMessage .= ' Please check your database connection settings.';

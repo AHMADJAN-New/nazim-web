@@ -6733,5 +6733,14 @@ export const ps: TranslationKeys = {
   classes: {
     noClasses: 'هیڅ ټولګي نشته',
     viewAll: 'ټول کتل'
-  }
+  },
+  platform: {
+    restoreType: {
+      label: 'د بېرته راګرځولو ډول',
+      databaseOnly: 'یوازې ډیټابیس (اوسنۍ فایلونه وساتل)',
+      databaseAndFiles: 'ډیټابیس + فایلونه (بشپړ بېرته راګرځول)',
+      databaseOnlyDescription: 'دا به یوازې د ډیټابیس ډیټا بدل کړي. اوسنۍ ذخیره فایلونه به وساتل شي.',
+      databaseAndFilesDescription: 'دا به د بیک اپ څخه د ډیټابیس او ذخیره کولو ټول اوسنۍ ډیټا بدل کړي.',
+    },
+  },
 };

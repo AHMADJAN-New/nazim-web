@@ -6741,5 +6741,14 @@ export const fa: TranslationKeys = {
     ' Please check the file format': {
       '': ''
     }
-  }
+  },
+  platform: {
+    restoreType: {
+      label: 'نوع بازیابی',
+      databaseOnly: 'فقط پایگاه داده (حفظ فایل‌های فعلی)',
+      databaseAndFiles: 'پایگاه داده + فایل‌ها (بازیابی کامل)',
+      databaseOnlyDescription: 'این فقط داده‌های پایگاه داده را جایگزین می‌کند. فایل‌های ذخیره‌سازی فعلی حفظ خواهند شد.',
+      databaseAndFilesDescription: 'این تمام داده‌های فعلی در پایگاه داده و ذخیره‌سازی شما را با داده‌های این بکاپ جایگزین می‌کند.',
+    },
+  },
 };
