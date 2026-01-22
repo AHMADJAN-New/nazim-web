@@ -1256,7 +1256,7 @@ export function StaffList() {
                                                         <Label htmlFor="salary">{t('staff.salary')}</Label>
                                                         <Input id="salary" {...register('salary')} />
                                                     </div>
-                                                    <div className="grid gap-2 col-span-2">
+                                                    <div className="grid gap-2 md:col-span-2">
                                                         <Label htmlFor="notes">{t('events.notes')}</Label>
                                                         <Textarea id="notes" {...register('notes')} rows={3} placeholder={t('staff.notesPlaceholder')} />
                                                     </div>
@@ -1505,7 +1505,7 @@ export function StaffList() {
                                                 <CardDescription>{t('staff.basicInformationDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="edit_employee_id">{t('staff.employeeCode')} *</Label>
                                                         <Input id="edit_employee_id" {...register('employee_id')} placeholder={t('staff.employeeCodePlaceholder')} />
@@ -1584,7 +1584,7 @@ export function StaffList() {
                                                 <CardDescription>{t('staff.personalDetailsDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
-                                                <div className="grid grid-cols-3 gap-4">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="edit_first_name">{t('events.firstName')} *</Label>
                                                         <Input id="edit_first_name" {...register('first_name')} />
@@ -1639,7 +1639,7 @@ export function StaffList() {
                                                 <CardDescription>{t('staff.contactLocationDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="edit_email">{t('events.email')}</Label>
                                                         <Input id="edit_email" type="email" {...register('email')} />
@@ -1649,15 +1649,15 @@ export function StaffList() {
                                                         <Label htmlFor="edit_phone_number">{t('staff.phoneNumber')}</Label>
                                                         <Input id="edit_phone_number" {...register('phone_number')} />
                                                     </div>
-                                                    <div className="grid gap-2 col-span-2">
+                                                    <div className="grid gap-2 md:col-span-2">
                                                         <Label htmlFor="edit_home_address">{t('staff.homeAddress')}</Label>
                                                         <Input id="edit_home_address" {...register('home_address')} />
                                                     </div>
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                                                     <div>
                                                         <h4 className="font-medium mb-3">{t('staff.originLocation')}</h4>
-                                                        <div className="grid grid-cols-3 gap-2">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                             <div className="grid gap-2">
                                                                 <Label htmlFor="edit_origin_province">{t('staff.province')}</Label>
                                                                 <Input id="edit_origin_province" {...register('origin_province')} />
@@ -1674,7 +1674,7 @@ export function StaffList() {
                                                     </div>
                                                     <div>
                                                         <h4 className="font-medium mb-3">{t('staff.currentLocation')}</h4>
-                                                        <div className="grid grid-cols-3 gap-2">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                             <div className="grid gap-2">
                                                                 <Label htmlFor="edit_current_province">{t('staff.province')}</Label>
                                                                 <Input id="edit_current_province" {...register('current_province')} />
@@ -1709,7 +1709,7 @@ export function StaffList() {
                                             <CardContent className="space-y-6">
                                                 <div>
                                                     <h4 className="font-medium mb-3">{t('staff.religiousEducationSection')}</h4>
-                                                    <div className="grid grid-cols-2 gap-4">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div className="grid gap-2">
                                                             <Label htmlFor="edit_religious_education">{t('staff.educationLevel')}</Label>
                                                             <Input id="edit_religious_education" {...register('religious_education')} />
@@ -1730,7 +1730,7 @@ export function StaffList() {
                                                 </div>
                                                 <div className="pt-4 border-t">
                                                     <h4 className="font-medium mb-3">{t('staff.modernEducationSection')}</h4>
-                                                    <div className="grid grid-cols-2 gap-4">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div className="grid gap-2">
                                                             <Label htmlFor="edit_modern_education">{t('staff.educationLevel')}</Label>
                                                             <Input id="edit_modern_education" {...register('modern_education')} />
@@ -1766,7 +1766,7 @@ export function StaffList() {
                                                 <CardDescription>{t('staff.employmentDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="edit_position">{t('search.position')}</Label>
                                                         <Input id="edit_position" {...register('position')} />
@@ -1783,7 +1783,7 @@ export function StaffList() {
                                                         <Label htmlFor="edit_salary">{t('staff.salary')}</Label>
                                                         <Input id="edit_salary" {...register('salary')} />
                                                     </div>
-                                                    <div className="grid gap-2 col-span-2">
+                                                    <div className="grid gap-2 md:col-span-2">
                                                         <Label htmlFor="edit_notes">{t('events.notes')}</Label>
                                                         <Textarea id="edit_notes" {...register('notes')} rows={3} placeholder={t('staff.notesPlaceholder')} />
                                                     </div>

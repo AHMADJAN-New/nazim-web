@@ -149,7 +149,7 @@ export function ProfileManagement() {
                 {t('staff.profileSubtitle')}
               </CardDescription>
             </div>
-            <Button onClick={() => handleOpenDialog()} className="flex-shrink-0">
+            <Button onClick={() => handleOpenDialog()} className="flex-shrink-0 text-white">
               <Pencil className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">{t('profileManagement.editMyProfile')}</span>
               <span className="sm:hidden">{t('events.edit')}</span>
@@ -164,23 +164,29 @@ export function ProfileManagement() {
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold truncate">{currentProfile.full_name || t('profileManagement.noName')}</h3>
                   <p className="text-sm text-muted-foreground truncate">{currentProfile.email || t('profileManagement.noEmail')}</p>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                      {currentProfile.role}
-                    </span>
+                  <div className="flex flex-col gap-2 mt-2">
+                    <div className="flex flex-wrap gap-2">
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                        {currentProfile.role}
+                      </span>
+                      {!currentProfile.organization_id && (
+                        <span className="text-xs bg-destructive/10 text-destructive px-2 py-1 rounded">
+                          {t('profileManagement.superAdmin')}
+                        </span>
+                      )}
+                    </div>
                     {currentProfile.organization_id && (
-                      <span className="text-xs bg-secondary px-2 py-1 rounded">
+                      <Button 
+                        variant="default" 
+                        className="w-full sm:w-auto text-white text-sm h-8"
+                        disabled
+                      >
                         {organizations?.find(o => o.id === currentProfile.organization_id)?.name || t('profileManagement.unknownOrg')}
-                      </span>
-                    )}
-                    {!currentProfile.organization_id && (
-                      <span className="text-xs bg-destructive/10 text-destructive px-2 py-1 rounded">
-                        {t('profileManagement.superAdmin')}
-                      </span>
+                      </Button>
                     )}
                   </div>
                 </div>
-                <Button variant="outline" onClick={() => handleOpenDialog()} className="flex-shrink-0">
+                <Button onClick={() => handleOpenDialog()} className="flex-shrink-0 text-white">
                   <Pencil className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">{t('events.edit')}</span>
                 </Button>
