@@ -1,0 +1,73 @@
+# Prometheus Configuration
+# Scrapes metrics from exporters and stores them for Grafana
+
+global:
+  scrape_interval: 15s  # Scrape targets every 15 seconds
+  evaluation_interval: 15s  # Evaluate rules every 15 seconds
+  external_labels:
+    monitor: 'nazim-monitoring'
+    environment: 'production'
+
+# Alertmanager configuration (for future alerting)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: []
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "alerts.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          instance: 'prometheus'
+          service: 'monitoring'
+
+  # Node Exporter - System metrics (CPU, memory, disk, network)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          instance: 'nazim-server'
+          exporter: 'node-exporter'
+          service: 'system'
+
+  # cAdvisor - Docker container metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          instance: 'nazim-server'
+          exporter: 'cadvisor'
+          service: 'docker'
+
+  # Docker containers (via cAdvisor) - all containers
+  - job_name: 'docker-containers'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    metrics_path: '/metrics'
+    metric_relabel_configs:
+      # Transform systemd cgroup IDs to Docker container format
+      # Extract container ID from: /system.slice/docker-{id}.scope
+      - source_labels: [id]
+        regex: '/system.slice/docker-(.+)\.scope'
+        target_label: container_id
+        replacement: '${1}'
+      # Create 'name' label from container_id (for dashboard compatibility)
+      - source_labels: [container_id]
+        target_label: name
+        replacement: '${1}'
+      # Keep only container metrics (filter out system metrics)
+      - source_labels: [__name__]
+        regex: 'container_network.*|container_cpu.*|container_memory.*|container_fs.*|container_spec.*|container_last_seen'
+        action: keep
+      # Filter for Docker containers only (exclude system.slice without docker-)
+      - source_labels: [id]
+        regex: '/system.slice/docker-.*'
+        action: keep
+

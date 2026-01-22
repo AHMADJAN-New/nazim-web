@@ -40,6 +40,7 @@ server {
     location = /api { return 301 /api/; }
 
     location ^~ /api/ {
+        access_log /var/log/nginx/api_access.log;
         include fastcgi_params;
         fastcgi_pass php:9000;
         fastcgi_param SCRIPT_FILENAME /var/www/backend/public/index.php;

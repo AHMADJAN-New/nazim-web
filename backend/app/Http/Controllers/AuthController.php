@@ -40,27 +40,22 @@ class AuthController extends Controller
         ]);
 
         // Find user in users table (public schema)
-        try {
-            $authUser = DB::table('users')
-                ->where('email', $request->email)
-                ->first();
+        // CRITICAL: Use case-insensitive email lookup
+        // Email addresses should be case-insensitive per RFC 5321
+        $authUser = DB::table('users')
+            ->whereRaw('LOWER(email) = LOWER(?)', [$request->email])
+            ->first();
 
-            if (!$authUser) {
-                throw ValidationException::withMessages([
-                    'email' => ['The provided credentials are incorrect.'],
-                ]);
-            }
-
-            // Check password
-            if (!Hash::check($request->password, $authUser->encrypted_password)) {
-                throw ValidationException::withMessages([
-                    'email' => ['The provided credentials are incorrect.'],
-                ]);
-            }
-        } catch (\Exception $e) {
-            \Log::error('Auth login error: ' . $e->getMessage());
+        if (!$authUser) {
             throw ValidationException::withMessages([
-                'email' => ['Authentication failed. Please contact administrator.'],
+                'email' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        // Check password
+        if (!Hash::check($request->password, $authUser->encrypted_password)) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 

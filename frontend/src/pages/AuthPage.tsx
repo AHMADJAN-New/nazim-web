@@ -128,9 +128,30 @@ export default function AuthPage() {
         localStorage.removeItem('platform_admin_token_backup');
       }
       
-      const errorMessage = error.message || t('auth.signInFailed') || 'Failed to sign in. Please check your credentials and try again.';
+      // Extract error message from error object
+      let errorMessage = error.message || '';
+      
+      // Check if error has errors object (from ValidationException)
+      if (error.errors && typeof error.errors === 'object') {
+        const errorKeys = Object.keys(error.errors);
+        if (errorKeys.length > 0) {
+          const firstFieldErrors = error.errors[errorKeys[0]];
+          if (Array.isArray(firstFieldErrors) && firstFieldErrors.length > 0) {
+            errorMessage = firstFieldErrors[0];
+          } else if (typeof firstFieldErrors === 'string') {
+            errorMessage = firstFieldErrors;
+          }
+        }
+      }
+      
+      // Fallback to generic message if no specific message found
+      if (!errorMessage) {
+        errorMessage = t('auth.signInFailed') || 'Failed to sign in. Please check your credentials and try again.';
+      }
 
-      if (errorMessage.includes('credentials') || errorMessage.includes('Invalid')) {
+      // Check if error is related to credentials (case-insensitive)
+      const errorMessageLower = errorMessage.toLowerCase();
+      if (errorMessageLower.includes('credentials') || errorMessageLower.includes('invalid') || errorMessageLower.includes('incorrect')) {
         toast.error(t('toast.invalidCredentials') || 'Invalid email or password. Please check your credentials and try again.');
       } else {
         toast.error(errorMessage);

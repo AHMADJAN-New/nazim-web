@@ -2,13 +2,25 @@ FROM php:8.3-fpm
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# System deps (PHP extensions, image/PDF tooling, Chromium for Browsershot)
+# Install prerequisites for PostgreSQL repository setup
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
+    lsb-release \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add PostgreSQL official APT repository for PostgreSQL 18 client tools
+RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+
+# System deps (PHP extensions, image/PDF tooling, Chromium for Browsershot)
+# CRITICAL: Install postgresql-client-18 to match PostgreSQL 18 server version
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     unzip \
     libpq-dev \
+    postgresql-client-18 \
     libzip-dev \
     libonig-dev \
     libicu-dev \
@@ -65,6 +77,10 @@ RUN mkdir -p /var/www/backend/storage/framework/{cache,sessions,views} \
     /var/www/backend/storage/logs \
     /var/www/backend/storage/app/private \
     /var/www/backend/storage/app/public \
+    /var/www/backend/storage/app/backups \
+    /var/www/backend/storage/app/restore_temp \
+    /var/www/backend/storage/app/temp \
+    /var/www/backend/storage/app/tmp \
     /var/www/backend/bootstrap/cache \
     && chown -R www-data:www-data /var/www/backend/storage /var/www/backend/bootstrap/cache \
     && chmod -R 775 /var/www/backend/storage /var/www/backend/bootstrap/cache

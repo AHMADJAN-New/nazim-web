@@ -26,6 +26,9 @@ git -C "${ROOT_DIR}" pull --ff-only
 echo "[update] Building images..."
 compose build
 
+echo "[update] Cleaning up old/dangling images..."
+docker image prune -f || echo "[update] Warning: Failed to clean up images (non-critical)"
+
 echo "[update] Restarting services..."
 compose up -d
 

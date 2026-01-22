@@ -20,8 +20,18 @@ class DocumentPdfService
             $directoryPath = dirname($fullPath);
             
             if (!is_dir($directoryPath)) {
-                if (!mkdir($directoryPath, 0755, true)) {
-                    throw new \RuntimeException("Failed to create directory: {$directoryPath}");
+                try {
+                    if (!mkdir($directoryPath, 0775, true)) {
+                        throw new \RuntimeException("Failed to create directory: {$directoryPath}");
+                    }
+                    // Ensure www-data owns the directory (important for Docker)
+                    if (function_exists('chown') && function_exists('posix_geteuid') && posix_geteuid() === 0) {
+                        @chown($directoryPath, 'www-data');
+                        @chgrp($directoryPath, 'www-data');
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to create directory: ' . $e->getMessage());
+                    throw new \RuntimeException("Failed to create directory: {$directoryPath}. Please ensure the directory is writable.");
                 }
             }
 
