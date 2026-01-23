@@ -711,21 +711,117 @@ class BackupController extends Controller
                     }
                     throw new \Exception($errorMessage);
                 }
-                
-                // Use environment variable via Process::setEnv() for cross-platform compatibility
-                $command = sprintf(
-                    '%s -h %s -p %s -U %s -d %s -f %s',
-                    escapeshellarg($psqlPath),
-                    escapeshellarg($dbHost),
-                    escapeshellarg($dbPort),
-                    escapeshellarg($dbUser),
-                    escapeshellarg($dbName),
-                    escapeshellarg($normalizedDbFile)
-                );
-                $commandForLogging = $command;
-                
-                $process = Process::fromShellCommandline($command);
-                $process->setEnv(['PGPASSWORD' => $dbPassword]);
+
+                // NOTE (Windows): Symfony Process output capture is unreliable for psql in some setups.
+                // We use the same batch-file + exec(2>&1) approach as pg_restore to reliably capture errors.
+                // Also enable ON_ERROR_STOP so psql exits on the first SQL error with a clear message.
+                if (PHP_OS_FAMILY === 'Windows') {
+                    $tempDir = str_replace('/', '\\', sys_get_temp_dir());
+                    $batchFile = $tempDir . '\\psql_restore_' . uniqid() . '.bat';
+
+                    // Escape password for batch file (do NOT log the password)
+                    $escapedPassword = str_replace(['"', '%', '!', '^', '&'], ['""', '%%', '!!', '^^', '^&'], $dbPassword);
+
+                    // Normalize paths for Windows
+                    $normalizedPsqlPath = str_replace('/', '\\', $psqlPath);
+                    $normalizedDbFileWin = str_replace('/', '\\', $normalizedDbFile);
+
+                    // Escape backslashes and quotes in paths for batch file
+                    $escapedPsqlPath = str_replace(['\\', '"'], ['\\\\', '\\"'], $normalizedPsqlPath);
+                    $escapedDbFile = str_replace(['\\', '"'], ['\\\\', '\\"'], $normalizedDbFileWin);
+
+                    $batchContent = sprintf(
+                        "@echo off\nset PGPASSWORD=%s\n\"%s\" -h %s -p %s -U %s -d %s --set ON_ERROR_STOP=on --echo-errors -f \"%s\" 2>&1\n",
+                        $escapedPassword,
+                        $escapedPsqlPath,
+                        escapeshellarg($dbHost),
+                        escapeshellarg($dbPort),
+                        escapeshellarg($dbUser),
+                        escapeshellarg($dbName),
+                        $escapedDbFile
+                    );
+                    file_put_contents($batchFile, $batchContent);
+
+                    $normalizedBatchFile = str_replace('/', '\\', $batchFile);
+                    $command = 'cmd /c "' . $normalizedBatchFile . '"';
+                    $commandForLogging = sprintf(
+                        '"%s" -h "%s" -p "%s" -U "%s" -d "%s" --set ON_ERROR_STOP=on --echo-errors -f "%s"',
+                        $normalizedPsqlPath,
+                        $dbHost,
+                        $dbPort,
+                        $dbUser,
+                        $dbName,
+                        $normalizedDbFileWin
+                    );
+
+                    $output = [];
+                    $returnVar = 0;
+                    exec($command . ' 2>&1', $output, $returnVar);
+                    $combinedOutput = implode("\n", $output);
+
+                    if (file_exists($batchFile)) {
+                        @unlink($batchFile);
+                    }
+
+                    // Create a mock Process object for compatibility with the shared error handling below
+                    $process = new class($returnVar, $combinedOutput) {
+                        private int $exitCode;
+                        private string $output;
+                        private string $errorOutput;
+
+                        public function __construct(int $exitCode, string $output) {
+                            $this->exitCode = $exitCode;
+                            $this->output = $output;
+                            // On Windows with 2>&1, both stdout and stderr are in output
+                            $this->errorOutput = $output;
+                        }
+
+                        public function run($callback = null): void
+                        {
+                            // Already executed via exec(), so this is a no-op
+                        }
+
+                        public function isSuccessful(): bool
+                        {
+                            return $this->exitCode === 0;
+                        }
+
+                        public function getExitCode(): int
+                        {
+                            return $this->exitCode;
+                        }
+
+                        public function getOutput(): string
+                        {
+                            return $this->output;
+                        }
+
+                        public function getErrorOutput(): string
+                        {
+                            return $this->errorOutput;
+                        }
+
+                        public function setTimeout($timeout)
+                        {
+                            return $this;
+                        }
+                    };
+                } else {
+                    // Use environment variable via Process::setEnv() for cross-platform compatibility
+                    $command = sprintf(
+                        '%s -h %s -p %s -U %s -d %s --set ON_ERROR_STOP=on --echo-errors -f %s',
+                        escapeshellarg($psqlPath),
+                        escapeshellarg($dbHost),
+                        escapeshellarg($dbPort),
+                        escapeshellarg($dbUser),
+                        escapeshellarg($dbName),
+                        escapeshellarg($normalizedDbFile)
+                    );
+                    $commandForLogging = $command;
+
+                    $process = Process::fromShellCommandline($command);
+                    $process->setEnv(['PGPASSWORD' => $dbPassword]);
+                }
             }
         } elseif ($dbConnection === 'mysql') {
             // Use mysql for MySQL
@@ -1230,8 +1326,10 @@ class BackupController extends Controller
                 // Redirect stderr to stdout (2>&1) to capture all output
                 // Note: Don't use escapeshellarg() for paths in batch files - it adds extra quotes
                 // Use plain SQL format (-F p) for better compatibility across PostgreSQL versions
+                // IMPORTANT: include --clean --if-exists so restores can be applied on non-empty DBs.
+                // Also include --no-owner/--no-privileges to avoid role/permission issues on target systems.
                 $batchContent = sprintf(
-                    "@echo off\nset PGPASSWORD=%s\n\"%s\" -h %s -p %s -U %s -d %s -F p -f \"%s\" 2>&1\n",
+                    "@echo off\nset PGPASSWORD=%s\n\"%s\" -h %s -p %s -U %s -d %s --clean --if-exists --no-owner --no-privileges -F p -f \"%s\" 2>&1\n",
                     $escapedPassword,
                     $pgDumpPath,
                     escapeshellarg($dbHost),
@@ -1313,12 +1411,18 @@ class BackupController extends Controller
             } else {
                 // On Unix-like systems, use Process constructor with command array
                 // Use plain SQL format (-F p) for better compatibility across PostgreSQL versions
+                // IMPORTANT: include --clean --if-exists so restores can be applied on non-empty DBs.
+                // Also include --no-owner/--no-privileges to avoid role/permission issues on target systems.
                 $commandArray = [
                     $pgDumpPath,
                     '-h', $dbHost,
                     '-p', $dbPort,
                     '-U', $dbUser,
                     '-d', $dbName,
+                    '--clean',
+                    '--if-exists',
+                    '--no-owner',
+                    '--no-privileges',
                     '-F', 'p',  // Plain SQL format for maximum compatibility
                     '-f', $backupFile
                 ];
