@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\WebsiteSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class WebsiteSettingsController extends Controller
 {
+    private const PUBLIC_LANGUAGES = ['en', 'ps', 'fa', 'ar'];
+
     public function show(Request $request)
     {
         $user = $request->user();
@@ -38,6 +41,8 @@ class WebsiteSettingsController extends Controller
                 'is_public' => true,
             ]
         );
+
+        $this->clearPublicCaches($profile->organization_id, $schoolId);
 
         return response()->json($setting);
     }
@@ -70,6 +75,15 @@ class WebsiteSettingsController extends Controller
             $data
         );
 
+        $this->clearPublicCaches($profile->organization_id, $schoolId);
+
         return response()->json($setting);
+    }
+
+    private function clearPublicCaches(string $organizationId, string $schoolId): void
+    {
+        foreach (self::PUBLIC_LANGUAGES as $lang) {
+            Cache::forget("public-site:{$organizationId}:{$schoolId}:{$lang}");
+        }
     }
 }

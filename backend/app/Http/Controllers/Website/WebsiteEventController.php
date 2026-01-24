@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\WebsiteEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class WebsiteEventController extends Controller
 {
+    private const PUBLIC_LANGUAGES = ['en', 'ps', 'fa', 'ar'];
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -54,6 +57,8 @@ class WebsiteEventController extends Controller
             'school_id' => $schoolId,
         ]));
 
+        $this->clearPublicCaches($profile->organization_id, $schoolId);
+
         return response()->json($event, 201);
     }
 
@@ -86,6 +91,8 @@ class WebsiteEventController extends Controller
         $event->fill($data);
         $event->save();
 
+        $this->clearPublicCaches($profile->organization_id, $schoolId);
+
         return response()->json($event);
     }
 
@@ -107,6 +114,16 @@ class WebsiteEventController extends Controller
 
         $event->delete();
 
+        $this->clearPublicCaches($profile->organization_id, $schoolId);
+
         return response()->json(['status' => 'deleted']);
+    }
+
+    private function clearPublicCaches(string $organizationId, string $schoolId): void
+    {
+        foreach (self::PUBLIC_LANGUAGES as $lang) {
+            Cache::forget("public-site:{$organizationId}:{$schoolId}:{$lang}");
+        }
+        Cache::forget("public-events:{$organizationId}:{$schoolId}");
     }
 }

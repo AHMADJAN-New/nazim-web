@@ -104,4 +104,46 @@ class PublicWebsiteController extends Controller
             return response()->json($events);
         });
     }
+
+    public function sitemap(Request $request)
+    {
+        $schoolId = $request->attributes->get('school_id');
+        $host = $request->getSchemeAndHttpHost();
+
+        $pages = WebsitePage::where('school_id', $schoolId)
+            ->where('status', 'published')
+            ->get(['slug', 'updated_at']);
+
+        $posts = WebsitePost::where('school_id', $schoolId)
+            ->where('status', 'published')
+            ->get(['slug', 'updated_at']);
+
+        $urls = collect($pages)->map(fn ($page) => [
+            'loc' => "{$host}/pages/{$page->slug}",
+            'lastmod' => optional($page->updated_at)->toDateString(),
+        ])->merge(collect($posts)->map(fn ($post) => [
+            'loc' => "{$host}/announcements/{$post->slug}",
+            'lastmod' => optional($post->updated_at)->toDateString(),
+        ]));
+
+        $xmlEntries = $urls->map(function ($url) {
+            $lastmod = $url['lastmod'] ? "<lastmod>{$url['lastmod']}</lastmod>" : '';
+            return "<url><loc>{$url['loc']}</loc>{$lastmod}</url>";
+        })->implode('');
+
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'
+            . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            . $xmlEntries
+            . '</urlset>';
+
+        return response($xml, 200)->header('Content-Type', 'application/xml');
+    }
+
+    public function robots(Request $request)
+    {
+        $host = $request->getSchemeAndHttpHost();
+        $content = "User-agent: *\nAllow: /\nSitemap: {$host}/sitemap.xml\n";
+
+        return response($content, 200)->header('Content-Type', 'text/plain');
+    }
 }

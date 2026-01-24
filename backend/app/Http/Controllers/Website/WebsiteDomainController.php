@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\WebsiteDomain;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class WebsiteDomainController extends Controller
 {
+    private const PUBLIC_LANGUAGES = ['en', 'ps', 'fa', 'ar'];
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -51,6 +54,8 @@ class WebsiteDomainController extends Controller
             'school_id' => $schoolId,
         ]));
 
+        $this->clearPublicCaches($profile->organization_id, $schoolId);
+
         return response()->json($domain, 201);
     }
 
@@ -80,6 +85,8 @@ class WebsiteDomainController extends Controller
         $domain->fill($data);
         $domain->save();
 
+        $this->clearPublicCaches($profile->organization_id, $schoolId);
+
         return response()->json($domain);
     }
 
@@ -101,6 +108,15 @@ class WebsiteDomainController extends Controller
 
         $domain->delete();
 
+        $this->clearPublicCaches($profile->organization_id, $schoolId);
+
         return response()->json(['status' => 'deleted']);
+    }
+
+    private function clearPublicCaches(string $organizationId, string $schoolId): void
+    {
+        foreach (self::PUBLIC_LANGUAGES as $lang) {
+            Cache::forget("public-site:{$organizationId}:{$schoolId}:{$lang}");
+        }
     }
 }

@@ -41,6 +41,7 @@ Custom domains can be attached per school using **Website Manager → Domains**.
 ## Cache & performance
 - Public responses are cached server-side for 10 minutes per school.
 - Consider a CDN in front of `/api/public/website/*` for static caching.
+- Public SEO endpoints are available at `/api/public/website/sitemap.xml` and `/api/public/website/robots.txt`.
 
 ## Notes
 - Public website access is enabled only for **Complete** and **Enterprise** plans.

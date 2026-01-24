@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\WebsiteMenuLink;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class WebsiteMenuController extends Controller
 {
+    private const PUBLIC_LANGUAGES = ['en', 'ps', 'fa', 'ar'];
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -52,6 +55,8 @@ class WebsiteMenuController extends Controller
             'school_id' => $schoolId,
         ]));
 
+        $this->clearPublicCaches($profile->organization_id, $schoolId);
+
         return response()->json($link, 201);
     }
 
@@ -82,6 +87,8 @@ class WebsiteMenuController extends Controller
         $link->fill($data);
         $link->save();
 
+        $this->clearPublicCaches($profile->organization_id, $schoolId);
+
         return response()->json($link);
     }
 
@@ -103,6 +110,15 @@ class WebsiteMenuController extends Controller
 
         $link->delete();
 
+        $this->clearPublicCaches($profile->organization_id, $schoolId);
+
         return response()->json(['status' => 'deleted']);
+    }
+
+    private function clearPublicCaches(string $organizationId, string $schoolId): void
+    {
+        foreach (self::PUBLIC_LANGUAGES as $lang) {
+            Cache::forget("public-site:{$organizationId}:{$schoolId}:{$lang}");
+        }
     }
 }

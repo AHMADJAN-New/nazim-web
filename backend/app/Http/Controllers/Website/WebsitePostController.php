@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\WebsitePost;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class WebsitePostController extends Controller
 {
+    private const PUBLIC_LANGUAGES = ['en', 'ps', 'fa', 'ar'];
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -58,6 +61,8 @@ class WebsitePostController extends Controller
             'updated_by' => $user->id,
         ]));
 
+        $this->clearPublicCaches($profile->organization_id, $schoolId, $post->slug);
+
         return response()->json($post, 201);
     }
 
@@ -93,6 +98,8 @@ class WebsitePostController extends Controller
         $post->updated_by = $user->id;
         $post->save();
 
+        $this->clearPublicCaches($profile->organization_id, $schoolId, $post->slug);
+
         return response()->json($post);
     }
 
@@ -114,6 +121,17 @@ class WebsitePostController extends Controller
 
         $post->delete();
 
+        $this->clearPublicCaches($profile->organization_id, $schoolId, $post->slug);
+
         return response()->json(['status' => 'deleted']);
+    }
+
+    private function clearPublicCaches(string $organizationId, string $schoolId, string $slug): void
+    {
+        foreach (self::PUBLIC_LANGUAGES as $lang) {
+            Cache::forget("public-site:{$organizationId}:{$schoolId}:{$lang}");
+        }
+        Cache::forget("public-posts:{$organizationId}:{$schoolId}");
+        Cache::forget("public-page:{$organizationId}:{$schoolId}:{$slug}");
     }
 }

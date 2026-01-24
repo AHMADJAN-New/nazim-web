@@ -152,6 +152,8 @@ Route::middleware(['public.website.resolve', 'public.website.feature'])
         Route::get('/pages/{slug}', [PublicWebsiteController::class, 'page']);
         Route::get('/posts', [PublicWebsiteController::class, 'posts']);
         Route::get('/events', [PublicWebsiteController::class, 'events']);
+        Route::get('/sitemap.xml', [PublicWebsiteController::class, 'sitemap']);
+        Route::get('/robots.txt', [PublicWebsiteController::class, 'robots']);
     });
 
 // Auth routes (require authentication but NO subscription checks - always allowed)
