@@ -52,19 +52,31 @@ describe('WebsiteManagerPage', () => {
     updateSettings.mutate.mockClear();
   });
 
-  it('renders website manager sections with data', () => {
+  it('renders website manager sections with data', async () => {
+    const user = userEvent.setup();
+
     render(
       <MemoryRouter>
         <WebsiteManagerPage />
       </MemoryRouter>
     );
 
-    expect(screen.getByText('websiteManager.title')).toBeInTheDocument();
-    expect(screen.getByText('Home')).toBeInTheDocument();
-    expect(screen.getByText('Welcome')).toBeInTheDocument();
-    expect(screen.getByText('Open Day')).toBeInTheDocument();
-    expect(screen.getByText('hero.jpg')).toBeInTheDocument();
-    expect(screen.getByText('school.example.com')).toBeInTheDocument();
+    expect(screen.getByText('websiteManager.title')).toBeTruthy();
+
+    await user.click(screen.getByRole('tab', { name: 'websiteManager.pages' }));
+    expect(screen.getByText('Home')).toBeTruthy();
+
+    await user.click(screen.getByRole('tab', { name: 'websiteManager.posts' }));
+    expect(screen.getByText('Welcome')).toBeTruthy();
+
+    await user.click(screen.getByRole('tab', { name: 'websiteManager.events' }));
+    expect(screen.getByText('Open Day')).toBeTruthy();
+
+    await user.click(screen.getByRole('tab', { name: 'websiteManager.media' }));
+    expect(screen.getByText('hero.jpg')).toBeTruthy();
+
+    await user.click(screen.getByRole('tab', { name: 'websiteManager.domains' }));
+    expect(screen.getByText('school.example.com')).toBeTruthy();
   });
 
   it('submits updated settings with parsed languages', async () => {
@@ -84,7 +96,8 @@ describe('WebsiteManagerPage', () => {
     await user.clear(languagesInput);
     await user.type(languagesInput, 'en, ar, ps');
 
-    await user.click(screen.getByRole('button', { name: 'websiteManager.saveSettings' }));
+    const [saveButton] = screen.getAllByRole('button', { name: 'websiteManager.saveSettings' });
+    await user.click(saveButton);
 
     expect(updateSettings.mutate).toHaveBeenCalledWith({
       school_slug: 'new-school',

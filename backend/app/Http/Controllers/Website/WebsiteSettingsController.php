@@ -42,8 +42,6 @@ class WebsiteSettingsController extends Controller
             ]
         );
 
-        $this->clearPublicCaches($profile->organization_id, $schoolId);
-
         return response()->json($setting);
     }
 

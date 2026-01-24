@@ -40,8 +40,8 @@ describe('PublicWebsitePage', () => {
       </QueryClientProvider>
     );
 
-    expect(await screen.findByText('Al Huda School')).toBeInTheDocument();
-    expect(screen.getByText('Welcome')).toBeInTheDocument();
-    expect(screen.getByText('Open Day')).toBeInTheDocument();
+    expect(await screen.findByText('Al Huda School')).toBeTruthy();
+    expect(screen.getByText('Welcome')).toBeTruthy();
+    expect(screen.getByText('Open Day')).toBeTruthy();
   });
 });
