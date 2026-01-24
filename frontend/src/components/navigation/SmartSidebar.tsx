@@ -1465,6 +1465,81 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: Settings2,
           },
           {
+            title: "Navigation",
+            url: "/website/navigation",
+            icon: ListChecks,
+          },
+          {
+            title: "Announcements",
+            url: "/website/announcements",
+            icon: PartyPopper,
+          },
+          {
+            title: "Courses & Programs",
+            url: "/website/courses",
+            icon: BookOpen,
+          },
+          {
+            title: "Articles & Blog",
+            url: "/website/articles",
+            icon: BookText,
+          },
+          {
+            title: "Library & Books",
+            url: "/website/library",
+            icon: Library,
+          },
+          {
+            title: "Events",
+            url: "/website/events",
+            icon: CalendarClock,
+          },
+          {
+            title: "Gallery",
+            url: "/website/gallery",
+            icon: GalleryVerticalEnd,
+          },
+          {
+            title: "Scholars & Staff",
+            url: "/website/scholars",
+            icon: UserRound,
+          },
+          {
+            title: "Graduates",
+            url: "/website/graduates",
+            icon: GraduationCap,
+          },
+          {
+            title: "Donations",
+            url: "/website/donations",
+            icon: HeartHandshake,
+          },
+          {
+            title: "Questions & Fatwas",
+            url: "/website/fatwas",
+            icon: FileQuestion,
+          },
+          {
+            title: "Inbox",
+            url: "/website/inbox",
+            icon: Inbox,
+          },
+          {
+            title: "SEO Tools",
+            url: "/website/seo",
+            icon: Search,
+          },
+          {
+            title: "Users & Roles",
+            url: "/website/users",
+            icon: UsersRound,
+          },
+          {
+            title: "Audit Logs",
+            url: "/website/audit",
+            icon: ClipboardList,
+          },
+          {
             title: "Open public site",
             titleKey: "websiteManager.openPublicSite",
             url: "/public-site",

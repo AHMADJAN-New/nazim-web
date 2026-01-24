@@ -201,6 +201,7 @@ import { TourProviderWrapper } from "@/components/TourProviderWrapper";
 import { RouteToursHandler } from "@/components/RouteToursHandler";
 import WebsiteManagerPage from "@/website/pages/WebsiteManagerPage";
 import PublicWebsitePage from "@/website/pages/PublicWebsitePage";
+import WebsiteModulePlaceholderPage from "@/website/pages/WebsiteModulePlaceholderPage";
 
 // Optimized QueryClient with better caching and performance settings
 const queryClient = new QueryClient({
@@ -224,6 +225,189 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+const websiteModulePlaceholders = [
+  {
+    path: "/website/navigation",
+    title: "Navigation",
+    description: "Manage header and footer menus for the public site.",
+    actionLabel: "New menu item",
+    features: [
+      "Drag-and-drop menu ordering",
+      "Nested menu support",
+      "Footer links editor",
+      "Bulk publish and visibility toggles",
+    ],
+  },
+  {
+    path: "/website/announcements",
+    title: "Announcements",
+    description: "Publish short notices and ticker updates for visitors.",
+    actionLabel: "New announcement",
+    features: [
+      "Draft, scheduled, and published statuses",
+      "Expiry dates with automatic archiving",
+      "Pinned announcements for homepage",
+      "Bulk publish/unpublish",
+    ],
+  },
+  {
+    path: "/website/courses",
+    title: "Courses & Programs",
+    description: "Manage program listings, instructors, and course pages.",
+    actionLabel: "New course",
+    features: [
+      "Course categories with filters",
+      "Instructor linking",
+      "Scheduling and enrollment info",
+      "SEO metadata and previews",
+    ],
+  },
+  {
+    path: "/website/articles",
+    title: "Articles & Blog",
+    description: "Create blog posts, categories, and tags for the school site.",
+    actionLabel: "New article",
+    features: [
+      "Draft, scheduled, and published workflow",
+      "Categories, tags, and author profiles",
+      "Rich editor with media picker",
+      "Version history and restore",
+    ],
+  },
+  {
+    path: "/website/library",
+    title: "Library & Books",
+    description: "Maintain the public library catalog and downloadable PDFs.",
+    actionLabel: "New book",
+    features: [
+      "Book categories and filters",
+      "PDF upload with viewer toggle",
+      "Cover image management",
+      "Download tracking",
+    ],
+  },
+  {
+    path: "/website/events",
+    title: "Events Calendar",
+    description: "Publish upcoming events and manage calendar views.",
+    actionLabel: "New event",
+    features: [
+      "Calendar and list views",
+      "Recurring events (optional)",
+      "Public/private visibility",
+      "RSVP and inquiry settings",
+    ],
+  },
+  {
+    path: "/website/gallery",
+    title: "Gallery",
+    description: "Organize albums and media for the public gallery.",
+    actionLabel: "New album",
+    features: [
+      "Album and photo CRUD",
+      "Bulk media uploads",
+      "Video embed links",
+      "Featured gallery sections",
+    ],
+  },
+  {
+    path: "/website/scholars",
+    title: "Scholars & Staff",
+    description: "Manage scholar profiles and staff listings.",
+    actionLabel: "New profile",
+    features: [
+      "Positions and biographies",
+      "Social links",
+      "Link to articles and fatwas",
+      "Featured scholars",
+    ],
+  },
+  {
+    path: "/website/graduates",
+    title: "Graduates",
+    description: "Highlight graduating cohorts and alumni lists.",
+    actionLabel: "New graduate year",
+    features: [
+      "Graduation years CRUD",
+      "CSV import and bulk add",
+      "Public profile visibility",
+      "Search and filters",
+    ],
+  },
+  {
+    path: "/website/donations",
+    title: "Donations",
+    description: "Configure donation funds and inquiry handling.",
+    actionLabel: "New fund",
+    features: [
+      "Funds and categories",
+      "Bank details/instructions",
+      "Inquiry inbox",
+      "Optional online payment setup",
+    ],
+  },
+  {
+    path: "/website/fatwas",
+    title: "Questions & Fatwas",
+    description: "Moderate questions, assign muftis, and publish fatwas.",
+    actionLabel: "New fatwa",
+    features: [
+      "Multi-stage review workflow",
+      "Assignment and internal notes",
+      "References and citations block",
+      "Related question suggestions",
+    ],
+  },
+  {
+    path: "/website/inbox",
+    title: "Inbox",
+    description: "Review contact messages, donation inquiries, and question submissions.",
+    actionLabel: "New response",
+    features: [
+      "Unified inbox with filters",
+      "Status tracking and assignments",
+      "Quick reply templates",
+      "Notifications for new items",
+    ],
+  },
+  {
+    path: "/website/seo",
+    title: "SEO Tools",
+    description: "Manage site metadata, redirects, and SEO monitoring.",
+    actionLabel: "New redirect",
+    features: [
+      "Meta title/description defaults",
+      "OG image presets",
+      "301 redirect manager",
+      "Broken link reports",
+    ],
+  },
+  {
+    path: "/website/users",
+    title: "Users & Roles",
+    description: "Invite website staff and manage roles.",
+    actionLabel: "Invite user",
+    features: [
+      "Role assignments",
+      "Access review",
+      "Activity summaries",
+      "Invitation tracking",
+    ],
+  },
+  {
+    path: "/website/audit",
+    title: "Audit Logs",
+    description: "Track content changes and approvals.",
+    actionLabel: "Export log",
+    features: [
+      "Content change history",
+      "Approval and publish logs",
+      "User activity trail",
+      "Exportable reports",
+    ],
+  },
+];
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -566,6 +750,22 @@ const App = () => (
                         <WebsiteManagerPage />
                       </PermissionRoute>
                     } />
+                    {websiteModulePlaceholders.map((module) => (
+                      <Route
+                        key={module.path}
+                        path={module.path}
+                        element={
+                          <PermissionRoute permission="website_settings.read">
+                            <WebsiteModulePlaceholderPage
+                              title={module.title}
+                              description={module.description}
+                              actionLabel={module.actionLabel}
+                              features={module.features}
+                            />
+                          </PermissionRoute>
+                        }
+                      />
+                    ))}
                     <Route path="/settings/report-templates" element={
                       <PermissionRoute permission="reports.read">
                         <Suspense fallback={<PageSkeleton />}>
