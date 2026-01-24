@@ -58,6 +58,14 @@ use App\Http\Controllers\CourseAttendanceSessionController;
 use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\CourseDocumentController;
 use App\Http\Controllers\CertificateTemplateController;
+use App\Http\Controllers\Website\WebsiteSettingsController;
+use App\Http\Controllers\Website\WebsitePageController;
+use App\Http\Controllers\Website\WebsitePostController;
+use App\Http\Controllers\Website\WebsiteEventController;
+use App\Http\Controllers\Website\WebsiteMediaController;
+use App\Http\Controllers\Website\WebsiteDomainController;
+use App\Http\Controllers\Website\WebsiteMenuController;
+use App\Http\Controllers\Website\PublicWebsiteController;
 use App\Http\Controllers\IdCardTemplateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExamController;
@@ -135,6 +143,16 @@ Route::get('/stats/students-count', [StatsController::class, 'studentsCount']);
 Route::get('/stats/staff-count', [StatsController::class, 'staffCount']);
 Route::post('/landing/contact', [LandingController::class, 'submitContact']);
 Route::post('/landing/plan-request', [LandingController::class, 'submitPlanRequest']);
+
+// Public website routes (school-scoped via domain/subdomain resolution)
+Route::middleware(['public.website.resolve', 'public.website.feature'])
+    ->prefix('public/website')
+    ->group(function () {
+        Route::get('/site', [PublicWebsiteController::class, 'site']);
+        Route::get('/pages/{slug}', [PublicWebsiteController::class, 'page']);
+        Route::get('/posts', [PublicWebsiteController::class, 'posts']);
+        Route::get('/events', [PublicWebsiteController::class, 'events']);
+    });
 
 // Auth routes (require authentication but NO subscription checks - always allowed)
 // These routes must be accessible even without active subscription for login/auth checks
@@ -1294,6 +1312,55 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
                 Route::post('/events/{eventId}/users', [\App\Http\Controllers\EventUserController::class, 'store']);
                 Route::put('/events/{eventId}/users/{userId}', [\App\Http\Controllers\EventUserController::class, 'update']);
                 Route::delete('/events/{eventId}/users/{userId}', [\App\Http\Controllers\EventUserController::class, 'destroy']);
+            });
+        });
+
+        // Website Manager (Complete/Enterprise only)
+        Route::middleware(['feature:public_website'])->prefix('website')->group(function () {
+            Route::get('/settings', [WebsiteSettingsController::class, 'show']);
+            Route::put('/settings', [WebsiteSettingsController::class, 'update']);
+
+            Route::get('/pages', [WebsitePageController::class, 'index']);
+            Route::get('/pages/{id}', [WebsitePageController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/pages', [WebsitePageController::class, 'store']);
+                Route::put('/pages/{id}', [WebsitePageController::class, 'update']);
+                Route::delete('/pages/{id}', [WebsitePageController::class, 'destroy']);
+            });
+
+            Route::get('/posts', [WebsitePostController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/posts', [WebsitePostController::class, 'store']);
+                Route::put('/posts/{id}', [WebsitePostController::class, 'update']);
+                Route::delete('/posts/{id}', [WebsitePostController::class, 'destroy']);
+            });
+
+            Route::get('/events', [WebsiteEventController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/events', [WebsiteEventController::class, 'store']);
+                Route::put('/events/{id}', [WebsiteEventController::class, 'update']);
+                Route::delete('/events/{id}', [WebsiteEventController::class, 'destroy']);
+            });
+
+            Route::get('/media', [WebsiteMediaController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/media', [WebsiteMediaController::class, 'store']);
+                Route::put('/media/{id}', [WebsiteMediaController::class, 'update']);
+                Route::delete('/media/{id}', [WebsiteMediaController::class, 'destroy']);
+            });
+
+            Route::get('/domains', [WebsiteDomainController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/domains', [WebsiteDomainController::class, 'store']);
+                Route::put('/domains/{id}', [WebsiteDomainController::class, 'update']);
+                Route::delete('/domains/{id}', [WebsiteDomainController::class, 'destroy']);
+            });
+
+            Route::get('/menus', [WebsiteMenuController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/menus', [WebsiteMenuController::class, 'store']);
+                Route::put('/menus/{id}', [WebsiteMenuController::class, 'update']);
+                Route::delete('/menus/{id}', [WebsiteMenuController::class, 'destroy']);
             });
         });
     });

@@ -277,6 +277,9 @@ class DatabaseSeeder extends Seeder
             ['name' => 'admin', 'description' => 'Administrator with full access to all features'],
             ['name' => 'staff', 'description' => 'Staff member with limited access for operational tasks'],
             ['name' => 'teacher', 'description' => 'Teacher with access to academic content and student information'],
+            ['name' => 'website_admin', 'description' => 'Website admin with full control over public site content'],
+            ['name' => 'website_editor', 'description' => 'Website editor with content publishing access'],
+            ['name' => 'website_media', 'description' => 'Website media manager for uploads and galleries'],
         ];
 
         foreach ($roles as $roleData) {

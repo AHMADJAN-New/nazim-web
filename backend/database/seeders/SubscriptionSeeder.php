@@ -70,6 +70,7 @@ class SubscriptionSeeder extends Seeder
             ['feature_key' => 'hostel', 'name' => 'Hostel Management', 'category' => 'enterprise', 'is_addon' => true, 'sort_order' => 91],
             ['feature_key' => 'multi_school', 'name' => 'Multi-Branch Support', 'category' => 'enterprise', 'is_addon' => false, 'sort_order' => 92],
             ['feature_key' => 'api_access', 'name' => 'API Access / Integrations', 'category' => 'enterprise', 'is_addon' => true, 'sort_order' => 93],
+            ['feature_key' => 'public_website', 'name' => 'Public Website Portal', 'category' => 'enterprise', 'is_addon' => true, 'sort_order' => 94],
         ];
 
         foreach ($features as $feature) {
@@ -179,6 +180,7 @@ class SubscriptionSeeder extends Seeder
                     'hostel' => true,
                     'multi_school' => false,
                     'api_access' => false,
+                    'public_website' => false,
                 ],
                 'limits' => [
                     'students' => 5, 'staff' => 2, 'users' => 1, 'schools' => 1, 'classes' => 2,
@@ -249,6 +251,7 @@ class SubscriptionSeeder extends Seeder
                     'hostel' => true,
                     'multi_school' => false,
                     'api_access' => false,
+                    'public_website' => false,
                 ],
                 'limits' => [
                     'students' => 250, 'staff' => 50, 'users' => 10, 'schools' => 1, 'classes' => 30,
@@ -316,6 +319,7 @@ class SubscriptionSeeder extends Seeder
                     'hostel' => false,
                     'multi_school' => false,
                     'api_access' => false,
+                    'public_website' => false,
                 ],
                 'limits' => [
                     'students' => 600, 'staff' => 120, 'users' => 30, 'schools' => 1, 'classes' => 80,
@@ -383,6 +387,7 @@ class SubscriptionSeeder extends Seeder
                     'hostel' => false,
                     'multi_school' => false,
                     'api_access' => false,
+                    'public_website' => true,
                 ],
                 'limits' => [
                     'students' => 1200, 'staff' => 200, 'users' => 50, 'schools' => 1, 'classes' => 150,
@@ -455,6 +460,7 @@ class SubscriptionSeeder extends Seeder
                     'hostel' => true,
                     'multi_school' => true,
                     'api_access' => true,
+                    'public_website' => true,
                 ],
                 'limits' => [
                     'students' => -1, 'staff' => -1, 'users' => -1, 'schools' => -1, 'classes' => -1,

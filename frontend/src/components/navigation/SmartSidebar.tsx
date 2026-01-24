@@ -377,6 +377,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasEventCheckinsCreatePermission = useHasPermissionAndFeature('event_checkins.create');
   const hasEventCheckinsReadPermission = useHasPermissionAndFeature('event_checkins.read');
   const hasEventUpdatePermission = useHasPermissionAndFeature('events.update');
+  const hasWebsiteSettingsPermission = useHasPermissionAndFeature('website_settings.read');
   // Show events navigation if user has ANY event-related permission
   const hasEventsNavigation = hasEventsPermission || hasEventTypesPermission || hasEventGuestsPermission || hasEventGuestsCreatePermission || hasEventCheckinsCreatePermission || hasEventCheckinsReadPermission || hasEventUpdatePermission;
   
@@ -1449,6 +1450,15 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
         ],
       },
+      ...(hasWebsiteSettingsPermission ? [asNavItem({
+        titleKey: "websiteManager",
+        url: "/website",
+        icon: LucideIcons.Globe,
+        badge: null,
+        priority: 10.2,
+        category: 'admin' as NavigationCategory,
+        iconColor: categoryColors.admin,
+      })] : []),
       ...(hasHelpCenterPermission ? [asNavItem({
         titleKey: "helpCenter",
         url: "/help-center",

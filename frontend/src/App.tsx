@@ -199,6 +199,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { appCoreTour, schoolSetupTour } from "@/onboarding";
 import { TourProviderWrapper } from "@/components/TourProviderWrapper";
 import { RouteToursHandler } from "@/components/RouteToursHandler";
+import WebsiteManagerPage from "@/pages/website/WebsiteManagerPage";
+import PublicWebsitePage from "@/pages/website/PublicWebsitePage";
 
 // Optimized QueryClient with better caching and performance settings
 const queryClient = new QueryClient({
@@ -246,6 +248,7 @@ const App = () => (
                     <Route path="/terms" element={<TermsOfService />} />
                     <Route path="/auth" element={<AuthPage />} />
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/public-site" element={<PublicWebsitePage />} />
                     <Route path="/maintenance" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <MaintenancePage />
@@ -556,6 +559,11 @@ const App = () => (
                         <Suspense fallback={<PageSkeleton />}>
                           <SchoolsManagement />
                         </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/website" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <WebsiteManagerPage />
                       </PermissionRoute>
                     } />
                     <Route path="/settings/report-templates" element={

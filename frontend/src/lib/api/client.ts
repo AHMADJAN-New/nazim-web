@@ -4591,3 +4591,214 @@ export const helpCenterArticlesApi = {
         return apiClient.post(`/help-center/articles/${id}/archive`);
     },
 };
+
+export const websiteSettingsApi = {
+  get: async () => {
+    return apiClient.get('/website/settings');
+  },
+  update: async (data: {
+    school_slug: string;
+    default_language: string;
+    enabled_languages: string[];
+    theme?: Record<string, any>;
+    is_public?: boolean;
+  }) => {
+    return apiClient.put('/website/settings', data);
+  },
+};
+
+export const websitePagesApi = {
+  list: async () => {
+    return apiClient.get('/website/pages');
+  },
+  get: async (id: string) => {
+    return apiClient.get(`/website/pages/${id}`);
+  },
+  create: async (data: {
+    slug: string;
+    title: string;
+    status: string;
+    content_json?: any[];
+    seo_title?: string | null;
+    seo_description?: string | null;
+    seo_image_path?: string | null;
+    published_at?: string | null;
+  }) => {
+    return apiClient.post('/website/pages', data);
+  },
+  update: async (id: string, data: {
+    slug?: string;
+    title?: string;
+    status?: string;
+    content_json?: any[];
+    seo_title?: string | null;
+    seo_description?: string | null;
+    seo_image_path?: string | null;
+    published_at?: string | null;
+  }) => {
+    return apiClient.put(`/website/pages/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/pages/${id}`);
+  },
+};
+
+export const websitePostsApi = {
+  list: async () => {
+    return apiClient.get('/website/posts');
+  },
+  create: async (data: {
+    slug: string;
+    title: string;
+    status: string;
+    excerpt?: string | null;
+    content_json?: any[];
+    seo_title?: string | null;
+    seo_description?: string | null;
+    seo_image_path?: string | null;
+    published_at?: string | null;
+  }) => {
+    return apiClient.post('/website/posts', data);
+  },
+  update: async (id: string, data: {
+    slug?: string;
+    title?: string;
+    status?: string;
+    excerpt?: string | null;
+    content_json?: any[];
+    seo_title?: string | null;
+    seo_description?: string | null;
+    seo_image_path?: string | null;
+    published_at?: string | null;
+  }) => {
+    return apiClient.put(`/website/posts/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/posts/${id}`);
+  },
+};
+
+export const websiteEventsApi = {
+  list: async () => {
+    return apiClient.get('/website/events');
+  },
+  create: async (data: {
+    title: string;
+    location?: string | null;
+    starts_at: string;
+    ends_at?: string | null;
+    is_public?: boolean;
+    summary?: string | null;
+    content_json?: any[];
+  }) => {
+    return apiClient.post('/website/events', data);
+  },
+  update: async (id: string, data: {
+    title?: string;
+    location?: string | null;
+    starts_at?: string;
+    ends_at?: string | null;
+    is_public?: boolean;
+    summary?: string | null;
+    content_json?: any[];
+  }) => {
+    return apiClient.put(`/website/events/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/events/${id}`);
+  },
+};
+
+export const websiteMediaApi = {
+  list: async () => {
+    return apiClient.get('/website/media');
+  },
+  create: async (data: {
+    type: string;
+    file_path: string;
+    file_name?: string | null;
+    alt_text?: string | null;
+    metadata?: Record<string, any>;
+  }) => {
+    return apiClient.post('/website/media', data);
+  },
+  update: async (id: string, data: {
+    type?: string;
+    file_path?: string;
+    file_name?: string | null;
+    alt_text?: string | null;
+    metadata?: Record<string, any>;
+  }) => {
+    return apiClient.put(`/website/media/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/media/${id}`);
+  },
+};
+
+export const websiteDomainsApi = {
+  list: async () => {
+    return apiClient.get('/website/domains');
+  },
+  create: async (data: {
+    domain: string;
+    is_primary?: boolean;
+    verification_status?: string | null;
+    ssl_status?: string | null;
+  }) => {
+    return apiClient.post('/website/domains', data);
+  },
+  update: async (id: string, data: {
+    domain?: string;
+    is_primary?: boolean;
+    verification_status?: string | null;
+    ssl_status?: string | null;
+  }) => {
+    return apiClient.put(`/website/domains/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/domains/${id}`);
+  },
+};
+
+export const websiteMenusApi = {
+  list: async () => {
+    return apiClient.get('/website/menus');
+  },
+  create: async (data: {
+    parent_id?: string | null;
+    label: string;
+    url: string;
+    sort_order?: number;
+    is_visible?: boolean;
+  }) => {
+    return apiClient.post('/website/menus', data);
+  },
+  update: async (id: string, data: {
+    parent_id?: string | null;
+    label?: string;
+    url?: string;
+    sort_order?: number;
+    is_visible?: boolean;
+  }) => {
+    return apiClient.put(`/website/menus/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/menus/${id}`);
+  },
+};
+
+export const publicWebsiteApi = {
+  getSite: async (params?: { locale?: string }) => {
+    return apiClient.get('/public/website/site', params);
+  },
+  getPage: async (slug: string) => {
+    return apiClient.get(`/public/website/pages/${slug}`);
+  },
+  getPosts: async () => {
+    return apiClient.get('/public/website/posts');
+  },
+  getEvents: async () => {
+    return apiClient.get('/public/website/events');
+  },
+};
