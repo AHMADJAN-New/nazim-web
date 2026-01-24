@@ -129,6 +129,7 @@ Route::get('/maintenance/status/public', [App\Http\Controllers\MaintenanceContro
 
 // Public certificate verification routes (rate limited)
 use App\Http\Controllers\CertificateVerifyController;
+use App\Http\Controllers\Website\PublicFatwaController;
 Route::get('/verify/certificate/{hash}', [CertificateVerifyController::class, 'show'])
     ->middleware('throttle:60,1'); // 60 requests per minute for hash verification
 
@@ -152,6 +153,10 @@ Route::middleware(['public.website.resolve', 'public.website.feature'])
         Route::get('/pages/{slug}', [PublicWebsiteController::class, 'page']);
         Route::get('/posts', [PublicWebsiteController::class, 'posts']);
         Route::get('/events', [PublicWebsiteController::class, 'events']);
+        Route::get('/fatwas/categories', [PublicFatwaController::class, 'categories']);
+        Route::get('/fatwas', [PublicFatwaController::class, 'index']);
+        Route::get('/fatwas/{slug}', [PublicFatwaController::class, 'show']);
+        Route::post('/fatwas/questions', [PublicFatwaController::class, 'storeQuestion']);
         Route::get('/sitemap.xml', [PublicWebsiteController::class, 'sitemap']);
         Route::get('/robots.txt', [PublicWebsiteController::class, 'robots']);
     });
@@ -1363,6 +1368,20 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
                 Route::post('/menus', [WebsiteMenuController::class, 'store']);
                 Route::put('/menus/{id}', [WebsiteMenuController::class, 'update']);
                 Route::delete('/menus/{id}', [WebsiteMenuController::class, 'destroy']);
+            });
+
+            Route::get('/fatwa-categories', [\App\Http\Controllers\Website\WebsiteFatwaCategoryController::class, 'index']);
+            Route::get('/fatwa-questions', [\App\Http\Controllers\Website\WebsiteFatwaQuestionController::class, 'index']);
+            Route::get('/fatwa-questions/{id}', [\App\Http\Controllers\Website\WebsiteFatwaQuestionController::class, 'show']);
+            Route::get('/fatwas', [\App\Http\Controllers\Website\WebsiteFatwaController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/fatwa-categories', [\App\Http\Controllers\Website\WebsiteFatwaCategoryController::class, 'store']);
+                Route::put('/fatwa-categories/{id}', [\App\Http\Controllers\Website\WebsiteFatwaCategoryController::class, 'update']);
+                Route::delete('/fatwa-categories/{id}', [\App\Http\Controllers\Website\WebsiteFatwaCategoryController::class, 'destroy']);
+                Route::put('/fatwa-questions/{id}', [\App\Http\Controllers\Website\WebsiteFatwaQuestionController::class, 'update']);
+                Route::post('/fatwas', [\App\Http\Controllers\Website\WebsiteFatwaController::class, 'store']);
+                Route::put('/fatwas/{id}', [\App\Http\Controllers\Website\WebsiteFatwaController::class, 'update']);
+                Route::delete('/fatwas/{id}', [\App\Http\Controllers\Website\WebsiteFatwaController::class, 'destroy']);
             });
         });
     });
