@@ -4709,6 +4709,35 @@ export const websiteEventsApi = {
   },
 };
 
+export const websiteAnnouncementsApi = {
+  list: async () => {
+    return apiClient.get('/website/announcements');
+  },
+  create: async (data: {
+    title: string;
+    content?: string | null;
+    status: string;
+    published_at?: string | null;
+    expires_at?: string | null;
+    is_pinned?: boolean;
+  }) => {
+    return apiClient.post('/website/announcements', data);
+  },
+  update: async (id: string, data: {
+    title?: string;
+    content?: string | null;
+    status?: string;
+    published_at?: string | null;
+    expires_at?: string | null;
+    is_pinned?: boolean;
+  }) => {
+    return apiClient.put(`/website/announcements/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/announcements/${id}`);
+  },
+};
+
 export const websiteMediaApi = {
   list: async () => {
     return apiClient.get('/website/media');

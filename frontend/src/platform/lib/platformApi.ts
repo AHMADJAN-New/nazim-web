@@ -577,6 +577,48 @@ export const platformApi = {
     },
   },
 
+  // Website management
+  websites: {
+    getOrganizationWebsite: async (organizationId: string) => {
+      return apiClient.get<{
+        organization: {
+          id: string;
+          name: string;
+          slug: string;
+          website: string | null;
+        };
+        domains: Array<{
+          id: string;
+          organization_id: string;
+          school_id: string | null;
+          domain: string;
+          is_primary: boolean;
+          verification_status: string | null;
+          ssl_status: string | null;
+          created_at: string;
+          updated_at: string;
+        }>;
+        settings: Array<{
+          id: string;
+          organization_id: string;
+          school_id: string | null;
+          school_slug: string | null;
+          default_language: string | null;
+          enabled_languages: string[] | null;
+          theme: Record<string, any> | null;
+          is_public: boolean;
+          created_at: string;
+          updated_at: string;
+        }>;
+        schools: Array<{
+          id: string;
+          school_name: string | null;
+          school_slug: string | null;
+        }>;
+      }>(`/platform/organizations/${organizationId}/website`);
+    },
+  },
+
   // Generic request method for custom endpoints
   request: async function<T = any>(endpoint: string, options?: { method?: string; body?: string | object; params?: Record<string, string> }) {
     const method = options?.method || 'GET';

@@ -20,6 +20,7 @@ import { PlatformAdminDashboard } from "./platform/pages/PlatformAdminDashboard"
 import { PlatformAdminLayout } from "./platform/components/PlatformAdminLayout";
 import { OrganizationAdminsManagement } from "@/components/settings/OrganizationAdminsManagement";
 import { PlatformPermissionGroupsManagement } from "./platform/pages/PlatformPermissionGroupsManagement";
+import WebsiteManagementPage from "./platform/pages/admin/WebsiteManagementPage";
 
 // Lazy-loaded components with optimized loading
 import {
@@ -203,6 +204,14 @@ import WebsiteManagerPage from "@/website/pages/WebsiteManagerPage";
 import PublicWebsitePage from "@/website/pages/PublicWebsitePage";
 import WebsiteModulePlaceholderPage from "@/website/pages/WebsiteModulePlaceholderPage";
 import PublicWebsitePlaceholderPage from "@/website/pages/PublicWebsitePlaceholderPage";
+import PagesManagementPage from "@/website/pages/PagesManagementPage";
+import ArticlesManagementPage from "@/website/pages/ArticlesManagementPage";
+import EventsManagementPage from "@/website/pages/EventsManagementPage";
+import NavigationManagementPage from "@/website/pages/NavigationManagementPage";
+import MediaManagementPage from "@/website/pages/MediaManagementPage";
+import DomainsManagementPage from "@/website/pages/DomainsManagementPage";
+import FatwasManagementPage from "@/website/pages/FatwasManagementPage";
+import AnnouncementsManagementPage from "@/website/pages/AnnouncementsManagementPage";
 
 // Optimized QueryClient with better caching and performance settings
 const queryClient = new QueryClient({
@@ -591,6 +600,11 @@ const App = () => (
                         <PlatformPermissionGroupsManagement />
                       </Suspense>
                     } />
+                    <Route path="websites" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <WebsiteManagementPage />
+                      </Suspense>
+                    } />
                     <Route path="subscriptions" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <AllSubscriptionsPage />
@@ -839,22 +853,63 @@ const App = () => (
                         <WebsiteManagerPage />
                       </PermissionRoute>
                     } />
-                    {websiteModulePlaceholders.map((module) => (
-                      <Route
-                        key={module.path}
-                        path={module.path}
-                        element={
-                          <PermissionRoute permission="website_settings.read">
-                            <WebsiteModulePlaceholderPage
-                              title={module.title}
-                              description={module.description}
-                              actionLabel={module.actionLabel}
-                              features={module.features}
-                            />
-                          </PermissionRoute>
-                        }
-                      />
-                    ))}
+                    {/* Phase 1: Pages with backend APIs */}
+                    <Route path="/website/navigation" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <NavigationManagementPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="/website/articles" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <ArticlesManagementPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="/website/events" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <EventsManagementPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="/website/fatwas" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <FatwasManagementPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="/website/media" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <MediaManagementPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="/website/domains" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <DomainsManagementPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="/website/announcements" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <AnnouncementsManagementPage />
+                      </PermissionRoute>
+                    } />
+                    {/* Phase 2: Pages requiring backend work - still use placeholders */}
+                    {websiteModulePlaceholders
+                      .filter(module => 
+                        !['/website/navigation', '/website/articles', '/website/events', '/website/fatwas', '/website/media', '/website/domains', '/website/announcements'].includes(module.path)
+                      )
+                      .map((module) => (
+                        <Route
+                          key={module.path}
+                          path={module.path}
+                          element={
+                            <PermissionRoute permission="website_settings.read">
+                              <WebsiteModulePlaceholderPage
+                                title={module.title}
+                                description={module.description}
+                                actionLabel={module.actionLabel}
+                                features={module.features}
+                              />
+                            </PermissionRoute>
+                          }
+                        />
+                      ))}
                     <Route path="/settings/report-templates" element={
                       <PermissionRoute permission="reports.read">
                         <Suspense fallback={<PageSkeleton />}>

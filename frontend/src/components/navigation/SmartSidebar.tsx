@@ -167,6 +167,7 @@ import { useProfile } from "@/hooks/useProfiles";
 import { useSubscriptionGateStatus, type SubscriptionGateStatus } from "@/hooks/useSubscription";
 import { useUserRole } from "@/hooks/useUserRole";
 import type { UserRole } from "@/types/auth";
+import { SecondarySidebar } from "./SecondarySidebar";
 
 /**
  * Helper function to determine if subscription access is blocked
@@ -194,7 +195,7 @@ function isSubscriptionBlocked(gateStatus: SubscriptionGateStatus | null): boole
     accessLevel === 'none';
 }
 
-interface NavigationChild {
+export interface NavigationChild {
   title: string;
   titleKey?: string; // Translation key for the title
   url?: string; // URL for navigation (optional if it has children)
@@ -205,7 +206,7 @@ interface NavigationChild {
 
 type NavigationCategory = 'core' | 'operations' | 'academic' | 'finance' | 'admin';
 
-interface NavigationItem {
+export interface NavigationItem {
   titleKey: string;
   url?: string;
   icon: LucideIcon;
@@ -245,7 +246,7 @@ interface DbRecentTask {
 
 
 export const SmartSidebar = memo(function SmartSidebar() {
-  const { state } = useSidebar();
+  const { state, setOpen } = useSidebar();
   const { t, tUnsafe, isRTL } = useLanguage();
   const { user, profile } = useAuth();
   const { data: currentProfile } = useProfile();
@@ -395,6 +396,10 @@ export const SmartSidebar = memo(function SmartSidebar() {
     quickActions: []
   });
   
+  // Secondary sidebar state for website menu
+  const [secondarySidebarOpen, setSecondarySidebarOpen] = useState(false);
+  const [secondarySidebarItem, setSecondarySidebarItem] = useState<NavigationItem | null>(null);
+  
   // Search functionality
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -509,6 +514,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
   
   const collapsed = state === "collapsed";
   const currentPath = location.pathname;
+
+  // Note: We no longer auto-close secondary sidebar when main collapses
+  // Instead, we control main sidebar state when secondary opens/closes
 
   // Preserve sidebar scroll position (do NOT auto-scroll on route changes)
   const sidebarScrollRestoredRef = useRef(false);
@@ -2026,6 +2034,41 @@ export const SmartSidebar = memo(function SmartSidebar() {
     );
   }, []);
 
+  // Handle website menu click - open secondary sidebar instead of inline expansion
+  const handleWebsiteMenuClick = useCallback((item: NavigationItem, e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    
+    if (item.titleKey === 'websiteManager') {
+      // Don't open secondary sidebar if main sidebar is collapsed
+      if (collapsed) {
+        if (import.meta.env.DEV) {
+          console.log('[SmartSidebar] Cannot open secondary sidebar when main sidebar is collapsed');
+        }
+        return;
+      }
+      // Toggle secondary sidebar
+      if (secondarySidebarOpen && secondarySidebarItem?.titleKey === 'websiteManager') {
+        if (import.meta.env.DEV) {
+          console.log('[SmartSidebar] Closing secondary sidebar');
+        }
+        setSecondarySidebarOpen(false);
+        setSecondarySidebarItem(null);
+      } else {
+        if (import.meta.env.DEV) {
+          console.log('[SmartSidebar] Opening secondary sidebar for websiteManager', item);
+        }
+        // Collapse main sidebar when opening secondary sidebar
+        setOpen(false);
+        setSecondarySidebarItem(item);
+        setSecondarySidebarOpen(true);
+      }
+    } else {
+      // Normal toggle for other menus
+      toggleExpanded(item.titleKey);
+    }
+  }, [secondarySidebarOpen, secondarySidebarItem, toggleExpanded, collapsed]);
+
   // Get data-tour attribute for menu items
   const getDataTourAttr = (titleKey: string): string | undefined => {
     const tourMap: Record<string, string> = {
@@ -2058,7 +2101,38 @@ export const SmartSidebar = memo(function SmartSidebar() {
     if (item.children) {
       const isExpanded = expandedItems.includes(item.titleKey) || isChildActive(item.children);
       
-      const menuButton = (
+      // For website menu, create button with click handler
+      const menuButton = item.titleKey === 'websiteManager' ? (
+        <SidebarMenuButton 
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleWebsiteMenuClick(item, e);
+          }}
+          className={cn(
+            "transition-all duration-200",
+            "hover:bg-sidebar-accent/50",
+            getNavCls({ isActive: (secondarySidebarOpen && secondarySidebarItem?.titleKey === 'websiteManager') || isChildActive(item.children) })
+          )}
+        >
+          <item.icon className={`h-4 w-4 ${iconColorClass}`} />
+          {!collapsed && (
+            <>
+              <span className="flex-1">{label}</span>
+              {item.badge && (
+                <Badge variant={item.badge.variant} className="text-xs mr-2">
+                  {item.badge.text}
+                </Badge>
+              )}
+              {(secondarySidebarOpen && secondarySidebarItem?.titleKey === 'websiteManager') ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </>
+          )}
+        </SidebarMenuButton>
+      ) : (
         <SidebarMenuButton 
           className={cn(
             "transition-all duration-200",
@@ -2128,7 +2202,21 @@ export const SmartSidebar = memo(function SmartSidebar() {
       };
 
       // Collapsed: show a standard flyout menu (submenu list) instead of only a tooltip label.
+      // For website menu when collapsed, just show the dropdown (secondary sidebar won't work when collapsed)
       if (collapsed) {
+        // Create a regular menuButton for collapsed state (without onClick handler for website menu)
+        const collapsedMenuButton = item.titleKey === 'websiteManager' ? (
+          <SidebarMenuButton 
+            className={cn(
+              "transition-all duration-200",
+              "hover:bg-sidebar-accent/50",
+              getNavCls({ isActive: isChildActive(item.children) })
+            )}
+          >
+            <item.icon className={`h-4 w-4 ${iconColorClass}`} />
+          </SidebarMenuButton>
+        ) : menuButton;
+
         return (
           <DropdownMenu
             key={item.titleKey}
@@ -2154,7 +2242,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
                     }, 120);
                   }}
                 >
-                  {menuButton}
+                  {collapsedMenuButton}
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -2193,6 +2281,48 @@ export const SmartSidebar = memo(function SmartSidebar() {
               </DropdownMenuContent>
             </SidebarMenuItem>
           </DropdownMenu>
+        );
+      }
+
+      // For website menu, use secondary sidebar instead of inline expansion
+      if (item.titleKey === 'websiteManager') {
+        const isWebsiteMenuActive = secondarySidebarOpen && secondarySidebarItem?.titleKey === 'websiteManager';
+        return (
+          <SidebarMenuItem key={item.titleKey} data-tour={dataTour}>
+            <SidebarMenuButton 
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (import.meta.env.DEV) {
+                  console.log('[SmartSidebar] Website menu button clicked', { item, collapsed, secondarySidebarOpen });
+                }
+                handleWebsiteMenuClick(item, e);
+              }}
+              className={cn(
+                "transition-all duration-200 cursor-pointer",
+                "hover:bg-sidebar-accent/50",
+                getNavCls({ isActive: isWebsiteMenuActive || isChildActive(item.children) })
+              )}
+            >
+              <item.icon className={`h-4 w-4 ${iconColorClass}`} />
+              {!collapsed && (
+                <>
+                  <span className="flex-1">{label}</span>
+                  {item.badge && (
+                    <Badge variant={item.badge.variant} className="text-xs mr-2">
+                      {item.badge.text}
+                    </Badge>
+                  )}
+                  {isWebsiteMenuActive ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </>
+              )}
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         );
       }
 
@@ -2516,6 +2646,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   // The sidebar will update when role is available
 
   return (
+    <>
     <Sidebar
       className={`${collapsed ? "w-14" : "w-72"} transition-all duration-300`}
       collapsible="icon"
@@ -2933,5 +3064,22 @@ export const SmartSidebar = memo(function SmartSidebar() {
       </TooltipProvider>
 
     </Sidebar>
+    <SecondarySidebar
+      open={secondarySidebarOpen}
+      onClose={() => {
+        setSecondarySidebarOpen(false);
+        setSecondarySidebarItem(null);
+        // Expand main sidebar when secondary sidebar is closed
+        setOpen(true);
+      }}
+      onItemClick={() => {
+        // Expand main sidebar when an item in secondary sidebar is clicked
+        setOpen(true);
+      }}
+      item={secondarySidebarItem}
+      isRTL={isRTL}
+      collapsed={collapsed}
+    />
+  </>
   );
 });

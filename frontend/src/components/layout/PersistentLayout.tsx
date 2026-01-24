@@ -59,7 +59,7 @@ export function PersistentLayout() {
 
   return (
     <div className="min-h-screen flex w-full bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="relative z-30 flex-shrink-0 isolate bg-sidebar" style={{ contain: 'layout style paint' }}>
+      <div className="relative z-50 flex-shrink-0 isolate bg-sidebar" style={{ contain: 'layout style paint' }}>
         <SmartSidebar />
       </div>
       

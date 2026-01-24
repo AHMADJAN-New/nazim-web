@@ -62,6 +62,7 @@ use App\Http\Controllers\Website\WebsiteSettingsController;
 use App\Http\Controllers\Website\WebsitePageController;
 use App\Http\Controllers\Website\WebsitePostController;
 use App\Http\Controllers\Website\WebsiteEventController;
+use App\Http\Controllers\Website\WebsiteAnnouncementController;
 use App\Http\Controllers\Website\WebsiteMediaController;
 use App\Http\Controllers\Website\WebsiteDomainController;
 use App\Http\Controllers\Website\WebsiteMenuController;
@@ -1349,6 +1350,13 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
                 Route::delete('/events/{id}', [WebsiteEventController::class, 'destroy']);
             });
 
+            Route::get('/announcements', [WebsiteAnnouncementController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/announcements', [WebsiteAnnouncementController::class, 'store']);
+                Route::put('/announcements/{id}', [WebsiteAnnouncementController::class, 'update']);
+                Route::delete('/announcements/{id}', [WebsiteAnnouncementController::class, 'destroy']);
+            });
+
             Route::get('/media', [WebsiteMediaController::class, 'index']);
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/media', [WebsiteMediaController::class, 'store']);
@@ -1510,6 +1518,7 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::get('/organizations/{id}', [OrganizationController::class, 'showPlatformAdmin']);
     Route::put('/organizations/{id}', [OrganizationController::class, 'updatePlatformAdmin']);
     Route::delete('/organizations/{id}', [OrganizationController::class, 'destroyPlatformAdmin']);
+    Route::get('/organizations/{id}/website', [OrganizationController::class, 'websiteData']);
     Route::post('/organizations/{organizationId}/features/{featureKey}/toggle', [SubscriptionAdminController::class, 'toggleFeature']);
     
     // Discount codes
