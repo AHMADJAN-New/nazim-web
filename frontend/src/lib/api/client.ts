@@ -4801,4 +4801,102 @@ export const publicWebsiteApi = {
   getEvents: async () => {
     return apiClient.get('/public/website/events');
   },
+  getFatwaCategories: async () => {
+    return apiClient.get('/public/website/fatwas/categories');
+  },
+  getFatwas: async () => {
+    return apiClient.get('/public/website/fatwas');
+  },
+  getFatwa: async (slug: string) => {
+    return apiClient.get(`/public/website/fatwas/${slug}`);
+  },
+  submitFatwaQuestion: async (data: {
+    category_id?: string | null;
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    question_text: string;
+    is_anonymous?: boolean;
+  }) => {
+    return apiClient.post('/public/website/fatwas/questions', data);
+  },
+};
+
+export const websiteFatwaCategoriesApi = {
+  list: async () => {
+    return apiClient.get('/website/fatwa-categories');
+  },
+  create: async (data: {
+    name: string;
+    slug: string;
+    description?: string | null;
+    is_active?: boolean;
+    sort_order?: number;
+  }) => {
+    return apiClient.post('/website/fatwa-categories', data);
+  },
+  update: async (id: string, data: {
+    name?: string;
+    slug?: string;
+    description?: string | null;
+    is_active?: boolean;
+    sort_order?: number;
+  }) => {
+    return apiClient.put(`/website/fatwa-categories/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/fatwa-categories/${id}`);
+  },
+};
+
+export const websiteFatwaQuestionsApi = {
+  list: async () => {
+    return apiClient.get('/website/fatwa-questions');
+  },
+  get: async (id: string) => {
+    return apiClient.get(`/website/fatwa-questions/${id}`);
+  },
+  update: async (id: string, data: {
+    status?: string;
+    assigned_to?: string | null;
+    internal_notes?: string | null;
+    answer_draft?: string | null;
+  }) => {
+    return apiClient.put(`/website/fatwa-questions/${id}`, data);
+  },
+};
+
+export const websiteFatwasApi = {
+  list: async () => {
+    return apiClient.get('/website/fatwas');
+  },
+  create: async (data: {
+    category_id?: string | null;
+    slug: string;
+    title: string;
+    question_text?: string | null;
+    answer_text?: string | null;
+    references_json?: any[] | null;
+    status: string;
+    published_at?: string | null;
+    is_featured?: boolean;
+  }) => {
+    return apiClient.post('/website/fatwas', data);
+  },
+  update: async (id: string, data: {
+    category_id?: string | null;
+    slug?: string;
+    title?: string;
+    question_text?: string | null;
+    answer_text?: string | null;
+    references_json?: any[] | null;
+    status?: string;
+    published_at?: string | null;
+    is_featured?: boolean;
+  }) => {
+    return apiClient.put(`/website/fatwas/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/fatwas/${id}`);
+  },
 };
