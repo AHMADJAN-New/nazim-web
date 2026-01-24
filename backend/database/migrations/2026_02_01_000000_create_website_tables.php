@@ -142,8 +142,12 @@ return new class extends Migration
 
             $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
             $table->foreign('school_id')->references('id')->on('school_branding')->onDelete('cascade');
-            $table->foreign('parent_id')->references('id')->on('website_menu_links')->onDelete('cascade');
             $table->index(['school_id', 'sort_order']);
+        });
+
+        // Add self-referencing foreign key after table creation
+        Schema::table('website_menu_links', function (Blueprint $table) {
+            $table->foreign('parent_id')->references('id')->on('website_menu_links')->onDelete('cascade');
         });
     }
 
