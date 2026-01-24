@@ -19,7 +19,7 @@ import {
   useWebsiteEvents,
   useWebsiteMedia,
   useWebsiteDomains,
-} from '@/hooks/useWebsiteManager';
+} from '@/website/hooks/useWebsiteManager';
 
 const settingsSchema = z.object({
   school_slug: z.string().min(2).max(80),

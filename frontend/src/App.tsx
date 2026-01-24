@@ -199,8 +199,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { appCoreTour, schoolSetupTour } from "@/onboarding";
 import { TourProviderWrapper } from "@/components/TourProviderWrapper";
 import { RouteToursHandler } from "@/components/RouteToursHandler";
-import WebsiteManagerPage from "@/pages/website/WebsiteManagerPage";
-import PublicWebsitePage from "@/pages/website/PublicWebsitePage";
+import WebsiteManagerPage from "@/website/pages/WebsiteManagerPage";
+import PublicWebsitePage from "@/website/pages/PublicWebsitePage";
 
 // Optimized QueryClient with better caching and performance settings
 const queryClient = new QueryClient({

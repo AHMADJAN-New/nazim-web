@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import WebsiteManagerPage from '@/pages/website/WebsiteManagerPage';
+import WebsiteManagerPage from '@/website/pages/WebsiteManagerPage';
 
 const updateSettings = {
   mutate: vi.fn(),
@@ -15,7 +15,7 @@ vi.mock('@/hooks/useLanguage', () => ({
   useLanguage: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock('@/hooks/useWebsiteManager', () => ({
+vi.mock('@/website/hooks/useWebsiteManager', () => ({
   useWebsiteSettings: () => ({
     data: {
       school_slug: 'alhuda',

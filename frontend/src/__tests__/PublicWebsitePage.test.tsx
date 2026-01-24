@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import PublicWebsitePage from '@/pages/website/PublicWebsitePage';
+import PublicWebsitePage from '@/website/pages/PublicWebsitePage';
 
 const getSite = vi.fn();
 
