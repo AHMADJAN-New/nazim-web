@@ -23,6 +23,7 @@ import {
   MessageSquare,
   Key,
   AlertCircle,
+  Globe,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -160,6 +161,15 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       iconColor: 'text-purple-500',
       iconBg: 'bg-purple-500/10',
       description: 'Manage all organizations',
+      badge: null,
+    },
+    { 
+      name: 'Websites', 
+      href: '/platform/websites', 
+      icon: Globe,
+      iconColor: 'text-sky-500',
+      iconBg: 'bg-sky-500/10',
+      description: 'Review organization website links',
       badge: null,
     },
     { 

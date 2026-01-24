@@ -18,6 +18,7 @@ import MaintenanceFeesManagement from './pages/admin/MaintenanceFeesManagement';
 import LicenseFeesManagement from './pages/admin/LicenseFeesManagement';
 import DesktopLicenseGeneration from './pages/admin/DesktopLicenseGeneration';
 import ContactMessagesManagement from './pages/admin/ContactMessagesManagement';
+import WebsiteManagementPage from './pages/admin/WebsiteManagementPage';
 import { PlatformAdminDashboard } from './pages/PlatformAdminDashboard';
 import { PlatformAdminLogin } from './pages/PlatformAdminLogin';
 import { PlatformPermissionGroupsManagement } from './pages/PlatformPermissionGroupsManagement';
@@ -170,6 +171,7 @@ export function PlatformAdminApp() {
               />
 
               <Route path="organizations" element={<PlatformAdminDashboard />} />
+              <Route path="websites" element={<WebsiteManagementPage />} />
               <Route path="subscriptions" element={<SubscriptionAdminDashboard />} />
               <Route path="plans" element={<PlansManagement />} />
               <Route path="plan-requests" element={<PlanRequestsPage />} />
@@ -219,4 +221,3 @@ export function PlatformAdminApp() {
     </QueryClientProvider>
   );
 }
-

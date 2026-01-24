@@ -1452,12 +1452,25 @@ export const SmartSidebar = memo(function SmartSidebar() {
       },
       ...(hasWebsiteSettingsPermission ? [asNavItem({
         titleKey: "websiteManager",
-        url: "/website",
         icon: LucideIcons.Globe,
         badge: null,
         priority: 10.2,
         category: 'admin' as NavigationCategory,
         iconColor: categoryColors.admin,
+        children: [
+          {
+            title: "Website Manager",
+            titleKey: "websiteManager.settings",
+            url: "/website",
+            icon: Settings2,
+          },
+          {
+            title: "Open public site",
+            titleKey: "websiteManager.openPublicSite",
+            url: "/public-site",
+            icon: LucideIcons.ExternalLink,
+          },
+        ],
       })] : []),
       ...(hasHelpCenterPermission ? [asNavItem({
         titleKey: "helpCenter",

@@ -8,8 +8,8 @@ import {
   websiteDomainsApi,
   websiteMenusApi,
 } from '@/lib/api/client';
-import { useAuth } from './useAuth';
-import { useProfile } from './useProfiles';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfiles';
 
 export const useWebsiteSettings = () => {
   const { user } = useAuth();
