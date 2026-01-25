@@ -7,12 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class WebsiteFatwaCategory extends Model
+class WebsiteDonation extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $connection = 'pgsql';
-    protected $table = 'website_fatwa_categories';
+    protected $table = 'website_donations';
 
     public $incrementing = false;
     protected $keyType = 'string';
@@ -21,31 +21,29 @@ class WebsiteFatwaCategory extends Model
         'id',
         'organization_id',
         'school_id',
-        'parent_id',
-        'name',
-        'slug',
+        'title',
         'description',
+        'target_amount',
+        'current_amount',
+        'bank_details',
+        'payment_links',
         'is_active',
         'sort_order',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
+        'target_amount' => 'decimal:2',
+        'current_amount' => 'decimal:2',
+        'bank_details' => 'array',
+        'payment_links' => 'array',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
-
-    public function parent()
-    {
-        return $this->belongsTo(WebsiteFatwaCategory::class, 'parent_id');
-    }
-
-    public function children()
-    {
-        return $this->hasMany(WebsiteFatwaCategory::class, 'parent_id')->orderBy('sort_order');
-    }
 
     protected static function boot()
     {
@@ -56,5 +54,15 @@ class WebsiteFatwaCategory extends Model
                 $model->id = (string) Str::uuid();
             }
         });
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 }

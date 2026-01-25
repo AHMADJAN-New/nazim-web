@@ -22,6 +22,25 @@ import { OrganizationAdminsManagement } from "@/components/settings/Organization
 import { PlatformPermissionGroupsManagement } from "./platform/pages/PlatformPermissionGroupsManagement";
 import WebsiteManagementPage from "./platform/pages/admin/WebsiteManagementPage";
 
+// Website Pages
+import PublicWebsitePage from '@/website/pages/PublicWebsitePage';
+import PublicDynamicPage from '@/website/pages/PublicDynamicPage';
+import PublicNewsPage from '@/website/pages/PublicNewsPage';
+import PublicFatwasPage from '@/website/pages/PublicFatwasPage';
+import PublicAskFatwaPage from '@/website/pages/PublicAskFatwaPage';
+import PublicExamResultsPage from '@/website/pages/PublicExamResultsPage';
+import PublicContactPage from '@/website/pages/PublicContactPage';
+import PublicLibraryPage from '@/website/pages/PublicLibraryPage';
+import PublicCoursesPage from '@/website/pages/PublicCoursesPage';
+import PublicScholarsPage from '@/website/pages/PublicScholarsPage';
+import PublicGraduatesPage from '@/website/pages/PublicGraduatesPage';
+import PublicDonationsPage from '@/website/pages/PublicDonationsPage';
+import { PublicHeader } from '@/website/components/layout/PublicHeader';
+import { PublicFooter } from '@/website/components/layout/PublicFooter';
+import PublicWebsitePlaceholderPage from '@/website/pages/PublicWebsitePlaceholderPage';
+import { publicWebsitePlaceholders } from '@/website/config/placeholders';
+import { PublicLayout } from "@/website/components/layout/PublicLayout"
+
 // Lazy-loaded components with optimized loading
 import {
   Dashboard,
@@ -201,9 +220,7 @@ import { appCoreTour, schoolSetupTour } from "@/onboarding";
 import { TourProviderWrapper } from "@/components/TourProviderWrapper";
 import { RouteToursHandler } from "@/components/RouteToursHandler";
 import WebsiteManagerPage from "@/website/pages/WebsiteManagerPage";
-import PublicWebsitePage from "@/website/pages/PublicWebsitePage";
 import WebsiteModulePlaceholderPage from "@/website/pages/WebsiteModulePlaceholderPage";
-import PublicWebsitePlaceholderPage from "@/website/pages/PublicWebsitePlaceholderPage";
 import PagesManagementPage from "@/website/pages/PagesManagementPage";
 import ArticlesManagementPage from "@/website/pages/ArticlesManagementPage";
 import EventsManagementPage from "@/website/pages/EventsManagementPage";
@@ -212,6 +229,12 @@ import MediaManagementPage from "@/website/pages/MediaManagementPage";
 import DomainsManagementPage from "@/website/pages/DomainsManagementPage";
 import FatwasManagementPage from "@/website/pages/FatwasManagementPage";
 import AnnouncementsManagementPage from "@/website/pages/AnnouncementsManagementPage";
+import WebsiteLibraryPage from "@/website/pages/WebsiteLibraryPage";
+import WebsiteCoursesPage from "@/website/pages/WebsiteCoursesPage";
+import WebsiteScholarsPage from "@/website/pages/WebsiteScholarsPage";
+import WebsiteGraduatesPage from "@/website/pages/WebsiteGraduatesPage";
+import WebsiteDonationsPage from "@/website/pages/WebsiteDonationsPage";
+import WebsiteInboxPage from "@/website/pages/WebsiteInboxPage";
 
 // Optimized QueryClient with better caching and performance settings
 const queryClient = new QueryClient({
@@ -419,80 +442,7 @@ const websiteModulePlaceholders = [
   },
 ];
 
-const publicWebsitePlaceholders = [
-  {
-    path: "/public-site/about",
-    title: "About",
-    description: "Introduce the school mission, history, and leadership.",
-    highlights: ["Mission and vision", "Leadership team", "School values", "Timeline"],
-  },
-  {
-    path: "/public-site/courses",
-    title: "Programs & Courses",
-    description: "Showcase academic and Islamic studies programs.",
-    highlights: ["Program categories", "Course detail cards", "Instructor highlights", "Enrollment CTA"],
-  },
-  {
-    path: "/public-site/articles",
-    title: "Articles & Blog",
-    description: "Share articles, reflections, and announcements.",
-    highlights: ["Latest articles", "Categories & tags", "Featured posts", "Newsletter sign-up"],
-  },
-  {
-    path: "/public-site/library",
-    title: "Library & Books",
-    description: "Public library catalog with downloadable resources.",
-    highlights: ["Book categories", "PDF viewer", "Download tracking", "Featured books"],
-  },
-  {
-    path: "/public-site/events",
-    title: "Events",
-    description: "Upcoming events and calendar view.",
-    highlights: ["Event list", "Calendar view", "Event detail pages", "RSVP prompts"],
-  },
-  {
-    path: "/public-site/gallery",
-    title: "Gallery",
-    description: "Albums, photos, and media highlights.",
-    highlights: ["Album grid", "Photo carousel", "Video embeds", "Media filters"],
-  },
-  {
-    path: "/public-site/scholars",
-    title: "Scholars & Teachers",
-    description: "Profiles of scholars and teaching staff.",
-    highlights: ["Scholar bios", "Teaching specialties", "Contact links", "Featured profiles"],
-  },
-  {
-    path: "/public-site/graduates",
-    title: "Graduates",
-    description: "Celebrate graduation cohorts and alumni.",
-    highlights: ["Graduation years", "Graduate list", "Highlights", "Alumni stories"],
-  },
-  {
-    path: "/public-site/donate",
-    title: "Donations",
-    description: "Donation funds and support channels.",
-    highlights: ["Donation categories", "Bank details", "Online payments", "Inquiry form"],
-  },
-  {
-    path: "/public-site/fatwas",
-    title: "Questions & Fatwas",
-    description: "Browse and search scholarly answers.",
-    highlights: ["Category filters", "Question list", "Fatwa detail", "Ask a question form"],
-  },
-  {
-    path: "/public-site/announcements",
-    title: "Announcements",
-    description: "Latest school announcements and news.",
-    highlights: ["Pinned notices", "Expiry dates", "Search and filters", "Archive"],
-  },
-  {
-    path: "/public-site/contact",
-    title: "Contact",
-    description: "Contact information and inquiry form.",
-    highlights: ["Contact details", "Form with validation", "Map embed", "Office hours"],
-  },
-];
+
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -507,17 +457,45 @@ const App = () => (
               v7_relativeSplatPath: true,
             }}
           >
-            <SidebarProvider>
-              <ErrorBoundary>
-                <MaintenanceModeHandler>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/about" element={<AboutUs />} />
-                    <Route path="/privacy" element={<PrivacyPolicy />} />
-                    <Route path="/terms" element={<TermsOfService />} />
-                    <Route path="/auth" element={<AuthPage />} />
-                    <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+            <ErrorBoundary>
+              <MaintenanceModeHandler>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/about" element={<AboutUs />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+                  <Route element={<PublicLayout />}>
                     <Route path="/public-site" element={<PublicWebsitePage />} />
+                    <Route path="/public-site/pages/:slug" element={<PublicDynamicPage />} />
+
+                    {/* Standard Content Pages (Generic Dynamic) */}
+                    <Route path="/public-site/about" element={<PublicDynamicPage />} />
+                    <Route path="/public-site/academics" element={<PublicDynamicPage />} />
+                    <Route path="/public-site/admissions" element={<PublicDynamicPage />} />
+
+                    {/* Specialized Pages */}
+                    <Route path="/public-site/news" element={<PublicNewsPage />} />
+                    <Route path="/public-site/fatwas" element={<PublicFatwasPage />} />
+                    <Route path="/public-site/results" element={<PublicExamResultsPage />} />
+                    <Route path="/public-site/fatwas/ask" element={<PublicAskFatwaPage />} />
+                    <Route path="/public-site/fatwas/category/:category" element={<PublicFatwasPage />} />
+                    <Route path="/public-site/contact" element={<PublicContactPage />} />
+
+                    {/* New Public Modules */}
+                    <Route path="/public-site/library" element={<PublicLibraryPage />} />
+                    <Route path="/public-site/programs" element={<PublicCoursesPage />} />
+                    <Route path="/public-site/scholars" element={<PublicScholarsPage />} />
+                    <Route path="/public-site/alumni" element={<PublicGraduatesPage />} />
+                    <Route path="/public-site/donate" element={<PublicDonationsPage />} />
+
+                    {/* Events Fallback (can be specialized later) */}
+                    <Route path="/public-site/events" element={<PublicDynamicPage />} />
+
+                    {/* Placeholders for any other dynamic routes */}
                     {publicWebsitePlaceholders.map((page) => (
                       <Route
                         key={page.path}
@@ -531,12 +509,13 @@ const App = () => (
                         }
                       />
                     ))}
-                    <Route path="/maintenance" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <MaintenancePage />
-                      </Suspense>
-                    } />
-                  
+                  </Route>
+                  <Route path="/maintenance" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <MaintenancePage />
+                    </Suspense>
+                  } />
+
                   {/* Public verification routes - no auth required */}
                   <Route path="/verify/certificate/:hash" element={
                     <Suspense fallback={<PageSkeleton />}>
@@ -693,7 +672,9 @@ const App = () => (
                   <Route element={
                     <ProtectedRoute>
                       <TourProviderWrapper tours={[appCoreTour, schoolSetupTour]} autoStart={false}>
-                        <PersistentLayout />
+                        <SidebarProvider>
+                          <PersistentLayout />
+                        </SidebarProvider>
                       </TourProviderWrapper>
                     </ProtectedRoute>
                   }>
@@ -889,10 +870,41 @@ const App = () => (
                         <AnnouncementsManagementPage />
                       </PermissionRoute>
                     } />
+                    <Route path="/website/library" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <WebsiteLibraryPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="/website/courses" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <WebsiteCoursesPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="/website/scholars" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <WebsiteScholarsPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="/website/graduates" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <WebsiteGraduatesPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="/website/donations" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <WebsiteDonationsPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="/website/inbox" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <WebsiteInboxPage />
+                      </PermissionRoute>
+                    } />
                     {/* Phase 2: Pages requiring backend work - still use placeholders */}
                     {websiteModulePlaceholders
-                      .filter(module => 
-                        !['/website/navigation', '/website/articles', '/website/events', '/website/fatwas', '/website/media', '/website/domains', '/website/announcements'].includes(module.path)
+                      .filter(module =>
+                        !['/website/navigation', '/website/articles', '/website/events', '/website/fatwas', '/website/media', '/website/domains', '/website/announcements',
+                          '/website/library', '/website/courses', '/website/scholars', '/website/graduates', '/website/donations', '/website/inbox'].includes(module.path)
                       )
                       .map((module) => (
                         <Route
@@ -1873,13 +1885,13 @@ const App = () => (
                       </Suspense>
                     } />
 
-                  {/* Catch-all route */}
-                  <Route path="*" element={<NotFound />} />
+                    {/* Catch-all route */}
+                    <Route path="*" element={<NotFound />} />
                   </Route>
-                  </Routes>
-                </MaintenanceModeHandler>
-              </ErrorBoundary>
-            </SidebarProvider>
+                </Routes>
+              </MaintenanceModeHandler>
+            </ErrorBoundary>
+
           </BrowserRouter>
         </SchoolProvider>
       </AuthProvider>

@@ -7,12 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class WebsiteFatwaCategory extends Model
+class WebsiteInbox extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $connection = 'pgsql';
-    protected $table = 'website_fatwa_categories';
+    protected $table = 'website_inbox';
 
     public $incrementing = false;
     protected $keyType = 'string';
@@ -21,31 +21,22 @@ class WebsiteFatwaCategory extends Model
         'id',
         'organization_id',
         'school_id',
-        'parent_id',
         'name',
-        'slug',
-        'description',
-        'is_active',
-        'sort_order',
+        'email',
+        'phone',
+        'subject',
+        'message',
+        'status',
+        'replied_at',
+        'replied_by',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'sort_order' => 'integer',
+        'replied_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
-
-    public function parent()
-    {
-        return $this->belongsTo(WebsiteFatwaCategory::class, 'parent_id');
-    }
-
-    public function children()
-    {
-        return $this->hasMany(WebsiteFatwaCategory::class, 'parent_id')->orderBy('sort_order');
-    }
 
     protected static function boot()
     {
@@ -56,5 +47,25 @@ class WebsiteFatwaCategory extends Model
                 $model->id = (string) Str::uuid();
             }
         });
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
+
+    public function repliedBy()
+    {
+        return $this->belongsTo(Profile::class, 'replied_by');
+    }
+
+    public function scopeNew($query)
+    {
+        return $query->where('status', 'new');
+    }
+
+    public function scopeUnread($query)
+    {
+        return $query->whereIn('status', ['new']);
     }
 }

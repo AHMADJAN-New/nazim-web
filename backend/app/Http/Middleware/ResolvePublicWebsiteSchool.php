@@ -40,6 +40,34 @@ class ResolvePublicWebsiteSchool
             }
         }
 
+        // Development fallback: allow school_id query parameter or use first available school
+        if (app()->environment('local', 'development', 'testing')) {
+            $schoolId = $request->query('school_id');
+            
+            if ($schoolId) {
+                $setting = WebsiteSetting::where('school_id', $schoolId)
+                    ->whereNull('deleted_at')
+                    ->first();
+            } else {
+                // Fallback to first website-enabled school for development convenience
+                $setting = WebsiteSetting::whereNull('deleted_at')->first();
+            }
+            
+            if ($setting) {
+                $request->attributes->set('school_id', $setting->school_id);
+                $request->attributes->set('organization_id', $setting->organization_id);
+                return $next($request);
+            }
+            
+            // Ultimate fallback: use first SchoolBranding directly if no WebsiteSetting exists
+            $school = \App\Models\SchoolBranding::first();
+            if ($school) {
+                $request->attributes->set('school_id', $school->id);
+                $request->attributes->set('organization_id', $school->organization_id);
+                return $next($request);
+            }
+        }
+
         return response()->json(['error' => 'School website not found.'], 404);
     }
 }

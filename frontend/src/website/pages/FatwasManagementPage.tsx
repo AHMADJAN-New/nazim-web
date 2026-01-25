@@ -314,7 +314,7 @@ export default function FatwasManagementPage() {
               setIsCreateCategoryOpen(true);
             },
             icon: <Plus className="h-4 w-4" />,
-          },
+          } : undefined
         }
       />
 

@@ -42,6 +42,7 @@ import {
   useCreateWebsiteMenu,
   useUpdateWebsiteMenu,
   useDeleteWebsiteMenu,
+  useWebsitePages,
   type WebsiteMenu,
 } from '@/website/hooks/useWebsiteManager';
 import { buildMenuTree } from '@/mappers/websiteMenuMapper';
@@ -59,6 +60,7 @@ type MenuFormData = z.infer<typeof menuSchema>;
 export default function NavigationManagementPage() {
   const { t } = useLanguage();
   const { data: menus = [], isLoading } = useWebsiteMenus();
+  const { data: pages = [] } = useWebsitePages();
   const createMenu = useCreateWebsiteMenu();
   const updateMenu = useUpdateWebsiteMenu();
   const deleteMenu = useDeleteWebsiteMenu();
@@ -248,6 +250,29 @@ export default function NavigationManagementPage() {
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
             <div className="space-y-2">
+              <Label>Link to Page (Optional)</Label>
+              <Select onValueChange={(pageId) => {
+                const page = pages.find(p => p.id === pageId);
+                if (page) {
+                  form.setValue('url', `/${page.slug}`);
+                  if (!form.getValues('label')) {
+                    form.setValue('label', page.title);
+                  }
+                }
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a page..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {pages.map((page) => (
+                    <SelectItem key={page.id} value={page.id}>
+                      {page.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="label">Label *</Label>
               <Input id="label" {...form.register('label')} placeholder="Home" />
               {form.formState.errors.label && (
@@ -317,6 +342,29 @@ export default function NavigationManagementPage() {
             <DialogDescription>Update menu item details</DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Link to Page (Optional)</Label>
+              <Select onValueChange={(pageId) => {
+                const page = pages.find(p => p.id === pageId);
+                if (page) {
+                  form.setValue('url', `/${page.slug}`);
+                  if (!form.getValues('label')) {
+                    form.setValue('label', page.title);
+                  }
+                }
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a page..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {pages.map((page) => (
+                    <SelectItem key={page.id} value={page.id}>
+                      {page.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="edit-label">Label *</Label>
               <Input id="edit-label" {...form.register('label')} />

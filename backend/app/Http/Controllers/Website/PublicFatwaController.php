@@ -16,6 +16,10 @@ class PublicFatwaController extends Controller
 
         $categories = WebsiteFatwaCategory::where('school_id', $schoolId)
             ->where('is_active', true)
+            ->whereNull('parent_id')
+            ->with(['children' => function($query) {
+                $query->where('is_active', true)->orderBy('sort_order')->orderBy('name');
+            }])
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
@@ -26,11 +30,28 @@ class PublicFatwaController extends Controller
     public function index(Request $request)
     {
         $schoolId = $request->attributes->get('school_id');
+        $categorySlug = $request->query('category');
 
-        $fatwas = WebsiteFatwa::where('school_id', $schoolId)
+        $query = WebsiteFatwa::where('school_id', $schoolId)
             ->where('status', 'published')
-            ->orderBy('published_at', 'desc')
-            ->get();
+            ->with('category');
+
+        if ($categorySlug) {
+            $category = WebsiteFatwaCategory::where('school_id', $schoolId)
+                ->where('slug', $categorySlug)
+                ->first();
+            
+            if ($category) {
+                // Get fatwas for this category AND its children
+                $categoryIds = [$category->id];
+                $childrenIds = $category->children()->pluck('id')->toArray();
+                $allCategoryIds = array_merge($categoryIds, $childrenIds);
+                
+                $query->whereIn('category_id', $allCategoryIds);
+            }
+        }
+
+        $fatwas = $query->orderBy('published_at', 'desc')->get();
 
         return response()->json($fatwas);
     }
@@ -42,6 +63,7 @@ class PublicFatwaController extends Controller
         $fatwa = WebsiteFatwa::where('school_id', $schoolId)
             ->where('slug', $slug)
             ->where('status', 'published')
+            ->with('category')
             ->firstOrFail();
 
         return response()->json($fatwa);

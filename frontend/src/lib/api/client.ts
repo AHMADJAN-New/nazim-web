@@ -116,7 +116,7 @@ class ApiClient {
       // Check if user has schools_access_all permission (stored in localStorage by SchoolContext)
       const hasSchoolsAccessAll = localStorage.getItem('has_schools_access_all') === 'true';
       const selectedSchoolId = localStorage.getItem('selected_school_id');
-      
+
       // Only add school_id if user has schools_access_all permission
       // For other users, the backend middleware will use their default_school_id
       if (hasSchoolsAccessAll && selectedSchoolId) {
@@ -129,7 +129,7 @@ class ApiClient {
         }
       }
     }
-    
+
     // Automatically add language parameter for help center endpoints
     // This ensures articles are filtered by user's language preference
     if (typeof window !== 'undefined' && endpoint.includes('/help-center/')) {
@@ -141,11 +141,11 @@ class ApiClient {
         options.params.lang = userLanguage;
       }
     }
-    
+
     // CRITICAL: Extract params BEFORE destructuring to ensure it's a plain object
     const params = options.params ? { ...options.params } : undefined;
     const { params: _, ...fetchOptions } = options;
-    
+
     const url = this.buildUrl(endpoint, params);
 
     const headers: HeadersInit = {
@@ -174,7 +174,7 @@ class ApiClient {
         // Check content type before parsing
         const contentType = response.headers.get('content-type') || '';
         let error: any = { message: response.statusText };
-        
+
         if (contentType.includes('application/json')) {
           // Try to parse as JSON
           try {
@@ -237,19 +237,19 @@ class ApiClient {
           (subscriptionError as any).current = error.current;
           (subscriptionError as any).limit = error.limit;
           (subscriptionError as any).availableAddons = error.available_addons;
-          
+
           // Dispatch custom event for global subscription error handling (with debouncing)
           if (typeof window !== 'undefined') {
             // Use a debounced event dispatch to prevent multiple events for the same error
             const eventKey = `${error.code}-${error.feature_key || error.resource_key || 'unknown'}`;
             const lastEventTime = (window as any).__lastSubscriptionErrorTime || {};
             const now = Date.now();
-            
+
             // Only dispatch if we haven't dispatched the same error in the last 2 seconds
             if (!lastEventTime[eventKey] || now - lastEventTime[eventKey] > 2000) {
               lastEventTime[eventKey] = now;
               (window as any).__lastSubscriptionErrorTime = lastEventTime;
-              
+
               window.dispatchEvent(new CustomEvent('subscription-error', {
                 detail: {
                   code: error.code,
@@ -266,7 +266,7 @@ class ApiClient {
               }));
             }
           }
-          
+
           throw subscriptionError;
         }
 
@@ -277,22 +277,22 @@ class ApiClient {
           const maintenanceMessage = error.message || error.error || 'We are performing scheduled maintenance. We\'ll be back soon!';
           const retryAfter = error.retry_after || error.retry || null;
           const scheduledEnd = error.scheduled_end || error.scheduled_end_at || null;
-          
+
           // Check if this is a platform admin route or login - backend should allow these through
           // But if we still get 503, it means backend didn't allow it, so we should still handle it
           const isPlatformAdminRoute = endpoint.includes('/platform/');
           const isLoginRoute = endpoint.includes('/auth/login');
-          
+
           // Dispatch maintenance mode event (for showing maintenance message)
           if (typeof window !== 'undefined') {
             // Use a debounced event dispatch to prevent multiple events
             const lastEventTime = (window as any).__lastMaintenanceErrorTime || 0;
             const now = Date.now();
-            
+
             // Only dispatch if we haven't dispatched in the last 2 seconds
             if (!lastEventTime || now - lastEventTime > 2000) {
               (window as any).__lastMaintenanceErrorTime = now;
-              
+
               window.dispatchEvent(new CustomEvent('maintenance-mode', {
                 detail: {
                   message: maintenanceMessage,
@@ -302,7 +302,7 @@ class ApiClient {
               }));
             }
           }
-          
+
           // For platform admin routes, don't throw error - let them see the maintenance message but continue
           // The backend should allow platform admin routes through, but if it doesn't, we still show the message
           if (isPlatformAdminRoute) {
@@ -316,7 +316,7 @@ class ApiClient {
             (maintenanceError as any).scheduledEnd = scheduledEnd;
             throw maintenanceError;
           }
-          
+
           // For login routes, backend should allow them through, but if we get 503, throw error
           // This allows login to fail gracefully and show maintenance message
           if (isLoginRoute) {
@@ -327,7 +327,7 @@ class ApiClient {
             (maintenanceError as any).scheduledEnd = scheduledEnd;
             throw maintenanceError;
           }
-          
+
           // For all other routes, throw maintenance error
           const maintenanceError = new Error(maintenanceMessage);
           (maintenanceError as any).isMaintenanceMode = true;
@@ -2891,7 +2891,7 @@ export const idCardTemplatesApi = {
 
   setDefault: async (id: string) => apiClient.post(`/id-card-templates/${id}/set-default`),
 
-  getBackgroundUrl: (id: string, side: 'front' | 'back') => 
+  getBackgroundUrl: (id: string, side: 'front' | 'back') =>
     `${API_URL}/id-card-templates/${id}/background/${side}`,
 
   getBackgroundImage: async (id: string, side: 'front' | 'back') => {
@@ -2915,10 +2915,10 @@ export const translationsApi = {
     ar: Record<string, unknown>;
   }) => apiClient.post<{ message: string; languages: string[] }>('/translations', { translations }),
 
-  saveChanges: async (changes: Array<{ key: string; lang: string; value: string }>) => 
-    apiClient.post<{ 
-      message: string; 
-      updated_files: string[]; 
+  saveChanges: async (changes: Array<{ key: string; lang: string; value: string }>) =>
+    apiClient.post<{
+      message: string;
+      updated_files: string[];
       updated_keys_count: number;
       file_changes: Record<string, {
         file_name: string;
@@ -2928,7 +2928,7 @@ export const translationsApi = {
       }>;
     }>('/translations/changes', { changes }),
 
-  getChangedFiles: async () => 
+  getChangedFiles: async () =>
     apiClient.get<{
       changed_files: Array<{
         file_name: string;
@@ -4039,7 +4039,7 @@ export const graduationBatchesApi = {
     class_id?: string;
     exam_id?: string;
   }) => apiClient.get('/graduation/batches', params),
-  get: async (id: string, params?: { school_id?: string }) => 
+  get: async (id: string, params?: { school_id?: string }) =>
     apiClient.get(`/graduation/batches/${id}`, params),
   create: async (data: {
     school_id: string;
@@ -4080,8 +4080,8 @@ export const graduationBatchesApi = {
     apiClient.post(`/graduation/batches/${id}/generate-students`, params),
   approve: async (id: string, params?: { school_id?: string }) =>
     apiClient.post(`/graduation/batches/${id}/approve`, params),
-  issueCertificates: async (id: string, data: { 
-    template_id: string; 
+  issueCertificates: async (id: string, data: {
+    template_id: string;
     school_id?: string;
     starting_number?: number;
     prefix?: string;
@@ -4197,15 +4197,15 @@ export const issuedCertificatesApi = {
     type?: string;
   }) => apiClient.get('/certificates/issued', params),
   get: async (id: string) => apiClient.get(`/certificates/issued/${id}`),
-  getCertificateData: async (id: string, schoolId?: string) => 
+  getCertificateData: async (id: string, schoolId?: string) =>
     apiClient.get(`/certificates/issued/${id}/data`, schoolId ? { school_id: schoolId } : undefined),
   revoke: async (id: string, reason: string, schoolId?: string) =>
-    apiClient.post(`/certificates/issued/${id}/revoke`, { 
+    apiClient.post(`/certificates/issued/${id}/revoke`, {
       reason,
       ...(schoolId && { school_id: schoolId }),
     }),
   downloadPdf: async (id: string, schoolId?: string) =>
-    apiClient.requestFile(`/certificates/issued/${id}/pdf`, { 
+    apiClient.requestFile(`/certificates/issued/${id}/pdf`, {
       method: 'GET',
       params: schoolId ? { school_id: schoolId } : undefined,
     }),
@@ -4230,9 +4230,9 @@ export const studentIdCardsApi = {
     page?: number;
     per_page?: number;
   }) => apiClient.get('/student-id-cards', params),
-  
+
   get: async (id: string) => apiClient.get(`/student-id-cards/${id}`),
-  
+
   assign: async (data: {
     academic_year_id: string;
     id_card_template_id: string;
@@ -4248,7 +4248,7 @@ export const studentIdCardsApi = {
     card_number?: string | null;
     notes?: string | null;
   }) => apiClient.post('/student-id-cards/assign', data),
-  
+
   update: async (id: string, data: {
     card_number?: string | null;
     card_fee?: number;
@@ -4259,17 +4259,17 @@ export const studentIdCardsApi = {
     printed_by?: string | null;
     notes?: string | null;
   }) => apiClient.put(`/student-id-cards/${id}`, data),
-  
-  markPrinted: async (id: string) => 
+
+  markPrinted: async (id: string) =>
     apiClient.post(`/student-id-cards/${id}/mark-printed`),
-  
+
   markFeePaid: async (id: string, data: {
     card_fee_paid: boolean;
     card_fee_paid_date?: string;
     account_id?: string | null;
     income_category_id?: string | null;
   }) => apiClient.post(`/student-id-cards/${id}/mark-fee-paid`, data),
-  
+
   delete: async (id: string) => apiClient.delete(`/student-id-cards/${id}`),
 };
 
@@ -4371,12 +4371,12 @@ export const eventGuestsApi = {
     const formData = new FormData();
     // Explicitly append file with name to ensure Android Chrome compatibility
     formData.append('photo', file, file.name);
-    
+
     try {
       const result = await apiClient.post<{ photo_url: string; photo_thumb_url: string }>(`/guests/${guestId}/photo`, formData, {
         headers: {}, // Let browser set Content-Type with boundary (important for Android Chrome)
       });
-      
+
       return result;
     } catch (error: any) {
       throw error;
@@ -4575,21 +4575,21 @@ export const helpCenterArticlesApi = {
     return apiClient.post(`/help-center/articles/${id}/helpful`);
   },
 
-    markNotHelpful: async (id: string) => {
-        return apiClient.post(`/help-center/articles/${id}/not-helpful`);
-    },
+  markNotHelpful: async (id: string) => {
+    return apiClient.post(`/help-center/articles/${id}/not-helpful`);
+  },
 
-    publish: async (id: string) => {
-        return apiClient.post(`/help-center/articles/${id}/publish`);
-    },
+  publish: async (id: string) => {
+    return apiClient.post(`/help-center/articles/${id}/publish`);
+  },
 
-    unpublish: async (id: string) => {
-        return apiClient.post(`/help-center/articles/${id}/unpublish`);
-    },
+  unpublish: async (id: string) => {
+    return apiClient.post(`/help-center/articles/${id}/unpublish`);
+  },
 
-    archive: async (id: string) => {
-        return apiClient.post(`/help-center/articles/${id}/archive`);
-    },
+  archive: async (id: string) => {
+    return apiClient.post(`/help-center/articles/${id}/archive`);
+  },
 };
 
 export const websiteSettingsApi = {
@@ -4821,6 +4821,9 @@ export const publicWebsiteApi = {
   getSite: async (params?: { locale?: string }) => {
     return apiClient.get('/public/website/site', params);
   },
+  getMenus: async () => {
+    return apiClient.get('/public/website/menus');
+  },
   getPage: async (slug: string) => {
     return apiClient.get(`/public/website/pages/${slug}`);
   },
@@ -4833,8 +4836,8 @@ export const publicWebsiteApi = {
   getFatwaCategories: async () => {
     return apiClient.get('/public/website/fatwas/categories');
   },
-  getFatwas: async () => {
-    return apiClient.get('/public/website/fatwas');
+  getFatwas: async (params?: { category?: string }) => {
+    return apiClient.get('/public/website/fatwas', { params });
   },
   getFatwa: async (slug: string) => {
     return apiClient.get(`/public/website/fatwas/${slug}`);
@@ -4848,6 +4851,30 @@ export const publicWebsiteApi = {
     is_anonymous?: boolean;
   }) => {
     return apiClient.post('/public/website/fatwas/questions', data);
+  },
+  getLibrary: async (params?: { query?: string; category?: string }) => {
+    return apiClient.get('/public/website/library', params);
+  },
+  getCourses: async (params?: { category?: string; level?: string }) => {
+    return apiClient.get('/public/website/courses', params);
+  },
+  getScholars: async () => {
+    return apiClient.get('/public/website/scholars');
+  },
+  getGraduates: async (params?: { year?: number }) => {
+    return apiClient.get('/public/website/graduates', params);
+  },
+  getDonations: async () => {
+    return apiClient.get('/public/website/donations');
+  },
+  submitContact: async (data: any) => {
+    return apiClient.post('/public/website/contact', data);
+  },
+  getPublicExamOptions: async () => {
+    return apiClient.get('/public/website/exams/options');
+  },
+  searchPublicExamResults: async (data: { exam_id: string; search_term: string }) => {
+    return apiClient.post('/public/website/exams/results', data);
   },
 };
 

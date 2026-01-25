@@ -67,6 +67,12 @@ use App\Http\Controllers\Website\WebsiteMediaController;
 use App\Http\Controllers\Website\WebsiteDomainController;
 use App\Http\Controllers\Website\WebsiteMenuController;
 use App\Http\Controllers\Website\PublicWebsiteController;
+use App\Http\Controllers\Website\WebsitePublicBooksController;
+use App\Http\Controllers\Website\WebsiteScholarsController;
+use App\Http\Controllers\Website\WebsiteCoursesController;
+use App\Http\Controllers\Website\WebsiteGraduatesController;
+use App\Http\Controllers\Website\WebsiteDonationsController;
+use App\Http\Controllers\Website\WebsiteInboxController;
 use App\Http\Controllers\IdCardTemplateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExamController;
@@ -131,6 +137,7 @@ Route::get('/maintenance/status/public', [App\Http\Controllers\MaintenanceContro
 // Public certificate verification routes (rate limited)
 use App\Http\Controllers\CertificateVerifyController;
 use App\Http\Controllers\Website\PublicFatwaController;
+use App\Http\Controllers\Website\PublicExamResultController;
 Route::get('/verify/certificate/{hash}', [CertificateVerifyController::class, 'show'])
     ->middleware('throttle:60,1'); // 60 requests per minute for hash verification
 
@@ -151,6 +158,8 @@ Route::middleware(['public.website.resolve', 'public.website.feature'])
     ->prefix('public/website')
     ->group(function () {
         Route::get('/site', [PublicWebsiteController::class, 'site']);
+        Route::get('/schools/{schoolId}/logos/{type}', [PublicWebsiteController::class, 'logo'])->where('type', 'primary|secondary|ministry');
+        Route::get('/menus', [PublicWebsiteController::class, 'menus']);
         Route::get('/pages/{slug}', [PublicWebsiteController::class, 'page']);
         Route::get('/posts', [PublicWebsiteController::class, 'posts']);
         Route::get('/events', [PublicWebsiteController::class, 'events']);
@@ -158,8 +167,16 @@ Route::middleware(['public.website.resolve', 'public.website.feature'])
         Route::get('/fatwas', [PublicFatwaController::class, 'index']);
         Route::get('/fatwas/{slug}', [PublicFatwaController::class, 'show']);
         Route::post('/fatwas/questions', [PublicFatwaController::class, 'storeQuestion']);
+        Route::get('/library', [PublicWebsiteController::class, 'library']);
+        Route::get('/courses', [PublicWebsiteController::class, 'courses']);
+        Route::get('/scholars', [PublicWebsiteController::class, 'scholars']);
+        Route::get('/graduates', [PublicWebsiteController::class, 'graduates']);
+        Route::get('/donations', [PublicWebsiteController::class, 'donations']);
+        Route::post('/contact', [PublicWebsiteController::class, 'contact']);
         Route::get('/sitemap.xml', [PublicWebsiteController::class, 'sitemap']);
         Route::get('/robots.txt', [PublicWebsiteController::class, 'robots']);
+        Route::get('/exams/options', [PublicExamResultController::class, 'options']);
+        Route::post('/exams/results', [PublicExamResultController::class, 'search']);
     });
 
 // Auth routes (require authentication but NO subscription checks - always allowed)
@@ -1390,6 +1407,55 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
                 Route::post('/fatwas', [\App\Http\Controllers\Website\WebsiteFatwaController::class, 'store']);
                 Route::put('/fatwas/{id}', [\App\Http\Controllers\Website\WebsiteFatwaController::class, 'update']);
                 Route::delete('/fatwas/{id}', [\App\Http\Controllers\Website\WebsiteFatwaController::class, 'destroy']);
+            });
+
+            // Public Books/Library
+            Route::get('/public-books', [WebsitePublicBooksController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/public-books', [WebsitePublicBooksController::class, 'store']);
+                Route::put('/public-books/{id}', [WebsitePublicBooksController::class, 'update']);
+                Route::delete('/public-books/{id}', [WebsitePublicBooksController::class, 'destroy']);
+            });
+
+            // Scholars
+            Route::get('/scholars', [WebsiteScholarsController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/scholars', [WebsiteScholarsController::class, 'store']);
+                Route::put('/scholars/{id}', [WebsiteScholarsController::class, 'update']);
+                Route::delete('/scholars/{id}', [WebsiteScholarsController::class, 'destroy']);
+            });
+
+            // Courses
+            Route::get('/courses', [WebsiteCoursesController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/courses', [WebsiteCoursesController::class, 'store']);
+                Route::put('/courses/{id}', [WebsiteCoursesController::class, 'update']);
+                Route::delete('/courses/{id}', [WebsiteCoursesController::class, 'destroy']);
+            });
+
+            // Graduates
+            Route::get('/graduates', [WebsiteGraduatesController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/graduates', [WebsiteGraduatesController::class, 'store']);
+                Route::put('/graduates/{id}', [WebsiteGraduatesController::class, 'update']);
+                Route::delete('/graduates/{id}', [WebsiteGraduatesController::class, 'destroy']);
+            });
+
+            // Donations
+            Route::get('/donations', [WebsiteDonationsController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/donations', [WebsiteDonationsController::class, 'store']);
+                Route::put('/donations/{id}', [WebsiteDonationsController::class, 'update']);
+                Route::delete('/donations/{id}', [WebsiteDonationsController::class, 'destroy']);
+            });
+
+            // Inbox (Contact Form)
+            Route::get('/inbox', [WebsiteInboxController::class, 'index']);
+            Route::get('/inbox/stats', [WebsiteInboxController::class, 'stats']);
+            Route::get('/inbox/{id}', [WebsiteInboxController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::put('/inbox/{id}', [WebsiteInboxController::class, 'update']);
+                Route::delete('/inbox/{id}', [WebsiteInboxController::class, 'destroy']);
             });
         });
     });
