@@ -3,9 +3,20 @@
     "shadcn": {
       "command": "npx",
       "args": [
+        "--yes",
         "shadcn@latest",
         "mcp"
       ]
+    },
+    "laravel-boost": {
+      "command": "php",
+      "args": [
+        "-ddisplay_errors=0",
+        "-ddisplay_startup_errors=0",
+        "E:/Nazim Production/nazim-web-1/backend/artisan",
+        "boost:mcp"
+      ],
+      "cwd": "E:/Nazim Production/nazim-web-1/backend"
     }
   }
 }
