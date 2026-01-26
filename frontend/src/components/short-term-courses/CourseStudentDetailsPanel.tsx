@@ -23,6 +23,7 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCourseStudents } from '@/hooks/useCourseStudents';
+import { useLanguage } from '@/hooks/useLanguage';
 import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import type { CourseStudent } from '@/types/domain/courseStudent';
@@ -54,11 +55,12 @@ export function CourseStudentDetailsPanel({
   onOpenChange,
   student,
 }: CourseStudentDetailsPanelProps) {
+  const { t } = useLanguage();
   // Get all students to find related courses
   const { data: allStudents } = useCourseStudents(undefined, false);
   const { data: courses } = useShortTermCourses();
 
-  // Find all courses this student is enrolled in
+  // Find all courses this student is enrolled in (by main_student_id or matching name/father name)
   const studentCourses = useMemo(() => {
     if (!student || !allStudents || !courses) return [];
     
@@ -96,8 +98,8 @@ export function CourseStudentDetailsPanel({
             <div>
               <SheetTitle className="text-2xl font-bold">{student.fullName}</SheetTitle>
               <SheetDescription>
-                {student.admissionNo && `Admission #${student.admissionNo}`}
-                {student.mainStudentId && ' • Linked to Main Student'}
+                {student.admissionNo && `${t('courses.studentDetails.admissionNumber')}${student.admissionNo}`}
+                {student.mainStudentId && ` • ${t('courses.studentDetails.linkedToMain')}`}
               </SheetDescription>
             </div>
           </div>
@@ -107,15 +109,15 @@ export function CourseStudentDetailsPanel({
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="info">
               <User className="h-4 w-4 mr-2" />
-              Student Info
+              {t('courses.studentDetails.studentInfo')}
             </TabsTrigger>
             <TabsTrigger value="courses">
               <BookOpen className="h-4 w-4 mr-2" />
-              Courses ({studentCourses.length + 1})
+              {t('courses.studentDetails.courses') || 'Courses'} ({studentCourses.length + (currentCourse ? 1 : 0)})
             </TabsTrigger>
             <TabsTrigger value="history">
               <Clock className="h-4 w-4 mr-2" />
-              History
+              {t('courses.studentDetails.history')}
             </TabsTrigger>
           </TabsList>
 
@@ -126,28 +128,28 @@ export function CourseStudentDetailsPanel({
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <StatusIcon className="h-5 w-5" />
-                  Enrollment Status
+                  {t('courses.studentDetails.enrollmentStatus')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Status</span>
+                  <span className="text-sm text-muted-foreground">{t('events.status')}</span>
                   <Badge variant="outline" className={statusBadge[student.completionStatus] || ''}>
                     {student.completionStatus}
                   </Badge>
                 </div>
                 {student.certificateIssued && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Certificate</span>
+                    <span className="text-sm text-muted-foreground">{t('courses.studentDetails.certificate')}</span>
                     <Badge variant="outline" className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200">
                       <Award className="h-3 w-3 mr-1" />
-                      Issued
+                      {t('courses.studentDetails.issued')}
                     </Badge>
                   </div>
                 )}
                 {student.registrationDate && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Registration Date</span>
+                    <span className="text-sm text-muted-foreground">{t('courses.studentDetails.registrationDate')}</span>
                     <span className="text-sm font-medium">
                       {formatDate(student.registrationDate)}
                     </span>
@@ -155,7 +157,7 @@ export function CourseStudentDetailsPanel({
                 )}
                 {student.completionDate && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Completion Date</span>
+                    <span className="text-sm text-muted-foreground">{t('courses.studentDetails.completionDate')}</span>
                     <span className="text-sm font-medium">
                       {formatDate(student.completionDate)}
                     </span>
@@ -163,7 +165,7 @@ export function CourseStudentDetailsPanel({
                 )}
                 {student.grade && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Grade</span>
+                    <span className="text-sm text-muted-foreground">{t('courses.studentDetails.grade')}</span>
                     <span className="text-sm font-medium">{student.grade}</span>
                   </div>
                 )}
@@ -175,48 +177,48 @@ export function CourseStudentDetailsPanel({
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <User className="h-5 w-5" />
-                  Personal Information
+                  {t('courses.studentDetails.personalInformation')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Full Name</p>
+                    <p className="text-sm text-muted-foreground">{t('courses.registrationForm.fullName')}</p>
                     <p className="text-sm font-medium">{student.fullName || '-'}</p>
                   </div>
                   {student.fatherName && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Father Name</p>
+                      <p className="text-sm text-muted-foreground">{t('courses.registrationForm.fatherName')}</p>
                       <p className="text-sm font-medium">{student.fatherName}</p>
                     </div>
                   )}
                   {student.grandfatherName && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Grandfather Name</p>
+                      <p className="text-sm text-muted-foreground">{t('courses.registrationForm.grandfatherName')}</p>
                       <p className="text-sm font-medium">{student.grandfatherName}</p>
                     </div>
                   )}
                   {student.motherName && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Mother Name</p>
+                      <p className="text-sm text-muted-foreground">{t('courses.registrationForm.motherName')}</p>
                       <p className="text-sm font-medium">{student.motherName}</p>
                     </div>
                   )}
                   {student.gender && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Gender</p>
+                      <p className="text-sm text-muted-foreground">{t('courses.registrationForm.gender')}</p>
                       <p className="text-sm font-medium capitalize">{student.gender}</p>
                     </div>
                   )}
                   {student.birthYear && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Birth Year</p>
+                      <p className="text-sm text-muted-foreground">{t('courses.registrationForm.birthYear')}</p>
                       <p className="text-sm font-medium">{student.birthYear}</p>
                     </div>
                   )}
                   {student.birthDate && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Birth Date</p>
+                      <p className="text-sm text-muted-foreground">{t('courses.registrationForm.birthDate')}</p>
                       <p className="text-sm font-medium">
                         {formatDate(student.birthDate)}
                       </p>
@@ -224,19 +226,19 @@ export function CourseStudentDetailsPanel({
                   )}
                   {student.age && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Age</p>
-                      <p className="text-sm font-medium">{student.age} years</p>
+                      <p className="text-sm text-muted-foreground">{t('courses.registrationForm.age')}</p>
+                      <p className="text-sm font-medium">{student.age} {t('common.years')}</p>
                     </div>
                   )}
                   {student.nationality && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Nationality</p>
+                      <p className="text-sm text-muted-foreground">{t('courses.registrationForm.nationality')}</p>
                       <p className="text-sm font-medium">{student.nationality}</p>
                     </div>
                   )}
                   {student.preferredLanguage && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Preferred Language</p>
+                      <p className="text-sm text-muted-foreground">{t('courses.registrationForm.preferredLanguage')}</p>
                       <p className="text-sm font-medium">{student.preferredLanguage}</p>
                     </div>
                   )}
@@ -247,13 +249,13 @@ export function CourseStudentDetailsPanel({
                     <div className="grid grid-cols-2 gap-4">
                       {student.isOrphan && (
                         <div>
-                          <p className="text-sm text-muted-foreground">Orphan Status</p>
-                          <p className="text-sm font-medium">Yes</p>
+                          <p className="text-sm text-muted-foreground">{t('courses.registrationForm.orphanStatus')}</p>
+                          <p className="text-sm font-medium">{t('common.yes')}</p>
                         </div>
                       )}
                       {student.disabilityStatus && (
                         <div>
-                          <p className="text-sm text-muted-foreground">Disability Status</p>
+                          <p className="text-sm text-muted-foreground">{t('courses.registrationForm.disabilityStatus')}</p>
                           <p className="text-sm font-medium">{student.disabilityStatus}</p>
                         </div>
                       )}
@@ -269,13 +271,13 @@ export function CourseStudentDetailsPanel({
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <MapPin className="h-5 w-5" />
-                    Address Information
+                    {t('courses.studentDetails.addressInformation')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {student.origProvince && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Origin</p>
+                      <p className="text-sm text-muted-foreground">{t('courses.studentDetails.origin')}</p>
                       <p className="text-sm font-medium">
                         {[student.origVillage, student.origDistrict, student.origProvince]
                           .filter(Boolean)
@@ -285,7 +287,7 @@ export function CourseStudentDetailsPanel({
                   )}
                   {student.currProvince && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Current Location</p>
+                      <p className="text-sm text-muted-foreground">{t('courses.studentDetails.currentLocation')}</p>
                       <p className="text-sm font-medium">
                         {[student.currVillage, student.currDistrict, student.currProvince]
                           .filter(Boolean)
@@ -295,7 +297,7 @@ export function CourseStudentDetailsPanel({
                   )}
                   {student.homeAddress && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Home Address</p>
+                      <p className="text-sm text-muted-foreground">{t('courses.registrationForm.homeAddress')}</p>
                       <p className="text-sm font-medium">{student.homeAddress}</p>
                     </div>
                   )}
@@ -309,19 +311,19 @@ export function CourseStudentDetailsPanel({
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Users className="h-5 w-5" />
-                    Guardian Information
+                    {t('courses.studentDetails.guardianInformation')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {student.guardianName && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Guardian Name</p>
+                      <p className="text-sm text-muted-foreground">{t('courses.registrationForm.guardianName')}</p>
                       <p className="text-sm font-medium">{student.guardianName}</p>
                     </div>
                   )}
                   {student.guardianRelation && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Relation</p>
+                      <p className="text-sm text-muted-foreground">{t('courses.registrationForm.relation')}</p>
                       <p className="text-sm font-medium">{student.guardianRelation}</p>
                     </div>
                   )}
@@ -329,7 +331,7 @@ export function CourseStudentDetailsPanel({
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Phone</p>
+                        <p className="text-sm text-muted-foreground">{t('courses.registrationForm.guardianPhone')}</p>
                         <p className="text-sm font-medium">{student.guardianPhone}</p>
                       </div>
                     </div>
@@ -383,24 +385,24 @@ export function CourseStudentDetailsPanel({
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <BookOpen className="h-5 w-5" />
-                    Current Course
+                    {t('courses.studentDetails.currentCourse')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
-                    <p className="text-sm text-muted-foreground">Course Name</p>
+                    <p className="text-sm text-muted-foreground">{t('courses.studentDetails.courseName')}</p>
                     <p className="text-base font-semibold">{currentCourse.name}</p>
                   </div>
                   {currentCourse.description && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Description</p>
+                      <p className="text-sm text-muted-foreground">{t('courses.studentDetails.description')}</p>
                       <p className="text-sm">{currentCourse.description}</p>
                     </div>
                   )}
                   <div className="flex items-center gap-4">
                     {currentCourse.startDate && (
                       <div>
-                        <p className="text-sm text-muted-foreground">Start Date</p>
+                        <p className="text-sm text-muted-foreground">{t('courses.studentDetails.startDate')}</p>
                         <p className="text-sm font-medium">
                           {formatDate(currentCourse.startDate)}
                         </p>
@@ -408,7 +410,7 @@ export function CourseStudentDetailsPanel({
                     )}
                     {currentCourse.endDate && (
                       <div>
-                        <p className="text-sm text-muted-foreground">End Date</p>
+                        <p className="text-sm text-muted-foreground">{t('courses.studentDetails.endDate')}</p>
                         <p className="text-sm font-medium">
                           {formatDate(currentCourse.endDate)}
                         </p>
@@ -416,7 +418,7 @@ export function CourseStudentDetailsPanel({
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Status:</span>
+                    <span className="text-sm text-muted-foreground">{t('events.status')}:</span>
                     <Badge variant="outline" className={statusBadge[student.completionStatus] || ''}>
                       {student.completionStatus}
                     </Badge>
@@ -431,7 +433,7 @@ export function CourseStudentDetailsPanel({
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <GraduationCap className="h-5 w-5" />
-                    Other Enrollments ({studentCourses.length})
+                    {t('courses.studentDetails.otherEnrollments') || 'Other Enrollments'} ({studentCourses.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -454,20 +456,20 @@ export function CourseStudentDetailsPanel({
                         {enrollment.registrationDate && (
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            <span>Registered: {formatDate(enrollment.registrationDate)}</span>
+                            <span>{t('courses.studentDetails.registered') || 'Registered'}: {formatDate(enrollment.registrationDate)}</span>
                           </div>
                         )}
                         {enrollment.completionDate && (
                           <div className="flex items-center gap-1">
                             <CheckCircle className="h-3 w-3" />
-                            <span>Completed: {formatDate(enrollment.completionDate)}</span>
+                            <span>{t('courses.studentDetails.completed') || 'Completed'}: {formatDate(enrollment.completionDate)}</span>
                           </div>
                         )}
                       </div>
                       {enrollment.certificateIssued && (
                         <div className="flex items-center gap-1 text-xs">
                           <Award className="h-3 w-3 text-purple-600" />
-                          <span className="text-purple-600 font-medium">Certificate Issued</span>
+                          <span className="text-purple-600 font-medium">{t('courses.studentDetails.certificateIssued') || 'Certificate Issued'}</span>
                         </div>
                       )}
                     </div>
@@ -479,7 +481,7 @@ export function CourseStudentDetailsPanel({
             {studentCourses.length === 0 && !currentCourse && (
               <div className="text-center py-8 text-muted-foreground">
                 <BookOpen className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No course enrollments found</p>
+                <p>{t('courses.studentDetails.noCourseEnrollments') || 'No course enrollments found'}</p>
               </div>
             )}
           </TabsContent>
@@ -490,7 +492,7 @@ export function CourseStudentDetailsPanel({
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Clock className="h-5 w-5" />
-                  Enrollment History
+                  {t('courses.studentDetails.enrollmentHistory')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -503,13 +505,13 @@ export function CourseStudentDetailsPanel({
                     </div>
                     <div className="flex-1 pb-4">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold">Enrolled</p>
+                        <p className="text-sm font-semibold">{t('courses.studentDetails.enrolled')}</p>
                         <p className="text-xs text-muted-foreground">
                           {formatDate(student.registrationDate)}
                         </p>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Student registered for {currentCourse?.name || 'course'}
+                        {t('courses.studentDetails.studentRegisteredFor', { courseName: currentCourse?.name || t('certificateTemplates.course') })}
                       </p>
                     </div>
                   </div>
@@ -524,14 +526,14 @@ export function CourseStudentDetailsPanel({
                     </div>
                     <div className="flex-1 pb-4">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold">Completed</p>
+                        <p className="text-sm font-semibold">{t('courses.studentDetails.completed')}</p>
                         <p className="text-xs text-muted-foreground">
                           {formatDate(student.completionDate)}
                         </p>
                       </div>
                       {student.grade && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Grade: {student.grade}
+                          {t('courses.studentDetails.grade')}: {student.grade}
                         </p>
                       )}
                     </div>
@@ -549,7 +551,7 @@ export function CourseStudentDetailsPanel({
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-semibold flex items-center gap-1">
                           <Award className="h-3 w-3" />
-                          Certificate Issued
+                          {t('courses.studentDetails.certificateIssued')}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {formatDate(student.certificateIssuedDate)}
@@ -569,7 +571,7 @@ export function CourseStudentDetailsPanel({
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-semibold flex items-center gap-1">
                           <DollarSign className="h-3 w-3" />
-                          Fee Paid
+                          {t('courses.studentDetails.feePaid')}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {formatDate(student.feePaidDate)}
@@ -577,7 +579,7 @@ export function CourseStudentDetailsPanel({
                       </div>
                       {student.feeAmount !== null && student.feeAmount !== undefined && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Amount: ${typeof student.feeAmount === 'number' 
+                          {t('common.amount')}: ${typeof student.feeAmount === 'number' 
                             ? student.feeAmount.toFixed(2) 
                             : Number(student.feeAmount || 0).toFixed(2)}
                         </p>
@@ -590,11 +592,11 @@ export function CourseStudentDetailsPanel({
                 <Separator />
                 <div className="space-y-2 text-xs text-muted-foreground">
                   <div className="flex justify-between">
-                    <span>Created:</span>
+                    <span>{t('courses.studentDetails.created')}:</span>
                     <span>{formatDate(student.createdAt)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Last Updated:</span>
+                    <span>{t('courses.studentDetails.lastUpdated')}:</span>
                     <span>{formatDate(student.updatedAt)}</span>
                   </div>
                 </div>

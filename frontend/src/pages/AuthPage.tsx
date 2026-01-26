@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useUserPermissions } from '@/hooks/usePermissions';
+import { useFeatures } from '@/hooks/useSubscription';
 import { authApi } from '@/lib/api/client';
 import { getPostLoginRedirectPath } from '@/lib/redirectUtils';
 
@@ -23,6 +24,7 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const { user, refreshAuth } = useAuth();
   const { data: permissions = [], isLoading: permissionsLoading } = useUserPermissions();
+  const { data: features, isLoading: featuresLoading } = useFeatures();
   const [authLoading, setAuthLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -40,23 +42,31 @@ export default function AuthPage() {
   const { profile } = useAuth();
 
   useEffect(() => {
-    if (user && !permissionsLoading) {
-      // Get redirect path based on permissions and profile (async function)
-      getPostLoginRedirectPath(permissions, profile).then((redirectPath) => {
+    // Wait for both permissions and features to load before redirecting
+    if (user && !permissionsLoading && !featuresLoading) {
+      // Get redirect path based on permissions, profile, and features (async function)
+      getPostLoginRedirectPath(permissions, profile, features).then((redirectPath) => {
         navigate(redirectPath, { replace: true });
       }).catch((error) => {
-        // On error, default to dashboard (unless event user)
+        // On error, default to dashboard (unless event user with events feature enabled)
         if (import.meta.env.DEV) {
           console.error('Redirect error:', error);
         }
-        if (profile?.is_event_user && profile?.event_id) {
+        // Only redirect to events if user is an event user AND events feature is enabled
+        // Use the same pattern as useHasFeature hook: check isAccessible first, then isEnabled
+        const hasEventsFeature = features?.some((f) => {
+          if (f.featureKey !== 'events') return false;
+          // Check isAccessible first (more accurate), fallback to isEnabled
+          return f.isAccessible ?? f.isEnabled ?? false;
+        }) ?? false;
+        if (profile?.is_event_user && profile?.event_id && hasEventsFeature) {
           navigate(`/events/${profile.event_id}`, { replace: true });
         } else {
           navigate('/dashboard', { replace: true });
         }
       });
     }
-  }, [user, navigate, permissions, permissionsLoading, profile]);
+  }, [user, navigate, permissions, permissionsLoading, profile, features, featuresLoading]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

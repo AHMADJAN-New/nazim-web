@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, memo, useState as useReactState } from 'react';
+import { useEffect, memo, useState as useReactState, useState } from 'react';
 import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 
@@ -81,6 +81,7 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
   const updateMutation = useUpdateCourseStudent();
   const { data: courses } = useShortTermCourses();
   const [selectedPictureFile, setSelectedPictureFile] = useReactState<File | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('basic');
   const pictureUpload = useCourseStudentPictureUpload();
   const queryClient = useQueryClient();
 
@@ -126,7 +127,10 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
   } = form;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setActiveTab('basic');
+      return;
+    }
     if (student) {
       reset({
         courseId: student.courseId || '',
@@ -265,25 +269,48 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? t('courses.registrationForm.editCourseStudent') : t('courses.registrationForm.registerCourseStudent')}</DialogTitle>
-          <DialogDescription>
-            {isEdit ? t('courses.registrationForm.updateDescription') : t('courses.registrationForm.registerDescription')}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <style>{`
+        @media (max-width: 639px) {
+          [data-radix-dialog-content][data-state="open"] {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            transform: none !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+          }
+        }
+      `}</style>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent 
+          className="max-w-5xl max-h-[100vh] h-[100vh] sm:max-h-[95vh] sm:h-[95vh] w-full sm:w-[95vw] md:w-[90vw] lg:w-full p-0 gap-0 flex flex-col m-0 sm:m-4 rounded-none sm:rounded-lg"
+          aria-describedby="course-student-form-description"
+        >
+          <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex-shrink-0">
+            <DialogTitle className="text-lg sm:text-xl">{isEdit ? t('courses.registrationForm.editCourseStudent') : t('courses.registrationForm.registerCourseStudent')}</DialogTitle>
+            <DialogDescription id="course-student-form-description" className="text-sm">
+              {isEdit ? t('courses.registrationForm.updateDescription') : t('courses.registrationForm.registerDescription')}
+            </DialogDescription>
+          </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="basic">{t('courses.registrationForm.basicInfo')}</TabsTrigger>
-              <TabsTrigger value="address">{t('courses.registrationForm.address')}</TabsTrigger>
-              <TabsTrigger value="guardian">{t('courses.registrationForm.guardianFee')}</TabsTrigger>
-            </TabsList>
+          <Form {...form}>
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0 px-4 sm:px-6">
+                <TabsList className="flex w-full gap-1 h-auto mb-3 sm:mb-4 flex-shrink-0 overflow-x-auto pb-1 scrollbar-hide">
+                  <TabsTrigger value="basic" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">{t('courses.registrationForm.basicInfo')}</TabsTrigger>
+                  <TabsTrigger value="address" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">{t('courses.registrationForm.address')}</TabsTrigger>
+                  <TabsTrigger value="guardian" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">{t('courses.registrationForm.guardianFee')}</TabsTrigger>
+                </TabsList>
 
-            <TabsContent value="basic" className="space-y-4 mt-4">
+                <div className="flex-1 overflow-y-auto pb-4 min-h-0">
+                  <TabsContent value="basic" className="space-y-4 mt-0">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="courseId">{t('courses.registrationForm.course')} *</Label>
@@ -438,9 +465,9 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
                   allowUploadWithoutStudent={!isEdit}
                 />
               </div>
-            </TabsContent>
+                  </TabsContent>
 
-            <TabsContent value="address" className="space-y-4 mt-4">
+                  <TabsContent value="address" className="space-y-4 mt-0">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="origProvince">{t('courses.registrationForm.originProvince')}</Label>
@@ -505,9 +532,9 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
                   />
                 </div>
               </div>
-            </TabsContent>
+                  </TabsContent>
 
-            <TabsContent value="guardian" className="space-y-4 mt-4">
+                  <TabsContent value="guardian" className="space-y-4 mt-0">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="guardianName">{t('courses.registrationForm.guardianName')}</Label>
@@ -595,21 +622,65 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
                   />
                 </div>
               </div>
-            </TabsContent>
-            </Tabs>
+                  </TabsContent>
+                </div>
+              </Tabs>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                {t('courses.registrationForm.cancel')}
-              </Button>
-              <Button type="submit" disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}>
-                {isEdit ? t('courses.registrationForm.updateStudent') : t('courses.registrationForm.registerStudent')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+              <DialogFooter className="px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4 flex-shrink-0 border-t bg-background">
+                <div className="flex flex-col sm:flex-row gap-2 w-full">
+                  <div className="flex gap-2 flex-1 order-2 sm:order-1">
+                    {activeTab !== 'basic' && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          const tabs = ['basic', 'address', 'guardian'];
+                          const currentIndex = tabs.indexOf(activeTab);
+                          if (currentIndex > 0) {
+                            setActiveTab(tabs[currentIndex - 1]);
+                          }
+                        }}
+                        className="flex-1 sm:flex-initial text-sm"
+                      >
+                        {t('events.previous') || 'Previous'}
+                      </Button>
+                    )}
+                    {activeTab !== 'guardian' && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          const tabs = ['basic', 'address', 'guardian'];
+                          const currentIndex = tabs.indexOf(activeTab);
+                          if (currentIndex < tabs.length - 1) {
+                            setActiveTab(tabs[currentIndex + 1]);
+                          }
+                        }}
+                        className="flex-1 sm:flex-initial text-sm"
+                      >
+                        {t('events.next') || 'Next'}
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex gap-2 order-1 sm:order-2">
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto text-sm">
+                      {t('courses.registrationForm.cancel') || t('events.cancel')}
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}
+                      className="w-full sm:w-auto sm:min-w-[150px] text-sm"
+                    >
+                      {isEdit ? t('courses.registrationForm.updateStudent') : t('courses.registrationForm.registerStudent')}
+                    </Button>
+                  </div>
+                </div>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 });
 

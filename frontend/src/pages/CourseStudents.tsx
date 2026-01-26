@@ -94,24 +94,9 @@ const StudentRow = ({
   onCopyToMain,
   onViewDetails,
   courses,
-  allStudents,
-}: StudentRowProps & { courses?: ShortTermCourse[]; allStudents?: CourseStudent[] }) => {
+}: StudentRowProps & { courses?: ShortTermCourse[] }) => {
   const { t } = useLanguage();
   const course = courses?.find((c) => c.id === student.courseId);
-  
-  // Find all courses this student is enrolled in (by main_student_id or matching name/father name)
-  const studentCourses = useMemo(() => {
-    if (!allStudents || !courses) return [];
-    return allStudents
-      .filter(s => 
-        s.id !== student.id && 
-        (s.mainStudentId === student.mainStudentId || 
-         (s.mainStudentId && student.mainStudentId && s.mainStudentId === student.mainStudentId) ||
-         (s.fullName === student.fullName && s.fatherName === student.fatherName))
-      )
-      .map(s => courses.find(c => c.id === s.courseId))
-      .filter(Boolean) as ShortTermCourse[];
-  }, [allStudents, courses, student]);
   
   return (
     <TableRow 
@@ -132,23 +117,7 @@ const StudentRow = ({
         {student.admissionNo || '-'}
       </TableCell>
       <TableCell className="hidden lg:table-cell text-sm">
-        <div className="flex flex-col gap-1">
           {course?.name || '-'}
-          {studentCourses.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {studentCourses.slice(0, 2).map((c, idx) => (
-                <Badge key={`course-badge-${student.id}-${c.id}-${idx}`} variant="outline" className="text-xs">
-                  {c.name}
-                </Badge>
-              ))}
-              {studentCourses.length > 2 && (
-                <Badge key={`course-badge-more-${student.id}`} variant="outline" className="text-xs">
-                  +{studentCourses.length - 2} {t('events.more') || 'more'}
-                </Badge>
-              )}
-            </div>
-          )}
-        </div>
       </TableCell>
       <TableCell className="hidden lg:table-cell text-sm">
         {student.guardianName || '-'}
@@ -267,13 +236,10 @@ const CourseStudents = () => {
   const effectiveCourseId = selectedCourseId === 'all' ? undefined : selectedCourseId;
   const { data: students, isLoading, error, pagination, page, pageSize, setPage, setPageSize, refetch } = useCourseStudents(effectiveCourseId, true);
   const { data: courses } = useShortTermCourses();
-  // Get all students (not filtered) to check for multiple course enrollments
-  const { data: allStudents } = useCourseStudents(undefined, false);
   
   // Type assertions to ensure domain types
   const typedStudents = (students || []) as CourseStudent[];
   const typedCourses = (courses || []) as ShortTermCourse[];
-  const typedAllStudents = (allStudents || []) as CourseStudent[];
 
   const deleteMutation = useDeleteCourseStudent();
   const markCompletedMutation = useMarkCompleted();
@@ -570,7 +536,6 @@ const CourseStudents = () => {
                           key={student.id}
                           student={student}
                           courses={typedCourses}
-                          allStudents={typedAllStudents}
                           onEdit={handleEdit}
                           onDelete={handleDeleteClick}
                           onMarkCompleted={handleMarkCompleted}

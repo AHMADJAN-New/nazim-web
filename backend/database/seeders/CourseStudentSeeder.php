@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\CourseStudent;
 use App\Models\ShortTermCourse;
+use App\Services\Reports\DateConversionService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -194,7 +195,11 @@ class CourseStudentSeeder extends Seeder
             ->whereNull('deleted_at')
             ->count() + 1;
         
-        $year = $course->start_date ? $course->start_date->format('Y') : now()->format('Y');
+        // Convert to Shamsi (Jalali) calendar and get 2-digit year
+        $dateService = app(DateConversionService::class);
+        $date = $course->start_date ? $course->start_date : now();
+        $shamsiDate = $dateService->getDateComponents($date, 'jalali');
+        $year = substr((string) $shamsiDate['year'], -2); // Get last 2 digits of Shamsi year
         
         // Extract course code from name (first 3 letters, uppercase, alphanumeric only)
         $courseCode = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $course->name_en), 0, 3));

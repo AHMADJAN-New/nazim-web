@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateCourseStudentRequest;
 use App\Models\CourseStudent;
 use App\Models\ShortTermCourse;
 use App\Models\Student;
+use App\Services\Reports\DateConversionService;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,8 @@ use Illuminate\Support\Facades\Log;
 class CourseStudentController extends Controller
 {
     public function __construct(
-        private FileStorageService $fileStorageService
+        private FileStorageService $fileStorageService,
+        private DateConversionService $dateService
     ) {}
 
     private function getProfile($user)
@@ -122,8 +124,10 @@ class CourseStudentController extends Controller
             if ($course) {
                 $validated['admission_no'] = $this->generateAdmissionNumber($course);
             } else {
-                // Fallback if course not found
-                $validated['admission_no'] = 'CS-' . now()->format('Y') . '-' . str_pad((string)(CourseStudent::where('organization_id', $profile->organization_id)->count() + 1), 3, '0', STR_PAD_LEFT);
+                // Fallback if course not found - use Shamsi year
+                $shamsiDate = $this->dateService->getDateComponents(now(), 'jalali');
+                $year = substr((string) $shamsiDate['year'], -2); // Get last 2 digits of Shamsi year
+                $validated['admission_no'] = 'CS-' . $year . '-' . str_pad((string)(CourseStudent::where('organization_id', $profile->organization_id)->count() + 1), 3, '0', STR_PAD_LEFT);
             }
         }
 
@@ -739,7 +743,12 @@ class CourseStudentController extends Controller
     private function generateAdmissionNumber(ShortTermCourse $course): string
     {
         $sequence = CourseStudent::where('course_id', $course->id)->count() + 1;
-        $year = $course->start_date ? $course->start_date->format('Y') : now()->format('Y');
+        
+        // Convert to Shamsi (Jalali) calendar and get 2-digit year
+        $date = $course->start_date ? $course->start_date : now();
+        $shamsiDate = $this->dateService->getDateComponents($date, 'jalali');
+        $year = substr((string) $shamsiDate['year'], -2); // Get last 2 digits of Shamsi year
+        
         return sprintf('CS-%s-%s-%03d', strtoupper(substr($course->name, 0, 3)), $year, $sequence);
     }
 

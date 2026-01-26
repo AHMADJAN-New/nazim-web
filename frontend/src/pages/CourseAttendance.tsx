@@ -13,8 +13,19 @@ import {
   Heart,
   FileText,
   BarChart3,
+  ClipboardList,
+  Save,
+  ScanLine,
+  Search,
+  History,
+  Activity,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Check,
+  ChevronsUpDown,
 } from 'lucide-react';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import {
@@ -30,7 +41,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import {
   Dialog,
   DialogContent,
@@ -40,6 +53,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -56,6 +70,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import {
   useCourseAttendanceSessions,
   useCourseAttendanceSession,
@@ -76,6 +91,8 @@ import { CourseReportTable } from '@/components/course-attendance/CourseReportTa
 import { useLanguage } from '@/hooks/useLanguage';
 import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import { formatDate, formatDateTime } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { showToast } from '@/lib/toast';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused' | 'sick' | 'leave';
 
@@ -92,23 +109,37 @@ export default function CourseAttendance() {
 
   const [selectedCourseId, setSelectedCourseId] = useState(initialCourseId);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [attendanceMode, setAttendanceMode] = useState<'manual' | 'barcode'>('manual');
-  const [barcodeInput, setBarcodeInput] = useState('');
+  const [scanCardNumber, setScanCardNumber] = useState('');
+  const [scanNote, setScanNote] = useState('');
+  const [lastScanId, setLastScanId] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [attendanceRecords, setAttendanceRecords] = useState<Map<string, AttendanceRecord>>(new Map());
-  const [mainTab, setMainTab] = useState<'mark' | 'session-report' | 'course-report'>('mark');
+  const [mainTab, setMainTab] = useState<'create' | 'mark' | 'session-report' | 'course-report'>('create');
   const [reportSessionId, setReportSessionId] = useState<string | null>(null);
   const [courseReportStatus, setCourseReportStatus] = useState<'enrolled' | 'completed' | 'dropped' | 'failed' | 'all'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [scanFeedSearch, setScanFeedSearch] = useState('');
+  const [sessionSearchTerm, setSessionSearchTerm] = useState('');
+  const [isSessionSelectOpen, setIsSessionSelectOpen] = useState(false);
+  const [isSessionPanelOpen, setIsSessionPanelOpen] = useState(true);
 
-  const barcodeInputRef = useRef<HTMLInputElement>(null);
+  // Session creation form state
+  const [sessionDate, setSessionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [sessionTitle, setSessionTitle] = useState('');
+  const [sessionMethod, setSessionMethod] = useState<'manual' | 'barcode'>('manual');
+  const [sessionRemarks, setSessionRemarks] = useState('');
+
+  const scanInputRef = useRef<HTMLInputElement | null>(null);
+  const [studentCache, setStudentCache] = useState<Map<string, any>>(new Map());
 
   const { data: courses = [] } = useShortTermCourses();
   const { data: sessions = [], isLoading: sessionsLoading } = useCourseAttendanceSessions(selectedCourseId || undefined);
   const { data: currentSession } = useCourseAttendanceSession(selectedSessionId || '');
   const { data: roster = [], isLoading: rosterLoading } = useCourseRoster(selectedCourseId || undefined);
-  const { data: recentScans = [] } = useCourseAttendanceScans(selectedSessionId || '', 10);
+  const { data: scanFeed = [] } = useCourseAttendanceScans(selectedSessionId || '', 30);
   const { data: sessionReport = [], isLoading: sessionReportLoading } = useCourseAttendanceSessionReport(reportSessionId);
   const { data: courseReport = [], isLoading: courseReportLoading } = useCourseAttendanceCourseReport({
     courseId: selectedCourseId || undefined,
@@ -121,17 +152,141 @@ export default function CourseAttendance() {
   const scanAttendance = useScanCourseAttendance();
   const closeSession = useCloseCourseAttendanceSession();
 
-  // New session form state
-  const [newSessionDate, setNewSessionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [newSessionTitle, setNewSessionTitle] = useState('');
-  const [newSessionMethod, setNewSessionMethod] = useState<'manual' | 'barcode' | 'mixed'>('manual');
+  // Filter and sort sessions: prioritize today and yesterday, but show all open sessions
+  const filteredSessions = useMemo(() => {
+    if (!sessions || sessions.length === 0) return [];
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Filter to only open sessions
+    const allOpenSessions = sessions.filter((item) => item.status === 'open');
+    
+    // Sort: today first (most recent first within today), then yesterday, then others (most recent first)
+    return allOpenSessions.sort((a, b) => {
+      const dateA = new Date(a.session_date);
+      dateA.setHours(0, 0, 0, 0);
+      const dateB = new Date(b.session_date);
+      dateB.setHours(0, 0, 0, 0);
+      
+      const aIsToday = dateA.getTime() === today.getTime();
+      const aIsYesterday = dateA.getTime() === yesterday.getTime();
+      const bIsToday = dateB.getTime() === today.getTime();
+      const bIsYesterday = dateB.getTime() === yesterday.getTime();
+      
+      // Today sessions first
+      if (aIsToday && !bIsToday) return -1;
+      if (!aIsToday && bIsToday) return 1;
+      
+      // If both are today, sort by creation time (most recent first)
+      if (aIsToday && bIsToday) {
+        const timeA = new Date(a.session_date).getTime();
+        const timeB = new Date(b.session_date).getTime();
+        return timeB - timeA; // Most recent first
+      }
+      
+      // Yesterday sessions second
+      if (aIsYesterday && !bIsYesterday && !bIsToday) return -1;
+      if (!aIsYesterday && bIsYesterday && !aIsToday) return 1;
+      
+      // Then sort by date (most recent first)
+      return dateB.getTime() - dateA.getTime();
+    });
+  }, [sessions]);
+
+  // Searchable filtered sessions
+  const searchableSessions = useMemo(() => {
+    if (!sessionSearchTerm.trim()) return filteredSessions;
+    
+    const term = sessionSearchTerm.trim().toLowerCase();
+    return filteredSessions.filter((item) => {
+      const title = item.session_title || '';
+      const dateStr = formatDate(item.session_date).toLowerCase();
+      const method = item.method === 'manual' ? t('courses.attendance.manual') : t('courses.attendance.barcode');
+      
+      return (
+        title.toLowerCase().includes(term) ||
+        dateStr.includes(term) ||
+        method.toLowerCase().includes(term)
+      );
+    });
+  }, [filteredSessions, sessionSearchTerm, t]);
+
+  // Attendance options
+  const attendanceOptions = useMemo(() => ([
+    { value: 'present', label: t('courses.attendance.present'), icon: CheckCircle2, color: 'bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-400' },
+    { value: 'absent', label: t('courses.attendance.absent'), icon: XCircle, color: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-400' },
+    { value: 'late', label: t('courses.attendance.late'), icon: Clock, color: 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-400' },
+    { value: 'excused', label: t('courses.attendance.excused'), icon: AlertCircle, color: 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-400' },
+    { value: 'sick', label: t('courses.attendance.sick'), icon: Heart, color: 'bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-950 dark:text-purple-400' },
+    { value: 'leave', label: t('courses.attendance.leave'), icon: Calendar, color: 'bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950 dark:text-orange-400' },
+  ]), [t]);
+
+  const orderedRoster = useMemo(() => {
+    if (!roster) return [];
+    let filtered = roster.slice();
+    
+    if (searchTerm.trim()) {
+      const term = searchTerm.trim().toLowerCase();
+      filtered = filtered.filter(student => 
+        student.full_name.toLowerCase().includes(term) ||
+        student.admission_no.toLowerCase().includes(term) ||
+        (student.card_number && student.card_number.toLowerCase().includes(term))
+      );
+    }
+    
+    return filtered.sort((a, b) => a.full_name.localeCompare(b.full_name));
+  }, [roster, searchTerm]);
+
+  const filteredScanFeed = useMemo(() => {
+    if (!scanFeed) return [];
+    if (!scanFeedSearch.trim()) return scanFeed;
+    
+    const term = scanFeedSearch.trim().toLowerCase();
+    return scanFeed.filter(record => 
+      record.course_student?.full_name?.toLowerCase().includes(term) ||
+      record.course_student?.admission_no?.toLowerCase().includes(term) ||
+      (record.course_student?.card_number && record.course_student.card_number.toLowerCase().includes(term))
+    );
+  }, [scanFeed, scanFeedSearch]);
+
+  // Status badge component
+  const StatusBadge = ({ status }: { status: AttendanceStatus }) => {
+    const option = attendanceOptions.find(opt => opt.value === status);
+    if (!option) return null;
+    const Icon = option.icon;
+    return (
+      <Badge variant="outline" className={`${option.color} flex items-center gap-1.5 font-medium`}>
+        <Icon className="h-3.5 w-3.5" />
+        {option.label}
+      </Badge>
+    );
+  };
 
   // Focus barcode input when in barcode mode
   useEffect(() => {
-    if (attendanceMode === 'barcode' && barcodeInputRef.current) {
-      barcodeInputRef.current.focus();
+    if (attendanceMode === 'barcode' && scanInputRef.current) {
+      scanInputRef.current.focus();
     }
   }, [attendanceMode, selectedSessionId]);
+
+  // Cache students when roster is loaded
+  useEffect(() => {
+    if (roster && roster.length > 0) {
+      const cache = new Map<string, any>();
+      roster.forEach((student) => {
+        if (student.card_number) {
+          cache.set(student.card_number, student);
+        }
+        if (student.admission_no) {
+          cache.set(student.admission_no, student);
+        }
+      });
+      setStudentCache(cache);
+    }
+  }, [roster]);
 
   // Initialize attendance records from existing session data
   useEffect(() => {
@@ -149,15 +304,33 @@ export default function CourseAttendance() {
   }, [currentSession]);
 
   const handleCreateSession = async () => {
-    if (!selectedCourseId) return;
-    await createSession.mutateAsync({
-      course_id: selectedCourseId,
-      session_date: newSessionDate,
-      session_title: newSessionTitle || null,
-      method: newSessionMethod,
-    });
-    setIsCreateDialogOpen(false);
-    setNewSessionTitle('');
+    if (!selectedCourseId || !sessionDate) {
+      showToast.error(t('courses.attendance.selectCourseAndDate') || 'Please select a course and date');
+      return;
+    }
+
+    try {
+      const created = await createSession.mutateAsync({
+        course_id: selectedCourseId,
+        session_date: sessionDate,
+        session_title: sessionTitle || null,
+        method: sessionMethod,
+        remarks: sessionRemarks || undefined,
+      });
+      
+      // Reset form
+      setSessionTitle('');
+      setSessionRemarks('');
+      setSessionDate(format(new Date(), 'yyyy-MM-dd'));
+      setSessionMethod('manual');
+      
+      // Switch to mark tab and select the new session
+      setMainTab('mark');
+      setSelectedSessionId(created.id);
+      showToast.success(t('courses.attendance.sessionCreated') || 'Session created successfully');
+    } catch (error: any) {
+      showToast.error(error.message || t('events.error'));
+    }
   };
 
   const handleDeleteSession = async () => {
@@ -179,6 +352,7 @@ export default function CourseAttendance() {
   };
 
   const handleMarkAll = (status: AttendanceStatus) => {
+    if (!roster) return;
     const newMap = new Map<string, AttendanceRecord>();
     roster.forEach((student) => {
       newMap.set(student.id, { courseStudentId: student.id, status });
@@ -187,7 +361,10 @@ export default function CourseAttendance() {
   };
 
   const handleSaveAttendance = async () => {
-    if (!selectedSessionId || !roster || roster.length === 0) return;
+    if (!selectedSessionId || !roster || roster.length === 0) {
+      showToast.error(t('courses.attendance.sessionRequired') || 'Please select a session');
+      return;
+    }
     
     // Build records for all students in roster
     // Use existing records if available, otherwise default to 'absent'
@@ -201,46 +378,130 @@ export default function CourseAttendance() {
     });
     
     if (apiRecords.length === 0) {
-      console.error('No students in roster to save');
+      showToast.error(t('courses.attendance.recordsRequired') || 'No records to save');
       return;
     }
     
-    await markRecords.mutateAsync({ sessionId: selectedSessionId, records: apiRecords });
+    try {
+      await markRecords.mutateAsync({ sessionId: selectedSessionId, records: apiRecords });
+      showToast.success(t('courses.attendance.attendanceSaved') || 'Attendance saved successfully');
+    } catch (error: any) {
+      showToast.error(error.message || t('events.error'));
+    }
   };
 
-  const handleBarcodeScan = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && barcodeInput.trim() && selectedSessionId) {
-      await scanAttendance.mutateAsync({ sessionId: selectedSessionId, code: barcodeInput.trim() });
-      setBarcodeInput('');
+  const handleScanSubmit = async () => {
+    if (!scanCardNumber.trim()) {
+      setScanError(t('courses.attendance.scanPrompt') || 'Please enter a card number');
+      setTimeout(() => setScanError(null), 2000);
+      return;
     }
+    
+    const scannedValue = scanCardNumber.trim();
+    setScanError(null);
+    
+    const foundStudent = studentCache.get(scannedValue);
+    if (!foundStudent && roster && roster.length > 0) {
+      setScanError(t('leave.studentNotFound') || 'Student not found');
+      setTimeout(() => setScanError(null), 2000);
+      setScanCardNumber('');
+      if (scanInputRef.current) {
+        scanInputRef.current.focus();
+      }
+      return;
+    }
+    
+    setScanCardNumber('');
+    
+    if (scanInputRef.current) {
+      scanInputRef.current.focus();
+    }
+    
+    scanAttendance.mutate(
+      { sessionId: selectedSessionId!, code: scannedValue, note: scanNote || undefined },
+      {
+        onSuccess: (result) => {
+          setLastScanId((result as any)?.id || null);
+          setTimeout(() => setLastScanId(null), 3000);
+          setScanNote('');
+        },
+        onError: (error: any) => {
+          setScanError(error.message || t('events.error') || 'Failed to scan');
+          setTimeout(() => setScanError(null), 2000);
+        },
+      }
+    );
   };
 
   const handleCloseSession = async () => {
     if (!selectedSessionId) return;
-    await closeSession.mutateAsync(selectedSessionId);
-    setSelectedSessionId(null);
+    try {
+      await closeSession.mutateAsync(selectedSessionId);
+      setSelectedSessionId(null);
+      showToast.success(t('courses.attendance.sessionClosed') || 'Session closed successfully');
+    } catch (error: any) {
+      showToast.error(error.message || t('events.error'));
+    }
   };
 
-  const attendanceOptions = [
-    { value: 'present', label: t('courses.attendance.present'), icon: CheckCircle2, color: 'bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-400' },
-    { value: 'absent', label: t('courses.attendance.absent'), icon: XCircle, color: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-400' },
-    { value: 'late', label: t('courses.attendance.late'), icon: Clock, color: 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-400' },
-    { value: 'excused', label: t('courses.attendance.excused'), icon: AlertCircle, color: 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-400' },
-    { value: 'sick', label: t('courses.attendance.sick'), icon: Heart, color: 'bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-950 dark:text-purple-400' },
-    { value: 'leave', label: t('courses.attendance.leave'), icon: Calendar, color: 'bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950 dark:text-orange-400' },
-  ];
+  // Auto-select session: first check query param, then auto-select latest today session
+  useEffect(() => {
+    if (!sessions || sessions.length === 0 || sessionsLoading) return;
+    
+    // First priority: session from query param
+    const sessionIdFromParam = searchParams.get('session');
+    if (sessionIdFromParam) {
+      const foundSession = sessions.find(s => s.id === sessionIdFromParam);
+      if (foundSession && selectedSessionId !== sessionIdFromParam) {
+        setSelectedSessionId(sessionIdFromParam);
+        setMainTab('mark');
+        return;
+      }
+    }
+    
+    // Second priority: auto-select latest today session if no session is selected
+    const hasValidSelection = selectedSessionId && filteredSessions.some(s => s.id === selectedSessionId);
+    if (!hasValidSelection && filteredSessions.length > 0 && mainTab === 'mark') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Find the latest today session
+      const todaySessions = filteredSessions.filter((item) => {
+        const sessionDate = new Date(item.session_date);
+        sessionDate.setHours(0, 0, 0, 0);
+        return sessionDate.getTime() === today.getTime();
+      });
+      
+      if (todaySessions.length > 0) {
+        const latestTodaySessionId = todaySessions[0].id;
+        if (selectedSessionId !== latestTodaySessionId) {
+          setSelectedSessionId(latestTodaySessionId);
+        }
+        return;
+      }
+      
+      // Fallback: select the first (most recent) session if no today session exists
+      const firstSessionId = filteredSessions[0].id;
+      if (selectedSessionId !== firstSessionId) {
+        setSelectedSessionId(firstSessionId);
+      }
+    }
+  }, [searchParams, sessions, filteredSessions, sessionsLoading, selectedSessionId, mainTab]);
 
-  const getStatusBadge = (status: AttendanceStatus) => {
-    const option = attendanceOptions.find(opt => opt.value === status);
-    if (!option) return <Badge variant="outline">{status}</Badge>;
-    const Icon = option.icon;
-    return (
-      <Badge variant="outline" className={`${option.color} flex items-center gap-1.5 font-medium w-fit`}>
-        <Icon className="h-3.5 w-3.5" />
-        {option.label}
-      </Badge>
-    );
-  };
+  // Initialize attendance records from existing session data
+  useEffect(() => {
+    if (currentSession?.records) {
+      const recordsMap = new Map<string, AttendanceRecord>();
+      currentSession.records.forEach((record) => {
+        recordsMap.set(record.course_student_id, {
+          courseStudentId: record.course_student_id,
+          status: record.status,
+          note: record.note || undefined,
+        });
+      });
+      setAttendanceRecords(recordsMap);
+    }
+  }, [currentSession]);
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
