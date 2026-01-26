@@ -99,9 +99,29 @@ return new class extends Migration
                 $table->index('difficulty');
                 $table->index('is_active');
                 $table->index('deleted_at');
+                $table->index('created_at'); // For ORDER BY created_at DESC
+                $table->index('created_by'); // For filtering by creator
+                
+                // Composite indexes for common query patterns
+                // Most common: organization + school + deleted_at + created_at (for listing)
+                $table->index(['organization_id', 'school_id', 'deleted_at', 'created_at'], 'idx_questions_org_school_active_created');
+                
+                // Filter by organization + school + subject
                 $table->index(['organization_id', 'school_id', 'subject_id']);
+                
+                // Filter by organization + school + class_academic_year
                 $table->index(['organization_id', 'school_id', 'class_academic_year_id']);
+                
+                // Filter by organization + school + subject + type + difficulty
+                $table->index(['organization_id', 'school_id', 'subject_id', 'type', 'difficulty'], 'idx_questions_org_school_subject_type_diff');
+                
+                // Filter by organization + school + is_active + deleted_at
+                $table->index(['organization_id', 'school_id', 'is_active', 'deleted_at'], 'idx_questions_org_school_active_status');
             });
+            
+            // GIN index for JSONB tags column (for search scope using whereJsonContains)
+            // Must be created separately as Laravel doesn't support GIN indexes directly
+            DB::statement('CREATE INDEX idx_questions_tags_gin ON questions USING gin (tags)');
         }
     }
 

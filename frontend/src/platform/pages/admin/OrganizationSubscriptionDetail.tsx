@@ -327,57 +327,57 @@ export default function OrganizationSubscriptionDetail() {
 
               <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
                 <div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs sm:text-sm text-muted-foreground">
                     Started At
                   </div>
-                  <div className="mt-1 font-medium">
+                  <div className="mt-1 text-sm sm:text-base font-medium">
                     {subscription.started_at
                       ? formatDate(new Date(subscription.started_at))
                       : 'N/A'}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs sm:text-sm text-muted-foreground">
                     Expires At
                   </div>
-                  <div className="mt-1 font-medium">
+                  <div className="mt-1 text-sm sm:text-base font-medium">
                     {subscription.expires_at
                       ? formatDate(new Date(subscription.expires_at))
                       : 'N/A'}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs sm:text-sm text-muted-foreground">
                     Trial Ends At
                   </div>
-                  <div className="mt-1 font-medium">
+                  <div className="mt-1 text-sm sm:text-base font-medium">
                     {subscription.trial_ends_at
                       ? formatDate(new Date(subscription.trial_ends_at))
                       : 'N/A'}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs sm:text-sm text-muted-foreground">
                     Auto Renew
                   </div>
-                  <div className="mt-1 font-medium">
+                  <div className="mt-1 text-sm sm:text-base font-medium">
                     {subscription.auto_renew ? 'Yes' : 'No'}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs sm:text-sm text-muted-foreground">
                     Amount Paid
                   </div>
-                  <div className="mt-1 font-medium">
+                  <div className="mt-1 text-sm sm:text-base font-medium">
                     {subscription.amount_paid.toLocaleString()}{' '}
                     {subscription.currency}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs sm:text-sm text-muted-foreground">
                     Additional Schools
                   </div>
-                  <div className="mt-1 font-medium">
+                  <div className="mt-1 text-sm sm:text-base font-medium">
                     {subscription.additional_schools}
                   </div>
                 </div>
@@ -458,23 +458,26 @@ export default function OrganizationSubscriptionDetail() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground mb-4">
+            <div className="text-center py-6 sm:py-8">
+              <p className="text-sm sm:text-base text-muted-foreground mb-4">
                 No active subscription found for this organization
               </p>
               <Button
                 onClick={() => setIsActivateDialogOpen(true)}
                 disabled={activateSubscription.isPending}
+                className="w-full sm:w-auto"
               >
                 {activateSubscription.isPending ? (
                   <>
                     <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Activating...
+                    <span className="hidden sm:inline">Activating...</span>
+                    <span className="sm:hidden">Activating...</span>
                   </>
                 ) : (
                   <>
                     <CheckCircle className="mr-2 h-4 w-4" />
-                    Create Subscription
+                    <span className="hidden sm:inline">Create Subscription</span>
+                    <span className="sm:hidden">Create</span>
                   </>
                 )}
               </Button>
@@ -1046,7 +1049,7 @@ export default function OrganizationSubscriptionDetail() {
               ))}
             </div>
           ) : (
-            <div className="py-8 text-center text-muted-foreground">
+            <div className="py-6 sm:py-8 text-center text-xs sm:text-sm text-muted-foreground">
               No feature data available
             </div>
           )}
@@ -1055,10 +1058,10 @@ export default function OrganizationSubscriptionDetail() {
 
       {/* Activate Subscription Dialog */}
       <Dialog open={isActivateDialogOpen} onOpenChange={setIsActivateDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-[95vw] sm:w-full">
           <DialogHeader>
-            <DialogTitle>Activate Subscription</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Activate Subscription</DialogTitle>
+            <DialogDescription className="hidden sm:block">
               Configure and activate a subscription for this organization
             </DialogDescription>
           </DialogHeader>
@@ -1174,10 +1177,11 @@ export default function OrganizationSubscriptionDetail() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => setIsActivateDialogOpen(false)}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
@@ -1188,16 +1192,19 @@ export default function OrganizationSubscriptionDetail() {
                 activateFormData.amount_paid < 0 ||
                 activateSubscription.isPending
               }
+              className="w-full sm:w-auto"
             >
               {activateSubscription.isPending ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Activating...
+                  <span className="hidden sm:inline">Activating...</span>
+                  <span className="sm:hidden">Activating...</span>
                 </>
               ) : (
                 <>
                   <CheckCircle className="mr-2 h-4 w-4" />
-                  Activate Subscription
+                  <span className="hidden sm:inline">Activate Subscription</span>
+                  <span className="sm:hidden">Activate</span>
                 </>
               )}
             </Button>
@@ -1207,10 +1214,10 @@ export default function OrganizationSubscriptionDetail() {
 
       {/* Suspend Subscription Dialog */}
       <Dialog open={isSuspendDialogOpen} onOpenChange={setIsSuspendDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] sm:w-full max-w-md">
           <DialogHeader>
-            <DialogTitle>Suspend Subscription</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Suspend Subscription</DialogTitle>
+            <DialogDescription className="hidden sm:block">
               Suspend this organization's subscription. Provide a reason for
               suspension.
             </DialogDescription>
@@ -1229,10 +1236,11 @@ export default function OrganizationSubscriptionDetail() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => setIsSuspendDialogOpen(false)}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
@@ -1240,16 +1248,19 @@ export default function OrganizationSubscriptionDetail() {
               variant="destructive"
               onClick={handleSuspend}
               disabled={!suspendReason.trim() || suspendSubscription.isPending}
+              className="w-full sm:w-auto"
             >
               {suspendSubscription.isPending ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Suspending...
+                  <span className="hidden sm:inline">Suspending...</span>
+                  <span className="sm:hidden">Suspending...</span>
                 </>
               ) : (
                 <>
                   <XCircle className="mr-2 h-4 w-4" />
-                  Suspend Subscription
+                  <span className="hidden sm:inline">Suspend Subscription</span>
+                  <span className="sm:hidden">Suspend</span>
                 </>
               )}
             </Button>

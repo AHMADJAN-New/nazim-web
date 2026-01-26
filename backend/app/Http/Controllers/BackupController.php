@@ -63,7 +63,7 @@ class BackupController extends Controller
                 try {
                     File::makeDirectory($backupBaseDir, 0775, true);
                     // Ensure www-data owns the directory (important for Docker)
-                    if (function_exists('chown') && posix_geteuid() === 0) {
+                    if (function_exists('chown') && function_exists('posix_geteuid') && posix_geteuid() === 0) {
                         @chown($backupBaseDir, 'www-data');
                         @chgrp($backupBaseDir, 'www-data');
                     }
@@ -171,7 +171,7 @@ class BackupController extends Controller
                 try {
                     File::makeDirectory($backupsDir, 0775, true);
                     // Ensure www-data owns the directory (important for Docker)
-                    if (function_exists('chown') && posix_geteuid() === 0) {
+                    if (function_exists('chown') && function_exists('posix_geteuid') && posix_geteuid() === 0) {
                         @chown($backupsDir, 'www-data');
                         @chgrp($backupsDir, 'www-data');
                     }
@@ -317,7 +317,7 @@ class BackupController extends Controller
                 try {
                     File::makeDirectory($backupsDir, 0775, true);
                     // Ensure www-data owns the directory (important for Docker)
-                    if (function_exists('chown') && posix_geteuid() === 0) {
+                    if (function_exists('chown') && function_exists('posix_geteuid') && posix_geteuid() === 0) {
                         @chown($backupsDir, 'www-data');
                         @chgrp($backupsDir, 'www-data');
                     }
@@ -363,22 +363,26 @@ class BackupController extends Controller
     private function performRestore(string $backupPath, bool $restoreStorage = true): void
     {
         $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
-        $extractDir = storage_path('app/restore_temp/' . $timestamp);
+        // IMPORTANT (Windows + storage restore):
+        // Do NOT extract under storage/app because restoreStorage() clears storage/app,
+        // which would delete the extracted files mid-restore.
+        // Use storage/restore_temp (outside storage/app) to keep extraction stable.
+        $extractDir = storage_path('restore_temp/' . $timestamp);
 
         try {
             // Ensure restore_temp base directory exists
-            $restoreTempBase = storage_path('app/restore_temp');
+            $restoreTempBase = storage_path('restore_temp');
             if (!File::exists($restoreTempBase)) {
                 try {
                     File::makeDirectory($restoreTempBase, 0775, true);
                     // Ensure www-data owns the directory (important for Docker)
-                    if (function_exists('chown') && posix_geteuid() === 0) {
+                    if (function_exists('chown') && function_exists('posix_geteuid') && posix_geteuid() === 0) {
                         @chown($restoreTempBase, 'www-data');
                         @chgrp($restoreTempBase, 'www-data');
                     }
                 } catch (\Exception $e) {
                     \Log::error('Failed to create restore_temp base directory: ' . $e->getMessage());
-                    throw new \Exception('Failed to create restore temporary directory. Please ensure storage/app/restore_temp is writable.');
+                    throw new \Exception('Failed to create restore temporary directory. Please ensure storage/restore_temp is writable.');
                 }
             }
             
@@ -415,21 +419,48 @@ class BackupController extends Controller
             $dbDumpFile = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dbDumpFile);
             $dbDumpDir = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dbDumpDir);
             
+            \Log::info('Looking for database backup file', [
+                'extract_dir' => $extractDir,
+                'db_file_exists' => File::exists($dbFile),
+                'db_tar_file_exists' => File::exists($dbTarFile),
+                'db_dump_file_exists' => File::exists($dbDumpFile),
+                'db_dump_dir_exists' => is_dir($dbDumpDir),
+            ]);
+            
             if (File::exists($dbFile)) {
+                \Log::info('Found database.sql file, starting restore', [
+                    'file_size' => File::size($dbFile),
+                    'file_path' => $dbFile,
+                ]);
                 $this->restoreDatabase($dbFile);
+                \Log::info('Database restore method completed');
             } elseif (File::exists($dbTarFile)) {
                 // Validate file before restoring
                 if (File::size($dbTarFile) === 0) {
                     throw new \Exception('Database backup file is empty: database.tar');
                 }
+                \Log::info('Found database.tar file, starting restore', [
+                    'file_size' => File::size($dbTarFile),
+                    'file_path' => $dbTarFile,
+                ]);
                 $this->restoreDatabase($dbTarFile);
+                \Log::info('Database restore method completed');
             } elseif (File::exists($dbDumpFile)) {
                 if (File::size($dbDumpFile) === 0) {
                     throw new \Exception('Database backup file is empty: database.dump');
                 }
+                \Log::info('Found database.dump file, starting restore', [
+                    'file_size' => File::size($dbDumpFile),
+                    'file_path' => $dbDumpFile,
+                ]);
                 $this->restoreDatabase($dbDumpFile);
+                \Log::info('Database restore method completed');
             } elseif (is_dir($dbDumpDir)) {
+                \Log::info('Found database_dump directory, starting restore', [
+                    'dir_path' => $dbDumpDir,
+                ]);
                 $this->restoreDatabase($dbDumpDir);
+                \Log::info('Database restore method completed');
             } else {
                 // List what files were found for debugging
                 $foundFiles = [];
@@ -486,16 +517,28 @@ class BackupController extends Controller
                 }
                 
                 if ($storageDir && File::exists($storageDir)) {
+                    \Log::info('Found storage backup directory, starting restore', [
+                        'storage_dir' => $storageDir,
+                    ]);
                     $this->restoreStorage($storageDir);
+                    \Log::info('Storage restore completed successfully');
                 } else {
-                    \Log::info('Storage backup not found in archive, skipping storage restore. This is normal if the backup only contains database.');
+                    \Log::info('Storage backup not found in archive, skipping storage restore. This is normal if the backup only contains database.', [
+                        'checked_dirs' => [
+                            'storage/app' => $storageDir1,
+                            'app' => $storageDir2,
+                            'storage' => $storageDir3,
+                        ],
+                    ]);
                 }
             } else {
                 \Log::info('Storage restore skipped - database only restore requested.');
             }
 
             // Clean up temporary directory
+            \Log::info('Cleaning up temporary restore directory', ['extract_dir' => $extractDir]);
             File::deleteDirectory($extractDir);
+            \Log::info('Backup restore process completed successfully');
 
         } catch (\Exception $e) {
             // Clean up temporary directory on error
@@ -530,6 +573,107 @@ class BackupController extends Controller
             $fileSize = File::size($normalizedDbFile);
             if ($fileSize === 0) {
                 throw new \Exception("Database backup file is empty: {$normalizedDbFile}");
+            }
+            
+            // Pre-process SQL file to fix common restore issues
+            // This prevents "function already exists" and "role does not exist" errors during restore
+            if (str_ends_with($normalizedDbFile, '.sql')) {
+                try {
+                    $originalFileSize = File::size($normalizedDbFile);
+                    $sqlContent = File::get($normalizedDbFile);
+                    
+                    \Log::info('Starting SQL file preprocessing', [
+                        'file_path' => $normalizedDbFile,
+                        'file_size' => $originalFileSize,
+                        'content_length' => strlen($sqlContent),
+                    ]);
+                    
+                    // 1. Replace CREATE FUNCTION with CREATE OR REPLACE FUNCTION
+                    // Use regex to match CREATE FUNCTION statements while preserving the function definition
+                    // Pattern: CREATE FUNCTION (possibly with OR REPLACE already) -> ensure OR REPLACE is present
+                    $sqlContent = preg_replace(
+                        '/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+/i',
+                        'CREATE OR REPLACE FUNCTION ',
+                        $sqlContent
+                    );
+                    
+                    // 2. Remove ALTER ... OWNER TO statements (roles may not exist in target database)
+                    // These statements cause "role does not exist" errors during restore
+                    // Match multi-line ALTER statements that may span multiple lines
+                    // Pattern: ALTER <object_type> <object_name> OWNER TO <role>;
+                    
+                    // Count original OWNER TO statements for logging (before removal)
+                    preg_match_all('/ALTER\s+[A-Z_]+\s+[^;]*?OWNER\s+TO\s+[^;]+;/is', $sqlContent, $matches);
+                    $originalOwnerToCount = count($matches[0] ?? []);
+                    
+                    // Remove ALTER FUNCTION ... OWNER TO ... (handles multi-line and function names with parentheses)
+                    // Example: ALTER FUNCTION public.auto_set_staff_document_organization_id() OWNER TO nazim;
+                    // Use [^;]+ to match everything up to semicolon (non-greedy with ?)
+                    $sqlContent = preg_replace(
+                        '/ALTER\s+FUNCTION\s+[^;]*?OWNER\s+TO\s+[^;]+;/is',
+                        '-- Removed ALTER FUNCTION OWNER TO (role may not exist)',
+                        $sqlContent
+                    );
+                    
+                    // Remove ALTER TABLE ... OWNER TO ...
+                    $sqlContent = preg_replace(
+                        '/ALTER\s+TABLE\s+[^;]*?OWNER\s+TO\s+[^;]+;/is',
+                        '-- Removed ALTER TABLE OWNER TO (role may not exist)',
+                        $sqlContent
+                    );
+                    
+                    // Remove ALTER SEQUENCE ... OWNER TO ...
+                    $sqlContent = preg_replace(
+                        '/ALTER\s+SEQUENCE\s+[^;]*?OWNER\s+TO\s+[^;]+;/is',
+                        '-- Removed ALTER SEQUENCE OWNER TO (role may not exist)',
+                        $sqlContent
+                    );
+                    
+                    // Remove ALTER VIEW ... OWNER TO ...
+                    $sqlContent = preg_replace(
+                        '/ALTER\s+VIEW\s+[^;]*?OWNER\s+TO\s+[^;]+;/is',
+                        '-- Removed ALTER VIEW OWNER TO (role may not exist)',
+                        $sqlContent
+                    );
+                    
+                    // Remove ALTER TYPE ... OWNER TO ...
+                    $sqlContent = preg_replace(
+                        '/ALTER\s+TYPE\s+[^;]*?OWNER\s+TO\s+[^;]+;/is',
+                        '-- Removed ALTER TYPE OWNER TO (role may not exist)',
+                        $sqlContent
+                    );
+                    
+                    // Remove ALTER SCHEMA ... OWNER TO ...
+                    $sqlContent = preg_replace(
+                        '/ALTER\s+SCHEMA\s+[^;]*?OWNER\s+TO\s+[^;]+;/is',
+                        '-- Removed ALTER SCHEMA OWNER TO (role may not exist)',
+                        $sqlContent
+                    );
+                    
+                    // Generic catch-all for any other ALTER ... OWNER TO statements
+                    $sqlContent = preg_replace(
+                        '/ALTER\s+[A-Z_]+\s+[^;]*?OWNER\s+TO\s+[^;]+;/is',
+                        '-- Removed ALTER ... OWNER TO (role may not exist)',
+                        $sqlContent
+                    );
+                    
+                    // Count how many were actually removed (by counting comments)
+                    $removedCount = substr_count($sqlContent, '-- Removed ALTER');
+                    
+                    // Write the processed SQL back to the file
+                    File::put($normalizedDbFile, $sqlContent);
+                    
+                    \Log::info("Pre-processed SQL file", [
+                        'replaced_create_function' => true,
+                        'original_owner_to_statements' => $originalOwnerToCount,
+                        'removed_owner_to_statements' => $removedCount,
+                        'file_size_before' => $originalFileSize,
+                        'file_size_after' => File::size($normalizedDbFile),
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to pre-process SQL file (continuing anyway): ' . $e->getMessage());
+                    // Don't throw - continue with restore even if preprocessing fails
+                }
             }
         }
         
@@ -712,6 +856,23 @@ class BackupController extends Controller
                     throw new \Exception($errorMessage);
                 }
 
+                /**
+                 * CRITICAL:
+                 * Many user-provided / older backups may not include `--clean` drop statements.
+                 * Restoring into a non-empty database will then fail with "relation already exists".
+                 *
+                 * We solve this by recreating the target database BEFORE applying the SQL file.
+                 * This yields a clean restore target and avoids dependency-order issues from DROP TABLE.
+                 */
+                $this->recreatePostgresDatabaseForRestore(
+                    psqlPath: $psqlPath,
+                    dbHost: $dbHost,
+                    dbPort: $dbPort,
+                    dbUser: $dbUser,
+                    dbPassword: $dbPassword,
+                    targetDbName: $dbName
+                );
+
                 // NOTE (Windows): Symfony Process output capture is unreliable for psql in some setups.
                 // We use the same batch-file + exec(2>&1) approach as pg_restore to reliably capture errors.
                 // Also enable ON_ERROR_STOP so psql exits on the first SQL error with a clear message.
@@ -844,7 +1005,19 @@ class BackupController extends Controller
 
         // Execute the command
         $process->setTimeout(600); // 10 minutes timeout
+        
+        \Log::info('Starting database restore', [
+            'db_file' => $normalizedDbFile,
+            'file_size' => File::exists($normalizedDbFile) && !is_dir($normalizedDbFile) ? File::size($normalizedDbFile) : 0,
+            'db_name' => $dbName,
+            'db_host' => $dbHost,
+        ]);
+        
         $process->run();
+        
+        $output = $process->getOutput();
+        $errorOutput = $process->getErrorOutput();
+        $exitCode = $process->getExitCode();
 
         if (!$process->isSuccessful()) {
             // Capture full error output
@@ -955,7 +1128,11 @@ class BackupController extends Controller
                 $errorMessage .= ' Please check your database credentials.';
             } elseif (str_contains($fullError, 'could not connect') || str_contains($fullError, 'connection refused')) {
                 $errorMessage .= ' Please check your database connection settings (host, port).';
-            } elseif (str_contains($fullError, 'does not exist') || str_contains($fullError, 'database') && str_contains($fullError, 'not exist')) {
+            } elseif (str_contains($fullError, 'role') && str_contains($fullError, 'does not exist')) {
+                $errorMessage .= ' A database role referenced in the backup does not exist in the target database.';
+                $errorMessage .= ' The SQL file has been pre-processed to remove OWNER TO statements, but some may remain.';
+                $errorMessage .= ' Please ensure all required database roles exist, or restore with a user that has sufficient privileges.';
+            } elseif (str_contains($fullError, 'does not exist') && str_contains($fullError, 'database') && !str_contains($fullError, 'role')) {
                 $errorMessage .= ' The database does not exist. Please create it first.';
             } elseif (str_contains($fullError, 'permission denied') || str_contains($fullError, 'access denied')) {
                 $errorMessage .= ' Database permission denied. Please check user permissions.';
@@ -967,6 +1144,224 @@ class BackupController extends Controller
             
             throw new \Exception($errorMessage);
         }
+        
+        // Log successful restore
+        \Log::info('Database restore completed successfully', [
+            'db_file' => $normalizedDbFile,
+            'db_name' => $dbName,
+            'exit_code' => $exitCode,
+            'output_length' => strlen($output),
+            'error_output_length' => strlen($errorOutput),
+        ]);
+        
+        // Verify restore by checking if we can query the database and count tables
+        try {
+            $tableCount = DB::select("SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = 'public'");
+            $tableCountValue = $tableCount[0]->count ?? 0;
+            
+            // Also check for some common tables to verify data was restored
+            $commonTables = ['organizations', 'users', 'profiles', 'students', 'staff'];
+            $existingTables = [];
+            foreach ($commonTables as $table) {
+                try {
+                    $result = DB::select("SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ?", [$table]);
+                    if (($result[0]->count ?? 0) > 0) {
+                        // Also check if table has data
+                        try {
+                            $rowCount = DB::table($table)->count();
+                            $existingTables[] = $table . " ({$rowCount} rows)";
+                        } catch (\Exception $e) {
+                            $existingTables[] = $table . " (exists)";
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Ignore individual table check errors
+                }
+            }
+            
+            \Log::info('Database restore verification', [
+                'tables_in_public_schema' => $tableCountValue,
+                'common_tables_found' => $existingTables,
+                'verification_status' => $tableCountValue > 0 ? 'success' : 'warning_no_tables',
+            ]);
+        } catch (\Exception $e) {
+            \Log::warning('Could not verify database restore (non-critical): ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Recreate the target PostgreSQL database before restoring a dump into it.
+     *
+     * Why:
+     * - Some backups (especially older ones) may not include `--clean` / DROP statements.
+     * - Even when drops exist, dependency order can cause failures.
+     *
+     * This method:
+     * - disconnects Laravel DB connections,
+     * - terminates existing sessions for the target DB,
+     * - drops and recreates the DB,
+     * - then the caller can restore into a clean database.
+     */
+    private function recreatePostgresDatabaseForRestore(
+        string $psqlPath,
+        string $dbHost,
+        string $dbPort,
+        string $dbUser,
+        string $dbPassword,
+        string $targetDbName
+    ): void {
+        // Close any active Laravel DB connections (otherwise DROP DATABASE may fail)
+        try {
+            DB::disconnect();
+            DB::purge();
+        } catch (\Exception $e) {
+            // Non-fatal; continue
+            \Log::warning('Failed to disconnect Laravel DB before recreate (continuing): ' . $e->getMessage());
+        }
+
+        $maintenanceDb = env('DB_MAINTENANCE_DATABASE', 'postgres');
+
+        // NOTE: We purposely do NOT rely on `--clean` inside the dump file.
+        // We recreate the database for a guaranteed clean restore target.
+        //
+        // IMPORTANT: `DROP DATABASE` CANNOT run inside a transaction block.
+        // If we send multiple statements in a single `psql -c "<...; ...; ...>"`,
+        // PostgreSQL treats it as one multi-statement query, which is executed inside
+        // an implicit transaction block, and DROP DATABASE will fail.
+        //
+        // So we run THREE separate `psql -c` commands.
+        $terminateSql = sprintf(
+            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = %s AND pid <> pg_backend_pid();",
+            $this->pgQuoteLiteral($targetDbName),
+        );
+        $dropSql = sprintf(
+            "DROP DATABASE IF EXISTS %s;",
+            $this->pgQuoteIdentifier($targetDbName)
+        );
+        $createSql = sprintf(
+            "CREATE DATABASE %s WITH OWNER %s ENCODING 'UTF8';",
+            $this->pgQuoteIdentifier($targetDbName),
+            $this->pgQuoteIdentifier($dbUser)
+        );
+
+        \Log::info('Recreating PostgreSQL database before restore', [
+            'db_host' => $dbHost,
+            'db_port' => $dbPort,
+            'db_user' => $dbUser,
+            'target_db' => $targetDbName,
+            'maintenance_db' => $maintenanceDb,
+        ]);
+
+        if (PHP_OS_FAMILY === 'Windows') {
+            $tempDir = str_replace('/', '\\', sys_get_temp_dir());
+            $batchFile = $tempDir . '\\psql_recreate_db_' . uniqid() . '.bat';
+
+            $escapedPassword = str_replace(['"', '%', '!', '^', '&'], ['""', '%%', '!!', '^^', '^&'], $dbPassword);
+            $normalizedPsqlPath = str_replace('/', '\\', $psqlPath);
+
+            $terminateSqlOneLine = str_replace(["\r\n", "\n", "\r"], ' ', $terminateSql);
+            $dropSqlOneLine = str_replace(["\r\n", "\n", "\r"], ' ', $dropSql);
+            $createSqlOneLine = str_replace(["\r\n", "\n", "\r"], ' ', $createSql);
+
+            // Escape for batch context (quotes inside the SQL must be doubled)
+            $terminateSqlOneLine = str_replace('"', '""', $terminateSqlOneLine);
+            $dropSqlOneLine = str_replace('"', '""', $dropSqlOneLine);
+            $createSqlOneLine = str_replace('"', '""', $createSqlOneLine);
+
+            $batchContent = sprintf(
+                "@echo off\n".
+                "set PGPASSWORD=%s\n".
+                "\"%s\" -h %s -p %s -U %s -d %s --set ON_ERROR_STOP=on --echo-errors -v VERBOSITY=verbose -c \"%s\" 2>&1 || exit /b %%errorlevel%%\n".
+                "\"%s\" -h %s -p %s -U %s -d %s --set ON_ERROR_STOP=on --echo-errors -v VERBOSITY=verbose -c \"%s\" 2>&1 || exit /b %%errorlevel%%\n".
+                "\"%s\" -h %s -p %s -U %s -d %s --set ON_ERROR_STOP=on --echo-errors -v VERBOSITY=verbose -c \"%s\" 2>&1 || exit /b %%errorlevel%%\n",
+                $escapedPassword,
+                $normalizedPsqlPath,
+                escapeshellarg($dbHost),
+                escapeshellarg($dbPort),
+                escapeshellarg($dbUser),
+                escapeshellarg($maintenanceDb),
+                $terminateSqlOneLine,
+                $normalizedPsqlPath,
+                escapeshellarg($dbHost),
+                escapeshellarg($dbPort),
+                escapeshellarg($dbUser),
+                escapeshellarg($maintenanceDb),
+                $dropSqlOneLine,
+                $normalizedPsqlPath,
+                escapeshellarg($dbHost),
+                escapeshellarg($dbPort),
+                escapeshellarg($dbUser),
+                escapeshellarg($maintenanceDb),
+                $createSqlOneLine
+            );
+
+            file_put_contents($batchFile, $batchContent);
+            $command = 'cmd /c "' . str_replace('/', '\\', $batchFile) . '"';
+
+            $output = [];
+            $returnVar = 0;
+            exec($command . ' 2>&1', $output, $returnVar);
+            $combinedOutput = trim(implode("\n", $output));
+
+            if (file_exists($batchFile)) {
+                @unlink($batchFile);
+            }
+
+            if ($returnVar !== 0) {
+                \Log::error('Failed to recreate PostgreSQL database (Windows)', [
+                    'exit_code' => $returnVar,
+                    'output' => $combinedOutput,
+                ]);
+                throw new \Exception(
+                    "Failed to recreate PostgreSQL database before restore.\n\n" .
+                    ($combinedOutput !== '' ? $combinedOutput : "Exit code: {$returnVar}")
+                );
+            }
+        } else {
+            $statements = [$terminateSql, $dropSql, $createSql];
+            foreach ($statements as $statement) {
+                $commandArray = [
+                    $psqlPath,
+                    '-h', $dbHost,
+                    '-p', $dbPort,
+                    '-U', $dbUser,
+                    '-d', $maintenanceDb,
+                    '--set', 'ON_ERROR_STOP=on',
+                    '--echo-errors',
+                    '-v', 'VERBOSITY=verbose',
+                    '-c', $statement,
+                ];
+
+                $process = new Process($commandArray, null, ['PGPASSWORD' => $dbPassword]);
+                $process->setTimeout(120);
+                $process->run();
+
+                if (!$process->isSuccessful()) {
+                    $fullError = trim($process->getErrorOutput() ?: $process->getOutput() ?: '');
+                    \Log::error('Failed to recreate PostgreSQL database (Unix)', [
+                        'exit_code' => $process->getExitCode(),
+                        'error' => $fullError,
+                        'statement' => $statement,
+                    ]);
+                    throw new \Exception(
+                        "Failed to recreate PostgreSQL database before restore.\n\n" .
+                        ($fullError !== '' ? $fullError : 'Unknown error occurred')
+                    );
+                }
+            }
+        }
+    }
+
+    private function pgQuoteIdentifier(string $identifier): string
+    {
+        // Double-quote identifiers and escape any embedded quotes.
+        return '"' . str_replace('"', '""', $identifier) . '"';
+    }
+
+    private function pgQuoteLiteral(string $literal): string
+    {
+        // Single-quote string literals and escape any embedded single quotes.
+        return "'" . str_replace("'", "''", $literal) . "'";
     }
 
     /**

@@ -38,8 +38,13 @@ function translateMessage(
 ): string {
   const lang = getLanguage();
   
-  // If it looks like a translation key (contains dots), try to translate
-  if (messageOrKey.includes('.')) {
+  // Only treat as a translation key if it *actually* looks like one.
+  // Error messages and stack traces often contain dots (file names, paths, etc.)
+  // and should NOT be routed through i18n (it creates noisy "missing key" logs).
+  const looksLikeTranslationKey =
+    !/\s/.test(messageOrKey) && /^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/.test(messageOrKey);
+
+  if (looksLikeTranslationKey) {
     // Ensure language is loaded (trigger async load if needed)
     // The t() function will handle this, but we trigger it explicitly to ensure it's in progress
     if (lang !== 'en') {
